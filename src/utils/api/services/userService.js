@@ -241,13 +241,20 @@ const userUtils = {
       return profilePicture;
     }
     
-    // Determine base URL with protocol preference
-    let staticBaseUrl = 'http://157.10.73.52:8085';
+    // Determine base URL with environment-specific logic
+    let staticBaseUrl;
     
-    // Check if HTTPS is preferred or if current page is HTTPS
-    if (forceHttps || (typeof window !== 'undefined' && window.location.protocol === 'https:')) {
-      // Try HTTPS first, but keep HTTP as fallback in the URL construction
-      staticBaseUrl = 'https://157.10.73.52:8085';
+    // In development, use direct server URL
+    if (import.meta.env.DEV) {
+      staticBaseUrl = import.meta.env.VITE_STATIC_BASE_URL || 'http://157.10.73.52:8085';
+      
+      // Handle forceHttps for development
+      if (forceHttps && staticBaseUrl.startsWith('http://')) {
+        staticBaseUrl = staticBaseUrl.replace('http://', 'https://');
+      }
+    } else {
+      // In production (Vercel), use relative URLs that will be proxied
+      staticBaseUrl = '';
     }
     
     // Handle different path formats
@@ -267,6 +274,12 @@ const userUtils = {
       profilePath = pathParts.join('/');
     }
     
+    // In production, use relative URL that will be proxied by Vercel
+    if (import.meta.env.PROD) {
+      return profilePath; // This will become /uploads/filename and be proxied by Vercel
+    }
+    
+    // In development, use full URL
     return `${staticBaseUrl}${profilePath}`;
   },
 
