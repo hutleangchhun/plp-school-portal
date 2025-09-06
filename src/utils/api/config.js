@@ -1,6 +1,11 @@
-// API Configuration - Use relative URLs for Vercel proxy
+// API Configuration - Environment-specific URLs
 const getApiBaseUrl = () => {
-  // Use relative URLs that will be proxied by Vercel
+  // In development, use environment variable or direct server URL
+  if (import.meta.env.DEV) {
+    return import.meta.env.VITE_API_URL || 'http://157.10.73.52:8085/api/v1';
+  }
+  
+  // In production (Vercel), use relative URLs for proxy rewrites
   return '/api/v1';
 };
 
@@ -127,9 +132,14 @@ export const HTTP_STATUS = {
   SERVICE_UNAVAILABLE: 503
 };
 
-// Function to get static asset base URL - Use relative URLs for Vercel proxy
+// Function to get static asset base URL - Environment-specific URLs
 export const getStaticAssetBaseUrl = () => {
-  // Use relative URLs that will be proxied by Vercel
+  // In development, use environment variable or direct server URL
+  if (import.meta.env.DEV) {
+    return import.meta.env.VITE_STATIC_BASE_URL || 'http://157.10.73.52:8085';
+  }
+  
+  // In production (Vercel), use relative URLs for proxy rewrites
   return '';
 };
 
@@ -172,9 +182,14 @@ export const testApiConnection = async (baseUrl) => {
   }
 };
 
-// Function to get the API URL (using relative URLs for proxy)
+// Function to get the API URL (environment-specific)
 export const getBestApiUrl = async () => {
-  // Use relative URLs that will be proxied by Vercel
+  // In development, use environment variable or direct server URL
+  if (import.meta.env.DEV) {
+    return import.meta.env.VITE_API_URL || 'http://157.10.73.52:8085/api/v1';
+  }
+  
+  // In production (Vercel), use relative URLs for proxy rewrites
   return '/api/v1';
 };
 
