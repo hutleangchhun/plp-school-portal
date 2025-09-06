@@ -1,17 +1,12 @@
-// API Configuration with HTTPS support
+// API Configuration - Force HTTP for API server
 const getApiBaseUrl = () => {
-  // Check if we should prefer HTTPS
-  const preferHttps = import.meta.env.VITE_PREFER_HTTPS === 'true' || 
-                     (typeof window !== 'undefined' && window.location.protocol === 'https:');
-  
-  // Environment variable takes precedence
+  // Environment variable takes absolute precedence
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
   
-  // Default to HTTPS if preferred, fallback to HTTP
-  const protocol = preferHttps ? 'https' : 'http';
-  return `${protocol}://157.10.73.52:8085/api/v1`;
+  // Force HTTP for API server (even when app is served over HTTPS)
+  return 'http://157.10.73.52:8085/api/v1';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -137,14 +132,15 @@ export const HTTP_STATUS = {
   SERVICE_UNAVAILABLE: 503
 };
 
-// Function to get static asset base URL with HTTPS support
-export const getStaticAssetBaseUrl = (preferHttps = null) => {
-  // Determine HTTPS preference
-  const useHttps = preferHttps !== null ? preferHttps : 
-                   (import.meta.env.VITE_PREFER_HTTPS === 'true' || 
-                    (typeof window !== 'undefined' && window.location.protocol === 'https:'));
+// Function to get static asset base URL - Force HTTP
+export const getStaticAssetBaseUrl = () => {
+  // Check for environment variable first
+  if (import.meta.env.VITE_STATIC_BASE_URL) {
+    return import.meta.env.VITE_STATIC_BASE_URL;
+  }
   
-  return useHttps ? HTTPS_CONFIG.staticUrls.https : HTTPS_CONFIG.staticUrls.http;
+  // Force HTTP for static assets (same as API server)
+  return 'http://157.10.73.52:8085';
 };
 
 // Function to test API availability

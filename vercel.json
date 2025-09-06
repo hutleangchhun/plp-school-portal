@@ -13,6 +13,7 @@
   ],
   "env": {
     "VITE_API_URL": "http://157.10.73.52:8085/api/v1",
+    "VITE_STATIC_BASE_URL": "http://157.10.73.52:8085",
     "VITE_PREFER_HTTPS": "false"
   }
 }
