@@ -21,8 +21,8 @@ npm run deploy
 
 ### Environment Variables (Optional)
 ```
-VITE_API_URL=https://157.10.73.52:8085/api/v1
-VITE_PREFER_HTTPS=true
+VITE_API_URL=http://157.10.73.52:8085/api/v1
+VITE_PREFER_HTTPS=false
 ```
 
 ## Features Ready
