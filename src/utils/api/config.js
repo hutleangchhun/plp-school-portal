@@ -1,12 +1,7 @@
-// API Configuration - Force HTTP for API server
+// API Configuration - Use relative URLs for Vercel proxy
 const getApiBaseUrl = () => {
-  // Environment variable takes absolute precedence
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  
-  // Force HTTP for API server (even when app is served over HTTPS)
-  return 'http://157.10.73.52:8085/api/v1';
+  // Use relative URLs that will be proxied by Vercel
+  return '/api/v1';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -132,15 +127,10 @@ export const HTTP_STATUS = {
   SERVICE_UNAVAILABLE: 503
 };
 
-// Function to get static asset base URL - Force HTTP
+// Function to get static asset base URL - Use relative URLs for Vercel proxy
 export const getStaticAssetBaseUrl = () => {
-  // Check for environment variable first
-  if (import.meta.env.VITE_STATIC_BASE_URL) {
-    return import.meta.env.VITE_STATIC_BASE_URL;
-  }
-  
-  // Force HTTP for static assets (same as API server)
-  return 'http://157.10.73.52:8085';
+  // Use relative URLs that will be proxied by Vercel
+  return '';
 };
 
 // Function to test API availability
@@ -182,10 +172,10 @@ export const testApiConnection = async (baseUrl) => {
   }
 };
 
-// Function to get the API URL (always server)
+// Function to get the API URL (using relative URLs for proxy)
 export const getBestApiUrl = async () => {
-  // Always return server API URL, override with environment variable if set
-  return import.meta.env.VITE_API_URL || 'http://157.10.73.52:8085/api/v1';
+  // Use relative URLs that will be proxied by Vercel
+  return '/api/v1';
 };
 
 // Main API configuration object
