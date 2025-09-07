@@ -215,6 +215,40 @@ export const en = {
   noStudentsFound: 'No students found',
   addStudentsToClass: 'Add Students to Class',
   
+  // Table and UI elements
+  name: 'Name',
+  noName: 'No Name',
+  active: 'Active',
+  inactive: 'Inactive',
+  removeStudent: 'Remove Student',
+  confirmRemoveStudent: 'Are you sure you want to remove',
+  thisStudent: 'this student',
+  fromYourClass: 'from your class? This action cannot be undone.',
+  removing: 'Removing...',
+  remove: 'Remove',
+  studentRemovedSuccess: 'Student removed successfully',
+  failedRemoveStudent: 'Failed to remove student',
+  filterByGrade: 'Filter by grade',
+  allGrades: 'All Grades',
+  
+  // Pagination
+  showing: 'Showing',
+  to: 'to',
+  of: 'of',
+  results: 'results',
+  previous: 'Previous',
+  next: 'Next',
+  
+  // Bulk operations
+  studentsRemovedSuccess: 'Students removed successfully',
+  failedRemoveStudents: 'Failed to remove students',
+  removeStudents: 'Remove Students',
+  confirmRemoveStudents: 'Are you sure you want to remove',
+  studentsFromClass: 'students from your class? This action cannot be undone.',
+  studentsSelected: 'students selected',
+  clearSelection: 'Clear Selection',
+  removeSelected: 'Remove Selected',
+  
   // Login page
   signInToAccount: 'Sign in to your account',
   enterUsername: 'Enter your username',

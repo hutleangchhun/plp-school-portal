@@ -215,6 +215,39 @@ export const km = {
   noStudentsFound: 'រកមិនឃើញសិស្ស',
   addStudentsToClass: 'បន្ថែមសិស្សទៅថ្នាក់',
   
+  // Table and UI elements
+  name: 'ឈ្មោះ',
+  noName: 'គ្មានឈ្មោះ',
+  active: 'សកម្ម',
+  inactive: 'មិនសកម្ម',
+  removeStudent: 'ដកសិស្សចេញ',
+  confirmRemoveStudent: 'តើអ្នកប្រាកដថាចង់ដកសិស្ស',
+  thisStudent: 'សិស្សនេះ',
+  fromYourClass: 'ពីថ្នាក់របស់អ្នកមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+  removing: 'កំពុងដកចេញ...',
+  remove: 'ដកចេញ',
+  studentRemovedSuccess: 'បានដកសិស្សចេញដោយជោគជ័យ',
+  failedRemoveStudent: 'បរាជ័យក្នុងការដកសិស្សចេញ',
+  filterByGrade: 'តម្រោងតាមថ្នាក់',
+  allGrades: 'ថ្នាក់ទាំងអស់',
+  
+  // Pagination
+  showing: 'បង្ហាញ',
+  to: 'ដល់',
+  of: 'នៃ',
+  results: 'លទ្ធផលសរុប',
+  previous: 'មុន',
+  next: 'បន្ទាប់',
+  
+  // Bulk operations
+  studentsRemovedSuccess: 'បានដកសិស្សចេញដោយជោគជ័យ',
+  failedRemoveStudents: 'បរាជ័យក្នុងការដកសិស្សចេញ',
+  removeStudents: 'ដកសិស្សចេញ',
+  confirmRemoveStudents: 'តើអ្នកប្រាកដថាចង់ដកសិស្ស',
+  studentsFromClass: 'សិស្សពីថ្នាក់របស់អ្នកមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+  clearSelection: 'សម្អាតការជ្រើសរើស',
+  removeSelected: 'ដកចេញអ្នកដែលបានជ្រើសរើស',
+  
   // Login page
   signInToAccount: 'ចូលទៅកាន់គណនីរបស់អ្នក',
   enterUsername: 'បញ្ចូលឈ្មោះអ្នកប្រើរបស់អ្នក',
