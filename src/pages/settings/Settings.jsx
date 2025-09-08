@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Settings as SettingsIcon, User, Bell, Shield, Palette, Globe } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useToast } from '../contexts/ToastContext';
-import LanguageSwitcher from './LanguageSwitcher';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
+import LanguageSwitcher from '../../components/common/LanguageSwitcher';
 
 export default function Settings() {
   const { t } = useLanguage();

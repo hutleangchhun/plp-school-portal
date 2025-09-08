@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useToast } from '../contexts/ToastContext';
-import LanguageSwitcher from './LanguageSwitcher';
-import { Button } from './ui/Button';
-import { api, utils } from '../utils/api';
-import Footer from './Footer';
-import plpLogo from '../assets/plp-logo-v2.png';
-import moeysLogo from '../assets/moeys-logo.png';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
+import LanguageSwitcher from '../../components/common/LanguageSwitcher';
+import { Button } from '../../components/ui/Button';
+import { api, utils } from '../../utils/api';
+import Footer from '../../components/layout/Footer';
+import plpLogo from '../../assets/plp-logo-v2.png';
+import moeysLogo from '../../assets/moeys-logo.png';
 
 export default function Login({ setUser }) {
   const { t } = useLanguage();

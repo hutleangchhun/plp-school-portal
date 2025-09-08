@@ -1,6 +1,6 @@
 import { Construction, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function PlaceholderPage({ 
   title, 

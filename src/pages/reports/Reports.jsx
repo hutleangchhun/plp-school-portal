@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, Download, Filter, TrendingUp, Users, BookOpen, Award, Calendar } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useToast } from '../contexts/ToastContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function Reports() {
   const { t } = useLanguage();

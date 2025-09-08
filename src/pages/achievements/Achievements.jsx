@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Award, Plus, Trophy, Medal, Star, Users } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useToast } from '../contexts/ToastContext';
-import Modal from './ui/Modal';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
+import Modal from '../../components/ui/Modal';
 
 export default function Achievements() {
   const { t } = useLanguage();

@@ -1,6 +1,6 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Languages, ChevronDown } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function LanguageSwitcher({ className = '' }) {
   const { language, toggleLanguage, t } = useLanguage();

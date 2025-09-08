@@ -1,9 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown, LogOut, User } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { useLanguage } from '../contexts/LanguageContext';
-import LanguageSwitcher from './LanguageSwitcher';
-import ProfileImage from './ui/ProfileImage';
+import { useLanguage } from '../../contexts/LanguageContext';
+import LanguageSwitcher from '../common/LanguageSwitcher';
+import ProfileImage from '../ui/ProfileImage';
 
 const getPageTitle = (pathname) => {
   const path = pathname.split('/')[1];

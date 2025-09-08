@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Check, X, Clock, Users, Search, Filter } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useToast } from '../contexts/ToastContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function Attendance() {
   const { t } = useLanguage();

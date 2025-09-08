@@ -1,13 +1,13 @@
 import { User, Edit, GraduationCap, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
-import WelcomeAlert from './ui/WelcomeAlert';
-import { Button } from './ui/Button';
-import { PageTransition, FadeInSection } from './ui/PageTransition';
-import { LoadingSpinner } from './ui/LoadingSpinner';
-import ProfileImage from './ui/ProfileImage';
-import { utils, userService } from '../utils/api';
+import { useLanguage } from '../../contexts/LanguageContext';
+import WelcomeAlert from '../../components/ui/WelcomeAlert';
+import { Button } from '../../components/ui/Button';
+import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import ProfileImage from '../../components/ui/ProfileImage';
+import { utils, userService } from '../../utils/api';
 
 export default function Dashboard({ user: initialUser }) {
   const { t } = useLanguage();

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
-import ConfirmDialog from './ui/ConfirmDialog';
+import ConfirmDialog from '../ui/ConfirmDialog';
 export default function DashboardLayout({ user, onLogout }) {
   const { t } = useLanguage();
   const navigate = useNavigate();

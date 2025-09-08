@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Users, BookOpen, Clock, Calendar } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useToast } from '../contexts/ToastContext';
-import Modal from './ui/Modal';
-import ConfirmDialog from './ui/ConfirmDialog';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
+import Modal from '../../components/ui/Modal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 export default function ClassesManagement() {
   const { t } = useLanguage();

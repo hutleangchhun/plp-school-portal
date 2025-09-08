@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, Trash2, User, Users, ChevronDown, Check } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useToast } from '../contexts/ToastContext';
-import Modal from './ui/Modal';
-import ConfirmDialog from './ui/ConfirmDialog';
-import { Button } from './ui/Button';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
+import Modal from '../../components/ui/Modal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { Button } from '../../components/ui/Button';
 import * as Select from '@radix-ui/react-select';
-import { studentService } from '../utils/api/services/studentService';
-import { classService } from '../utils/api/services/classService';
-import { PageTransition, FadeInSection } from './ui/PageTransition';
-import { Badge } from './ui/Badge';
-import { Table, MobileCards } from './ui/Table';
+import { studentService } from '../../utils/api/services/studentService';
+import { classService } from '../../utils/api/services/classService';
+import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
+import { Badge } from '../../components/ui/Badge';
+import { Table, MobileCards } from '../../components/ui/Table';
 
 export default function StudentsManagement() {
   const { t } = useLanguage();

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Users, X } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import plpLogo from '../assets/plp-logo-v2.png';
+import { useLanguage } from '../../contexts/LanguageContext';
+import plpLogo from '../../assets/plp-logo-v2.png';
 
 export default function MobileSidebar({ isOpen, onClose }) {
   const { t } = useLanguage();

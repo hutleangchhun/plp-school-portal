@@ -5,9 +5,9 @@ import {
   ChevronLeft, 
   ChevronRight
 } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import plpLogo from '../assets/plp-logo-v2.png';
-import MinistryLogo from '../assets/moeys-logo.png';
+import { useLanguage } from '../../contexts/LanguageContext';
+import plpLogo from '../../assets/plp-logo-v2.png';
+import MinistryLogo from '../../assets/moeys-logo.png';
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const { t } = useLanguage();
@@ -27,6 +27,13 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
       icon: Users,
       current: location.pathname === '/students',
       color: 'purple'
+    },
+    {
+      name: t('students') || 'Students',
+      href: '/attendance',
+      icon: Users,
+      current: location.pathname === '/attendance',
+      color: 'green'
     },
   ];
 

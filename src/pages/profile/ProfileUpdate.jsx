@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { Save, User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, Calendar, MapPin, Building, Home, Compass, X } from 'lucide-react';
 import * as RadioGroup from '@radix-ui/react-radio-group';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useToast } from '../contexts/ToastContext';
-import ConfirmDialog from './ui/ConfirmDialog';
-import { Button } from './ui/Button';
-import ProfileImage from './ui/ProfileImage';
-import { api, utils } from '../utils/api';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { Button } from '../../components/ui/Button';
+import ProfileImage from '../../components/ui/ProfileImage';
+import { api, utils } from '../../utils/api';
 
 export default function ProfileUpdate({ user, setUser }) {
   const { t } = useLanguage();

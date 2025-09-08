@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Search, Users, GraduationCap, ArrowRight, Save } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useToast } from '../contexts/ToastContext';
-import ConfirmDialog from './ui/ConfirmDialog';
-// import { api } from '../utils/api'; // For future API integration
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+// import { api } from '../../utils/api'; // For future API integration
 
 export default function StudentGradeManagement() {
   const { t } = useLanguage();
