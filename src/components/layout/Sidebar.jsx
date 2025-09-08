@@ -29,7 +29,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
       color: 'purple'
     },
     {
-      name: t('students') || 'Students',
+      name: t('attendance') || 'Attendance',
       href: '/attendance',
       icon: Users,
       current: location.pathname === '/attendance',

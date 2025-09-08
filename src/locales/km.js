@@ -248,6 +248,17 @@ export const km = {
   clearSelection: 'សម្អាតការជ្រើសរើស',
   removeSelected: 'ដកចេញអ្នកដែលបានជ្រើសរើស',
   
+  // Export functionality
+  export: 'នាំចេញ',
+  exportSuccess: 'បាននាំចេញទិន្នន័យដោយជោគជ័យ',
+  exportError: 'បរាជ័យក្នុងការនាំចេញទិន្នន័យ',
+  studentManagementReport: 'របាយការណ៍ការគ្រប់គ្រងសិស្ស',
+  class: 'ថ្នាក់',
+  section: 'វគ្គ',
+  academicYear: 'ឆ្នាំសិក្សា',
+  generated: 'បានបង្កើត',
+  totalStudents: 'សិស្សសរុប',
+  
   // Login page
   signInToAccount: 'ចូលទៅកាន់គណនីរបស់អ្នក',
   enterUsername: 'បញ្ចូលឈ្មោះអ្នកប្រើរបស់អ្នក',

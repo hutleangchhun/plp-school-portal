@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, Trash2, User, Users, ChevronDown, Check } from 'lucide-react';
+import { Search, Plus, Trash2, User, Users, ChevronDown, Check, Download } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import Modal from '../../components/ui/Modal';
@@ -11,6 +11,7 @@ import { classService } from '../../utils/api/services/classService';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
+import { exportToExcel, exportToCSV, exportToPDF, getTimestampedFilename } from '../../utils/exportUtils';
 
 export default function StudentsManagement() {
   const { t } = useLanguage();
@@ -37,6 +38,7 @@ export default function StudentsManagement() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
   
   // Fetch class information
   const fetchClassInfo = useCallback(async () => {
@@ -119,6 +121,18 @@ export default function StudentsManagement() {
   useEffect(() => {
     fetchClassInfo();
   }, [fetchClassInfo]);
+  
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showExportDropdown && !event.target.closest('.export-dropdown')) {
+        setShowExportDropdown(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showExportDropdown]);
   
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -615,6 +629,46 @@ export default function StudentsManagement() {
     }
   };
 
+  // Export handlers
+  const handleExportExcel = async () => {
+    try {
+      const filename = getTimestampedFilename('students_data', 'xlsx');
+      await exportToExcel(students, filename, t);
+      showSuccess(t('exportSuccess', 'Data exported successfully'));
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      showError(t('exportError', 'Failed to export data'));
+    }
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      const filename = getTimestampedFilename('students_data', 'csv');
+      await exportToCSV(students, filename, t);
+      showSuccess(t('exportSuccess', 'Data exported successfully'));
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      showError(t('exportError', 'Failed to export data'));
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setLoading(true);
+      const filename = getTimestampedFilename('students_data', 'pdf');
+      await exportToPDF(students, classInfo, filename, t);
+      showSuccess(t('exportSuccess', 'Data exported successfully'));
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      showError(t('exportError', 'Failed to export data'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Define table columns
   const tableColumns = [
     {
@@ -660,22 +714,14 @@ export default function StudentsManagement() {
       )
     },
     {
-      key: 'email',
-      header: t('email', 'Email'),
-      accessor: 'email',
+      key: 'username',
+      header: t('username', 'Username'),
+      accessor: 'username',
       cellClassName: 'text-xs sm:text-sm text-gray-500',
       responsive: 'hidden lg:table-cell',
       render: (student) => (
-        <div className="truncate max-w-xs">{student.email || 'N/A'}</div>
+        <Badge color='blue'>{student.username || 'N/A'}</Badge>
       )
-    },
-    {
-      key: 'phone',
-      header: t('phone', 'Phone'),
-      accessor: 'phone',
-      cellClassName: 'text-xs sm:text-sm text-gray-500',
-      responsive: 'hidden md:table-cell',
-      render: (student) => student.phone || 'N/A'
     },
     {
       key: 'status',
@@ -692,9 +738,9 @@ export default function StudentsManagement() {
     },
     {
       key: 'actions',
-      header: '',
+      header: t('actions', 'Actions'),
       headerClassName: 'relative',
-      cellClassName: 'text-right text-sm font-medium',
+      cellClassName: 'text-left text-sm font-medium',
       render: (student) => (
         <Button
           onClick={(e) => {
@@ -810,15 +856,58 @@ export default function StudentsManagement() {
             )}
           </div>
         </div>
-        <Button
-          onClick={() => setShowAddModal(true)}
-          variant="primary"
-          size="default"
-          className="shadow-lg"
-        >
-          <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-          <span className="text-xs sm:text-sm">{t('addStudent')}</span>
-        </Button>
+        <div className="flex items-center space-x-2">
+          {/* Export Dropdown */}
+          <div className="relative export-dropdown">
+            <Button
+              onClick={() => setShowExportDropdown(!showExportDropdown)}
+              variant="outline"
+              size="default"
+              className="shadow-lg"
+              disabled={students.length === 0}
+            >
+              <Download className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm">{t('export', 'Export')}</span>
+              <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+            </Button>
+            
+            {showExportDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                <div className="py-1">
+                  <button
+                    onClick={handleExportExcel}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                  >
+                    Export to Excel (.xlsx)
+                  </button>
+                  <button
+                    onClick={handleExportCSV}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                  >
+                    Export to CSV (.csv)
+                  </button>
+                  <button
+                    onClick={handleExportPDF}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                  >
+                    Export to PDF (.pdf)
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Add Student Button */}
+          <Button
+            onClick={() => setShowAddModal(true)}
+            variant="primary"
+            size="default"
+            className="shadow-lg"
+          >
+            <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{t('addStudent')}</span>
+          </Button>
+        </div>
       </div>
         <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
           <div className="relative flex-1 max-w-md">

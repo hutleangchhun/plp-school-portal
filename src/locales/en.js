@@ -245,9 +245,19 @@ export const en = {
   removeStudents: 'Remove Students',
   confirmRemoveStudents: 'Are you sure you want to remove',
   studentsFromClass: 'students from your class? This action cannot be undone.',
-  studentsSelected: 'students selected',
   clearSelection: 'Clear Selection',
   removeSelected: 'Remove Selected',
+  
+  // Export functionality
+  export: 'Export',
+  exportSuccess: 'Data exported successfully',
+  exportError: 'Failed to export data',
+  studentManagementReport: 'Student Management Report',
+  class: 'Class',
+  section: 'Section',
+  academicYear: 'Academic Year',
+  generated: 'Generated',
+  totalStudents: 'Total Students',
   
   // Login page
   signInToAccount: 'Sign in to your account',

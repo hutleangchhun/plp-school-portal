@@ -41,13 +41,13 @@ const Table = ({
   return (
     <div className="overflow-x-auto">
       <table className={`min-w-full divide-y divide-gray-200 ${className}`} {...props}>
-        <thead className="bg-gray-50">
+        <thead className="rounded-t-lg bg-blue-50">
           <tr>
             {columns.map((column, index) => (
               <th
                 key={column.key || index}
                 scope="col"
-                className={`px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                className={`px-3 sm:px-6 py-3 text-left bg-blue-50 text-sm font-semibold text-gray-700 uppercase tracking-wider ${
                   column.headerClassName || ''
                 } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
               >
