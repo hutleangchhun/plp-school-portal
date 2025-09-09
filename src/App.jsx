@@ -7,6 +7,7 @@ import ProfileUpdate from './pages/profile/ProfileUpdate';
 import DashboardLayout from './components/layout/DashboardLayout';
 //import StudentGradeManagement from './pages/students/StudentGradeManagement';
 import StudentsManagement from './pages/students/StudentsManagement';
+import StudentSelection from './pages/students/StudentSelection';
 import ClassesManagement from './pages/classes/ClassesManagement';
 // Temporarily removed imports (will be re-enabled later):
 // import Reports from './pages/reports/Reports';
@@ -91,6 +92,7 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<StudentsManagement />} />
+            <Route path="select" element={<StudentSelection />} />
           </Route>
           
           <Route path="classes" element={

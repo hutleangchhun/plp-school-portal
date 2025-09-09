@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Trash2, User, Users, ChevronDown, Check, Download } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
-import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
 import * as Select from '@radix-ui/react-select';
@@ -22,6 +22,7 @@ import { exportToExcel, exportToCSV, exportToPDF, getTimestampedFilename } from 
  * - Validates class IDs against teacher's assigned classes
  */
 export default function StudentsManagement() {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   
@@ -52,7 +53,7 @@ export default function StudentsManagement() {
   // Other state variables
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState("all");
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [availableGrades, setAvailableGrades] = useState([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -98,6 +99,10 @@ export default function StudentsManagement() {
           console.log('Extracted classes from student data:', extractedClasses);
           setClasses(extractedClasses);
           
+          // Extract unique grade levels
+          const grades = [...new Set(extractedClasses.map(cls => cls.gradeLevel))].filter(grade => grade && grade !== 'Unknown');
+          setAvailableGrades(grades.sort());
+          
           if (extractedClasses.length === 1) {
             setSelectedClassId(extractedClasses[0].classId.toString());
           }
@@ -133,6 +138,10 @@ export default function StudentsManagement() {
 
     setClasses(teacherClasses);
 
+    // Extract unique grade levels from teacher's classes
+    const grades = [...new Set(teacherClasses.map(cls => cls.gradeLevel))].filter(grade => grade && grade !== 'Unknown');
+    setAvailableGrades(grades.sort());
+
     // Set first class as default if none selected and teacher has only one class
     if (selectedClassId === 'all' && teacherClasses.length === 1) {
       setSelectedClassId(teacherClasses[0].classId.toString());
@@ -140,6 +149,7 @@ export default function StudentsManagement() {
 
     console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes:`, 
       teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
+    console.log('Available grades:', grades);
   }, [user, selectedClassId]);
 
   // Fetch students with pagination and filters (SECURE: only teacher's own students)
@@ -240,6 +250,20 @@ export default function StudentsManagement() {
         );
       }
       
+      // Filter by selected grade if not 'all'
+      if (selectedGrade && selectedGrade !== 'all') {
+        filteredData = filteredData.filter(student => {
+          const studentGrade = student.gradeLevel || 
+                              (student.class && student.class.gradeLevel) || 
+                              (classes.find(cls => 
+                                cls.classId === student.classId || 
+                                cls.classId === student.class_id || 
+                                (student.class && cls.classId === student.class.classId)
+                              )?.gradeLevel);
+          return studentGrade === selectedGrade;
+        });
+      }
+      
       console.log('Filtered students data:', filteredData);
       console.log('=== MAIN LIST STUDENTS ===');
       console.log(`Total students in main list: ${filteredData.length}`);
@@ -257,7 +281,7 @@ export default function StudentsManagement() {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, showError, t, selectedClassId, user]);
+  }, [searchTerm, showError, t, selectedClassId, selectedGrade, user, classes]);
   
   // Handle search with debounce
   useEffect(() => {
@@ -266,7 +290,7 @@ export default function StudentsManagement() {
     }, 500);
     
     return () => clearTimeout(timer);
-  }, [searchTerm, fetchStudents]);
+  }, [searchTerm, selectedGrade, fetchStudents]);
   
   // Remove this useEffect since we now handle it in the selectedClassId dependency
 
@@ -316,305 +340,6 @@ export default function StudentsManagement() {
     ? classes.find(c => c.classId.toString() === selectedClassId)
     : null;
 
-  // Add Student Modal Component
-  const AddStudentModal = () => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [availableStudents, setAvailableStudents] = useState([]);
-    const [, setModalPagination] = useState({
-      page: 1,
-      limit: 10,
-      total: 0,
-      pages: 1
-    });
-    const [isLoading, setIsLoading] = useState(false);
-    const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
-    
-    // Fetch available students with debounced search
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        fetchAvailableStudents(1, searchQuery);
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }, [searchQuery]);
-    
-    const fetchAvailableStudents = async (page = 1, search = '') => {
-      try {
-        setIsLoading(true);
-        
-        // First get the current class students
-        const response = await studentService.getAvailableStudents(search, {
-          page,
-          limit: 10
-        });
-        
-        if (response.data) {
-          setAvailableStudents(response.data);
-          setModalPagination({
-            page: response.pagination.page,
-            limit: response.pagination.limit,
-            total: response.pagination.total,
-            pages: response.pagination.pages
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching available students:', error);
-        showError(t('failedLoadAvailableStudents', 'Failed to load available students'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    // Note: Pagination functionality for available students needs implementation
-    
-    const handleStudentSelect = (studentId) => {
-      // Normalize the studentId to string for consistent comparison
-      const normalizedId = String(studentId);
-      
-      setSelectedStudentIds(prev => {
-        // Normalize existing IDs to strings for comparison
-        const normalizedSelection = new Set(Array.from(prev).map(id => String(id)));
-        const wasSelected = normalizedSelection.has(normalizedId);
-        
-        if (wasSelected) {
-          normalizedSelection.delete(normalizedId);
-        } else {
-          normalizedSelection.add(normalizedId);
-        }
-        
-        return normalizedSelection;
-      });
-    };
-    
-    const handleAddStudents = async () => {
-      if (!classInfo) {
-        showError('Please select a specific class to add students to');
-        return;
-      }
-      try {
-        setIsLoading(true);
-        const selectedStudents = availableStudents.filter(student => 
-          selectedStudentIds.has(String(student.id))
-        );
-        
-        console.log('=== ADD STUDENT DEBUG ===');
-        console.log('Selected students from modal:', selectedStudents);
-        selectedStudents.forEach(student => {
-          console.log(`Modal student: ID=${student.id}, Name="${student.firstName} ${student.lastName}"`);
-        });
-        
-        const studentIdsToAdd = selectedStudents
-          .map(student => student.student_id || student.id)
-          .filter(Boolean);
-          
-        console.log('Adding students with IDs:', studentIdsToAdd);
-        console.log('=== END ADD STUDENT DEBUG ===');
-        
-        if (studentIdsToAdd.length === 0) {
-          throw new Error('No valid student IDs found to add');
-        }
-        
-        const numericStudentIds = studentIdsToAdd.map(id => Number(id));
-        console.log('Calling addStudentsToClass with:', {
-          classId: classInfo.classId,
-          studentIds: numericStudentIds
-        });
-        
-        const response = await studentService.addStudentsToClass(classInfo.classId, numericStudentIds);
-        console.log('=== API ADD RESPONSE DEBUG ===');
-        console.log('Full API Response:', response);
-        console.log('Response success:', response?.success);
-        console.log('Response data:', response?.data);
-        
-        // Check if API response has detailed results for each student
-        if (response?.data?.results) {
-          console.log('Individual student results:', response.data.results);
-        }
-        if (response?.data?.errors) {
-          console.log('Individual student errors:', response.data.errors);
-        }
-        if (response?.data?.summary) {
-          console.log('Summary:', response.data.summary);
-        }
-        console.log('=== END API ADD RESPONSE DEBUG ===');
-        
-        if (response && response.success) {
-          // Check for partial success - some students added, some failed
-          const summary = response.data?.summary;
-          const successful = summary?.successful || 0;
-          const failed = summary?.failed || 0;
-          const errors = response.data?.errors || [];
-          
-          if (successful > 0) {
-            if (failed > 0) {
-              // Partial success
-              showSuccess(t('studentsPartiallyAdded', `${successful} of ${numericStudentIds.length} students added successfully`));
-              
-              // Show details of failed students
-              if (errors.length > 0) {
-                const failedNames = errors.map(err => {
-                  const failedStudent = selectedStudents.find(s => s.id == err.studentId);
-                  return failedStudent ? `${failedStudent.firstName} ${failedStudent.lastName}` : `ID ${err.studentId}`;
-                }).join(', ');
-                showError(t('someStudentsFailed', `Failed to add: ${failedNames}`));
-              }
-            } else {
-              // Complete success
-              showSuccess(t('studentsAddedSuccess', `${successful} students added successfully`));
-            }
-          } else {
-            // Complete failure
-            throw new Error('Failed to add any students');
-          }
-          
-          setSelectedStudentIds(new Set());
-          setShowAddModal(false);
-          console.log('=== BEFORE FETCH STUDENTS AFTER ADD ===');
-          console.log(`Expected to add ${numericStudentIds.length} students, actually added ${successful}`);
-          await fetchStudents();
-          console.log('=== AFTER FETCH STUDENTS AFTER ADD ===');
-        } else {
-          const errorMessage = response?.error || response?.message || 'Failed to add students';
-          console.error('API Error:', errorMessage);
-          throw new Error(errorMessage);
-        }
-      } catch (error) {
-        console.error('Error in handleAddStudents:', error);
-        showError(t('failedAddStudents', 'Failed to add students: ' + (error.message || 'Unknown error')));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    return (
-      <Modal
-        isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          setSelectedStudentIds(new Set());
-        }}
-        title={t('addStudentsToClass', 'Add Students to Class')}
-        size="2xl"
-      >
-        <div className="space-y-4">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder={t('searchStudentsByNameEmail', 'Search students by name or email...')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
-          <div className="h-96 overflow-y-auto border border-gray-200 rounded-md">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-              </div>
-            ) : availableStudents.length > 0 ? (
-              <ul className="divide-y divide-gray-200">
-                {availableStudents.map((student) => (
-                  <li key={student.id} className="hover:bg-gray-50">
-                    <div className="flex items-center px-4 py-3">
-                      <div className="flex items-center h-5">
-                        <input
-                          id={`student-${student.id}`}
-                          name={`student-${student.id}`}
-                          type="checkbox"
-                          checked={selectedStudentIds.has(String(student.id))}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            handleStudentSelect(student.id);
-                          }}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                      </div>
-                      <div className="ml-3 flex-1 min-w-0">
-                        <div 
-                          className="flex items-center justify-between w-full cursor-pointer"
-                          onClick={() => handleStudentSelect(student.id)}
-                        >
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {student.firstName} {student.lastName}
-                            </p>
-                            <p className="text-sm text-gray-500 truncate">
-                              {student.email}
-                            </p>
-                          </div>
-                          {student.grade && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {student.grade}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-center py-12">
-                <Users className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">{t('noStudentsFound')}</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {searchQuery 
-                    ? t('noStudentsMatchSearch', 'No students match your search criteria.') 
-                    : t('noStudentsAvailableAdd', 'There are no students available to add.')}
-                </p>
-              </div>
-            )}
-          </div>
-          
-          {availableStudents.length > 0 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-700">
-                {selectedStudentIds.size} {selectedStudentIds.size === 1 ? 'student' : 'students'} selected
-              </p>
-              <div className="flex space-x-2">
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setSelectedStudentIds(new Set());
-                  }}
-                  variant="outline"
-                  size="sm"
-                  disabled={isLoading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleAddStudents}
-                  disabled={selectedStudentIds.size === 0 || isLoading}
-                  variant="primary"
-                  size="sm"
-                >
-                  {isLoading ? (
-                    <span className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Adding...
-                    </span>
-                  ) : (
-                    `Add ${selectedStudentIds.size} ${selectedStudentIds.size === 1 ? 'Student' : 'Students'}`
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </Modal>
-    );
-  };
-  
   // Delete Confirmation Dialog
   const DeleteDialog = () => (
     <ConfirmDialog
@@ -1022,6 +747,10 @@ export default function StudentsManagement() {
     </>
   );
 
+  const handleAddStudentClick = () => {
+    navigate('/students/select');
+  };
+
   return (
     <PageTransition variant="fade" className="p-6">      
       {/* Search and filter */}
@@ -1144,12 +873,10 @@ export default function StudentsManagement() {
           
           {/* Add Student Button */}
           <Button
-            onClick={() => setShowAddModal(true)}
+            onClick={handleAddStudentClick}
             variant="primary"
             size="default"
             className="shadow-lg"
-            disabled={selectedClassId === 'all'}
-            title={selectedClassId === 'all' ? 'Please select a specific class to add students' : ''}
           >
             <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
             <span className="text-xs sm:text-sm">{t('addStudent')}</span>
@@ -1157,70 +884,94 @@ export default function StudentsManagement() {
         </div>
       </div>
         <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
-          <div className="relative flex-1 max-w-md">
-            <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 flex-1">
+            <div className="relative flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                className="block w-full pl-8 sm:pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                placeholder={t('searchStudents', 'Search students...')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-            <input
-              type="text"
-              className="block w-full pl-8 sm:pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-              placeholder={t('searchStudents', 'Search students...')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          {/* Grade filter (optional) */}
-          <div className="w-full sm:w-40 lg:w-48">
-            <Select.Root 
-              value={selectedGrade} 
-              onValueChange={setSelectedGrade}
-            >
-              <Select.Trigger className="inline-flex items-center justify-between w-full px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                <Select.Value placeholder={t('filterByGrade', 'Filter by grade')} />
-                <Select.Icon>
-                  <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
-                </Select.Icon>
-              </Select.Trigger>
-              <Select.Content className="z-10 mt-1 w-full bg-white shadow-lg rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                <Select.Item 
-                  value="all"
-                  className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 hover:bg-gray-100"
-                >
-                  <Select.ItemText>{t('allGrades', 'All Grades')}</Select.ItemText>
-                  {selectedGrade === 'all' && (
-                    <Select.ItemIndicator className="absolute inset-y-0 right-0 flex items-center pr-4">
-                      <Check className="h-5 w-5 text-blue-600" />
-                    </Select.ItemIndicator>
-                  )}
-                </Select.Item>
-                {[1, 2, 3, 4, 5, 6].map((grade) => (
-                  <Select.Item 
-                    key={grade} 
-                    value={`grade-${grade}`}
-                    className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 hover:bg-gray-100"
-                  >
-                    <Select.ItemText>{t('grade', 'Grade')} {grade}</Select.ItemText>
-                    {selectedGrade === `grade-${grade}` && (
-                      <Select.ItemIndicator className="absolute inset-y-0 right-0 flex items-center pr-4">
-                        <Check className="h-5 w-5 text-blue-600" />
-                      </Select.ItemIndicator>
-                    )}
-                  </Select.Item>
-                ))}
-              </Select.Content>
-            </Select.Root>
+            
+            {/* Grade Filter Dropdown */}
+            {availableGrades.length > 0 && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-700 font-medium whitespace-nowrap">{t('filterByGrade', 'Grade')}:</span>
+                <Select.Root value={selectedGrade} onValueChange={setSelectedGrade}>
+                  <Select.Trigger className="inline-flex items-center justify-center rounded px-3 py-2 text-sm bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]">
+                    <Select.Value placeholder={t('selectGrade', 'Select Grade')} />
+                    <Select.Icon className="ml-2">
+                      <ChevronDown className="h-4 w-4" />
+                    </Select.Icon>
+                  </Select.Trigger>
+                  <Select.Portal>
+                    <Select.Content className="overflow-hidden bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                      <Select.Viewport className="p-1">
+                        <Select.Item value="all" className="relative flex items-center px-3 py-2 text-sm rounded cursor-pointer hover:bg-blue-50 focus:bg-blue-50 outline-none">
+                          <Select.ItemText>{t('allGrades', 'All Grades')}</Select.ItemText>
+                          <Select.ItemIndicator className="absolute left-2">
+                            <Check className="h-4 w-4" />
+                          </Select.ItemIndicator>
+                        </Select.Item>
+                        {availableGrades.map((grade) => (
+                          <Select.Item key={grade} value={grade} className="relative flex items-center px-3 py-2 text-sm rounded cursor-pointer hover:bg-blue-50 focus:bg-blue-50 outline-none">
+                            <Select.ItemText>Grade {grade}</Select.ItemText>
+                            <Select.ItemIndicator className="absolute left-2">
+                              <Check className="h-4 w-4" />
+                            </Select.ItemIndicator>
+                          </Select.Item>
+                        ))}
+                      </Select.Viewport>
+                    </Select.Content>
+                  </Select.Portal>
+                </Select.Root>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Bulk Actions Bar */}
+        {/* Selected Students Display */}
         {selectedStudentIds.size > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-blue-800 font-medium">
-                  {selectedStudentIds.size} {t('studentsSelected', 'students selected')}
-                </span>
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-blue-800 mb-3">
+                សិស្សបានជ្រើសរើស ({selectedStudentIds.size}):
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {Array.from(selectedStudentIds).map(studentId => {
+                  const student = students.find(s => s.id === studentId);
+                  if (!student) return null;
+                  
+                  const studentName = student.name || 
+                    (student.firstName || student.lastName 
+                      ? `${student.firstName || ''} ${student.lastName || ''}`.trim() 
+                      : student.username || t('noName', 'No Name'));
+                  
+                  return (
+                    <span key={studentId} className="inline-flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+                      {studentName}
+                      <button
+                        onClick={() => handleStudentSelect(studentId)}
+                        className="ml-2 flex-shrink-0 h-4 w-4 flex items-center justify-center rounded-full hover:bg-blue-200 text-blue-600 hover:text-blue-800 transition-colors"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between pt-3 border-t border-blue-200">
+              <div className="text-xs text-blue-600">
+                {t('selectedStudentsActions', 'Actions for selected students')}
               </div>
               <div className="flex items-center space-x-2">
                 <Button
@@ -1269,9 +1020,6 @@ export default function StudentsManagement() {
         </FadeInSection>
       </FadeInSection>
       
-      {/* Add Student Modal */}
-      <AddStudentModal />
-      
       {/* Delete Confirmation */}
       <DeleteDialog />
       
@@ -1279,6 +1027,4 @@ export default function StudentsManagement() {
       <BulkDeleteDialog />
     </PageTransition>
   );
-  
-  // ... rest of the component code ...
 }

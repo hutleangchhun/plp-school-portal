@@ -265,4 +265,176 @@ export const km = {
   enterPassword: 'បញ្ចូលពាក្យសម្ងាត់របស់អ្នក',
   signingIn: 'កំពុងចូល...',
   signIn: 'ចូល',
+  
+  // Student Selection
+  studentSelection: 'ការជ្រើសរើសសិស្ស',
+  selectStudentsForAction: 'ជ្រើសរើសសិស្សដើម្បីអនុវត្តសកម្មភាពជាក្រុម',
+  backToStudents: 'ត្រឡប់ទៅសិស្ស',
+  assignToClass: 'កំណត់ទៅថ្នាក់',
+  selectClass: 'ជ្រើសរើសថ្នាក់...',
+  selectClassToAssign: 'ជ្រើសរើសថ្នាក់ដើម្បីកំណត់សិស្សដែលបានជ្រើសរើស',
+  selectClassFirst: 'សូមជ្រើសរើសថ្នាក់ជាមុនសិន',
+  assignStudents: 'កំណត់សិស្ស',
+  assigning: 'កំពុងកំណត់...',
+  errorAssigningStudents: 'កំហុសក្នុងការកំណត់សិស្សទៅថ្នាក់',
+  selectedStudentsActions: 'សកម្មភាពសម្រាប់សិស្សដែលបានជ្រើសរើស',
+  resetFilters: 'កំណត់ចម្រោងឡើងវិញ',
+  
+  // Class selection
+  selectClass: 'ជ្រើសរើសថ្នាក់...',
+  allClasses: 'ថ្នាក់ទាំងអស់',
+  
+  // General UI
+  errorFetchingData: 'កំហុសក្នុងការទាញយកទិន្នន័យ',
+  noDataFound: 'រកមិនឃើញទិន្នន័យ',
+  errorPerformingAction: 'កំហុសក្នុងការអនុវត្តសកម្មភាព',
+  withSelected: 'ជាមួយអ្នកដែលបានជ្រើសរើស...',
+  updateStatus: 'ធ្វើបច្ចុប្បន្នភាពស្ថានភាព',
+  
+  // Additional missing translations
+  selectAllClasses: 'ជ្រើសរើសថ្នាក់ទាំងអស់',
+  manageClasses: 'គ្រប់គ្រងថ្នាក់រៀន',
+  viewClassDetails: 'មើលព័ត៌មានលម្អិតថ្នាក់',
+  classInformation: 'ព័ត៌មានថ្នាក់',
+  gradeLevel: 'កម្រិតថ្នាក់',
+  noStudentsFoundMatchingCriteria: 'រកមិនឃើញសិស្សដែលស្របនឹងលក្ខខណ្ឌរបស់អ្នក។',
+  searchStudentsByNameOrEmail: 'ស្វែងរកសិស្សតាមឈ្មោះ ឬអ៊ីមែល...',
+  
+  // Toast and action messages  
+  studentAssignmentSuccess: 'បានកំណត់សិស្សទៅថ្នាក់ដោយជោគជ័យ',
+  studentsAssignmentSuccess: 'បានកំណត់សិស្សទៅថ្នាក់ដោយជោគជ័យ',
+  assignmentFailed: 'បរាជ័យក្នុងការកំណត់សិស្ស',
+  operationSuccessful: 'ប្រតិបត្តិការបានសម្រេច',
+  operationFailed: 'ប្រតិបត្តិការបរាជ័យ',
+  pleaseSelectClass: 'សូមជ្រើសរើសថ្នាក់ជាមុនសិន',
+  pleaseSelectStudents: 'សូមជ្រើសរើសសិស្សជាមុនសិន',
+  
+  // Additional UI elements
+  showingResults: 'បង្ហាញលទ្ធផល',
+  fromTotal: 'ពីសរុប',
+  noDataAvailable: 'មិនមានទិន្នន័យ',
+  loadingData: 'កំពុងទាញយកទិន្នន័យ...',
+  selectAction: 'ជ្រើសរើសសកម្មភាព',
+  performAction: 'អនុវត្តសកម្មភាព',
+  confirmAction: 'បញ្ជាក់សកម្មភាព',
+  actionCompleted: 'សកម្មភាពបានបញ្ចប់',
+  
+  // Dashboard specific  
+  loadingDashboard: 'កំពុងទាញយកផ្ទាំងគ្រប់គ្រង...',
+  error: 'កំហុស',
+  retry: 'ព្យាយាមម្តងទៀត',
+  notAssigned: 'មិនបានកំណត់',
+  placeOfBirth: 'ទីកន្លែងកំណើត',
+  residence: 'ទីលំនៅ',
+  
+  // Navigation items that might be missing  
+  dashboard: 'ផ្ទាំងគ្រប់គ្រង',
+  students: 'សិស្ស',
+  classes: 'ថ្នាក់រៀន',
+  attendance: 'វត្តមាន',
+  reports: 'របាយការណ៍',
+  achievements: 'សមិទ្ធិផល',
+  settings: 'ការកំណត់',
+  myGrades: 'ពិន្ទុរបស់ខ្ញុំ',
+  myAttendance: 'វត្តមានរបស់ខ្ញុំ',
+  myAssignments: 'កិច្ចការរបស់ខ្ញុំ',
+  
+  // Additional fallback text that might appear
+  Dashboard: 'ផ្ទាំងគ្រប់គ្រង',
+  Students: 'សិស្ស', 
+  Classes: 'ថ្នាក់រៀន',
+  'Loading dashboard...': 'កំពុងទាញយកផ្ទាំងគ្រប់គ្រង...',
+  'Not assigned': 'មិនបានកំណត់',
+  Error: 'កំហុស',
+  Retry: 'ព្យាយាមម្តងទៀត',
+  Edit: 'កែប្រែ',
+  Refresh: 'ធ្វើឱ្យទាន់សម័យ',
+  
+  // Stats cards
+  'Total Classes': 'ថ្នាក់រៀនសរុប',
+  'Total Students': 'សិស្សសរុប', 
+  'Active Today': 'សកម្មថ្ងៃនេះ',
+  'Average Load': 'ការទាក់ទញជាមធ្យម',
+  totalClasses: 'ថ្នាក់រៀនសរុប',
+  totalStudents: 'សិស្សសរុប',
+  activeToday: 'សកម្មថ្ងៃនេះ',
+  averageLoad: 'ការទាក់ទញជាមធ្យម',
+  
+  // Common alt texts and titles
+  Remove: 'ដកចេញ',
+  'Profile Preview': 'មុខរូបភាពបណ្ដាលុខ',
+  'MoEYS Logo': 'រូបសញ្ញាក្រសួងអប់រំ',
+  'PLP Logo': 'រូបសញ្ញា PLP',
+  Profile: 'ប្រវត្តិរូប',
+  
+  // Classes Management specific
+  teacher: 'គ្រូ',
+  Teacher: 'គ្រូ',
+  'Teacher:': 'គ្រូ:',
+  subject: 'មុខវិជ្ជា',
+  Subject: 'មុខវិជ្ជា',
+  room: 'បន្ទប់រៀន',
+  Room: 'បន្ទប់រៀន',
+  enrollment: 'ចុះឈ្មោះ',
+  Enrollment: 'ចុះឈ្មោះ',
+  capacity: 'ចំណុះ',
+  Capacity: 'ចំណុះ',
+  schedule: 'កាលវិភាគ',
+  Schedule: 'កាលវិភាគ',
+  
+  // Days of the week
+  Monday: 'ថ្ងៃច័ន្ទ',
+  Tuesday: 'ថ្ងៃអង្គារ',
+  Wednesday: 'ថ្ងៃពុធ',
+  Thursday: 'ថ្ងៃព្រហស្បតិ៍',
+  Friday: 'ថ្ងៃសុក្រ',
+  Saturday: 'ថ្ងៃសៅរ៍',
+  Sunday: 'ថ្ងៃអាទិត្យ',
+  Mon: 'ច',
+  Tue: 'អ',
+  Wed: 'ព',
+  Thu: 'ព្រ',
+  Fri: 'សុ',
+  Sat: 'ស',
+  Sun: 'អា',
+  'Mon, Wed, Fri': 'ច, ព, សុ',
+  'Tue, Thu': 'អ, ព្រ',
+  'Mon-Fri': 'ច-សុ',
+  
+  // Grade levels
+  'Grade': 'ថ្នាក់ទី',
+  'Grade 1': 'ថ្នាក់ទី១',
+  'Grade 2': 'ថ្នាក់ទី២',
+  'Grade 3': 'ថ្នាក់ទី៣',
+  'Grade 4': 'ថ្នាក់ទី៤',
+  'Grade 5': 'ថ្នាក់ទី៥',
+  'Grade 6': 'ថ្នាក់ទី៦',
+  'Grade 7': 'ថ្នាក់ទី៧',
+  'Grade 8': 'ថ្នាក់ទី៨',
+  'Grade 9': 'ថ្នាក់ទី៩',
+  'Grade 10': 'ថ្នាក់ទី១០',
+  'Grade 11': 'ថ្នាក់ទី១១',
+  'Grade 12': 'ថ្នាក់ទី១២',
+  
+  // Subject names (common ones)
+  'Subject 1': 'មុខវិជ្ជាទី១',
+  'Subject 2': 'មុខវិជ្ជាទី២',
+  Mathematics: 'គណិតវិទ្យា',
+  Science: 'វិទ្យាសាស្ត្រ',
+  English: 'ភាសាអង់គ្លេស',
+  Khmer: 'ភាសាខ្មែរ',
+  History: 'ប្រវត្តិសាស្ត្រ',
+  Geography: 'ភូមិវិទ្យា',
+  
+  // Class sections
+  'Section A': 'វគ្គ ក',
+  'Section B': 'វគ្គ ខ',
+  'Section C': 'វគ្គ គ',
+  '(A)': '(ក)',
+  '(B)': '(ខ)',
+  '(C)': '(គ)',
+  
+  // Room numbers
+  'Room 21': 'បន្ទប់ ២១',
+  'Room ': 'បន្ទប់ ',
 };

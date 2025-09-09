@@ -265,4 +265,175 @@ export const en = {
   enterPassword: 'Enter your password',
   signingIn: 'Signing in...',
   signIn: 'Sign in',
+  
+  // Student Selection
+  studentSelection: 'Student Selection',
+  selectStudentsForAction: 'Select students to perform bulk actions',
+  backToStudents: 'Back to Students',
+  assignToClass: 'Assign to Class',
+  selectClass: 'Select Class...',
+  selectClassToAssign: 'Select a class to assign selected students to',
+  selectClassFirst: 'Please select a class first',
+  assignStudents: 'Assign Students',
+  assigning: 'Assigning...',
+  errorAssigningStudents: 'Error assigning students to class',
+  selectedStudentsActions: 'Actions for selected students',
+  resetFilters: 'Reset Filters',
+  
+  // Class selection
+  allClasses: 'All Classes',
+  
+  // General UI
+  errorFetchingData: 'Error fetching data',
+  noDataFound: 'No data found',
+  errorPerformingAction: 'Error performing action',
+  withSelected: 'With selected...',
+  updateStatus: 'Update Status',
+  
+  // Additional missing translations
+  selectAllClasses: 'Select All Classes',
+  manageClasses: 'Manage Classes',
+  viewClassDetails: 'View Class Details',
+  classInformation: 'Class Information',
+  gradeLevel: 'Grade Level',
+  noStudentsFoundMatchingCriteria: 'No students found matching your criteria.',
+  searchStudentsByNameOrEmail: 'Search students by name or email...',
+  
+  // Toast and action messages  
+  studentAssignmentSuccess: 'Student assigned to class successfully',
+  studentsAssignmentSuccess: 'Students assigned to class successfully',
+  assignmentFailed: 'Failed to assign students',
+  operationSuccessful: 'Operation successful',
+  operationFailed: 'Operation failed',
+  pleaseSelectClass: 'Please select a class first',
+  pleaseSelectStudents: 'Please select students first',
+  
+  // Additional UI elements
+  showingResults: 'Showing results',
+  fromTotal: 'from total',
+  noDataAvailable: 'No data available',
+  loadingData: 'Loading data...',
+  selectAction: 'Select action',
+  performAction: 'Perform action',
+  confirmAction: 'Confirm action',
+  actionCompleted: 'Action completed',
+  
+  // Dashboard specific  
+  loadingDashboard: 'Loading dashboard...',
+  error: 'Error',
+  retry: 'Retry',
+  notAssigned: 'Not assigned',
+  placeOfBirth: 'Place of Birth',
+  residence: 'Residence',
+  
+  // Navigation items that might be missing  
+  dashboard: 'Dashboard',
+  students: 'Students',
+  classes: 'Classes',
+  attendance: 'Attendance',
+  reports: 'Reports',
+  achievements: 'Achievements',
+  settings: 'Settings',
+  myGrades: 'My Grades',
+  myAttendance: 'My Attendance',
+  myAssignments: 'My Assignments',
+  
+  // Additional fallback text that might appear
+  Dashboard: 'Dashboard',
+  Students: 'Students', 
+  Classes: 'Classes',
+  'Loading dashboard...': 'Loading dashboard...',
+  'Not assigned': 'Not assigned',
+  Error: 'Error',
+  Retry: 'Retry',
+  Edit: 'Edit',
+  Refresh: 'Refresh',
+  
+  // Stats cards
+  'Total Classes': 'Total Classes',
+  'Total Students': 'Total Students', 
+  'Active Today': 'Active Today',
+  'Average Load': 'Average Load',
+  totalClasses: 'Total Classes',
+  totalStudents: 'Total Students',
+  activeToday: 'Active Today',
+  averageLoad: 'Average Load',
+  
+  // Common alt texts and titles
+  Remove: 'Remove',
+  'Profile Preview': 'Profile Preview',
+  'MoEYS Logo': 'MoEYS Logo',
+  'PLP Logo': 'PLP Logo',
+  Profile: 'Profile',
+  
+  // Classes Management specific
+  teacher: 'Teacher',
+  Teacher: 'Teacher',
+  'Teacher:': 'Teacher:',
+  subject: 'Subject',
+  Subject: 'Subject',
+  room: 'Room',
+  Room: 'Room',
+  enrollment: 'Enrollment',
+  Enrollment: 'Enrollment',
+  capacity: 'Capacity',
+  Capacity: 'Capacity',
+  schedule: 'Schedule',
+  Schedule: 'Schedule',
+  
+  // Days of the week
+  Monday: 'Monday',
+  Tuesday: 'Tuesday',
+  Wednesday: 'Wednesday',
+  Thursday: 'Thursday',
+  Friday: 'Friday',
+  Saturday: 'Saturday',
+  Sunday: 'Sunday',
+  Mon: 'Mon',
+  Tue: 'Tue',
+  Wed: 'Wed',
+  Thu: 'Thu',
+  Fri: 'Fri',
+  Sat: 'Sat',
+  Sun: 'Sun',
+  'Mon, Wed, Fri': 'Mon, Wed, Fri',
+  'Tue, Thu': 'Tue, Thu',
+  'Mon-Fri': 'Mon-Fri',
+  
+  // Grade levels
+  'Grade': 'Grade',
+  'Grade 1': 'Grade 1',
+  'Grade 2': 'Grade 2',
+  'Grade 3': 'Grade 3',
+  'Grade 4': 'Grade 4',
+  'Grade 5': 'Grade 5',
+  'Grade 6': 'Grade 6',
+  'Grade 7': 'Grade 7',
+  'Grade 8': 'Grade 8',
+  'Grade 9': 'Grade 9',
+  'Grade 10': 'Grade 10',
+  'Grade 11': 'Grade 11',
+  'Grade 12': 'Grade 12',
+  
+  // Subject names (common ones)
+  'Subject 1': 'Subject 1',
+  'Subject 2': 'Subject 2',
+  Mathematics: 'Mathematics',
+  Science: 'Science',
+  English: 'English',
+  Khmer: 'Khmer',
+  History: 'History',
+  Geography: 'Geography',
+  
+  // Class sections
+  'Section A': 'Section A',
+  'Section B': 'Section B',
+  'Section C': 'Section C',
+  '(A)': '(A)',
+  '(B)': '(B)',
+  '(C)': '(C)',
+  
+  // Room numbers
+  'Room 21': 'Room 21',
+  'Room ': 'Room ',
 };  

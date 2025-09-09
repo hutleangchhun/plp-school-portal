@@ -12,39 +12,52 @@ export const studentService = {
    * @param {number} [params.page=1] - Page number
    * @param {number} [params.limit=10] - Number of items per page
    * @param {string} [params.search=''] - Search term for filtering students
-   * @param {boolean} [params.status=true] - Filter by active status
+   * @param {boolean|string} [params.status=true] - Filter by active status (accepts 'active', 'inactive', or boolean)
    * @param {number} [params.roleId=9] - Role ID for students (default: 9)
    * @returns {Promise<Object>} Response with student data and pagination info
    */
   async getStudents(params = {}) {
-    const { page = 1, limit = 10, search = '', status = true, roleId } = params;
-    
-    const response = await handleApiResponse(() =>
-      apiClient_.get(`${ENDPOINTS.USERS.BASE}/filter`, {
-        params: {
-          page,
-          limit,
-          search,
-          status,
-          roleId
-        }
-      })
-    );
-    
-    // Format the response to match the expected structure
-    if (response.data && response.data.data) {
-      return {
-        data: response.data.data.map(student => studentService.utils.formatStudentData(student)),
-        pagination: {
-          page: response.data.page || 1,
-          limit: response.data.limit || 10,
-          total: response.data.total || 0,
-          pages: response.data.pages || 1
-        }
-      };
+    const { page = 1, limit = 10, search = '', status = true, roleId = 9 } = params;
+
+    // Normalize status: accept 'active' | 'inactive' | '' | boolean
+    let normalizedStatus = status;
+    if (typeof status === 'string') {
+      const s = status.trim().toLowerCase();
+      if (s === 'active') normalizedStatus = true;
+      else if (s === 'inactive') normalizedStatus = false;
+      else normalizedStatus = undefined; // don't send status when empty/all
     }
-    
-    return { data: [], pagination: { page: 1, limit: 10, total: 0, pages: 1 } };
+
+    // Build query params, omitting undefined values
+    const queryParams = {
+      page,
+      limit,
+      search,
+      roleId
+    };
+    if (normalizedStatus !== undefined) queryParams.status = normalizedStatus;
+
+    const response = await handleApiResponse(() =>
+      apiClient_.get(`${ENDPOINTS.USERS.BASE}/filter`, { params: queryParams })
+    );
+
+    // Robustly extract data and pagination from various response shapes
+    const d = response?.data;
+    const list = Array.isArray(d?.data)
+      ? d.data
+      : (Array.isArray(d) ? d : []);
+
+    const pagination = d?.pagination || {
+      page: d?.page ?? page,
+      limit: d?.limit ?? limit,
+      total: d?.total ?? list.length,
+      pages: d?.pages ?? Math.max(1, Math.ceil((d?.total ?? list.length) / (d?.limit ?? limit)))
+    };
+
+    return {
+      data: list.map(student => studentService.utils.formatStudentData(student)),
+      pagination
+    };
   },
 
   /**
@@ -221,16 +234,30 @@ export const studentService = {
     // Convert to array if a single ID is passed
     const ids = Array.isArray(studentIds) ? studentIds : [studentIds];
     
+    // Convert all student IDs to positive integers and filter out invalid ones
+    const validIds = ids
+      .map(id => {
+        const numId = parseInt(id);
+        return isNaN(numId) || numId <= 0 ? null : numId;
+      })
+      .filter(id => id !== null);
+    
+    if (validIds.length === 0) {
+      throw new Error('No valid student IDs provided');
+    }
+    
     // Prepare request body based on number of students
     const requestBody = {
       classId: parseInt(classId)
     };
     
-    if (ids.length === 1) {
-      requestBody.studentId = ids[0];
+    if (validIds.length === 1) {
+      requestBody.studentId = validIds[0];
     } else {
-      requestBody.studentIds = ids;
+      requestBody.studentIds = validIds;
     }
+    
+    console.log('Sending request to assign students:', requestBody);
     
     const response = await handleApiResponse(() =>
       apiClient_.put('/classes/students', requestBody)

@@ -74,7 +74,7 @@ export const getNavigationItems = (user, t) => {
   
   const commonItems = [
     {
-      name: t('dashboard') || 'Dashboard',
+      name: t('dashboard') || 'ផ្ទាំងគ្រប់គ្រង',
       href: '/dashboard',
       allowedRoles: [ROLES.TEACHER, ROLES.STUDENT]
     }
@@ -82,15 +82,16 @@ export const getNavigationItems = (user, t) => {
 
   const teacherItems = [
     {
-      name: t('students') || 'Students',
+      name: t('students') || 'សិស្ស',
       href: '/students',
       allowedRoles: [ROLES.TEACHER]
     },
     {
-      name: t('classes') || 'Classes',
+      name: t('classes') || 'ថ្នាក់រៀន',
       href: '/classes',
       allowedRoles: [ROLES.TEACHER]
     },
+   
     // Temporarily removed navigation items:
     // attendance, reports, achievements, settings
   ];

@@ -58,13 +58,13 @@ export default function Login({ setUser }) {
           <div className="flex justify-center items-center space-x-8 mb-8">
             <img 
               src={moeysLogo} 
-              alt="MoEYS Logo" 
+              alt={t('MoEYS Logo') || 'រូបសញ្ញាក្រសួងអប់រំ'} 
               className="h-16 w-auto object-contain"
             />
             <div className="h-12 w-px bg-gray-300"></div>
             <img 
               src={plpLogo} 
-              alt="PLP Logo" 
+              alt={t('PLP Logo') || 'រូបសញ្ញា PLP'} 
               className="h-16 w-auto object-contain"
             />
           </div>

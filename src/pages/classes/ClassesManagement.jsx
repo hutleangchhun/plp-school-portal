@@ -374,7 +374,7 @@ export default function ClassesManagement() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <StatsCard
-          title="Total Classes"
+          title={t('totalClasses') || 'ថ្នាក់រៀនសរុប'}
           value={classes.length}
           icon={BookOpen}
           enhanced={true}
@@ -385,7 +385,7 @@ export default function ClassesManagement() {
         />
         
         <StatsCard
-          title="Total Students"
+          title={t('totalStudents') || 'សិស្សសរុប'}
           value={classes.reduce((sum, cls) => sum + cls.enrolled, 0)}
           icon={Users}
           enhanced={true}
@@ -396,7 +396,7 @@ export default function ClassesManagement() {
         />
         
         <StatsCard
-          title="Active Today"
+          title={t('activeToday') || 'សកម្មថ្ងៃនេះ'}
           value={classes.filter(cls => cls.schedule && cls.schedule.includes('Mon')).length}
           icon={Calendar}
           enhanced={true}
@@ -407,7 +407,7 @@ export default function ClassesManagement() {
         />
         
         <StatsCard
-          title="Average Load"
+          title={t('averageLoad') || 'ការទាក់ទញជាមធ្យម'}
           value={`${classes.length > 0 ? Math.round(classes.reduce((sum, cls) => sum + (cls.enrolled / cls.capacity), 0) / classes.length * 100) : 0}%`}
           icon={Clock}
           enhanced={true}
@@ -446,31 +446,31 @@ export default function ClassesManagement() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      {classItem.grade}
+                      {t(classItem.grade) || classItem.grade}
                     </span>
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {classItem.subject}
+                      {t(classItem.subject) || classItem.subject}
                     </span>
                   </div>
 
                   <div className="text-sm text-gray-600">
                     <p className="flex items-center mb-1">
                       <Users className="h-4 w-4 mr-2" />
-                      Teacher: {classItem.teacher}
+                      {t('Teacher:') || 'គ្រូ:'} {classItem.teacher}
                     </p>
                     <p className="flex items-center mb-1">
                       <Clock className="h-4 w-4 mr-2" />
-                      {classItem.schedule}
+                      {t(classItem.schedule) || classItem.schedule}
                     </p>
                     <p className="flex items-center mb-1">
                       <Calendar className="h-4 w-4 mr-2" />
-                      {classItem.room}
+                      {t(classItem.room) || classItem.room}
                     </p>
                   </div>
 
                   <div className="border-t pt-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Enrollment</span>
+                      <span className="text-sm font-medium text-gray-700">{t('Enrollment') || 'ចុះឈ្មោះ'}</span>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${enrollmentStatus.color}`}>
                         {classItem.enrolled}/{classItem.capacity}
                       </span>

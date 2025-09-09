@@ -77,7 +77,7 @@ export default function Dashboard({ user: initialUser }) {
       <div className="flex-1 bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="xl" className="mx-auto" />
-          <p className="mt-4 text-gray-600 animate-pulse">{t('loading') || 'Loading dashboard...'}</p>
+          <p className="mt-4 text-gray-600 animate-pulse">{t('loadingDashboard') || 'កំពុងទាញយកផ្ទាំងគ្រប់គ្រង...'}</p>
         </div>
       </div>
     );
@@ -93,14 +93,14 @@ export default function Dashboard({ user: initialUser }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('error') || 'Error'}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('error') || 'កំហុស'}</h3>
           <p className="text-gray-600 mb-4">{error}</p>
           <Button 
             onClick={() => window.location.reload()} 
             variant="primary"
             size="default"
           >
-            {t('retry') || 'Retry'}
+            {t('retry') || 'ព្យាយាមម្តងទៀត'}
           </Button>
         </div>
       </div>
@@ -142,7 +142,7 @@ export default function Dashboard({ user: initialUser }) {
                       <span className="truncate">{utils.user.getRoleDisplay(user, t)}</span>
                     </p>
                     <p className="text-blue-100 text-xs sm:text-sm mt-1 truncate">
-                      {t('teacherId')}: {user?.teacherId || t('notAssigned') || 'Not assigned'}
+                      {t('teacherId')}: {user?.teacherId || t('notAssigned') || 'មិនបានកំណត់'}
                     </p>
                   </div>
                 </div>
@@ -157,7 +157,7 @@ export default function Dashboard({ user: initialUser }) {
                     className="shadow-lg backdrop-blur-sm text-xs sm:text-sm"
                   >
                     <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
-                    <span className="hidden xs:inline">{t('refresh') || 'Refresh'}</span>
+                    <span className="hidden xs:inline">{t('refresh') || 'ធ្វើឱ្យទាន់សម័យ'}</span>
                   </Button>
                   <Button
                     asChild
@@ -168,7 +168,7 @@ export default function Dashboard({ user: initialUser }) {
                     <Link to="/profile">
                       <Edit className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
                       <span className="hidden xs:inline">{t('updateProfileTitle')}</span>
-                      <span className="xs:hidden">Edit</span>
+                      <span className="xs:hidden">{t('edit') || 'កែប្រែ'}</span>
                     </Link>
                   </Button>
                 </div>
@@ -320,7 +320,7 @@ export default function Dashboard({ user: initialUser }) {
                     <span className="truncate">{t('teacherId')}</span>
                   </dt>
                   <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4">
-                    {user?.teacherId || t('notAssigned') || 'Not assigned'}
+                    {user?.teacherId || t('notAssigned') || 'មិនបានកំណត់'}
                   </dd>
                 </div>
                 {user?.placeOfBirth && (

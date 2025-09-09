@@ -27,12 +27,17 @@ export const LanguageProvider = ({ children }) => {
     localStorage.setItem('language', newLanguage);
   };
 
-  // New translation function using key-based translations
+  // New translation function using key-based translations with Khmer as base
   const t = (key, fallback) => {
     if (typeof key === 'string') {
       // Key-based translation
       const translation = translations[language]?.[key];
-      return translation || fallback || key;
+      // If no translation found in current language, fall back to Khmer first, then fallback parameter, then key
+      if (!translation) {
+        const khmerTranslation = translations['km']?.[key];
+        return khmerTranslation || fallback || key;
+      }
+      return translation;
     } else {
       // Backward compatibility: direct km/en values (will be deprecated)
       return language === 'km' ? key : fallback;
