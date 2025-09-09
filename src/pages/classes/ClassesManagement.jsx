@@ -5,6 +5,7 @@ import { useToast } from '../../contexts/ToastContext';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import StatsCard from '../../components/ui/StatsCard';
+import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import classService from '../../utils/api/services/classService'; // Import the classService
 import studentService from '../../utils/api/services/studentService'; // Import the studentService
 
@@ -66,11 +67,6 @@ export default function ClassesManagement() {
     '2024-2025',
     '2025-2026'
   ];
-
-  const subjects = [
-    'Mathematics', 'Science', 'English', 'Social Studies', 'Art', 'Physical Education', 'Music'
-  ];
-
 
   useEffect(() => {
     fetchClasses();
@@ -349,78 +345,84 @@ export default function ClassesManagement() {
   };
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {t('classesManagement') || 'Classes Management'}
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
-              {t('manageClassSchedules') || 'Manage class schedules, assignments, and enrollment'}
-            </p>
+    <PageTransition>
+      <div className="p-6">
+        {/* Header */}
+        <FadeInSection className='bg-white shadow rounded-lg p-4 sm:p-6 transition-all duration-300 mb-4'>
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {t('classesManagement') || 'Classes Management'}
+                </h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  {t('manageClassSchedules') || 'Manage class schedules, assignments, and enrollment'}
+                </p>
+              </div>
+              <button
+                onClick={handleAddClass}
+                className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t('addClass') || 'Add Class'}
+              </button>
+            </div>
           </div>
-          <button
-            onClick={handleAddClass}
-            className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {t('addClass') || 'Add Class'}
-          </button>
-        </div>
-      </div>
+        </FadeInSection>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <StatsCard
-          title={t('totalClasses') || 'ថ្នាក់រៀនសរុប'}
-          value={classes.length}
-          icon={BookOpen}
-          enhanced={true}
-          responsive={true}
-          hoverColor="hover:border-blue-200"
-          gradientFrom="from-blue-500"
-          gradientTo="to-blue-600"
-        />
-        
-        <StatsCard
-          title={t('totalStudents') || 'សិស្សសរុប'}
-          value={classes.reduce((sum, cls) => sum + cls.enrolled, 0)}
-          icon={Users}
-          enhanced={true}
-          responsive={true}
-          hoverColor="hover:border-green-200"
-          gradientFrom="from-green-500"
-          gradientTo="to-green-600"
-        />
-        
-        <StatsCard
-          title={t('activeToday') || 'សកម្មថ្ងៃនេះ'}
-          value={classes.filter(cls => cls.schedule && cls.schedule.includes('Mon')).length}
-          icon={Calendar}
-          enhanced={true}
-          responsive={true}
-          hoverColor="hover:border-purple-200"
-          gradientFrom="from-purple-500"
-          gradientTo="to-purple-600"
-        />
-        
-        <StatsCard
-          title={t('averageLoad') || 'ការទាក់ទញជាមធ្យម'}
-          value={`${classes.length > 0 ? Math.round(classes.reduce((sum, cls) => sum + (cls.enrolled / cls.capacity), 0) / classes.length * 100) : 0}%`}
-          icon={Clock}
-          enhanced={true}
-          responsive={true}
-          hoverColor="hover:border-orange-200"
-          gradientFrom="from-orange-500"
-          gradientTo="to-orange-400"
-        />
-      </div>
+        {/* Stats Cards */}
+        <FadeInSection delay={0.1}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+            <StatsCard
+              title={t('totalClasses') || 'ថ្នាក់រៀនសរុប'}
+              value={classes.length}
+              icon={BookOpen}
+              enhanced={true}
+              responsive={true}
+              hoverColor="hover:border-blue-200"
+              gradientFrom="from-blue-500"
+              gradientTo="to-blue-600"
+            />
+            
+            <StatsCard
+              title={t('totalStudents') || 'សិស្សសរុប'}
+              value={classes.reduce((sum, cls) => sum + cls.enrolled, 0)}
+              icon={Users}
+              enhanced={true}
+              responsive={true}
+              hoverColor="hover:border-green-200"
+              gradientFrom="from-green-500"
+              gradientTo="to-green-600"
+            />
+            
+            <StatsCard
+              title={t('activeToday') || 'សកម្មថ្ងៃនេះ'}
+              value={classes.filter(cls => cls.schedule && cls.schedule.includes('Mon')).length}
+              icon={Calendar}
+              enhanced={true}
+              responsive={true}
+              hoverColor="hover:border-purple-200"
+              gradientFrom="from-purple-500"
+              gradientTo="to-purple-600"
+            />
+            
+            <StatsCard
+              title={t('averageLoad') || 'ការទាក់ទញជាមធ្យម'}
+              value={`${classes.length > 0 ? Math.round(classes.reduce((sum, cls) => sum + (cls.enrolled / cls.capacity), 0) / classes.length * 100) : 0}%`}
+              icon={Clock}
+              enhanced={true}
+              responsive={true}
+              hoverColor="hover:border-orange-200"
+              gradientFrom="from-orange-500"
+              gradientTo="to-orange-400"
+            />
+          </div>
+        </FadeInSection>
 
-      {/* Classes Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {classes.map((classItem) => {
+        {/* Classes Grid */}
+        <FadeInSection delay={0.2}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {classes.map((classItem) => {
           const enrollmentStatus = getEnrollmentStatus(classItem.enrolled, classItem.capacity);
           return (
             <div key={classItem.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
@@ -445,26 +447,16 @@ export default function ClassesManagement() {
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      {t(classItem.grade) || classItem.grade}
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-gray-800">
+                      {t('grade') || 'Grade Level'} {classItem.grade.replace('Grade ', '')}
                     </span>
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {t(classItem.subject) || classItem.subject}
-                    </span>
+                    
                   </div>
 
                   <div className="text-sm text-gray-600">
                     <p className="flex items-center mb-1">
                       <Users className="h-4 w-4 mr-2" />
                       {t('Teacher:') || 'គ្រូ:'} {classItem.teacher}
-                    </p>
-                    <p className="flex items-center mb-1">
-                      <Clock className="h-4 w-4 mr-2" />
-                      {t(classItem.schedule) || classItem.schedule}
-                    </p>
-                    <p className="flex items-center mb-1">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      {t(classItem.room) || classItem.room}
                     </p>
                   </div>
 
@@ -491,9 +483,10 @@ export default function ClassesManagement() {
                 </div>
               </div>
             </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </FadeInSection>
 
       {/* Add/Edit Modal */}
       <Modal
@@ -656,6 +649,7 @@ export default function ClassesManagement() {
         cancelText={t('cancel') || 'Cancel'}
         loading={loading}
       />
-    </div>
+      </div>
+    </PageTransition>
   );
 }

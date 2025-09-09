@@ -10,7 +10,7 @@ const getPageTitle = (pathname) => {
   const titleMap = {
     'dashboard': 'dashboard',
     'students': 'manageStudentRecords',
-    'classes': 'classManagement',
+    'classes': 'classesManagement',
     'reports': 'reports',
     'attendance': 'attendance',
     'achievements': 'achievements',

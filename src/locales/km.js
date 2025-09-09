@@ -137,8 +137,8 @@ export const km = {
   className: 'ឈ្មោះថ្នាក់រៀន',
   classesManagement: 'ការគ្រប់គ្រងថ្នាក់រៀន',
   editClass: 'កែប្រែថ្នាក់រៀន',
-  grade: 'ថ្នាក់',
-  manageClassSchedules: 'គ្រប់គ្រងកាលវិភាគនិងកិច្ចការថ្នាក់រៀន',
+  grade: 'កម្រិតថ្នាក់',
+  manageClassSchedules: 'គ្រប់គ្រងថ្នាក់រៀន',
   room: 'បន្ទប់រៀន',
   schedule: 'កាលវិភាគ',
   selectSubject: 'ជ្រើសរើសមុខវិជ្ជា',
@@ -268,20 +268,20 @@ export const km = {
   
   // Student Selection
   studentSelection: 'ការជ្រើសរើសសិស្ស',
-  selectStudentsForAction: 'ជ្រើសរើសសិស្សដើម្បីអនុវត្តសកម្មភាពជាក្រុម',
+  selectStudentsForAction: 'ជ្រើសរើសសិស្សដើម្បីបន្ថែមទៅថ្នាក់',
   backToStudents: 'ត្រឡប់ទៅសិស្ស',
   assignToClass: 'កំណត់ទៅថ្នាក់',
-  selectClass: 'ជ្រើសរើសថ្នាក់...',
+  selectClass: 'ជ្រើសរើសថ្នាក់',
   selectClassToAssign: 'ជ្រើសរើសថ្នាក់ដើម្បីកំណត់សិស្សដែលបានជ្រើសរើស',
   selectClassFirst: 'សូមជ្រើសរើសថ្នាក់ជាមុនសិន',
   assignStudents: 'កំណត់សិស្ស',
   assigning: 'កំពុងកំណត់...',
   errorAssigningStudents: 'កំហុសក្នុងការកំណត់សិស្សទៅថ្នាក់',
   selectedStudentsActions: 'សកម្មភាពសម្រាប់សិស្សដែលបានជ្រើសរើស',
-  resetFilters: 'កំណត់ចម្រោងឡើងវិញ',
+  resetFilters: 'កំណត់ការស្វែងរកឡើងវិញ',
   
   // Class selection
-  selectClass: 'ជ្រើសរើសថ្នាក់...',
+  selectClass: 'ជ្រើសរើសថ្នាក់',
   allClasses: 'ថ្នាក់ទាំងអស់',
   
   // General UI
@@ -375,8 +375,8 @@ export const km = {
   Subject: 'មុខវិជ្ជា',
   room: 'បន្ទប់រៀន',
   Room: 'បន្ទប់រៀន',
-  enrollment: 'ចុះឈ្មោះ',
-  Enrollment: 'ចុះឈ្មោះ',
+  enrollment: 'ចំនួនសិស្សក្នុងថ្នាក់',
+  Enrollment: 'ចំនួនសិស្សក្នុងថ្នាក់',
   capacity: 'ចំណុះ',
   Capacity: 'ចំណុះ',
   schedule: 'កាលវិភាគ',

@@ -137,8 +137,8 @@ export const en = {
   className: 'Class Name',
   classesManagement: 'Classes Management',
   editClass: 'Edit Class',
-  grade: 'Grade',
-  manageClassSchedules: 'Manage class schedules and assignments',
+  grade: 'Grade Level',
+  manageClassSchedules: 'Manage class',
   room: 'Room',
   schedule: 'Schedule',
   selectSubject: 'Select Subject',
@@ -268,10 +268,10 @@ export const en = {
   
   // Student Selection
   studentSelection: 'Student Selection',
-  selectStudentsForAction: 'Select students to perform bulk actions',
+  selectStudentsForAction: 'Select students to add to class',
   backToStudents: 'Back to Students',
   assignToClass: 'Assign to Class',
-  selectClass: 'Select Class...',
+  selectClass: 'Select Class',
   selectClassToAssign: 'Select a class to assign selected students to',
   selectClassFirst: 'Please select a class first',
   assignStudents: 'Assign Students',

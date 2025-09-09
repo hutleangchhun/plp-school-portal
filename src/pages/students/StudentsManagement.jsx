@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Trash2, User, Users, ChevronDown, Check, Download } from 'lucide-react';
+import { Search, Plus, Trash2, User, Users, ChevronDown, Download } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
-import * as Select from '@radix-ui/react-select';
+import Dropdown from '../../components/ui/Dropdown';
 import { studentService } from '../../utils/api/services/studentService';
+import { classService } from '../../utils/api/services/classService';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
@@ -60,14 +61,64 @@ export default function StudentsManagement() {
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const fetchingRef = useRef(false);
+  const lastFetchParams = useRef(null);
   
-  // Initialize classes from authenticated user data (SECURE: no API calls needed)
+  // Initialize classes using direct class API for accurate data
   const initializeClasses = useCallback(async () => {
-    console.log('=== USER DATA DEBUG ===');
+    // Avoid re-initializing if classes are already loaded
+    if (classes.length > 0) {
+      console.log('Classes already loaded, skipping initialization');
+      return;
+    }
+    
+    console.log('=== FETCHING CLASSES FROM API ===');
+    
+    try {
+      // Use direct class API to get accurate class data with correct academic years
+      const response = await classService.getMyClasses();
+      console.log('Classes API response:', response);
+      
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        const teacherClasses = response.data.map(cls => ({
+          classId: cls.classId,
+          name: cls.name,
+          gradeLevel: cls.gradeLevel,
+          section: cls.section,
+          academicYear: cls.academicYear, // Direct from API - no hardcoding!
+          teacherId: cls.teacherId,
+          maxStudents: cls.maxStudents,
+          status: cls.status
+        }));
+        
+        console.log(`Successfully loaded ${teacherClasses.length} classes with correct academic years:`, teacherClasses);
+        
+        setClasses(teacherClasses);
+        // Only set to 'all' if no selection exists yet
+        if (!selectedClassId || selectedClassId === '') {
+          setSelectedClassId('all');
+        }
+        
+        // Extract unique grade levels
+        const grades = [...new Set(teacherClasses.map(cls => cls.gradeLevel))];
+        setAvailableGrades(grades);
+        console.log('Available grades:', grades);
+        return;
+      }
+      
+      console.log('No classes found from API - trying fallback');
+    } catch (error) {
+      console.error('Error fetching classes from API:', error);
+    }
+    
+    // Fallback to original logic
+    console.log('=== FALLBACK TO USER DATA DEBUG ===');
     console.log('Current user object:', user);
     console.log('User classIds:', user?.classIds);
     console.log('User classNames:', user?.classNames);
     console.log('User gradeLevels:', user?.gradeLevels);
+    console.log('User academicYear:', user?.academicYear);
+    console.log('User academicYears:', user?.academicYears);
     console.log('=== END USER DATA DEBUG ===');
     
     if (!user || !user.classIds || !user.classNames) {
@@ -84,12 +135,16 @@ export default function StudentsManagement() {
             const gradeLevel = student.gradeLevel || (student.class && student.class.gradeLevel) || 'Unknown';
             
             if (classId) {
+              const academicYear = student.academicYear || 
+                                  (student.class && student.class.academicYear) || 
+                                  '2024-2025'; // Current default
+              
               classMap.set(classId, {
                 classId: classId,
                 name: className,
                 gradeLevel: gradeLevel,
                 section: 'A',
-                academicYear: '2024-2025',
+                academicYear: academicYear,
                 teacherId: user?.teacherId || user?.id
               });
             }
@@ -122,19 +177,29 @@ export default function StudentsManagement() {
       }
       
       setClasses([]);
-      setSelectedClassId('all');
+      // Only reset if no selection exists yet
+      if (!selectedClassId || selectedClassId === '') {
+        setSelectedClassId('all');
+      }
       return;
     }
 
     // SECURITY: Use only the classes from authenticated user token
-    const teacherClasses = user.classIds.map((classId, index) => ({
-      classId: classId,
-      name: user.classNames[index] || `Class ${classId}`,
-      gradeLevel: user.gradeLevels ? user.gradeLevels[index] : 'Unknown',
-      section: 'A', // Default section, could be enhanced if available in auth data
-      academicYear: '2024-2025', // Default academic year, could be enhanced
-      teacherId: user.teacherId
-    }));
+    const teacherClasses = user.classIds.map((classId, index) => {
+      // Try to get academic year from user data or default to current
+      const academicYear = (user.academicYears && user.academicYears[index]) || 
+                          user.academicYear || 
+                          new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
+      
+      return {
+        classId: classId,
+        name: user.classNames[index] || `Class ${classId}`,
+        gradeLevel: user.gradeLevels ? user.gradeLevels[index] : 'Unknown',
+        section: 'A', // Default section, could be enhanced if available in auth data
+        academicYear: academicYear,
+        teacherId: user.teacherId
+      };
+    });
 
     setClasses(teacherClasses);
 
@@ -150,10 +215,25 @@ export default function StudentsManagement() {
     console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes:`, 
       teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
     console.log('Available grades:', grades);
-  }, [user, selectedClassId]);
+  }, [user]);
 
   // Fetch students with pagination and filters (SECURE: only teacher's own students)
-  const fetchStudents = useCallback(async (search = searchTerm) => {
+  const fetchStudents = useCallback(async (search = searchTerm, force = false) => {
+    // Create a unique key for current fetch parameters
+    const currentParams = JSON.stringify({
+      search,
+      selectedGrade,
+      selectedClassId,
+      userId: user?.userId
+    });
+    
+    // Prevent duplicate fetches with same parameters unless forced
+    if (!force && (fetchingRef.current || lastFetchParams.current === currentParams)) {
+      return;
+    }
+    
+    fetchingRef.current = true;
+    lastFetchParams.current = currentParams;
     try {
       setLoading(true);
       
@@ -280,41 +360,48 @@ export default function StudentsManagement() {
       setStudents([]);
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   }, [searchTerm, showError, t, selectedClassId, selectedGrade, user, classes]);
   
-  // Handle search with debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchStudents();
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [searchTerm, selectedGrade, fetchStudents]);
-  
-  // Remove this useEffect since we now handle it in the selectedClassId dependency
-
   // Initialize classes when component mounts
   useEffect(() => {
     initializeClasses();
   }, [initializeClasses]);
 
-  // Fetch students when selected class changes
+  // Memoized fetch parameters to avoid unnecessary re-renders
+  const fetchParams = useMemo(() => ({
+    searchTerm,
+    selectedGrade,
+    selectedClassId,
+    classesLength: classes.length
+  }), [searchTerm, selectedGrade, selectedClassId, classes.length]);
+
+  // Single useEffect to handle all data fetching
   useEffect(() => {
-    if (classes.length > 0) {
-      // SECURITY: Validate that selectedClassId belongs to teacher's authorized classes
-      if (selectedClassId !== 'all') {
-        const selectedClassIdInt = parseInt(selectedClassId);
-        const isValidClass = user?.classIds?.includes(selectedClassIdInt);
-        if (!isValidClass) {
-          console.warn(`Invalid class ID ${selectedClassId} selected for teacher ${user?.username}. Resetting to 'all'.`);
-          setSelectedClassId('all');
-          return;
-        }
+    if (classes.length === 0) return; // Wait for classes to load
+    
+    // SECURITY: Validate that selectedClassId belongs to teacher's authorized classes
+    if (selectedClassId !== 'all') {
+      const selectedClassIdInt = parseInt(selectedClassId);
+      const isValidClass = user?.classIds?.includes(selectedClassIdInt);
+      if (!isValidClass) {
+        console.warn(`Invalid class ID ${selectedClassId} selected for teacher ${user?.username}. Resetting to 'all'.`);
+        setSelectedClassId('all');
+        return;
       }
-      fetchStudents();
     }
-  }, [selectedClassId, classes, fetchStudents, user]);
+
+    // Debounce only for search changes, immediate for filter changes
+    const isSearchChange = searchTerm.trim() !== '';
+    const delay = isSearchChange ? 500 : 100; // Small delay to batch state changes
+    
+    const timer = setTimeout(() => {
+      fetchStudents(searchTerm, false);
+    }, delay);
+    
+    return () => clearTimeout(timer);
+  }, [fetchParams, user, classes, fetchStudents, selectedClassId, searchTerm]);
   
   // Close export dropdown when clicking outside
   useEffect(() => {
@@ -770,64 +857,11 @@ export default function StudentsManagement() {
                   {students.length} {students.length === 1 ? t('student', 'student') : t('students', 'students')}
                   {selectedClassId !== 'all' && (() => {
                     const selectedClass = classes.find(c => c.classId.toString() === selectedClassId);
-                    return selectedClass ? ` in ${selectedClass.name}` : '';
+                    return selectedClass ? ` នៅ ${selectedClass.name}` : '';
                   })()}
                 </span>
               </div>
             </div>
-            {classes.length > 0 && (
-              <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-700 font-medium">{t('selectClass', 'Class')}:</span>
-                  <Select.Root value={selectedClassId} onValueChange={setSelectedClassId}>
-                    <Select.Trigger className="inline-flex items-center justify-center rounded px-3 py-1 text-sm bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0">
-                      <Select.Value placeholder={t('selectClass', 'Select Class')} />
-                      <Select.Icon className="ml-2">
-                        <ChevronDown className="h-4 w-4" />
-                      </Select.Icon>
-                    </Select.Trigger>
-                    <Select.Portal>
-                      <Select.Content className="overflow-hidden bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                        <Select.Viewport className="p-1">
-                          <Select.Item value="all" className="relative flex items-center px-3 py-2 text-sm rounded cursor-pointer hover:bg-blue-50 focus:bg-blue-50 outline-none">
-                            <Select.ItemText>{t('allClasses', 'All Classes')}</Select.ItemText>
-                            <Select.ItemIndicator className="absolute left-2">
-                              <Check className="h-4 w-4" />
-                            </Select.ItemIndicator>
-                          </Select.Item>
-                          {classes.map((cls) => (
-                            <Select.Item key={cls.classId} value={cls.classId.toString()} className="relative flex items-center px-3 py-2 text-sm rounded cursor-pointer hover:bg-blue-50 focus:bg-blue-50 outline-none">
-                              <Select.ItemText>
-                                {cls.name} (Grade {cls.gradeLevel} - {cls.section})
-                              </Select.ItemText>
-                              <Select.ItemIndicator className="absolute left-2">
-                                <Check className="h-4 w-4" />
-                              </Select.ItemIndicator>
-                            </Select.Item>
-                          ))}
-                        </Select.Viewport>
-                      </Select.Content>
-                    </Select.Portal>
-                  </Select.Root>
-                </div>
-                {selectedClassId !== 'all' && (
-                  <div className="flex items-center space-x-2 text-xs text-gray-500">
-                    {(() => {
-                      const selectedClass = classes.find(c => c.classId.toString() === selectedClassId);
-                      return selectedClass ? (
-                        <>
-                          <Badge color="orange" className="text-xs">
-                            {selectedClass.name}
-                          </Badge>
-                          <span>Grade {selectedClass.gradeLevel} • Section {selectedClass.section}</span>
-                          <span>{selectedClass.academicYear}</span>
-                        </>
-                      ) : null;
-                    })()}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
         <div className="flex items-center space-x-2">
@@ -884,7 +918,7 @@ export default function StudentsManagement() {
         </div>
       </div>
         <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 flex-1">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 flex-1 justify-between">
             <div className="relative flex-1 max-w-md">
               <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
                 <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
@@ -898,38 +932,39 @@ export default function StudentsManagement() {
               />
             </div>
             
-            {/* Grade Filter Dropdown */}
-            {availableGrades.length > 0 && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-700 font-medium whitespace-nowrap">{t('filterByGrade', 'Grade')}:</span>
-                <Select.Root value={selectedGrade} onValueChange={setSelectedGrade}>
-                  <Select.Trigger className="inline-flex items-center justify-center rounded px-3 py-2 text-sm bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]">
-                    <Select.Value placeholder={t('selectGrade', 'Select Grade')} />
-                    <Select.Icon className="ml-2">
-                      <ChevronDown className="h-4 w-4" />
-                    </Select.Icon>
-                  </Select.Trigger>
-                  <Select.Portal>
-                    <Select.Content className="overflow-hidden bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                      <Select.Viewport className="p-1">
-                        <Select.Item value="all" className="relative flex items-center px-3 py-2 text-sm rounded cursor-pointer hover:bg-blue-50 focus:bg-blue-50 outline-none">
-                          <Select.ItemText>{t('allGrades', 'All Grades')}</Select.ItemText>
-                          <Select.ItemIndicator className="absolute left-2">
-                            <Check className="h-4 w-4" />
-                          </Select.ItemIndicator>
-                        </Select.Item>
-                        {availableGrades.map((grade) => (
-                          <Select.Item key={grade} value={grade} className="relative flex items-center px-3 py-2 text-sm rounded cursor-pointer hover:bg-blue-50 focus:bg-blue-50 outline-none">
-                            <Select.ItemText>Grade {grade}</Select.ItemText>
-                            <Select.ItemIndicator className="absolute left-2">
-                              <Check className="h-4 w-4" />
-                            </Select.ItemIndicator>
-                          </Select.Item>
-                        ))}
-                      </Select.Viewport>
-                    </Select.Content>
-                  </Select.Portal>
-                </Select.Root>
+            {classes.length > 0 && (
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm">
+                {selectedClassId !== 'all' && (
+                  <div className="flex items-center space-x-2 text-xs text-gray-500">
+                    {(() => {
+                      const selectedClass = classes.find(c => c.classId.toString() === selectedClassId);
+                      return selectedClass ? (
+                        <>
+                          <Badge color="orange" className="text-xs">
+                            {selectedClass.name}
+                          </Badge>
+                          <span>{selectedClass.academicYear}</span>
+                        </>
+                      ) : null;
+                    })()}
+                  </div>
+                )}
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-700 font-medium">{t('selectClass', 'Class')}:</span>
+                  <Dropdown
+                    value={selectedClassId}
+                    onValueChange={setSelectedClassId}
+                    options={[
+                      { value: 'all', label: t('allClasses', 'ថ្នាក់ទាំងអស់') },
+                      ...classes.map(cls => ({
+                        value: cls.classId.toString(),
+                        label: cls.name
+                      }))
+                    ]}
+                    placeholder={t('selectClass', 'ជ្រើសរើសថ្នាក់')}
+                    minWidth="min-w-[200px]"
+                  />
+                </div>
               </div>
             )}
           </div>

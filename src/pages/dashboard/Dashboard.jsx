@@ -109,7 +109,7 @@ export default function Dashboard({ user: initialUser }) {
 
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
-      <div className="px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="p-6">
         {/* Header Section */}
         <FadeInSection className="mb-3 border-2 bg-white rounded-xl border-gray-100 pb-4 sm:pb-6 hover:shadow-lg hover:border-blue-200 transition-all duration-300">
           <div className="rounded-2xl border-1 border-gray-100 overflow-hidden">
