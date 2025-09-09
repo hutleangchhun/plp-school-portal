@@ -253,34 +253,24 @@ export const studentService = {
 
   /**
    * Get current teacher's students
+   * @param {Object} params - Optional parameters for filtering
+   * @param {number} [params.classId] - Specific class ID to filter students
    * @returns {Promise<Array>} List of students
    */
-  async getMyStudents() {
+  async getMyStudents(params = {}) {
     try {
-      // First try getting the teacher's class, then get students from that class
-      const classResponse = await handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.CLASSES.BASE)
-      );
+      const { classId } = params;
       
-      if (!classResponse.data || !Array.isArray(classResponse.data) || classResponse.data.length === 0) {
-        return { success: true, data: [] };
+      // Use the proper my-students endpoint with optional classId filtering
+      const queryParams = {};
+      if (classId) {
+        queryParams.classId = classId;
       }
-      
-      // Get the first class (assuming teacher teaches one class)
-      const teacherClass = classResponse.data[0];
-      
-      // Try to get the class ID from different possible fields
-      const classId = teacherClass.id || teacherClass.classId || (teacherClass.data && teacherClass.data.id);
-      
-      if (!classId) {
-        return { success: true, data: [] };
-      }
-      
-      // Now get students for this class
-      const endpoint = `/classes/${classId}/students`;
       
       const response = await handleApiResponse(() =>
-        apiClient_.get(endpoint)
+        apiClient_.get(ENDPOINTS.STUDENTS.MY_STUDENTS, {
+          params: queryParams
+        })
       );
       
       // Handle the response data
@@ -295,65 +285,19 @@ export const studentService = {
         studentsData = response.data.data;
       }
       
-      // Transform the API response format to match what formatStudentData expects
-      // API returns: {student_id, user_id, username, first_name, last_name, class_id}
-      // formatStudentData expects: {studentId, user: {firstName, lastName, username}}
+      console.log('Raw students data from my-students API:', studentsData);
       
-      // Get correct user data for each student since class API has wrong mappings
-      // Use student_id as the user_id since that seems to be the correct mapping
-      const transformedDataPromises = studentsData.map(async (apiStudent) => {
-        try {
-          // The actual user ID is the student_id field, not user_id field
-          const actualUserId = apiStudent.student_id;
-          
-          // Fetch correct user data from users API using student_id as user_id
-          const userResponse = await handleApiResponse(() =>
-            apiClient_.get(`${ENDPOINTS.USERS.BASE}/${actualUserId}`)
-          );
-          
-          const userData = userResponse.data || {};
-          
-          return {
-            studentId: parseInt(apiStudent.student_id),
-            user: {
-              firstName: userData.first_name || apiStudent.first_name,
-              lastName: userData.last_name || apiStudent.last_name, 
-              username: userData.username || apiStudent.username,
-              id: actualUserId  // Use the correct user ID
-            },
-            class: {
-              classId: parseInt(apiStudent.class_id),
-              gradeLevel: apiStudent.class_grade_level
-            }
-          };
-        } catch (error) {
-          console.error(`Failed to fetch user data for student_id ${apiStudent.student_id}:`, error);
-          // Fallback to class API data if user fetch fails
-          return {
-            studentId: parseInt(apiStudent.student_id),
-            user: {
-              firstName: apiStudent.first_name,
-              lastName: apiStudent.last_name, 
-              username: apiStudent.username,
-              id: apiStudent.student_id  // Use student_id as fallback
-            },
-            class: {
-              classId: parseInt(apiStudent.class_id),
-              gradeLevel: apiStudent.class_grade_level
-            }
-          };
-        }
-      });
+      // Format student data
+      const formattedStudents = studentsData.map(student => {
+        return studentService.utils.formatStudentData(student);
+      }).filter(student => student !== null);
       
-      const transformedData = await Promise.all(transformedDataPromises);
-      
-      // Format the student data
-      const formattedStudents = transformedData.map(student => this.utils.formatStudentData(student));
+      console.log(`getMyStudents: Found ${formattedStudents.length} students${classId ? ` for class ${classId}` : ' (all classes)'}`);
       
       return {
         success: true,
         data: formattedStudents,
-        pagination: response.pagination || { page: 1, limit: 10, total: formattedStudents.length, pages: 1 }
+        pagination: { page: 1, limit: 10, total: formattedStudents.length, pages: 1 }
       };
       
     } catch (error) {

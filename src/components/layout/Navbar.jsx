@@ -16,7 +16,6 @@ const getPageTitle = (pathname) => {
     'achievements': 'achievements',
     'settings': 'settings',
     'profile': 'profile',
-    'student-grade-management': 'studentGradeManagement'
   };
   return titleMap[path] || 'dashboard';
 };

@@ -25,7 +25,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/dashboard': Home,
     '/students': Users,
     '/classes': BookOpen,
-    '/student-grade-management': GraduationCap,
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/attendance': Calendar,
     // '/reports': FileText,
@@ -41,7 +40,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/dashboard': 'blue',
     '/students': 'purple',
     '/classes': 'green',
-    '/student-grade-management': 'orange',
     // Temporarily removed color mappings (will be re-enabled later):
     // '/attendance': 'teal',
     // '/reports': 'yellow',

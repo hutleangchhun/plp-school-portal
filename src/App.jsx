@@ -5,7 +5,7 @@ import Layout from './components/layout/Layout';
 import Dashboard from './pages/dashboard/Dashboard';
 import ProfileUpdate from './pages/profile/ProfileUpdate';
 import DashboardLayout from './components/layout/DashboardLayout';
-import StudentGradeManagement from './pages/students/StudentGradeManagement';
+//import StudentGradeManagement from './pages/students/StudentGradeManagement';
 import StudentsManagement from './pages/students/StudentsManagement';
 import ClassesManagement from './pages/classes/ClassesManagement';
 // Temporarily removed imports (will be re-enabled later):
@@ -83,14 +83,6 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<Dashboard user={user} setUser={setUser} />} />
-          </Route>
-          
-          <Route path="student-grade-management" element={
-            <ProtectedRoute path="/student-grade-management" user={user}>
-              <DashboardLayout user={user} onLogout={handleLogout} />
-            </ProtectedRoute>
-          }>
-            <Route index element={<StudentGradeManagement />} />
           </Route>
           
           <Route path="students" element={

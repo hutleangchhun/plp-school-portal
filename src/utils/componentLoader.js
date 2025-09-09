@@ -92,13 +92,6 @@ export const RouteConfig = [
     layout: 'dashboard'
   },
   {
-    path: '/student-grade-management',
-    component: 'StudentGradeManagement',
-    title: 'studentGradeManagement',
-    requiresAuth: true,
-    layout: 'dashboard'
-  },
-  {
     path: '/classes',
     component: 'ClassesManagement',
     title: 'classesManagement',

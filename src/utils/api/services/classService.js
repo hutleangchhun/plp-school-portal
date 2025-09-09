@@ -62,6 +62,67 @@ export const classService = {
   },
 
   /**
+   * Create a new class
+   * @param {Object} classData - The class data to create
+   * @returns {Promise<Object>} Created class data
+   */
+  async createClass(classData) {
+    try {
+      const response = await handleApiResponse(() =>
+        apiClient_.post(ENDPOINTS.CLASSES.BASE, classData)
+      );
+      return {
+        success: true,
+        data: classService.utils.formatClassData(response.data)
+      };
+    } catch (error) {
+      console.error('Error creating class:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update an existing class
+   * @param {string|number} classId - The ID of the class to update
+   * @param {Object} classData - The updated class data
+   * @returns {Promise<Object>} Updated class data
+   */
+  async updateClass(classId, classData) {
+    try {
+      const response = await handleApiResponse(() =>
+        apiClient_.patch(`${ENDPOINTS.CLASSES.BASE}/${classId}`, classData)
+      );
+      return {
+        success: true,
+        data: classService.utils.formatClassData(response.data)
+      };
+    } catch (error) {
+      console.error('Error updating class:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete a class
+   * @param {string|number} classId - The ID of the class to delete
+   * @returns {Promise<Object>} Deletion confirmation
+   */
+  async deleteClass(classId) {
+    try {
+      await handleApiResponse(() =>
+        apiClient_.delete(`${ENDPOINTS.CLASSES.BASE}/${classId}`)
+      );
+      return {
+        success: true,
+        message: 'Class deleted successfully'
+      };
+    } catch (error) {
+      console.error('Error deleting class:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Utility functions for class data transformation
    */
   utils: {

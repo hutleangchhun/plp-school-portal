@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import ProfileImage from '../../components/ui/ProfileImage';
+import StatsCard from '../../components/ui/StatsCard';
 import { utils, userService } from '../../utils/api';
 
 export default function Dashboard({ user: initialUser }) {
@@ -178,74 +179,55 @@ export default function Dashboard({ user: initialUser }) {
 
         {/* Stats Grid */}
         <FadeInSection className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-3">
-          {/* Total Experience Card */}
-          <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-6 border border-gray-100 sm:border-2 shadow-sm hover:shadow-lg hover:scale-[1.02] hover:border-blue-200 transition-all duration-300 cursor-pointer group">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left">
-              <div className="flex-shrink-0 mb-2 sm:mb-0">
-                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 mx-auto">
-                  <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white group-hover:rotate-12 transition-transform duration-300" />
-                </div>
-              </div>
-              <div className="sm:ml-3 lg:ml-4 flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{t('experience')}</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
-                  <span className="block sm:inline">{user?.yearsExperience || '0'}</span>
-                  <span className="text-sm sm:text-base lg:text-lg ml-0 sm:ml-1"> {t('years')}</span>
-                </p>
-              </div>
-            </div>
-          </div>
+          <StatsCard
+            title={t('experience')}
+            value={`${user?.yearsExperience || '0'} ${t('years')}`}
+            icon={GraduationCap}
+            enhanced={true}
+            responsive={true}
+            clickable={true}
+            hoverColor="hover:border-blue-200"
+            gradientFrom="from-blue-500"
+            gradientTo="to-blue-600"
+          />
 
-          {/* Classes Card */}
-          <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-6 border border-gray-100 shadow-sm hover:shadow-lg hover:scale-[1.02] hover:border-green-200 transition-all duration-300 cursor-pointer group">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left">
-              <div className="flex-shrink-0 mb-2 sm:mb-0">
-                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 mx-auto">
-                  <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white group-hover:rotate-12 transition-transform duration-300" />
-                </div>
-              </div>
-              <div className="sm:ml-3 lg:ml-4 flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{t('classes')}</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
-                  {user?.classNames?.length || '0'}
-                </p>
-              </div>
-            </div>
-          </div>
+          <StatsCard
+            title={t('classes')}
+            value={user?.classNames?.length || '0'}
+            icon={BookOpen}
+            enhanced={true}
+            responsive={true}
+            clickable={true}
+            hoverColor="hover:border-green-200"
+            gradientFrom="from-green-500"
+            gradientTo="to-green-600"
+          />
 
-          {/* Students Card */}
-          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-3 sm:p-4 lg:p-6 border border-gray-100 hover:shadow-lg hover:scale-[1.02] hover:border-purple-200 transition-all duration-300 cursor-pointer group">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left">
-              <div className="flex-shrink-0 mb-2 sm:mb-0">
-                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 mx-auto">
-                  <Users className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white group-hover:rotate-12 transition-transform duration-300" />
-                </div>
-              </div>
-              <div className="sm:ml-3 lg:ml-4 flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{t('students')}</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
-                  {user?.totalStudents || '0'}
-                </p>
-              </div>
-            </div>
-          </div>
+          <StatsCard
+            title={t('students')}
+            value={user?.totalStudents || '0'}
+            icon={Users}
+            enhanced={true}
+            responsive={true}
+            clickable={true}
+            hoverColor="hover:border-purple-200"
+            gradientFrom="from-purple-500"
+            gradientTo="to-purple-600"
+          />
 
-          {/* School Card */}
-          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-3 sm:p-4 lg:p-6 border border-gray-100 hover:shadow-lg hover:scale-[1.02] hover:border-orange-200 transition-all duration-300 cursor-pointer group">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left">
-              <div className="flex-shrink-0 mb-2 sm:mb-0">
-                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 mx-auto">
-                  <Building2 className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white group-hover:rotate-12 transition-transform duration-300" />
-                </div>
-              </div>
-              <div className="sm:ml-3 lg:ml-4 flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{t('school')}</p>
-                <p className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 truncate">
-                  {user?.schoolName || t('assigned')}
-                </p>
-              </div>
-            </div>
-          </div>
+          <StatsCard
+            title={t('school')}
+            value={user?.schoolName || t('assigned')}
+            icon={Building2}
+            enhanced={true}
+            responsive={true}
+            clickable={true}
+            hoverColor="hover:border-orange-200"
+            gradientFrom="from-orange-500"
+            gradientTo="to-orange-600"
+            valueColor="text-gray-900"
+            className="text-sm sm:text-base lg:text-lg font-semibold"
+          />
         </FadeInSection>
 
         {/* Detailed Information Cards */}

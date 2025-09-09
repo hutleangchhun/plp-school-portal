@@ -22,12 +22,6 @@ export const routePermissions = {
     allowedRoles: [ROLES.TEACHER, ROLES.STUDENT],
     component: 'ProfileUpdate'
   },
-
-  // Teacher-only routes
-  '/student-grade-management': {
-    allowedRoles: [ROLES.TEACHER],
-    component: 'StudentGradeManagement'
-  },
   '/students': {
     allowedRoles: [ROLES.TEACHER],
     component: 'StudentsManagement'
@@ -97,11 +91,6 @@ export const getNavigationItems = (user, t) => {
       href: '/classes',
       allowedRoles: [ROLES.TEACHER]
     },
-    {
-      name: t('student-grade-management') || 'Grade Management',
-      href: '/student-grade-management',
-      allowedRoles: [ROLES.TEACHER]
-    }
     // Temporarily removed navigation items:
     // attendance, reports, achievements, settings
   ];
