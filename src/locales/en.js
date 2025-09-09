@@ -253,7 +253,7 @@ export const en = {
   exportSuccess: 'Data exported successfully',
   exportError: 'Failed to export data',
   studentManagementReport: 'Student Management Report',
-  class: 'Class',
+  classField: 'Class',
   section: 'Section',
   academicYear: 'Academic Year',
   generated: 'Generated',

@@ -253,7 +253,7 @@ export const km = {
   exportSuccess: 'បាននាំចេញទិន្នន័យដោយជោគជ័យ',
   exportError: 'បរាជ័យក្នុងការនាំចេញទិន្នន័យ',
   studentManagementReport: 'របាយការណ៍ការគ្រប់គ្រងសិស្ស',
-  class: 'ថ្នាក់',
+  classField: 'ថ្នាក់',
   section: 'វគ្គ',
   academicYear: 'ឆ្នាំសិក្សា',
   generated: 'បានបង្កើត',

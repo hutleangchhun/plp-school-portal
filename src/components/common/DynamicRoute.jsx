@@ -4,6 +4,7 @@ import { getComponent, getRouteConfig } from '../../utils/componentLoader';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { api } from '../../utils/api';
+import { hasRouteAccess } from '../../utils/routePermissions';
 
 /**
  * DynamicRoute Component
@@ -54,11 +55,31 @@ export default function DynamicRoute({
 }
 
 /**
+ * ProtectedRoute Component
+ * Wraps routes with role-based access control
+ */
+export function ProtectedRoute({ children, path, user, fallbackPath = "/dashboard" }) {
+  const isAuthenticated = api.auth.isAuthenticated();
+  
+  // Check if user is authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Check if user has access to this specific route
+  if (!hasRouteAccess(path, user)) {
+    return <Navigate to={fallbackPath} replace />;
+  }
+
+  return children;
+}
+
+/**
  * HOC for creating protected routes
  * @param {React.Component} Component - Component to protect
- * @param {Array} allowedRoles - Array of allowed roles (optional)
+ * @param {Array} allowedRoleIds - Array of allowed role IDs
  */
-export const withAuth = (Component, allowedRoles = []) => {
+export const withAuth = (Component, allowedRoleIds = []) => {
   return function AuthenticatedComponent(props) {
     const isAuthenticated = api.auth.isAuthenticated();
     
@@ -67,9 +88,8 @@ export const withAuth = (Component, allowedRoles = []) => {
     }
 
     // Check role-based access if roles are specified
-    if (allowedRoles.length > 0 && props.user) {
-      const userRole = props.user.roleNameEn?.toLowerCase();
-      if (!allowedRoles.includes(userRole)) {
+    if (allowedRoleIds.length > 0 && props.user) {
+      if (!allowedRoleIds.includes(props.user.roleId)) {
         return <Navigate to="/dashboard" replace />;
       }
     }

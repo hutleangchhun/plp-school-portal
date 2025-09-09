@@ -24,10 +24,10 @@ export const authService = {
       const { accessToken, user } = response.data;
       
       // Validate user role (teachers only)
-      if (user.roleId !== 8) {
+      if (user.roleId !== 8 && user.roleId !== 9) {
         return {
           success: false,
-          error: 'Only teachers can access this portal'
+          error: 'Only teachers and students can access this portal'
         };
       }
 
@@ -112,6 +112,38 @@ export const authUtils = {
    */
   isTeacher: (user) => {
     return user && user.roleId === 8;
+  },
+
+  /**
+   * Validate student role
+   * @param {Object} user - User object
+   * @returns {boolean} Whether user is a student
+   */
+  isStudent: (user) => {
+    return user && user.roleId === 9;
+  },
+
+  /**
+   * Check if user has access to route based on role
+   * @param {Object} user - User object
+   * @param {Array} allowedRoles - Array of allowed role IDs
+   * @returns {boolean} Whether user has access
+   */
+  hasAccess: (user, allowedRoles = []) => {
+    if (!user || !allowedRoles.length) return false;
+    return allowedRoles.includes(user.roleId);
+  },
+
+  /**
+   * Get user role type
+   * @param {Object} user - User object
+   * @returns {string} Role type (teacher, student, unknown)
+   */
+  getUserRole: (user) => {
+    if (!user) return 'unknown';
+    if (user.roleId === 8) return 'teacher';
+    if (user.roleId === 9) return 'student';
+    return 'unknown';
   },
 
   /**

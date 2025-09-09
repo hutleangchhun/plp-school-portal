@@ -8,13 +8,15 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import StudentGradeManagement from './pages/students/StudentGradeManagement';
 import StudentsManagement from './pages/students/StudentsManagement';
 import ClassesManagement from './pages/classes/ClassesManagement';
-import Reports from './pages/reports/Reports';
-import Attendance from './pages/attendance/Attendance';
-import Achievements from './pages/achievements/Achievements';
-import Settings from './pages/settings/Settings';
+// Temporarily removed imports (will be re-enabled later):
+// import Reports from './pages/reports/Reports';
+// import Attendance from './pages/attendance/Attendance';
+// import Achievements from './pages/achievements/Achievements';
+// import Settings from './pages/settings/Settings';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { api, utils } from './utils/api';
+import { ProtectedRoute } from './components/common/DynamicRoute';
 
 function AppContent() {
   const { t } = useLanguage();
@@ -75,33 +77,49 @@ function AppContent() {
           <Route index element={<Navigate to="/dashboard" />} />
           
           {/* Dashboard routes with sidebar */}
-          <Route path="dashboard/*" element={<DashboardLayout user={user} onLogout={handleLogout} />}>
+          <Route path="dashboard/*" element={
+            <ProtectedRoute path="/dashboard" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
             <Route index element={<Dashboard user={user} setUser={setUser} />} />
           </Route>
-          <Route path="student-grade-management" element={<DashboardLayout user={user} onLogout={handleLogout} />}>
+          
+          <Route path="student-grade-management" element={
+            <ProtectedRoute path="/student-grade-management" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
             <Route index element={<StudentGradeManagement />} />
           </Route>
-          <Route path="students" element={<DashboardLayout user={user} onLogout={handleLogout} />}>
+          
+          <Route path="students" element={
+            <ProtectedRoute path="/students" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
             <Route index element={<StudentsManagement />} />
           </Route>
-          <Route path="classes" element={<DashboardLayout user={user} onLogout={handleLogout} />}>
+          
+          <Route path="classes" element={
+            <ProtectedRoute path="/classes" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
             <Route index element={<ClassesManagement />} />
           </Route>
-          <Route path="reports" element={<DashboardLayout user={user} onLogout={handleLogout} />}>
-            <Route index element={<Reports />} />
-          </Route>
-          <Route path="attendance" element={<DashboardLayout user={user} onLogout={handleLogout} />}>
-            <Route index element={<Attendance />} />
-          </Route>
-          <Route path="achievements" element={<DashboardLayout user={user} onLogout={handleLogout} />}>
-            <Route index element={<Achievements />} />
-          </Route>
-          <Route path="settings" element={<DashboardLayout user={user} onLogout={handleLogout} />}>
-            <Route index element={<Settings />} />
-          </Route>
-          <Route path="profile" element={<DashboardLayout user={user} onLogout={handleLogout} />}>
+          
+          <Route path="profile" element={
+            <ProtectedRoute path="/profile" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
             <Route index element={<ProfileUpdate user={user} setUser={setUser} />} />
           </Route>
+
+          {/* Temporarily removed routes (will be re-enabled later):
+              - reports, attendance, achievements, settings
+              - my-grades, my-attendance, my-assignments */}
         </Route>
       </Routes>
     </Router>

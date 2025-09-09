@@ -33,7 +33,8 @@ export default function DashboardLayout({ user, onLogout }) {
       {/* Sidebar */}
       <Sidebar 
         isCollapsed={sidebarCollapsed} 
-        setIsCollapsed={setSidebarCollapsed} 
+        setIsCollapsed={setSidebarCollapsed}
+        user={user}
       />
       
       {/* Main content */}

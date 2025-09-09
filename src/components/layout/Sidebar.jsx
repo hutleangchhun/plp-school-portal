@@ -3,39 +3,62 @@ import {
   Home, 
   Users, 
   ChevronLeft, 
-  ChevronRight
+  ChevronRight,
+  BookOpen,
+  FileText,
+  Calendar,
+  Trophy,
+  Settings as SettingsIcon,
+  GraduationCap
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { getNavigationItems } from '../../utils/routePermissions';
 import plpLogo from '../../assets/plp-logo-v2.png';
 import MinistryLogo from '../../assets/moeys-logo.png';
 
-export default function Sidebar({ isCollapsed, setIsCollapsed }) {
+export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
   const { t } = useLanguage();
   const location = useLocation();
 
-  const navigationItems = [
-    {
-      name: t('dashboard') || 'Dashboard',
-      href: '/dashboard',
-      icon: Home,
-      current: location.pathname === '/dashboard',
-      color: 'blue'
-    },
-    {
-      name: t('students') || 'Students',
-      href: '/students',
-      icon: Users,
-      current: location.pathname === '/students',
-      color: 'purple'
-    },
-    {
-      name: t('attendance') || 'Attendance',
-      href: '/attendance',
-      icon: Users,
-      current: location.pathname === '/attendance',
-      color: 'green'
-    },
-  ];
+  // Icon mapping for routes
+  const iconMap = {
+    '/dashboard': Home,
+    '/students': Users,
+    '/classes': BookOpen,
+    '/student-grade-management': GraduationCap,
+    // Temporarily removed icon mappings (will be re-enabled later):
+    // '/attendance': Calendar,
+    // '/reports': FileText,
+    // '/achievements': Trophy,
+    // '/settings': SettingsIcon,
+    // '/my-grades': GraduationCap,
+    // '/my-attendance': Calendar,
+    // '/my-assignments': FileText
+  };
+
+  // Color mapping for routes
+  const colorMap = {
+    '/dashboard': 'blue',
+    '/students': 'purple',
+    '/classes': 'green',
+    '/student-grade-management': 'orange',
+    // Temporarily removed color mappings (will be re-enabled later):
+    // '/attendance': 'teal',
+    // '/reports': 'yellow',
+    // '/achievements': 'red',
+    // '/settings': 'gray',
+    // '/my-grades': 'orange',
+    // '/my-attendance': 'teal',
+    // '/my-assignments': 'yellow'
+  };
+
+  // Get navigation items based on user role
+  const navigationItems = getNavigationItems(user, t).map(item => ({
+    ...item,
+    icon: iconMap[item.href] || Home,
+    current: location.pathname === item.href,
+    color: colorMap[item.href] || 'blue'
+  }));
 
   const getColorClasses = (color, isActive) => {
     const colorMap = {
@@ -80,6 +103,12 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         icon: 'text-yellow-600',
         hover: 'hover:bg-yellow-50',
         iconHover: 'group-hover:text-yellow-500'
+      },
+      gray: {
+        active: 'bg-gray-100 text-gray-700 border-gray-200',
+        icon: 'text-gray-600',
+        hover: 'hover:bg-gray-50',
+        iconHover: 'group-hover:text-gray-500'
       }
     };
 
@@ -135,13 +164,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                   <Icon 
                     className={`flex-shrink-0 h-5 w-5 ${
                       item.current 
-                        ? getColorClasses(item.color, true).includes('blue') ? 'text-blue-600' :
-                          getColorClasses(item.color, true).includes('green') ? 'text-green-600' :
-                          getColorClasses(item.color, true).includes('purple') ? 'text-purple-600' :
-                          getColorClasses(item.color, true).includes('orange') ? 'text-orange-600' :
-                          getColorClasses(item.color, true).includes('red') ? 'text-red-600' :
-                          getColorClasses(item.color, true).includes('teal') ? 'text-teal-600' :
-                          'text-yellow-600'
+                        ? `text-${item.color}-600`
                         : 'text-slate-500 group-hover:text-slate-700'
                     }`} 
                   />

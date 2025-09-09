@@ -8,45 +8,46 @@ import { lazy } from 'react';
 // Page Components (lazy loaded for better performance)
 export const DynamicComponents = {
   // Authentication
-  Login: lazy(() => import('../components/Login')),
+  Login: lazy(() => import('../pages/auth/Login')),
   
   // Layout Components
-  Layout: lazy(() => import('../components/Layout')),
-  DashboardLayout: lazy(() => import('../components/DashboardLayout')),
-  Navbar: lazy(() => import('../components/Navbar')),
-  Sidebar: lazy(() => import('../components/Sidebar')),
-  MobileSidebar: lazy(() => import('../components/MobileSidebar')),
-  Footer: lazy(() => import('../components/Footer')),
+  Layout: lazy(() => import('../components/layout/Layout')),
+  DashboardLayout: lazy(() => import('../components/layout/DashboardLayout')),
+  Navbar: lazy(() => import('../components/layout/Navbar')),
+  Sidebar: lazy(() => import('../components/layout/Sidebar')),
   
   // Page Components
-  Dashboard: lazy(() => import('../components/Dashboard')),
-  ProfileUpdate: lazy(() => import('../components/ProfileUpdate')),
-  StudentsManagement: lazy(() => import('../components/StudentsManagement')),
-  StudentGradeManagement: lazy(() => import('../components/StudentGradeManagement')),
-  ClassesManagement: lazy(() => import('../components/ClassesManagement')),
-  Reports: lazy(() => import('../components/Reports')),
-  Attendance: lazy(() => import('../components/Attendance')),
-  Achievements: lazy(() => import('../components/Achievements')),
-  Settings: lazy(() => import('../components/Settings')),
-  PlaceholderPage: lazy(() => import('../components/PlaceholderPage')),
-  
-  // Common Components
-  LanguageSwitcher: lazy(() => import('../components/LanguageSwitcher')),
+  Dashboard: lazy(() => import('../pages/dashboard/Dashboard')),
+  ProfileUpdate: lazy(() => import('../pages/profile/ProfileUpdate')),
+  StudentsManagement: lazy(() => import('../pages/students/StudentsManagement')),
+  StudentGradeManagement: lazy(() => import('../pages/students/StudentGradeManagement')),
+  ClassesManagement: lazy(() => import('../pages/classes/ClassesManagement')),
+  // Temporarily removed components (will be re-enabled later):
+  // Reports: lazy(() => import('../pages/reports/Reports')),
+  // Attendance: lazy(() => import('../pages/attendance/Attendance')),
+  // Achievements: lazy(() => import('../pages/achievements/Achievements')),
+  // Settings: lazy(() => import('../pages/settings/Settings')),
+  // StudentGrades: lazy(() => import('../pages/students/StudentGrades')),
+  // StudentAttendance: lazy(() => import('../pages/students/StudentAttendance')),
+  // StudentAssignments: lazy(() => import('../pages/students/StudentAssignments')),
 };
 
 // Component Registry for dynamic loading based on strings
 export const ComponentRegistry = {
-  'login': DynamicComponents.Login,
-  'dashboard': DynamicComponents.Dashboard,
-  'profile': DynamicComponents.ProfileUpdate,
-  'students': DynamicComponents.StudentsManagement,
-  'student-grade': DynamicComponents.StudentGradeManagement,
-  'classes': DynamicComponents.ClassesManagement,
-  'reports': DynamicComponents.Reports,
-  'attendance': DynamicComponents.Attendance,
-  'achievements': DynamicComponents.Achievements,
-  'settings': DynamicComponents.Settings,
-  'placeholder': DynamicComponents.PlaceholderPage,
+  'Login': DynamicComponents.Login,
+  'Dashboard': DynamicComponents.Dashboard,
+  'ProfileUpdate': DynamicComponents.ProfileUpdate,
+  'StudentsManagement': DynamicComponents.StudentsManagement,
+  'StudentGradeManagement': DynamicComponents.StudentGradeManagement,
+  'ClassesManagement': DynamicComponents.ClassesManagement,
+  // Temporarily removed component registry entries (will be re-enabled later):
+  // 'Reports': DynamicComponents.Reports,
+  // 'Attendance': DynamicComponents.Attendance,
+  // 'Achievements': DynamicComponents.Achievements,
+  // 'Settings': DynamicComponents.Settings,
+  // 'StudentGrades': DynamicComponents.StudentGrades,
+  // 'StudentAttendance': DynamicComponents.StudentAttendance,
+  // 'StudentAssignments': DynamicComponents.StudentAssignments,
 };
 
 /**
@@ -55,7 +56,7 @@ export const ComponentRegistry = {
  * @returns {React.Component} - The requested component
  */
 export const getComponent = (componentName) => {
-  return ComponentRegistry[componentName] || DynamicComponents.PlaceholderPage;
+  return ComponentRegistry[componentName] || null;
 };
 
 /**
@@ -64,74 +65,46 @@ export const getComponent = (componentName) => {
 export const RouteConfig = [
   {
     path: '/login',
-    component: 'login',
+    component: 'Login',
     title: 'signIn',
     requiresAuth: false,
     layout: null
   },
   {
     path: '/dashboard',
-    component: 'dashboard',
+    component: 'Dashboard',
     title: 'dashboard',
     requiresAuth: true,
     layout: 'dashboard'
   },
   {
     path: '/profile',
-    component: 'profile',
+    component: 'ProfileUpdate',
     title: 'profile',
     requiresAuth: true,
     layout: 'dashboard'
   },
   {
     path: '/students',
-    component: 'students',
+    component: 'StudentsManagement',
     title: 'studentsManagement',
     requiresAuth: true,
     layout: 'dashboard'
   },
   {
     path: '/student-grade-management',
-    component: 'student-grade',
+    component: 'StudentGradeManagement',
     title: 'studentGradeManagement',
     requiresAuth: true,
     layout: 'dashboard'
   },
   {
     path: '/classes',
-    component: 'classes',
+    component: 'ClassesManagement',
     title: 'classesManagement',
     requiresAuth: true,
     layout: 'dashboard'
   },
-  {
-    path: '/reports',
-    component: 'reports',
-    title: 'reports',
-    requiresAuth: true,
-    layout: 'dashboard'
-  },
-  {
-    path: '/attendance',
-    component: 'attendance',
-    title: 'attendance',
-    requiresAuth: true,
-    layout: 'dashboard'
-  },
-  {
-    path: '/achievements',
-    component: 'achievements',
-    title: 'achievements',
-    requiresAuth: true,
-    layout: 'dashboard'
-  },
-  {
-    path: '/settings',
-    component: 'settings',
-    title: 'settings',
-    requiresAuth: true,
-    layout: 'dashboard'
-  }
 ];
 
 /**
@@ -180,42 +153,6 @@ export const NavigationConfig = [
     requiresAuth: true,
     roles: ['admin', 'teacher']
   },
-  {
-    id: 'attendance',
-    path: '/attendance',
-    titleKey: 'attendance',
-    icon: 'Calendar',
-    color: 'orange',
-    requiresAuth: true,
-    roles: ['admin', 'teacher']
-  },
-  {
-    id: 'achievements',
-    path: '/achievements',
-    titleKey: 'achievements',
-    icon: 'Award',
-    color: 'yellow',
-    requiresAuth: true,
-    roles: ['admin', 'teacher', 'student']
-  },
-  {
-    id: 'reports',
-    path: '/reports',
-    titleKey: 'reports',
-    icon: 'FileText',
-    color: 'indigo',
-    requiresAuth: true,
-    roles: ['admin', 'teacher']
-  },
-  {
-    id: 'settings',
-    path: '/settings',
-    titleKey: 'settings',
-    icon: 'Settings',
-    color: 'gray',
-    requiresAuth: true,
-    roles: ['admin', 'teacher', 'student']
-  }
 ];
 
 /**
