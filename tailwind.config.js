@@ -7,7 +7,11 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        'sans': ['Hanuman', 'serif'],
+      },
+    },
   },
   plugins: [
     tailwindForms,
