@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { Save, User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, Calendar, MapPin, Building, Home, Compass, X } from 'lucide-react';
+import { Save, User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, MapPin, Building, Home, Compass, X } from 'lucide-react';
 import * as RadioGroup from '@radix-ui/react-radio-group';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
+import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import ProfileImage from '../../components/ui/ProfileImage';
 import { api, utils } from '../../utils/api';
 
@@ -167,6 +168,13 @@ export default function ProfileUpdate({ user, setUser }) {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleDateChange = (date) => {
+    setFormData(prev => ({
+      ...prev,
+      date_of_birth: date ? date.toISOString().split('T')[0] : ''
     }));
   };
 
@@ -530,23 +538,18 @@ export default function ProfileUpdate({ user, setUser }) {
 
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div>
-                    <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700 mb-2">
                       {t('dateOfBirth')}
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="date"
-                        name="date_of_birth"
-                        id="date_of_birth"
-                        readOnly={!isEditMode}
-                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                        value={formData.date_of_birth}
-                        onChange={handleInputChange}
-                      />
-                    </div>
+                    <DatePickerWithDropdowns
+                      value={formData.date_of_birth ? new Date(formData.date_of_birth) : null}
+                      onChange={handleDateChange}
+                      placeholder={t('selectDateOfBirth', 'Select date of birth')}
+                      disabled={!isEditMode}
+                      fromYear={1960}
+                      toYear={new Date().getFullYear()}
+                      className={`transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
+                    />
                   </div>
 
                   <div>

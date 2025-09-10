@@ -1,10 +1,8 @@
-import React from 'react';
-
 const Badge = ({ 
   children, 
   color = 'blue', 
   size = 'sm', 
-  variant = 'filled',
+  variant = 'outline',
   className = '',
   ...props 
 }) => {
@@ -45,12 +43,12 @@ const Badge = ({
 
   const sizeClasses = {
     xs: 'px-2 py-0.5 text-xs',
-    sm: 'px-2.5 py-0.5 text-xs',
+    sm: 'px-3 py-0.5 text-xs',
     md: 'px-3 py-1 text-sm',
     lg: 'px-3 py-1.5 text-sm'
   };
 
-  const baseClasses = 'inline-flex items-center font-medium rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const baseClasses = 'inline-flex items-center pt-1 font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
   
   const colorClass = colorClasses[color]?.[variant] || colorClasses.blue.filled;
   const sizeClass = sizeClasses[size] || sizeClasses.sm;

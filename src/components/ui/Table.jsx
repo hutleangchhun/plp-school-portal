@@ -47,7 +47,7 @@ const Table = ({
               <th
                 key={column.key || index}
                 scope="col"
-                className={`px-3 sm:px-6 py-3 text-left bg-blue-50 text-sm font-semibold text-gray-700 uppercase tracking-wider ${
+                className={`px-3 sm:px-6 py-3 text-left bg-blue-50 text-sm text-gray-700 font-bold capitalize ${
                   column.headerClassName || ''
                 } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
               >

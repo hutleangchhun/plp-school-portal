@@ -793,23 +793,32 @@ export default function StudentsManagement() {
       key: 'username',
       header: t('username', 'Username'),
       accessor: 'username',
-      cellClassName: 'text-xs sm:text-sm text-gray-500',
+      cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (student) => (
-        <Badge color='blue'>{student.username || 'N/A'}</Badge>
+        <p>{student.username || 'N/A'}</p>
+      )
+    },
+    {
+      key: 'className',
+      header: t('class', 'Class'),
+      accessor: 'className',
+      cellClassName: 'text-xs sm:text-sm text-gray-700',
+      responsive: 'hidden lg:table-cell',
+      render: (student) => (
+        <p>{student?.class?.name || 'N/A'}</p>
       )
     },
     {
       key: 'status',
       header: t('status', 'Status'),
       render: (student) => (
-        <span className={`px-1.5 sm:px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-          student.isActive 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-gray-100 text-gray-800'
-        }`}>
+        <Badge 
+          color={student.isActive ? 'green' : 'gray'}
+          variant="filled"
+        >
           {student.isActive ? t('active', 'Active') : t('inactive', 'Inactive')}
-        </span>
+        </Badge>
       )
     },
     {
@@ -894,13 +903,13 @@ export default function StudentsManagement() {
       </div>
       <div className="flex justify-between items-center text-xs text-gray-500">
         <span>{t('phone', 'Phone')}: {student.phone || 'N/A'}</span>
-        <span className={`px-2 py-1 text-xs leading-5 font-semibold rounded-full ${
-          student.isActive 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-gray-100 text-gray-800'
-        }`}>
+        <Badge 
+          color={student.isActive ? 'green' : 'gray'}
+          variant="filled"
+          size="xs"
+        >
           {student.isActive ? t('active', 'Active') : t('inactive', 'Inactive')}
-        </span>
+        </Badge>
       </div>
     </>
   );
