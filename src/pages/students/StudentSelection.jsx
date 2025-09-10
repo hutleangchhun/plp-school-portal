@@ -17,7 +17,6 @@ const StudentSelection = () => {
   const { t } = useLanguage();
   const { showError, showSuccess } = useToast();
   
-  const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -60,21 +59,21 @@ const StudentSelection = () => {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, pagination.limit, debouncedSearch, filters.classId, filters.status]);
+  }, [pagination.page, pagination.limit, debouncedSearch, filters.status]);
 
   // Move the fetchData function inside the component and wrap it in useCallback
   const fetchData = useCallback(async () => {
     try {
       setListLoading(true);
       
-      // Fetch students with roleId 9 (students)
+      // Fetch students with roleId 9 (students) - only those without a class (classId=null)
       const studentsResponse = await studentService.getStudents({
         roleId: 9,
         status: filters.status,
         page: pagination.page,
         limit: pagination.limit,
         search: debouncedSearch,
-        classId: filters.classId
+        classId: 'null' // Get students that have no class assigned
       });
       
       if (studentsResponse && studentsResponse.data) {
@@ -94,7 +93,7 @@ const StudentSelection = () => {
     } finally {
       setListLoading(false);
     }
-  }, [filters.status, filters.classId, debouncedSearch, pagination.page, pagination.limit, showError, t]);
+  }, [filters.status, debouncedSearch, pagination.page, pagination.limit, showError, t]);
 
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -127,15 +126,6 @@ const StudentSelection = () => {
       }
     });
   };
-
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      setSelectedStudents(students.map(student => student.id));
-    } else {
-      setSelectedStudents([]);
-    }
-  };
-
 
   const handleAssignToClass = async () => {
     if (!selectedClass || selectedStudents.length === 0) {

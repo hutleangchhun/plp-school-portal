@@ -495,8 +495,10 @@ export default function StudentsManagement() {
         setShowDeleteDialog(false);
         // Clear the selected student
         setSelectedStudent(null);
-        // Refresh the student list
-        await fetchStudents();
+        // Refresh the student list after a brief delay
+        setTimeout(async () => {
+          await fetchStudents(searchTerm, true);
+        }, 500);
         // Clear any selected student IDs
         setSelectedStudentIds(new Set());
       } else {
@@ -512,10 +514,11 @@ export default function StudentsManagement() {
 
   // Handle bulk delete students (remove from class)
   const handleBulkDeleteStudents = async () => {
-    if (selectedStudentIds.size === 0 || !classInfo) return;
+    if (selectedStudentIds.size === 0) return;
     
-    console.log('Class Info:', classInfo);
     console.log('Selected Student User IDs:', Array.from(selectedStudentIds));
+    console.log('Selected Class ID:', selectedClassId);
+    console.log('Class Info:', classInfo);
     
     try {
       setLoading(true);
@@ -542,41 +545,109 @@ export default function StudentsManagement() {
       if (studentsToRemove.length === 0) {
         throw new Error('No matching students found for the selected IDs');
       }
-      
-      // Extract the student IDs to remove
-      const studentIdsToRemove = studentsToRemove.map(student => {
-        const id = student.id; // Use the id field which contains the numeric studentId
-        console.log(`=== DELETION DEBUG ===`);
-        console.log(`Student object:`, student);
-        console.log(`Student.id: ${student.id} (type: ${typeof student.id})`);
-        console.log(`Student.studentId: ${student.studentId} (type: ${typeof student.studentId})`);
-        console.log(`Using ID: ${id} for deletion`);
-        console.log(`=== END DELETION DEBUG ===`);
-        return id;
-      }).filter(Boolean);
-      
-      console.log('Final Student IDs to remove:', studentIdsToRemove);
-      
-      if (studentIdsToRemove.length === 0) {
-        throw new Error('No valid student IDs found for removal');
-      }
-      
-      // Call the service to remove students using student IDs
-      const response = await studentService.removeStudentsFromClass(
-        classInfo.classId, 
-        studentIdsToRemove
-      );
-      
-      console.log('Remove students response:', response);
-      
-      if (response && response.success) {
-        showSuccess(t('studentsRemovedSuccess', `${studentIdsToRemove.length} students removed successfully`));
-        setShowBulkDeleteDialog(false);
-        setSelectedStudentIds(new Set()); // Clear selection
-        await fetchStudents(); // Refresh the list
+
+      if (selectedClassId === 'all') {
+        // When viewing "all" classes, group students by their class and remove them individually
+        const studentsByClass = new Map();
+        
+        studentsToRemove.forEach(student => {
+          // Get the student's class ID from their data
+          const studentClassId = student.classId || student.class_id || 
+            (student.class && student.class.classId) || (student.class && student.class.id);
+          
+          if (!studentClassId) {
+            console.warn('Student has no class ID, skipping:', student);
+            return;
+          }
+          
+          if (!studentsByClass.has(studentClassId)) {
+            studentsByClass.set(studentClassId, []);
+          }
+          studentsByClass.get(studentClassId).push(student.id);
+        });
+
+        console.log('Students grouped by class:', Object.fromEntries(studentsByClass));
+
+        // Remove students from each class
+        let totalRemoved = 0;
+        const results = [];
+        
+        for (const [classId, studentIds] of studentsByClass) {
+          try {
+            console.log(`Removing ${studentIds.length} students from class ${classId}`);
+            const response = await studentService.removeStudentsFromClass(classId, studentIds);
+            console.log(`Remove response for class ${classId}:`, response);
+            
+            if (response && response.success) {
+              totalRemoved += studentIds.length;
+              results.push({ classId, success: true, count: studentIds.length });
+            } else {
+              results.push({ classId, success: false, error: response?.error || 'Unknown error' });
+            }
+          } catch (error) {
+            console.error(`Error removing students from class ${classId}:`, error);
+            results.push({ classId, success: false, error: error.message });
+          }
+        }
+
+        // Show results
+        if (totalRemoved > 0) {
+          showSuccess(t('studentsRemovedSuccess', `${totalRemoved} students removed successfully`));
+        }
+        
+        const failedResults = results.filter(r => !r.success);
+        if (failedResults.length > 0) {
+          console.error('Some removals failed:', failedResults);
+          showError(t('someStudentsNotRemoved', `Some students could not be removed. Check console for details.`));
+        }
+
       } else {
-        throw new Error(response?.error || 'Failed to remove students');
+        // Single class removal (existing logic)
+        if (!classInfo) {
+          throw new Error('No class information available');
+        }
+        
+        // Extract the student IDs to remove
+        const studentIdsToRemove = studentsToRemove.map(student => {
+          const id = student.id; // Use the id field which contains the numeric studentId
+          console.log(`=== DELETION DEBUG ===`);
+          console.log(`Student object:`, student);
+          console.log(`Student.id: ${student.id} (type: ${typeof student.id})`);
+          console.log(`Student.studentId: ${student.studentId} (type: ${typeof student.studentId})`);
+          console.log(`Using ID: ${id} for deletion`);
+          console.log(`=== END DELETION DEBUG ===`);
+          return id;
+        }).filter(Boolean);
+        
+        console.log('Final Student IDs to remove:', studentIdsToRemove);
+        
+        if (studentIdsToRemove.length === 0) {
+          throw new Error('No valid student IDs found for removal');
+        }
+        
+        // Call the service to remove students using student IDs
+        const response = await studentService.removeStudentsFromClass(
+          classInfo.classId, 
+          studentIdsToRemove
+        );
+        
+        console.log('Remove students response:', response);
+        
+        if (response && response.success) {
+          showSuccess(t('studentsRemovedSuccess', `${studentIdsToRemove.length} students removed successfully`));
+        } else {
+          throw new Error(response?.error || 'Failed to remove students');
+        }
       }
+      
+      // Clean up and refresh
+      setShowBulkDeleteDialog(false);
+      setSelectedStudentIds(new Set()); // Clear selection
+      // Refresh the student list after a brief delay
+      setTimeout(async () => {
+        await fetchStudents(searchTerm, true);
+      }, 500);
+      
     } catch (error) {
       console.error('Error removing students:', error);
       showError(t('failedRemoveStudents', 'Failed to remove students: ') + (error.message || 'Unknown error'));

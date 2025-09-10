@@ -14,10 +14,11 @@ export const studentService = {
    * @param {string} [params.search=''] - Search term for filtering students
    * @param {boolean|string} [params.status=true] - Filter by active status (accepts 'active', 'inactive', or boolean)
    * @param {number} [params.roleId=9] - Role ID for students (default: 9)
+   * @param {string|number|null} [params.classId] - Filter by class ID, use 'null' string to get students without a class
    * @returns {Promise<Object>} Response with student data and pagination info
    */
   async getStudents(params = {}) {
-    const { page = 1, limit = 10, search = '', status = true, roleId = 9 } = params;
+    const { page = 1, limit = 10, search = '', status = true, roleId = 9, classId } = params;
 
     // Normalize status: accept 'active' | 'inactive' | '' | boolean
     let normalizedStatus = status;
@@ -36,9 +37,10 @@ export const studentService = {
       roleId
     };
     if (normalizedStatus !== undefined) queryParams.status = normalizedStatus;
+    if (classId !== undefined) queryParams.classId = classId;
 
     const response = await handleApiResponse(() =>
-      apiClient_.get(`${ENDPOINTS.USERS.BASE}/filter`, { params: queryParams })
+      apiClient_.get(`${ENDPOINTS.STUDENTS.BASE}`, { params: queryParams })
     );
 
     // Robustly extract data and pagination from various response shapes
@@ -179,12 +181,16 @@ export const studentService = {
         throw new Error('No valid student IDs provided');
       }
       
-      // Prepare request data in the format expected by the API
-      // API always expects studentIds to be an array
+      // Prepare request body based on number of students (matching addStudentsToClass format)
       const requestData = {
-        classId: Number(classId),
-        studentIds: numericUserIds
+        classId: Number(classId)
       };
+      
+      if (numericUserIds.length === 1) {
+        requestData.studentId = numericUserIds[0];
+      } else {
+        requestData.studentIds = numericUserIds;
+      }
       
       console.log('Sending delete request with data:', requestData);
       
