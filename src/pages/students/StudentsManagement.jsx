@@ -7,7 +7,6 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
 import Dropdown from '../../components/ui/Dropdown';
 import { studentService } from '../../utils/api/services/studentService';
-import { classService } from '../../utils/api/services/classService';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
@@ -64,7 +63,7 @@ export default function StudentsManagement() {
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
   
-  // Initialize classes using direct class API for accurate data
+  // Initialize classes using local user data and derive from student data
   const initializeClasses = useCallback(async () => {
     // Avoid re-initializing if classes are already loaded
     if (classes.length > 0) {
@@ -72,58 +71,14 @@ export default function StudentsManagement() {
       return;
     }
     
-    console.log('=== FETCHING CLASSES FROM API ===');
-    
-    try {
-      // Use direct class API to get accurate class data with correct academic years
-      const response = await classService.getMyClasses();
-      console.log('Classes API response:', response);
-      
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-        const teacherClasses = response.data.map(cls => ({
-          classId: cls.classId,
-          name: cls.name,
-          gradeLevel: cls.gradeLevel,
-          section: cls.section,
-          academicYear: cls.academicYear, // Direct from API - no hardcoding!
-          teacherId: cls.teacherId,
-          maxStudents: cls.maxStudents,
-          status: cls.status
-        }));
-        
-        console.log(`Successfully loaded ${teacherClasses.length} classes with correct academic years:`, teacherClasses);
-        
-        setClasses(teacherClasses);
-        // Only set to 'all' if no selection exists yet
-        if (!selectedClassId || selectedClassId === '') {
-          setSelectedClassId('all');
-        }
-        
-        // Extract unique grade levels
-        const grades = [...new Set(teacherClasses.map(cls => cls.gradeLevel))];
-        setAvailableGrades(grades);
-        console.log('Available grades:', grades);
-        return;
-      }
-      
-      console.log('No classes found from API - trying fallback');
-    } catch (error) {
-      console.error('Error fetching classes from API:', error);
-    }
-    
-    // Fallback to original logic
-    console.log('=== FALLBACK TO USER DATA DEBUG ===');
+    console.log('=== INITIALIZING CLASSES FROM LOCAL DATA ===');
     console.log('Current user object:', user);
     console.log('User classIds:', user?.classIds);
     console.log('User classNames:', user?.classNames);
-    console.log('User gradeLevels:', user?.gradeLevels);
-    console.log('User academicYear:', user?.academicYear);
-    console.log('User academicYears:', user?.academicYears);
-    console.log('=== END USER DATA DEBUG ===');
     
     if (!user || !user.classIds || !user.classNames) {
-      console.log('No user data or classes found in authentication');
-      // Try to fetch directly from API as fallback
+      console.log('No user data or classes found in authentication - deriving from student data');
+      // Try to derive classes from student data without using class routes
       try {
         const response = await studentService.getMyStudents({});
         if (response.success && response.data && response.data.length > 0) {
@@ -163,25 +118,17 @@ export default function StudentsManagement() {
           }
           return;
         } else {
-          // If no student data, create fallback classes based on your route info
-          console.log('No student data found, using fallback classes');
-          const fallbackClasses = [
-            { classId: 20, name: 'Class 20', gradeLevel: 'Unknown', section: 'A', academicYear: '2024-2025' },
-            { classId: 21, name: 'Class 21', gradeLevel: 'Unknown', section: 'A', academicYear: '2024-2025' }
-          ];
-          setClasses(fallbackClasses);
+          console.log('No student data found - using empty classes');
+          setClasses([]);
+          setSelectedClassId('all');
           return;
         }
       } catch (error) {
         console.error('Failed to extract classes from student data:', error);
-      }
-      
-      setClasses([]);
-      // Only reset if no selection exists yet
-      if (!selectedClassId || selectedClassId === '') {
+        setClasses([]);
         setSelectedClassId('all');
+        return;
       }
-      return;
     }
 
     // SECURITY: Use only the classes from authenticated user token
@@ -215,7 +162,7 @@ export default function StudentsManagement() {
     console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes:`, 
       teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
     console.log('Available grades:', grades);
-  }, [user]);
+  }, [user, classes.length, selectedClassId]);
 
   // Fetch students with pagination and filters (SECURE: only teacher's own students)
   const fetchStudents = useCallback(async (search = searchTerm, force = false) => {
@@ -459,7 +406,25 @@ export default function StudentsManagement() {
   
   // Handle delete student (remove from class)
   const handleDeleteStudent = async () => {
-    if (!selectedStudent || !classInfo) return;
+    if (!selectedStudent) return;
+    
+    // Get class info from selected student when viewing "all classes"
+    const studentClassInfo = classInfo || (() => {
+      const studentClassId = selectedStudent.classId || selectedStudent.class_id || 
+        (selectedStudent.class && selectedStudent.class.classId) || (selectedStudent.class && selectedStudent.class.id);
+      
+      if (!studentClassId) {
+        showError(t('studentHasNoClass', 'Student has no class assigned'));
+        return null;
+      }
+      
+      return classes.find(c => c.classId === studentClassId || c.classId === Number(studentClassId));
+    })();
+    
+    if (!studentClassInfo) {
+      showError(t('cannotFindStudentClass', 'Cannot determine student\'s class'));
+      return;
+    }
     
     try {
       setLoading(true);
@@ -482,12 +447,12 @@ export default function StudentsManagement() {
       }
       
       console.log('Calling removeStudentFromClass with:', {
-        classId: classInfo.classId,
+        classId: studentClassInfo.classId,
         studentId: numericStudentId,
         studentData: selectedStudent // Log full student data for debugging
       });
       
-      const response = await studentService.removeStudentFromClass(classInfo.classId, numericStudentId);
+      const response = await studentService.removeStudentFromClass(studentClassInfo.classId, numericStudentId);
       console.log('Remove student response:', response);
       
       if (response && response.success) {

@@ -12,15 +12,15 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0', // Listen on all network interfaces
-    port: 3000, // Default port is 5173, change if needed
-    strictPort: true, // Don't try to use other ports if 3000 is in use
+    port: 3001, // Use port 3001
+    strictPort: false, // Allow fallback to other ports if 3001 is in use
     open: false, // Don't open browser automatically
     hmr: {
-      clientPort: 3000, // Important for HMR to work on network
+      clientPort: 3001, // Important for HMR to work on network
     },
   },
   preview: {
     host: true,
-    port: 3000,
+    port: 3001,
   },
 })

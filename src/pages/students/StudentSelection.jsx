@@ -4,7 +4,6 @@ import { Search, User, X, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import studentService from '../../utils/api/services/studentService';
-import classService from '../../utils/api/services/classService';
 import { Button } from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -16,6 +15,17 @@ const StudentSelection = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { showError, showSuccess } = useToast();
+  
+  // Get authenticated user data
+  const [user] = useState(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return null;
+    }
+  });
   
   const [students, setStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
@@ -43,17 +53,36 @@ const StudentSelection = () => {
     return () => clearTimeout(id);
   }, [filters.search]);
 
-  // Fetch classes once on mount
+  // Initialize classes using local user data
   useEffect(() => {
-    (async () => {
-      try {
-        const classesResponse = await classService.getMyClasses();
-        if (classesResponse.data) setClasses(classesResponse.data);
-      } catch (e) {
-        console.error('Error fetching classes:', e);
-      }
-    })();
-  }, []);
+    if (!user || !user.classIds || !user.classNames) {
+      console.log('No user data or classes found in authentication');
+      setClasses([]);
+      return;
+    }
+
+    // SECURITY: Use only the classes from authenticated user token
+    const teacherClasses = user.classIds.map((classId, index) => {
+      // Try to get academic year from user data or default to current
+      const academicYear = (user.academicYears && user.academicYears[index]) || 
+                          user.academicYear || 
+                          new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
+      
+      return {
+        id: classId,
+        classId: classId,
+        name: user.classNames[index] || `Class ${classId}`,
+        gradeLevel: user.gradeLevels ? user.gradeLevels[index] : 'Unknown',
+        section: 'A', // Default section, could be enhanced if available in auth data
+        academicYear: academicYear,
+        teacherId: user.teacherId
+      };
+    });
+
+    setClasses(teacherClasses);
+    console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes for student selection:`, 
+      teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
+  }, [user]);
 
   // Fetch students when pagination or filters change (using debounced search)
   useEffect(() => {
