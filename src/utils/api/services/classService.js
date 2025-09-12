@@ -122,29 +122,76 @@ export const classService = {
     }
   },
 
-  async getMasterClasses() {
+  /**
+   * Get master classes/students from a specific school
+   * @param {string|number} schoolId - The ID of the school
+   * @param {Object} params - Query parameters for pagination and filtering
+   * @param {number} [params.page=1] - Page number
+   * @param {number} [params.limit=10] - Number of items per page
+   * @param {string} [params.search=''] - Search term
+   * @returns {Promise<Object>} Response with students from all classes in the school
+   */
+  async getMasterClasses(schoolId, params = {}) {
     try {
+      if (!schoolId) {
+        throw new Error('School ID is required for master classes endpoint');
+      }
+
+      const { 
+        page = 1, 
+        limit = 10, 
+        search = ''
+      } = params;
+
+      // Build query params for the master-class endpoint
+      const queryParams = {
+        page,
+        limit
+      };
+
+      // Add search parameter if provided
+      if (search.trim()) {
+        queryParams.search = search.trim();
+      }
+
       const response = await handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.CLASSES.MASTER)
+        apiClient_.get(ENDPOINTS.CLASSES.MASTER(schoolId), { params: queryParams })
       );
       
-      console.log('Raw master classes API response:', response);
+      console.log('Raw master classes API response for school', schoolId, 'with params', queryParams, ':', response);
       
-      if (response.data && Array.isArray(response.data)) {
-        const formattedData = response.data.map(cls => {
-          console.log('Raw master class before formatting:', cls);
-          const formatted = classService.utils.formatClassData(cls);
-          console.log('Formatted master class:', formatted);
-          return formatted;
-        });
-        
+      // Handle the nested response structure from the master-class endpoint
+      // Response structure: { success: true, data: { data: [...students], total: 61, page: 1, limit: 10 } }
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
         return {
-          data: formattedData,
+          success: true,
+          data: response.data.data, // Extract the actual students array
+          total: response.data.total || response.data.data.length,
+          pagination: {
+            page: response.data.page || 1,
+            limit: response.data.limit || 10,
+            total: response.data.total || response.data.data.length,
+            pages: response.data.totalPages || Math.ceil((response.data.total || response.data.data.length) / (response.data.limit || 10))
+          }
         };
       }
-      return { data: [] };
+      
+      // Fallback for direct array response
+      if (response.data && Array.isArray(response.data)) {
+        return {
+          success: true,
+          data: response.data,
+          total: response.data.length
+        };
+      }
+      
+      return { 
+        success: true,
+        data: [], 
+        total: 0 
+      };
     } catch (error) {
-      console.error('Error fetching master classes:', error);
+      console.error('Error fetching master classes for school', schoolId, 'with params', params, ':', error);
       throw error;
     }
   },

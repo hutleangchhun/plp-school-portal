@@ -4,6 +4,8 @@ import { Search, User, X, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import studentService from '../../utils/api/services/studentService';
+import classService from '../../utils/api/services/classService';
+import { userService } from '../../utils/api/services/userService';
 import { Button } from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -35,6 +37,7 @@ const StudentSelection = () => {
   const [students, setStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [schoolId, setSchoolId] = useState(null);
   const [listLoading, setListLoading] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pagination, setPagination] = useState({
@@ -44,9 +47,7 @@ const StudentSelection = () => {
     pages: 1
   });
   const [filters, setFilters] = useState({
-    search: '',
-    classId: '',
-    status: 'active'
+    search: ''
   });
   const [selectedClass, setSelectedClass] = useState('');
   const [showClassModal, setShowClassModal] = useState(false);
@@ -59,61 +60,144 @@ const StudentSelection = () => {
   }, [filters.search]);
 
 
-  // Initialize classes using local user data
+  // Initialize classes using local user data and fetch complete details including maxStudents
   useEffect(() => {
-    if (!user || !user.classIds || !user.classNames) {
-      console.log('No user data or classes found in authentication');
-      setClasses([]);
-      return;
-    }
+    const fetchClassDetails = async () => {
+      if (!user || !user.classIds || !user.classNames) {
+        console.log('No user data or classes found in authentication');
+        setClasses([]);
+        return;
+      }
 
-    // SECURITY: Use only the classes from authenticated user token
-    const teacherClasses = user.classIds.map((classId, index) => {
-      // Try to get academic year from user data or default to current
-      const academicYear = (user.academicYears && user.academicYears[index]) || 
-                          user.academicYear || 
-                          new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
-      
-      return {
-        id: classId,
-        classId: classId,
-        name: user.classNames[index] || `Class ${classId}`,
-        gradeLevel: user.gradeLevels ? user.gradeLevels[index] : 'Unknown',
-        section: 'A', // Default section, could be enhanced if available in auth data
-        academicYear: academicYear,
-        teacherId: user.teacherId
-      };
-    });
+      try {
+        // Fetch complete class details including maxStudents (following ClassesManagement pattern)
+        const classDetailsPromises = user.classIds.map(classId => 
+          classService.getClassById(classId).catch(error => {
+            console.error(`Error fetching details for class ${classId}:`, error);
+            return null;
+          })
+        );
 
-    setClasses(teacherClasses);
-    console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes for student selection:`, 
-      teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
+        const classDetails = await Promise.all(classDetailsPromises);
+
+        // Create classes with complete information including maxStudents
+        const teacherClasses = classDetails.map((classDetail, index) => {
+          if (!classDetail) return null;
+
+          const classId = user.classIds[index];
+          const className = user.classNames[index] || `Class ${classId}`;
+          const gradeLevel = user.gradeLevels ? user.gradeLevels[index] : 'Unknown';
+          const maxStudents = classDetail.maxStudents || 50; // Default to 50 if not provided
+
+          // Try to get academic year from user data or default to current
+          const academicYear = (user.academicYears && user.academicYears[index]) || 
+                              user.academicYear || 
+                              new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
+
+          return {
+            id: classId,
+            classId: classId,
+            name: className,
+            gradeLevel: gradeLevel,
+            section: classDetail.section || 'A',
+            academicYear: academicYear,
+            teacherId: user.teacherId,
+            maxStudents: maxStudents, // Include maxStudents for capacity checking
+            capacity: maxStudents // Also add capacity for consistency
+          };
+        }).filter(cls => cls !== null);
+
+        setClasses(teacherClasses);
+        console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes for student selection with maxStudents:`, 
+          teacherClasses.map(c => `${c.name} (ID: ${c.classId}, Max: ${c.maxStudents})`));
+      } catch (error) {
+        console.error('Error fetching class details:', error);
+        // Fallback to basic class info without maxStudents
+        const basicClasses = user.classIds.map((classId, index) => ({
+          id: classId,
+          classId: classId,
+          name: user.classNames[index] || `Class ${classId}`,
+          gradeLevel: user.gradeLevels ? user.gradeLevels[index] : 'Unknown',
+          section: 'A',
+          academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+          teacherId: user.teacherId,
+          maxStudents: 50, // Default fallback
+          capacity: 50
+        }));
+        setClasses(basicClasses);
+      }
+    };
+
+    fetchClassDetails();
   }, [user]);
 
-  // Fetch students when pagination or filters change (using debounced search)
+  // Fetch current user's school ID from my-account endpoint
+  const fetchSchoolId = useCallback(async () => {
+    try {
+      if (schoolId) {
+        console.log('School ID already available:', schoolId);
+        return;
+      }
+
+      console.log('Fetching school ID from my-account endpoint...');
+      const accountData = await userService.getMyAccount();
+      
+      if (accountData && accountData.school_id) {
+        console.log('School ID fetched:', accountData.school_id);
+        setSchoolId(accountData.school_id);
+      } else {
+        console.error('No school_id found in account data:', accountData);
+        showError(t('noSchoolIdFound', 'No school ID found for your account'));
+      }
+    } catch (error) {
+      console.error('Error fetching school ID:', error);
+      showError(t('failedToFetchSchoolId', 'Failed to fetch school information'));
+    }
+  }, [schoolId, showError, t]);
+
+  // Fetch school ID when component mounts
   useEffect(() => {
-    fetchData();
+    fetchSchoolId();
+  }, [fetchSchoolId]);
+
+  // Fetch students when pagination or search changes (using debounced search)
+  useEffect(() => {
+    if (schoolId) {
+      fetchData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, pagination.limit, debouncedSearch, filters.status]);
+  }, [pagination.page, pagination.limit, debouncedSearch, schoolId]);
 
   // Move the fetchData function inside the component and wrap it in useCallback
   const fetchData = useCallback(async () => {
     try {
+      if (!schoolId) {
+        console.log('No school ID available, cannot fetch students');
+        return;
+      }
+
       setListLoading(true);
       
-      // Fetch students with roleId 9 (students) - only those without a class (classId=null)
-      const studentsResponse = await studentService.getStudents({
-        roleId: 9,
-        status: filters.status,
-        page: pagination.page,
-        limit: pagination.limit,
+      console.log('=== STUDENT SELECTION FETCH DEBUG ===');
+      console.log('School ID:', schoolId);
+      console.log('Search term:', debouncedSearch);
+      console.log('Pagination:', pagination);
+      
+      // Use the master-class endpoint to get all students from the school with search only
+      const studentsResponse = await studentService.getStudentsBySchool(schoolId, {
         search: debouncedSearch,
-        classId: 'null' // Get students that have no class assigned
+        page: pagination.page,
+        limit: pagination.limit
       });
       
-      if (studentsResponse && studentsResponse.data) {
+      console.log('Master-class response:', studentsResponse);
+      
+      if (studentsResponse && studentsResponse.success && studentsResponse.data) {
+        // For student selection, we might want to show all students or filter by some criteria
+        // The user can then choose which students to assign to which classes
         setStudents(studentsResponse.data);
-        console.log('Students:', studentsResponse);
+        console.log(`Loaded ${studentsResponse.data.length} students from school ${schoolId} for selection`);
+        
         if (studentsResponse.pagination) {
           console.log('Pagination data:', studentsResponse.pagination);
           setPagination(prev => ({
@@ -121,14 +205,18 @@ const StudentSelection = () => {
             ...studentsResponse.pagination
           }));
         }
+      } else {
+        console.error('Invalid response from master-class endpoint:', studentsResponse);
+        setStudents([]);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
-      showError(t('errorFetchingData') || 'កំហុសក្នុងការទាញយកទិន្នន័យ');
+      console.error('Error fetching student data from master-class:', error);
+      showError(error.message || t('errorFetchingData') || 'កំហុសក្នុងការទាញយកទិន្នន័យ');
+      setStudents([]);
     } finally {
       setListLoading(false);
     }
-  }, [filters.status, debouncedSearch, pagination.page, pagination.limit, showError, t]);
+  }, [schoolId, debouncedSearch, pagination.page, pagination.limit, showError, t]);
 
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -173,14 +261,40 @@ const StudentSelection = () => {
       
       // Convert selectedClass to number for API call
       const classId = parseInt(selectedClass);
-      await studentService.addStudentsToClass(classId, selectedStudents);
       
-      // Show success message - compare both string and number versions
-      const selectedClassName = classes.find(cls => 
+      // Find the selected class details to check capacity
+      const selectedClassData = classes.find(cls => 
         cls.id === classId || cls.id === selectedClass || 
         cls.id.toString() === selectedClass
-      )?.name || 'Unknown Class';
+      );
       
+      if (selectedClassData && selectedClassData.maxStudents) {
+        // Get current enrollment count for this class
+        try {
+          const currentStudentsResponse = await studentService.getMyStudents({ classId: classId });
+          const currentEnrollment = currentStudentsResponse?.data?.length || 0;
+          const maxStudents = selectedClassData.maxStudents;
+          const remainingCapacity = maxStudents - currentEnrollment;
+          
+          console.log(`Class capacity check: ${currentEnrollment}/${maxStudents} (${remainingCapacity} remaining)`);
+          
+          // Check if adding selected students would exceed capacity
+          if (selectedStudents.length > remainingCapacity) {
+            showError(
+              t('classCapacityExceeded') || 
+              `Cannot assign ${selectedStudents.length} students. Class "${selectedClassData.name}" has only ${remainingCapacity} spots remaining (${currentEnrollment}/${maxStudents} currently enrolled).`
+            );
+            return;
+          }
+        } catch (error) {
+          console.warn('Could not check current enrollment, proceeding with assignment:', error);
+        }
+      }
+      
+      await studentService.addStudentsToClass(classId, selectedStudents);
+      
+      // Show success message
+      const selectedClassName = selectedClassData?.name || 'Unknown Class';
       showSuccess(`${selectedStudents.length} student(s) assigned to ${selectedClassName} successfully`);
       
       // Reset selections and close modal
@@ -237,9 +351,9 @@ const StudentSelection = () => {
             />
           </div>
           
-          <div className="flex space-x-2">
+          <div className="flex justify-end">
             <Button
-              onClick={() => handleFilterChange({ search: '', classId: '', status: 'active' })}
+              onClick={() => handleFilterChange({ search: '' })}
               variant="outline"
               size="sm"
             >
@@ -387,7 +501,7 @@ const StudentSelection = () => {
                             key={cls.id} 
                             value={cls.id.toString()}
                           >
-                            {cls.name} - {cls.gradeLevel}
+                            {cls.name} - Grade {cls.gradeLevel} (Max: {cls.maxStudents || 50})
                           </SelectItem>
                         ))}
                       </SelectContent>

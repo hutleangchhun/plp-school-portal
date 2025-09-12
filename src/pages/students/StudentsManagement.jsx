@@ -7,6 +7,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
 import Dropdown from '../../components/ui/Dropdown';
 import { studentService } from '../../utils/api/services/studentService';
+import { userService } from '../../utils/api/services/userService';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
@@ -36,6 +37,9 @@ export default function StudentsManagement() {
       return null;
     }
   });
+  
+  // State for current user's school ID (fetched from my-account endpoint)
+  const [schoolId, setSchoolId] = useState(null);
   
   // State for students list and pagination
   const [students, setStudents] = useState([]);
@@ -80,7 +84,18 @@ export default function StudentsManagement() {
       console.log('No user data or classes found in authentication - deriving from student data');
       // Try to derive classes from student data without using class routes
       try {
-        const response = await studentService.getMyStudents({});
+        // Use master-class endpoint to derive classes if schoolId is available
+        if (!schoolId) {
+          await fetchSchoolId();
+          if (!schoolId) {
+            console.log('No school ID available for class derivation');
+            setClasses([]);
+            setSelectedClassId('all');
+            return;
+          }
+        }
+        
+        const response = await studentService.getStudentsBySchool(schoolId, {});
         if (response.success && response.data && response.data.length > 0) {
           // Extract unique classes from student data
           const classMap = new Map();
@@ -164,13 +179,45 @@ export default function StudentsManagement() {
     console.log('Available grades:', grades);
   }, [user, classes.length, selectedClassId]);
 
-  // Fetch students with pagination and filters (SECURE: only teacher's own students)
+  // Fetch current user's school ID from my-account endpoint
+  const fetchSchoolId = useCallback(async () => {
+    try {
+      if (schoolId) {
+        console.log('School ID already available:', schoolId);
+        return;
+      }
+
+      console.log('Fetching school ID from my-account endpoint...');
+      const accountData = await userService.getMyAccount();
+      
+      if (accountData && accountData.school_id) {
+        console.log('School ID fetched:', accountData.school_id);
+        setSchoolId(accountData.school_id);
+      } else {
+        console.error('No school_id found in account data:', accountData);
+        showError(t('noSchoolIdFound', 'No school ID found for your account'));
+      }
+    } catch (error) {
+      console.error('Error fetching school ID:', error);
+      showError(t('failedToFetchSchoolId', 'Failed to fetch school information'));
+    }
+  }, [schoolId, showError, t]);
+
+  // Fetch students with pagination and filters using master-class endpoint
   const fetchStudents = useCallback(async (search = searchTerm, force = false) => {
+    // Ensure we have a school ID before fetching students
+    if (!schoolId) {
+      console.log('No school ID available, attempting to fetch...');
+      await fetchSchoolId();
+      return;
+    }
+
     // Create a unique key for current fetch parameters
     const currentParams = JSON.stringify({
       search,
       selectedGrade,
       selectedClassId,
+      schoolId,
       userId: user?.userId
     });
     
@@ -184,100 +231,58 @@ export default function StudentsManagement() {
     try {
       setLoading(true);
       
-      // SECURITY: Use the my-students endpoint with classId filtering (secure)
-      let requestParams = {};
-      
-      console.log(`=== FETCH STUDENTS DEBUG ===`);
+      console.log(`=== FETCH STUDENTS DEBUG (MASTER-CLASS) ===`);
+      console.log(`School ID: ${schoolId}`);
       console.log(`Selected class ID: ${selectedClassId}`);
-      console.log(`User classIds:`, user?.classIds);
+      console.log(`Search term: ${search}`);
       
+      // Prepare parameters for the new getStudentsBySchool function
+      const requestParams = {
+        search: search || '',
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      
+      // Add class filter if specific class is selected
       if (selectedClassId !== 'all') {
-        // EXTRA SECURITY: Ensure the selected class ID is actually in the teacher's authorized classes
         const selectedClassIdInt = parseInt(selectedClassId);
-        console.log(`Checking if class ${selectedClassIdInt} is in authorized classes:`, user?.classIds);
         
-        // Only check authorization if user has proper class data
+        // SECURITY: Ensure the selected class ID is actually in the teacher's authorized classes
         if (user?.classIds && Array.isArray(user.classIds) && user.classIds.length > 0) {
           if (!user.classIds.includes(selectedClassIdInt)) {
             console.warn(`Teacher ${user?.username} attempted to access unauthorized class ID: ${selectedClassId}`);
             throw new Error('Unauthorized class access');
           }
-        } else {
-          console.log(`Skipping authorization check - user class data incomplete`);
         }
         
-        // Pass classId to API for server-side filtering
         requestParams.classId = selectedClassIdInt;
         console.log(`Filtering by class ${selectedClassIdInt}`);
       } else {
-        console.log(`Fetching ALL students (no class filter)`);
+        console.log(`Fetching ALL students from school ${schoolId}`);
       }
       
       console.log(`API request params:`, requestParams);
       console.log(`=== END FETCH STUDENTS DEBUG ===`);
       
+      // Use the new master-class endpoint via getStudentsBySchool
       const response = await studentService.getMyStudents(requestParams);
       
-      console.log('=== API RESPONSE DEBUG ===');
+      console.log('=== API RESPONSE DEBUG (MASTER-CLASS) ===');
       console.log('Full API response:', response);
       console.log('Response success:', response?.success);
-      console.log('Response data:', response?.data);
+      console.log('Response data length:', response?.data?.length);
       console.log('=== END API RESPONSE DEBUG ===');
       
-      if (!response || (!response.success && !response.data)) {
-        throw new Error('Failed to fetch students');
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch students from school');
       }
       
       let data = response.data || [];
       
-      console.log(`Fetched ${data.length} students for ${selectedClassId === 'all' ? 'all classes' : `class ${selectedClassId}`}`);
+      console.log(`Fetched ${data.length} students from school ${schoolId} for ${selectedClassId === 'all' ? 'all classes' : `class ${selectedClassId}`}`);
       
-      // ADDITIONAL CLIENT-SIDE SECURITY: Ensure all returned students belong to teacher's authorized classes
-      // Only do client-side filtering if we have proper user class data
-      if (user?.classIds && Array.isArray(user.classIds) && user.classIds.length > 0 && data.length > 0) {
-        const originalCount = data.length;
-        console.log(`=== CLIENT-SIDE AUTHORIZATION CHECK ===`);
-        console.log(`User authorized classIds:`, user.classIds);
-        console.log(`Checking ${data.length} students:`);
-        
-        data = data.filter((student, index) => {
-          const studentClassId = student.classId || student.class_id || (student.class && student.class.classId) || (student.class && student.class.id);
-          console.log(`Student ${index + 1}: classId=${studentClassId} (type: ${typeof studentClassId}), name="${student.firstName} ${student.lastName}"`);
-          console.log(`Student object:`, student);
-          
-          // Try both number and string comparison
-          const isAuthorized = user.classIds.includes(studentClassId) || 
-                              user.classIds.includes(Number(studentClassId)) || 
-                              user.classIds.includes(String(studentClassId));
-          
-          console.log(`Is authorized: ${isAuthorized}`);
-          
-          if (!isAuthorized) {
-            console.warn(`Filtering out unauthorized student with classId: ${studentClassId}`);
-          }
-          return isAuthorized;
-        });
-        
-        console.log(`=== END CLIENT-SIDE AUTHORIZATION CHECK ===`);
-        
-        if (data.length !== originalCount) {
-          console.warn(`Filtered out ${originalCount - data.length} unauthorized students`);
-        }
-      }
-      
-      // Filter by search term if provided (client-side filtering for now)
+      // Additional client-side filtering for grade level if specified
       let filteredData = data;
-      if (search && search.trim()) {
-        const searchLower = search.toLowerCase();
-        filteredData = data.filter(student => 
-          (student.firstName || '').toLowerCase().includes(searchLower) ||
-          (student.lastName || '').toLowerCase().includes(searchLower) ||
-          (student.email || '').toLowerCase().includes(searchLower) ||
-          (student.username || '').toLowerCase().includes(searchLower)
-        );
-      }
-      
-      // Filter by selected grade if not 'all'
       if (selectedGrade && selectedGrade !== 'all') {
         filteredData = filteredData.filter(student => {
           const studentGrade = student.gradeLevel || 
@@ -291,30 +296,53 @@ export default function StudentsManagement() {
         });
       }
       
-      console.log('Filtered students data:', filteredData);
-      console.log('=== MAIN LIST STUDENTS ===');
+      console.log('Final filtered students data:', filteredData);
+      console.log('=== MAIN LIST STUDENTS (MASTER-CLASS) ===');
       console.log(`Total students in main list: ${filteredData.length}`);
       filteredData.forEach(s => {
-        console.log(`Main list student: ID=${s.id}, Name="${s.firstName} ${s.lastName}"`)
+        console.log(`Main list student: ID=${s.id}, Name="${s.firstName} ${s.lastName}", Class=${s.class?.id || s.classId}`)
       });
       console.log('=== END MAIN LIST STUDENTS ===');
       
       setStudents(filteredData);
       
+      // Update pagination info
+      if (response.pagination) {
+        setPagination({
+          page: response.pagination.page,
+          limit: response.pagination.limit,
+          total: response.pagination.total,
+          pages: response.pagination.pages
+        });
+      }
+      
     } catch (error) {
-      console.error('Error fetching students:', error);
-      showError(t('errorFetchingStudents'));
+      console.error('Error fetching students from school:', error);
+      showError(error.message || t('errorFetchingStudents'));
       setStudents([]);
     } finally {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [searchTerm, showError, t, selectedClassId, selectedGrade, user, classes]);
+  }, [searchTerm, showError, t, selectedClassId, selectedGrade, schoolId, user, classes, pagination.page, pagination.limit, fetchSchoolId]);
   
   // Initialize classes when component mounts
   useEffect(() => {
     initializeClasses();
   }, [initializeClasses]);
+
+  // Fetch school ID when component mounts
+  useEffect(() => {
+    fetchSchoolId();
+  }, [fetchSchoolId]);
+
+  // Fetch students when schoolId becomes available
+  useEffect(() => {
+    if (schoolId && classes.length > 0) {
+      console.log('School ID available, fetching students...');
+      fetchStudents();
+    }
+  }, [schoolId, classes.length, fetchStudents]);
 
   // Memoized fetch parameters to avoid unnecessary re-renders
   const fetchParams = useMemo(() => ({

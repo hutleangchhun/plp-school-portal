@@ -1,4 +1,4 @@
-import { User, Edit, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, RefreshCw, TrendingUp, Clock, Target, Activity, Settings, BarChart3, Zap } from 'lucide-react';
+import { User, Edit, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, RefreshCw, TrendingUp, Clock, Target, Activity, Settings, BarChart3, Zap, User2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -10,6 +10,8 @@ import ProfileImage from '../../components/ui/ProfileImage';
 import StatsCard from '../../components/ui/StatsCard';
 import { utils, userService } from '../../utils/api';
 import studentService from '../../utils/api/services/studentService';
+import classService from '../../utils/api/services/classService';
+import Badge from '@/components/ui/Badge';
 
 export default function Dashboard({ user: initialUser }) {
   const { t } = useLanguage();
@@ -94,6 +96,16 @@ export default function Dashboard({ user: initialUser }) {
         try {
           const classDetailsPromises = authUser.classIds.map(async (classId, index) => {
             try {
+              // First, get the class details to fetch the actual maxStudents using classService
+              let actualMaxStudents = 50; // Default fallback
+              try {
+                const classData = await classService.getClassById(classId);
+                actualMaxStudents = classData.maxStudents || 50;
+                console.log(`Class ${classId} actual maxStudents:`, actualMaxStudents);
+              } catch (classError) {
+                console.warn(`Could not fetch class details for ${classId}, using default capacity:`, classError);
+              }
+
               // Get students for this specific class
               const classStudentsResponse = await studentService.getMyStudents({ classId });
               const enrolledCount = classStudentsResponse.data?.length || 0;
@@ -102,7 +114,7 @@ export default function Dashboard({ user: initialUser }) {
                 id: classId,
                 name: authUser.classNames[index] || `Class ${classId}`,
                 enrolledCount,
-                maxCapacity: 30 // Default capacity
+                maxCapacity: actualMaxStudents // Use actual maxStudents from API
               };
             } catch (error) {
               console.error(`Error fetching data for class ${classId}:`, error);
@@ -110,7 +122,7 @@ export default function Dashboard({ user: initialUser }) {
                 id: classId,
                 name: authUser.classNames[index] || `Class ${classId}`,
                 enrolledCount: 0,
-                maxCapacity: 30
+                maxCapacity: 50 // Default fallback
               };
             }
           });
@@ -144,7 +156,7 @@ export default function Dashboard({ user: initialUser }) {
     if (autoRefresh) {
       interval = setInterval(() => {
         fetchAllData();
-      }, 30000); // Refresh every 30 seconds
+      }, 7200000); // Refresh every 30 seconds
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -198,96 +210,59 @@ export default function Dashboard({ user: initialUser }) {
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-6">
         {/* Header Section */}
-        <FadeInSection className="mb-3 border-2 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl border-gray-100 pb-4 sm:pb-6 hover:shadow-lg hover:border-blue-200 transition-all duration-300">
-          <div className="rounded-2xl border-1 border-gray-100 overflow-hidden">
-            <div className="px-3 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+        <FadeInSection className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="mb-3 bg-gradient-to-br from-gray-50 to-blue-100 border-1 border-blue-100 rounded-xl ">
+            <div className="px-3 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               {/* Time-based greeting */}
-              <div className="mb-4">
-                <h2 className="text-sm sm:text-base text-gray-600 font-medium">
+              <div className="mb-4 flex flex-col items-start">
+                <h2 className="text-xl text-gray-600 font-semibold">
                   {getTimeBasedGreeting()}, {utils.user.getDisplayName(user) || user?.username || t('teacher')}
                 </h2>
-                <p className="text-xs text-gray-500 mt-1 flex items-center">
-                  <Clock className="h-3 w-3 mr-1" />
-                  {t('lastUpdated')}: {lastRefresh.toLocaleTimeString()}
-                  {autoRefresh && (
-                    <span className="ml-2 flex items-center text-green-600">
-                      <Activity className="h-3 w-3 mr-1 animate-pulse" />
-                      {t('liveUpdates') || 'Live'}
-                    </span>
-                  )}
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center space-x-3 sm:space-x-4">
-                  {/* Profile Picture */}
-                  <div className="relative group">
-                    <ProfileImage
-                      user={user}
-                      size="custom"
-                      customSize="h-12 w-12 sm:h-16 sm:w-16 lg:h-20 lg:w-20"
-                      alt="Profile"
-                      className="shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
-                      borderColor="border-white/20"
-                      fallbackType="icon"
-                    />
-                    <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-green-400 rounded-full border-2 border-white flex items-center justify-center animate-pulse">
-                      <div className="h-2 w-2 bg-white rounded-full animate-ping"></div>
-                    </div>
-                  </div>
-                  
-                  {/* User Info */}
-                  <div className="min-w-0 flex-1">
-                    <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent truncate">
-                      {utils.user.getDisplayName(user) || user?.username || t('welcome')}
-                    </h1>
-                    <p className="text-gray-600 text-xs sm:text-sm mt-1 flex items-center">
-                      <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                      <span className="truncate">{utils.user.getRoleDisplay(user, t)}</span>
-                    </p>
-                    <p className="text-gray-500 text-xs sm:text-sm mt-1 truncate">
-                      {t('teacherId')}: {user?.teacherId || t('notAssigned') || 'មិនបានកំណត់'}
-                    </p>
+                <div className="text-xs text-gray-500 mt-1">
+                  <div className='flex flex-row items-start justify-center'>
+                    {t('lastUpdated')}: {lastRefresh.toLocaleTimeString()}
                   </div>
                 </div>
-                
-                {/* Action Buttons */}
-                <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
-                  <Button
-                    onClick={() => setAutoRefresh(!autoRefresh)}
-                    variant={autoRefresh ? "primary" : "secondary"}
-                    size="sm"
-                    className="shadow-lg backdrop-blur-sm text-xs sm:text-sm"
-                  >
-                    <Zap className={`h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 ${autoRefresh ? 'animate-pulse' : ''}`} />
-                    <span className="hidden xs:inline">{autoRefresh ? t('liveMode') || 'Live' : t('manualMode') || 'Manual'}</span>
-                  </Button>
-                  <Button
-                    onClick={refreshUserData}
-                    disabled={loading}
-                    variant="secondary"
-                    size="sm"
-                    className="shadow-lg backdrop-blur-sm text-xs sm:text-sm"
-                  >
-                    <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
-                    <span className="hidden xs:inline">{t('refresh') || 'ធ្វើឱ្យទាន់សម័យ'}</span>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="primary"
-                    size="sm"
-                    className="shadow-lg backdrop-blur-sm text-xs sm:text-sm"
-                  >
-                    <Link to="/profile">
-                      <Edit className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                      <span className="hidden xs:inline">{t('updateProfileTitle')}</span>
-                      <span className="xs:hidden">{t('edit') || 'កែប្រែ'}</span>
-                    </Link>
-                  </Button>
-                </div>
+                <Badge color='blue' size='sm' variant='filled' className='mt-1'>{user?.roleNameKh || user?.roleNameEn || '-'}</Badge>
               </div>
+              {autoRefresh && (
+                <Badge color='blue' size='sm' variant='outline'>
+                  <Activity className="h-3 w-3 mr-1 animate-pulse" />
+                    {t('liveUpdates') || 'Live'}
+                </Badge>  
+              )}
             </div>
           </div>
+          {/* School Information */}
+          <div className="mb-3 bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 sm:border-2 overflow-hidden transition-all duration-300 group">
+            <div className="bg-gradient-to-bl from-gray-50 to-blue-100 px-3 py-3 sm:px-6 sm:py-4 border-b border-blue-100">
+              <h3 className="text-base font-semibold text-gray-700 flex">
+                <User className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-gray-600 group-hover:text-blue-600 transition-colors duration-300 flex-shrink-0" />
+                <span className="truncate">{t('accountInformation')}</span>
+              </h3>
+            </div>
+            <div className="p-3 sm:p-4 lg:p-6">
+              <dl className="space-y-2 sm:space-y-3 lg:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center">
+                  <dt className="flex text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32">
+                    <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                    <span className="truncate">{t('username')}</span>
+                  </dt>
+                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4 break-words">{user?.username || '-'}</dd>
+                </div>
+                <div className="flex sm:flex-row sm:items-center">
+                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32">
+                    <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                    <span className="truncate">{t('school')}</span>
+                  </dt>
+                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4">
+                    {user?.school?.name || t('notAssigned') || 'មិនបានកំណត់'}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        
         </FadeInSection>
 
         {/* Enhanced Stats Grid */}
@@ -344,61 +319,6 @@ export default function Dashboard({ user: initialUser }) {
             gradientFrom="from-purple-500"
             gradientTo="to-purple-600"
           />
-        </FadeInSection>
-
-        {/* Quick Actions */}
-        <FadeInSection delay={100} className="mb-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Zap className="h-5 w-5 mr-2 text-indigo-600" />
-              {t('quickActions') || 'សកម្មភាពរហ័ស'}
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Button
-                asChild
-                variant="outline"
-                className="h-20 flex-col space-y-2 hover:bg-blue-50 hover:border-blue-200 transition-all duration-200"
-              >
-                <Link to="/students/select">
-                  <Users className="h-6 w-6 text-blue-600" />
-                  <span className="text-sm font-medium text-center">{t('assignStudents') || 'កំណត់សិស្សទៅថ្នាក់'}</span>
-                </Link>
-              </Button>
-              
-              <Button
-                asChild
-                variant="outline"
-                className="h-20 flex-col space-y-2 hover:bg-green-50 hover:border-green-200 transition-all duration-200"
-              >
-                <Link to="/classes">
-                  <BookOpen className="h-6 w-6 text-green-600" />
-                  <span className="text-sm font-medium text-center">{t('manageClasses') || 'គ្រប់គ្រងថ្នាក់'}</span>
-                </Link>
-              </Button>
-              
-              <Button
-                asChild
-                variant="outline"
-                className="h-20 flex-col space-y-2 hover:bg-orange-50 hover:border-orange-200 transition-all duration-200"
-              >
-                <Link to="/students">
-                  <Edit className="h-6 w-6 text-orange-600" />
-                  <span className="text-sm font-medium text-center">{t('manageStudents') || 'គ្រប់គ្រងសិស្ស'}</span>
-                </Link>
-              </Button>
-              
-              <Button
-                asChild
-                variant="outline"
-                className="h-20 flex-col space-y-2 hover:bg-purple-50 hover:border-purple-200 transition-all duration-200"
-              >
-                <Link to="/profile">
-                  <Settings className="h-6 w-6 text-purple-600" />
-                  <span className="text-sm font-medium text-center">{t('updateProfile') || 'ធ្វើបច្ចុប្បន្នភាពព័ត៌មាន'}</span>
-                </Link>
-              </Button>
-            </div>
-          </div>
         </FadeInSection>
 
 

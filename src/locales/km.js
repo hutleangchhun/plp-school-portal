@@ -179,6 +179,15 @@ export const km = {
   searchStudents: 'ស្វែងរកសិស្ស...',
   selectAll: 'ជ្រើសរើសទាំងអស់',
   selectGrade: 'ជ្រើសរើសថ្នាក់',
+  
+  // Advanced filtering
+  advancedFilters: 'ការរើសចេញកម្រិតខ្ពស់',
+  sortBy: 'តម្រៀបតាម',
+  studentNumber: 'លេខសិស្ស',
+  dateCreated: 'កាលបរិច្ឆេទបង្កើត',
+  selectStatus: 'ជ្រើសរើសស្ថានភាព',
+  selectGender: 'ជ្រើសរើសភេទ',
+  all: 'ទាំងអស់',
 
   // Navigation & Pages
   comingSoon: 'នឹងមកដល់ឆាប់ៗ',
@@ -238,6 +247,11 @@ export const km = {
   results: 'លទ្ធផលសរុប',
   previous: 'មុន',
   next: 'បន្ទាប់',
+  page: 'ទំព័រ',
+  firstPage: 'ទំព័រដំបូង',
+  lastPage: 'ទំព័រចុងក្រោយ',
+  previousPage: 'ទំព័រមុន',
+  nextPage: 'ទំព័របន្ទាប់',
   
   // Bulk operations
   studentsRemovedSuccess: 'បានដកសិស្សចេញដោយជោគជ័យ',
@@ -277,6 +291,7 @@ export const km = {
   assignStudents: 'កំណត់សិស្ស',
   assigning: 'កំពុងកំណត់...',
   errorAssigningStudents: 'កំហុសក្នុងការកំណត់សិស្សទៅថ្នាក់',
+  classCapacityExceeded: 'មិនអាចកំណត់សិស្សបានទេ ថ្នាក់រៀនពេញហើយ',
   selectedStudentsActions: 'សកម្មភាពសម្រាប់សិស្សដែលបានជ្រើសរើស',
   resetFilters: 'កំណត់ការស្វែងរកឡើងវិញ',
   allDistricts: 'គ្រប់ស្រុកទាំងអស់',
@@ -494,4 +509,8 @@ export const km = {
   avgPerClass: 'ជាមធ្យមក្នុងមួយថ្នាក់',
   yourClasses: 'ថ្នាក់របស់អ្នក',
   noClassesAssigned: 'មិនមានថ្នាក់រៀនដែលបានកំណត់',
+  
+  // Student management with master-class endpoint
+  noSchoolIdFound: 'រកមិនឃើញលេខសម្គាល់សាលារៀនសម្រាប់គណនីរបស់អ្នក',
+  failedToFetchSchoolId: 'បរាជ័យក្នុងការទាញយកព័ត៌មានសាលារៀន',
 };

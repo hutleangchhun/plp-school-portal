@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from './Button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 const Table = ({
   columns = [],
@@ -102,12 +102,72 @@ const getNestedValue = (obj, path) => {
   return path.split('.').reduce((current, key) => current?.[key], obj);
 };
 
-// Pagination component
+// Advanced Pagination component
 const Pagination = ({ pagination, onPageChange, t }) => {
   const { page, pages, total, limit } = pagination;
 
+  // Helper function to generate page numbers with ellipsis
+  const generatePageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    if (pages <= maxVisiblePages + 2) {
+      // Show all pages if total pages is small
+      for (let i = 1; i <= pages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always show first page
+      pageNumbers.push(1);
+      
+      // Calculate start and end of middle pages
+      let startPage, endPage;
+      
+      if (page <= 4) {
+        // Near the beginning
+        startPage = 2;
+        endPage = maxVisiblePages;
+      } else if (page >= pages - 3) {
+        // Near the end
+        startPage = pages - maxVisiblePages + 1;
+        endPage = pages - 1;
+      } else {
+        // In the middle
+        startPage = page - 2;
+        endPage = page + 2;
+      }
+      
+      // Add ellipsis before middle pages if needed
+      if (startPage > 2) {
+        pageNumbers.push('ellipsis-start');
+      }
+      
+      // Add middle pages
+      for (let i = startPage; i <= endPage; i++) {
+        if (i > 1 && i < pages) {
+          pageNumbers.push(i);
+        }
+      }
+      
+      // Add ellipsis after middle pages if needed
+      if (endPage < pages - 1) {
+        pageNumbers.push('ellipsis-end');
+      }
+      
+      // Always show last page if more than 1 page
+      if (pages > 1) {
+        pageNumbers.push(pages);
+      }
+    }
+    
+    return pageNumbers;
+  };
+
+  const pageNumbers = generatePageNumbers();
+
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+      {/* Mobile pagination */}
       <div className="flex-1 flex justify-between sm:hidden">
         <Button
           onClick={() => onPageChange(page - 1)}
@@ -117,6 +177,11 @@ const Pagination = ({ pagination, onPageChange, t }) => {
         >
           {t ? t('previous', 'Previous') : 'Previous'}
         </Button>
+        <div className="flex items-center px-4">
+          <span className="text-sm text-gray-700">
+            {t ? t('page', 'Page') : 'Page'} {page} {t ? t('of', 'of') : 'of'} {pages}
+          </span>
+        </div>
         <Button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= pages}
@@ -126,6 +191,8 @@ const Pagination = ({ pagination, onPageChange, t }) => {
           {t ? t('next', 'Next') : 'Next'}
         </Button>
       </div>
+
+      {/* Desktop pagination */}
       <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-gray-700">
@@ -142,30 +209,46 @@ const Pagination = ({ pagination, onPageChange, t }) => {
             {t ? t('results', 'results') : 'results'}
           </p>
         </div>
+        
         <div>
           <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+            {/* First page button */}
+            <Button
+              onClick={() => onPageChange(1)}
+              disabled={page === 1}
+              variant="outline"
+              size="sm"
+              className="rounded-l-md rounded-r-none border-r-0"
+              title={t ? t('firstPage', 'First page') : 'First page'}
+            >
+              <span className="sr-only">First</span>
+              <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
+            </Button>
+
+            {/* Previous page button */}
             <Button
               onClick={() => onPageChange(page - 1)}
               disabled={page === 1}
               variant="outline"
               size="sm"
-              className="rounded-l-md rounded-r-none border-r-0"
+              className="rounded-none border-r-0"
+              title={t ? t('previousPage', 'Previous page') : 'Previous page'}
             >
               <span className="sr-only">Previous</span>
-              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
             
             {/* Page numbers */}
-            {Array.from({ length: Math.min(5, pages) }, (_, i) => {
-              let pageNum;
-              if (pages <= 5) {
-                pageNum = i + 1;
-              } else if (page <= 3) {
-                pageNum = i + 1;
-              } else if (page >= pages - 2) {
-                pageNum = pages - 4 + i;
-              } else {
-                pageNum = page - 2 + i;
+            {pageNumbers.map((pageNum, index) => {
+              if (typeof pageNum === 'string' && pageNum.startsWith('ellipsis')) {
+                return (
+                  <span
+                    key={pageNum}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
+                  >
+                    ...
+                  </span>
+                );
               }
               
               return (
@@ -175,21 +258,37 @@ const Pagination = ({ pagination, onPageChange, t }) => {
                   variant={page === pageNum ? 'primary' : 'outline'}
                   size="sm"
                   className="rounded-none border-r-0 hover:scale-105 transition-transform duration-200"
+                  title={`${t ? t('page', 'Page') : 'Page'} ${pageNum}`}
                 >
                   {pageNum}
                 </Button>
               );
             })}
-            
+
+            {/* Next page button */}
             <Button
               onClick={() => onPageChange(page + 1)}
               disabled={page >= pages}
               variant="outline"
               size="sm"
-              className="rounded-r-md rounded-l-none"
+              className="rounded-none border-r-0"
+              title={t ? t('nextPage', 'Next page') : 'Next page'}
             >
               <span className="sr-only">Next</span>
-              <ChevronRight className="h-5 w-5" aria-hidden="true" />
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </Button>
+
+            {/* Last page button */}
+            <Button
+              onClick={() => onPageChange(pages)}
+              disabled={page >= pages}
+              variant="outline"
+              size="sm"
+              className="rounded-r-md rounded-l-none"
+              title={`${t ? t('lastPage', 'Last page') : 'Last page'} (${pages})`}
+            >
+              <span className="sr-only">Last</span>
+              <ChevronsRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </nav>
         </div>

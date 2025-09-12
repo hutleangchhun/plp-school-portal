@@ -82,6 +82,7 @@ const ENDPOINTS = {
     STUDENTS: (classId) => `/classes/${classId}/students`,
     SUBJECTS: (classId) => `/classes/${classId}/subjects`,
     SCHEDULE: (classId) => `/classes/${classId}/schedule`,
+    MASTER: (schoolId) => `/master-class/${schoolId}/students`,
   },
   SUBJECTS: {
     BASE: '/subjects',

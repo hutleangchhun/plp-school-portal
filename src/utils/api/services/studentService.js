@@ -344,6 +344,88 @@ export const studentService = {
   },
 
   /**
+   * Get all students from a specific school using master-class endpoint
+   * @param {string|number} schoolId - The ID of the school
+   * @param {Object} params - Query parameters for filtering
+   * @param {string} [params.search=''] - Search term for filtering students
+   * @param {number} [params.page=1] - Page number for pagination
+   * @param {number} [params.limit=10] - Number of items per page
+   * @returns {Promise<Object>} Response with student data from all classes in the school
+   */
+  async getStudentsBySchool(schoolId, params = {}) {
+    try {
+      if (!schoolId) {
+        throw new Error('School ID is required to fetch students');
+      }
+
+      const { 
+        search = '', 
+        page = 1, 
+        limit = 10
+      } = params;
+
+      // Import classService here to avoid circular dependency
+      const { classService } = await import('./classService.js');
+      
+      // Use the master-class endpoint to get students from the school with search and pagination
+      const apiParams = {
+        page,
+        limit,
+        search: search.trim()
+      };
+
+      const response = await classService.getMasterClasses(schoolId, apiParams);
+      
+      console.log('Raw master classes response for students:', response);
+      
+      if (!response.success) {
+        throw new Error('Failed to fetch students from school');
+      }
+
+      let allStudents = response.data || [];
+      
+      // Format student data using our utility function
+      const formattedStudents = allStudents.map(student => {
+        return studentService.utils.formatStudentData(student);
+      }).filter(student => student !== null);
+
+      // Use server-side pagination directly since we only have search and pagination
+      if (response.pagination) {
+        console.log(`getStudentsBySchool: Using server-side search and pagination - Found ${formattedStudents.length} students from school ${schoolId} on page ${page}`);
+        
+        return {
+          success: true,
+          data: formattedStudents,
+          pagination: response.pagination
+        };
+      }
+
+      // Fallback to basic pagination if API doesn't provide pagination info
+      console.log(`getStudentsBySchool: Fallback pagination - Found ${formattedStudents.length} students from school ${schoolId}`);
+      
+      return {
+        success: true,
+        data: formattedStudents,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: formattedStudents.length,
+          pages: Math.ceil(formattedStudents.length / limit)
+        }
+      };
+      
+    } catch (error) {
+      console.error('Error in getStudentsBySchool:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Failed to fetch students from school',
+        data: [],
+        pagination: { page: 1, limit: 10, total: 0, pages: 1 }
+      };
+    }
+  },
+
+  /**
    * Utility functions for student data transformation
    */
   utils: {
@@ -356,24 +438,22 @@ export const studentService = {
       if (!student) return null;
       
       // Handle different API response structures
-      // Structure 1: Direct student object
+      // Structure 1: Direct student object  
       // Structure 2: Nested user object
       // Structure 3: From classes/{id}/students endpoint
+      // Structure 4: From master-class endpoint: {student_id, user_id, student_number, first_name, last_name, etc.}
       
       const user = student.user || student;
       const classInfo = student.class || {};
       
-      // Try multiple ID field possibilities based on actual API response
-      // Based on API sample: {studentId: 9, user: {...}, class: {...}}
-      // Use studentId as the primary identifier for API calls - this MUST be used
-      let finalId = student.studentId;    // Primary: studentId from API response
+      // Handle master-class endpoint format with direct fields
+      let finalId = student.student_id || student.studentId;
       
-      // Only use fallbacks if studentId is missing (should never happen with your API)
+      // Fallback to other possible ID fields
       if (!finalId) {
         finalId = student.id || 
                   student.user_id ||      
                   student.userId ||       
-                  student.student_id ||
                   user.id || 
                   user.userId || 
                   user.user_id;
@@ -381,60 +461,50 @@ export const studentService = {
       
       // If still no ID, try to create a temporary unique identifier
       if (finalId === undefined || finalId === null) {
-        // Use username as fallback ID if available
-        finalId = user.username || student.username;
-        
-        // If still no ID, use email as fallback
-        if (!finalId) {
-          finalId = user.email || student.email;
-        }
-        
-        // Last resort: use index-based ID (not ideal but prevents undefined)
-        if (!finalId) {
-          finalId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-        }
+        finalId = user.username || student.username || 
+                  user.email || student.email ||
+                  `temp_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
       }
       
-      // Only log when ID is undefined to reduce noise
-      if (finalId === undefined) {
-        // Removed console.error
-      }
+      // Handle name fields - master-class endpoint uses direct first_name/last_name
+      const firstName = student.first_name || user.firstName || user.first_name || student.firstName || '';
+      const lastName = student.last_name || user.lastName || user.last_name || student.lastName || '';
       
-      const firstName = user.firstName || user.first_name || student.firstName || '';
-      const lastName = user.lastName || user.last_name || student.lastName || '';
+      // Handle student number/ID display
+      const studentNumber = student.student_number || student.studentNumber || student.studentId || finalId;
       
       return {
         id: finalId,
-        studentId: finalId, // Use the same numeric studentId from API for both id and studentId
-        name: `${firstName} ${lastName}`.trim(),
+        studentId: studentNumber, // Use student_number for display purposes
+        name: `${firstName} ${lastName}`.trim() || student.fullname || user.fullname || 'Unknown Student',
         firstName,
         lastName,
-        email: user.email || student.email || '',
-        phone: user.phone || student.phone || '',
-        gender: user.gender || student.gender || '',
-        dateOfBirth: user.dateOfBirth || user.date_of_birth || student.date_of_birth,
-        profilePicture: user.profilePicture || user.profile_picture || student.profile_picture,
-        isActive: user.isActive !== undefined ? user.isActive : (user.is_active !== undefined ? user.is_active : true),
-        username: user.username || student.username || '',
+        email: student.email || user.email || '',
+        phone: student.phone || user.phone || '',
+        gender: student.gender || user.gender || '',
+        dateOfBirth: student.date_of_birth || student.dateOfBirth || user.date_of_birth || user.dateOfBirth,
+        profilePicture: student.profile_picture || student.profilePicture || user.profile_picture || user.profilePicture,
+        isActive: student.student_status === 'ACTIVE' || student.isActive !== undefined ? student.isActive : (user.is_active !== undefined ? user.is_active : true),
+        username: student.username || user.username || '',
         // Class information
         class: {
-          id: classInfo.classId || classInfo.id,
-          name: classInfo.name,
-          gradeLevel: classInfo.gradeLevel
+          id: student.class_id || classInfo.classId || classInfo.id,
+          name: student.class_name || classInfo.name,
+          gradeLevel: student.grade_level || classInfo.gradeLevel
         },
         // Additional fields from the API
         averageScore: student.averageScore || 0,
         timeSpent: student.timeSpent || 0,
         scores: student.scores || [],
         problemPoints: student.problemPoints || [],
-        // Fallback for role structure
+        // Role information  
         role: {
           id: student.roleId || user.roleId,
           nameEn: student.roleNameEn || user.roleNameEn,
           nameKh: student.roleNameKh || user.roleNameKh
         },
-        createdAt: student.createdAt || student.created_at || user.created_at,
-        updatedAt: student.updatedAt || student.updated_at || user.updated_at
+        createdAt: student.student_created_at || student.createdAt || student.created_at || user.created_at,
+        updatedAt: student.student_updated_at || student.updatedAt || student.updated_at || user.updated_at
       };
     },
     

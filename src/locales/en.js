@@ -426,4 +426,52 @@ export const en = {
   // Room numbers
   'Room 21': 'Room 21',
   'Room ': 'Room ',
+  
+  // Dashboard specific translations
+  goodMorning: 'Good Morning',
+  goodAfternoon: 'Good Afternoon', 
+  goodEvening: 'Good Evening',
+  lastUpdated: 'Last Updated',
+  liveUpdates: 'Live Updates',
+  liveMode: 'Live Mode',
+  manualMode: 'Manual Mode',
+  failedToLoadDashboard: 'Failed to load dashboard data',
+  
+  // Dashboard stats
+  classes: 'Classes',
+  assignedStudents: 'Assigned Students',
+  inYourClasses: 'In Your Classes',
+  unassignedStudents: 'Unassigned Students', 
+  awaitingAssignment: 'Awaiting Assignment',
+  avgEnrollment: 'Avg Enrollment',
+  studentsPerClass: 'Students Per Class',
+  
+  // User data validation
+  noValidUserData: 'No valid user data received from API',
+  
+  // Dashboard quick actions and components
+  quickActions: 'Quick Actions',
+  assignStudents: 'Assign Students',
+  manageClasses: 'Manage Classes',
+  manageStudents: 'Manage Students',
+  updateProfile: 'Update Profile',
+  classEnrollment: 'Class Enrollment',
+  enrolled: 'Enrolled',
+  capacity: 'Capacity',
+  totalEnrolled: 'Total Enrolled',
+  avgPerClass: 'Average Per Class',
+  students: 'Students',
+  
+  // Additional navigation/action translations that may appear
+  'Assign Students': 'Assign Students',
+  'Manage Classes': 'Manage Classes',
+  'Manage Students': 'Manage Students',
+  'Update Profile': 'Update Profile',
+  'Quick Actions': 'Quick Actions',
+  'Class Enrollment': 'Class Enrollment',
+  'Total Enrolled': 'Total Enrolled',
+  'Average Per Class': 'Average Per Class',
+  Capacity: 'Capacity',
+  'Awaiting Assignment': 'Awaiting Assignment',
+  Students: 'Students',
 };  
