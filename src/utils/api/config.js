@@ -51,6 +51,16 @@ const ENDPOINTS = {
     VERIFY_EMAIL: '/users/verify-email',
     RESEND_VERIFICATION: '/users/resend-verification',
   },
+  SCHOOLS: {
+    BASE: '/schools',
+    SCHOOL_BY_ID: (schoolId) => `/schools${schoolId}`,
+    SCHOOL_BY_PROVINCE: (provinceId) => `/schools/province/${provinceId}`,
+    SCHOOL_BY_DISTRICT: (districtId) => `/schools/district/${districtId}`,
+  },
+  LOCATION: {
+    BASE: '/locations/provinces',
+    DISTRICTS: (provinceId) => `/locations/districts?province_id=${provinceId}`,
+  },
   STUDENTS: {
     BASE: '/students',
     MY_STUDENTS: '/students/my-students',

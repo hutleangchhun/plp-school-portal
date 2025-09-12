@@ -279,6 +279,9 @@ export const en = {
   errorAssigningStudents: 'Error assigning students to class',
   selectedStudentsActions: 'Actions for selected students',
   resetFilters: 'Reset Filters',
+  allDistricts: 'All Districts',
+  allProvinces: 'All Provinces',
+
   
   // Class selection
   allClasses: 'All Classes',

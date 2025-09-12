@@ -4,12 +4,18 @@ import { Search, User, X, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import studentService from '../../utils/api/services/studentService';
+import locationService from '../../utils/api/services/locationService';
 import { Button } from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Pagination as UIPagination } from '../../components/ui/Table';
-import * as Select from '@radix-ui/react-select';
-import { ChevronDownIcon, ChevronUpIcon, CheckIcon } from '@radix-ui/react-icons';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 
 const StudentSelection = () => {
   const navigate = useNavigate();
@@ -30,6 +36,8 @@ const StudentSelection = () => {
   const [students, setStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [districts, setDistricts] = useState([]);
   const [listLoading, setListLoading] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pagination, setPagination] = useState({
@@ -41,7 +49,9 @@ const StudentSelection = () => {
   const [filters, setFilters] = useState({
     search: '',
     classId: '',
-    status: 'active'
+    status: 'active',
+    provinceId: 'all',
+    districtId: 'all'
   });
   const [selectedClass, setSelectedClass] = useState('');
   const [showClassModal, setShowClassModal] = useState(false);
@@ -53,7 +63,49 @@ const StudentSelection = () => {
     return () => clearTimeout(id);
   }, [filters.search]);
 
-  // Initialize classes using local user data
+  // Fetch provinces
+  const fetchProvinces = useCallback(async () => {
+    try {
+      const provincesResponse = await locationService.getProvinces();
+      console.log('Fetched provinces:', provincesResponse);
+      if (provincesResponse && provincesResponse.data) {
+        console.log('Setting provinces to:', provincesResponse.data);
+        setProvinces(provincesResponse.data);
+      } else if (provincesResponse && Array.isArray(provincesResponse)) {
+        console.log('Setting provinces to array:', provincesResponse);
+        setProvinces(provincesResponse);
+      }
+    } catch (error) {
+      console.error('Error fetching provinces:', error);
+      showError(t('errorFetchingProvinces') || 'កំហុសក្នុងការទាញយកខេត្ត');
+    }
+  }, [showError, t]);
+
+  // Fetch districts by province ID
+  const fetchDistricts = useCallback(async (provinceId) => {
+    if (!provinceId || provinceId === 'all') {
+      setDistricts([]);
+      return;
+    }
+    
+    try {
+      const districtsResponse = await locationService.getDistrictsByProvince(provinceId);
+      console.log('Fetched districts:', districtsResponse);
+      if (districtsResponse && districtsResponse.data) {
+        console.log('Setting districts to:', districtsResponse.data);
+        setDistricts(districtsResponse.data);
+      } else if (districtsResponse && Array.isArray(districtsResponse)) {
+        console.log('Setting districts to array:', districtsResponse);
+        setDistricts(districtsResponse);
+      }
+    } catch (error) {
+      console.error('Error fetching districts:', error);
+      showError(t('errorFetchingDistricts') || 'កំហុសក្នុងការទាញយកស្រុក');
+      setDistricts([]);
+    }
+  }, [showError, t]);
+
+  // Initialize classes and fetch provinces using local user data
   useEffect(() => {
     if (!user || !user.classIds || !user.classNames) {
       console.log('No user data or classes found in authentication');
@@ -82,13 +134,30 @@ const StudentSelection = () => {
     setClasses(teacherClasses);
     console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes for student selection:`, 
       teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
-  }, [user]);
+
+    // Fetch provinces
+    fetchProvinces();
+  }, [user, fetchProvinces]);
+
+  // Fetch districts when province changes
+  useEffect(() => {
+    if (filters.provinceId !== 'all') {
+      fetchDistricts(filters.provinceId);
+    } else {
+      setDistricts([]);
+    }
+    // Reset district filter when province changes
+    if (filters.districtId !== 'all') {
+      setFilters(prev => ({ ...prev, districtId: 'all' }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.provinceId, fetchDistricts]);
 
   // Fetch students when pagination or filters change (using debounced search)
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, pagination.limit, debouncedSearch, filters.status]);
+  }, [pagination.page, pagination.limit, debouncedSearch, filters.status, filters.provinceId, filters.districtId]);
 
   // Move the fetchData function inside the component and wrap it in useCallback
   const fetchData = useCallback(async () => {
@@ -102,7 +171,9 @@ const StudentSelection = () => {
         page: pagination.page,
         limit: pagination.limit,
         search: debouncedSearch,
-        classId: 'null' // Get students that have no class assigned
+        classId: 'null', // Get students that have no class assigned
+        provinceId: (filters.provinceId && filters.provinceId !== 'all') ? filters.provinceId : undefined,
+        districtId: (filters.districtId && filters.districtId !== 'all') ? filters.districtId : undefined
       });
       
       if (studentsResponse && studentsResponse.data) {
@@ -122,7 +193,7 @@ const StudentSelection = () => {
     } finally {
       setListLoading(false);
     }
-  }, [filters.status, debouncedSearch, pagination.page, pagination.limit, showError, t]);
+  }, [filters.status, filters.provinceId, filters.districtId, debouncedSearch, pagination.page, pagination.limit, showError, t]);
 
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -217,7 +288,7 @@ const StudentSelection = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-gray-400" />
@@ -229,10 +300,62 @@ const StudentSelection = () => {
               value={filters.search}
               onChange={(e) => handleFilterChange({ ...filters, search: e.target.value })}
             />
-          </div>          
+          </div>
+          
+          {/* Province Filter */}
+          <div>
+            <Select 
+              value={filters.provinceId} 
+              onValueChange={(value) => handleFilterChange({ ...filters, provinceId: value })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={t('allProvinces') || 'ខេត្តទាំងអស់'} />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">
+                  {t('allProvinces') || 'ខេត្តទាំងអស់'}
+                </SelectItem>
+                {provinces.map((province) => (
+                  <SelectItem 
+                    key={province.id} 
+                    value={province.id.toString()}
+                  >
+                    {province.province_name_kh}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* District Filter */}
+          <div>
+            <Select 
+              value={filters.districtId} 
+              onValueChange={(value) => handleFilterChange({ ...filters, districtId: value })}
+              disabled={filters.provinceId === 'all'}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={t('allDistricts') || 'ស្រុកទាំងអស់'} />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">
+                  {t('allDistricts') || 'ស្រុកទាំងអស់'}
+                </SelectItem>
+                {districts.map((district) => (
+                  <SelectItem 
+                    key={district.id} 
+                    value={district.id.toString()}
+                  >
+                    {district.district_name_kh || district.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
           <div className="flex space-x-2">
             <Button
-              onClick={() => handleFilterChange({ search: '', classId: '', status: 'active' })}
+              onClick={() => handleFilterChange({ search: '', classId: '', status: 'active', provinceId: 'all', districtId: 'all' })}
               variant="outline"
               size="sm"
             >
@@ -370,38 +493,21 @@ const StudentSelection = () => {
                   </p>
                   
                   <div className="mb-4">
-                    <Select.Root value={selectedClass} onValueChange={setSelectedClass}>
-                      <Select.Trigger className="inline-flex items-center justify-between rounded-md border border-gray-300 bg-white px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 w-full">
-                        <Select.Value placeholder={t('selectClass') || 'Select a class...'} />
-                        <Select.Icon>
-                          <ChevronDownIcon />
-                        </Select.Icon>
-                      </Select.Trigger>
-                      <Select.Portal>
-                        <Select.Content className="overflow-hidden rounded-md border border-gray-200 bg-white shadow-md z-50">
-                          <Select.ScrollUpButton className="flex items-center justify-center p-1 text-gray-500">
-                            <ChevronUpIcon />
-                          </Select.ScrollUpButton>
-                          <Select.Viewport className="p-1 max-h-60 overflow-y-auto">
-                            {classes.map((cls) => (
-                              <Select.Item 
-                                key={cls.id} 
-                                value={cls.id.toString()} 
-                                className="relative flex cursor-pointer select-none items-center rounded px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 focus:bg-gray-100"
-                              >
-                                <Select.ItemText>{cls.name} - {cls.gradeLevel}</Select.ItemText>
-                                <Select.ItemIndicator className="absolute right-2">
-                                  <CheckIcon />
-                                </Select.ItemIndicator>
-                              </Select.Item>
-                            ))}
-                          </Select.Viewport>
-                          <Select.ScrollDownButton className="flex items-center justify-center p-1 text-gray-500">
-                            <ChevronDownIcon />
-                          </Select.ScrollDownButton>
-                        </Select.Content>
-                      </Select.Portal>
-                    </Select.Root>
+                    <Select value={selectedClass} onValueChange={setSelectedClass}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t('selectClass') || 'Select a class...'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {classes.map((cls) => (
+                          <SelectItem 
+                            key={cls.id} 
+                            value={cls.id.toString()}
+                          >
+                            {cls.name} - {cls.gradeLevel}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>

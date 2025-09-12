@@ -279,6 +279,8 @@ export const km = {
   errorAssigningStudents: 'កំហុសក្នុងការកំណត់សិស្សទៅថ្នាក់',
   selectedStudentsActions: 'សកម្មភាពសម្រាប់សិស្សដែលបានជ្រើសរើស',
   resetFilters: 'កំណត់ការស្វែងរកឡើងវិញ',
+  allDistricts: 'គ្រប់ស្រុកទាំងអស់',
+  allProvinces: 'គ្រប់ខេត្តទាំងអស់',
   
   // Class selection
   selectClass: 'ជ្រើសរើសថ្នាក់',
