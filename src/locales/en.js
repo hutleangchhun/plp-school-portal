@@ -330,13 +330,6 @@ export const en = {
   residence: 'Residence',
   
   // Navigation items that might be missing  
-  dashboard: 'Dashboard',
-  students: 'Students',
-  classes: 'Classes',
-  attendance: 'Attendance',
-  reports: 'Reports',
-  achievements: 'Achievements',
-  settings: 'Settings',
   myGrades: 'My Grades',
   myAttendance: 'My Attendance',
   myAssignments: 'My Assignments',
@@ -358,7 +351,6 @@ export const en = {
   'Active Today': 'Active Today',
   'Average Load': 'Average Load',
   totalClasses: 'Total Classes',
-  totalStudents: 'Total Students',
   activeToday: 'Active Today',
   averageLoad: 'Average Load',
   
@@ -370,18 +362,13 @@ export const en = {
   Profile: 'Profile',
   
   // Classes Management specific
-  teacher: 'Teacher',
   Teacher: 'Teacher',
   'Teacher:': 'Teacher:',
-  subject: 'Subject',
   Subject: 'Subject',
-  room: 'Room',
   Room: 'Room',
   enrollment: 'Enrollment',
   Enrollment: 'Enrollment',
-  capacity: 'Capacity',
   Capacity: 'Capacity',
-  schedule: 'Schedule',
   Schedule: 'Schedule',
   
   // Days of the week

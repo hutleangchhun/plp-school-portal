@@ -4,7 +4,6 @@ import { Search, User, X, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import studentService from '../../utils/api/services/studentService';
-import locationService from '../../utils/api/services/locationService';
 import { Button } from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -36,8 +35,6 @@ const StudentSelection = () => {
   const [students, setStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [provinces, setProvinces] = useState([]);
-  const [districts, setDistricts] = useState([]);
   const [listLoading, setListLoading] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pagination, setPagination] = useState({
@@ -49,9 +46,7 @@ const StudentSelection = () => {
   const [filters, setFilters] = useState({
     search: '',
     classId: '',
-    status: 'active',
-    provinceId: 'all',
-    districtId: 'all'
+    status: 'active'
   });
   const [selectedClass, setSelectedClass] = useState('');
   const [showClassModal, setShowClassModal] = useState(false);
@@ -63,49 +58,8 @@ const StudentSelection = () => {
     return () => clearTimeout(id);
   }, [filters.search]);
 
-  // Fetch provinces
-  const fetchProvinces = useCallback(async () => {
-    try {
-      const provincesResponse = await locationService.getProvinces();
-      console.log('Fetched provinces:', provincesResponse);
-      if (provincesResponse && provincesResponse.data) {
-        console.log('Setting provinces to:', provincesResponse.data);
-        setProvinces(provincesResponse.data);
-      } else if (provincesResponse && Array.isArray(provincesResponse)) {
-        console.log('Setting provinces to array:', provincesResponse);
-        setProvinces(provincesResponse);
-      }
-    } catch (error) {
-      console.error('Error fetching provinces:', error);
-      showError(t('errorFetchingProvinces') || 'កំហុសក្នុងការទាញយកខេត្ត');
-    }
-  }, [showError, t]);
 
-  // Fetch districts by province ID
-  const fetchDistricts = useCallback(async (provinceId) => {
-    if (!provinceId || provinceId === 'all') {
-      setDistricts([]);
-      return;
-    }
-    
-    try {
-      const districtsResponse = await locationService.getDistrictsByProvince(provinceId);
-      console.log('Fetched districts:', districtsResponse);
-      if (districtsResponse && districtsResponse.data) {
-        console.log('Setting districts to:', districtsResponse.data);
-        setDistricts(districtsResponse.data);
-      } else if (districtsResponse && Array.isArray(districtsResponse)) {
-        console.log('Setting districts to array:', districtsResponse);
-        setDistricts(districtsResponse);
-      }
-    } catch (error) {
-      console.error('Error fetching districts:', error);
-      showError(t('errorFetchingDistricts') || 'កំហុសក្នុងការទាញយកស្រុក');
-      setDistricts([]);
-    }
-  }, [showError, t]);
-
-  // Initialize classes and fetch provinces using local user data
+  // Initialize classes using local user data
   useEffect(() => {
     if (!user || !user.classIds || !user.classNames) {
       console.log('No user data or classes found in authentication');
@@ -134,30 +88,13 @@ const StudentSelection = () => {
     setClasses(teacherClasses);
     console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes for student selection:`, 
       teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
-
-    // Fetch provinces
-    fetchProvinces();
-  }, [user, fetchProvinces]);
-
-  // Fetch districts when province changes
-  useEffect(() => {
-    if (filters.provinceId !== 'all') {
-      fetchDistricts(filters.provinceId);
-    } else {
-      setDistricts([]);
-    }
-    // Reset district filter when province changes
-    if (filters.districtId !== 'all') {
-      setFilters(prev => ({ ...prev, districtId: 'all' }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.provinceId, fetchDistricts]);
+  }, [user]);
 
   // Fetch students when pagination or filters change (using debounced search)
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, pagination.limit, debouncedSearch, filters.status, filters.provinceId, filters.districtId]);
+  }, [pagination.page, pagination.limit, debouncedSearch, filters.status]);
 
   // Move the fetchData function inside the component and wrap it in useCallback
   const fetchData = useCallback(async () => {
@@ -171,9 +108,7 @@ const StudentSelection = () => {
         page: pagination.page,
         limit: pagination.limit,
         search: debouncedSearch,
-        classId: 'null', // Get students that have no class assigned
-        provinceId: (filters.provinceId && filters.provinceId !== 'all') ? filters.provinceId : undefined,
-        districtId: (filters.districtId && filters.districtId !== 'all') ? filters.districtId : undefined
+        classId: 'null' // Get students that have no class assigned
       });
       
       if (studentsResponse && studentsResponse.data) {
@@ -193,7 +128,7 @@ const StudentSelection = () => {
     } finally {
       setListLoading(false);
     }
-  }, [filters.status, filters.provinceId, filters.districtId, debouncedSearch, pagination.page, pagination.limit, showError, t]);
+  }, [filters.status, debouncedSearch, pagination.page, pagination.limit, showError, t]);
 
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -288,7 +223,7 @@ const StudentSelection = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-gray-400" />
@@ -302,60 +237,9 @@ const StudentSelection = () => {
             />
           </div>
           
-          {/* Province Filter */}
-          <div>
-            <Select 
-              value={filters.provinceId} 
-              onValueChange={(value) => handleFilterChange({ ...filters, provinceId: value })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('allProvinces') || 'ខេត្តទាំងអស់'} />
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px] overflow-y-auto">
-                <SelectItem value="all">
-                  {t('allProvinces') || 'ខេត្តទាំងអស់'}
-                </SelectItem>
-                {provinces.map((province) => (
-                  <SelectItem 
-                    key={province.id} 
-                    value={province.id.toString()}
-                  >
-                    {province.province_name_kh}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* District Filter */}
-          <div>
-            <Select 
-              value={filters.districtId} 
-              onValueChange={(value) => handleFilterChange({ ...filters, districtId: value })}
-              disabled={filters.provinceId === 'all'}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('allDistricts') || 'ស្រុកទាំងអស់'} />
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px] overflow-y-auto">
-                <SelectItem value="all">
-                  {t('allDistricts') || 'ស្រុកទាំងអស់'}
-                </SelectItem>
-                {districts.map((district) => (
-                  <SelectItem 
-                    key={district.id} 
-                    value={district.id.toString()}
-                  >
-                    {district.district_name_kh || district.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
           <div className="flex space-x-2">
             <Button
-              onClick={() => handleFilterChange({ search: '', classId: '', status: 'active', provinceId: 'all', districtId: 'all' })}
+              onClick={() => handleFilterChange({ search: '', classId: '', status: 'active' })}
               variant="outline"
               size="sm"
             >

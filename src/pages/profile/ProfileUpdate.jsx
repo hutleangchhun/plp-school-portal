@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Save, User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, MapPin, Building, Home, Compass, X } from 'lucide-react';
+import { Save, User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building } from 'lucide-react';
 import * as RadioGroup from '@radix-ui/react-radio-group';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -16,6 +16,7 @@ export default function ProfileUpdate({ user, setUser }) {
     username: '',
     first_name: '',
     last_name: '',
+    fullname: '',
     email: '',
     newPassword: '',
     date_of_birth: '',
@@ -23,11 +24,14 @@ export default function ProfileUpdate({ user, setUser }) {
     profile_picture: '',
     phone: '',
     teacher_number: '',
-    provinceId: '',
-    districtId: '',
-    communeId: '',
-    villageId: '',
-    nationality: 'Cambodian'
+    teacherId: '',
+    nationality: 'Cambodian',
+    roleNameEn: '',
+    roleNameKh: '',
+    residence: '',
+    placeOfBirth: '',
+    school_id: '',
+    school: null
   });
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
@@ -63,6 +67,7 @@ export default function ProfileUpdate({ user, setUser }) {
           username: userData.username || '',
           first_name: userData.first_name || '',
           last_name: userData.last_name || '',
+          fullname: userData.fullname || '',
           email: userData.email || '',
           newPassword: '',
           date_of_birth: userData.date_of_birth || '',
@@ -70,11 +75,14 @@ export default function ProfileUpdate({ user, setUser }) {
           profile_picture: userData.profile_picture || '',
           phone: userData.phone || '',
           teacher_number: userData.teacher_number || '',
-          provinceId: userData.provinceId || '',
-          districtId: userData.districtId || '',
-          communeId: userData.communeId || '',
-          villageId: userData.villageId || '',
-          nationality: userData.nationality || 'Cambodian'
+          teacherId: userData.teacherId || '',
+          nationality: userData.nationality || 'Cambodian',
+          roleNameEn: userData.roleNameEn || '',
+          roleNameKh: userData.roleNameKh || '',
+          residence: userData.residence || '',
+          placeOfBirth: userData.placeOfBirth || '',
+          school_id: userData.school_id || '',
+          school: userData.school || null
         });
         // Also update the user context if needed
         if (setUser) {
@@ -410,6 +418,46 @@ export default function ProfileUpdate({ user, setUser }) {
 
                 <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2">
                   <div>
+                    <label htmlFor="teacherId" className="block text-xs sm:text-sm font-medium text-gray-700">
+                      {t('teacherId') || 'Teacher ID'}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+                        <Building className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        name="teacherId"
+                        id="teacherId"
+                        readOnly
+                        className="mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                        value={formData.teacherId}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="roleNameKh" className="block text-xs sm:text-sm font-medium text-gray-700">
+                      {t('role') || 'Role'}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+                        <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        name="roleNameKh"
+                        id="roleNameKh"
+                        readOnly
+                        className="mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                        value={formData.roleNameKh}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2">
+                  <div>
                     <label htmlFor="first_name" className="block text-xs sm:text-sm font-medium text-gray-700">
                       {t('firstNameRequired')}
                     </label>
@@ -538,6 +586,48 @@ export default function ProfileUpdate({ user, setUser }) {
 
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div>
+                    <label htmlFor="residence" className="block text-sm font-medium text-gray-700">
+                      {t('residence') || 'Residence'}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Globe className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        name="residence"
+                        id="residence"
+                        readOnly={!isEditMode}
+                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
+                        value={formData.residence || ''}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="placeOfBirth" className="block text-sm font-medium text-gray-700">
+                      {t('placeOfBirth') || 'Place of Birth'}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Globe className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        name="placeOfBirth"
+                        id="placeOfBirth"
+                        readOnly={!isEditMode}
+                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
+                        value={formData.placeOfBirth || ''}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div>
                     <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700 mb-2">
                       {t('dateOfBirth')}
                     </label>
@@ -598,93 +688,90 @@ export default function ProfileUpdate({ user, setUser }) {
                 </div>
 
 
+
+                {/* School Information Section */}
                 <div className="border-t pt-4 sm:pt-6">
-                  <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('locationInformation')}</h4>
+                  <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('schoolInformation') || 'School Information'}</h4>
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="provinceId" className="block text-sm font-medium text-gray-700">
-                        {t('provinceId')}
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <MapPin className="h-4 w-4 text-gray-400" />
-                        </div>
-                        <input
-                          type="number"
-                          name="provinceId"
-                          id="provinceId"
-                          readOnly={!isEditMode}
-                          className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                          value={formData.provinceId}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="districtId" className="block text-sm font-medium text-gray-700">
-                        {t('districtId')}
+                      <label htmlFor="school_name" className="block text-sm font-medium text-gray-700">
+                        {t('schoolName') || 'School Name'}
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <Building className="h-4 w-4 text-gray-400" />
                         </div>
                         <input
-                          type="number"
-                          name="districtId"
-                          id="districtId"
-                          readOnly={!isEditMode}
-                          className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                          value={formData.districtId}
-                          onChange={handleInputChange}
+                          type="text"
+                          name="school_name"
+                          id="school_name"
+                          readOnly
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                          value={formData.school?.name || ''}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="school_code" className="block text-sm font-medium text-gray-700">
+                        {t('schoolCode') || 'School Code'}
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Building className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <input
+                          type="text"
+                          name="school_code"
+                          id="school_code"
+                          readOnly
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                          value={formData.school?.code || ''}
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 mt-4 sm:mt-6">
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mt-4 sm:mt-6">
                     <div>
-                      <label htmlFor="communeId" className="block text-sm font-medium text-gray-700">
-                        {t('communeId')}
+                      <label htmlFor="school_status" className="block text-sm font-medium text-gray-700">
+                        {t('schoolStatus') || 'School Status'}
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Compass className="h-4 w-4 text-gray-400" />
+                          <Building className="h-4 w-4 text-gray-400" />
                         </div>
                         <input
-                          type="number"
-                          name="communeId"
-                          id="communeId"
-                          readOnly={!isEditMode}
-                          className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                          value={formData.communeId}
-                          onChange={handleInputChange}
+                          type="text"
+                          name="school_status"
+                          id="school_status"
+                          readOnly
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                          value={formData.school?.status || ''}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label htmlFor="villageId" className="block text-sm font-medium text-gray-700">
-                        {t('villageId')}
+                      <label htmlFor="fullname" className="block text-sm font-medium text-gray-700">
+                        {t('fullName') || 'Full Name'}
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Home className="h-4 w-4 text-gray-400" />
+                          <User className="h-4 w-4 text-gray-400" />
                         </div>
                         <input
-                          type="number"
-                          name="villageId"
-                          id="villageId"
-                          readOnly={!isEditMode}
-                          className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                          value={formData.villageId}
-                          onChange={handleInputChange}
+                          type="text"
+                          name="fullname"
+                          id="fullname"
+                          readOnly
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                          value={formData.fullname || ''}
                         />
                       </div>
                     </div>
                   </div>
                 </div>
-
 
                 {isEditMode && (
                   <div className="pt-4 sm:pt-6">

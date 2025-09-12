@@ -19,7 +19,7 @@ export default function Settings() {
     setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      showSuccess('Settings saved successfully');
+      showSuccess(t('Settings saved successfully', 'Settings saved successfully'));
     } finally {
       setLoading(false);
     }
@@ -45,15 +45,15 @@ export default function Settings() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center mb-4">
             <User className="h-5 w-5 text-gray-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-900">Profile Settings</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('profileSettings', 'Profile Settings')}</h3>
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-              <input type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2" defaultValue="John Doe" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('Display Name', 'Display Name')}</label>
+              <input type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2" defaultValue={t('John Doe', 'John Doe')} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('email', 'Email')}</label>
               <input type="email" className="w-full border border-gray-300 rounded-lg px-3 py-2" defaultValue="john@school.com" />
             </div>
           </div>
@@ -63,7 +63,7 @@ export default function Settings() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center mb-4">
             <Bell className="h-5 w-5 text-gray-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('notifications', 'Notifications')}</h3>
           </div>
           <div className="space-y-4">
             {Object.entries(settings).map(([key, value]) => (
@@ -90,10 +90,10 @@ export default function Settings() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center mb-4">
             <Globe className="h-5 w-5 text-gray-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-900">Language</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('language', 'Language')}</h3>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">Interface Language</span>
+            <span className="text-sm font-medium text-gray-700">{t('interfaceLanguage', 'Interface Language')}</span>
             <LanguageSwitcher />
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function Settings() {
             disabled={loading}
             className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg"
           >
-            {loading ? 'Saving...' : 'Save Settings'}
+            {loading ? t('Saving...', 'Saving...') : t('Save Settings', 'Save Settings')}
           </button>
         </div>
       </div>

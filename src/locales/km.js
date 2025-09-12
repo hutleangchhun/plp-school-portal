@@ -283,7 +283,6 @@ export const km = {
   allProvinces: 'គ្រប់ខេត្តទាំងអស់',
   
   // Class selection
-  selectClass: 'ជ្រើសរើសថ្នាក់',
   allClasses: 'ថ្នាក់ទាំងអស់',
   
   // General UI
@@ -330,13 +329,6 @@ export const km = {
   residence: 'ទីលំនៅ',
   
   // Navigation items that might be missing  
-  dashboard: 'ផ្ទាំងគ្រប់គ្រង',
-  students: 'សិស្ស',
-  classes: 'ថ្នាក់រៀន',
-  attendance: 'វត្តមាន',
-  reports: 'របាយការណ៍',
-  achievements: 'សមិទ្ធិផល',
-  settings: 'ការកំណត់',
   myGrades: 'ពិន្ទុរបស់ខ្ញុំ',
   myAttendance: 'វត្តមានរបស់ខ្ញុំ',
   myAssignments: 'កិច្ចការរបស់ខ្ញុំ',
@@ -358,7 +350,6 @@ export const km = {
   'Active Today': 'សកម្មថ្ងៃនេះ',
   'Average Load': 'ការទាក់ទញជាមធ្យម',
   totalClasses: 'ថ្នាក់រៀនសរុប',
-  totalStudents: 'សិស្សសរុប',
   activeToday: 'សកម្មថ្ងៃនេះ',
   averageLoad: 'ការទាក់ទញជាមធ្យម',
   
@@ -370,18 +361,13 @@ export const km = {
   Profile: 'ប្រវត្តិរូប',
   
   // Classes Management specific
-  teacher: 'គ្រូ',
   Teacher: 'គ្រូ',
   'Teacher:': 'គ្រូ:',
-  subject: 'មុខវិជ្ជា',
   Subject: 'មុខវិជ្ជា',
-  room: 'បន្ទប់រៀន',
   Room: 'បន្ទប់រៀន',
   enrollment: 'ចំនួនសិស្សក្នុងថ្នាក់',
   Enrollment: 'ចំនួនសិស្សក្នុងថ្នាក់',
-  capacity: 'ចំណុះ',
   Capacity: 'ចំណុះ',
-  schedule: 'កាលវិភាគ',
   Schedule: 'កាលវិភាគ',
   
   // Days of the week
@@ -439,4 +425,73 @@ export const km = {
   // Room numbers
   'Room 21': 'បន្ទប់ ២១',
   'Room ': 'បន្ទប់ ',
+  
+  // Additional missing translations
+  'Settings saved successfully': 'បានរក្សាទុកការកំណត់ដោយជោគជ័យ',
+  'Display Name': 'ឈ្មោះបង្ហាញ',
+  'John Doe': 'នាមគំរូ',
+  'Saving...': 'កំពុងរក្សាទុក...',
+  'Save Settings': 'រក្សាទុកការកំណត់',
+  'Alice Johnson': 'សិស្សគំរូ',
+  'Academic Excellence': 'ឧត្តមភាពសិក្សា',
+  'Academic': 'សិក្សា',
+  'Outstanding performance in Mathematics': 'សមិទ្ធិផលពិសេសក្នុងគណិតវិទ្យា',
+  'Add Achievement': 'បន្ថែមសមិទ្ធិផល',
+  'Select date of birth': 'ជ្រើសរើសថ្ងៃកំណើត',
+  'e.g., A, B, C': 'ឧ. ក, ខ, គ',
+  'Maximum 200 students': 'អតិបរមា ២០០ សិស្ស',
+  'Confirm Delete': 'បញ្ជាក់ការលុប',
+  'Select a class...': 'ជ្រើសរើសថ្នាក់...',
+  'Remove Student': 'ដកសិស្សចេញ',
+  'ប្តូរភាសា': 'ប្តូរភាសា',
+  'Switch Language': 'ប្តូរភាសា',
+  goodMorning: 'អរុណសួស្តី',
+  goodAfternoon: 'ទិវាសួស្តី',
+  goodEvening: 'សាយណ្ហសួស្តី',
+  failedToLoadUserData: 'បរាជ័យក្នុងការទាញយកព័ត៌មានអ្នកប្រើ',
+  selectDateOfBirth: 'ជ្រើសរើសថ្ងៃកំណើត',
+  noValidUserData: 'មិនមានទិន្នន័យអ្នកប្រើត្រឹមត្រូវពី API',
+  failedToLoadDashboard: 'បរាជ័យក្នុងការទាញយកទិន្នន័យផ្ទាំងគ្រប់គ្រង',
+  
+  // Cambodian nationality
+  'Cambodian': 'ខ្មែរ',
+  
+  // Settings page specific
+  profileSettings: 'ការកំណត់ប្រូហ្វាល់',
+  notifications: 'ការជូនដំណឹង',
+  language: 'ភាសា',
+  interfaceLanguage: 'ភាសាចំណុចប្រទាក់',
+  
+  // Achievement page specific
+  'Bob Smith': 'សិស្សប្រុសគំរូ',
+  'Sports Champion': 'ជើងឯកកីឡា',
+  'Sports': 'កីឡា',
+  'Winner of inter-school athletics competition': 'ជះជ្រយក្នុងការប្រកួតកីឡាអន្តរសាលារៀន',
+  'Gold': 'មាស',
+  'Silver': 'ប្រាក់',
+  'Achievement added successfully': 'បានបន្ថែមសមិទ្ធិផលដោយជោគជ័យ',
+  'Student Achievements': 'សមិទ្ធិផលសិស្ស',
+  'Track and celebrate student achievements': 'តាមដាននិងអបអរសាទរសមិទ្ធិផលសិស្ស',
+  'សិស្សស្រីគំរូ': 'សិស្សស្រីគំរូ',
+  
+  // Dashboard specific translations
+  lastUpdated: 'បានធ្វើបច្ចុប្បន្នភាពចុងក្រោយ',
+  liveUpdates: 'បច្ចុប្បន្នភាពបន្តផ្ទាល់',
+  liveMode: 'របៀបបន្តផ្ទាល់',
+  manualMode: 'របៀបកែសម្រួល',
+  quickActions: 'សកម្មភាពរហ័ស',
+  manageStudents: 'គ្រប់គ្រងសិស្ស',
+  updateProfile: 'ធ្វើបច្ចុប្បន្នភាពព័ត៌មាន',
+  assignedStudents: 'សិស្សបានកំណត់',
+  inYourClasses: 'ក្នុងថ្នាក់របស់អ្នក',
+  unassignedStudents: 'សិស្សមិនបានកំណត់',
+  awaitingAssignment: 'រង់ចាំការកំណត់',
+  avgEnrollment: 'ការចុះឈ្មោះជាមធ្យម',
+  studentsPerClass: 'សិស្សក្នុងមួយថ្នាក់',
+  classEnrollment: 'ការចុះឈ្មោះថ្នាក់រៀន',
+  enrolled: 'បានចុះឈ្មោះ',
+  totalEnrolled: 'សិស្សចុះឈ្មោះសរុប',
+  avgPerClass: 'ជាមធ្យមក្នុងមួយថ្នាក់',
+  yourClasses: 'ថ្នាក់របស់អ្នក',
+  noClassesAssigned: 'មិនមានថ្នាក់រៀនដែលបានកំណត់',
 };

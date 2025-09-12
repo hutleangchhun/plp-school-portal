@@ -20,23 +20,23 @@ export default function Achievements() {
     const mockAchievements = [
       {
         id: 1,
-        student: 'Alice Johnson',
+        student: 'សិស្សស្រីគំរូ',
         studentId: 'STU004',
-        achievement: 'Academic Excellence',
-        category: 'Academic',
+        achievement: 'ឧត្តមភាពសិក្សា',
+        category: 'សិក្សា',
         date: '2024-01-15',
-        description: 'Outstanding performance in Mathematics',
-        level: 'Gold'
+        description: 'សមិទ្ធិផលពិសេសក្នុងគណិតវិទ្យា',
+        level: 'មាស'
       },
       {
         id: 2,
-        student: 'Bob Smith',
+        student: 'សិស្សប្រុសគំរូ',
         studentId: 'STU003',
-        achievement: 'Sports Champion',
-        category: 'Sports',
+        achievement: 'ជើងឯកកីឡា',
+        category: 'កីឡា',
         date: '2024-01-10',
-        description: 'Winner of inter-school athletics competition',
-        level: 'Silver'
+        description: 'ជះជ្រយក្នុងការប្រកួតកីឡាអន្តរសាលារៀន',
+        level: 'ប្រាក់'
       }
     ];
     setAchievements(mockAchievements);
@@ -52,7 +52,7 @@ export default function Achievements() {
         date: new Date().toISOString().split('T')[0]
       };
       setAchievements(prev => [newAchievement, ...prev]);
-      showSuccess('Achievement added successfully');
+      showSuccess(t('Achievement added successfully', 'Achievement added successfully'));
       setShowAddModal(false);
     } finally {
       setLoading(false);

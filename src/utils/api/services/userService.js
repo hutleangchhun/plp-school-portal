@@ -12,6 +12,7 @@ const userService = {
    */
   getMyAccount: async () => {
     const response = await get(ENDPOINTS.USERS.MY_ACCOUNT);
+    console.log('My account response:', response);
     return response;
   },
 

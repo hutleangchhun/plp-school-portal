@@ -122,6 +122,33 @@ export const classService = {
     }
   },
 
+  async getMasterClasses() {
+    try {
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.CLASSES.MASTER)
+      );
+      
+      console.log('Raw master classes API response:', response);
+      
+      if (response.data && Array.isArray(response.data)) {
+        const formattedData = response.data.map(cls => {
+          console.log('Raw master class before formatting:', cls);
+          const formatted = classService.utils.formatClassData(cls);
+          console.log('Formatted master class:', formatted);
+          return formatted;
+        });
+        
+        return {
+          data: formattedData,
+        };
+      }
+      return { data: [] };
+    } catch (error) {
+      console.error('Error fetching master classes:', error);
+      throw error;
+    }
+  },
+
   /**
    * Utility functions for class data transformation
    */
