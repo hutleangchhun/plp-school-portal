@@ -1,4 +1,4 @@
-import { User, Edit, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, RefreshCw, TrendingUp, Clock, Target, Activity, Settings, BarChart3, Zap, User2 } from 'lucide-react';
+import { User, Edit,Edit2, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, RefreshCw, TrendingUp, Clock, Target, Activity, Settings, BarChart3, Zap, User2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -6,7 +6,6 @@ import WelcomeAlert from '../../components/ui/WelcomeAlert';
 import { Button } from '../../components/ui/Button';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import ProfileImage from '../../components/ui/ProfileImage';
 import StatsCard from '../../components/ui/StatsCard';
 import { utils, userService } from '../../utils/api';
 import studentService from '../../utils/api/services/studentService';
@@ -31,13 +30,11 @@ export default function Dashboard({ user: initialUser }) {
       const userData = localStorage.getItem('user');
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
-      console.error('Error parsing user data:', error);
+      setError(`Failed to parse user data from localStorage: ${error.message}`);
       return null;
     }
   });
   
-  console.log('Initial user prop:', initialUser);
-
   // Get time-based greeting
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
@@ -87,7 +84,7 @@ export default function Dashboard({ user: initialUser }) {
           setUnassignedStudents(unassignedResponse.data.length);
         }
       } catch (error) {
-        console.error('Failed to fetch unassigned students:', error);
+        setError(`Failed to fetch unassigned students: ${error.message}`);
         setUnassignedStudents(0);
       }
 
@@ -101,9 +98,8 @@ export default function Dashboard({ user: initialUser }) {
               try {
                 const classData = await classService.getClassById(classId);
                 actualMaxStudents = classData.maxStudents || 50;
-                console.log(`Class ${classId} actual maxStudents:`, actualMaxStudents);
               } catch (classError) {
-                console.warn(`Could not fetch class details for ${classId}, using default capacity:`, classError);
+                setError(`Could not fetch class details for ${classId}, using default capacity. ${classError.message}`);
               }
 
               // Get students for this specific class
@@ -117,7 +113,7 @@ export default function Dashboard({ user: initialUser }) {
                 maxCapacity: actualMaxStudents // Use actual maxStudents from API
               };
             } catch (error) {
-              console.error(`Error fetching data for class ${classId}:`, error);
+              setError(`Failed to fetch data for class ${classId}: ${error.message}`);
               return {
                 id: classId,
                 name: authUser.classNames[index] || `Class ${classId}`,
@@ -130,7 +126,7 @@ export default function Dashboard({ user: initialUser }) {
           const classData = await Promise.all(classDetailsPromises);
           setClassDetails(classData);
         } catch (error) {
-          console.error('Error fetching class details:', error);
+          setError(`Failed to fetch class details: ${error.message}`);
           setClassDetails([]);
         }
       }
@@ -139,7 +135,6 @@ export default function Dashboard({ user: initialUser }) {
       
     } catch (error) {
       setError(error.message || t('failedToLoadDashboard', 'Failed to load dashboard data'));
-      console.error('Dashboard error:', error);
     } finally {
       setLoading(false);
     }
@@ -164,11 +159,6 @@ export default function Dashboard({ user: initialUser }) {
   }, [autoRefresh, fetchAllData]);
 
   // Profile picture URL is handled by ProfileImage component
-
-  // Refresh user data function (now using fetchAllData)
-  const refreshUserData = () => {
-    fetchAllData();
-  };
 
   // Loading state
   if (loading) {
@@ -211,35 +201,36 @@ export default function Dashboard({ user: initialUser }) {
       <div className="p-6">
         {/* Header Section */}
         <FadeInSection className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="mb-3 bg-gradient-to-br from-gray-50 to-blue-100 border-1 border-blue-100 rounded-xl ">
-            <div className="px-3 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="mb-3 bg-gradient-to-br from-gray-50 to-blue-100 border border-blue-200 rounded-xl ">
+            <div className="px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 gap-4">
               {/* Time-based greeting */}
-              <div className="mb-4 flex flex-col items-start">
-                <h2 className="text-xl text-gray-600 font-semibold">
-                  {getTimeBasedGreeting()}, {utils.user.getDisplayName(user) || user?.username || t('teacher')}
-                </h2>
-                <div className="text-xs text-gray-500 mt-1">
-                  <div className='flex flex-row items-start justify-center'>
+              <div className="flex items-start justify-between">
+                <div className="">
+                  <h2 className="text-xl text-gray-600 font-semibold">
+                    {getTimeBasedGreeting()}, {utils.user.getDisplayName(user) || user?.username || t('teacher')}
+                  </h2>
+                  <div className='flex flex-row items-start justify-center text-xs text-gray-500 mt-1'>
                     {t('lastUpdated')}: {lastRefresh.toLocaleTimeString()}
                   </div>
                 </div>
-                <Badge color='blue' size='sm' variant='filled' className='mt-1'>{user?.roleNameKh || user?.roleNameEn || '-'}</Badge>
+                <div>
+                  <Badge color='blue' size='sm' variant='filled' className='mt-1'>{user?.roleNameKh || user?.roleNameEn || '-'}</Badge>
+                </div>
               </div>
-              {autoRefresh && (
-                <Badge color='blue' size='sm' variant='outline'>
-                  <Activity className="h-3 w-3 mr-1 animate-pulse" />
-                    {t('liveUpdates') || 'Live'}
-                </Badge>  
-              )}
             </div>
           </div>
           {/* School Information */}
-          <div className="mb-3 bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 sm:border-2 overflow-hidden transition-all duration-300 group">
-            <div className="bg-gradient-to-bl from-gray-50 to-blue-100 px-3 py-3 sm:px-6 sm:py-4 border-b border-blue-100">
+          <div className="mb-3 bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 sm:border-2 overflow-hidden transition-all duration-300 group">
+            <div className="flex items-center justify-between bg-gradient-to-bl from-gray-50 to-blue-100 px-3 py-3 sm:px-6 sm:py-4 border-b border-blue-100">
               <h3 className="text-base font-semibold text-gray-700 flex">
                 <User className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-gray-600 group-hover:text-blue-600 transition-colors duration-300 flex-shrink-0" />
                 <span className="truncate">{t('accountInformation')}</span>
               </h3>
+              <div>
+                <Link to="/profile">
+                  <Edit className="h-4 w-4 text-gray-500 group-hover:text-blue-600 transition-colors duration-300 inline mr-1" />
+                </Link>
+              </div>
             </div>
             <div className="p-3 sm:p-4 lg:p-6">
               <dl className="space-y-2 sm:space-y-3 lg:space-y-4">
@@ -270,7 +261,6 @@ export default function Dashboard({ user: initialUser }) {
           <StatsCard
             title={t('classes') || 'ថ្នាក់រៀន'}
             value={classCount}
-            subtitle={t('totalClasses') || 'ថ្នាក់សរុប'}
             icon={BookOpen}
             enhanced={true}
             responsive={true}
@@ -283,7 +273,6 @@ export default function Dashboard({ user: initialUser }) {
           <StatsCard
             title={t('assignedStudents') || 'សិស្សបានកំណត់'}
             value={studentCount}
-            subtitle={t('inYourClasses') || 'ក្នុងថ្នាក់របស់អ្នក'}
             icon={Users}
             enhanced={true}
             responsive={true}
@@ -296,7 +285,6 @@ export default function Dashboard({ user: initialUser }) {
           <StatsCard
             title={t('unassignedStudents') || 'សិស្សមិនបានកំណត់'}
             value={unassignedStudents}
-            subtitle={t('awaitingAssignment') || 'រង់ចាំការកំណត់'}
             icon={Target}
             enhanced={true}
             responsive={true}
@@ -310,7 +298,6 @@ export default function Dashboard({ user: initialUser }) {
           <StatsCard
             title={t('avgEnrollment') || 'ការចុះឈ្មោះជាមធ្យម'}
             value={`${classCount > 0 ? Math.round(studentCount / classCount) : 0}`}
-            subtitle={t('studentsPerClass') || 'សិស្សក្នុងមួយថ្នាក់'}
             icon={TrendingUp}
             enhanced={true}
             responsive={true}
@@ -371,9 +358,9 @@ export default function Dashboard({ user: initialUser }) {
                       </span>
                     </div>
                     <div className="flex items-center space-x-4">
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div className="flex-1 bg-green-200 rounded-full h-2">
                         <div 
-                          className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                          className="bg-green-500 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${Math.min((classDetail.enrolledCount / classDetail.maxCapacity) * 100, 100)}%` }}
                         ></div>
                       </div>

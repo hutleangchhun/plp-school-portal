@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Trash2, User, Users, ChevronDown, Download } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, User, Users, ChevronDown, Download, X } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -12,6 +12,7 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
 import { exportToExcel, exportToCSV, exportToPDF, getTimestampedFilename } from '../../utils/exportUtils';
+import Modal from '../../components/ui/Modal';
 
 /**
  * StudentsManagement Component
@@ -56,16 +57,78 @@ export default function StudentsManagement() {
   
   // Other state variables
   const [searchTerm, setSearchTerm] = useState('');
+  const [localSearchTerm, setLocalSearchTerm] = useState(''); // For immediate UI feedback
   const [selectedGrade, setSelectedGrade] = useState("all");
   const [availableGrades, setAvailableGrades] = useState([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [editForm, setEditForm] = useState({
+    firstName: '',
+    lastName: '',
+    username: '',
+    email: '',
+    phone: ''
+  });
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
+  const searchTimeoutRef = useRef(null);
+  
+  // State for all students (unfiltered) and filtered students
+  const [allStudents, setAllStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  
+  // Enhanced client-side search function
+  const performClientSideSearch = useCallback((studentsData, searchQuery) => {
+    if (!searchQuery || searchQuery.trim() === '') {
+      return studentsData;
+    }
+    
+    const query = searchQuery.trim().toLowerCase();
+    
+    return studentsData.filter(student => {
+      // Search in multiple fields
+      const searchFields = [
+        student.firstName || '',
+        student.lastName || '',
+        student.username || '',
+        student.email || '',
+        student.phone || '',
+        (student.name || ''),
+        (student.firstName && student.lastName ? `${student.firstName} ${student.lastName}` : ''),
+        (student.class?.name || ''),
+        (student.className || '')
+      ];
+      
+      return searchFields.some(field => 
+        field.toLowerCase().includes(query)
+      );
+    });
+  }, []);
+  
+  // Debounced search handler
+  const handleSearchChange = useCallback((value) => {
+    setLocalSearchTerm(value);
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Apply client-side filter immediately for better UX
+    const filtered = performClientSideSearch(allStudents, value);
+    setFilteredStudents(filtered);
+    
+    // Debounce server-side search
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchTerm(value);
+    }, 500);
+  }, [allStudents, performClientSideSearch]);
   
   // Initialize classes using local user data and derive from student data
   const initializeClasses = useCallback(async () => {
@@ -304,7 +367,13 @@ export default function StudentsManagement() {
       });
       console.log('=== END MAIN LIST STUDENTS ===');
       
-      setStudents(filteredData);
+      // Store all students for client-side searching
+      setAllStudents(filteredData);
+      
+      // Apply client-side search if there's a local search term
+      const finalFilteredData = performClientSideSearch(filteredData, localSearchTerm);
+      setFilteredStudents(finalFilteredData);
+      setStudents(finalFilteredData);
       
       // Update pagination info
       if (response.pagination) {
@@ -320,11 +389,13 @@ export default function StudentsManagement() {
       console.error('Error fetching students from school:', error);
       showError(error.message || t('errorFetchingStudents'));
       setStudents([]);
+      setAllStudents([]);
+      setFilteredStudents([]);
     } finally {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [searchTerm, showError, t, selectedClassId, selectedGrade, schoolId, user, classes, pagination.page, pagination.limit, fetchSchoolId]);
+  }, [searchTerm, showError, t, selectedClassId, selectedGrade, schoolId, user, classes, pagination.page, pagination.limit, fetchSchoolId, localSearchTerm, performClientSideSearch]);
   
   // Initialize classes when component mounts
   useEffect(() => {
@@ -389,6 +460,15 @@ export default function StudentsManagement() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showExportDropdown]);
+  
+  // Cleanup search timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
   
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -649,6 +729,69 @@ export default function StudentsManagement() {
     }
   };
 
+  // Handle edit student
+  const handleEditStudent = (student) => {
+    console.log('Edit button clicked for student:', student);
+    setEditingStudent(student);
+    setEditForm({
+      firstName: student.firstName || '',
+      lastName: student.lastName || '',
+      username: student.username || '',
+      email: student.email || '',
+      phone: student.phone || ''
+    });
+    setShowEditModal(true);
+  };
+
+  // Handle update student form submission
+  const handleUpdateStudent = async (e) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+
+    try {
+      setLoading(true);
+      
+      console.log('Updating student with ID:', editingStudent.id);
+      console.log('Update data:', editForm);
+
+      const response = await studentService.updateStudent(editingStudent.id, editForm);
+      console.log('Update response:', response);
+
+      if (response) {
+        showSuccess(t('studentUpdatedSuccess', 'Student updated successfully'));
+        setShowEditModal(false);
+        setEditingStudent(null);
+        setEditForm({
+          firstName: '',
+          lastName: '',
+          username: '',
+          email: '',
+          phone: ''
+        });
+        
+        // Refresh the student list
+        setTimeout(async () => {
+          await fetchStudents(searchTerm, true);
+        }, 500);
+      } else {
+        throw new Error('Failed to update student');
+      }
+    } catch (error) {
+      console.error('Error updating student:', error);
+      showError(t('failedUpdateStudent', 'Failed to update student: ') + (error.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle edit form input changes
+  const handleEditFormChange = (field, value) => {
+    setEditForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   // Handle student selection
   const handleStudentSelect = (studentId) => {
     console.log('Selecting student with ID:', studentId, 'Type:', typeof studentId);
@@ -820,29 +963,43 @@ export default function StudentsManagement() {
       headerClassName: 'relative',
       cellClassName: 'text-left text-sm font-medium',
       render: (student) => (
-        <Button
-          onClick={(e) => {
-            e.stopPropagation();
-            console.log('Delete button clicked for student:', student);
-            // Make sure we have the student ID in the expected format
-            const studentToDelete = {
-              ...student,
-              // Ensure we have all possible ID fields
-              id: student.id || student.student_id || student.user_id,
-              student_id: student.student_id || student.id || student.user_id,
-              user_id: student.user_id || student.id || student.student_id
-            };
-            console.log('Student data being set for deletion:', studentToDelete);
-            setSelectedStudent(studentToDelete);
-            setShowDeleteDialog(true);
-          }}
-          variant="ghost"
-          size="sm"
-          className="text-red-600 hover:text-red-900 hover:bg-red-50 hover:scale-110"
-          title={t('removeStudent', 'Remove student')}
-        >
-          <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
-        </Button>
+        <div className="flex items-center space-x-1">
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditStudent(student);
+            }}
+            variant="ghost"
+            size="sm"
+            className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 hover:scale-110"
+            title={t('editStudent', 'Edit student')}
+          >
+            <Edit2 className="h-4 w-4 sm:h-5 sm:w-5" />
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Delete button clicked for student:', student);
+              // Make sure we have the student ID in the expected format
+              const studentToDelete = {
+                ...student,
+                // Ensure we have all possible ID fields
+                id: student.id || student.student_id || student.user_id,
+                student_id: student.student_id || student.id || student.user_id,
+                user_id: student.user_id || student.id || student.student_id
+              };
+              console.log('Student data being set for deletion:', studentToDelete);
+              setSelectedStudent(studentToDelete);
+              setShowDeleteDialog(true);
+            }}
+            variant="ghost"
+            size="sm"
+            className="text-red-600 hover:text-red-900 hover:bg-red-50 hover:scale-110"
+            title={t('removeStudent', 'Remove student')}
+          >
+            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+          </Button>
+        </div>
       )
     }
   ];
@@ -870,29 +1027,43 @@ export default function StudentsManagement() {
             <div className="text-xs text-gray-500 truncate">{student.email || 'N/A'}</div>
           </div>
         </div>
-        <Button
-          onClick={(e) => {
-            e.stopPropagation();
-            console.log('Delete button clicked for student:', student);
-            // Make sure we have the student ID in the expected format
-            const studentToDelete = {
-              ...student,
-              // Ensure we have all possible ID fields
-              id: student.id || student.student_id || student.user_id,
-              student_id: student.student_id || student.id || student.user_id,
-              user_id: student.user_id || student.id || student.student_id
-            };
-            console.log('Student data being set for deletion:', studentToDelete);
-            setSelectedStudent(studentToDelete);
-            setShowDeleteDialog(true);
-          }}
-          variant="ghost"
-          size="sm"
-          className="text-red-600 hover:text-red-900 hover:bg-red-50 hover:scale-110 flex-shrink-0"
-          title={t('removeStudent', 'Remove student')}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center space-x-1">
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditStudent(student);
+            }}
+            variant="ghost"
+            size="sm"
+            className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 hover:scale-110 flex-shrink-0"
+            title={t('editStudent', 'Edit student')}
+          >
+            <Edit2 className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Delete button clicked for student:', student);
+              // Make sure we have the student ID in the expected format
+              const studentToDelete = {
+                ...student,
+                // Ensure we have all possible ID fields
+                id: student.id || student.student_id || student.user_id,
+                student_id: student.student_id || student.id || student.user_id,
+                user_id: student.user_id || student.id || student.student_id
+              };
+              console.log('Student data being set for deletion:', studentToDelete);
+              setSelectedStudent(studentToDelete);
+              setShowDeleteDialog(true);
+            }}
+            variant="ghost"
+            size="sm"
+            className="text-red-600 hover:text-red-900 hover:bg-red-50 hover:scale-110 flex-shrink-0"
+            title={t('removeStudent', 'Remove student')}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       <div className="flex justify-between items-center text-xs text-gray-500">
         <span>{t('phone', 'Phone')}: {student.phone || 'N/A'}</span>
@@ -928,6 +1099,11 @@ export default function StudentsManagement() {
                 <Users className="h-4 w-4 text-blue-600" />
                 <span className="text-sm font-medium text-blue-600">
                   {students.length} {students.length === 1 ? t('student', 'student') : t('students', 'students')}
+                  {localSearchTerm && allStudents.length !== students.length && (
+                    <span className="text-xs text-gray-500 ml-1">
+                      ({t('filteredFrom', 'filtered from')} {allStudents.length})
+                    </span>
+                  )}
                   {selectedClassId !== 'all' && (() => {
                     const selectedClass = classes.find(c => c.classId.toString() === selectedClassId);
                     return selectedClass ? ` នៅ ${selectedClass.name}` : '';
@@ -998,11 +1174,20 @@ export default function StudentsManagement() {
               </div>
               <input
                 type="text"
-                className="block w-full pl-8 sm:pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                placeholder={t('searchStudents', 'Search students...')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-8 sm:pl-10 pr-8 sm:pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                placeholder={t('searchStudents', 'Search students by name, username, email, phone, or class...')}
+                value={localSearchTerm}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
+              {localSearchTerm && (
+                <button
+                  onClick={() => handleSearchChange('')}
+                  className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  title={t('clearSearch', 'Clear search')}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
             
             {classes.length > 0 && (
@@ -1133,6 +1318,130 @@ export default function StudentsManagement() {
       
       {/* Bulk Delete Confirmation */}
       <BulkDeleteDialog />
+      
+      {/* Edit Student Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingStudent(null);
+          setEditForm({
+            firstName: '',
+            lastName: '',
+            username: '',
+            email: '',
+            phone: ''
+          });
+        }}
+        title={t('editStudent', 'Edit Student')}
+        size="md"
+      >
+        <form onSubmit={handleUpdateStudent} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('firstName', 'First Name')}
+              </label>
+              <input
+                type="text"
+                id="firstName"
+                value={editForm.firstName}
+                onChange={(e) => handleEditFormChange('firstName', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder={t('enterFirstName', 'Enter first name')}
+                required
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('lastName', 'Last Name')}
+              </label>
+              <input
+                type="text"
+                id="lastName"
+                value={editForm.lastName}
+                onChange={(e) => handleEditFormChange('lastName', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder={t('enterLastName', 'Enter last name')}
+                required
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+              {t('username', 'Username')}
+            </label>
+            <input
+              type="text"
+              id="username"
+              value={editForm.username}
+              onChange={(e) => handleEditFormChange('username', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder={t('enterUsername', 'Enter username')}
+              required
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              {t('email', 'Email')}
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={editForm.email}
+              onChange={(e) => handleEditFormChange('email', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder={t('enterEmail', 'Enter email address')}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+              {t('phone', 'Phone')}
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              value={editForm.phone}
+              onChange={(e) => handleEditFormChange('phone', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder={t('enterPhone', 'Enter phone number')}
+            />
+          </div>
+          
+          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+            <Button
+              type="button"
+              onClick={() => {
+                setShowEditModal(false);
+                setEditingStudent(null);
+                setEditForm({
+                  firstName: '',
+                  lastName: '',
+                  username: '',
+                  email: '',
+                  phone: ''
+                });
+              }}
+              variant="outline"
+              disabled={loading}
+            >
+              {t('cancel', 'Cancel')}
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={loading}
+              className="min-w-[120px]"
+            >
+              {loading ? t('updating', 'Updating...') : t('updateStudent', 'Update Student')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </PageTransition>
   );
 }
