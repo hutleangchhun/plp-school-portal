@@ -48,14 +48,20 @@ export const schoolService = {
 
     utils: {
         formatSchoolData(school) {
-            // Example formatting logic
+            // Format school data with correct field mapping
+            console.log('Formatting school data:', school);
             return {
-                id: school.id,
+                id: school.schoolId || school.id, // API returns 'schoolId', fallback to 'id'
                 name: school.name,
                 address: school.address,
                 phone: school.phone,
                 email: school.email,
+                code: school.code,
+                status: school.status,
+                place: school.place,
                 establishedYear: school.established_year,
+                createdAt: school.createdAt,
+                updatedAt: school.updatedAt
             };
         },
     },

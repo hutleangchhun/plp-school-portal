@@ -73,7 +73,7 @@ export default function Modal({
               </div>
             </div>
           )}
-
+          <Dialog.Description className="sr-only"></Dialog.Description>
           {/* Content */}
           <div className="flex-1 overflow-auto bg-white px-4 pt-5 pb-4 sm:p-6 rounded-b-xl">
             {children}

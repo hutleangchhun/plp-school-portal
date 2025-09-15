@@ -8,13 +8,15 @@ import StatsCard from '../../components/ui/StatsCard';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import classService from '../../utils/api/services/classService'; // Import the classService
 import studentService from '../../utils/api/services/studentService'; // Import the studentService
+import { userService } from '../../utils/api/services/userService'; // Import userService for my-account
+import schoolService from '../../utils/api/services/schoolService'; // Import schoolService for school info
 
 export default function ClassesManagement() {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   
   // Get authenticated user data
-  const [user] = useState(() => {
+  const [user, setUser] = useState(() => {
     try {
       const userData = localStorage.getItem('user');
       return userData ? JSON.parse(userData) : null;
@@ -36,13 +38,19 @@ export default function ClassesManagement() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [schoolInfo, setSchoolInfo] = useState({ id: null, name: 'Loading...' });
+
+  // Add this useEffect to log school info changes (after schoolInfo is declared)
+  useEffect(() => {
+    console.log('School info updated:', schoolInfo);
+  }, [schoolInfo]);
   const [formData, setFormData] = useState(() => {
     const currentYear = new Date().getFullYear();
     return {
       name: '',
       gradeLevel: '',
       section: '',
-      schoolId: user?.schoolId || '',
+      schoolId: '', // Will be set when schoolInfo is loaded
       teacherId: user?.teacherId || user?.id || '',
       academicYear: `${currentYear}-${currentYear + 1}`,
       maxStudents: '30',
@@ -68,38 +76,182 @@ export default function ClassesManagement() {
     '2025-2026'
   ];
 
+  // Fetch school information using schoolService
+  const fetchSchoolInfo = async () => {
+    try {
+      console.log('Fetching school ID from my-account...');
+      // First get the school ID from my-account
+      const accountData = await userService.getMyAccount();
+      
+      if (accountData && accountData.school_id) {
+        console.log('School ID fetched from account:', accountData.school_id);
+        
+        // Then get detailed school information using schoolService
+        console.log('Fetching school details using schoolService...');
+        console.log('School ID to fetch:', accountData.school_id);
+        console.log('API URL will be:', `${import.meta.env.VITE_API_URL || 'http://157.10.73.52:8085/api/v1'}/schools/${accountData.school_id}`);
+        
+        try {
+          const schoolResponse = await schoolService.getSchoolInfo(accountData.school_id);
+          console.log('Raw school service response:', schoolResponse);
+          
+          if (schoolResponse && schoolResponse.data) {
+            console.log('School information fetched successfully:', {
+              schoolId: schoolResponse.data.id,
+              schoolName: schoolResponse.data.name
+            });
+            
+            setSchoolInfo({
+              id: schoolResponse.data.id,
+              name: schoolResponse.data.name || `School ${schoolResponse.data.id}`
+            });
+          } else {
+            console.warn('No school data returned from schoolService, using fallback');
+            setSchoolInfo({
+              id: accountData.school_id,
+              name: `School ${accountData.school_id}`
+            });
+          }
+        } catch (schoolError) {
+          console.error('Error calling schoolService.getSchoolInfo:', schoolError);
+          console.error('School error details:', {
+            message: schoolError.message,
+            status: schoolError.status,
+            response: schoolError.response
+          });
+          
+          // Use fallback with school ID but show a warning
+          setSchoolInfo({
+            id: accountData.school_id,
+            name: `School ${accountData.school_id} (Failed to load name)`
+          });
+          
+          // Show a less alarming message to the user
+          console.log('Using school ID as fallback due to school service error');
+        }
+      } else {
+        console.error('No school ID found in account data:', accountData);
+        setSchoolInfo({ id: null, name: 'No School Found' });
+        showError(t('noSchoolIdInAccount', 'No school ID found in your account. Please contact administrator.'));
+      }
+    } catch (error) {
+      console.error('Error in fetchSchoolInfo (outer catch):', error);
+      
+      // Only show error if it's a critical account data error
+      if (error.message && error.message.includes('account')) {
+        showError(t('failedToFetchAccountInfo', 'Failed to fetch account information: ') + (error.message || 'Unknown error'));
+      } else {
+        console.log('Non-critical error in fetchSchoolInfo, will use fallback');
+      }
+      
+      setSchoolInfo({ id: null, name: 'Error Loading School' });
+    }
+  };
+
+  // Function to refresh user authentication data from server
+  const refreshUserData = async () => {
+    try {
+      console.log('Refreshing user authentication data...');
+      console.log('Current user before refresh:', user);
+      
+      const accountData = await userService.getMyAccount();
+      console.log('Account data from server:', accountData);
+      
+      if (accountData) {
+        // Check what fields are available in the account data
+        console.log('Available fields in accountData:', Object.keys(accountData));
+        
+        // Extract class information from the new API response structure
+        let classIds = [];
+        let classNames = [];
+        let gradeLevels = [];
+        
+        if (accountData.classes && Array.isArray(accountData.classes)) {
+          classIds = accountData.classes.map(cls => parseInt(cls.class_id));
+          classNames = accountData.classes.map(cls => cls.name);
+          gradeLevels = accountData.classes.map(cls => cls.grade_level);
+          
+          console.log('Extracted from classes array:', {
+            classIds,
+            classNames,
+            gradeLevels
+          });
+        } else {
+          console.warn('No classes array found in account data, keeping original user data');
+          classIds = user?.classIds || [];
+          classNames = user?.classNames || [];
+          gradeLevels = user?.gradeLevels || [];
+        }
+        
+        // Update the user state with fresh data from server
+        const updatedUser = {
+          ...user,
+          classIds: classIds,
+          classNames: classNames,
+          gradeLevels: gradeLevels,
+          // Also update other fields that might have changed
+          teacherId: accountData.teacherId || user.teacherId,
+          school_id: accountData.school_id || user.school_id,
+          schoolId: accountData.school_id || user.schoolId, // For backward compatibility
+        };
+        
+        console.log('Updated user data comparison:', {
+          originalClassIds: user?.classIds,
+          newClassIds: updatedUser.classIds,
+          originalClassNames: user?.classNames,
+          newClassNames: updatedUser.classNames,
+          classesArrayLength: accountData.classes?.length || 0
+        });
+        
+        // Update localStorage and state with fresh data
+        console.log('Updating user data with fresh class information');
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        return updatedUser;
+      } else {
+        console.warn('No account data received from server');
+        return user;
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      return user; // Return original user data if refresh fails
+    }
+  };
+
   useEffect(() => {
+    fetchSchoolInfo();
     fetchClasses();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-fetch classes when user data changes (after refresh)
+  // Note: fetchClasses now uses my-account API directly, so we don't need to depend on user.classIds
+  useEffect(() => {
+    if (user) {
+      console.log('User data changed, re-fetching classes...');
+      fetchClasses();
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchClasses = async () => {
     try {
       setLoading(true);
       
-      if (!user || !user.classIds || !user.classNames) {
-        console.log('No user data or classes found in authentication');
+      console.log('Fetching classes using my-account API...');
+      
+      // Get fresh class data from my-account API
+      const accountData = await userService.getMyAccount();
+      
+      if (!accountData || !accountData.classes || !Array.isArray(accountData.classes)) {
+        console.log('No classes found in account data');
         setClasses([]);
         return;
       }
 
-      // First, fetch all class details including maxStudents
-      const classDetailsPromises = user.classIds.map(classId => 
-        classService.getClassById(classId).catch(error => {
-          console.error(`Error fetching details for class ${classId}:`, error);
-          return null;
-        })
-      );
+      console.log('Found classes in account data:', accountData.classes);
 
-      const classDetails = await Promise.all(classDetailsPromises);
-      
-      // Create an array of promises to fetch students for each authorized class
-      const classPromises = classDetails.map(async (classDetail, index) => {
-        if (!classDetail) return null;
-        
-        const classId = user.classIds[index];
-        const className = user.classNames[index] || `Class ${classId}`;
-        const gradeLevel = user.gradeLevels ? user.gradeLevels[index] : 'Unknown';
-        const maxStudents = classDetail.maxStudents || 50; // Default to 50 if not provided
+      // Process each class from the my-account response
+      const classPromises = accountData.classes.map(async (classData) => {
+        const classId = parseInt(classData.class_id);
         
         try {
           // Get students for this class
@@ -112,36 +264,40 @@ export default function ClassesManagement() {
           
           return {
             id: classId,
-            name: className,
-            grade: `Grade ${gradeLevel}`,
-            section: classDetail.section || 'A',
-            subject: classDetail.subject || `Subject ${gradeLevel}`,
-            teacher: classDetail.teacherName || `Teacher ${classDetail.teacherId || user.teacherId}`,
-            schedule: classDetail.schedule || 'Mon, Wed, Fri',
-            room: classDetail.room || `Room ${classId}`,
-            capacity: maxStudents, // Use maxStudents from the class details
+            name: classData.name,
+            grade: `Grade ${classData.grade_level}`,
+            section: classData.section || 'A',
+            subject: `Subject ${classData.grade_level}`,
+            teacher: `Teacher ${accountData.teacherId || user.teacherId}`,
+            schedule: 'Mon, Wed, Fri',
+            room: `Room ${classId}`,
+            capacity: parseInt(classData.max_students) || 50,
             enrolled: studentCount,
-            description: classDetail.description || `Class ${className} - Grade ${gradeLevel} (${classDetail.section || 'A'})`,
+            description: `Class ${classData.name} - Grade ${classData.grade_level} (${classData.section})`,
             classId: classId,
-            maxStudents: maxStudents // Also include maxStudents at the root level for consistency
+            maxStudents: parseInt(classData.max_students) || 50,
+            academicYear: classData.academic_year,
+            status: classData.status
           };
         } catch (error) {
           console.error(`Error fetching students for class ${classId}:`, error);
           // Return the class with 0 students if there's an error
           return {
             id: classId,
-            name: className,
-            grade: `Grade ${gradeLevel}`,
-            section: classDetail.section || 'A',
-            subject: classDetail.subject || `Subject ${gradeLevel}`,
-            teacher: classDetail.teacherName || `Teacher ${classDetail.teacherId || user.teacherId}`,
-            schedule: classDetail.schedule || 'Mon, Wed, Fri',
-            room: classDetail.room || `Room ${classId}`,
-            capacity: maxStudents,
+            name: classData.name,
+            grade: `Grade ${classData.grade_level}`,
+            section: classData.section || 'A',
+            subject: `Subject ${classData.grade_level}`,
+            teacher: `Teacher ${accountData.teacherId || user.teacherId}`,
+            schedule: 'Mon, Wed, Fri',
+            room: `Room ${classId}`,
+            capacity: parseInt(classData.max_students) || 50,
             enrolled: 0,
-            description: classDetail.description || `Class ${className} - Grade ${gradeLevel} (${classDetail.section || 'A'})`,
+            description: `Class ${classData.name} - Grade ${classData.grade_level} (${classData.section})`,
             classId: classId,
-            maxStudents: maxStudents
+            maxStudents: parseInt(classData.max_students) || 50,
+            academicYear: classData.academic_year,
+            status: classData.status
           };
         }
       });
@@ -150,11 +306,13 @@ export default function ClassesManagement() {
       const formattedClasses = (await Promise.all(classPromises)).filter(cls => cls !== null);
       setClasses(formattedClasses);
       
-      console.log(`Loaded ${formattedClasses.length} classes for teacher ${user.username}`);
+      console.log(`Loaded ${formattedClasses.length} classes for teacher ${accountData.username || user.username}`);
+      console.log('Formatted classes data:', formattedClasses);
       
     } catch (error) {
       console.error('Failed to fetch classes:', error);
       showError(t('error.fetchingClasses') || 'Failed to fetch classes');
+      setClasses([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -165,7 +323,7 @@ export default function ClassesManagement() {
       name: '',
       gradeLevel: '',
       section: '',
-      schoolId: user?.schoolId || '',
+      schoolId: schoolInfo.id?.toString() || '',
       teacherId: user?.teacherId || user?.id || '', // Prefer teacherId, fallback to id if not available
       academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
       maxStudents: '',
@@ -220,12 +378,12 @@ export default function ClassesManagement() {
         academicYear = `${currentYear}-${currentYear + 1}`;
       }
       
-      // Create form data with schoolId from the API response
+      // Create form data - use schoolId from my-account instead of API response
       const formDataToSet = {
         name: classData.name || '',
         gradeLevel: gradeLevel,
         section: classData.section || '',
-        schoolId: classData.schoolId?.toString() || '',
+        schoolId: schoolInfo.id?.toString() || '', // Use schoolId from my-account
         teacherId: classData.teacherId?.toString() || '',
         academicYear: academicYear,
         maxStudents: classData.maxStudents?.toString() || '30',
@@ -235,7 +393,7 @@ export default function ClassesManagement() {
         description: classData.description || ''
       };
       
-      console.log('Setting form data with schoolId from API:', formDataToSet);
+      console.log('Setting form data with schoolId from my-account:', formDataToSet);
       
       setSelectedClass(classData);
       setFormData(formDataToSet);
@@ -271,11 +429,32 @@ export default function ClassesManagement() {
         return;
       }
 
+      // Validate school information is available
+      if (!schoolInfo.id) {
+        console.log('Current schoolInfo state:', schoolInfo);
+        
+        // If school info is still loading, just show a loading message
+        if (schoolInfo.name === 'Loading...') {
+          showError(t('schoolInfoStillLoading') || 'School information is still loading. Please wait a moment and try again.');
+          return;
+        }
+        
+        // If school info failed to load, try to refetch it automatically
+        console.log('School info not available, attempting to refetch...');
+        await fetchSchoolInfo();
+        
+        // Check again after refetch
+        if (!schoolInfo.id) {
+          showError(t('schoolInfoNotAvailable') || 'School information is not available. Please try refreshing the page or contact administrator.');
+          return;
+        }
+      }
+
       const classData = {
         name: formData.name.trim(),
         gradeLevel: parseInt(formData.gradeLevel),
         section: formData.section?.trim() || 'A',
-        schoolId: parseInt(formData.schoolId) || 0,
+        schoolId: parseInt(schoolInfo.id) || 0, // Always use schoolId from my-account
         teacherId: parseInt(formData.teacherId) || 0,
         academicYear: formData.academicYear.trim(),
         maxStudents: parseInt(formData.maxStudents) || 200
@@ -297,14 +476,26 @@ export default function ClassesManagement() {
         if (response.success) {
           showSuccess(t('classAddedSuccessfully') || 'Class added successfully');
           setShowAddModal(false);
-          await fetchClasses(); // Refresh the classes list
+          
+          // Refresh user data from server to get updated class information
+          console.log('Class created successfully, refreshing user data...');
+          await refreshUserData();
+          
+          // Then fetch classes with updated user data
+          await fetchClasses();
         }
       } else if (showEditModal) {
         const response = await classService.updateClass(selectedClass.classId, classData);
         if (response.success) {
           showSuccess(t('classUpdatedSuccessfully') || 'Class updated successfully');
           setShowEditModal(false);
-          await fetchClasses(); // Refresh the classes list
+          
+          // Refresh user data from server to get updated class information
+          console.log('Class updated successfully, refreshing user data...');
+          await refreshUserData();
+          
+          // Then fetch classes with updated user data
+          await fetchClasses();
         }
       }
     } catch (error) {
@@ -322,7 +513,13 @@ export default function ClassesManagement() {
       if (response.success) {
         showSuccess(t('classDeletedSuccessfully') || 'Class deleted successfully');
         setShowDeleteDialog(false);
-        await fetchClasses(); // Refresh the classes list
+        
+        // Refresh user data from server to get updated class information
+        console.log('Class deleted successfully, refreshing user data...');
+        await refreshUserData();
+        
+        // Then fetch classes with updated user data
+        await fetchClasses();
       }
     } catch (error) {
       console.error('Error deleting class:', error);
@@ -435,12 +632,6 @@ export default function ClassesManagement() {
                       className="text-indigo-600 hover:text-indigo-900 p-1 rounded"
                     >
                       <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClass(classItem)}
-                      className="text-red-600 hover:text-red-900 p-1 rounded"
-                    >
-                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -573,16 +764,46 @@ export default function ClassesManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('schoolId') || 'School ID'} *
+                {t('school') || 'School'} *
               </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="schoolName"
+                  required
+                  readOnly
+                  value={schoolInfo.name}
+                  className={`w-full border rounded-lg px-3 py-2 cursor-not-allowed ${
+                    schoolInfo.name === 'Loading...' 
+                      ? 'bg-blue-50 border-blue-300 text-blue-700'
+                      : schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')
+                      ? 'bg-red-50 border-red-300 text-red-700'
+                      : 'bg-gray-100 border-gray-300'
+                  }`}
+                  title={`School ID: ${schoolInfo.id || 'Not available'}`}
+                />
+                {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
+                  <button
+                    type="button"
+                    onClick={fetchSchoolInfo}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                    title="Retry loading school information"
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
               <input
-                type="text"
+                type="hidden"
                 name="schoolId"
-                required
-                readOnly
                 value={formData.schoolId}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
               />
+              {schoolInfo.name === 'Loading...' && (
+                <p className="text-xs text-blue-600 mt-1">Loading school information...</p>
+              )}
+              {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
+                <p className="text-xs text-red-600 mt-1">Failed to load school information. Click "Retry" to try again.</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
