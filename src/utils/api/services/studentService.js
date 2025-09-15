@@ -431,18 +431,41 @@ export const studentService = {
       const { 
         search = '', 
         page = 1, 
-        limit = 10
+        limit = 10,
+        classId: incomingClassId
       } = params;
 
       // Import classService here to avoid circular dependency
       const { classService } = await import('./classService.js');
       
+      // Determine classId to query: use provided, else auto-detect the Master Class id
+      let classId = incomingClassId;
+      if (!classId) {
+        try {
+          const classesResp = await classService.getMasterClassesList(schoolId, { page: 1, limit: 50 });
+          const classes = classesResp?.data || [];
+          const master = classes.find(c => c.section === 'MASTER' || /master/i.test(c.name || ''));
+          if (master) {
+            classId = master.class_id || master.classId || master.id;
+            console.log('Auto-detected Master Class ID:', classId, 'for school', schoolId);
+          } else {
+            console.warn('Master Class not found for school', schoolId, '- falling back to no classId filter.');
+          }
+        } catch (e) {
+          console.warn('Failed to fetch master classes list; proceeding without classId filter:', e);
+        }
+      }
+
       // Use the master-class endpoint to get students from the school with search and pagination
       const apiParams = {
         page,
         limit,
         search: search.trim()
       };
+
+      if (classId) {
+        apiParams.classId = String(classId);
+      }
 
       const response = await classService.getMasterClasses(schoolId, apiParams);
       

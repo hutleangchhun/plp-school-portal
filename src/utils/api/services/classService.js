@@ -129,6 +129,7 @@ export const classService = {
    * @param {number} [params.page=1] - Page number
    * @param {number} [params.limit=10] - Number of items per page
    * @param {string} [params.search=''] - Search term
+   * @param {string|number} [params.classId] - Class ID to filter by
    * @returns {Promise<Object>} Response with students from all classes in the school
    */
   async getMasterClasses(schoolId, params = {}) {
@@ -140,7 +141,8 @@ export const classService = {
       const { 
         page = 1, 
         limit = 10, 
-        search = ''
+        search = '',
+        classId
       } = params;
 
       // Build query params for the master-class endpoint
@@ -152,6 +154,11 @@ export const classService = {
       // Add search parameter if provided
       if (search.trim()) {
         queryParams.search = search.trim();
+      }
+
+      // Forward classId if provided (filter by specific class)
+      if (classId) {
+        queryParams.classId = classId;
       }
 
       const response = await handleApiResponse(() =>
@@ -192,6 +199,45 @@ export const classService = {
       };
     } catch (error) {
       console.error('Error fetching master classes for school', schoolId, 'with params', params, ':', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get classes list for a school via master-class classes endpoint
+   * @param {string|number} schoolId
+   * @param {Object} params
+   * @returns {Promise<Object>} { success, data, pagination, schoolInfo }
+   */
+  async getMasterClassesList(schoolId, params = {}) {
+    try {
+      if (!schoolId) {
+        throw new Error('School ID is required for master classes list endpoint');
+      }
+
+      const { page = 1, limit = 10 } = params;
+      const queryParams = { page, limit };
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.CLASSES.MASTER_CLASSES(schoolId), { params: queryParams })
+      );
+
+      const payload = response?.data || {};
+      const data = Array.isArray(payload.data) ? payload.data : [];
+
+      return {
+        success: true,
+        data,
+        pagination: {
+          page: payload.page || page,
+          limit: payload.limit || limit,
+          total: payload.total || data.length,
+          pages: payload.totalPages || Math.ceil((payload.total || data.length) / (payload.limit || limit))
+        },
+        schoolInfo: payload.schoolInfo
+      };
+    } catch (error) {
+      console.error('Error fetching master classes list for school', schoolId, ':', error);
       throw error;
     }
   },
