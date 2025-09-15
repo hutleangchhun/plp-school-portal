@@ -488,9 +488,9 @@ export default function StudentsManagement() {
       isOpen={showDeleteDialog}
       onClose={() => setShowDeleteDialog(false)}
       onConfirm={handleDeleteStudent}
-      title={t('removeStudent', 'Remove Student')}
-      message={`${t('confirmRemoveStudent', 'Are you sure you want to remove')} ${selectedStudent?.firstName || t('thisStudent', 'this student')} ${t('fromYourClass', 'from your class? This action cannot be undone.')}`}
-      confirmText={loading ? t('removing', 'Removing...') : t('remove', 'Remove')}
+      title={t('moveStudentToMaster', 'Move Student to Master Class')}
+      message={`${t('confirmMoveStudentToMaster', 'Are you sure you want to move')} ${selectedStudent?.firstName || t('thisStudent', 'this student')} ${t('toMasterClass', 'to the master class? This will remove them from the current class.')}`}
+      confirmText={loading ? t('moving', 'Moving...') : t('moveToMaster', 'Move to Master')}
       confirmVariant="danger"
       cancelText={t('cancel', 'Cancel')}
       isConfirming={loading}
@@ -503,9 +503,9 @@ export default function StudentsManagement() {
       isOpen={showBulkDeleteDialog}
       onClose={() => setShowBulkDeleteDialog(false)}
       onConfirm={handleBulkDeleteStudents}
-      title={t('removeStudents', 'Remove Students')}
-      message={`${t('confirmRemoveStudents', 'Are you sure you want to remove')} ${selectedStudentIds.size} ${t('studentsFromClass', 'students from your class? This action cannot be undone.')}`}
-      confirmText={loading ? t('removing', 'Removing...') : t('remove', 'Remove')}
+      title={t('moveStudentsToMaster', 'Move Students to Master Class')}
+      message={`${t('confirmMoveStudentsToMaster', 'Are you sure you want to move')} ${selectedStudentIds.size} ${t('studentsToMasterClass', 'students to the master class? This will remove them from their current classes.')}`}
+      confirmText={loading ? t('moving', 'Moving...') : t('moveToMaster', 'Move to Master')}
       confirmVariant="danger"
       cancelText={t('cancel', 'Cancel')}
       isConfirming={loading}
@@ -554,17 +554,41 @@ export default function StudentsManagement() {
         throw new Error('Student ID must be a number');
       }
       
-      console.log('Calling removeStudentFromClass with:', {
+      // Validate schoolId
+      if (!schoolId) {
+        throw new Error('School ID is required but not available');
+      }
+      
+      console.log('Calling removeStudentToMasterClass with:', {
         classId: studentClassInfo.classId,
+        schoolId: schoolId,
         studentId: numericStudentId,
         studentData: selectedStudent // Log full student data for debugging
       });
       
-      const response = await studentService.removeStudentFromClass(studentClassInfo.classId, numericStudentId);
+      const response = await studentService.removeStudentToMasterClass(studentClassInfo.classId, schoolId, numericStudentId);
       console.log('Remove student response:', response);
       
-      if (response && response.success) {
-        showSuccess(t('studentRemovedSuccess', 'Student removed successfully'));
+      // Check if the API response indicates success
+      // handleApiResponse wraps responses as: { success: boolean, data: actualApiResponse }
+      if (response && response.success && response.data) {
+        const apiData = response.data;
+        // Use the actual message from the API response
+        const successMessage = apiData.message || t('studentRemovedFromClass', 'Student removed from class successfully');
+        showSuccess(successMessage);
+        
+        // Check if student was actually moved to master class or just removed
+        if (apiData.results && apiData.results.length > 0) {
+          const result = apiData.results[0];
+          console.log('Student removal result:', result);
+          
+          // If the student's status shows they were removed but not reassigned,
+          // it might mean the master class is full
+          if (result.status === 'removed' && !result.newClass) {
+            console.log('Student was removed from class but may not have been assigned to master class (possibly due to capacity)');
+          }
+        }
+        
         setShowDeleteDialog(false);
         // Clear the selected student
         setSelectedStudent(null);
@@ -575,7 +599,7 @@ export default function StudentsManagement() {
         // Clear any selected student IDs
         setSelectedStudentIds(new Set());
       } else {
-        throw new Error(response?.error || 'Failed to remove student');
+        throw new Error(response?.error || 'Failed to remove student from class');
       }
     } catch (error) {
       console.error('Error removing student:', error);
@@ -595,6 +619,11 @@ export default function StudentsManagement() {
     
     try {
       setLoading(true);
+      
+      // Validate schoolId
+      if (!schoolId) {
+        throw new Error('School ID is required but not available');
+      }
       
       // Get the current list of students
       const currentStudents = [...students];
@@ -647,13 +676,20 @@ export default function StudentsManagement() {
         
         for (const [classId, studentIds] of studentsByClass) {
           try {
-            console.log(`Removing ${studentIds.length} students from class ${classId}`);
-            const response = await studentService.removeStudentsFromClass(classId, studentIds);
+            console.log(`Removing ${studentIds.length} students from class ${classId} to master class`);
+            const response = await studentService.removeStudentsToMasterClass(classId, schoolId, studentIds);
             console.log(`Remove response for class ${classId}:`, response);
             
-            if (response && response.success) {
-              totalRemoved += studentIds.length;
-              results.push({ classId, success: true, count: studentIds.length });
+            // Check if the API response indicates success
+            // handleApiResponse wraps responses as: { success: boolean, data: actualApiResponse }
+            if (response && response.success && response.data) {
+              const apiData = response.data;
+              if (apiData.message || apiData.summary?.successful > 0) {
+                totalRemoved += studentIds.length;
+                results.push({ classId, success: true, count: studentIds.length });
+              } else {
+                results.push({ classId, success: false, error: apiData.error || 'Unknown error' });
+              }
             } else {
               results.push({ classId, success: false, error: response?.error || 'Unknown error' });
             }
@@ -665,7 +701,7 @@ export default function StudentsManagement() {
 
         // Show results
         if (totalRemoved > 0) {
-          showSuccess(t('studentsRemovedSuccess', `${totalRemoved} students removed successfully`));
+          showSuccess(t('studentsMovedToMasterSuccess', `${totalRemoved} students moved to master class successfully`));
         }
         
         const failedResults = results.filter(r => !r.success);
@@ -698,18 +734,23 @@ export default function StudentsManagement() {
           throw new Error('No valid student IDs found for removal');
         }
         
-        // Call the service to remove students using student IDs
-        const response = await studentService.removeStudentsFromClass(
+        // Call the service to remove students to master class using student IDs
+        const response = await studentService.removeStudentsToMasterClass(
           classInfo.classId, 
+          schoolId,
           studentIdsToRemove
         );
         
         console.log('Remove students response:', response);
         
-        if (response && response.success) {
-          showSuccess(t('studentsRemovedSuccess', `${studentIdsToRemove.length} students removed successfully`));
+        // Check if the API response indicates success
+        // handleApiResponse wraps responses as: { success: boolean, data: actualApiResponse }
+        if (response && response.success && response.data) {
+          const apiData = response.data;
+          const successMessage = apiData.message || t('studentsRemovedFromClass', `${studentIdsToRemove.length} students removed from class successfully`);
+          showSuccess(successMessage);
         } else {
-          throw new Error(response?.error || 'Failed to remove students');
+          throw new Error(response?.error || 'Failed to remove students from class');
         }
       }
       
@@ -995,7 +1036,7 @@ export default function StudentsManagement() {
             variant="ghost"
             size="sm"
             className="text-red-600 hover:text-red-900 hover:bg-red-50 hover:scale-110"
-            title={t('removeStudent', 'Remove student')}
+            title={t('moveStudentToMaster', 'Move student to master class')}
           >
             <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
@@ -1059,7 +1100,7 @@ export default function StudentsManagement() {
             variant="ghost"
             size="sm"
             className="text-red-600 hover:text-red-900 hover:bg-red-50 hover:scale-110 flex-shrink-0"
-            title={t('removeStudent', 'Remove student')}
+            title={t('moveStudentToMaster', 'Move student to master class')}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -1281,7 +1322,7 @@ export default function StudentsManagement() {
                   className="bg-red-600 hover:bg-red-700 text-white"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  {t('removeSelected', 'Remove Selected')}
+                  {t('moveSelectedToMaster', 'Move Selected to Master')}
                 </Button>
               </div>
             </div>

@@ -285,6 +285,76 @@ export const studentService = {
   },
 
   /**
+   * Remove a single student from current class to master class
+   * @param {string|number} classId - The ID of the class
+   * @param {string|number} schoolId - The ID of the school
+   * @param {string|number} studentId - The ID of the student to remove to master class
+   * @returns {Promise<Object>} Remove response
+   */
+  async removeStudentToMasterClass(classId, schoolId, studentId) {
+    try {
+      const response = await handleApiResponse(() =>
+        apiClient_.delete(`${ENDPOINTS.CLASSES.BASE}/${classId}/students/remove-to-master/${schoolId}`, {
+          params: { studentId: Number(studentId) },
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+      );
+      
+      console.log('Remove student to master class response:', response);
+      return response;
+      
+    } catch (error) {
+      console.error('Error in removeStudentToMasterClass:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Remove multiple students from current class to master class
+   * @param {string|number} classId - The ID of the class
+   * @param {string|number} schoolId - The ID of the school
+   * @param {Array<string|number>} studentIds - Array of student IDs to remove to master class
+   * @returns {Promise<Object>} Remove response
+   */
+  async removeStudentsToMasterClass(classId, schoolId, studentIds) {
+    try {
+      // Convert to array if it's a single ID
+      const ids = Array.isArray(studentIds) ? studentIds : [studentIds];
+      
+      // Convert all IDs to numbers
+      const numericIds = ids.map(id => Number(id)).filter(id => !isNaN(id));
+      
+      if (numericIds.length === 0) {
+        throw new Error('No valid student IDs provided');
+      }
+      
+      // If only one student, use the single student endpoint
+      if (numericIds.length === 1) {
+        return await this.removeStudentToMasterClass(classId, schoolId, numericIds[0]);
+      }
+      
+      // For multiple students, use the bulk endpoint with body
+      const response = await handleApiResponse(() =>
+        apiClient_.delete(`${ENDPOINTS.CLASSES.BASE}/${classId}/students/remove-to-master/${schoolId}`, {
+          data: { studentIds: numericIds },
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+      );
+      
+      console.log('Remove students to master class response:', response);
+      return response;
+      
+    } catch (error) {
+      console.error('Error in removeStudentsToMasterClass:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get current teacher's students
    * @param {Object} params - Optional parameters for filtering
    * @param {number} [params.classId] - Specific class ID to filter students
