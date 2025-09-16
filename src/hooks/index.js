@@ -1,6 +1,7 @@
 // Central export for all custom hooks
 export * from './useApiCall.js';
 export * from './useLocalStorage.js';
+export * from './useLocationData.js';
 
 // Additional utility hooks
 import { useState, useEffect, useCallback, useRef } from 'react';

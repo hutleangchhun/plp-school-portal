@@ -8,6 +8,8 @@ import { Button } from '../../components/ui/Button';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import ProfileImage from '../../components/ui/ProfileImage';
 import { api, utils } from '../../utils/api';
+import Dropdown from '../../components/ui/Dropdown';
+import { useLocationData } from '../../hooks/useLocationData';
 
 export default function ProfileUpdate({ user, setUser }) {
   const { t } = useLanguage();
@@ -32,7 +34,11 @@ export default function ProfileUpdate({ user, setUser }) {
     residence: '',
     placeOfBirth: '',
     school_id: '',
-    school: null
+    school: null,
+    provinceId: '',
+    districtId: '',
+    communeId: '',
+    villageId: ''
   });
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
@@ -44,6 +50,23 @@ export default function ProfileUpdate({ user, setUser }) {
   const [isEditMode, setIsEditMode] = useState(false);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
+
+  // Initialize location data hook
+  const {
+    selectedProvince,
+    selectedDistrict,
+    selectedCommune,
+    selectedVillage,
+    handleProvinceChange,
+    handleDistrictChange,
+    handleCommuneChange,
+    handleVillageChange,
+    getProvinceOptions,
+    getDistrictOptions,
+    getCommuneOptions,
+    getVillageOptions,
+    setInitialValues: setLocationInitialValues
+  } = useLocationData();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -124,8 +147,23 @@ export default function ProfileUpdate({ user, setUser }) {
           residence: userData.residence || '',
           placeOfBirth: userData.placeOfBirth || '',
           school_id: userData.school_id || '',
-          school: userData.school || null
+          school: userData.school || null,
+          provinceId: userData.province_id || '',
+          districtId: userData.district_id || '',
+          communeId: userData.commune_id || '',
+          villageId: userData.village_id || ''
         });
+        console.log('User data loaded into form:', formData);
+
+        // Initialize location data if available
+        if (userData.province_id || userData.district_id || userData.commune_id || userData.village_id) {
+          setLocationInitialValues({
+            provinceId: userData.province_id,
+            districtId: userData.district_id,
+            communeId: userData.commune_id,
+            villageId: userData.village_id
+          });
+        }
         // Also update the user context if needed
         if (setUser) {
           setUser(userData);
@@ -139,7 +177,7 @@ export default function ProfileUpdate({ user, setUser }) {
     };
 
     fetchUserData();
-  }, [setUser, showError, t]);
+  }, [setUser, showError, t, setLocationInitialValues]);
 
   const handleViewPicture = () => {
     setShowImageModal(true);
@@ -680,6 +718,116 @@ export default function ProfileUpdate({ user, setUser }) {
                     </div>
                   </div>
                 </div>
+                {/* Location Information */}
+                <div className="border-t pt-4 sm:pt-6">
+                  <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('locationInformation')}</h4>
+                  
+                  {/* Province and District */}
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-6">
+                    <div>
+                      <label htmlFor="province" className="block text-sm font-medium text-gray-700">
+                        {t('province')}
+                      </label>
+                      <div className="mt-1">
+                        {isEditMode ? (
+                          <Dropdown
+                            value={selectedProvince}
+                            onValueChange={(value) => {
+                              handleProvinceChange(value);
+                              setFormData(prev => ({ ...prev, provinceId: value }));
+                            }}
+                            options={getProvinceOptions()}
+                            placeholder={t('selectProvince')}
+                            className="w-full"
+                          />
+                        ) : (
+                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                            {getProvinceOptions().find(p => p.value === selectedProvince)?.label || '-'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="district" className="block text-sm font-medium text-gray-700">
+                        {t('district')}
+                      </label>
+                      <div className="mt-1">
+                        {isEditMode ? (
+                          <Dropdown
+                            value={selectedDistrict}
+                            onValueChange={(value) => {
+                              handleDistrictChange(value);
+                              setFormData(prev => ({ ...prev, districtId: value }));
+                            }}
+                            options={getDistrictOptions()}
+                            placeholder={t('selectDistrict')}
+                            className="w-full"
+                            disabled={!selectedProvince}
+                          />
+                        ) : (
+                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                            {getDistrictOptions().find(d => d.value === selectedDistrict)?.label || '-'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Commune and Village */}
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="commune" className="block text-sm font-medium text-gray-700">
+                        {t('commune')}
+                      </label>
+                      <div className="mt-1">
+                        {isEditMode ? (
+                          <Dropdown
+                            value={selectedCommune}
+                            onValueChange={(value) => {
+                              handleCommuneChange(value);
+                              setFormData(prev => ({ ...prev, communeId: value }));
+                            }}
+                            options={getCommuneOptions()}
+                            placeholder={t('selectCommune')}
+                            className="w-full"
+                            disabled={!selectedDistrict}
+                          />
+                        ) : (
+                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                            {getCommuneOptions().find(c => c.value === selectedCommune)?.label || '-'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="village" className="block text-sm font-medium text-gray-700">
+                        {t('village')}
+                      </label>
+                      <div className="mt-1">
+                        {isEditMode ? (
+                          <Dropdown
+                            value={selectedVillage}
+                            onValueChange={(value) => {
+                              handleVillageChange(value);
+                              setFormData(prev => ({ ...prev, villageId: value }));
+                            }}
+                            options={getVillageOptions()}
+                            placeholder={t('selectVillage')}
+                            className="w-full"
+                            disabled={!selectedCommune}
+                          />
+                        ) : (
+                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                            {getVillageOptions().find(v => v.value === selectedVillage)?.label || '-'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
 
                 {/* School Information Section */}
                 <div className="border-t pt-4 sm:pt-6">

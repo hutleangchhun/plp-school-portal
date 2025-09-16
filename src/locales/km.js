@@ -23,6 +23,19 @@ export const km = {
   updateProfileTitle: 'កែប្រែព័ត៌មានផ្ទាល់ខ្លួន',
   accountInformation: 'ព័ត៌មានគណនី',
   locationInformation: 'ព័ត៌មានទីតាំង',
+  village: 'ភូមិ',
+  commune: 'ឃុំ/សង្កាត់',
+  district: 'ស្រុក/ខណ្ឌ/ក្រុង',
+  province: 'ខេត្ត',
+  selectProvince: 'ជ្រើសរើសខេត្ត',
+  selectDistrict: 'ជ្រើសរើសស្រុក/ខណ្ឌ/ក្រុង',
+  selectCommune: 'ជ្រើសរើសឃុំ/សង្កាត់',
+  selectVillage: 'ជ្រើសរើសភូមិ',
+  loadingProvinces: 'កំពុងទាញយកខេត្ត...',
+  loadingDistricts: 'កំពុងទាញយកស្រុក/ខណ្ឌ/ក្រុង...',
+  loadingCommunes: 'កំពុងទាញយកឃុំ/សង្កាត់...',
+  loadingVillages: 'កំពុងទាញយកភូមិ...',
+
   
   // Form fields
   username: 'ឈ្មោះអ្នកប្រើ',

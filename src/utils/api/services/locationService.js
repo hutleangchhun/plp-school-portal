@@ -30,7 +30,25 @@ const locationService = {
       console.error('Error fetching districts:', error);
       throw error;
     }
-  }
+  },
+  getCommunesByDistrict: async (provinceId, districtCode) => {
+    try {
+      const response = await get(ENDPOINTS.LOCATION.COMMUNES(provinceId, districtCode));
+      return response;
+    } catch (error) {
+      console.error('Error fetching communes:', error);
+      throw error;
+    }
+  },
+  getVillagesByCommune: async (provinceId, districtCode, communeCode) => {
+    try {
+      const response = await get(ENDPOINTS.LOCATION.VILLAGES(provinceId, districtCode, communeCode));
+      return response;
+    } catch (error) {
+      console.error('Error fetching villages:', error);
+      throw error;
+    }
+  },
 };
 
 export default locationService;

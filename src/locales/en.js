@@ -23,6 +23,18 @@ export const en = {
   updateProfileTitle: 'Update Profile',
   accountInformation: 'Account Information',
   locationInformation: 'Location Information',
+  village: 'Village',
+  commune: 'Commune',
+  district: 'District',
+  province: 'Province',
+  selectProvince: 'Select Province',
+  selectDistrict: 'Select District', 
+  selectCommune: 'Select Commune',
+  selectVillage: 'Select Village',
+  loadingProvinces: 'Loading provinces...',
+  loadingDistricts: 'Loading districts...',
+  loadingCommunes: 'Loading communes...',
+  loadingVillages: 'Loading villages...',
   
   // Form fields
   username: 'Username',
