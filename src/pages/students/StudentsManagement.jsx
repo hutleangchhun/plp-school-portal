@@ -58,8 +58,6 @@ export default function StudentsManagement() {
   // Other state variables
   const [searchTerm, setSearchTerm] = useState('');
   const [localSearchTerm, setLocalSearchTerm] = useState(''); // For immediate UI feedback
-  const [selectedGrade, setSelectedGrade] = useState("all");
-  const [availableGrades, setAvailableGrades] = useState([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -187,10 +185,6 @@ export default function StudentsManagement() {
           console.log('Extracted classes from student data:', extractedClasses);
           setClasses(extractedClasses);
           
-          // Extract unique grade levels
-          const grades = [...new Set(extractedClasses.map(cls => cls.gradeLevel))].filter(grade => grade && grade !== 'Unknown');
-          setAvailableGrades(grades.sort());
-          
           if (extractedClasses.length === 1) {
             setSelectedClassId(extractedClasses[0].classId.toString());
           }
@@ -228,10 +222,6 @@ export default function StudentsManagement() {
 
     setClasses(teacherClasses);
 
-    // Extract unique grade levels from teacher's classes
-    const grades = [...new Set(teacherClasses.map(cls => cls.gradeLevel))].filter(grade => grade && grade !== 'Unknown');
-    setAvailableGrades(grades.sort());
-
     // Set first class as default if none selected and teacher has only one class
     if (selectedClassId === 'all' && teacherClasses.length === 1) {
       setSelectedClassId(teacherClasses[0].classId.toString());
@@ -239,7 +229,6 @@ export default function StudentsManagement() {
 
     console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes:`, 
       teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
-    console.log('Available grades:', grades);
   }, [user, classes.length, selectedClassId]);
 
   // Fetch current user's school ID from my-account endpoint
@@ -278,7 +267,6 @@ export default function StudentsManagement() {
     // Create a unique key for current fetch parameters
     const currentParams = JSON.stringify({
       search,
-      selectedGrade,
       selectedClassId,
       schoolId,
       userId: user?.userId,
@@ -303,8 +291,8 @@ export default function StudentsManagement() {
       console.log(`Search term: ${search}`);
       
       // Determine if we need client-side filtering
-      // Use client-side filtering when we have grade filter or local search
-      const needsClientSideFiltering = (selectedGrade && selectedGrade !== 'all') || (localSearchTerm && localSearchTerm.trim() !== '');
+      // Use client-side filtering when we have local search
+      const needsClientSideFiltering = (localSearchTerm && localSearchTerm.trim() !== '');
       
       // Prepare parameters for the API call
       const requestParams = {};
@@ -367,30 +355,12 @@ export default function StudentsManagement() {
       // Store all unfiltered students for reference
       setAllStudents(data);
       
-      // Apply all client-side filters
-      let filteredData = data;
-      
-      // Filter by grade level if specified
-      if (selectedGrade && selectedGrade !== 'all') {
-        filteredData = filteredData.filter(student => {
-          const studentGrade = student.gradeLevel || 
-                              (student.class && student.class.gradeLevel) || 
-                              (classes.find(cls => 
-                                cls.classId === student.classId || 
-                                cls.classId === student.class_id || 
-                                (student.class && cls.classId === student.class.classId)
-                              )?.gradeLevel);
-          return studentGrade === selectedGrade;
-        });
-        console.log(`Filtered ${data.length} students to ${filteredData.length} by grade: ${selectedGrade}`);
-      }
-      
       // Apply client-side search if there's a local search term
-      const finalFilteredData = performClientSideSearch(filteredData, localSearchTerm);
+      const finalFilteredData = performClientSideSearch(data, localSearchTerm);
       setFilteredStudents(finalFilteredData);
       
       console.log('Final filtered students data:', finalFilteredData);
-      console.log(`Applied filters: Grade=${selectedGrade}, Search="${localSearchTerm}", Result=${finalFilteredData.length} students`);
+      console.log(`Applied filters: Search="${localSearchTerm}", Result=${finalFilteredData.length} students`);
       
       // Handle pagination based on whether we're using client-side filtering
       if (needsClientSideFiltering) {
@@ -434,7 +404,7 @@ export default function StudentsManagement() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [searchTerm, showError, t, selectedClassId, selectedGrade, schoolId, user, classes, fetchSchoolId, localSearchTerm, performClientSideSearch, pagination]);
+  }, [searchTerm, showError, t, selectedClassId, schoolId, user, classes, fetchSchoolId, localSearchTerm, performClientSideSearch, pagination]);
   
   // Initialize classes when component mounts
   useEffect(() => {
@@ -457,10 +427,9 @@ export default function StudentsManagement() {
   // Memoized fetch parameters to avoid unnecessary re-renders
   const fetchParams = useMemo(() => ({
     searchTerm,
-    selectedGrade,
     selectedClassId,
     classesLength: classes.length
-  }), [searchTerm, selectedGrade, selectedClassId, classes.length]);
+  }), [searchTerm, selectedClassId, classes.length]);
 
   // Single useEffect to handle all data fetching
   useEffect(() => {
@@ -549,17 +518,16 @@ export default function StudentsManagement() {
   };
 
   // Reset pagination to page 1 when filters change
-  const prevFiltersRef = useRef({ selectedGrade, selectedClassId });
+  const prevFiltersRef = useRef({ selectedClassId });
   useEffect(() => {
-    if (prevFiltersRef.current.selectedGrade !== selectedGrade || 
-        prevFiltersRef.current.selectedClassId !== selectedClassId) {
+    if (prevFiltersRef.current.selectedClassId !== selectedClassId) {
       if (pagination.page !== 1) {
         console.log(`Filter changed - resetting pagination to page 1`);
         setPagination(prev => ({ ...prev, page: 1 }));
       }
-      prevFiltersRef.current = { selectedGrade, selectedClassId };
+      prevFiltersRef.current = { selectedClassId };
     }
-  }, [selectedGrade, selectedClassId, pagination.page]); // Reset page when filters change
+  }, [selectedClassId, pagination.page]); // Reset page when filters change
   
   // Get class information for the selected class
   const classInfo = selectedClassId !== 'all' 
@@ -1348,25 +1316,6 @@ export default function StudentsManagement() {
                     minWidth="min-w-[200px]"
                   />
                 </div>
-                
-                {availableGrades.length > 0 && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-gray-700 font-medium">{t('selectGrade', 'Grade')}:</span>
-                    <Dropdown
-                      value={selectedGrade}
-                      onValueChange={setSelectedGrade}
-                      options={[
-                        { value: 'all', label: t('allGrades', 'All Grades') },
-                        ...availableGrades.map(grade => ({
-                          value: grade,
-                          label: grade
-                        }))
-                      ]}
-                      placeholder={t('selectGrade', 'Select Grade')}
-                      minWidth="min-w-[150px]"
-                    />
-                  </div>
-                )}
               </div>
             )}
           </div>
