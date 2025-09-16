@@ -76,6 +76,7 @@ export default function StudentsManagement() {
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
   const searchTimeoutRef = useRef(null);
+  const classesInitialized = useRef(false);
   
   // State for all students (unfiltered) and filtered students
   const [allStudents, setAllStudents] = useState([]);
@@ -131,8 +132,8 @@ export default function StudentsManagement() {
   // Initialize classes using local user data and derive from student data
   const initializeClasses = useCallback(async () => {
     // Avoid re-initializing if classes are already loaded
-    if (classes.length > 0) {
-      console.log('Classes already loaded, skipping initialization');
+    if (classesInitialized.current) {
+      console.log('Classes already initialized, skipping');
       return;
     }
     
@@ -184,6 +185,7 @@ export default function StudentsManagement() {
           const extractedClasses = Array.from(classMap.values());
           console.log('Extracted classes from student data:', extractedClasses);
           setClasses(extractedClasses);
+          classesInitialized.current = true;
           
           if (extractedClasses.length === 1) {
             setSelectedClassId(extractedClasses[0].classId.toString());
@@ -221,6 +223,7 @@ export default function StudentsManagement() {
     });
 
     setClasses(teacherClasses);
+    classesInitialized.current = true;
 
     // Set first class as default if none selected and teacher has only one class
     if (selectedClassId === 'all' && teacherClasses.length === 1) {
@@ -229,7 +232,7 @@ export default function StudentsManagement() {
 
     console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes:`, 
       teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
-  }, [user, classes.length, selectedClassId]);
+  }, [user, schoolId, fetchSchoolId]);
 
   // Fetch current user's school ID from my-account endpoint
   const fetchSchoolId = useCallback(async () => {
