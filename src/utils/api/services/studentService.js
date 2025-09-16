@@ -356,16 +356,22 @@ export const studentService = {
 
   /**
    * Get current teacher's students
-   * @param {Object} params - Optional parameters for filtering
+   * @param {Object} params - Optional parameters for filtering and pagination
    * @param {number} [params.classId] - Specific class ID to filter students
-   * @returns {Promise<Array>} List of students
+   * @param {number} [params.page=1] - Page number for pagination
+   * @param {number} [params.limit=5] - Number of items per page
+   * @returns {Promise<Object>} Response with student data and pagination info
    */
   async getMyStudents(params = {}) {
     try {
-      const { classId } = params;
+      const { classId, page = 1, limit = 5 } = params;
       
-      // Use the proper my-students endpoint with optional classId filtering
-      const queryParams = {};
+      // Use the proper my-students endpoint with pagination and optional classId filtering
+      const queryParams = {
+        page,
+        limit
+      };
+      
       if (classId) {
         queryParams.classId = classId;
       }
@@ -376,31 +382,50 @@ export const studentService = {
         })
       );
       
-      // Handle the response data
-      let studentsData = [];
+      // Handle the response data - using the same robust approach as getStudents
+      const d = response?.data;
+      const studentsData = Array.isArray(d?.data)
+        ? d.data
+        : (Array.isArray(d) ? d : (Array.isArray(response) ? response : []));
       
-      // Check if response is an array or has a data property that's an array
-      if (Array.isArray(response)) {
-        studentsData = response;
-      } else if (response && Array.isArray(response.data)) {
-        studentsData = response.data;
-      } else if (response && response.data && Array.isArray(response.data.data)) {
-        studentsData = response.data.data;
-      }
-      
+      console.log('=== MY-STUDENTS API RESPONSE DEBUG ===');
+      console.log('Request URL params sent:', queryParams);
       console.log('Raw students data from my-students API:', studentsData);
+      console.log('Students data length:', studentsData?.length);
+      console.log('Full response structure:', response);
+      console.log('Response.data structure:', d);
+      console.log('Pagination info in response:', d?.pagination);
+      console.log('Does response have pagination metadata?', !!d?.pagination);
+      console.log('=== END MY-STUDENTS API RESPONSE DEBUG ===');
       
       // Format student data
       const formattedStudents = studentsData.map(student => {
         return studentService.utils.formatStudentData(student);
       }).filter(student => student !== null);
       
-      console.log(`getMyStudents: Found ${formattedStudents.length} students${classId ? ` for class ${classId}` : ' (all classes)'}`);
+      // Robust pagination extraction - try multiple paths and check if server provided total
+      let serverTotal = d?.total || d?.pagination?.total || response?.total || response?.pagination?.total;
+      
+      // If no server total and we got exactly the limit, assume there might be more pages
+      if (!serverTotal && formattedStudents.length === parseInt(limit)) {
+        console.warn('No server total provided but got full page - pagination may be incomplete');
+      }
+      
+      const pagination = d?.pagination || {
+        page: d?.page ?? parseInt(page),
+        limit: d?.limit ?? parseInt(limit),
+        total: serverTotal ?? formattedStudents.length,
+        pages: d?.pages ?? Math.max(1, Math.ceil((serverTotal ?? formattedStudents.length) / (d?.limit ?? parseInt(limit))))
+      };
+      
+      console.log('Final pagination object:', pagination);
+      
+      console.log(`getMyStudents: Found ${formattedStudents.length} students${classId ? ` for class ${classId}` : ' (all classes)'} - Page ${page}/${pagination.pages}`);
       
       return {
         success: true,
         data: formattedStudents,
-        pagination: { page: 1, limit: 10, total: formattedStudents.length, pages: 1 }
+        pagination
       };
       
     } catch (error) {
@@ -408,7 +433,8 @@ export const studentService = {
       return { 
         success: false, 
         error: error.message || 'Failed to fetch students',
-        data: [] 
+        data: [],
+        pagination: { page: 1, limit: 5, total: 0, pages: 1 }
       };
     }
   },

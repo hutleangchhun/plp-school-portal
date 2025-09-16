@@ -281,7 +281,9 @@ export default function StudentsManagement() {
       selectedGrade,
       selectedClassId,
       schoolId,
-      userId: user?.userId
+      userId: user?.userId,
+      page: pagination.page,
+      limit: pagination.limit
     });
     
     // Prevent duplicate fetches with same parameters unless forced
@@ -299,12 +301,27 @@ export default function StudentsManagement() {
       console.log(`Selected class ID: ${selectedClassId}`);
       console.log(`Search term: ${search}`);
       
-      // Prepare parameters for the new getStudentsBySchool function
-      const requestParams = {
-        search: search || '',
-        page: pagination.page,
-        limit: pagination.limit
-      };
+      // Determine if we need client-side filtering
+      // Use client-side filtering when we have grade filter or local search
+      const needsClientSideFiltering = (selectedGrade && selectedGrade !== 'all') || (localSearchTerm && localSearchTerm.trim() !== '');
+      
+      // Prepare parameters for the API call
+      const requestParams = {};
+      
+      if (!needsClientSideFiltering) {
+        // Use server-side pagination when no client-side filtering is needed
+        requestParams.page = pagination.page;
+        requestParams.limit = pagination.limit;
+      } else {
+        // When using client-side filtering, fetch more data to ensure we have enough for local filtering
+        requestParams.page = 1;
+        requestParams.limit = 100; // Fetch larger batch for client-side filtering
+      }
+      
+      console.log(`=== FETCH STUDENTS CALLED ===`);
+      console.log(`Current pagination state:`, pagination);
+      console.log(`Needs client-side filtering:`, needsClientSideFiltering);
+      console.log(`Request params being sent to API:`, requestParams);
       
       // Add class filter if specific class is selected
       if (selectedClassId !== 'all') {
@@ -344,8 +361,15 @@ export default function StudentsManagement() {
       
       console.log(`Fetched ${data.length} students from school ${schoolId} for ${selectedClassId === 'all' ? 'all classes' : `class ${selectedClassId}`}`);
       
-      // Additional client-side filtering for grade level if specified
+      console.log('Raw students data from API:', data);
+      
+      // Store all unfiltered students for reference
+      setAllStudents(data);
+      
+      // Apply all client-side filters
       let filteredData = data;
+      
+      // Filter by grade level if specified
       if (selectedGrade && selectedGrade !== 'all') {
         filteredData = filteredData.filter(student => {
           const studentGrade = student.gradeLevel || 
@@ -357,32 +381,46 @@ export default function StudentsManagement() {
                               )?.gradeLevel);
           return studentGrade === selectedGrade;
         });
+        console.log(`Filtered ${data.length} students to ${filteredData.length} by grade: ${selectedGrade}`);
       }
-      
-      console.log('Final filtered students data:', filteredData);
-      console.log('=== MAIN LIST STUDENTS (MASTER-CLASS) ===');
-      console.log(`Total students in main list: ${filteredData.length}`);
-      filteredData.forEach(s => {
-        console.log(`Main list student: ID=${s.id}, Name="${s.firstName} ${s.lastName}", Class=${s.class?.id || s.classId}`)
-      });
-      console.log('=== END MAIN LIST STUDENTS ===');
-      
-      // Store all students for client-side searching
-      setAllStudents(filteredData);
       
       // Apply client-side search if there's a local search term
       const finalFilteredData = performClientSideSearch(filteredData, localSearchTerm);
       setFilteredStudents(finalFilteredData);
-      setStudents(finalFilteredData);
       
-      // Update pagination info
-      if (response.pagination) {
-        setPagination({
-          page: response.pagination.page,
-          limit: response.pagination.limit,
-          total: response.pagination.total,
-          pages: response.pagination.pages
-        });
+      console.log('Final filtered students data:', finalFilteredData);
+      console.log(`Applied filters: Grade=${selectedGrade}, Search="${localSearchTerm}", Result=${finalFilteredData.length} students`);
+      
+      // Handle pagination based on whether we're using client-side filtering
+      if (needsClientSideFiltering) {
+        // Client-side pagination: paginate the filtered data locally
+        const startIndex = (pagination.page - 1) * pagination.limit;
+        const endIndex = startIndex + pagination.limit;
+        const paginatedData = finalFilteredData.slice(startIndex, endIndex);
+        
+        console.log(`Client-side pagination: showing ${startIndex + 1}-${Math.min(endIndex, finalFilteredData.length)} of ${finalFilteredData.length} students`);
+        
+        setStudents(paginatedData);
+        
+        // Update pagination to reflect client-side totals
+        setPagination(prev => ({
+          ...prev,
+          total: finalFilteredData.length,
+          pages: Math.max(1, Math.ceil(finalFilteredData.length / prev.limit))
+        }));
+      } else {
+        // Server-side pagination: use all returned data and server pagination info
+        setStudents(finalFilteredData);
+        
+        // Update pagination info from server response
+        if (response.pagination) {
+          setPagination({
+            page: response.pagination.page,
+            limit: response.pagination.limit,
+            total: response.pagination.total,
+            pages: response.pagination.pages
+          });
+        }
       }
       
     } catch (error) {
@@ -395,7 +433,7 @@ export default function StudentsManagement() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [searchTerm, showError, t, selectedClassId, selectedGrade, schoolId, user, classes, pagination.page, pagination.limit, fetchSchoolId, localSearchTerm, performClientSideSearch]);
+  }, [searchTerm, showError, t, selectedClassId, selectedGrade, schoolId, user, classes, pagination, fetchSchoolId, localSearchTerm, performClientSideSearch]);
   
   // Initialize classes when component mounts
   useEffect(() => {
@@ -425,7 +463,16 @@ export default function StudentsManagement() {
 
   // Single useEffect to handle all data fetching
   useEffect(() => {
-    if (classes.length === 0) return; // Wait for classes to load
+    console.log(`=== USE EFFECT TRIGGERED ===`);
+    console.log(`Current pagination:`, pagination);
+    console.log(`Classes length:`, classes.length);
+    console.log(`Selected class ID:`, selectedClassId);
+    console.log(`Search term:`, searchTerm);
+    
+    if (classes.length === 0) {
+      console.log(`Waiting for classes to load...`);
+      return; // Wait for classes to load
+    }
     
     // SECURITY: Validate that selectedClassId belongs to teacher's authorized classes
     if (selectedClassId !== 'all') {
@@ -442,12 +489,17 @@ export default function StudentsManagement() {
     const isSearchChange = searchTerm.trim() !== '';
     const delay = isSearchChange ? 500 : 100; // Small delay to batch state changes
     
+    console.log(`Setting timer with delay ${delay}ms to fetch students`);
     const timer = setTimeout(() => {
+      console.log(`Timer fired - calling fetchStudents with page ${pagination.page}, limit ${pagination.limit}`);
       fetchStudents(searchTerm, false);
     }, delay);
     
-    return () => clearTimeout(timer);
-  }, [fetchParams, user, classes, fetchStudents, selectedClassId, searchTerm]);
+    return () => {
+      console.log(`Cleaning up timer`);
+      clearTimeout(timer);
+    };
+  }, [fetchParams, user, classes, fetchStudents, selectedClassId, searchTerm, pagination]);
   
   // Close export dropdown when clicking outside
   useEffect(() => {
@@ -472,10 +524,31 @@ export default function StudentsManagement() {
   
   // Handle page change
   const handlePageChange = (newPage) => {
+    console.log(`=== PAGINATION CHANGE DEBUG ===`);
+    console.log(`Changing from page ${pagination.page} to page ${newPage}`);
+    console.log(`Total pages available: ${pagination.pages}`);
+    console.log(`Current limit: ${pagination.limit}`);
+    
     if (newPage >= 1 && newPage <= pagination.pages) {
-      setPagination(prev => ({ ...prev, page: newPage }));
+      console.log(`Valid page change - updating pagination state`);
+      setPagination(prev => {
+        const newPagination = { ...prev, page: newPage };
+        console.log(`New pagination state:`, newPagination);
+        return newPagination;
+      });
+    } else {
+      console.warn(`Invalid page change attempted: page ${newPage} not in range 1-${pagination.pages}`);
     }
+    console.log(`=== END PAGINATION CHANGE DEBUG ===`);
   };
+
+  // Reset pagination to page 1 when filters change
+  useEffect(() => {
+    if (pagination.page !== 1) {
+      console.log(`Filter changed - resetting pagination to page 1`);
+      setPagination(prev => ({ ...prev, page: 1 }));
+    }
+  }, [selectedGrade, selectedClassId, pagination.page]); // Reset page when filters change
   
   // Get class information for the selected class
   const classInfo = selectedClassId !== 'all' 
@@ -1264,6 +1337,25 @@ export default function StudentsManagement() {
                     minWidth="min-w-[200px]"
                   />
                 </div>
+                
+                {availableGrades.length > 0 && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-700 font-medium">{t('selectGrade', 'Grade')}:</span>
+                    <Dropdown
+                      value={selectedGrade}
+                      onValueChange={setSelectedGrade}
+                      options={[
+                        { value: 'all', label: t('allGrades', 'All Grades') },
+                        ...availableGrades.map(grade => ({
+                          value: grade,
+                          label: grade
+                        }))
+                      ]}
+                      placeholder={t('selectGrade', 'Select Grade')}
+                      minWidth="min-w-[150px]"
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
