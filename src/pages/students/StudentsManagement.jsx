@@ -288,6 +288,7 @@ export default function StudentsManagement() {
     
     // Prevent duplicate fetches with same parameters unless forced
     if (!force && (fetchingRef.current || lastFetchParams.current === currentParams)) {
+      console.log('Skipping duplicate fetch with same parameters');
       return;
     }
     
@@ -433,7 +434,7 @@ export default function StudentsManagement() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [searchTerm, showError, t, selectedClassId, selectedGrade, schoolId, user, classes, fetchSchoolId, localSearchTerm, performClientSideSearch]);
+  }, [searchTerm, showError, t, selectedClassId, selectedGrade, schoolId, user, classes, fetchSchoolId, localSearchTerm, performClientSideSearch, pagination]);
   
   // Initialize classes when component mounts
   useEffect(() => {
@@ -445,13 +446,13 @@ export default function StudentsManagement() {
     fetchSchoolId();
   }, [fetchSchoolId]);
 
-  // Fetch students when schoolId becomes available
+  // Initial fetch when schoolId and classes become available
   useEffect(() => {
     if (schoolId && classes.length > 0) {
-      console.log('School ID available, fetching students...');
-      fetchStudents();
+      console.log('School ID available, initial fetch...');
+      fetchStudents('', true); // Force initial fetch
     }
-  }, [schoolId, classes.length, fetchStudents]);
+  }, [schoolId, classes.length]);
 
   // Memoized fetch parameters to avoid unnecessary re-renders
   const fetchParams = useMemo(() => ({
@@ -492,22 +493,19 @@ export default function StudentsManagement() {
     console.log(`Setting timer with delay ${delay}ms to fetch students`);
     const timer = setTimeout(() => {
       console.log(`Timer fired - calling fetchStudents with page ${pagination.page}, limit ${pagination.limit}`);
-      fetchStudents(searchTerm, false);
+      // Only fetch if not already fetching and has required data
+      if (!fetchingRef.current && schoolId) {
+        fetchStudents(searchTerm, false);
+      } else {
+        console.log('Skipping fetch - already fetching or missing schoolId');
+      }
     }, delay);
     
     return () => {
       console.log(`Cleaning up timer`);
       clearTimeout(timer);
     };
-  }, [fetchParams, user, classes, fetchStudents, selectedClassId, searchTerm]);
-  
-  // Separate useEffect for pagination changes
-  useEffect(() => {
-    if (classes.length > 0 && schoolId) {
-      console.log(`Pagination changed - fetching page ${pagination.page}`);
-      fetchStudents(searchTerm, false);
-    }
-  }, [pagination.page, pagination.limit, classes.length, schoolId, fetchStudents, searchTerm]);
+  }, [fetchParams, user, classes, fetchStudents, selectedClassId, searchTerm, pagination, schoolId]);
   
   // Close export dropdown when clicking outside
   useEffect(() => {
