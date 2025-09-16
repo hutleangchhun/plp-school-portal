@@ -211,7 +211,7 @@ const Pagination = ({ pagination, onPageChange, t }) => {
         </div>
         
         <div>
-          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label={t('pagination')}>
             {/* First page button */}
             <Button
               onClick={() => onPageChange(1)}

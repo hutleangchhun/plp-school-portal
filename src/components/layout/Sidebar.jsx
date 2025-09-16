@@ -131,8 +131,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
           />
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-gray-800">ប្រព័ន្ធរដ្ឋបាលសម្រាប់គ្រូ</span>
-              <span className="text-xs text-gray-600 mt-1">Teacher Portal</span>
+              <span className="text-sm font-semibold text-gray-800">{t('teacherPortal')}</span>
             </div>
           )}
         </div>
@@ -195,8 +194,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
           />
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="text-xs font-medium text-gray-700">Primary Education Department</span>
-              <span className="text-xs text-gray-500">Moeys of Cambodia</span>
+              <span className="text-xs font-medium text-gray-700">{t('primaryEducationDepartment')}</span>
+              <span className="text-xs text-gray-500">{t('moeysOfCambodia')}</span>
             </div>
           )}
         </div>

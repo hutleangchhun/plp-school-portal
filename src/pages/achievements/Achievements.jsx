@@ -138,7 +138,7 @@ export default function Achievements() {
       <Modal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="Add Achievement"
+        title={t('addAchievement')}
         size="lg"
       >
         <form onSubmit={(e) => {
@@ -159,10 +159,10 @@ export default function Achievements() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
               <select name="category" required className="w-full border border-gray-300 rounded-lg px-3 py-2">
                 <option value="">Select Category</option>
-                <option value="Academic">Academic</option>
-                <option value="Sports">Sports</option>
-                <option value="Arts">Arts</option>
-                <option value="Leadership">Leadership</option>
+                <option value="Academic">{t('academic')}</option>
+                <option value="Sports">{t('sports')}</option>
+                <option value="Arts">{t('arts')}</option>
+                <option value="Leadership">{t('leadership')}</option>
               </select>
             </div>
             <div>
@@ -172,7 +172,7 @@ export default function Achievements() {
             <div className="flex justify-end space-x-3 pt-4">
               <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg">Cancel</button>
               <button type="submit" disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded-lg">
-                {loading ? 'Adding...' : 'Add Achievement'}
+                {loading ? t('adding') : t('addAchievement')}
               </button>
             </div>
           </div>

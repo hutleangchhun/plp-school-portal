@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import * as Toast from '@radix-ui/react-toast';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function ToastComponent({ 
   type = 'info', 
@@ -9,6 +10,7 @@ export default function ToastComponent({
   onClose, 
   duration = 5000
 }) {
+  const { t } = useLanguage();
   useEffect(() => {
     if (isVisible && duration > 0) {
       const timer = setTimeout(() => {
@@ -83,8 +85,8 @@ export default function ToastComponent({
           <Toast.Close asChild>
             <button
               className={`rounded-full inline-flex ${config.textColor} hover:bg-gray-200 hover:${config.iconColor} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 p-0.5 sm:p-1 border border-transparent hover:border-gray-300`}
-              title="Close notification"
-              aria-label="Close notification"
+              title={t('closeNotification')}
+              aria-label={t('closeNotification')}
             >
               <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             </button>

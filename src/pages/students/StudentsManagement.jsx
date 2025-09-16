@@ -1231,19 +1231,19 @@ export default function StudentsManagement() {
                     onClick={handleExportExcel}
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
                   >
-                    Export to Excel (.xlsx)
+                    {t('exportToExcel')}
                   </button>
                   <button
                     onClick={handleExportCSV}
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
                   >
-                    Export to CSV (.csv)
+                    {t('exportToCSV')}
                   </button>
                   <button
                     onClick={handleExportPDF}
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
                   >
-                    Export to PDF (.pdf)
+                    {t('exportToPDF')}
                   </button>
                 </div>
               </div>

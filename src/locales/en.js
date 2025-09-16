@@ -438,7 +438,7 @@ export const en = {
   failedToLoadDashboard: 'Failed to load dashboard data',
   
   // Dashboard stats
-  classes: 'Classes',
+  dashboardClasses: 'Classes',
   assignedStudents: 'Assigned Students',
   inYourClasses: 'In Your Classes',
   unassignedStudents: 'Unassigned Students', 
@@ -451,16 +451,65 @@ export const en = {
   
   // Dashboard quick actions and components
   quickActions: 'Quick Actions',
-  assignStudents: 'Assign Students',
-  manageClasses: 'Manage Classes',
+  dashboardAssignStudents: 'Assign Students',
+  dashboardManageClasses: 'Manage Classes',
   manageStudents: 'Manage Students',
   updateProfile: 'Update Profile',
   classEnrollment: 'Class Enrollment',
   enrolled: 'Enrolled',
-  capacity: 'Capacity',
+  classCapacity: 'Capacity',
   totalEnrolled: 'Total Enrolled',
   avgPerClass: 'Average Per Class',
-  students: 'Students',
+  studentsCount: 'Students',
+  
+  // Export functionality
+  exportToExcel: 'Export to Excel (.xlsx)',
+  exportToCSV: 'Export to CSV (.csv)',
+  exportToPDF: 'Export to PDF (.pdf)',
+  chooseAnOption: 'Choose an option...',
+  selectClassDropdown: 'Select class...',
+  month: 'Month',
+  year: 'Year',
+  allClassesFilter: 'All Classes',
+  
+  // Grade levels for dropdown
+  grade1: 'Grade 1',
+  grade2: 'Grade 2',
+  grade3: 'Grade 3',
+  grade4: 'Grade 4',
+  grade5: 'Grade 5',
+  grade6: 'Grade 6',
+  grade7: 'Grade 7',
+  grade8: 'Grade 8',
+  grade9: 'Grade 9',
+  grade10: 'Grade 10',
+  grade11: 'Grade 11',
+  grade12: 'Grade 12',
+  
+  // Achievement categories
+  academic: 'Academic',
+  sports: 'Sports',
+  arts: 'Arts',
+  leadership: 'Leadership',
+  adding: 'Adding...',
+  
+  // Accessibility and UI
+  closeNotification: 'Close notification',
+  closeWelcomeMessage: 'Close welcome message',
+  pagination: 'Pagination',
+  
+  // Additional organization info
+  organizationTeacherPortal: 'Teacher Portal',
+  primaryEducationDepartment: 'Primary Education Department',
+  moeysOfCambodia: 'Moeys of Cambodia',
+  schoolInformation: 'School Information',
+  
+  // Form placeholders
+  sectionPlaceholder: 'e.g., A, B, C',
+  capacityPlaceholder: 'Maximum 200 students',
+  
+  // Loading states
+  loadingText: 'Loading...',
   
   // Additional navigation/action translations that may appear
   'Assign Students': 'Assign Students',
@@ -471,7 +520,5 @@ export const en = {
   'Class Enrollment': 'Class Enrollment',
   'Total Enrolled': 'Total Enrolled',
   'Average Per Class': 'Average Per Class',
-  Capacity: 'Capacity',
   'Awaiting Assignment': 'Awaiting Assignment',
-  Students: 'Students',
 };  

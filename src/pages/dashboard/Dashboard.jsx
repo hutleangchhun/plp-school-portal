@@ -487,7 +487,7 @@ export default function Dashboard({ user: initialUser }) {
             <div className="bg-blue-100 px-3 py-3 sm:px-6 sm:py-4 border-b border-gray-200 group-hover:bg-blue-200 transition-colors duration-300">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
                 <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-gray-600 group-hover:text-blue-600 transition-colors duration-300 flex-shrink-0" />
-                <span className="truncate">School Information</span>
+                <span className="truncate">{t('schoolInformation')}</span>
               </h3>
             </div>
             <div className="p-3 sm:p-4 lg:p-6">

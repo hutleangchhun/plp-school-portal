@@ -51,8 +51,8 @@ export default function WelcomeAlert({ user, t, onClose }) {
               <button
                 onClick={handleClose}
                 className="rounded-full inline-flex text-blue-800 hover:bg-blue-200 hover:text-blue-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-50 focus:ring-blue-600 p-1 border border-transparent hover:border-blue-300"
-                title="Close welcome message"
-                aria-label="Close welcome message"
+                title={t('closeWelcomeMessage')}
+                aria-label={t('closeWelcomeMessage')}
               >
                 <X className="h-3.5 w-3.5" />
               </button>

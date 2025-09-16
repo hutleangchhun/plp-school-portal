@@ -513,4 +513,53 @@ export const km = {
   // Student management with master-class endpoint
   noSchoolIdFound: 'រកមិនឃើញលេខសម្គាល់សាលារៀនសម្រាប់គណនីរបស់អ្នក',
   failedToFetchSchoolId: 'បរាជ័យក្នុងការទាញយកព័ត៌មានសាលារៀន',
+  
+  // Export functionality
+  exportToExcel: 'នាំចេញទៅ Excel (.xlsx)',
+  exportToCSV: 'នាំចេញទៅ CSV (.csv)',
+  exportToPDF: 'នាំចេញទៅ PDF (.pdf)',
+  chooseAnOption: 'ជ្រើសរើសជម្រើស...',
+  selectClassDropdown: 'ជ្រើសរើសថ្នាក់...',
+  month: 'ខែ',
+  year: 'ឆ្នាំ',
+  allClassesFilter: 'ថ្នាក់ទាំងអស់',
+  
+  // Grade levels for dropdown
+  grade1: 'ថ្នាក់ទី១',
+  grade2: 'ថ្នាក់ទី២',
+  grade3: 'ថ្នាក់ទី៣',
+  grade4: 'ថ្នាក់ទី៤',
+  grade5: 'ថ្នាក់ទី៥',
+  grade6: 'ថ្នាក់ទី៦',
+  grade7: 'ថ្នាក់ទី៧',
+  grade8: 'ថ្នាក់ទី៨',
+  grade9: 'ថ្នាក់ទី៩',
+  grade10: 'ថ្នាក់ទី១០',
+  grade11: 'ថ្នាក់ទី១១',
+  grade12: 'ថ្នាក់ទី១២',
+  
+  // Achievement categories
+  academic: 'សិក្សា',
+  sports: 'កីឡា',
+  arts: 'សិល្បៈ',
+  leadership: 'ភាពជាអ្នកដឹកនាំ',
+  adding: 'កំពុងបន្ថែម...',
+  
+  // Accessibility and UI
+  closeNotification: 'បិទការជូនដំណឹង',
+  closeWelcomeMessage: 'បិទសារស្វាគមន៍',
+  pagination: 'ការបែងចែកទំព័រ',
+  
+  // Additional organization info
+  organizationTeacherPortal: 'ប្រព័ន្ធរដ្ឋបាលសម្រាប់គ្រូ',
+  primaryEducationDepartment: 'នាយកដ្ឋានអប់រំបឋម',
+  moeysOfCambodia: 'ក្រសួងអប់រំ យុវជន និងកីឡា កម្ពុជា',
+  schoolInformation: 'ព័ត៌មានសាលារៀន',
+  
+  // Form placeholders
+  sectionPlaceholder: 'ឧ. ក, ខ, គ',
+  capacityPlaceholder: 'អតិបរមា ២០០ សិស្ស',
+  
+  // Loading states
+  loadingText: 'កំពុងផ្ទុក...',
 };

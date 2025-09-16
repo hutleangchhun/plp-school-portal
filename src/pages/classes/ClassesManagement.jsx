@@ -434,7 +434,7 @@ export default function ClassesManagement() {
         console.log('Current schoolInfo state:', schoolInfo);
         
         // If school info is still loading, just show a loading message
-        if (schoolInfo.name === 'Loading...') {
+        if (schoolInfo.name === 'Loading...' || schoolInfo.name === t('loadingText')) {
           showError(t('schoolInfoStillLoading') || 'School information is still loading. Please wait a moment and try again.');
           return;
         }
@@ -734,7 +734,7 @@ export default function ClassesManagement() {
                 type="text"
                 name="section"
                 required
-                placeholder="e.g., A, B, C"
+                placeholder={t('sectionPlaceholder')}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 value={formData.section}
                 onChange={handleInputChange}
@@ -830,7 +830,7 @@ export default function ClassesManagement() {
               required
               min="1"
               max="200"
-              placeholder="Maximum 200 students"
+              placeholder={t('capacityPlaceholder')}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               value={formData.maxStudents}
               onChange={handleInputChange}
