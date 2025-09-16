@@ -1,4 +1,4 @@
-import { get, post, patch, uploadFile } from '../client';
+import { get, post, patch, uploadFile, uploadFilePatch } from '../client';
 import { ENDPOINTS } from '../config';
 
 /**
@@ -46,13 +46,135 @@ const userService = {
   /**
    * Upload profile picture using /users/my-account/profile-picture route (PATCH method)
    * @param {File} file - Profile picture file
+   * @param {string|number} [userId] - Optional user ID for specific user upload (uses /users/{id}/upload-profile)
    * @returns {Promise<Object>} Upload response with image path
    */
-  uploadProfilePicture: async (file) => {
+  uploadProfilePicture: async (file, userId = null) => {
     const formData = new FormData();
     formData.append('file', file);
     
+    // If userId is provided, try the new endpoint format first
+    if (userId && userId !== null && userId !== undefined && userId !== '') {
+      try {
+        console.log(`Attempting to upload profile picture using new POST endpoint: /users/${userId}/upload-profile`);
+        console.log('Full URL will be:', import.meta.env.VITE_API_URL || 'http://157.10.73.52:8085/api/v1' + ENDPOINTS.USERS.UPLOAD_PROFILE(userId));
+        return await uploadFile(
+          ENDPOINTS.USERS.UPLOAD_PROFILE(userId),
+          file,
+          'file'
+        );
+      } catch (error) {
+        console.warn('New endpoint failed:', error.message);
+        
+        // If the new endpoint fails, try different approaches
+        if (error.status === 404) {
+          console.log('New endpoint not found (404), falling back to legacy endpoint');
+        } else if (error.status === 405) {
+          console.log('Method not allowed (405), endpoint may require different HTTP method');
+        } else {
+          console.log('New endpoint failed with error:', error.status || 'unknown');
+        }
+        
+        // Fall back to the legacy endpoint if the new one fails (using PATCH method)
+        try {
+          console.log('Attempting legacy endpoint with PATCH:', ENDPOINTS.USERS.MY_PROFILE_PICTURE);
+          console.log('Full URL will be:', import.meta.env.VITE_API_URL || 'http://157.10.73.52:8085/api/v1' + ENDPOINTS.USERS.MY_PROFILE_PICTURE);
+          return await uploadFilePatch(
+            ENDPOINTS.USERS.MY_PROFILE_PICTURE,
+            file,
+            'file'
+          );
+        } catch (legacyError) {
+          console.error('Legacy endpoint also failed:', legacyError.message);
+          
+          // Try generic upload endpoint as last resort
+          try {
+            console.log('Attempting generic upload endpoint: /upload/single');
+            const genericResponse = await uploadFile(
+              ENDPOINTS.UPLOAD.SINGLE,
+              file,
+              'file'
+            );
+            
+            // If generic upload succeeds, we might need to handle the response differently
+            if (genericResponse && (genericResponse.url || genericResponse.path || genericResponse.filename)) {
+              return {
+                profile_picture: genericResponse.url || genericResponse.path || genericResponse.filename
+              };
+            }
+            
+            return genericResponse;
+          } catch (genericError) {
+            console.error('Generic upload endpoint also failed:', genericError.message);
+            throw new Error(`All endpoints failed. New: ${error.message}, Legacy: ${legacyError.message}, Generic: ${genericError.message}`);
+          }
+        }
+      }
+    }
+    
+    // Otherwise, use the existing my-account endpoint for backward compatibility (using PATCH method)
+    console.log('Using legacy endpoint with PATCH:', ENDPOINTS.USERS.MY_PROFILE_PICTURE);
+    console.log('Full URL will be:', import.meta.env.VITE_API_URL || 'http://157.10.73.52:8085/api/v1' + ENDPOINTS.USERS.MY_PROFILE_PICTURE);
+    try {
+      return await uploadFilePatch(
+        ENDPOINTS.USERS.MY_PROFILE_PICTURE,
+        file,
+        'file'
+      );
+    } catch (error) {
+      console.error('Legacy endpoint failed:', error.message);
+      
+      // Try generic upload endpoint as last resort
+      try {
+        console.log('Attempting generic upload endpoint: /upload/single');
+        const genericResponse = await uploadFile(
+          ENDPOINTS.UPLOAD.SINGLE,
+          file,
+          'file'
+        );
+        
+        // If generic upload succeeds, we might need to handle the response differently
+        if (genericResponse && (genericResponse.url || genericResponse.path || genericResponse.filename)) {
+          return {
+            profile_picture: genericResponse.url || genericResponse.path || genericResponse.filename
+          };
+        }
+        
+        return genericResponse;
+      } catch (genericError) {
+        console.error('Generic upload endpoint also failed:', genericError.message);
+        throw new Error(`All endpoints failed. Legacy: ${error.message}, Generic: ${genericError.message}. Please check if the server supports profile picture uploads.`);
+      }
+    }
+  },
+
+  /**
+   * Upload profile picture for specific user using new endpoint format (POST method)
+   * @param {string|number} userId - User ID for the upload
+   * @param {File} file - Profile picture file
+   * @returns {Promise<Object>} Upload response with image path
+   */
+  uploadUserProfilePicture: async (userId, file) => {
+    if (!userId) {
+      throw new Error('User ID is required for this method');
+    }
+    
+    console.log(`Uploading profile picture for user ${userId} using new POST endpoint: /users/${userId}/upload-profile`);
     return uploadFile(
+      ENDPOINTS.USERS.UPLOAD_PROFILE(userId),
+      file,
+      'file'
+    );
+  },
+
+  /**
+   * Upload profile picture using legacy PATCH endpoint
+   * @param {File} file - Profile picture file
+   * @returns {Promise<Object>} Upload response with image path
+   */
+  uploadProfilePicturePatch: async (file) => {
+    console.log('Using legacy PATCH endpoint: /users/my-account/profile-picture');
+    return uploadFilePatch(
       ENDPOINTS.USERS.MY_PROFILE_PICTURE,
       file,
       'file'

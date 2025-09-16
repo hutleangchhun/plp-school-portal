@@ -129,6 +129,30 @@ export default function StudentsManagement() {
     }, 500);
   }, [allStudents, performClientSideSearch]);
   
+  // Fetch current user's school ID from my-account endpoint
+  const fetchSchoolId = useCallback(async () => {
+    try {
+      if (schoolId) {
+        console.log('School ID already available:', schoolId);
+        return;
+      }
+
+      console.log('Fetching school ID from my-account endpoint...');
+      const accountData = await userService.getMyAccount();
+      
+      if (accountData && accountData.school_id) {
+        console.log('School ID fetched:', accountData.school_id);
+        setSchoolId(accountData.school_id);
+      } else {
+        console.error('No school_id found in account data:', accountData);
+        showError(t('noSchoolIdFound', 'No school ID found for your account'));
+      }
+    } catch (error) {
+      console.error('Error fetching school ID:', error);
+      showError(t('failedToFetchSchoolId', 'Failed to fetch school information'));
+    }
+  }, [schoolId, showError, t]);
+  
   // Initialize classes using local user data and derive from student data
   const initializeClasses = useCallback(async () => {
     // Avoid re-initializing if classes are already loaded
@@ -233,30 +257,6 @@ export default function StudentsManagement() {
     console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes:`, 
       teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
   }, [user, schoolId, fetchSchoolId]);
-
-  // Fetch current user's school ID from my-account endpoint
-  const fetchSchoolId = useCallback(async () => {
-    try {
-      if (schoolId) {
-        console.log('School ID already available:', schoolId);
-        return;
-      }
-
-      console.log('Fetching school ID from my-account endpoint...');
-      const accountData = await userService.getMyAccount();
-      
-      if (accountData && accountData.school_id) {
-        console.log('School ID fetched:', accountData.school_id);
-        setSchoolId(accountData.school_id);
-      } else {
-        console.error('No school_id found in account data:', accountData);
-        showError(t('noSchoolIdFound', 'No school ID found for your account'));
-      }
-    } catch (error) {
-      console.error('Error fetching school ID:', error);
-      showError(t('failedToFetchSchoolId', 'Failed to fetch school information'));
-    }
-  }, [schoolId, showError, t]);
 
   // Fetch students with pagination and filters using master-class endpoint
   const fetchStudents = useCallback(async (search = searchTerm, force = false) => {

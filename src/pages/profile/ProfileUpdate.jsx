@@ -13,6 +13,7 @@ export default function ProfileUpdate({ user, setUser }) {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const [formData, setFormData] = useState({
+    id: '',
     username: '',
     first_name: '',
     last_name: '',
@@ -63,7 +64,48 @@ export default function ProfileUpdate({ user, setUser }) {
       setDataLoading(true);
       try {
         const userData = await api.user.getMyAccount();
+        // Debug user data structure (can be removed in production)
+        if (import.meta.env.DEV) {
+          console.log('=== USER DATA DEBUG ===');
+          console.log('Full userData object:', userData);
+          console.log('Available keys:', Object.keys(userData));
+          console.log('Checking ALL potential ID fields:');
+          console.log('userData.id:', userData.id);
+          console.log('userData.userId:', userData.userId);
+          console.log('userData.user_id:', userData.user_id);
+          console.log('userData.teacherId:', userData.teacherId);
+          console.log('userData.teacher_id:', userData.teacher_id);
+          console.log('userData.roleId:', userData.roleId);
+          console.log('userData.school_id:', userData.school_id);
+          console.log('userData.account_id:', userData.account_id);
+          console.log('userData.profileId:', userData.profileId);
+          console.log('userData.userAccountId:', userData.userAccountId);
+          
+          // Check if the roleId can be used (though it's not ideal)
+          console.log('=== CONSIDERING ALTERNATIVE IDs ===');
+          console.log('Could use roleId as fallback?', userData.roleId);
+          console.log('=== END USER DATA DEBUG ===');
+        }
+        
+        // Try to extract a valid user ID from various possible fields
+        const possibleUserIds = [
+          userData.id,
+          userData.userId, 
+          userData.user_id,
+          userData.teacherId,
+          userData.teacher_id,
+          userData.userAccountId,
+          userData.accountId,
+          userData.profileId,
+          userData.account_id,
+          userData.roleId // Last resort - roleId might work as user identifier
+        ];
+        
+        const extractedUserId = possibleUserIds.find(id => id !== null && id !== undefined && id !== '');
+        console.log('Extracted user ID:', extractedUserId, 'from possible IDs:', possibleUserIds);
+        
         setFormData({
+          id: extractedUserId,
           username: userData.username || '',
           first_name: userData.first_name || '',
           last_name: userData.last_name || '',
@@ -198,7 +240,62 @@ export default function ProfileUpdate({ user, setUser }) {
 
     setPictureUploading(true);
     try {
-      const response = await api.user.uploadProfilePicture(profilePictureFile);
+      // Get user ID from form data or user prop - try multiple field names
+      let userId = formData.id || formData.teacherId || 
+                   user?.id || user?.userId || user?.user_id || user?.teacherId;
+      
+      // Try to extract user ID from localStorage as fallback
+      if (!userId) {
+        try {
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            userId = parsedUser.id || parsedUser.userId || parsedUser.user_id || parsedUser.teacherId;
+            console.log('Extracted user ID from localStorage:', userId);
+          }
+        } catch (error) {
+          console.warn('Could not parse user from localStorage:', error);
+        }
+      }
+      
+      // Try to extract from JWT token as last resort
+      if (!userId) {
+        try {
+          const token = localStorage.getItem('authToken');
+          if (token) {
+            // Decode JWT token to see if user ID is in there
+            const tokenParts = token.split('.');
+            if (tokenParts.length === 3) {
+              const payload = JSON.parse(atob(tokenParts[1]));
+              userId = payload.userId || payload.user_id || payload.sub || payload.id;
+              console.log('Extracted user ID from JWT token:', userId);
+            }
+          }
+        } catch (error) {
+          console.warn('Could not decode JWT token:', error);
+        }
+      }
+      
+      console.log('=== UPLOAD DEBUG ===');
+      console.log('Form data ID fields:', {
+        id: formData.id,
+        teacherId: formData.teacherId
+      });
+      console.log('User prop ID fields:', {
+        id: user?.id,
+        userId: user?.userId,
+        user_id: user?.user_id,
+        teacherId: user?.teacherId
+      });
+      console.log('Final userId for upload:', userId);
+      console.log('=== END UPLOAD DEBUG ===');
+      
+      if (!userId) {
+        console.warn('No user ID found for profile picture upload, will use legacy endpoint');
+      }
+      
+      // Use the new endpoint if user ID is available
+      const response = await api.user.uploadProfilePicture(profilePictureFile, userId);
       return response.profile_picture;
     } catch (error) {
       console.error('Profile picture upload error:', error);
@@ -622,46 +719,6 @@ export default function ProfileUpdate({ user, setUser }) {
                           readOnly
                           className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
                           value={formData.school?.code || ''}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mt-4 sm:mt-6">
-                    <div>
-                      <label htmlFor="school_status" className="block text-sm font-medium text-gray-700">
-                        {t('schoolStatus') || 'School Status'}
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Building className="h-4 w-4 text-gray-400" />
-                        </div>
-                        <input
-                          type="text"
-                          name="school_status"
-                          id="school_status"
-                          readOnly
-                          className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
-                          value={formData.school?.status || ''}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="fullname" className="block text-sm font-medium text-gray-700">
-                        {t('fullName') || 'Full Name'}
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <User className="h-4 w-4 text-gray-400" />
-                        </div>
-                        <input
-                          type="text"
-                          name="fullname"
-                          id="fullname"
-                          readOnly
-                          className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
-                          value={formData.fullname || ''}
                         />
                       </div>
                     </div>

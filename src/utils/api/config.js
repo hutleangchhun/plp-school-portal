@@ -46,6 +46,7 @@ const ENDPOINTS = {
     PROFILE: (userId) => `/users/${userId}/profile`,
     MY_ACCOUNT: '/users/my-account',
     MY_PROFILE_PICTURE: '/users/my-account/profile-picture',
+    UPLOAD_PROFILE: (userId) => `/users/${userId}/upload-profile`,
     CHANGE_PASSWORD: '/users/change-password',
     RESET_PASSWORD: '/users/reset-password',
     VERIFY_EMAIL: '/users/verify-email',

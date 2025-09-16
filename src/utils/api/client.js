@@ -202,6 +202,42 @@ export const uploadFile = async (url, file, fieldName = 'file', data = {}, onUpl
 };
 
 /**
+ * Upload file using PATCH method (for legacy endpoints that expect PATCH)
+ * @param {string} url - The API endpoint URL
+ * @param {File} file - The file to upload
+ * @param {string} fieldName - The form field name for the file
+ * @param {Object} data - Additional form data
+ * @param {Function} onUploadProgress - Upload progress callback
+ * @returns {Promise<Object>} The response data
+ */
+export const uploadFilePatch = async (url, file, fieldName = 'file', data = {}, onUploadProgress = null) => {
+  const formData = new FormData();
+  formData.append(fieldName, file);
+  
+  // Append additional data to form data
+  Object.entries(data).forEach(([key, value]) => {
+    formData.append(key, value);
+  });
+  
+  const config = {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  };
+  
+  if (onUploadProgress) {
+    config.onUploadProgress = onUploadProgress;
+  }
+  
+  try {
+    const response = await apiClient.patch(url, formData, config);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
  * Handle API response with consistent error handling
  * @param {Function} apiCall - The API call function to execute
  * @returns {Promise<Object>} Standardized response object
