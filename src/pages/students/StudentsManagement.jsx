@@ -433,7 +433,7 @@ export default function StudentsManagement() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [searchTerm, showError, t, selectedClassId, selectedGrade, schoolId, user, classes, pagination, fetchSchoolId, localSearchTerm, performClientSideSearch]);
+  }, [searchTerm, showError, t, selectedClassId, selectedGrade, schoolId, user, classes, fetchSchoolId, localSearchTerm, performClientSideSearch]);
   
   // Initialize classes when component mounts
   useEffect(() => {
@@ -499,7 +499,15 @@ export default function StudentsManagement() {
       console.log(`Cleaning up timer`);
       clearTimeout(timer);
     };
-  }, [fetchParams, user, classes, fetchStudents, selectedClassId, searchTerm, pagination]);
+  }, [fetchParams, user, classes, fetchStudents, selectedClassId, searchTerm]);
+  
+  // Separate useEffect for pagination changes
+  useEffect(() => {
+    if (classes.length > 0 && schoolId) {
+      console.log(`Pagination changed - fetching page ${pagination.page}`);
+      fetchStudents(searchTerm, false);
+    }
+  }, [pagination.page, pagination.limit, classes.length, schoolId, fetchStudents, searchTerm]);
   
   // Close export dropdown when clicking outside
   useEffect(() => {
@@ -543,10 +551,15 @@ export default function StudentsManagement() {
   };
 
   // Reset pagination to page 1 when filters change
+  const prevFiltersRef = useRef({ selectedGrade, selectedClassId });
   useEffect(() => {
-    if (pagination.page !== 1) {
-      console.log(`Filter changed - resetting pagination to page 1`);
-      setPagination(prev => ({ ...prev, page: 1 }));
+    if (prevFiltersRef.current.selectedGrade !== selectedGrade || 
+        prevFiltersRef.current.selectedClassId !== selectedClassId) {
+      if (pagination.page !== 1) {
+        console.log(`Filter changed - resetting pagination to page 1`);
+        setPagination(prev => ({ ...prev, page: 1 }));
+      }
+      prevFiltersRef.current = { selectedGrade, selectedClassId };
     }
   }, [selectedGrade, selectedClassId, pagination.page]); // Reset page when filters change
   
