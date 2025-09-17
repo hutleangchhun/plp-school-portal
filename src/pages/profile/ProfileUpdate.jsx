@@ -63,6 +63,12 @@ export default function ProfileUpdate({ user, setUser }) {
   const [isEditMode, setIsEditMode] = useState(false);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
+  
+  // Store pending location data for setting initial values
+  const [pendingResidenceData, setPendingResidenceData] = useState(null);
+  const [pendingBirthData, setPendingBirthData] = useState(null);
+  const [residenceInitialized, setResidenceInitialized] = useState(false);
+  const [birthInitialized, setBirthInitialized] = useState(false);
 
   // Initialize location data hooks for residence
   const {
@@ -202,8 +208,8 @@ export default function ProfileUpdate({ user, setUser }) {
         const residenceData = userData.residence || {};
         const birthData = userData.placeOfBirth || {};
         
-        // Store the initial values to be set later
-        window.pendingResidenceData = residenceData.provinceId || residenceData.districtId || residenceData.communeId || residenceData.villageId || 
+        // Store the initial values to be set later using React state
+        const residenceInitialData = residenceData.provinceId || residenceData.districtId || residenceData.communeId || residenceData.villageId || 
             userData.province_id || userData.district_id || userData.commune_id || userData.village_id ? {
           provinceId: residenceData.provinceId || userData.province_id,
           districtId: residenceData.districtId || userData.district_id,
@@ -211,12 +217,15 @@ export default function ProfileUpdate({ user, setUser }) {
           villageId: residenceData.villageId || userData.village_id
         } : null;
 
-        window.pendingBirthData = birthData.provinceId || birthData.districtId || birthData.communeId || birthData.villageId ? {
+        const birthInitialData = birthData.provinceId || birthData.districtId || birthData.communeId || birthData.villageId ? {
           provinceId: birthData.provinceId,
           districtId: birthData.districtId,
           communeId: birthData.communeId,
           villageId: birthData.villageId
-        } : (window.pendingResidenceData || null);
+        } : residenceInitialData;
+        
+        setPendingResidenceData(residenceInitialData);
+        setPendingBirthData(birthInitialData);
         // Also update the user context if needed
         if (setUser) {
           setUser(userData);
@@ -235,19 +244,33 @@ export default function ProfileUpdate({ user, setUser }) {
   // Set initial location values once provinces are loaded
   useEffect(() => {
     const setInitialLocationData = async () => {
-      if (getResidenceProvinceOptions().length > 0 && window.pendingResidenceData) {
-        await setResidenceInitialValues(window.pendingResidenceData);
-        window.pendingResidenceData = null;
+      // Set residence data independently
+      if (!residenceInitialized && getResidenceProvinceOptions().length > 0 && pendingResidenceData) {
+        console.log('Setting residence data:', pendingResidenceData);
+        try {
+          await setResidenceInitialValues(pendingResidenceData);
+          setResidenceInitialized(true);
+          setPendingResidenceData(null);
+        } catch (error) {
+          console.error('Error setting residence initial values:', error);
+        }
       }
       
-      if (getBirthProvinceOptions().length > 0 && window.pendingBirthData) {
-        await setBirthInitialValues(window.pendingBirthData);
-        window.pendingBirthData = null;
+      // Set birth data independently  
+      if (!birthInitialized && getBirthProvinceOptions().length > 0 && pendingBirthData) {
+        console.log('Setting birth data:', pendingBirthData);
+        try {
+          await setBirthInitialValues(pendingBirthData);
+          setBirthInitialized(true);
+          setPendingBirthData(null);
+        } catch (error) {
+          console.error('Error setting birth initial values:', error);
+        }
       }
     };
     
     setInitialLocationData();
-  }, [getResidenceProvinceOptions, getBirthProvinceOptions, setResidenceInitialValues, setBirthInitialValues]);
+  }, [getResidenceProvinceOptions, getBirthProvinceOptions, setResidenceInitialValues, setBirthInitialValues, pendingResidenceData, pendingBirthData, residenceInitialized, birthInitialized]);
 
   const handleViewPicture = () => {
     setShowImageModal(true);
