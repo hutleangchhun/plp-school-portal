@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button';
 import Dropdown from '../../components/ui/Dropdown';
 import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
+import classService from '../../utils/api/services/classService';
 import { useStableCallback } from '../../utils/reactOptimization';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Badge } from '../../components/ui/Badge';
@@ -219,7 +220,7 @@ export default function StudentsManagement() {
     }, 500);
   }, [allStudents, performClientSideSearch]);
   
-  // Fetch current user's school ID from my-account endpoint
+  // Fetch current user's school ID - try from classes first, then my-account
   const fetchSchoolId = useStableCallback(async () => {
     try {
       if (schoolId) {
@@ -227,11 +228,27 @@ export default function StudentsManagement() {
         return;
       }
 
-      console.log('Fetching school ID from my-account endpoint...');
+      console.log('Fetching school ID from classes API...');
+      
+      // First try to get school ID from classes API
+      if (user?.id) {
+        const classResponse = await classService.getClassByUser(user.id);
+        if (classResponse && classResponse.success && classResponse.classes && classResponse.classes.length > 0) {
+          const firstClass = classResponse.classes[0];
+          if (firstClass.schoolId) {
+            console.log('School ID found in classes:', firstClass.schoolId);
+            setSchoolId(firstClass.schoolId);
+            return;
+          }
+        }
+      }
+
+      // Fallback to my-account endpoint
+      console.log('Trying school ID from my-account endpoint...');
       const accountData = await userService.getMyAccount();
       
       if (accountData && accountData.school_id) {
-        console.log('School ID fetched:', accountData.school_id);
+        console.log('School ID fetched from account:', accountData.school_id);
         setSchoolId(accountData.school_id);
       } else {
         console.error('No school_id found in account data:', accountData);
@@ -241,9 +258,9 @@ export default function StudentsManagement() {
       console.error('Error fetching school ID:', error);
       showError(t('failedToFetchSchoolId', 'Failed to fetch school information'));
     }
-  }, [schoolId, showError, t]);
+  }, [schoolId, showError, t, user?.id]);
   
-  // Initialize classes using local user data and derive from student data
+  // Initialize classes using new classes/user API
   const initializeClasses = useStableCallback(async () => {
     // Avoid re-initializing if classes are already loaded
     if (classesInitialized.current) {
@@ -251,110 +268,73 @@ export default function StudentsManagement() {
       return;
     }
     
-    console.log('=== INITIALIZING CLASSES FROM LOCAL DATA ===');
+    console.log('=== INITIALIZING CLASSES FROM NEW API ===');
     console.log('Current user object:', user);
-    console.log('User classIds:', user?.classIds);
-    console.log('User classNames:', user?.classNames);
     
-    if (!user || !user.classIds || !user.classNames) {
-      console.log('No user data or classes found in authentication - trying to get fresh user data');
-      try {
-        // Try to refresh user data from my-account endpoint
-        const accountData = await userService.getMyAccount();
-        if (accountData && accountData.classes && Array.isArray(accountData.classes)) {
-          // Update user data with fresh class information
-          const classIds = accountData.classes.map(cls => parseInt(cls.class_id));
-          const classNames = accountData.classes.map(cls => cls.name);
-          const gradeLevels = accountData.classes.map(cls => cls.grade_level);
-          
-          // Update user state with fresh data
-          const updatedUser = {
-            ...user,
-            classIds: classIds,
-            classNames: classNames,
-            gradeLevels: gradeLevels,
-            teacherId: accountData.teacherId || user?.teacherId,
-            school_id: accountData.school_id || user?.school_id,
-          };
-          
-          console.log('Updated user data with fresh class information:', updatedUser);
-          setUser(updatedUser);
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          
-          // Now initialize classes with updated user data
-          const teacherClasses = classIds.map((classId, index) => {
-            const academicYear = accountData.classes[index]?.academic_year || 
-                               new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
-            
-            return {
-              classId: classId,
-              name: classNames[index] || `Class ${classId}`,
-              gradeLevel: gradeLevels[index] || 'Unknown',
-              section: accountData.classes[index]?.section || 'A',
-              academicYear: academicYear,
-              teacherId: accountData.teacherId || user?.teacherId
-            };
-          });
-          
-          setClasses(teacherClasses);
-          classesInitialized.current = true;
-          
-          if (teacherClasses.length === 1) {
-            setSelectedClassId(teacherClasses[0].classId.toString());
-          }
-          
-          console.log(`Teacher ${updatedUser.username} has access to ${teacherClasses.length} classes:`, 
-            teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
-          return;
-        } else {
-          console.log('No classes found in account data - setting empty classes');
-          setClasses([]);
-          setSelectedClassId('all');
-          return;
-        }
-      } catch (error) {
-        console.error('Failed to refresh user data:', error);
+    if (!user?.id) {
+      console.log('No user ID available for fetching classes');
+      setClasses([]);
+      setSelectedClassId('all');
+      return;
+    }
+
+    try {
+      console.log('Fetching classes using new classes/user API...');
+      
+      // Get class data from new /classes/user/{userId} endpoint
+      const classResponse = await classService.getClassByUser(user.id);
+      
+      if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
+        console.log('No classes found in API response:', classResponse);
         setClasses([]);
         setSelectedClassId('all');
         return;
       }
+
+      console.log('Found classes in API response:', classResponse.classes);
+
+      // Process classes from the new API response
+      const teacherClasses = classResponse.classes.map((classData) => ({
+        classId: classData.classId,
+        name: classData.name,
+        gradeLevel: classData.gradeLevel,
+        section: classData.section || 'A',
+        academicYear: classData.academicYear,
+        teacherId: classData.teacherId,
+        maxStudents: classData.maxStudents,
+        schoolId: classData.schoolId,
+        status: classData.status
+      }));
+
+      setClasses(teacherClasses);
+      classesInitialized.current = true;
+
+      // Extract and set school ID from the first class if not already set
+      if (!schoolId && teacherClasses.length > 0 && teacherClasses[0].schoolId) {
+        console.log('Setting school ID from classes data:', teacherClasses[0].schoolId);
+        setSchoolId(teacherClasses[0].schoolId);
+      }
+
+      // Set first class as default if none selected and teacher has only one class
+      if (selectedClassId === 'all' && teacherClasses.length === 1) {
+        setSelectedClassId(teacherClasses[0].classId.toString());
+      }
+
+      console.log(`User ${user.username} has access to ${teacherClasses.length} classes:`, 
+        teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
+        
+    } catch (error) {
+      console.error('Failed to fetch classes from API:', error);
+      setClasses([]);
+      setSelectedClassId('all');
     }
+  }, [user?.id, user?.username]);
 
-    // SECURITY: Use only the classes from authenticated user token
-    const teacherClasses = user.classIds.map((classId, index) => {
-      // Try to get academic year from user data or default to current
-      const academicYear = (user.academicYears && user.academicYears[index]) || 
-                          user.academicYear || 
-                          new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
-      
-      return {
-        classId: classId,
-        name: user.classNames[index] || `Class ${classId}`,
-        gradeLevel: user.gradeLevels ? user.gradeLevels[index] : 'Unknown',
-        section: 'A', // Default section, could be enhanced if available in auth data
-        academicYear: academicYear,
-        teacherId: user.teacherId
-      };
-    });
-
-    setClasses(teacherClasses);
-    classesInitialized.current = true;
-
-    // Set first class as default if none selected and teacher has only one class
-    if (selectedClassId === 'all' && teacherClasses.length === 1) {
-      setSelectedClassId(teacherClasses[0].classId.toString());
-    }
-
-    console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes:`, 
-      teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
-  }, [user?.userId, schoolId]);
-
-  // Fetch students with pagination and filters using master-class endpoint
+  // Fetch students with pagination and filters using my-students endpoint
   const fetchStudents = useStableCallback(async (search = searchTerm, force = false, skipLoading = false) => {
-    // Ensure we have a school ID before fetching students
-    if (!schoolId) {
-      console.log('No school ID available, attempting to fetch...');
-      await fetchSchoolId();
+    // Ensure we have classes initialized before fetching students
+    if (!classesInitialized.current) {
+      console.log('Classes not yet initialized, skipping student fetch...');
       return;
     }
 
@@ -362,8 +342,7 @@ export default function StudentsManagement() {
     const currentParams = JSON.stringify({
       search,
       selectedClassId,
-      schoolId,
-      userId: user?.userId,
+      userId: user?.id,
       page: pagination.page,
       limit: pagination.limit
     });
@@ -382,9 +361,9 @@ export default function StudentsManagement() {
       }
        
       console.log(`=== FETCH STUDENTS (MY-STUDENTS) ===`);
-      console.log(`School ID: ${schoolId}`);
       console.log(`Selected class ID: ${selectedClassId}`);
       console.log(`Search term: ${search}`);
+      console.log(`Available classes: ${classes.map(c => c.classId).join(', ')}`);
        
       // Always use server-side pagination like before
       const requestParams = {
@@ -401,8 +380,9 @@ export default function StudentsManagement() {
         const selectedClassIdInt = parseInt(selectedClassId);
          
         // SECURITY: Ensure the selected class ID is actually in the teacher's authorized classes
-        if (user?.classIds && Array.isArray(user.classIds) && user.classIds.length > 0) {
-          if (!user.classIds.includes(selectedClassIdInt)) {
+        const authorizedClassIds = classes.map(c => c.classId);
+        if (authorizedClassIds.length > 0) {
+          if (!authorizedClassIds.includes(selectedClassIdInt)) {
             console.warn(`Teacher ${user?.username} attempted to access unauthorized class ID: ${selectedClassId}`);
             showError(t('unauthorizedClassAccess', 'You do not have permission to view students from this class'));
             setStudents([]);
@@ -411,7 +391,7 @@ export default function StudentsManagement() {
             return;
           }
         } else {
-          console.warn('No class IDs found for teacher, cannot validate class access');
+          console.warn('No classes found for teacher, cannot validate class access');
           showError(t('noClassesAssigned', 'No classes assigned to your account'));
           setStudents([]);
           setAllStudents([]);
@@ -425,11 +405,11 @@ export default function StudentsManagement() {
         console.log(`Filtering by authorized class ${selectedClassIdInt}`);
       } else {
         // When fetching all students, ensure we only get students from authorized classes
-        if (user?.classIds && Array.isArray(user.classIds) && user.classIds.length > 0) {
-          console.log(`Fetching students from authorized classes: ${user.classIds.join(', ')}`);
+        if (classes.length > 0) {
+          console.log(`Fetching students from authorized classes: ${classes.map(c => c.classId).join(', ')}`);
           // The my-students endpoint should automatically filter by teacher's classes
         } else {
-          console.warn('No class IDs found for teacher, cannot fetch students');
+          console.warn('No classes found for teacher, cannot fetch students');
           showError(t('noClassesAssigned', 'No classes assigned to your account'));
           setStudents([]);
           setAllStudents([]);
@@ -487,25 +467,20 @@ export default function StudentsManagement() {
       }
       fetchingRef.current = false;
     }
-  }, [schoolId, selectedClassId, user?.userId, showError, t]);
+  }, [selectedClassId, user?.id, showError, t]);
 
   // Initialize classes when component mounts
   useEffect(() => {
     initializeClasses();
   }, [initializeClasses]);
 
-  // Fetch school ID when component mounts
+  // Initial fetch when classes become available
   useEffect(() => {
-    fetchSchoolId();
-  }, [fetchSchoolId]);
-
-  // Initial fetch when schoolId and classes become available
-  useEffect(() => {
-    if (schoolId && classes.length > 0) {
-      console.log('School ID available, initial fetch...');
+    if (classes.length > 0 && classesInitialized.current) {
+      console.log('Classes available, initial fetch...');
       fetchStudents('', true); // Force initial fetch
     }
-  }, [schoolId, classes.length, fetchStudents]);
+  }, [classes.length, fetchStudents]);
 
   // Memoized fetch parameters to avoid unnecessary re-renders
   const fetchParams = useMemo(() => ({
@@ -523,13 +498,14 @@ export default function StudentsManagement() {
     // SECURITY: Validate that selectedClassId belongs to teacher's authorized classes
     if (selectedClassId !== 'all') {
       const selectedClassIdInt = parseInt(selectedClassId);
-      const isValidClass = user?.classIds?.includes(selectedClassIdInt);
+      const authorizedClassIds = classes.map(c => c.classId);
+      const isValidClass = authorizedClassIds.includes(selectedClassIdInt);
       if (!isValidClass) {
         console.warn(`Invalid class ID ${selectedClassId} selected for teacher ${user?.username}. Resetting to 'all'.`);
         setSelectedClassId('all');
       }
     }
-  }, [selectedClassId, user?.classIds, user?.username, classes.length]);
+  }, [selectedClassId, user?.username, classes]);
 
   // Single useEffect to handle all data fetching
   useEffect(() => {
@@ -549,10 +525,10 @@ export default function StudentsManagement() {
     const timer = setTimeout(() => {
       console.log(`Timer fired - calling fetchStudents with page ${fetchParams.page}, limit ${fetchParams.limit}`);
       // Only fetch if not already fetching and has required data
-      if (!fetchingRef.current && schoolId) {
+      if (!fetchingRef.current && classesInitialized.current) {
         fetchStudents(fetchParams.searchTerm, false);
       } else {
-        console.log('Skipping fetch - already fetching or missing schoolId');
+        console.log('Skipping fetch - already fetching or classes not initialized');
       }
     }, delay);
     
@@ -560,7 +536,7 @@ export default function StudentsManagement() {
       console.log(`Cleaning up timer`);
       clearTimeout(timer);
     };
-  }, [fetchParams, fetchStudents, schoolId]);
+  }, [fetchParams, fetchStudents]);
   
   // Close export dropdown when clicking outside
   useEffect(() => {

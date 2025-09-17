@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useRenderTracker } from '../../utils/reactOptimization';
 
-const PerformanceMonitor = ({ enabled = process.env.NODE_ENV === 'development' }) => {
+const PerformanceMonitor = ({ enabled = import.meta.env.DEV }) => {
   const [metrics, setMetrics] = useState({
     renderCount: 0,
     lastRenderTime: 0,

@@ -269,6 +269,24 @@ export const classService = {
         updatedAt: cls.updated_at
       };
     }
+  },
+  async getClassByUser(userId) {
+    try {
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.CLASSES.BY_USER(userId))
+      );
+      return {
+        success: true,
+        data: response.data,
+        message: response.data?.message || response.message,
+        classes: response.data?.classes || [],
+        userType: response.data?.userType,
+        total: response.data?.total || 0
+      };
+    } catch (error) {
+      console.error('Error fetching class by user ID:', error);
+      throw error;
+    }
   }
 };
 

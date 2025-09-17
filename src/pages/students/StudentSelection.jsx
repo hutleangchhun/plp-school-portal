@@ -61,78 +61,66 @@ const StudentSelection = () => {
   }, [filters.search]);
 
 
-  // Initialize classes using local user data and fetch complete details including maxStudents
+  // Initialize classes using new classes/user API
   useEffect(() => {
     const fetchClassDetails = async () => {
-      if (!user || !user.classIds || !user.classNames) {
-        console.log('No user data or classes found in authentication');
+      if (!user?.id) {
+        console.log('No user ID available for fetching classes');
         setClasses([]);
         return;
       }
 
       try {
-        // Fetch complete class details including maxStudents (following ClassesManagement pattern)
-        const classDetailsPromises = user.classIds.map(classId => 
-          classService.getClassById(classId).catch(error => {
-            console.error(`Error fetching details for class ${classId}:`, error);
-            return null;
-          })
-        );
+        console.log('Fetching classes using new classes/user API...');
+        
+        // Get class data from new /classes/user/{userId} endpoint
+        const classResponse = await classService.getClassByUser(user.id);
+        
+        if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
+          console.log('No classes found in API response:', classResponse);
+          setClasses([]);
+          return;
+        }
 
-        const classDetails = await Promise.all(classDetailsPromises);
+        console.log('Found classes in API response:', classResponse.classes);
 
-        // Create classes with complete information including maxStudents
-        const teacherClasses = classDetails.map((classDetail, index) => {
-          if (!classDetail) return null;
-
-          const classId = user.classIds[index];
-          const className = user.classNames[index] || `Class ${classId}`;
-          const gradeLevel = user.gradeLevels ? user.gradeLevels[index] : 'Unknown';
-          const maxStudents = classDetail.maxStudents || 50; // Default to 50 if not provided
-
-          // Try to get academic year from user data or default to current
-          const academicYear = (user.academicYears && user.academicYears[index]) || 
-                              user.academicYear || 
-                              new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
-
-          return {
-            id: classId,
-            classId: classId,
-            name: className,
-            gradeLevel: gradeLevel,
-            section: classDetail.section || 'A',
-            academicYear: academicYear,
-            teacherId: user.teacherId,
-            maxStudents: maxStudents, // Include maxStudents for capacity checking
-            capacity: maxStudents // Also add capacity for consistency
-          };
-        }).filter(cls => cls !== null);
+        // Process classes from the new API response
+        const teacherClasses = classResponse.classes.map((classData) => ({
+          id: classData.classId,
+          classId: classData.classId,
+          name: classData.name,
+          gradeLevel: classData.gradeLevel,
+          section: classData.section || 'A',
+          academicYear: classData.academicYear,
+          teacherId: classData.teacherId,
+          maxStudents: classData.maxStudents || 50,
+          capacity: classData.maxStudents || 50,
+          schoolId: classData.schoolId,
+          status: classData.status
+        }));
 
         setClasses(teacherClasses);
-        console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes for student selection with maxStudents:`, 
+        
+        // Extract and set school ID from the first class if not already set
+        if (!schoolId && teacherClasses.length > 0 && teacherClasses[0].schoolId) {
+          console.log('Setting school ID from classes data:', teacherClasses[0].schoolId);
+          setSchoolId(teacherClasses[0].schoolId);
+        }
+        
+        console.log(`User ${user.username} has access to ${teacherClasses.length} classes for student selection:`, 
           teacherClasses.map(c => `${c.name} (ID: ${c.classId}, Max: ${c.maxStudents})`));
+          
       } catch (error) {
         console.error('Error fetching class details:', error);
-        // Fallback to basic class info without maxStudents
-        const basicClasses = user.classIds.map((classId, index) => ({
-          id: classId,
-          classId: classId,
-          name: user.classNames[index] || `Class ${classId}`,
-          gradeLevel: user.gradeLevels ? user.gradeLevels[index] : 'Unknown',
-          section: 'A',
-          academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
-          teacherId: user.teacherId,
-          maxStudents: 50, // Default fallback
-          capacity: 50
-        }));
-        setClasses(basicClasses);
+        // Fallback to empty classes array
+        setClasses([]);
       }
     };
 
     fetchClassDetails();
-  }, [user]);
+  }, [user?.id, user?.username]);
 
-  // Fetch current user's school ID from my-account endpoint
+  // Fetch current user's school ID - try from classes first, then my-account
   const fetchSchoolId = useStableCallback(async () => {
     try {
       if (schoolId) {
@@ -140,11 +128,27 @@ const StudentSelection = () => {
         return;
       }
 
-      console.log('Fetching school ID from my-account endpoint...');
+      console.log('Fetching school ID from classes API...');
+      
+      // First try to get school ID from classes API
+      if (user?.id) {
+        const classResponse = await classService.getClassByUser(user.id);
+        if (classResponse && classResponse.success && classResponse.classes && classResponse.classes.length > 0) {
+          const firstClass = classResponse.classes[0];
+          if (firstClass.schoolId) {
+            console.log('School ID found in classes:', firstClass.schoolId);
+            setSchoolId(firstClass.schoolId);
+            return;
+          }
+        }
+      }
+
+      // Fallback to my-account endpoint
+      console.log('Trying school ID from my-account endpoint...');
       const accountData = await userService.getMyAccount();
       
       if (accountData && accountData.school_id) {
-        console.log('School ID fetched:', accountData.school_id);
+        console.log('School ID fetched from account:', accountData.school_id);
         setSchoolId(accountData.school_id);
       } else {
         console.error('No school_id found in account data:', accountData);
@@ -154,7 +158,7 @@ const StudentSelection = () => {
       console.error('Error fetching school ID:', error);
       showError(t('failedToFetchSchoolId', 'Failed to fetch school information'));
     }
-  }, [schoolId, showError, t]);
+  }, [schoolId, showError, t, user?.id]);
 
   // Fetch school ID when component mounts
   useEffect(() => {

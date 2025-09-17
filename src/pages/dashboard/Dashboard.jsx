@@ -61,9 +61,23 @@ export default function Dashboard({ user: initialUser }) {
         throw new Error(t('noValidUserData', 'No valid user data received from API'));
       }
 
-      // Get class count from localStorage auth user data
-      if (authUser?.classIds) {
-        setClassCount(authUser.classIds.length);
+      // Get class data from new /classes/user/{userId} endpoint
+      let teacherClasses = [];
+      if (authUser?.id) {
+        try {
+          const classResponse = await classService.getClassByUser(authUser.id);
+          
+          if (classResponse && classResponse.success && classResponse.classes && Array.isArray(classResponse.classes)) {
+            teacherClasses = classResponse.classes;
+            setClassCount(teacherClasses.length);
+          } else {
+            console.log('No classes found in API response:', classResponse);
+            setClassCount(0);
+          }
+        } catch (error) {
+          console.error('Failed to fetch classes from API:', error);
+          setClassCount(0);
+        }
       }
 
       // Get student count from API (all students assigned to teacher)
@@ -89,37 +103,28 @@ export default function Dashboard({ user: initialUser }) {
         setUnassignedStudents(0);
       }
 
-      // Get detailed class information with enrollment
-      if (authUser?.classIds && authUser.classIds.length > 0) {
+      // Get detailed class information with enrollment using the new API data
+      if (teacherClasses.length > 0) {
         try {
-          const classDetailsPromises = authUser.classIds.map(async (classId, index) => {
+          const classDetailsPromises = teacherClasses.map(async (classData) => {
             try {
-              // First, get the class details to fetch the actual maxStudents using classService
-              let actualMaxStudents = 50; // Default fallback
-              try {
-                const classData = await classService.getClassById(classId);
-                actualMaxStudents = classData.maxStudents || 50;
-              } catch (classError) {
-                setError(`Could not fetch class details for ${classId}, using default capacity. ${classError.message}`);
-              }
-
               // Get students for this specific class
-              const classStudentsResponse = await studentService.getMyStudents({ classId });
+              const classStudentsResponse = await studentService.getMyStudents({ classId: classData.classId });
               const enrolledCount = classStudentsResponse.data?.length || 0;
               
               return {
-                id: classId,
-                name: authUser.classNames[index] || `Class ${classId}`,
+                id: classData.classId,
+                name: classData.name,
                 enrolledCount,
-                maxCapacity: actualMaxStudents // Use actual maxStudents from API
+                maxCapacity: classData.maxStudents || 50
               };
             } catch (error) {
-              setError(`Failed to fetch data for class ${classId}: ${error.message}`);
+              setError(`Failed to fetch data for class ${classData.classId}: ${error.message}`);
               return {
-                id: classId,
-                name: authUser.classNames[index] || `Class ${classId}`,
+                id: classData.classId,
+                name: classData.name,
                 enrolledCount: 0,
-                maxCapacity: 50 // Default fallback
+                maxCapacity: classData.maxStudents || 50
               };
             }
           });
@@ -130,6 +135,8 @@ export default function Dashboard({ user: initialUser }) {
           setError(`Failed to fetch class details: ${error.message}`);
           setClassDetails([]);
         }
+      } else {
+        setClassDetails([]);
       }
 
       setLastRefresh(new Date());
