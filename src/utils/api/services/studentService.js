@@ -557,15 +557,10 @@ export const studentService = {
       if (!student) return null;
       
       // Handle different API response structures
-      // Structure 1: Direct student object  
-      // Structure 2: Nested user object
-      // Structure 3: From classes/{id}/students endpoint
-      // Structure 4: From master-class endpoint: {student_id, user_id, student_number, first_name, last_name, etc.}
-      
       const user = student.user || student;
       const classInfo = student.class || {};
       
-      // Handle master-class endpoint format with direct fields
+      // Prefer studentId (e.g., student_number) as display id if present
       let finalId = student.student_id || student.studentId;
       
       // Fallback to other possible ID fields
@@ -578,23 +573,27 @@ export const studentService = {
                   user.user_id;
       }
       
-      // If still no ID, try to create a temporary unique identifier
+      // Resolve the underlying users_id for updates (nested user.id in MY_STUDENTS responses)
+      const resolvedUserId = user?.id || user?.userId || user?.user_id || student.user_id || student.userId || undefined;
+      
+      // If still no ID, generate a temporary one for UI keys
       if (finalId === undefined || finalId === null) {
-        finalId = user.username || student.username || 
-                  user.email || student.email ||
-                  `temp_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+        finalId = user.username || student.username || user.email || student.email || `temp_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       }
       
-      // Handle name fields - master-class endpoint uses direct first_name/last_name
+      // Names
       const firstName = student.first_name || user.firstName || user.first_name || student.firstName || '';
       const lastName = student.last_name || user.lastName || user.last_name || student.lastName || '';
       
-      // Handle student number/ID display
+      // Student number for display
       const studentNumber = student.student_number || student.studentNumber || student.studentId || finalId;
       
       return {
+        // id remains for table selection; usually studentId
         id: finalId,
-        studentId: studentNumber, // Use student_number for display purposes
+        // explicit users_id for API use
+        userId: resolvedUserId,
+        studentId: studentNumber,
         name: `${firstName} ${lastName}`.trim() || student.fullname || user.fullname || 'Unknown Student',
         firstName,
         lastName,
@@ -605,18 +604,15 @@ export const studentService = {
         profilePicture: student.profile_picture || student.profilePicture || user.profile_picture || user.profilePicture,
         isActive: student.student_status === 'ACTIVE' || student.isActive !== undefined ? student.isActive : (user.is_active !== undefined ? user.is_active : true),
         username: student.username || user.username || '',
-        // Class information
         class: {
           id: student.class_id || classInfo.classId || classInfo.id,
           name: student.class_name || classInfo.name,
           gradeLevel: student.grade_level || classInfo.gradeLevel
         },
-        // Additional fields from the API
         averageScore: student.averageScore || 0,
         timeSpent: student.timeSpent || 0,
         scores: student.scores || [],
         problemPoints: student.problemPoints || [],
-        // Role information  
         role: {
           id: student.roleId || user.roleId,
           nameEn: student.roleNameEn || user.roleNameEn,

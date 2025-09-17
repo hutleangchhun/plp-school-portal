@@ -17,6 +17,11 @@ const userService = {
   },
 
 
+  getUserByID: async (userId) => {
+    // UPDATE_USER is a function that builds the URL, so call it with userId
+    return get(ENDPOINTS.USERS.UPDATE_USER(userId));
+  },
+
   /**
    * Update user by ID (internal method)
    * @param {string|number} userId - User ID
@@ -24,7 +29,7 @@ const userService = {
    * @returns {Promise<Object>} Updated user data
    */
   updateUser: async (userId, userData) => {
-    return patch(ENDPOINTS.USERS.UPDATE_USER(userId), userData);
+    return put(ENDPOINTS.USERS.UPDATE_USER(userId), userData);
   },
 
   /**

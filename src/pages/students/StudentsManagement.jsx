@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Trash2, Edit2, User, Users, ChevronDown, Download, X } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, User, Users, ChevronDown, Download, X, Building } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -14,6 +14,9 @@ import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
 import { exportToExcel, exportToCSV, exportToPDF, getTimestampedFilename } from '../../utils/exportUtils';
 import Modal from '../../components/ui/Modal';
+import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
+import ProfileImage from '../../components/ui/ProfileImage';
+import { useLocationData } from '../../hooks/useLocationData';
 
 /**
  * StudentsManagement Component
@@ -69,7 +72,23 @@ export default function StudentsManagement() {
     lastName: '',
     username: '',
     email: '',
-    phone: ''
+    phone: '',
+    gender: '',
+    dateOfBirth: null,
+    nationality: '',
+    profilePicture: '',
+    residence: {
+      provinceId: '',
+      districtId: '',
+      communeId: '',
+      villageId: ''
+    },
+    placeOfBirth: {
+      provinceId: '',
+      districtId: '',
+      communeId: '',
+      villageId: ''
+    }
   });
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
@@ -82,6 +101,50 @@ export default function StudentsManagement() {
   // State for all students (unfiltered) and filtered students
   const [allStudents, setAllStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
+  
+  // Location data hooks for residence
+  const {
+    provinces: residenceProvinces,
+    districts: residenceDistricts,
+    communes: residenceCommunes,
+    villages: residenceVillages,
+    selectedProvince: selectedResidenceProvince,
+    selectedDistrict: selectedResidenceDistrict,
+    selectedCommune: selectedResidenceCommune,
+    selectedVillage: selectedResidenceVillage,
+    handleProvinceChange: handleResidenceProvinceChange,
+    handleDistrictChange: handleResidenceDistrictChange,
+    handleCommuneChange: handleResidenceCommuneChange,
+    handleVillageChange: handleResidenceVillageChange,
+    getProvinceOptions: getResidenceProvinceOptions,
+    getDistrictOptions: getResidenceDistrictOptions,
+    getCommuneOptions: getResidenceCommuneOptions,
+    getVillageOptions: getResidenceVillageOptions,
+    setInitialValues: setResidenceInitialValues,
+    resetSelections: resetResidenceSelections
+  } = useLocationData();
+
+  // Location data hooks for place of birth
+  const {
+    provinces: birthProvinces,
+    districts: birthDistricts,
+    communes: birthCommunes,
+    villages: birthVillages,
+    selectedProvince: selectedBirthProvince,
+    selectedDistrict: selectedBirthDistrict,
+    selectedCommune: selectedBirthCommune,
+    selectedVillage: selectedBirthVillage,
+    handleProvinceChange: handleBirthProvinceChange,
+    handleDistrictChange: handleBirthDistrictChange,
+    handleCommuneChange: handleBirthCommuneChange,
+    handleVillageChange: handleBirthVillageChange,
+    getProvinceOptions: getBirthProvinceOptions,
+    getDistrictOptions: getBirthDistrictOptions,
+    getCommuneOptions: getBirthCommuneOptions,
+    getVillageOptions: getBirthVillageOptions,
+    setInitialValues: setBirthInitialValues,
+    resetSelections: resetBirthSelections
+  } = useLocationData();
   
   // Enhanced client-side search function
   const performClientSideSearch = useCallback((studentsData, searchQuery) => {
@@ -260,7 +323,7 @@ export default function StudentsManagement() {
   }, [user?.userId, schoolId]);
 
   // Fetch students with pagination and filters using master-class endpoint
-  const fetchStudents = useStableCallback(async (search = searchTerm, force = false) => {
+  const fetchStudents = useStableCallback(async (search = searchTerm, force = false, skipLoading = false) => {
     // Ensure we have a school ID before fetching students
     if (!schoolId) {
       console.log('No school ID available, attempting to fetch...');
@@ -287,39 +350,29 @@ export default function StudentsManagement() {
     fetchingRef.current = true;
     lastFetchParams.current = currentParams;
     try {
-      setLoading(true);
-      
-      console.log(`=== FETCH STUDENTS DEBUG (MASTER-CLASS) ===`);
+      if (!skipLoading) {
+        setLoading(true);
+      }
+       
+      console.log(`=== FETCH STUDENTS (MY-STUDENTS) ===`);
       console.log(`School ID: ${schoolId}`);
       console.log(`Selected class ID: ${selectedClassId}`);
       console.log(`Search term: ${search}`);
-      
-      // Determine if we need client-side filtering
-      // Use client-side filtering when we have local search
-      const needsClientSideFiltering = (localSearchTerm && localSearchTerm.trim() !== '');
-      
-      // Prepare parameters for the API call
-      const requestParams = {};
-      
-      if (!needsClientSideFiltering) {
-        // Use server-side pagination when no client-side filtering is needed
-        requestParams.page = pagination.page;
-        requestParams.limit = pagination.limit;
-      } else {
-        // When using client-side filtering, fetch more data to ensure we have enough for local filtering
-        requestParams.page = 1;
-        requestParams.limit = 100; // Fetch larger batch for client-side filtering
-      }
-      
+       
+      // Always use server-side pagination like before
+      const requestParams = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+       
       console.log(`=== FETCH STUDENTS CALLED ===`);
       console.log(`Current pagination state:`, pagination);
-      console.log(`Needs client-side filtering:`, needsClientSideFiltering);
       console.log(`Request params being sent to API:`, requestParams);
-      
+       
       // Add class filter if specific class is selected
       if (selectedClassId !== 'all') {
         const selectedClassIdInt = parseInt(selectedClassId);
-        
+         
         // SECURITY: Ensure the selected class ID is actually in the teacher's authorized classes
         if (user?.classIds && Array.isArray(user.classIds) && user.classIds.length > 0) {
           if (!user.classIds.includes(selectedClassIdInt)) {
@@ -327,77 +380,52 @@ export default function StudentsManagement() {
             throw new Error('Unauthorized class access');
           }
         }
-        
+         
+        // Send both camelCase and snake_case to be safe with backend
         requestParams.classId = selectedClassIdInt;
+        requestParams.class_id = selectedClassIdInt;
         console.log(`Filtering by class ${selectedClassIdInt}`);
       } else {
         console.log(`Fetching ALL students from school ${schoolId}`);
       }
-      
+       
       console.log(`API request params:`, requestParams);
-      console.log(`=== END FETCH STUDENTS DEBUG ===`);
-      
-      // Use the new master-class endpoint via getStudentsBySchool
+      console.log(`=== END FETCH STUDENTS ===`);
+       
+      // Use my-students endpoint (teacher-scoped)
       const response = await studentService.getMyStudents(requestParams);
-      
-      console.log('=== API RESPONSE DEBUG (MASTER-CLASS) ===');
+       
+      console.log('=== API RESPONSE (MY-STUDENTS) ===');
       console.log('Full API response:', response);
       console.log('Response success:', response?.success);
       console.log('Response data length:', response?.data?.length);
-      console.log('=== END API RESPONSE DEBUG ===');
-      
+      console.log('=== END API RESPONSE ===');
+       
       if (!response || !response.success) {
         throw new Error(response?.error || 'Failed to fetch students from school');
       }
-      
+       
       let data = response.data || [];
-      
+       
       console.log(`Fetched ${data.length} students from school ${schoolId} for ${selectedClassId === 'all' ? 'all classes' : `class ${selectedClassId}`}`);
-      
+       
       console.log('Raw students data from API:', data);
-      
-      // Store all unfiltered students for reference
+       
+      // Store for reference
       setAllStudents(data);
-      
-      // Apply client-side search if there's a local search term
-      const finalFilteredData = performClientSideSearch(data, localSearchTerm);
-      setFilteredStudents(finalFilteredData);
-      
-      console.log('Final filtered students data:', finalFilteredData);
-      console.log(`Applied filters: Search="${localSearchTerm}", Result=${finalFilteredData.length} students`);
-      
-      // Handle pagination based on whether we're using client-side filtering
-      if (needsClientSideFiltering) {
-        // Client-side pagination: paginate the filtered data locally
-        const startIndex = (pagination.page - 1) * pagination.limit;
-        const endIndex = startIndex + pagination.limit;
-        const paginatedData = finalFilteredData.slice(startIndex, endIndex);
-        
-        console.log(`Client-side pagination: showing ${startIndex + 1}-${Math.min(endIndex, finalFilteredData.length)} of ${finalFilteredData.length} students`);
-        
-        setStudents(paginatedData);
-        
-        // Update pagination to reflect client-side totals
-        setPagination(prev => ({
-          ...prev,
-          total: finalFilteredData.length,
-          pages: Math.max(1, Math.ceil(finalFilteredData.length / prev.limit))
-        }));
-      } else {
-        // Server-side pagination: use all returned data and server pagination info
-        setStudents(finalFilteredData);
-        
-        // Update pagination info from server response
-        if (response.pagination) {
-          setPagination({
-            page: response.pagination.page,
-            limit: response.pagination.limit,
-            total: response.pagination.total,
-            pages: response.pagination.pages
-          });
-        }
+      setFilteredStudents(data);
+       
+      // Server-side pagination: use returned data and server pagination info
+      setStudents(data);
+      if (response.pagination) {
+        setPagination({
+          page: response.pagination.page,
+          limit: response.pagination.limit,
+          total: response.pagination.total,
+          pages: response.pagination.pages
+        });
       }
-      
+       
     } catch (error) {
       console.error('Error fetching students from school:', error);
       showError(error.message || t('errorFetchingStudents'));
@@ -405,11 +433,13 @@ export default function StudentsManagement() {
       setAllStudents([]);
       setFilteredStudents([]);
     } finally {
-      setLoading(false);
+      if (!skipLoading) {
+        setLoading(false);
+      }
       fetchingRef.current = false;
     }
   }, [schoolId, selectedClassId, user?.userId, showError, t]);
-  
+
   // Initialize classes when component mounts
   useEffect(() => {
     initializeClasses();
@@ -426,27 +456,20 @@ export default function StudentsManagement() {
       console.log('School ID available, initial fetch...');
       fetchStudents('', true); // Force initial fetch
     }
-  }, [schoolId, classes.length]);
+  }, [schoolId, classes.length, fetchStudents]);
 
   // Memoized fetch parameters to avoid unnecessary re-renders
   const fetchParams = useMemo(() => ({
     searchTerm,
     selectedClassId,
-    classesLength: classes.length
-  }), [searchTerm, selectedClassId, classes.length]);
+    classesLength: classes.length,
+    page: pagination.page,
+    limit: pagination.limit
+  }), [searchTerm, selectedClassId, classes.length, pagination.page, pagination.limit]);
 
-  // Single useEffect to handle all data fetching
+  // Separate useEffect for class ID validation to avoid infinite loops
   useEffect(() => {
-    console.log(`=== USE EFFECT TRIGGERED ===`);
-    console.log(`Current pagination:`, pagination);
-    console.log(`Classes length:`, classes.length);
-    console.log(`Selected class ID:`, selectedClassId);
-    console.log(`Search term:`, searchTerm);
-    
-    if (classes.length === 0) {
-      console.log(`Waiting for classes to load...`);
-      return; // Wait for classes to load
-    }
+    if (classes.length === 0) return; // Wait for classes to load
     
     // SECURITY: Validate that selectedClassId belongs to teacher's authorized classes
     if (selectedClassId !== 'all') {
@@ -455,20 +478,30 @@ export default function StudentsManagement() {
       if (!isValidClass) {
         console.warn(`Invalid class ID ${selectedClassId} selected for teacher ${user?.username}. Resetting to 'all'.`);
         setSelectedClassId('all');
-        return;
       }
+    }
+  }, [selectedClassId, user?.classIds, user?.username, classes.length]);
+
+  // Single useEffect to handle all data fetching
+  useEffect(() => {
+    console.log(`=== USE EFFECT TRIGGERED ===`);
+    console.log(`Current fetch params:`, fetchParams);
+    
+    if (fetchParams.classesLength === 0) {
+      console.log(`Waiting for classes to load...`);
+      return; // Wait for classes to load
     }
 
     // Debounce only for search changes, immediate for filter changes
-    const isSearchChange = searchTerm.trim() !== '';
+    const isSearchChange = fetchParams.searchTerm.trim() !== '';
     const delay = isSearchChange ? 500 : 100; // Small delay to batch state changes
     
     console.log(`Setting timer with delay ${delay}ms to fetch students`);
     const timer = setTimeout(() => {
-      console.log(`Timer fired - calling fetchStudents with page ${pagination.page}, limit ${pagination.limit}`);
+      console.log(`Timer fired - calling fetchStudents with page ${fetchParams.page}, limit ${fetchParams.limit}`);
       // Only fetch if not already fetching and has required data
       if (!fetchingRef.current && schoolId) {
-        fetchStudents(searchTerm, false);
+        fetchStudents(fetchParams.searchTerm, false);
       } else {
         console.log('Skipping fetch - already fetching or missing schoolId');
       }
@@ -478,7 +511,7 @@ export default function StudentsManagement() {
       console.log(`Cleaning up timer`);
       clearTimeout(timer);
     };
-  }, [fetchParams, user?.userId, classes.length, fetchStudents, selectedClassId, searchTerm, pagination.page, pagination.limit, schoolId]);
+  }, [fetchParams, fetchStudents, schoolId]);
   
   // Close export dropdown when clicking outside
   useEffect(() => {
@@ -650,7 +683,7 @@ export default function StudentsManagement() {
         setSelectedStudent(null);
         // Refresh the student list after a brief delay
         setTimeout(async () => {
-          await fetchStudents(searchTerm, true);
+          await fetchStudents(searchTerm, true, true); // Skip loading since we're already managing it
         }, 500);
         // Clear any selected student IDs
         setSelectedStudentIds(new Set());
@@ -689,7 +722,7 @@ export default function StudentsManagement() {
       const studentsToRemove = currentStudents.filter(student => {
         console.log('Checking student:', student);
         // Use the id field which contains the numeric studentId
-        const studentId = student.id;
+        const studentId = student.id; // Use the id field which contains the numeric studentId
         console.log('Student ID:', studentId, 'Selected IDs:', Array.from(selectedStudentIds));
         // Check both string and number versions of the ID
         const isSelected = selectedStudentIds.has(String(studentId)) || 
@@ -815,7 +848,7 @@ export default function StudentsManagement() {
       setSelectedStudentIds(new Set()); // Clear selection
       // Refresh the student list after a brief delay
       setTimeout(async () => {
-        await fetchStudents(searchTerm, true);
+        await fetchStudents(searchTerm, true, true); // Skip loading since we're already managing it
       }, 500);
       
     } catch (error) {
@@ -827,17 +860,67 @@ export default function StudentsManagement() {
   };
 
   // Handle edit student
-  const handleEditStudent = (student) => {
+  const handleEditStudent = async (student) => {
     console.log('Edit button clicked for student:', student);
-    setEditingStudent(student);
-    setEditForm({
-      firstName: student.firstName || '',
-      lastName: student.lastName || '',
-      username: student.username || '',
-      email: student.email || '',
-      phone: student.phone || ''
-    });
-    setShowEditModal(true);
+    try {
+      setLoading(true);
+      
+      const userId = student.userId || student.user_id || student.id;
+      let fullData = student;
+      if (userId) {
+        const resp = await userService.getUserByID(userId);
+        // Some clients wrap data; support both shapes
+        fullData = resp?.data || resp || student;
+      }
+      setEditingStudent({ ...student, userId: userId });
+      setEditForm({
+        firstName: fullData.firstName || fullData.first_name || '',
+        lastName: fullData.lastName || fullData.last_name || '',
+        username: fullData.username || '',
+        email: fullData.email || '',
+        phone: fullData.phone || '',
+        gender: fullData.gender || '',
+        dateOfBirth: fullData.dateOfBirth ? new Date(fullData.dateOfBirth) : (fullData.date_of_birth ? new Date(fullData.date_of_birth) : null),
+        nationality: fullData.nationality || '',
+        profilePicture: fullData.profile_picture || fullData.profilePicture || '',
+        residence: {
+          provinceId: fullData.residence?.provinceId || fullData.province_id || '',
+          districtId: fullData.residence?.districtId || fullData.district_id || '',
+          communeId: fullData.residence?.communeId || fullData.commune_id || '',
+          villageId: fullData.residence?.villageId || fullData.village_id || ''
+        },
+        placeOfBirth: {
+          provinceId: fullData.placeOfBirth?.provinceId || fullData.residence?.provinceId || fullData.province_id || '',
+          districtId: fullData.placeOfBirth?.districtId || fullData.residence?.districtId || fullData.district_id || '',
+          communeId: fullData.placeOfBirth?.communeId || fullData.residence?.communeId || fullData.commune_id || '',
+          villageId: fullData.placeOfBirth?.villageId || fullData.residence?.villageId || fullData.village_id || ''
+        }
+      });
+      
+      // Initialize dropdown selections
+      const res = fullData.residence || {};
+      setResidenceInitialValues({
+        provinceId: res.provinceId || fullData.province_id || '',
+        districtId: res.districtId || fullData.district_id || '',
+        communeId: res.communeId || fullData.commune_id || '',
+        villageId: res.villageId || fullData.village_id || ''
+      });
+      
+      const birth = fullData.placeOfBirth || {};
+      setBirthInitialValues({
+        provinceId: birth.provinceId || res.provinceId || fullData.province_id || '',
+        districtId: birth.districtId || res.districtId || fullData.district_id || '',
+        communeId: birth.communeId || res.communeId || fullData.commune_id || '',
+        villageId: birth.villageId || res.villageId || fullData.village_id || ''
+      });
+      setShowEditModal(true);
+    } catch (e) {
+      console.error('Failed to fetch user by ID for edit:', e);
+      setEditingStudent(student);
+      setShowEditModal(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle update student form submission
@@ -848,10 +931,51 @@ export default function StudentsManagement() {
     try {
       setLoading(true);
       
-      console.log('Updating student with ID:', editingStudent.id);
-      console.log('Update data:', editForm);
+      const userId = editingStudent.userId || editingStudent.user_id || editingStudent.id;
+      console.log('Updating user by users_id:', userId);
+      console.log('Update data (form):', editForm);
 
-      const response = await studentService.updateStudent(editingStudent.id, editForm);
+      // Normalize date to YYYY-MM-DD
+      const formatDate = (val) => {
+        if (!val) return undefined;
+        const d = val instanceof Date ? val : new Date(val);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+
+      // Backend expects snake_case keys on updateUser
+      const payload = {
+        username: editForm.username?.trim(),
+        first_name: editForm.firstName?.trim(),
+        last_name: editForm.lastName?.trim(),
+        email: editForm.email?.trim(),
+        phone: editForm.phone?.trim(),
+        date_of_birth: formatDate(editForm.dateOfBirth),
+        gender: editForm.gender || undefined,
+        nationality: editForm.nationality?.trim() || undefined,
+        profile_picture: editForm.profilePicture || undefined,
+        residence: {
+          provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
+          districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
+          communeId: selectedResidenceCommune || editForm.residence.communeId || undefined,
+          villageId: selectedResidenceVillage || editForm.residence.villageId || undefined,
+        },
+        placeOfBirth: {
+          provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId || undefined,
+          districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId || undefined,
+          communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
+          villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
+        }
+      };
+
+      // Remove undefined/empty values
+      Object.keys(payload).forEach(k => {
+        if (payload[k] === undefined || payload[k] === null || payload[k] === '') delete payload[k];
+      });
+
+      const response = await userService.updateUser(userId, payload);
       console.log('Update response:', response);
 
       if (response) {
@@ -863,12 +987,22 @@ export default function StudentsManagement() {
           lastName: '',
           username: '',
           email: '',
-          phone: ''
+          phone: '',
+          gender: '',
+          dateOfBirth: null,
+          nationality: '',
+          profilePicture: '',
+          residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
+          placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
         });
+        
+        // Reset location selections
+        resetResidenceSelections();
+        resetBirthSelections();
         
         // Refresh the student list
         setTimeout(async () => {
-          await fetchStudents(searchTerm, true);
+          await fetchStudents(searchTerm, true, true); // Skip loading since we're already managing it
         }, 500);
       } else {
         throw new Error('Failed to update student');
@@ -1318,6 +1452,7 @@ export default function StudentsManagement() {
                     ]}
                     placeholder={t('selectClass', 'ជ្រើសរើសថ្នាក់')}
                     minWidth="min-w-[200px]"
+                    contentClassName="max-h-[200px] overflow-y-auto"
                   />
                 </div>
               </div>
@@ -1427,13 +1562,22 @@ export default function StudentsManagement() {
             lastName: '',
             username: '',
             email: '',
-            phone: ''
+            phone: '',
+            gender: '',
+            dateOfBirth: null,
+            nationality: '',
+            profilePicture: '',
+            residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
+            placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
           });
+          resetResidenceSelections();
+          resetBirthSelections();
         }}
         title={t('editStudent', 'Edit Student')}
-        size="md"
+        size="2xl"
+        height='xl'
       >
-        <form onSubmit={handleUpdateStudent} className="space-y-4">
+        <form onSubmit={handleUpdateStudent} className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -1509,6 +1653,176 @@ export default function StudentsManagement() {
             />
           </div>
           
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('gender', 'Gender')}
+              </label>
+              <select
+                value={editForm.gender}
+                onChange={(e) => handleEditFormChange('gender', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">{t('selectGender', 'Select gender')}</option>
+                <option value="MALE">{t('male', 'Male')}</option>
+                <option value="FEMALE">{t('female', 'Female')}</option>
+                <option value="OTHER">{t('other', 'Other')}</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('dateOfBirth', 'Date of Birth')}
+              </label>
+              <DatePickerWithDropdowns
+                value={editForm.dateOfBirth}
+                onChange={(date) => handleEditFormChange('dateOfBirth', date)}
+                placeholder={t('pickDate', 'Pick a date')}
+              />
+            </div>
+          </div>
+          
+          {/* Profile Picture */}
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">{t('profilePicture', 'Profile Picture')}</h3>
+            <div className="flex items-center space-x-4">
+              <ProfileImage
+                src={editForm.profilePicture}
+                alt={`${editForm.firstName} ${editForm.lastName}`}
+                size="lg"
+              />
+              <div className="flex-1">
+                <label htmlFor="profilePicture" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('profilePictureUrl', 'Profile Picture URL')}
+                </label>
+                <input
+                  type="url"
+                  id="profilePicture"
+                  value={editForm.profilePicture}
+                  onChange={(e) => handleEditFormChange('profilePicture', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={t('enterProfilePictureUrl', 'Enter profile picture URL')}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Current Residence */}
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <Building className="inline w-5 h-5 mr-2" />
+              {t('currentResidence', 'Current Residence')}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('province', 'Province')}
+                </label>
+                <Dropdown
+                  options={getResidenceProvinceOptions()}
+                  value={selectedResidenceProvince}
+                  onValueChange={handleResidenceProvinceChange}
+                  placeholder={t('selectProvince', 'Select Province')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('district', 'District')}
+                </label>
+                <Dropdown
+                  options={getResidenceDistrictOptions()}
+                  value={selectedResidenceDistrict}
+                  onValueChange={handleResidenceDistrictChange}
+                  placeholder={t('selectDistrict', 'Select District')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('commune', 'Commune')}
+                </label>
+                <Dropdown
+                  options={getResidenceCommuneOptions()}
+                  value={selectedResidenceCommune}
+                  onValueChange={handleResidenceCommuneChange}
+                  placeholder={t('selectCommune', 'Select Commune')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('village', 'Village')}
+                </label>
+                <Dropdown
+                  options={getResidenceVillageOptions()}
+                  value={selectedResidenceVillage}
+                  onValueChange={handleResidenceVillageChange}
+                  placeholder={t('selectVillage', 'Select Village')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Place of Birth */}
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <Building className="inline w-5 h-5 mr-2" />
+              {t('placeOfBirth', 'Place of Birth')}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('province', 'Province')}
+                </label>
+                <Dropdown
+                  options={getBirthProvinceOptions()}
+                  value={selectedBirthProvince}
+                  onValueChange={handleBirthProvinceChange}
+                  placeholder={t('selectProvince', 'Select Province')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('district', 'District')}
+                </label>
+                <Dropdown
+                  options={getBirthDistrictOptions()}
+                  value={selectedBirthDistrict}
+                  onValueChange={handleBirthDistrictChange}
+                  placeholder={t('selectDistrict', 'Select District')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('commune', 'Commune')}
+                </label>
+                <Dropdown
+                  options={getBirthCommuneOptions()}
+                  value={selectedBirthCommune}
+                  onValueChange={handleBirthCommuneChange}
+                  placeholder={t('selectCommune', 'Select Commune')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('village', 'Village')}
+                </label>
+                <Dropdown
+                  options={getBirthVillageOptions()}
+                  value={selectedBirthVillage}
+                  onValueChange={handleBirthVillageChange}
+                  placeholder={t('selectVillage', 'Select Village')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                />
+              </div>
+            </div>
+          </div>
+          
           <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
             <Button
               type="button"
@@ -1520,8 +1834,16 @@ export default function StudentsManagement() {
                   lastName: '',
                   username: '',
                   email: '',
-                  phone: ''
+                  phone: '',
+                  gender: '',
+                  dateOfBirth: null,
+                  nationality: '',
+                  profilePicture: '',
+                  residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
+                  placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
                 });
+                resetResidenceSelections();
+                resetBirthSelections();
               }}
               variant="outline"
               disabled={loading}
