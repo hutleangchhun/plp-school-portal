@@ -35,6 +35,7 @@ export const km = {
   loadingDistricts: 'កំពុងទាញយកស្រុក/ខណ្ឌ/ក្រុង...',
   loadingCommunes: 'កំពុងទាញយកឃុំ/សង្កាត់...',
   loadingVillages: 'កំពុងទាញយកភូមិ...',
+  currentResidence: 'ទីកន្លែងស្នាក់នៅបច្ចុប្បន្ន',
 
   
   // Form fields

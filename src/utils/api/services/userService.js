@@ -1,4 +1,4 @@
-import { get, post, patch, uploadFile, uploadFilePatch } from '../client';
+import { get, post, patch, put, uploadFile, uploadFilePatch } from '../client';
 import { ENDPOINTS } from '../config';
 
 /**
@@ -16,6 +16,93 @@ const userService = {
     return response;
   },
 
+
+  /**
+   * Update user by ID (internal method)
+   * @param {string|number} userId - User ID
+   * @param {Object} userData - User data to update
+   * @returns {Promise<Object>} Updated user data
+   */
+  updateUser: async (userId, userData) => {
+    return patch(ENDPOINTS.USERS.UPDATE_USER(userId), userData);
+  },
+
+  /**
+   * Update user profile using /users/{id} route (PUT method)
+   * Gets user ID from localStorage automatically
+   * @param {Object} userData - User data with all profile fields
+   * @returns {Promise<Object>} Updated user data
+   */
+  updateUserProfile: async (userData) => {
+    // Get user ID from localStorage
+    const currentUser = userUtils.getUserData();
+    if (!currentUser || !currentUser.id) {
+      throw new Error('User ID not found in localStorage. Please log in again.');
+    }
+
+    // Format data to match backend expectations
+    const formattedData = {
+      username: userData.username,
+      first_name: userData.firstName || userData.first_name,
+      last_name: userData.lastName || userData.last_name,
+      email: userData.email,
+      phone: userData.phone,
+      date_of_birth: userData.dateOfBirth || userData.date_of_birth,
+      gender: userData.gender,
+      nationality: userData.nationality,
+      teacher_number: userData.teacherNumber || userData.teacher_number
+    };
+
+    // Add password if provided
+    if (userData.newPassword && userData.newPassword.trim()) {
+      formattedData.newPassword = userData.newPassword;
+    }
+
+    // Handle residence data (nested object)
+    const residenceData = userData.residence || {};
+    const residenceProvinceId = residenceData.provinceId || userData.provinceId;
+    const residenceDistrictId = residenceData.districtId || userData.districtId;
+    const residenceCommuneId = residenceData.communeId || userData.communeId;
+    const residenceVillageId = residenceData.villageId || userData.villageId;
+
+    if (residenceProvinceId || residenceDistrictId || residenceCommuneId || residenceVillageId) {
+      formattedData.residence = {};
+      if (residenceProvinceId) formattedData.residence.provinceId = parseInt(residenceProvinceId);
+      if (residenceDistrictId) formattedData.residence.districtId = parseInt(residenceDistrictId);
+      if (residenceCommuneId) formattedData.residence.communeId = parseInt(residenceCommuneId);
+      if (residenceVillageId) formattedData.residence.villageId = parseInt(residenceVillageId);
+    }
+
+    // Handle place of birth data (nested object)
+    const placeOfBirthData = userData.placeOfBirth || {};
+    const birthProvinceId = placeOfBirthData.provinceId;
+    const birthDistrictId = placeOfBirthData.districtId;
+    const birthCommuneId = placeOfBirthData.communeId;
+    const birthVillageId = placeOfBirthData.villageId;
+
+    if (birthProvinceId || birthDistrictId || birthCommuneId || birthVillageId) {
+      formattedData.placeOfBirth = {};
+      if (birthProvinceId) formattedData.placeOfBirth.provinceId = parseInt(birthProvinceId);
+      if (birthDistrictId) formattedData.placeOfBirth.districtId = parseInt(birthDistrictId);
+      if (birthCommuneId) formattedData.placeOfBirth.communeId = parseInt(birthCommuneId);
+      if (birthVillageId) formattedData.placeOfBirth.villageId = parseInt(birthVillageId);
+    } else if (formattedData.residence) {
+      // Default to residence data if place of birth is not provided
+      formattedData.placeOfBirth = { ...formattedData.residence };
+    }
+
+    // Remove undefined/null values to avoid sending empty fields
+    Object.keys(formattedData).forEach(key => {
+      if (formattedData[key] === undefined || formattedData[key] === null || formattedData[key] === '') {
+        delete formattedData[key];
+      }
+    });
+
+    console.log('Updating user profile for ID:', currentUser.id);
+    console.log('Formatted data:', formattedData);
+    
+    return put(ENDPOINTS.USERS.UPDATE_USER(currentUser.id), formattedData);
+  },
   /**
    * Update user account using /users/my-account route (PATCH method)
    * @param {Object} userData - User data with fields: {username, first_name, last_name, email, newPassword, date_of_birth, gender, phone, teacher_number, provinceId, districtId, communeId, villageId, nationality}

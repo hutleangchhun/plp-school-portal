@@ -51,6 +51,7 @@ const ENDPOINTS = {
     RESET_PASSWORD: '/users/reset-password',
     VERIFY_EMAIL: '/users/verify-email',
     RESEND_VERIFICATION: '/users/resend-verification',
+    UPDATE_USER: (userId) => `/users/${userId}`,
   },
   SCHOOLS: {
     BASE: '/schools',

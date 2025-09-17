@@ -35,6 +35,7 @@ export const en = {
   loadingDistricts: 'Loading districts...',
   loadingCommunes: 'Loading communes...',
   loadingVillages: 'Loading villages...',
+  currentResidence: 'Current Residence',
   
   // Form fields
   username: 'Username',

@@ -31,10 +31,23 @@ export default function ProfileUpdate({ user, setUser }) {
     nationality: 'Cambodian',
     roleNameEn: '',
     roleNameKh: '',
-    residence: '',
-    placeOfBirth: '',
     school_id: '',
     school: null,
+    // Current residence location
+    residence: {
+      provinceId: '',
+      districtId: '',
+      communeId: '',
+      villageId: ''
+    },
+    // Place of birth location
+    placeOfBirth: {
+      provinceId: '',
+      districtId: '',
+      communeId: '',
+      villageId: ''
+    },
+    // Legacy fields for backward compatibility
     provinceId: '',
     districtId: '',
     communeId: '',
@@ -51,21 +64,38 @@ export default function ProfileUpdate({ user, setUser }) {
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  // Initialize location data hook
+  // Initialize location data hooks for residence
   const {
-    selectedProvince,
-    selectedDistrict,
-    selectedCommune,
-    selectedVillage,
-    handleProvinceChange,
-    handleDistrictChange,
-    handleCommuneChange,
-    handleVillageChange,
-    getProvinceOptions,
-    getDistrictOptions,
-    getCommuneOptions,
-    getVillageOptions,
-    setInitialValues: setLocationInitialValues
+    selectedProvince: selectedResidenceProvince,
+    selectedDistrict: selectedResidenceDistrict,
+    selectedCommune: selectedResidenceCommune,
+    selectedVillage: selectedResidenceVillage,
+    handleProvinceChange: handleResidenceProvinceChange,
+    handleDistrictChange: handleResidenceDistrictChange,
+    handleCommuneChange: handleResidenceCommuneChange,
+    handleVillageChange: handleResidenceVillageChange,
+    getProvinceOptions: getResidenceProvinceOptions,
+    getDistrictOptions: getResidenceDistrictOptions,
+    getCommuneOptions: getResidenceCommuneOptions,
+    getVillageOptions: getResidenceVillageOptions,
+    setInitialValues: setResidenceInitialValues
+  } = useLocationData();
+
+  // Initialize location data hooks for place of birth
+  const {
+    selectedProvince: selectedBirthProvince,
+    selectedDistrict: selectedBirthDistrict,
+    selectedCommune: selectedBirthCommune,
+    selectedVillage: selectedBirthVillage,
+    handleProvinceChange: handleBirthProvinceChange,
+    handleDistrictChange: handleBirthDistrictChange,
+    handleCommuneChange: handleBirthCommuneChange,
+    handleVillageChange: handleBirthVillageChange,
+    getProvinceOptions: getBirthProvinceOptions,
+    getDistrictOptions: getBirthDistrictOptions,
+    getCommuneOptions: getBirthCommuneOptions,
+    getVillageOptions: getBirthVillageOptions,
+    setInitialValues: setBirthInitialValues
   } = useLocationData();
 
   useEffect(() => {
@@ -144,26 +174,49 @@ export default function ProfileUpdate({ user, setUser }) {
           nationality: userData.nationality || 'Cambodian',
           roleNameEn: userData.roleNameEn || '',
           roleNameKh: userData.roleNameKh || '',
-          residence: userData.residence || '',
-          placeOfBirth: userData.placeOfBirth || '',
           school_id: userData.school_id || '',
           school: userData.school || null,
-          provinceId: userData.province_id || '',
-          districtId: userData.district_id || '',
-          communeId: userData.commune_id || '',
-          villageId: userData.village_id || ''
+          // Handle nested residence object
+          residence: {
+            provinceId: userData.residence?.provinceId || userData.province_id || '',
+            districtId: userData.residence?.districtId || userData.district_id || '',
+            communeId: userData.residence?.communeId || userData.commune_id || '',
+            villageId: userData.residence?.villageId || userData.village_id || ''
+          },
+          // Handle nested placeOfBirth object
+          placeOfBirth: {
+            provinceId: userData.placeOfBirth?.provinceId || userData.residence?.provinceId || userData.province_id || '',
+            districtId: userData.placeOfBirth?.districtId || userData.residence?.districtId || userData.district_id || '',
+            communeId: userData.placeOfBirth?.communeId || userData.residence?.communeId || userData.commune_id || '',
+            villageId: userData.placeOfBirth?.villageId || userData.residence?.villageId || userData.village_id || ''
+          },
+          // Legacy fields for backward compatibility
+          provinceId: userData.residence?.provinceId || userData.province_id || '',
+          districtId: userData.residence?.districtId || userData.district_id || '',
+          communeId: userData.residence?.communeId || userData.commune_id || '',
+          villageId: userData.residence?.villageId || userData.village_id || ''
         });
         console.log('User data loaded into form:', formData);
 
-        // Initialize location data if available
-        if (userData.province_id || userData.district_id || userData.commune_id || userData.village_id) {
-          setLocationInitialValues({
-            provinceId: userData.province_id,
-            districtId: userData.district_id,
-            communeId: userData.commune_id,
-            villageId: userData.village_id
-          });
-        }
+        // Store initial location data to set once provinces are loaded
+        const residenceData = userData.residence || {};
+        const birthData = userData.placeOfBirth || {};
+        
+        // Store the initial values to be set later
+        window.pendingResidenceData = residenceData.provinceId || residenceData.districtId || residenceData.communeId || residenceData.villageId || 
+            userData.province_id || userData.district_id || userData.commune_id || userData.village_id ? {
+          provinceId: residenceData.provinceId || userData.province_id,
+          districtId: residenceData.districtId || userData.district_id,
+          communeId: residenceData.communeId || userData.commune_id,
+          villageId: residenceData.villageId || userData.village_id
+        } : null;
+
+        window.pendingBirthData = birthData.provinceId || birthData.districtId || birthData.communeId || birthData.villageId ? {
+          provinceId: birthData.provinceId,
+          districtId: birthData.districtId,
+          communeId: birthData.communeId,
+          villageId: birthData.villageId
+        } : (window.pendingResidenceData || null);
         // Also update the user context if needed
         if (setUser) {
           setUser(userData);
@@ -177,7 +230,24 @@ export default function ProfileUpdate({ user, setUser }) {
     };
 
     fetchUserData();
-  }, [setUser, showError, t, setLocationInitialValues]);
+  }, [setUser, showError, t, setResidenceInitialValues, setBirthInitialValues]);
+
+  // Set initial location values once provinces are loaded
+  useEffect(() => {
+    const setInitialLocationData = async () => {
+      if (getResidenceProvinceOptions().length > 0 && window.pendingResidenceData) {
+        await setResidenceInitialValues(window.pendingResidenceData);
+        window.pendingResidenceData = null;
+      }
+      
+      if (getBirthProvinceOptions().length > 0 && window.pendingBirthData) {
+        await setBirthInitialValues(window.pendingBirthData);
+        window.pendingBirthData = null;
+      }
+    };
+    
+    setInitialLocationData();
+  }, [getResidenceProvinceOptions, getBirthProvinceOptions, setResidenceInitialValues, setBirthInitialValues]);
 
   const handleViewPicture = () => {
     setShowImageModal(true);
@@ -234,7 +304,7 @@ export default function ProfileUpdate({ user, setUser }) {
         updateData.profile_picture = profilePictureUrl;
       }
       
-      const response = await api.user.updateMyAccount(updateData);
+      const response = await api.user.updateUserProfile(updateData);
       clearTimeout(timeoutId);
 
       const updatedUser = { ...user, ...response };
@@ -718,56 +788,132 @@ export default function ProfileUpdate({ user, setUser }) {
                     </div>
                   </div>
                 </div>
-                {/* Location Information */}
+
+                {/* Date of Birth and Gender */}
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700">
+                      {t('dateOfBirth') || 'Date of Birth'}
+                    </label>
+                    <div className="mt-1">
+                      {isEditMode ? (
+                        <DatePickerWithDropdowns
+                          value={formData.date_of_birth ? new Date(formData.date_of_birth) : null}
+                          onChange={handleDateChange}
+                          placeholder={t('selectDate') || 'Select date'}
+                          className="w-full"
+                        />
+                      ) : (
+                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                          {formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : '-'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className=''>
+                    <label className="block text-sm font-medium text-gray-700">
+                      {t('gender') || 'Gender'}
+                    </label>
+                    <div className="mt-1">
+                      {isEditMode ? (
+                        <RadioGroup.Root
+                          value={formData.gender}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
+                          className="flex items-center gap-3"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroup.Item
+                              value="MALE"
+                              id="male"
+                              className="w-4 h-4 rounded-full border border-gray-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            >
+                              <RadioGroup.Indicator className="flex items-center justify-center w-full h-full relative after:content-[''] after:w-2 after:h-2 after:rounded-full after:bg-white" />
+                            </RadioGroup.Item>
+                            <label htmlFor="male" className="text-sm text-gray-700 cursor-pointer">
+                              {t('male') || 'Male'}
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroup.Item
+                              value="FEMALE"
+                              id="female"
+                              className="w-4 h-4 rounded-full border border-gray-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            >
+                              <RadioGroup.Indicator className="flex items-center justify-center w-full h-full relative after:content-[''] after:w-2 after:h-2 after:rounded-full after:bg-white" />
+                            </RadioGroup.Item>
+                            <label htmlFor="female" className="text-sm text-gray-700 cursor-pointer">
+                              {t('female') || 'Female'}
+                            </label>
+                          </div>
+                        </RadioGroup.Root>
+                      ) : (
+                        <div className="block w-full bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                          {formData.gender === 'MALE' ? (t('male') || 'Male') : (t('female') || 'Female')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Current Residence Information */}
                 <div className="border-t pt-4 sm:pt-6">
-                  <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('locationInformation')}</h4>
+                  <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('currentResidence') || 'Current Residence'}</h4>
                   
                   {/* Province and District */}
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-6">
                     <div>
-                      <label htmlFor="province" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="residence-province" className="block text-sm font-medium text-gray-700">
                         {t('province')}
                       </label>
                       <div className="mt-1">
                         {isEditMode ? (
                           <Dropdown
-                            value={selectedProvince}
+                            value={selectedResidenceProvince}
                             onValueChange={(value) => {
-                              handleProvinceChange(value);
-                              setFormData(prev => ({ ...prev, provinceId: value }));
+                              handleResidenceProvinceChange(value);
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                residence: { ...prev.residence, provinceId: value },
+                                provinceId: value 
+                              }));
                             }}
-                            options={getProvinceOptions()}
+                            options={getResidenceProvinceOptions()}
                             placeholder={t('selectProvince')}
                             className="w-full"
                           />
                         ) : (
                           <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {getProvinceOptions().find(p => p.value === selectedProvince)?.label || '-'}
+                            {getResidenceProvinceOptions().find(p => p.value === selectedResidenceProvince)?.label || '-'}
                           </div>
                         )}
                       </div>
                     </div>
 
                     <div>
-                      <label htmlFor="district" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="residence-district" className="block text-sm font-medium text-gray-700">
                         {t('district')}
                       </label>
                       <div className="mt-1">
                         {isEditMode ? (
                           <Dropdown
-                            value={selectedDistrict}
+                            value={selectedResidenceDistrict}
                             onValueChange={(value) => {
-                              handleDistrictChange(value);
-                              setFormData(prev => ({ ...prev, districtId: value }));
+                              handleResidenceDistrictChange(value);
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                residence: { ...prev.residence, districtId: value },
+                                districtId: value 
+                              }));
                             }}
-                            options={getDistrictOptions()}
+                            options={getResidenceDistrictOptions()}
                             placeholder={t('selectDistrict')}
                             className="w-full"
-                            disabled={!selectedProvince}
+                            disabled={!selectedResidenceProvince}
                           />
                         ) : (
                           <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {getDistrictOptions().find(d => d.value === selectedDistrict)?.label || '-'}
+                            {getResidenceDistrictOptions().find(d => d.value === selectedResidenceDistrict)?.label || '-'}
                           </div>
                         )}
                       </div>
@@ -777,50 +923,180 @@ export default function ProfileUpdate({ user, setUser }) {
                   {/* Commune and Village */}
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="commune" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="residence-commune" className="block text-sm font-medium text-gray-700">
                         {t('commune')}
                       </label>
                       <div className="mt-1">
                         {isEditMode ? (
                           <Dropdown
-                            value={selectedCommune}
+                            value={selectedResidenceCommune}
                             onValueChange={(value) => {
-                              handleCommuneChange(value);
-                              setFormData(prev => ({ ...prev, communeId: value }));
+                              handleResidenceCommuneChange(value);
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                residence: { ...prev.residence, communeId: value },
+                                communeId: value 
+                              }));
                             }}
-                            options={getCommuneOptions()}
+                            options={getResidenceCommuneOptions()}
                             placeholder={t('selectCommune')}
                             className="w-full"
-                            disabled={!selectedDistrict}
+                            disabled={!selectedResidenceDistrict}
                           />
                         ) : (
                           <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {getCommuneOptions().find(c => c.value === selectedCommune)?.label || '-'}
+                            {getResidenceCommuneOptions().find(c => c.value === selectedResidenceCommune)?.label || '-'}
                           </div>
                         )}
                       </div>
                     </div>
 
                     <div>
-                      <label htmlFor="village" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="residence-village" className="block text-sm font-medium text-gray-700">
                         {t('village')}
                       </label>
                       <div className="mt-1">
                         {isEditMode ? (
                           <Dropdown
-                            value={selectedVillage}
+                            value={selectedResidenceVillage}
                             onValueChange={(value) => {
-                              handleVillageChange(value);
-                              setFormData(prev => ({ ...prev, villageId: value }));
+                              handleResidenceVillageChange(value);
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                residence: { ...prev.residence, villageId: value },
+                                villageId: value 
+                              }));
                             }}
-                            options={getVillageOptions()}
+                            options={getResidenceVillageOptions()}
                             placeholder={t('selectVillage')}
                             className="w-full"
-                            disabled={!selectedCommune}
+                            disabled={!selectedResidenceCommune}
                           />
                         ) : (
                           <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {getVillageOptions().find(v => v.value === selectedVillage)?.label || '-'}
+                            {getResidenceVillageOptions().find(v => v.value === selectedResidenceVillage)?.label || '-'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Place of Birth Information */}
+                <div className="border-t pt-4 sm:pt-6">
+                  <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('placeOfBirth') || 'Place of Birth'}</h4>
+                  
+                  {/* Province and District */}
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-6">
+                    <div>
+                      <label htmlFor="birth-province" className="block text-sm font-medium text-gray-700">
+                        {t('province')}
+                      </label>
+                      <div className="mt-1">
+                        {isEditMode ? (
+                          <Dropdown
+                            value={selectedBirthProvince}
+                            onValueChange={(value) => {
+                              handleBirthProvinceChange(value);
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                placeOfBirth: { ...prev.placeOfBirth, provinceId: value }
+                              }));
+                            }}
+                            options={getBirthProvinceOptions()}
+                            placeholder={t('selectProvince')}
+                            className="w-full"
+                          />
+                        ) : (
+                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                            {getBirthProvinceOptions().find(p => p.value === selectedBirthProvince)?.label || '-'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="birth-district" className="block text-sm font-medium text-gray-700">
+                        {t('district')}
+                      </label>
+                      <div className="mt-1">
+                        {isEditMode ? (
+                          <Dropdown
+                            value={selectedBirthDistrict}
+                            onValueChange={(value) => {
+                              handleBirthDistrictChange(value);
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                placeOfBirth: { ...prev.placeOfBirth, districtId: value }
+                              }));
+                            }}
+                            options={getBirthDistrictOptions()}
+                            placeholder={t('selectDistrict')}
+                            className="w-full"
+                            disabled={!selectedBirthProvince}
+                          />
+                        ) : (
+                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                            {getBirthDistrictOptions().find(d => d.value === selectedBirthDistrict)?.label || '-'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Commune and Village */}
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="birth-commune" className="block text-sm font-medium text-gray-700">
+                        {t('commune')}
+                      </label>
+                      <div className="mt-1">
+                        {isEditMode ? (
+                          <Dropdown
+                            value={selectedBirthCommune}
+                            onValueChange={(value) => {
+                              handleBirthCommuneChange(value);
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                placeOfBirth: { ...prev.placeOfBirth, communeId: value }
+                              }));
+                            }}
+                            options={getBirthCommuneOptions()}
+                            placeholder={t('selectCommune')}
+                            className="w-full"
+                            disabled={!selectedBirthDistrict}
+                          />
+                        ) : (
+                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                            {getBirthCommuneOptions().find(c => c.value === selectedBirthCommune)?.label || '-'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="birth-village" className="block text-sm font-medium text-gray-700">
+                        {t('village')}
+                      </label>
+                      <div className="mt-1">
+                        {isEditMode ? (
+                          <Dropdown
+                            value={selectedBirthVillage}
+                            onValueChange={(value) => {
+                              handleBirthVillageChange(value);
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                placeOfBirth: { ...prev.placeOfBirth, villageId: value }
+                              }));
+                            }}
+                            options={getBirthVillageOptions()}
+                            placeholder={t('selectVillage')}
+                            className="w-full"
+                            disabled={!selectedBirthCommune}
+                          />
+                        ) : (
+                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                            {getBirthVillageOptions().find(v => v.value === selectedBirthVillage)?.label || '-'}
                           </div>
                         )}
                       </div>
