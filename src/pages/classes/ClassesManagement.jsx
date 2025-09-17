@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Users, BookOpen, Clock, Calendar } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, BookOpen, Clock, Calendar, Building, User } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import Modal from '../../components/ui/Modal';
@@ -12,6 +12,7 @@ import { userService } from '../../utils/api/services/userService'; // Import us
 import schoolService from '../../utils/api/services/schoolService'; // Import schoolService for school info
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
 import { useStableCallback } from '../../utils/reactOptimization';
+import Dropdown from '@/components/ui/Dropdown';
 
 export default function ClassesManagement() {
   const { t } = useLanguage();
@@ -687,40 +688,62 @@ export default function ClassesManagement() {
         }}
         title={showAddModal ? (t('addClass') || 'Add Class') : (t('editClass') || 'Edit Class')}
         size="lg"
+        stickyFooter={true}
+        footer={
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddModal(false);
+                setShowEditModal(false);
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              {t('cancel') || 'Cancel'}
+            </button>
+            <button
+              type="submit"
+              form="class-form"
+              disabled={loading}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors"
+            >
+              {loading ? (t('saving') || 'Saving...') : (showAddModal ? (t('addClass') || 'Add Class') : (t('updateClass') || 'Update Class'))}
+            </button>
+          </div>
+        }
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form id="class-form" onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('className') || 'Class Name'} *
               </label>
-              <input
-                type="text"
-                name="name"
-                required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                value={formData.name}
-                onChange={handleInputChange}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <BookOpen className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder={t('enterClassName') || 'Enter class name'}
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('grade') || 'Grade Level'} *
               </label>
-              <select
-                name="gradeLevel"
-                required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              <Dropdown
                 value={formData.gradeLevel}
-                onChange={handleInputChange}
-              >
-                <option value="">{t('selectGrade') || 'Select Grade'}</option>
-                {grades.map(grade => (
-                  <option key={grade.value} value={grade.value}>
-                    {grade.label}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(value) => handleInputChange({ target: { name: 'gradeLevel', value } })}
+                options={grades}
+                placeholder={t('selectGrade') || 'Select Grade'}
+                className="w-full"
+              />
             </div>
           </div>
 
@@ -729,34 +752,32 @@ export default function ClassesManagement() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('section') || 'Section'} *
               </label>
-              <input
-                type="text"
-                name="section"
-                required
-                placeholder={t('sectionPlaceholder')}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                value={formData.section}
-                onChange={handleInputChange}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Users className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  name="section"
+                  required
+                  placeholder={t('sectionPlaceholder') || 'Enter section'}
+                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                  value={formData.section}
+                  onChange={handleInputChange}
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('academicYear') || 'Academic Year'} *
               </label>
-              <select
-                name="academicYear"
-                required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              <Dropdown
                 value={formData.academicYear}
-                onChange={handleInputChange}
-              >
-                <option value="">{t('selectAcademicYear') || 'Select Academic Year'}</option>
-                {academicYears.map(year => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(value) => handleInputChange({ target: { name: 'academicYear', value } })}
+                options={academicYears.map(year => ({ value: year, label: year }))}
+                placeholder={t('selectAcademicYear') || 'Select Academic Year'}
+                className="w-full"
+              />
             </div>
           </div>
 
@@ -766,18 +787,21 @@ export default function ClassesManagement() {
                 {t('school') || 'School'} *
               </label>
               <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Building className="h-4 w-4 text-gray-400" />
+                </div>
                 <input
                   type="text"
                   name="schoolName"
                   required
                   readOnly
                   value={schoolInfo.name}
-                  className={`w-full border rounded-lg px-3 py-2 cursor-not-allowed ${
+                  className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm cursor-not-allowed ${
                     schoolInfo.name === 'Loading...' 
                       ? 'bg-blue-50 border-blue-300 text-blue-700'
                       : schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')
                       ? 'bg-red-50 border-red-300 text-red-700'
-                      : 'bg-gray-100 border-gray-300'
+                      : 'bg-gray-50 border-0 focus:ring-0 focus:border-0 focus:outline-none'
                   }`}
                   title={`School ID: ${schoolInfo.id || 'Not available'}`}
                 />
@@ -808,14 +832,19 @@ export default function ClassesManagement() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('teacherId') || 'Teacher ID'} *
               </label>
-              <input
-                type="text"
-                name="teacherId"
-                required
-                readOnly
-                value={formData.teacherId}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  name="teacherId"
+                  required
+                  readOnly
+                  value={formData.teacherId}
+                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                />
+              </div>
             </div>
           </div>
 
@@ -823,36 +852,22 @@ export default function ClassesManagement() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t('maxStudents') || 'Maximum Students'} *
             </label>
-            <input
-              type="number"
-              name="maxStudents"
-              required
-              min="1"
-              max="200"
-              placeholder={t('capacityPlaceholder')}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              value={formData.maxStudents}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={() => {
-                setShowAddModal(false);
-                setShowEditModal(false);
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              {t('cancel') || 'Cancel'}
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg disabled:opacity-50"
-            >
-              {loading ? (t('saving') || 'Saving...') : (showAddModal ? (t('addClass') || 'Add Class') : (t('updateClass') || 'Update Class'))}
-            </button>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Users className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="number"
+                name="maxStudents"
+                required
+                min="1"
+                max="200"
+                placeholder={t('capacityPlaceholder') || 'Enter maximum students'}
+                className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                value={formData.maxStudents}
+                onChange={handleInputChange}
+              />
+            </div>
           </div>
         </form>
       </Modal>

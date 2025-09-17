@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogIn, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Eye, EyeOff, User, Lock } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import LanguageSwitcher from '../../components/common/LanguageSwitcher';
@@ -84,16 +84,21 @@ export default function Login({ setUser }) {
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                   {t('username')}
                 </label>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder={t('enterUsername', 'Enter your username')}
-                  value={formData.username}
-                  onChange={(e) => setFormData({...formData, username: e.target.value})}
-                />
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    required
+                    className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-all duration-300 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterUsername', 'Enter your username')}
+                    value={formData.username}
+                    onChange={(e) => setFormData({...formData, username: e.target.value})}
+                  />
+                </div>
               </div>
               
               <div>
@@ -101,12 +106,15 @@ export default function Login({ setUser }) {
                   {t('password')}
                 </label>
                 <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-4 w-4 text-gray-400" />
+                  </div>
                   <input
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className="appearance-none relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    className="appearance-none relative block w-full pl-10 pr-10 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-all duration-300 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
                     placeholder={t('enterPassword', 'Enter your password')}
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}

@@ -293,6 +293,13 @@ export const studentService = {
    */
   async removeStudentToMasterClass(classId, schoolId, studentId) {
     try {
+      console.log('Attempting to remove student to master class:', {
+        classId: classId,
+        schoolId: schoolId,
+        studentId: studentId,
+        endpoint: `${ENDPOINTS.CLASSES.BASE}/${classId}/students/remove-to-master/${schoolId}`
+      });
+      
       const response = await handleApiResponse(() =>
         apiClient_.delete(`${ENDPOINTS.CLASSES.BASE}/${classId}/students/remove-to-master/${schoolId}`, {
           params: { studentId: Number(studentId) },
@@ -307,6 +314,12 @@ export const studentService = {
       
     } catch (error) {
       console.error('Error in removeStudentToMasterClass:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        response: error.response?.data
+      });
       throw error;
     }
   },

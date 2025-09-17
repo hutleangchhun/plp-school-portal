@@ -529,9 +529,9 @@ export const km = {
   failedToFetchSchoolId: 'បរាជ័យក្នុងការទាញយកព័ត៌មានសាលារៀន',
   
   // Export functionality
-  exportToExcel: 'នាំចេញទៅ Excel (.xlsx)',
-  exportToCSV: 'នាំចេញទៅ CSV (.csv)',
-  exportToPDF: 'នាំចេញទៅ PDF (.pdf)',
+  exportToExcel: 'ទាញទិន្នន័យជា Excel',
+  exportToCSV: 'ទាញទិន្នន័យជា CSV',
+  exportToPDF: 'ទាញទិន្នន័យជា PDF',
   chooseAnOption: 'ជ្រើសរើសជម្រើស...',
   selectClassDropdown: 'ជ្រើសរើសថ្នាក់...',
   month: 'ខែ',
@@ -576,4 +576,81 @@ export const km = {
   
   // Loading states
   loadingText: 'កំពុងផ្ទុក...',
+  
+  // Alert dialogs and confirmation messages
+  moveStudentToMaster: 'ផ្លាស់ទីសិស្សទៅថ្នាក់មេ',
+  confirmMoveStudentToMaster: 'តើអ្នកប្រាកដថាចង់ផ្លាស់ទី',
+  toMasterClass: 'ទៅថ្នាក់មេមែនទេ? នេះនឹងដកពួកគេចេញពីថ្នាក់បច្ចុប្បន្ន។',
+  moving: 'កំពុងផ្លាស់ទី...',
+  moveToMaster: 'ផ្លាស់ទីទៅថ្នាក់មេ',
+  moveStudentsToMaster: 'ផ្លាស់ទីសិស្សទៅថ្នាក់មេ',
+  confirmMoveStudentsToMaster: 'តើអ្នកប្រាកដថាចង់ផ្លាស់ទី',
+  studentsToMasterClass: 'សិស្សទៅថ្នាក់មេមែនទេ? នេះនឹងដកពួកគេចេញពីថ្នាក់បច្ចុប្បន្នរបស់ពួកគេ។',
+  noStudentSelected: 'មិនបានជ្រើសរើសសិស្ស',
+  cannotFindStudentClass: 'មិនអាចកំណត់ថ្នាក់របស់សិស្សបានទេ។ សិស្សនេះប្រហែលជាមិនត្រូវបានកំណត់ឱ្យថ្នាក់ណាមួយទេ។',
+  unauthorizedAction: 'អ្នកមិនមានសិទ្ធិដកសិស្សចេញពីថ្នាក់នេះទេ',
+  studentRemovedFromClass: 'បានដកសិស្សចេញពីថ្នាក់ដោយជោគជ័យ',
+  studentsMovedToMasterSuccess: 'បានផ្លាស់ទីសិស្សទៅថ្នាក់មេដោយជោគជ័យ',
+  someStudentsNotRemoved: 'សិស្សមួយចំនួនមិនអាចដកចេញបានទេ។ សូមពិនិត្យកុងសូលសម្រាប់ព័ត៌មានលម្អិត។',
+  studentsRemovedFromClass: 'បានដកសិស្សចេញពីថ្នាក់ដោយជោគជ័យ',
+  studentUpdatedSuccess: 'បានកែប្រែព័ត៌មានសិស្សដោយជោគជ័យ',
+  failedUpdateStudent: 'បរាជ័យក្នុងការកែប្រែព័ត៌មានសិស្ស',
+  unauthorizedClassAccess: 'អ្នកមិនមានសិទ្ធិមើលសិស្សពីថ្នាក់នេះទេ',
+  
+  // Form field labels and placeholders
+  enterFirstName: 'បញ្ចូលនាមខ្លួន',
+  enterLastName: 'បញ្ចូលនាមត្រកូល',
+  enterEmail: 'បញ្ចូលអាសយដ្ឋានអ៊ីមែល',
+  enterPhone: 'បញ្ចូលលេខទូរស័ព្ទ',
+  other: 'ផ្សេងទៀត',
+  pickDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
+  
+  // Search and filter
+  clearSearch: 'សម្អាតការស្វែងរក',
+  filteredFrom: 'បានត្រងចេញពី',
+  
+  // Bulk operations and selections
+  moveSelectedToMaster: 'ផ្លាស់ទីអ្នកដែលបានជ្រើសរើសទៅថ្នាក់មេ',
+  
+  // Profile picture related
+  profilePictureUrl: 'URL រូបភាពប្រូហ្វាល់',
+  enterProfilePictureUrl: 'បញ្ចូល URL រូបភាពប្រូហ្វាល់',
+  
+  // Classes Management specific translations
+  noSchoolIdInAccount: 'រកមិនឃើញលេខសម្គាល់សាលារៀនក្នុងគណនីរបស់អ្នក។ សូមទាក់ទងអ្នកគ្រប់គ្រង។',
+  failedToFetchAccountInfo: 'បរាជ័យក្នុងការទាញយកព័ត៌មានគណនី',
+  'error.fetchingClasses': 'បរាជ័យក្នុងការទាញយកថ្នាក់រៀន',
+  errorFetchingClassDetails: 'កំហុសក្នុងការទាញយកព័ត៌មានលម្អិតថ្នាក់',
+  pleaseCompleteAllRequiredFields: 'សូមបំពេញវាលដែលទាមទារទាំងអស់',
+  schoolInfoStillLoading: 'ព័ត៌មានសាលារៀនកំពុងតែទាញយក។ សូមរង់ចាំសិនហើយព្យាយាមម្តងទៀត។',
+  schoolInfoNotAvailable: 'ព័ត៌មានសាលារៀនមិនមាន។ សូមព្យាយាមធ្វើបច្ចុប្បន្នភាពទំព័រ ឬទាក់ទងអ្នកគ្រប់គ្រង។',
+  invalidGradeLevel: 'កម្រិតថ្នាក់ត្រូវតែនៅចន្លោះ ១ ដល់ ១២',
+  invalidMaxStudents: 'ចំនួនសិស្សអតិបរមាត្រូវតែនៅចន្លោះ ១ ដល់ ២០០',
+  classAddedSuccessfully: 'បានបន្ថែមថ្នាក់រៀនដោយជោគជ័យ',
+  classUpdatedSuccessfully: 'បានកែប្រែថ្នាក់រៀនដោយជោគជ័យ',
+  errorSavingClass: 'កំហុសក្នុងការរក្សាទុកថ្នាក់រៀន',
+  classDeletedSuccessfully: 'បានលុបថ្នាក់រៀនដោយជោគជ័យ',
+  errorDeletingClass: 'កំហុសក្នុងការលុបថ្នាក់រៀន',
+  enterClassName: 'បញ្ចូលឈ្មោះថ្នាក់រៀន',
+  selectAcademicYear: 'ជ្រើសរើសឆ្នាំសិក្សា',
+  
+  // ProfileUpdate specific translations
+  selectDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
+  schoolName: 'ឈ្មោះសាលារៀន',
+  schoolCode: 'លេខកូដសាលារៀន',
+  
+  // Common UI Components translations
+  'បិទ': 'បិទ',
+  'Close': 'បិទ',
+  'បោះបង់': 'បោះបង់',
+  'បន្ត': 'បន្ត',
+  'Continue': 'បន្ត',
+  allRightsReserved: 'រក្សាសិទ្ធិគ្រប់យ៉ាង',
+  poweredBy: 'គាំទ្រដោយ',
+  'ស្វាគមន៍': 'ស្វាគមន៍',
+  'Welcome': 'ស្វាគមន៍',
+  'សារនេះនឹងបាត់បង់ក្នុងរយៈពេល ១០ វិនាទី': 'សារនេះនឹងបាត់បង់ក្នុងរយៈពេល ១០ វិនាទី',
+  'This message will disappear in 10 seconds': 'សារនេះនឹងបាត់បង់ក្នុងរយៈពេល ១០ វិនាទី',
+  
+  // Additional common translations
 };

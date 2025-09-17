@@ -13,7 +13,9 @@ export default function Modal({
   showBorder = false,
   showCloseButton = true,
   closeOnOverlayClick = true,
-  className = ''
+  className = '',
+  footer = null,
+  stickyFooter = false
 }) {
   const { t } = useLanguage();
 
@@ -22,7 +24,7 @@ export default function Modal({
     md: 'max-w-lg',
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
-    '2xl': 'max-w-6xl',
+    '2xl': 'max-w-7xl',
     full: 'max-w-full'
   };
 
@@ -75,9 +77,16 @@ export default function Modal({
           )}
           <Dialog.Description className="sr-only"></Dialog.Description>
           {/* Content */}
-          <div className="flex-1 overflow-auto bg-white px-4 pt-5 pb-4 sm:p-6 rounded-b-xl">
+          <div className={`flex-1 overflow-auto bg-white px-4 pt-5 sm:p-6 ${footer && stickyFooter ? 'pb-4' : 'pb-4 rounded-b-xl'}`}>
             {children}
           </div>
+          
+          {/* Footer */}
+          {footer && (
+            <div className={`flex-shrink-0 bg-white px-4 py-4 sm:px-6 sm:pb-6 ${stickyFooter ? 'border-t border-gray-200 rounded-b-xl' : 'rounded-b-xl'}`}>
+              {footer}
+            </div>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

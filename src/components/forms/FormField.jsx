@@ -22,6 +22,7 @@ import { ChevronDown } from 'lucide-react';
  * @param {Array} props.options - Options for select/radio (format: [{value, label, labelKey}])
  * @param {string} props.className - Additional CSS classes
  * @param {Object} props.validation - Validation rules
+ * @param {React.Component} props.icon - Icon component to display
  */
 export default function FormField({
   name,
@@ -35,6 +36,7 @@ export default function FormField({
   disabled = false,
   options = [],
   className = '',
+  icon: Icon,
   // validation = {}, // For future implementation
   ...props
 }) {
@@ -59,11 +61,12 @@ export default function FormField({
   const isInvalid = touched && error;
   const isValid = touched && !error && value;
 
-  // Base input classes
+  // Base input classes with icon support
   const baseInputClasses = `
-    w-full px-3 py-2 border rounded-md transition-colors duration-200
-    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+    w-full border rounded-md transition-all duration-300
+    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:scale-[1.01] hover:shadow-md
     disabled:bg-gray-100 disabled:cursor-not-allowed
+    ${Icon ? 'pl-10 pr-3 py-2' : 'px-3 py-2'}
     ${isInvalid ? 'border-red-500 bg-red-50' : ''}
     ${isValid ? 'border-green-500 bg-green-50' : ''}
     ${!isInvalid && !isValid ? 'border-gray-300 hover:border-gray-400' : ''}
@@ -75,6 +78,11 @@ export default function FormField({
       case 'password':
         return (
           <div className="relative">
+            {Icon && (
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Icon className="h-4 w-4 text-gray-400" />
+              </div>
+            )}
             <input
               type={showPassword ? 'text' : 'password'}
               name={name}
@@ -83,7 +91,7 @@ export default function FormField({
               onBlur={handleBlur}
               placeholder={translatedPlaceholder}
               disabled={disabled}
-              className={`${baseInputClasses} pr-10`}
+              className={`${baseInputClasses} ${Icon ? 'pr-10' : 'pr-10'}`}
               {...props}
             />
             <button
@@ -184,17 +192,24 @@ export default function FormField({
 
       default:
         return (
-          <input
-            type={type}
-            name={name}
-            value={value || ''}
-            onChange={(e) => handleChange(e.target.value)}
-            onBlur={handleBlur}
-            placeholder={translatedPlaceholder}
-            disabled={disabled}
-            className={baseInputClasses}
-            {...props}
-          />
+          <div className="relative">
+            {Icon && (
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Icon className="h-4 w-4 text-gray-400" />
+              </div>
+            )}
+            <input
+              type={type}
+              name={name}
+              value={value || ''}
+              onChange={(e) => handleChange(e.target.value)}
+              onBlur={handleBlur}
+              placeholder={translatedPlaceholder}
+              disabled={disabled}
+              className={baseInputClasses}
+              {...props}
+            />
+          </div>
         );
     }
   };
@@ -214,7 +229,7 @@ export default function FormField({
         {renderInput()}
         
         {/* Status Icons */}
-        {(isInvalid || isValid) && (
+        {(isInvalid || isValid) && type !== 'password' && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
             {isInvalid && <AlertCircle className="h-4 w-4 text-red-500" />}
             {isValid && <Check className="h-4 w-4 text-green-500" />}

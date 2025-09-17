@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Award, Plus, Trophy, Medal, Star, Users } from 'lucide-react';
+import { Award, Plus, Trophy, Medal, Star, Users, User, BookOpen, Tag, FileText } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import Modal from '../../components/ui/Modal';
@@ -140,8 +140,17 @@ export default function Achievements() {
         onClose={() => setShowAddModal(false)}
         title={t('addAchievement')}
         size="lg"
+        stickyFooter={true}
+        footer={
+          <div className="flex justify-end space-x-3">
+            <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+            <button type="submit" form="add-achievement-form" disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50">
+              {loading ? t('adding') : t('addAchievement')}
+            </button>
+          </div>
+        }
       >
-        <form onSubmit={(e) => {
+        <form id="add-achievement-form" onSubmit={(e) => {
           e.preventDefault();
           const formData = new FormData(e.target);
           handleAddAchievement(Object.fromEntries(formData));
@@ -149,31 +158,63 @@ export default function Achievements() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
-              <input name="student" type="text" required className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-4 w-4 text-gray-400" />
+                </div>
+                <input 
+                  name="student" 
+                  type="text" 
+                  required 
+                  className="w-full pl-10 border border-gray-300 rounded-lg px-3 py-2 transition-all duration-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md" 
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Achievement</label>
-              <input name="achievement" type="text" required className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Award className="h-4 w-4 text-gray-400" />
+                </div>
+                <input 
+                  name="achievement" 
+                  type="text" 
+                  required 
+                  className="w-full pl-10 border border-gray-300 rounded-lg px-3 py-2 transition-all duration-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md" 
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select name="category" required className="w-full border border-gray-300 rounded-lg px-3 py-2">
-                <option value="">Select Category</option>
-                <option value="Academic">{t('academic')}</option>
-                <option value="Sports">{t('sports')}</option>
-                <option value="Arts">{t('arts')}</option>
-                <option value="Leadership">{t('leadership')}</option>
-              </select>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Tag className="h-4 w-4 text-gray-400" />
+                </div>
+                <select 
+                  name="category" 
+                  required 
+                  className="w-full pl-10 border border-gray-300 rounded-lg px-3 py-2 transition-all duration-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                >
+                  <option value="">Select Category</option>
+                  <option value="Academic">{t('academic')}</option>
+                  <option value="Sports">{t('sports')}</option>
+                  <option value="Arts">{t('arts')}</option>
+                  <option value="Leadership">{t('leadership')}</option>
+                </select>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <textarea name="description" className="w-full border border-gray-300 rounded-lg px-3 py-2" rows="3"></textarea>
-            </div>
-            <div className="flex justify-end space-x-3 pt-4">
-              <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg">Cancel</button>
-              <button type="submit" disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded-lg">
-                {loading ? t('adding') : t('addAchievement')}
-              </button>
+              <div className="relative">
+                <div className="absolute top-3 left-0 pl-3 flex items-start pointer-events-none">
+                  <FileText className="h-4 w-4 text-gray-400" />
+                </div>
+                <textarea 
+                  name="description" 
+                  className="w-full pl-10 border border-gray-300 rounded-lg px-3 py-2 transition-all duration-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md" 
+                  rows="3"
+                ></textarea>
+              </div>
             </div>
           </div>
         </form>

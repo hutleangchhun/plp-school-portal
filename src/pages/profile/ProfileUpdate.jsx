@@ -930,7 +930,7 @@ export default function ProfileUpdate({ user, setUser }) {
                           </div>
                         </RadioGroup.Root>
                       ) : (
-                        <div className="block w-full bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
                           {formData.gender === 'MALE' ? (t('male') || 'Male') : (t('female') || 'Female')}
                         </div>
                       )}

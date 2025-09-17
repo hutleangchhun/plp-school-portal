@@ -476,9 +476,9 @@ export const en = {
   studentsCount: 'Students',
   
   // Export functionality
-  exportToExcel: 'Export to Excel (.xlsx)',
-  exportToCSV: 'Export to CSV (.csv)',
-  exportToPDF: 'Export to PDF (.pdf)',
+  exportToExcel: 'Export to Excel',
+  exportToCSV: 'Export to CSV',
+  exportToPDF: 'Export to PDF',
   chooseAnOption: 'Choose an option...',
   selectClassDropdown: 'Select class...',
   month: 'Month',

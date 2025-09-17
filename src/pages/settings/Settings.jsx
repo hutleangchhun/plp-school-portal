@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, User, Bell, Shield, Palette, Globe } from 'lucide-react';
+import { User, Bell, Globe, Mail, Save } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import LanguageSwitcher from '../../components/common/LanguageSwitcher';
@@ -50,11 +50,29 @@ export default function Settings() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('Display Name', 'Display Name')}</label>
-              <input type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2" defaultValue={t('John Doe', 'John Doe')} />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-4 w-4 text-gray-400" />
+                </div>
+                <input 
+                  type="text" 
+                  className="w-full pl-10 border border-gray-300 rounded-lg px-3 py-2 transition-all duration-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md" 
+                  defaultValue={t('John Doe', 'John Doe')} 
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('email', 'Email')}</label>
-              <input type="email" className="w-full border border-gray-300 rounded-lg px-3 py-2" defaultValue="john@school.com" />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-4 w-4 text-gray-400" />
+                </div>
+                <input 
+                  type="email" 
+                  className="w-full pl-10 border border-gray-300 rounded-lg px-3 py-2 transition-all duration-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md" 
+                  defaultValue="john@school.com" 
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -103,9 +121,10 @@ export default function Settings() {
           <button
             onClick={handleSaveSettings}
             disabled={loading}
-            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg"
+            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg flex items-center space-x-2 transition-all duration-300 hover:shadow-md"
           >
-            {loading ? t('Saving...', 'Saving...') : t('Save Settings', 'Save Settings')}
+            <Save className="h-4 w-4" />
+            <span>{loading ? t('Saving...', 'Saving...') : t('Save Settings', 'Save Settings')}</span>
           </button>
         </div>
       </div>

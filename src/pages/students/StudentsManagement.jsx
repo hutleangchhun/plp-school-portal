@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Trash2, Edit2, User, Users, ChevronDown, Download, X, Building } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, User, Users, ChevronDown, Download, X, Building, Mail, Phone, Eye, Upload } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -93,10 +93,15 @@ export default function StudentsManagement() {
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
   const searchTimeoutRef = useRef(null);
   const classesInitialized = useRef(false);
+  const fileInputRef = useRef(null);
+  const dropdownRef = useRef(null);
   
   // State for all students (unfiltered) and filtered students
   const [allStudents, setAllStudents] = useState([]);
@@ -145,6 +150,27 @@ export default function StudentsManagement() {
     setInitialValues: setBirthInitialValues,
     resetSelections: resetBirthSelections
   } = useLocationData();
+
+  // Profile picture handlers
+  const handleViewPicture = () => {
+    setShowImageModal(true);
+    setShowDropdown(false);
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+    setShowDropdown(false);
+  };
+
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePictureFile(file);
+      // Update the form data with the file URL for preview
+      const fileURL = URL.createObjectURL(file);
+      handleEditFormChange('profilePicture', fileURL);
+    }
+  };
   
   // Enhanced client-side search function
   const performClientSideSearch = useCallback((studentsData, searchQuery) => {
@@ -231,62 +257,63 @@ export default function StudentsManagement() {
     console.log('User classNames:', user?.classNames);
     
     if (!user || !user.classIds || !user.classNames) {
-      console.log('No user data or classes found in authentication - deriving from student data');
-      // Try to derive classes from student data without using class routes
+      console.log('No user data or classes found in authentication - trying to get fresh user data');
       try {
-        // Use master-class endpoint to derive classes if schoolId is available
-        if (!schoolId) {
-          await fetchSchoolId();
-          if (!schoolId) {
-            console.log('No school ID available for class derivation');
-            setClasses([]);
-            setSelectedClassId('all');
-            return;
-          }
-        }
-        
-        const response = await studentService.getStudentsBySchool(schoolId, {});
-        if (response.success && response.data && response.data.length > 0) {
-          // Extract unique classes from student data
-          const classMap = new Map();
-          response.data.forEach(student => {
-            const classId = student.classId || student.class_id || (student.class && student.class.classId) || (student.class && student.class.id);
-            const className = student.className || (student.class && student.class.name) || `Class ${classId}`;
-            const gradeLevel = student.gradeLevel || (student.class && student.class.gradeLevel) || 'Unknown';
+        // Try to refresh user data from my-account endpoint
+        const accountData = await userService.getMyAccount();
+        if (accountData && accountData.classes && Array.isArray(accountData.classes)) {
+          // Update user data with fresh class information
+          const classIds = accountData.classes.map(cls => parseInt(cls.class_id));
+          const classNames = accountData.classes.map(cls => cls.name);
+          const gradeLevels = accountData.classes.map(cls => cls.grade_level);
+          
+          // Update user state with fresh data
+          const updatedUser = {
+            ...user,
+            classIds: classIds,
+            classNames: classNames,
+            gradeLevels: gradeLevels,
+            teacherId: accountData.teacherId || user?.teacherId,
+            school_id: accountData.school_id || user?.school_id,
+          };
+          
+          console.log('Updated user data with fresh class information:', updatedUser);
+          setUser(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          
+          // Now initialize classes with updated user data
+          const teacherClasses = classIds.map((classId, index) => {
+            const academicYear = accountData.classes[index]?.academic_year || 
+                               new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
             
-            if (classId) {
-              const academicYear = student.academicYear || 
-                                  (student.class && student.class.academicYear) || 
-                                  '2024-2025'; // Current default
-              
-              classMap.set(classId, {
-                classId: classId,
-                name: className,
-                gradeLevel: gradeLevel,
-                section: 'A',
-                academicYear: academicYear,
-                teacherId: user?.teacherId || user?.id
-              });
-            }
+            return {
+              classId: classId,
+              name: classNames[index] || `Class ${classId}`,
+              gradeLevel: gradeLevels[index] || 'Unknown',
+              section: accountData.classes[index]?.section || 'A',
+              academicYear: academicYear,
+              teacherId: accountData.teacherId || user?.teacherId
+            };
           });
           
-          const extractedClasses = Array.from(classMap.values());
-          console.log('Extracted classes from student data:', extractedClasses);
-          setClasses(extractedClasses);
+          setClasses(teacherClasses);
           classesInitialized.current = true;
           
-          if (extractedClasses.length === 1) {
-            setSelectedClassId(extractedClasses[0].classId.toString());
+          if (teacherClasses.length === 1) {
+            setSelectedClassId(teacherClasses[0].classId.toString());
           }
+          
+          console.log(`Teacher ${updatedUser.username} has access to ${teacherClasses.length} classes:`, 
+            teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
           return;
         } else {
-          console.log('No student data found - using empty classes');
+          console.log('No classes found in account data - setting empty classes');
           setClasses([]);
           setSelectedClassId('all');
           return;
         }
       } catch (error) {
-        console.error('Failed to extract classes from student data:', error);
+        console.error('Failed to refresh user data:', error);
         setClasses([]);
         setSelectedClassId('all');
         return;
@@ -377,16 +404,38 @@ export default function StudentsManagement() {
         if (user?.classIds && Array.isArray(user.classIds) && user.classIds.length > 0) {
           if (!user.classIds.includes(selectedClassIdInt)) {
             console.warn(`Teacher ${user?.username} attempted to access unauthorized class ID: ${selectedClassId}`);
-            throw new Error('Unauthorized class access');
+            showError(t('unauthorizedClassAccess', 'You do not have permission to view students from this class'));
+            setStudents([]);
+            setAllStudents([]);
+            setFilteredStudents([]);
+            return;
           }
+        } else {
+          console.warn('No class IDs found for teacher, cannot validate class access');
+          showError(t('noClassesAssigned', 'No classes assigned to your account'));
+          setStudents([]);
+          setAllStudents([]);
+          setFilteredStudents([]);
+          return;
         }
          
         // Send both camelCase and snake_case to be safe with backend
         requestParams.classId = selectedClassIdInt;
         requestParams.class_id = selectedClassIdInt;
-        console.log(`Filtering by class ${selectedClassIdInt}`);
+        console.log(`Filtering by authorized class ${selectedClassIdInt}`);
       } else {
-        console.log(`Fetching ALL students from school ${schoolId}`);
+        // When fetching all students, ensure we only get students from authorized classes
+        if (user?.classIds && Array.isArray(user.classIds) && user.classIds.length > 0) {
+          console.log(`Fetching students from authorized classes: ${user.classIds.join(', ')}`);
+          // The my-students endpoint should automatically filter by teacher's classes
+        } else {
+          console.warn('No class IDs found for teacher, cannot fetch students');
+          showError(t('noClassesAssigned', 'No classes assigned to your account'));
+          setStudents([]);
+          setAllStudents([]);
+          setFilteredStudents([]);
+          return;
+        }
       }
        
       console.log(`API request params:`, requestParams);
@@ -519,11 +568,14 @@ export default function StudentsManagement() {
       if (showExportDropdown && !event.target.closest('.export-dropdown')) {
         setShowExportDropdown(false);
       }
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
     };
     
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showExportDropdown]);
+  }, [showExportDropdown, showDropdown]);
   
   // Cleanup search timeout on unmount
   useEffect(() => {
@@ -603,44 +655,70 @@ export default function StudentsManagement() {
   
   // Handle delete student (remove from class)
   const handleDeleteStudent = async () => {
-    if (!selectedStudent) return;
+    if (!selectedStudent) {
+      showError(t('noStudentSelected', 'No student selected'));
+      return;
+    }
+    
+    console.log('=== HANDLE DELETE STUDENT DEBUG ===');
+    console.log('Selected student data:', selectedStudent);
+    console.log('Current classInfo:', classInfo);
+    console.log('Available classes:', classes);
+    console.log('Selected class ID:', selectedClassId);
     
     // Get class info from selected student when viewing "all classes"
     const studentClassInfo = classInfo || (() => {
       const studentClassId = selectedStudent.classId || selectedStudent.class_id || 
         (selectedStudent.class && selectedStudent.class.classId) || (selectedStudent.class && selectedStudent.class.id);
       
+      console.log('Student class ID extracted:', studentClassId);
+      
       if (!studentClassId) {
-        showError(t('studentHasNoClass', 'Student has no class assigned'));
+        console.error('No class ID found in student data:', selectedStudent);
         return null;
       }
       
-      return classes.find(c => c.classId === studentClassId || c.classId === Number(studentClassId));
+      const foundClass = classes.find(c => c.classId === studentClassId || c.classId === Number(studentClassId));
+      console.log('Found class info:', foundClass);
+      return foundClass;
     })();
     
     if (!studentClassInfo) {
-      showError(t('cannotFindStudentClass', 'Cannot determine student\'s class'));
+      console.error('Cannot determine student class. Student data:', selectedStudent);
+      showError(t('cannotFindStudentClass', 'Cannot determine student\'s class. The student may not be assigned to any class.'));
+      return;
+    }
+    
+    // Validate that the student's class is one of the teacher's authorized classes
+    if (!user?.classIds?.includes(studentClassInfo.classId)) {
+      console.error(`Teacher ${user?.username} attempted to remove student from unauthorized class ${studentClassInfo.classId}`);
+      showError(t('unauthorizedAction', 'You are not authorized to remove students from this class'));
       return;
     }
     
     try {
       setLoading(true);
       
-      // Log the selected student data for debugging
-      console.log('Deleting student:', selectedStudent);
+      // Get the student ID - try multiple fields to ensure we get the right ID
+      const studentId = selectedStudent.id || selectedStudent.student_id || selectedStudent.user_id || selectedStudent.userId;
       
-      // Get the student ID from the student data
-      const studentId = selectedStudent.id; // Use the id field which contains the numeric studentId
+      console.log('Student ID candidates:', {
+        id: selectedStudent.id,
+        student_id: selectedStudent.student_id,
+        user_id: selectedStudent.user_id,
+        userId: selectedStudent.userId,
+        selected: studentId
+      });
       
       if (!studentId) {
-        throw new Error('No valid student ID found');
+        throw new Error('No valid student ID found in student data');
       }
       
       // Convert to number for the API
       const numericStudentId = Number(studentId);
       
       if (isNaN(numericStudentId)) {
-        throw new Error('Student ID must be a number');
+        throw new Error(`Student ID must be a number, got: ${studentId} (${typeof studentId})`);
       }
       
       // Validate schoolId
@@ -648,15 +726,16 @@ export default function StudentsManagement() {
         throw new Error('School ID is required but not available');
       }
       
-      console.log('Calling removeStudentToMasterClass with:', {
+      console.log('Final API call parameters:', {
         classId: studentClassInfo.classId,
         schoolId: schoolId,
         studentId: numericStudentId,
-        studentData: selectedStudent // Log full student data for debugging
+        studentName: selectedStudent.name || `${selectedStudent.firstName} ${selectedStudent.lastName}`,
+        className: studentClassInfo.name
       });
       
       const response = await studentService.removeStudentToMasterClass(studentClassInfo.classId, schoolId, numericStudentId);
-      console.log('Remove student response:', response);
+      console.log('Remove student API response:', response);
       
       // Check if the API response indicates success
       // handleApiResponse wraps responses as: { success: boolean, data: actualApiResponse }
@@ -688,11 +767,27 @@ export default function StudentsManagement() {
         // Clear any selected student IDs
         setSelectedStudentIds(new Set());
       } else {
-        throw new Error(response?.error || 'Failed to remove student from class');
+        const errorMsg = response?.error || response?.message || 'Failed to remove student from class';
+        console.error('API returned unsuccessful response:', response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
       console.error('Error removing student:', error);
-      showError(t('failedRemoveStudent', 'Failed to remove student: ') + (error.message || 'Unknown error'));
+      
+      let errorMessage = error.message || 'Unknown error occurred';
+      
+      // Provide more specific error messages based on the error type
+      if (error.message?.includes('Network Error')) {
+        errorMessage = 'Network connection failed. Please check your internet connection.';
+      } else if (error.message?.includes('404')) {
+        errorMessage = 'The requested operation is not available. Please contact support.';
+      } else if (error.message?.includes('403')) {
+        errorMessage = 'You do not have permission to perform this action.';
+      } else if (error.message?.includes('500')) {
+        errorMessage = 'Server error occurred. Please try again later.';
+      }
+      
+      showError(t('failedRemoveStudent', 'Failed to remove student: ') + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -999,6 +1094,10 @@ export default function StudentsManagement() {
         // Reset location selections
         resetResidenceSelections();
         resetBirthSelections();
+        
+        // Clear profile picture state
+        setProfilePictureFile(null);
+        setShowDropdown(false);
         
         // Refresh the student list
         setTimeout(async () => {
@@ -1572,258 +1671,15 @@ export default function StudentsManagement() {
           });
           resetResidenceSelections();
           resetBirthSelections();
+          setProfilePictureFile(null);
+          setShowDropdown(false);
         }}
         title={t('editStudent', 'Edit Student')}
         size="2xl"
         height='xl'
-      >
-        <form onSubmit={handleUpdateStudent} className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('firstName', 'First Name')}
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                value={editForm.firstName}
-                onChange={(e) => handleEditFormChange('firstName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder={t('enterFirstName', 'Enter first name')}
-                required
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('lastName', 'Last Name')}
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                value={editForm.lastName}
-                onChange={(e) => handleEditFormChange('lastName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder={t('enterLastName', 'Enter last name')}
-                required
-              />
-            </div>
-          </div>
-          
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('username', 'Username')}
-            </label>
-            <input
-              type="text"
-              id="username"
-              value={editForm.username}
-              onChange={(e) => handleEditFormChange('username', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder={t('enterUsername', 'Enter username')}
-              required
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('email', 'Email')}
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={editForm.email}
-              onChange={(e) => handleEditFormChange('email', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder={t('enterEmail', 'Enter email address')}
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('phone', 'Phone')}
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              value={editForm.phone}
-              onChange={(e) => handleEditFormChange('phone', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder={t('enterPhone', 'Enter phone number')}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('gender', 'Gender')}
-              </label>
-              <select
-                value={editForm.gender}
-                onChange={(e) => handleEditFormChange('gender', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">{t('selectGender', 'Select gender')}</option>
-                <option value="MALE">{t('male', 'Male')}</option>
-                <option value="FEMALE">{t('female', 'Female')}</option>
-                <option value="OTHER">{t('other', 'Other')}</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('dateOfBirth', 'Date of Birth')}
-              </label>
-              <DatePickerWithDropdowns
-                value={editForm.dateOfBirth}
-                onChange={(date) => handleEditFormChange('dateOfBirth', date)}
-                placeholder={t('pickDate', 'Pick a date')}
-              />
-            </div>
-          </div>
-          
-          {/* Profile Picture */}
-          <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">{t('profilePicture', 'Profile Picture')}</h3>
-            <div className="flex items-center space-x-4">
-              <ProfileImage
-                src={editForm.profilePicture}
-                alt={`${editForm.firstName} ${editForm.lastName}`}
-                size="lg"
-              />
-              <div className="flex-1">
-                <label htmlFor="profilePicture" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('profilePictureUrl', 'Profile Picture URL')}
-                </label>
-                <input
-                  type="url"
-                  id="profilePicture"
-                  value={editForm.profilePicture}
-                  onChange={(e) => handleEditFormChange('profilePicture', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder={t('enterProfilePictureUrl', 'Enter profile picture URL')}
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Current Residence */}
-          <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <Building className="inline w-5 h-5 mr-2" />
-              {t('currentResidence', 'Current Residence')}
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('province', 'Province')}
-                </label>
-                <Dropdown
-                  options={getResidenceProvinceOptions()}
-                  value={selectedResidenceProvince}
-                  onValueChange={handleResidenceProvinceChange}
-                  placeholder={t('selectProvince', 'Select Province')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('district', 'District')}
-                </label>
-                <Dropdown
-                  options={getResidenceDistrictOptions()}
-                  value={selectedResidenceDistrict}
-                  onValueChange={handleResidenceDistrictChange}
-                  placeholder={t('selectDistrict', 'Select District')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('commune', 'Commune')}
-                </label>
-                <Dropdown
-                  options={getResidenceCommuneOptions()}
-                  value={selectedResidenceCommune}
-                  onValueChange={handleResidenceCommuneChange}
-                  placeholder={t('selectCommune', 'Select Commune')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('village', 'Village')}
-                </label>
-                <Dropdown
-                  options={getResidenceVillageOptions()}
-                  value={selectedResidenceVillage}
-                  onValueChange={handleResidenceVillageChange}
-                  placeholder={t('selectVillage', 'Select Village')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Place of Birth */}
-          <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <Building className="inline w-5 h-5 mr-2" />
-              {t('placeOfBirth', 'Place of Birth')}
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('province', 'Province')}
-                </label>
-                <Dropdown
-                  options={getBirthProvinceOptions()}
-                  value={selectedBirthProvince}
-                  onValueChange={handleBirthProvinceChange}
-                  placeholder={t('selectProvince', 'Select Province')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('district', 'District')}
-                </label>
-                <Dropdown
-                  options={getBirthDistrictOptions()}
-                  value={selectedBirthDistrict}
-                  onValueChange={handleBirthDistrictChange}
-                  placeholder={t('selectDistrict', 'Select District')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('commune', 'Commune')}
-                </label>
-                <Dropdown
-                  options={getBirthCommuneOptions()}
-                  value={selectedBirthCommune}
-                  onValueChange={handleBirthCommuneChange}
-                  placeholder={t('selectCommune', 'Select Commune')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('village', 'Village')}
-                </label>
-                <Dropdown
-                  options={getBirthVillageOptions()}
-                  value={selectedBirthVillage}
-                  onValueChange={handleBirthVillageChange}
-                  placeholder={t('selectVillage', 'Select Village')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                />
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+        stickyFooter={true}
+        footer={
+          <div className="flex items-center justify-end space-x-3">
             <Button
               type="button"
               onClick={() => {
@@ -1844,6 +1700,8 @@ export default function StudentsManagement() {
                 });
                 resetResidenceSelections();
                 resetBirthSelections();
+                setProfilePictureFile(null);
+                setShowDropdown(false);
               }}
               variant="outline"
               disabled={loading}
@@ -1852,6 +1710,7 @@ export default function StudentsManagement() {
             </Button>
             <Button
               type="submit"
+              form="edit-student-form"
               variant="primary"
               disabled={loading}
               className="min-w-[120px]"
@@ -1859,8 +1718,372 @@ export default function StudentsManagement() {
               {loading ? t('updating', 'Updating...') : t('updateStudent', 'Update Student')}
             </Button>
           </div>
+        }
+      >
+        <form id="edit-student-form" onSubmit={handleUpdateStudent} className="space-y-6">
+          {/* Profile Picture Section */}
+          <div className="">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('profilePicture', 'Profile Picture')}
+            </label>
+            
+            {/* Profile Picture with Dropdown */}
+            <div className="relative mb-4" ref={dropdownRef}>
+              <div 
+                className="relative inline-block cursor-pointer"
+                onClick={() => setShowDropdown(!showDropdown)}
+              >
+                {profilePictureFile ? (
+                  <img 
+                    src={URL.createObjectURL(profilePictureFile)}
+                    alt="Profile Preview" 
+                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-gray-300 hover:border-blue-500 transition-colors"
+                  />
+                ) : (
+                  <ProfileImage
+                    user={{ profile_picture: editForm.profilePicture, firstName: editForm.firstName, lastName: editForm.lastName }}
+                    size="lg"
+                    alt="Profile"
+                    className="hover:border-blue-500 transition-colors"
+                    borderColor="border-gray-300"
+                    fallbackType="image"
+                    clickable={true}
+                  />
+                )}
+              </div>
+
+              {/* Dropdown Menu */}
+              {showDropdown && (
+                <div className="absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200">
+                  <div className="py-1">
+                    {editForm.profilePicture && (
+                      <Button
+                        type="button"
+                        onClick={handleViewPicture}
+                        variant="ghost"
+                        size="sm"
+                        fullWidth
+                        className="justify-start rounded-none"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        {t('viewPicture') || 'View Picture'}
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      onClick={handleUploadClick}
+                      variant="ghost"
+                      size="sm"
+                      fullWidth
+                      className="justify-start rounded-none"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {t('uploadNewPicture') || 'Upload New Picture'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleProfilePictureChange}
+              className="hidden"
+            />
+            
+            {profilePictureFile && (
+              <p className="mt-2 text-sm text-green-600 mb-4">
+                {t('newPictureSelected') || 'New picture selected'}: {profilePictureFile.name}
+              </p>
+            )}
+          </div>
+          <div  className='border-t pt-4'>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <Building className="inline w-5 h-5 mr-2" />
+              {t('personalInformation', 'Personal Information')}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('firstName', 'First Name')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    id="firstName"
+                    value={editForm.firstName}
+                    onChange={(e) => handleEditFormChange('firstName', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterFirstName', 'Enter first name')}
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('lastName', 'Last Name')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    id="lastName"
+                    value={editForm.lastName}
+                    onChange={(e) => handleEditFormChange('lastName', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterLastName', 'Enter last name')}
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('gender', 'Gender')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <select
+                    value={editForm.gender}
+                    onChange={(e) => handleEditFormChange('gender', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                  >
+                  <option value="">{t('selectGender', 'Select gender')}</option>
+                  <option value="MALE">{t('male', 'Male')}</option>
+                  <option value="FEMALE">{t('female', 'Female')}</option>
+                  <option value="OTHER">{t('other', 'Other')}</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('dateOfBirth', 'Date of Birth')}
+                </label>
+                <DatePickerWithDropdowns
+                  value={editForm.dateOfBirth}
+                  onChange={(date) => handleEditFormChange('dateOfBirth', date)}
+                  placeholder={t('pickDate', 'Pick a date')}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+             
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('username', 'Username')}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  id="username"
+                  value={editForm.username}
+                  onChange={(e) => handleEditFormChange('username', e.target.value)}
+                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                  placeholder={t('enterUsername', 'Enter username')}
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('email', 'Email')}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="email"
+                  id="email"
+                  value={editForm.email}
+                  onChange={(e) => handleEditFormChange('email', e.target.value)}
+                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                  placeholder={t('enterEmail', 'Enter email address')}
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('phone', 'Phone')}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={editForm.phone}
+                  onChange={(e) => handleEditFormChange('phone', e.target.value)}
+                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                  placeholder={t('enterPhone', 'Enter phone number')}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Current Residence */}
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <Building className="inline w-5 h-5 mr-2" />
+              {t('currentResidence', 'Current Residence')}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('province', 'Province')}
+                </label>
+                <Dropdown
+                  options={getResidenceProvinceOptions()}
+                  value={selectedResidenceProvince}
+                  onValueChange={handleResidenceProvinceChange}
+                  placeholder={t('selectProvince', 'Select Province')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={false}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('district', 'District')}
+                </label>
+                <Dropdown
+                  options={getResidenceDistrictOptions()}
+                  value={selectedResidenceDistrict}
+                  onValueChange={handleResidenceDistrictChange}
+                  placeholder={t('selectDistrict', 'Select District')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={!selectedResidenceProvince}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('commune', 'Commune')}
+                </label>
+                <Dropdown
+                  options={getResidenceCommuneOptions()}
+                  value={selectedResidenceCommune}
+                  onValueChange={handleResidenceCommuneChange}
+                  placeholder={t('selectCommune', 'Select Commune')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={!selectedResidenceDistrict}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('village', 'Village')}
+                </label>
+                <Dropdown
+                  options={getResidenceVillageOptions()}
+                  value={selectedResidenceVillage}
+                  onValueChange={handleResidenceVillageChange}
+                  placeholder={t('selectVillage', 'Select Village')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={!selectedResidenceCommune}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Place of Birth */}
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <Building className="inline w-5 h-5 mr-2" />
+              {t('placeOfBirth', 'Place of Birth')}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('province', 'Province')}
+                </label>
+                <Dropdown
+                  options={getBirthProvinceOptions()}
+                  value={selectedBirthProvince}
+                  onValueChange={handleBirthProvinceChange}
+                  placeholder={t('selectProvince', 'Select Province')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={false}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('district', 'District')}
+                </label>
+                <Dropdown
+                  options={getBirthDistrictOptions()}
+                  value={selectedBirthDistrict}
+                  onValueChange={handleBirthDistrictChange}
+                  placeholder={t('selectDistrict', 'Select District')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={!selectedBirthProvince}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('commune', 'Commune')}
+                </label>
+                <Dropdown
+                  options={getBirthCommuneOptions()}
+                  value={selectedBirthCommune}
+                  onValueChange={handleBirthCommuneChange}
+                  placeholder={t('selectCommune', 'Select Commune')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={!selectedBirthDistrict}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('village', 'Village')}
+                </label>
+                <Dropdown
+                  options={getBirthVillageOptions()}
+                  value={selectedBirthVillage}
+                  onValueChange={handleBirthVillageChange}
+                  placeholder={t('selectVillage', 'Select Village')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={!selectedBirthCommune}
+                />
+              </div>
+            </div>
+          </div>
         </form>
       </Modal>
+
+      {/* Image Modal */}
+      {showImageModal && editForm.profilePicture && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowImageModal(false)}>
+          <div className="relative max-w-4xl max-h-full p-4">
+            <Button
+              onClick={() => setShowImageModal(false)}
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 text-white hover:text-gray-300 hover:bg-white/10 z-10"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+            <img 
+              src={editForm.profilePicture}
+              alt="Profile" 
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </PageTransition>
   );
 }
