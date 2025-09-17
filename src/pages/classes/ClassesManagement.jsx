@@ -11,6 +11,7 @@ import studentService from '../../utils/api/services/studentService'; // Import 
 import { userService } from '../../utils/api/services/userService'; // Import userService for my-account
 import schoolService from '../../utils/api/services/schoolService'; // Import schoolService for school info
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
+import { useStableCallback } from '../../utils/reactOptimization';
 
 export default function ClassesManagement() {
   const { t } = useLanguage();
@@ -221,16 +222,11 @@ export default function ClassesManagement() {
     fetchClasses();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-fetch classes when user data changes (after refresh)
+  // Re-fetch classes when user ID changes (after authentication)
   // Note: fetchClasses now uses my-account API directly, so we don't need to depend on user.classIds
-  useEffect(() => {
-    if (user) {
-      console.log('User data changed, re-fetching classes...');
-      fetchClasses();
-    }
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  
 
-  const fetchClasses = async () => {
+  const fetchClasses = useStableCallback(async () => {
     try {
       setLoading(true);
       
@@ -314,7 +310,13 @@ export default function ClassesManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError, t]);
+  useEffect(() => {
+    if (user?.userId) {
+      console.log('User authenticated, re-fetching classes...');
+      fetchClasses();
+    }
+  }, [user?.userId, fetchClasses]); // Only depend on user ID, not entire user object
 
   const handleAddClass = () => {
     setFormData({

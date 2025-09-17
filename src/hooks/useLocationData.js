@@ -1,8 +1,9 @@
 // Custom hook for managing location data (provinces, districts, communes, villages)
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import locationService from '../utils/api/services/locationService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
+import { useStableCallback } from '../utils/reactOptimization';
 
 // Create a shared cache for provinces to avoid duplicate API calls
 let provincesCache = null;
@@ -35,61 +36,67 @@ export const useLocationData = (initialValues = {}) => {
   const [selectedDistrictData, setSelectedDistrictData] = useState(null);
   const [selectedCommuneData, setSelectedCommuneData] = useState(null);
 
-  // Re-format labels when language changes
+  // Re-format labels when language changes - optimized to prevent infinite loops
+  const prevLanguageRef = useRef(language);
+  
+  // Only update labels when language actually changes, not when arrays change
   useEffect(() => {
-    if (provinces.length > 0) {
-      setProvinces(prevProvinces => 
-        prevProvinces.map(province => ({
-          ...province,
-          label: language === 'km' 
-            ? (province.labelKh || province.labelEn || `Province ${province.value}`)
-            : (province.labelEn || province.labelKh || `Province ${province.value}`)
-        }))
-      );
+    if (prevLanguageRef.current !== language) {
+      prevLanguageRef.current = language;
+      
+      // Update provinces labels if they exist
+      if (provinces.length > 0) {
+        setProvinces(prevProvinces => 
+          prevProvinces.map(province => ({
+            ...province,
+            label: language === 'km' 
+              ? (province.labelKh || province.labelEn || `Province ${province.value}`)
+              : (province.labelEn || province.labelKh || `Province ${province.value}`)
+          }))
+        );
+      }
+      
+      // Update districts labels if they exist
+      if (districts.length > 0) {
+        setDistricts(prevDistricts => 
+          prevDistricts.map(district => ({
+            ...district,
+            label: language === 'km' 
+              ? (district.labelKh || district.labelEn || `District ${district.value}`)
+              : (district.labelEn || district.labelKh || `District ${district.value}`)
+          }))
+        );
+      }
+      
+      // Update communes labels if they exist
+      if (communes.length > 0) {
+        setCommunes(prevCommunes => 
+          prevCommunes.map(commune => ({
+            ...commune,
+            label: language === 'km' 
+              ? (commune.labelKh || commune.labelEn || `Commune ${commune.value}`)
+              : (commune.labelEn || commune.labelKh || `Commune ${commune.value}`)
+          }))
+        );
+      }
+      
+      // Update villages labels if they exist
+      if (villages.length > 0) {
+        setVillages(prevVillages => 
+          prevVillages.map(village => ({
+            ...village,
+            label: language === 'km' 
+              ? (village.labelKh || village.labelEn || `Village ${village.value}`)
+              : (village.labelEn || village.labelKh || `Village ${village.value}`)
+          }))
+        );
+      }
     }
-  }, [language, provinces.length]);
-
-  useEffect(() => {
-    if (districts.length > 0) {
-      setDistricts(prevDistricts => 
-        prevDistricts.map(district => ({
-          ...district,
-          label: language === 'km' 
-            ? (district.labelKh || district.labelEn || `District ${district.value}`)
-            : (district.labelEn || district.labelKh || `District ${district.value}`)
-        }))
-      );
-    }
-  }, [language, districts.length]);
-
-  useEffect(() => {
-    if (communes.length > 0) {
-      setCommunes(prevCommunes => 
-        prevCommunes.map(commune => ({
-          ...commune,
-          label: language === 'km' 
-            ? (commune.labelKh || commune.labelEn || `Commune ${commune.value}`)
-            : (commune.labelEn || commune.labelKh || `Commune ${commune.value}`)
-        }))
-      );
-    }
-  }, [language, communes.length]);
-
-  useEffect(() => {
-    if (villages.length > 0) {
-      setVillages(prevVillages => 
-        prevVillages.map(village => ({
-          ...village,
-          label: language === 'km' 
-            ? (village.labelKh || village.labelEn || `Village ${village.value}`)
-            : (village.labelEn || village.labelKh || `Village ${village.value}`)
-        }))
-      );
-    }
-  }, [language, villages.length]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]);
 
 
-  const loadProvinces = useCallback(async () => {
+  const loadProvinces = useStableCallback(async () => {
     // Use cached provinces if available
     if (provincesCache) {
       const formattedProvinces = provincesCache.map(province => ({
@@ -153,7 +160,7 @@ export const useLocationData = (initialValues = {}) => {
   }, [loadProvinces]);
 
 
-  const loadDistricts = useCallback(async (provinceId) => {
+  const loadDistricts = useStableCallback(async (provinceId) => {
     setLoadingDistricts(true);
     try {
       const data = await locationService.getDistrictsByProvince(provinceId);

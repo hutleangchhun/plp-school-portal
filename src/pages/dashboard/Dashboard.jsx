@@ -11,6 +11,7 @@ import { utils, userService } from '../../utils/api';
 import studentService from '../../utils/api/services/studentService';
 import classService from '../../utils/api/services/classService';
 import Badge from '@/components/ui/Badge';
+import { useStableCallback } from '../../utils/reactOptimization';
 
 export default function Dashboard({ user: initialUser }) {
   const { t } = useLanguage();
@@ -44,7 +45,7 @@ export default function Dashboard({ user: initialUser }) {
   };
 
   // Fetch comprehensive data
-  const fetchAllData = useCallback(async () => {
+  const fetchAllData = useStableCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -138,7 +139,7 @@ export default function Dashboard({ user: initialUser }) {
     } finally {
       setLoading(false);
     }
-  }, [authUser, t]); // Dependencies: authUser for class data, t for translations
+  }, [authUser?.userId, authUser?.classIds?.length, t]); // Simplified dependencies to prevent infinite loops
 
   // Initial data fetch
   useEffect(() => {

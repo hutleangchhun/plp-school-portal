@@ -7,6 +7,7 @@ import studentService from '../../utils/api/services/studentService';
 import classService from '../../utils/api/services/classService';
 import { userService } from '../../utils/api/services/userService';
 import { Button } from '../../components/ui/Button';
+import { useStableCallback } from '../../utils/reactOptimization';
 import Badge from '../../components/ui/Badge';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Pagination as UIPagination } from '../../components/ui/Table';
@@ -132,7 +133,7 @@ const StudentSelection = () => {
   }, [user]);
 
   // Fetch current user's school ID from my-account endpoint
-  const fetchSchoolId = useCallback(async () => {
+  const fetchSchoolId = useStableCallback(async () => {
     try {
       if (schoolId) {
         console.log('School ID already available:', schoolId);
@@ -160,16 +161,8 @@ const StudentSelection = () => {
     fetchSchoolId();
   }, [fetchSchoolId]);
 
-  // Fetch students when pagination or search changes (using debounced search)
-  useEffect(() => {
-    if (schoolId) {
-      fetchData();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, pagination.limit, debouncedSearch, schoolId]);
-
-  // Move the fetchData function inside the component and wrap it in useCallback
-  const fetchData = useCallback(async () => {
+  // Move the fetchData function inside the component and wrap it in useStableCallback
+  const fetchData = useStableCallback(async () => {
     try {
       if (!schoolId) {
         console.log('No school ID available, cannot fetch students');
@@ -217,6 +210,13 @@ const StudentSelection = () => {
       setListLoading(false);
     }
   }, [schoolId, debouncedSearch, pagination.page, pagination.limit, showError, t]);
+
+  // Fetch students when pagination or search changes (using debounced search)
+  useEffect(() => {
+    if (schoolId) {
+      fetchData();
+    }
+  }, [schoolId, fetchData]); // Simplified dependencies
 
   // Handle page change
   const handlePageChange = (newPage) => {

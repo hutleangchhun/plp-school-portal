@@ -10,10 +10,12 @@ import ProfileImage from '../../components/ui/ProfileImage';
 import { api, utils } from '../../utils/api';
 import Dropdown from '../../components/ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
+import { useStableCallback } from '../../utils/reactOptimization';
 
 export default function ProfileUpdate({ user, setUser }) {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
+  
   const [formData, setFormData] = useState({
     id: '',
     username: '',
@@ -85,8 +87,7 @@ export default function ProfileUpdate({ user, setUser }) {
     getDistrictOptions: getResidenceDistrictOptions,
     getCommuneOptions: getResidenceCommuneOptions,
     getVillageOptions: getResidenceVillageOptions,
-    setInitialValues: setResidenceInitialValues,
-    resetSelections: resetResidenceSelections
+    setInitialValues: setResidenceInitialValues
   } = useLocationData();
 
   // Initialize location data hooks for place of birth
@@ -103,8 +104,7 @@ export default function ProfileUpdate({ user, setUser }) {
     getDistrictOptions: getBirthDistrictOptions,
     getCommuneOptions: getBirthCommuneOptions,
     getVillageOptions: getBirthVillageOptions,
-    setInitialValues: setBirthInitialValues,
-    resetSelections: resetBirthSelections
+    setInitialValues: setBirthInitialValues
   } = useLocationData();
 
   useEffect(() => {
@@ -279,7 +279,7 @@ export default function ProfileUpdate({ user, setUser }) {
 
       return () => clearTimeout(timer);
     }
-  }, [pendingResidenceData]); // Only depend on pendingResidenceData
+  }, [pendingResidenceData, residenceInitialized, setResidenceInitialValues]);
 
   useEffect(() => {
     if (!birthInitialized && pendingBirthData) {
@@ -303,7 +303,7 @@ export default function ProfileUpdate({ user, setUser }) {
 
       return () => clearTimeout(timer);
     }
-  }, [pendingBirthData]); // Only depend on pendingBirthData
+  }, [pendingBirthData, birthInitialized, setBirthInitialValues]);
 
   // Fallback timeout to ensure initialization happens even if there are issues
   useEffect(() => {
@@ -403,12 +403,12 @@ export default function ProfileUpdate({ user, setUser }) {
     }));
   };
 
-  const handleDateChange = (date) => {
+  const handleDateChange = useStableCallback((date) => {
     setFormData(prev => ({
       ...prev,
       date_of_birth: date ? date.toISOString().split('T')[0] : ''
     }));
-  };
+  }, []);
 
   const handleProfilePictureChange = (e) => {
     const file = e.target.files[0];

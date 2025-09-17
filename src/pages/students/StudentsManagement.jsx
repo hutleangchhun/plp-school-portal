@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button';
 import Dropdown from '../../components/ui/Dropdown';
 import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
+import { useStableCallback } from '../../utils/reactOptimization';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
@@ -130,7 +131,7 @@ export default function StudentsManagement() {
   }, [allStudents, performClientSideSearch]);
   
   // Fetch current user's school ID from my-account endpoint
-  const fetchSchoolId = useCallback(async () => {
+  const fetchSchoolId = useStableCallback(async () => {
     try {
       if (schoolId) {
         console.log('School ID already available:', schoolId);
@@ -154,7 +155,7 @@ export default function StudentsManagement() {
   }, [schoolId, showError, t]);
   
   // Initialize classes using local user data and derive from student data
-  const initializeClasses = useCallback(async () => {
+  const initializeClasses = useStableCallback(async () => {
     // Avoid re-initializing if classes are already loaded
     if (classesInitialized.current) {
       console.log('Classes already initialized, skipping');
@@ -256,10 +257,10 @@ export default function StudentsManagement() {
 
     console.log(`Teacher ${user.username} has access to ${teacherClasses.length} classes:`, 
       teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
-  }, [user, schoolId, fetchSchoolId]);
+  }, [user?.userId, schoolId]);
 
   // Fetch students with pagination and filters using master-class endpoint
-  const fetchStudents = useCallback(async (search = searchTerm, force = false) => {
+  const fetchStudents = useStableCallback(async (search = searchTerm, force = false) => {
     // Ensure we have a school ID before fetching students
     if (!schoolId) {
       console.log('No school ID available, attempting to fetch...');
@@ -407,7 +408,7 @@ export default function StudentsManagement() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [searchTerm, showError, t, selectedClassId, schoolId, user, classes, fetchSchoolId, localSearchTerm, performClientSideSearch, pagination]);
+  }, [schoolId, selectedClassId, user?.userId, showError, t]);
   
   // Initialize classes when component mounts
   useEffect(() => {
@@ -477,7 +478,7 @@ export default function StudentsManagement() {
       console.log(`Cleaning up timer`);
       clearTimeout(timer);
     };
-  }, [fetchParams, user, classes, fetchStudents, selectedClassId, searchTerm, pagination, schoolId]);
+  }, [fetchParams, user?.userId, classes.length, fetchStudents, selectedClassId, searchTerm, pagination.page, pagination.limit, schoolId]);
   
   // Close export dropdown when clicking outside
   useEffect(() => {
