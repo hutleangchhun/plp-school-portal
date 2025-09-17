@@ -34,15 +34,8 @@ function AppContent() {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await api.auth.logout();
-    } catch (err) {
-      console.error('Logout error:', err);
-    }
-    
-    // Clear user data
-    utils.user.removeUserData();
-    setUser(null);
+      utils.user.removeUserData();
+      setUser(null);
   };
 
   if (loading) {
