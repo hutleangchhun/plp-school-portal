@@ -10,6 +10,7 @@ import classService from '../../utils/api/services/classService'; // Import the 
 import studentService from '../../utils/api/services/studentService'; // Import the studentService
 import { userService } from '../../utils/api/services/userService'; // Import userService for my-account
 import schoolService from '../../utils/api/services/schoolService'; // Import schoolService for school info
+import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
 
 export default function ClassesManagement() {
   const { t } = useLanguage();
@@ -44,15 +45,15 @@ export default function ClassesManagement() {
   useEffect(() => {
     console.log('School info updated:', schoolInfo);
   }, [schoolInfo]);
+
   const [formData, setFormData] = useState(() => {
-    const currentYear = new Date().getFullYear();
     return {
       name: '',
       gradeLevel: '',
       section: '',
       schoolId: '', // Will be set when schoolInfo is loaded
       teacherId: user?.teacherId || user?.id || '',
-      academicYear: `${currentYear}-${currentYear + 1}`,
+      academicYear: getCurrentAcademicYear(),
       maxStudents: '30',
       subject: '',
       schedule: 'Mon, Wed, Fri',
@@ -70,11 +71,8 @@ export default function ClassesManagement() {
     { value: '6', label: 'Grade 6' }
   ];
 
-  const academicYears = [
-    '2023-2024',
-    '2024-2025',
-    '2025-2026'
-  ];
+  // Generate academic years dynamically (2 past, current, 3 future for better coverage)
+  const academicYears = generateAcademicYears(2, 3);
 
   // Fetch school information using schoolService
   const fetchSchoolInfo = async () => {
@@ -325,7 +323,7 @@ export default function ClassesManagement() {
       section: '',
       schoolId: schoolInfo.id?.toString() || '',
       teacherId: user?.teacherId || user?.id || '', // Prefer teacherId, fallback to id if not available
-      academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+      academicYear: getCurrentAcademicYear(),
       maxStudents: '',
       subject: '',
       schedule: '',
@@ -374,8 +372,7 @@ export default function ClassesManagement() {
       
       // If we don't have an academic year, use the current academic year
       if (!academicYear) {
-        const currentYear = new Date().getFullYear();
-        academicYear = `${currentYear}-${currentYear + 1}`;
+        academicYear = getCurrentAcademicYear();
       }
       
       // Create form data - use schoolId from my-account instead of API response
