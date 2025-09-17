@@ -52,7 +52,7 @@ export default function Achievements() {
         date: new Date().toISOString().split('T')[0]
       };
       setAchievements(prev => [newAchievement, ...prev]);
-      showSuccess(t('Achievement added successfully', 'Achievement added successfully'));
+      showSuccess(t('achievementAddedSuccessfully', 'Achievement added successfully'));
       setShowAddModal(false);
     } finally {
       setLoading(false);

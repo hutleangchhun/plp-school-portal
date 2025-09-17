@@ -53,7 +53,7 @@ export default function Attendance() {
       setAttendance(mockAttendance);
     } catch (error) {
       console.error('Error fetching students:', error);
-      showError('Error fetching student data');
+      showError(t('errorFetchingStudentData', 'Error fetching student data'));
     } finally {
       setLoading(false);
     }
@@ -87,9 +87,9 @@ export default function Attendance() {
     setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 2000)); // Mock API call
-      showSuccess('Attendance saved successfully');
+      showSuccess(t('attendanceSavedSuccessfully', 'Attendance saved successfully'));
     } catch {
-      showError('Error saving attendance');
+      showError(t('errorSavingAttendance', 'Error saving attendance'));
     } finally {
       setLoading(false);
     }

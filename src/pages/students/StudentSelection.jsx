@@ -295,7 +295,7 @@ const StudentSelection = () => {
       
       // Show success message
       const selectedClassName = selectedClassData?.name || 'Unknown Class';
-      showSuccess(`${selectedStudents.length} student(s) assigned to ${selectedClassName} successfully`);
+      showSuccess(t('studentsAssignedSuccessfully').replace('{count}', selectedStudents.length).replace('{className}', selectedClassName));
       
       // Reset selections and close modal
       setSelectedStudents([]);

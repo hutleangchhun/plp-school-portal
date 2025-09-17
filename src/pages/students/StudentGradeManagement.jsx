@@ -106,7 +106,7 @@ export default function StudentGradeManagement() {
       setSelectedStudents([]);
       setSelectedGrade('');
       setShowConfirmDialog(false);
-      showSuccess(t('studentsPromoted') || `Successfully promoted ${selectedStudents.length} student(s)`);
+      showSuccess(t('studentsPromotedSuccessfully').replace('{count}', selectedStudents.length));
     } catch (error) {
       console.error('Error promoting students:', error);
       showError(t('errorPromotingStudents') || 'Error promoting students');

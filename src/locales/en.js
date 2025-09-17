@@ -524,6 +524,34 @@ export const en = {
   // Loading states
   loadingText: 'Loading...',
   
+  // Additional student management messages
+  noClassesAssigned: 'No classes assigned',
+  noSchoolIdFound: 'No school ID found for your account',
+  failedToFetchSchoolId: 'Failed to fetch school information',
+  noStudentSelected: 'No student selected',
+  cannotFindStudentClass: 'Cannot determine student class. The student may not be assigned to any class.',
+  unauthorizedAction: 'You are not authorized to remove students from this class',
+  studentRemovedFromClass: 'Student removed from class successfully',
+  studentsMovedToMasterSuccess: '{count} students moved to master class successfully',
+  someStudentsNotRemoved: 'Some students could not be removed. Check console for details.',
+  studentsRemovedFromClass: '{count} students removed from class successfully',
+  studentUpdatedSuccess: 'Student updated successfully',
+  failedUpdateStudent: 'Failed to update student',
+  unauthorizedClassAccess: 'You do not have permission to view students from this class',
+
+  // Additional toast messages  
+  achievementAddedSuccessfully: 'Achievement added successfully',
+  loginSuccessful: 'Login successful!',
+  settingsSavedSuccessfully: 'Settings saved successfully',
+  studentsAssignedSuccessfully: '{count} students assigned to {className} successfully',
+  studentsPromotedSuccessfully: 'Successfully promoted {count} students',
+  errorFetchingReportData: 'Error fetching report data',
+  reportExportedSuccessfully: '{reportName} exported successfully',
+  errorExportingReport: 'Error exporting report',
+  errorFetchingStudentData: 'Error fetching student data',
+  attendanceSavedSuccessfully: 'Attendance saved successfully',
+  errorSavingAttendance: 'Error saving attendance',
+
   // Additional navigation/action translations that may appear
   'Assign Students': 'Assign Students',
   'Manage Classes': 'Manage Classes',

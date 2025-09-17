@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Trash2, Edit2, User, Users, ChevronDown, Download, X, Building, Mail, Phone, Eye, Upload } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, User, Users, User2, ChevronDown, Download, X, Building, Mail, Phone, Eye, Upload } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -741,8 +741,8 @@ export default function StudentsManagement() {
       // handleApiResponse wraps responses as: { success: boolean, data: actualApiResponse }
       if (response && response.success && response.data) {
         const apiData = response.data;
-        // Use the actual message from the API response
-        const successMessage = apiData.message || t('studentRemovedFromClass', 'Student removed from class successfully');
+        // Use the translated message instead of API message
+        const successMessage = t('studentRemovedFromClass', 'Student removed from class successfully');
         showSuccess(successMessage);
         
         // Check if student was actually moved to master class or just removed
@@ -885,7 +885,7 @@ export default function StudentsManagement() {
 
         // Show results
         if (totalRemoved > 0) {
-          showSuccess(t('studentsMovedToMasterSuccess', `${totalRemoved} students moved to master class successfully`));
+          showSuccess(t('studentsMovedToMasterSuccess').replace('{count}', totalRemoved));
         }
         
         const failedResults = results.filter(r => !r.success);
@@ -930,8 +930,7 @@ export default function StudentsManagement() {
         // Check if the API response indicates success
         // handleApiResponse wraps responses as: { success: boolean, data: actualApiResponse }
         if (response && response.success && response.data) {
-          const apiData = response.data;
-          const successMessage = apiData.message || t('studentsRemovedFromClass', `${studentIdsToRemove.length} students removed from class successfully`);
+          const successMessage = t('studentsRemovedFromClass').replace('{count}', studentIdsToRemove.length);
           showSuccess(successMessage);
         } else {
           throw new Error(response?.error || 'Failed to remove students from class');
@@ -1802,7 +1801,7 @@ export default function StudentsManagement() {
           </div>
           <div  className='border-t pt-4'>
             <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <Building className="inline w-5 h-5 mr-2" />
+              <User2 className="inline w-5 h-5 mr-2" />
               {t('personalInformation', 'Personal Information')}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

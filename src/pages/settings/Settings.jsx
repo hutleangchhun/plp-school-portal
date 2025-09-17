@@ -19,7 +19,7 @@ export default function Settings() {
     setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      showSuccess(t('Settings saved successfully', 'Settings saved successfully'));
+      showSuccess(t('settingsSavedSuccessfully', 'Settings saved successfully'));
     } finally {
       setLoading(false);
     }

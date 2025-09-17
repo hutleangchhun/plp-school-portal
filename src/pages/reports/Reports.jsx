@@ -86,7 +86,7 @@ export default function Reports() {
       setReportData(mockData);
     } catch (error) {
       console.error('Error fetching report data:', error);
-      showError('Error fetching report data');
+      showError(t('errorFetchingReportData', 'Error fetching report data'));
     } finally {
       setLoading(false);
     }
@@ -96,9 +96,10 @@ export default function Reports() {
     setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate export
-      showSuccess(`${reportTypes.find(r => r.id === selectedReport)?.name} exported successfully`);
+      const reportName = reportTypes.find(r => r.id === selectedReport)?.name;
+      showSuccess(t('reportExportedSuccessfully').replace('{reportName}', reportName));
     } catch (error) {
-      showError('Error exporting report');
+      showError(t('errorExportingReport', 'Error exporting report'));
     } finally {
       setLoading(false);
     }

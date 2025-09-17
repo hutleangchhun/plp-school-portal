@@ -32,7 +32,7 @@ export default function Login({ setUser }) {
       if (response.success) {
         const { user } = response.data;
         setUser(user);
-        showSuccess(t('បានចូលដោយជោគជ័យ!', 'Login successful!'));
+        showSuccess(t('loginSuccessful', 'Login successful!'));
       } else {
         showError(utils.auth.getErrorMessage(response, t));
       }
