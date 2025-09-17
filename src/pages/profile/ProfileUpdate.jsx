@@ -120,19 +120,13 @@ export default function ProfileUpdate({ user, setUser }) {
     };
   }, []);
 
-  // Reset location data when component mounts to ensure clean state
-  useEffect(() => {
-    resetResidenceSelections();
-    resetBirthSelections();
-    setResidenceInitialized(false);
-    setBirthInitialized(false);
-    setPendingResidenceData(null);
-    setPendingBirthData(null);
-  }, []); // Run only once on mount
 
   // Fetch user data from database
   useEffect(() => {
     const fetchUserData = async () => {
+      const startTime = performance.now();
+      console.log('🚀 Starting ProfileUpdate data fetch...');
+      
       setDataLoading(true);
       try {
         const userData = await api.user.getMyAccount();
@@ -252,55 +246,64 @@ export default function ProfileUpdate({ user, setUser }) {
         console.error('Error fetching user data:', error);
         showError(error.message || t('failedToLoadUserData') || 'Failed to load user data');
       } finally {
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+        console.log(`⏱️ ProfileUpdate data fetch completed in ${duration.toFixed(2)}ms`);
         setDataLoading(false);
       }
     };
 
     fetchUserData();
-  }, [setUser, showError, t, setResidenceInitialValues, setBirthInitialValues]);
+  }, [setUser, showError, t]);
 
-  // Set initial location values when data becomes available
+  // Initialize location data when pending data is available
   useEffect(() => {
-    if (!residenceInitialized && pendingResidenceData && getResidenceProvinceOptions().length > 0) {
-      console.log('Setting residence data:', pendingResidenceData);
-      setLocationDataLoading(true);
-      
-      setResidenceInitialValues(pendingResidenceData)
-        .then(() => {
-          console.log('Residence data set successfully');
-          setResidenceInitialized(true);
-          setPendingResidenceData(null);
-        })
-        .catch(error => {
-          console.error('Error setting residence initial values:', error);
-          // Don't block initialization on error
-          setResidenceInitialized(true);
-          setPendingResidenceData(null);
-        })
-        .finally(() => setLocationDataLoading(false));
+    if (!residenceInitialized && pendingResidenceData) {
+      const timer = setTimeout(() => {
+        console.log('🏠 Setting residence data:', pendingResidenceData);
+        setLocationDataLoading(true);
+        
+        setResidenceInitialValues(pendingResidenceData)
+          .then(() => {
+            console.log('✅ Residence data set successfully');
+          })
+          .catch(error => {
+            console.error('❌ Error setting residence initial values:', error);
+          })
+          .finally(() => {
+            setLocationDataLoading(false);
+            setResidenceInitialized(true);
+            setPendingResidenceData(null);
+          });
+      }, 1000); // Wait 1s for provinces to load
+
+      return () => clearTimeout(timer);
     }
-  }, [getResidenceProvinceOptions, setResidenceInitialValues, pendingResidenceData, residenceInitialized]);
+  }, [pendingResidenceData]); // Only depend on pendingResidenceData
 
   useEffect(() => {
-    if (!birthInitialized && pendingBirthData && getBirthProvinceOptions().length > 0) {
-      console.log('Setting birth data:', pendingBirthData);
-      setLocationDataLoading(true);
-      
-      setBirthInitialValues(pendingBirthData)
-        .then(() => {
-          console.log('Birth data set successfully');
-          setBirthInitialized(true);
-          setPendingBirthData(null);
-        })
-        .catch(error => {
-          console.error('Error setting birth initial values:', error);
-          // Don't block initialization on error
-          setBirthInitialized(true);
-          setPendingBirthData(null);
-        })
-        .finally(() => setLocationDataLoading(false));
+    if (!birthInitialized && pendingBirthData) {
+      const timer = setTimeout(() => {
+        console.log('🏥 Setting birth data:', pendingBirthData);
+        setLocationDataLoading(true);
+        
+        setBirthInitialValues(pendingBirthData)
+          .then(() => {
+            console.log('✅ Birth data set successfully');
+          })
+          .catch(error => {
+            console.error('❌ Error setting birth initial values:', error);
+          })
+          .finally(() => {
+            setLocationDataLoading(false);
+            setBirthInitialized(true);
+            setPendingBirthData(null);
+          });
+      }, 1000); // Wait 1s for provinces to load
+
+      return () => clearTimeout(timer);
     }
-  }, [getBirthProvinceOptions, setBirthInitialValues, pendingBirthData, birthInitialized]);
+  }, [pendingBirthData]); // Only depend on pendingBirthData
 
   // Fallback timeout to ensure initialization happens even if there are issues
   useEffect(() => {
@@ -315,7 +318,7 @@ export default function ProfileUpdate({ user, setUser }) {
         setBirthInitialized(true);
         setPendingBirthData(null);
       }
-    }, 10000); // 10 second fallback
+    }, 5000); // Reduced to 5 second fallback
 
     return () => clearTimeout(timeout);
   }, [residenceInitialized, birthInitialized, pendingResidenceData, pendingBirthData]);
@@ -522,10 +525,18 @@ export default function ProfileUpdate({ user, setUser }) {
       <div className="p-6">
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center space-x-3">
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="flex items-center space-x-3 mb-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="text-gray-600">{t('loading') || 'Loading...'}</span>
+                <span className="text-gray-600 text-lg">{t('loading') || 'Loading Profile...'}</span>
+              </div>
+              <div className="text-sm text-gray-500 text-center">
+                <div>Loading user data and location information...</div>
+                {locationDataLoading && (
+                  <div className="mt-2 text-blue-600">
+                    📍 Loading location data...
+                  </div>
+                )}
               </div>
             </div>
           </div>

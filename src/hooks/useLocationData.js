@@ -4,6 +4,10 @@ import locationService from '../utils/api/services/locationService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 
+// Create a shared cache for provinces to avoid duplicate API calls
+let provincesCache = null;
+let provincesPromise = null;
+
 export const useLocationData = (initialValues = {}) => {
   const { t, language } = useLanguage();
   const { showError } = useToast();
@@ -86,10 +90,9 @@ export const useLocationData = (initialValues = {}) => {
 
 
   const loadProvinces = useCallback(async () => {
-    setLoadingProvinces(true);
-    try {
-      const data = await locationService.getProvinces();
-      const formattedProvinces = Array.isArray(data) ? data.map(province => ({
+    // Use cached provinces if available
+    if (provincesCache) {
+      const formattedProvinces = provincesCache.map(province => ({
         value: province.id.toString(),
         label: language === 'km' 
           ? (province.province_name_kh || province.province_name_en || `Province ${province.id}`)
@@ -98,13 +101,49 @@ export const useLocationData = (initialValues = {}) => {
         labelEn: province.province_name_en,
         code: province.province_code,
         originalData: province
-      })) : [];
+      }));
+      setProvinces(formattedProvinces);
+      return;
+    }
+
+    // Prevent duplicate API calls
+    if (provincesPromise) {
+      try {
+        await provincesPromise;
+        // After promise resolves, try again with cached data
+        return loadProvinces();
+      } catch {
+        // If promise failed, continue with new call
+      }
+    }
+
+    setLoadingProvinces(true);
+    
+    try {
+      provincesPromise = locationService.getProvinces();
+      const data = await provincesPromise;
+      
+      // Cache the raw data
+      provincesCache = Array.isArray(data) ? data : [];
+      
+      const formattedProvinces = provincesCache.map(province => ({
+        value: province.id.toString(),
+        label: language === 'km' 
+          ? (province.province_name_kh || province.province_name_en || `Province ${province.id}`)
+          : (province.province_name_en || province.province_name_kh || `Province ${province.id}`),
+        labelKh: province.province_name_kh,
+        labelEn: province.province_name_en,
+        code: province.province_code,
+        originalData: province
+      }));
       setProvinces(formattedProvinces);
     } catch (error) {
       console.error('Error loading provinces:', error);
       showError(t('errorFetchingData'));
+      provincesCache = [];
     } finally {
       setLoadingProvinces(false);
+      provincesPromise = null;
     }
   }, [showError, t, language]);
 
