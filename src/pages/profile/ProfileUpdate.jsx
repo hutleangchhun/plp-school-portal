@@ -69,6 +69,7 @@ export default function ProfileUpdate({ user, setUser }) {
   const [pendingBirthData, setPendingBirthData] = useState(null);
   const [residenceInitialized, setResidenceInitialized] = useState(false);
   const [birthInitialized, setBirthInitialized] = useState(false);
+  const [locationDataLoading, setLocationDataLoading] = useState(false);
 
   // Initialize location data hooks for residence
   const {
@@ -84,7 +85,8 @@ export default function ProfileUpdate({ user, setUser }) {
     getDistrictOptions: getResidenceDistrictOptions,
     getCommuneOptions: getResidenceCommuneOptions,
     getVillageOptions: getResidenceVillageOptions,
-    setInitialValues: setResidenceInitialValues
+    setInitialValues: setResidenceInitialValues,
+    resetSelections: resetResidenceSelections
   } = useLocationData();
 
   // Initialize location data hooks for place of birth
@@ -101,7 +103,8 @@ export default function ProfileUpdate({ user, setUser }) {
     getDistrictOptions: getBirthDistrictOptions,
     getCommuneOptions: getBirthCommuneOptions,
     getVillageOptions: getBirthVillageOptions,
-    setInitialValues: setBirthInitialValues
+    setInitialValues: setBirthInitialValues,
+    resetSelections: resetBirthSelections
   } = useLocationData();
 
   useEffect(() => {
@@ -116,6 +119,16 @@ export default function ProfileUpdate({ user, setUser }) {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Reset location data when component mounts to ensure clean state
+  useEffect(() => {
+    resetResidenceSelections();
+    resetBirthSelections();
+    setResidenceInitialized(false);
+    setBirthInitialized(false);
+    setPendingResidenceData(null);
+    setPendingBirthData(null);
+  }, []); // Run only once on mount
 
   // Fetch user data from database
   useEffect(() => {
@@ -226,6 +239,11 @@ export default function ProfileUpdate({ user, setUser }) {
         
         setPendingResidenceData(residenceInitialData);
         setPendingBirthData(birthInitialData);
+        
+        // Reset initialization flags when new user data is loaded
+        setResidenceInitialized(false);
+        setBirthInitialized(false);
+        
         // Also update the user context if needed
         if (setUser) {
           setUser(userData);
@@ -241,36 +259,66 @@ export default function ProfileUpdate({ user, setUser }) {
     fetchUserData();
   }, [setUser, showError, t, setResidenceInitialValues, setBirthInitialValues]);
 
-  // Set initial location values once provinces are loaded
+  // Set initial location values when data becomes available
   useEffect(() => {
-    const setInitialLocationData = async () => {
-      // Set residence data independently
-      if (!residenceInitialized && getResidenceProvinceOptions().length > 0 && pendingResidenceData) {
-        console.log('Setting residence data:', pendingResidenceData);
-        try {
-          await setResidenceInitialValues(pendingResidenceData);
+    if (!residenceInitialized && pendingResidenceData && getResidenceProvinceOptions().length > 0) {
+      console.log('Setting residence data:', pendingResidenceData);
+      setLocationDataLoading(true);
+      
+      setResidenceInitialValues(pendingResidenceData)
+        .then(() => {
+          console.log('Residence data set successfully');
           setResidenceInitialized(true);
           setPendingResidenceData(null);
-        } catch (error) {
+        })
+        .catch(error => {
           console.error('Error setting residence initial values:', error);
-        }
-      }
+          // Don't block initialization on error
+          setResidenceInitialized(true);
+          setPendingResidenceData(null);
+        })
+        .finally(() => setLocationDataLoading(false));
+    }
+  }, [getResidenceProvinceOptions, setResidenceInitialValues, pendingResidenceData, residenceInitialized]);
+
+  useEffect(() => {
+    if (!birthInitialized && pendingBirthData && getBirthProvinceOptions().length > 0) {
+      console.log('Setting birth data:', pendingBirthData);
+      setLocationDataLoading(true);
       
-      // Set birth data independently  
-      if (!birthInitialized && getBirthProvinceOptions().length > 0 && pendingBirthData) {
-        console.log('Setting birth data:', pendingBirthData);
-        try {
-          await setBirthInitialValues(pendingBirthData);
+      setBirthInitialValues(pendingBirthData)
+        .then(() => {
+          console.log('Birth data set successfully');
           setBirthInitialized(true);
           setPendingBirthData(null);
-        } catch (error) {
+        })
+        .catch(error => {
           console.error('Error setting birth initial values:', error);
-        }
+          // Don't block initialization on error
+          setBirthInitialized(true);
+          setPendingBirthData(null);
+        })
+        .finally(() => setLocationDataLoading(false));
+    }
+  }, [getBirthProvinceOptions, setBirthInitialValues, pendingBirthData, birthInitialized]);
+
+  // Fallback timeout to ensure initialization happens even if there are issues
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!residenceInitialized && pendingResidenceData) {
+        console.log('Fallback: Forcing residence initialization');
+        setResidenceInitialized(true);
+        setPendingResidenceData(null);
       }
-    };
-    
-    setInitialLocationData();
-  }, [getResidenceProvinceOptions, getBirthProvinceOptions, setResidenceInitialValues, setBirthInitialValues, pendingResidenceData, pendingBirthData, residenceInitialized, birthInitialized]);
+      if (!birthInitialized && pendingBirthData) {
+        console.log('Fallback: Forcing birth initialization');
+        setBirthInitialized(true);
+        setPendingBirthData(null);
+      }
+    }, 10000); // 10 second fallback
+
+    return () => clearTimeout(timeout);
+  }, [residenceInitialized, birthInitialized, pendingResidenceData, pendingBirthData]);
 
   const handleViewPicture = () => {
     setShowImageModal(true);
@@ -881,7 +929,15 @@ export default function ProfileUpdate({ user, setUser }) {
 
                 {/* Current Residence Information */}
                 <div className="border-t pt-4 sm:pt-6">
-                  <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('currentResidence') || 'Current Residence'}</h4>
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <h4 className="text-base sm:text-lg font-medium text-gray-900">{t('currentResidence') || 'Current Residence'}</h4>
+                    {locationDataLoading && (
+                      <div className="flex items-center space-x-2 text-sm text-blue-600">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span>Loading location data...</span>
+                      </div>
+                    )}
+                  </div>
                   
                   {/* Province and District */}
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-6">

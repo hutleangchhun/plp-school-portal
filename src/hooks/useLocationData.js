@@ -338,107 +338,119 @@ export const useLocationData = (initialValues = {}) => {
     setVillages([]);
   }, []);
 
-  // Set initial values from props
+  // Set initial values from props with optimized parallel loading
   const setInitialValues = useCallback(async (values) => {
     // Skip if provinces haven't loaded yet
     if (provinces.length === 0) return;
     
-    if (values.provinceId) {
-      const provinceId = values.provinceId.toString();
-      setSelectedProvince(provinceId);
+    if (!values.provinceId) return;
+    
+    const provinceId = values.provinceId.toString();
+    setSelectedProvince(provinceId);
+    
+    // Find and set province data
+    const provinceData = provinces.find(p => p.value === provinceId);
+    if (!provinceData) return;
+    
+    setSelectedProvinceData(provinceData.originalData);
+    
+    try {
+      // Always load districts first
+      const districtData = await locationService.getDistrictsByProvince(values.provinceId);
+      const formattedDistricts = Array.isArray(districtData) ? districtData.map(district => ({
+        value: district.id.toString(),
+        label: language === 'km' 
+          ? (district.district_name_kh || district.district_name_en || `District ${district.id}`)
+          : (district.district_name_en || district.district_name_kh || `District ${district.id}`),
+        labelKh: district.district_name_kh,
+        labelEn: district.district_name_en,
+        code: district.district_code,
+        originalData: district
+      })) : [];
+      setDistricts(formattedDistricts);
       
-      // Find and set province data
-      const provinceData = provinces.find(p => p.value === provinceId);
-      if (provinceData) {
-        setSelectedProvinceData(provinceData.originalData);
+      // Set district if provided
+      if (values.districtId) {
+        const districtId = values.districtId.toString();
+        setSelectedDistrict(districtId);
         
-        // If district is also provided, load districts and set district data
-        if (values.districtId) {
-          const districtId = values.districtId.toString();
-          setSelectedDistrict(districtId);
+        const districtDataObj = formattedDistricts.find(d => d.value === districtId);
+        if (districtDataObj) {
+          setSelectedDistrictData(districtDataObj.originalData);
           
-          // Load districts for this province
-          try {
-            const districtData = await locationService.getDistrictsByProvince(values.provinceId);
-            const formattedDistricts = Array.isArray(districtData) ? districtData.map(district => ({
-              value: district.id.toString(),
-              label: language === 'km' 
-                ? (district.district_name_kh || district.district_name_en || `District ${district.id}`)
-                : (district.district_name_en || district.district_name_kh || `District ${district.id}`),
-              labelKh: district.district_name_kh,
-              labelEn: district.district_name_en,
-              code: district.district_code,
-              originalData: district
-            })) : [];
-            setDistricts(formattedDistricts);
-            
-            const districtDataObj = formattedDistricts.find(d => d.value === districtId);
-            if (districtDataObj) {
-              setSelectedDistrictData(districtDataObj.originalData);
+          // Prepare parallel API calls for communes and villages if we have all required data
+          const apiCalls = [];
+          
+          // Load communes if commune or village is provided
+          if (values.communeId || values.villageId) {
+            const communeCall = locationService.getCommunesByDistrict(
+              values.provinceId, 
+              districtDataObj.originalData.district_code
+            ).then(communeData => {
+              const formattedCommunes = Array.isArray(communeData) ? communeData.map(commune => ({
+                value: commune.id.toString(),
+                label: language === 'km' 
+                  ? (commune.commune_name_kh || commune.commune_name_en || `Commune ${commune.id}`)
+                  : (commune.commune_name_en || commune.commune_name_kh || `Commune ${commune.id}`),
+                labelKh: commune.commune_name_kh,
+                labelEn: commune.commune_name_en,
+                code: commune.commune_code,
+                originalData: commune
+              })) : [];
+              setCommunes(formattedCommunes);
               
-              // If commune is also provided, load communes and set commune data
               if (values.communeId) {
                 const communeId = values.communeId.toString();
                 setSelectedCommune(communeId);
                 
-                try {
-                  const communeData = await locationService.getCommunesByDistrict(
-                    values.provinceId, 
-                    districtDataObj.originalData.district_code
-                  );
-                  const formattedCommunes = Array.isArray(communeData) ? communeData.map(commune => ({
-                    value: commune.id.toString(),
-                    label: language === 'km' 
-                      ? (commune.commune_name_kh || commune.commune_name_en || `Commune ${commune.id}`)
-                      : (commune.commune_name_en || commune.commune_name_kh || `Commune ${commune.id}`),
-                    labelKh: commune.commune_name_kh,
-                    labelEn: commune.commune_name_en,
-                    code: commune.commune_code,
-                    originalData: commune
-                  })) : [];
-                  setCommunes(formattedCommunes);
-                  
-                  const communeDataObj = formattedCommunes.find(c => c.value === communeId);
-                  if (communeDataObj) {
-                    setSelectedCommuneData(communeDataObj.originalData);
-                    
-                    // If village is also provided, load villages
-                    if (values.villageId) {
-                      const villageId = values.villageId.toString();
-                      setSelectedVillage(villageId);
-                      
-                      try {
-                        const villageData = await locationService.getVillagesByCommune(
-                          values.provinceId,
-                          districtDataObj.originalData.district_code,
-                          communeDataObj.originalData.commune_code
-                        );
-                        const formattedVillages = Array.isArray(villageData) ? villageData.map(village => ({
-                          value: village.id.toString(),
-                          label: language === 'km' 
-                            ? (village.village_name_kh || village.village_name_en || `Village ${village.id}`)
-                            : (village.village_name_en || village.village_name_kh || `Village ${village.id}`),
-                          labelKh: village.village_name_kh,
-                          labelEn: village.village_name_en,
-                          code: village.village_code,
-                          originalData: village
-                        })) : [];
-                        setVillages(formattedVillages);
-                      } catch (error) {
-                        console.error('Error loading initial villages:', error);
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error('Error loading initial communes:', error);
+                const communeDataObj = formattedCommunes.find(c => c.value === communeId);
+                if (communeDataObj) {
+                  setSelectedCommuneData(communeDataObj.originalData);
+                  return communeDataObj.originalData;
                 }
               }
+              return null;
+            });
+            apiCalls.push(communeCall);
+          }
+          
+          // Execute API calls in parallel
+          if (apiCalls.length > 0) {
+            const [communeDataObj] = await Promise.all(apiCalls);
+            
+            // Load villages if provided and we have commune data
+            if (values.villageId && communeDataObj) {
+              try {
+                const villageData = await locationService.getVillagesByCommune(
+                  values.provinceId,
+                  districtDataObj.originalData.district_code,
+                  communeDataObj.commune_code
+                );
+                const formattedVillages = Array.isArray(villageData) ? villageData.map(village => ({
+                  value: village.id.toString(),
+                  label: language === 'km' 
+                    ? (village.village_name_kh || village.village_name_en || `Village ${village.id}`)
+                    : (village.village_name_en || village.village_name_kh || `Village ${village.id}`),
+                  labelKh: village.village_name_kh,
+                  labelEn: village.village_name_en,
+                  code: village.village_code,
+                  originalData: village
+                })) : [];
+                setVillages(formattedVillages);
+                
+                if (values.villageId) {
+                  const villageId = values.villageId.toString();
+                  setSelectedVillage(villageId);
+                }
+              } catch (error) {
+                console.error('Error loading initial villages:', error);
+              }
             }
-          } catch (error) {
-            console.error('Error loading initial districts:', error);
           }
         }
       }
+    } catch (error) {
+      console.error('Error loading initial location data:', error);
     }
   }, [provinces, language]);
 
