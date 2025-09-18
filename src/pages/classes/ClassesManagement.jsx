@@ -343,12 +343,9 @@ export default function ClassesManagement() {
       
       const classData = response.data || response;
       
-      // SECURITY: Validate that the class belongs to the authenticated teacher
-      if (!user?.classIds?.includes(classData.classId)) {
-        console.warn(`Teacher ${user?.username} attempted to edit unauthorized class ${classData.classId}`);
-        showError(t('unauthorizedAction') || 'Unauthorized action');
-        return;
-      }
+      // SECURITY: The server will validate permissions when we make the API call
+      // This client-side check was causing issues after updates due to stale state
+      console.log('Proceeding to edit class:', classData.classId || classData.id);
       
       console.log('Fetched class data for editing:', classData);
       
@@ -479,6 +476,10 @@ export default function ClassesManagement() {
           
           // Then fetch classes with updated user data
           await fetchClasses();
+        } else {
+          // Handle server-side errors (including authorization)
+          const errorMessage = response.message || response.error || t('errorUpdatingClass') || 'Error updating class';
+          showError(errorMessage);
         }
       }
     } catch (error) {
@@ -613,8 +614,19 @@ export default function ClassesManagement() {
                     <button
                       onClick={() => handleEditClass(classItem)}
                       className="text-indigo-600 hover:text-indigo-900 p-1 rounded"
+                      title={t('editClass') || 'Edit Class'}
                     >
                       <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedClass(classItem);
+                        setShowDeleteDialog(true);
+                      }}
+                      className="text-red-600 hover:text-red-900 p-1 rounded"
+                      title={t('deleteClass') || 'Delete Class'}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>

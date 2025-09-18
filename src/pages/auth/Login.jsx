@@ -85,7 +85,7 @@ export default function Login({ setUser }) {
                   {t('username')}
                 </label>
                 <div className="mt-1 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                     <User className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
@@ -93,7 +93,7 @@ export default function Login({ setUser }) {
                     name="username"
                     type="text"
                     required
-                    className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-all duration-300 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-300 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
                     placeholder={t('enterUsername', 'Enter your username')}
                     value={formData.username}
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
@@ -106,7 +106,7 @@ export default function Login({ setUser }) {
                   {t('password')}
                 </label>
                 <div className="mt-1 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                     <Lock className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
@@ -114,24 +114,22 @@ export default function Login({ setUser }) {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className="appearance-none relative block w-full pl-10 pr-10 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-all duration-300 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    className="appearance-none relative block w-full pl-10 pr-12 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-300 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
                     placeholder={t('enterPassword', 'Enter your password')}
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute inset-y-0 right-0 pr-3 h-auto w-auto hover:bg-transparent"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
+                      <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
+                      <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                     )}
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>

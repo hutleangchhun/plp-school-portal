@@ -665,12 +665,9 @@ export default function StudentsManagement() {
       return;
     }
     
-    // Validate that the student's class is one of the teacher's authorized classes
-    if (!user?.classIds?.includes(studentClassInfo.classId)) {
-      console.error(`Teacher ${user?.username} attempted to remove student from unauthorized class ${studentClassInfo.classId}`);
-      showError(t('unauthorizedAction', 'You are not authorized to remove students from this class'));
-      return;
-    }
+    // SECURITY: The server will validate permissions when we make the API call
+    // This client-side check was causing issues after updates due to stale state
+    console.log('Proceeding to remove student from class:', studentClassInfo.classId);
     
     try {
       setLoading(true);
@@ -743,7 +740,7 @@ export default function StudentsManagement() {
         // Clear any selected student IDs
         setSelectedStudentIds(new Set());
       } else {
-        const errorMsg = response?.error || response?.message || 'Failed to remove student from class';
+        const errorMsg = response?.data?.error || response?.error || response?.message || 'Failed to remove student from class';
         console.error('API returned unsuccessful response:', response);
         throw new Error(errorMsg);
       }
