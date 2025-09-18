@@ -142,101 +142,133 @@ const userService = {
    * @returns {Promise<Object>} Upload response with image path
    */
   uploadProfilePicture: async (file, userId = null) => {
-    const formData = new FormData();
-    formData.append('file', file);
+    // Validate file first
+    if (!file) {
+      throw new Error('No file provided for upload');
+    }
     
-    // If userId is provided, try the new endpoint format first
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Invalid file type. Please select an image file.');
+    }
+    
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      throw new Error('File too large. Please select an image smaller than 10MB.');
+    }
+    
+    console.log('=== UPLOAD SERVICE DEBUG ===');
+    console.log('File details:', {
+      name: file.name,
+      size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+      type: file.type
+    });
+    console.log('User ID provided:', userId);
+    console.log('Available endpoints to try:');
+    console.log('1. POST /users/{userId}/upload-profile (if userId provided)');
+    console.log('2. PATCH /users/my-account/profile-picture');
+    console.log('3. POST /upload/single (generic fallback)');
+    console.log('=== END UPLOAD SERVICE DEBUG ===');
+    
+    const endpoints = [];
+    
+    // Build list of endpoints to try in order of preference
     if (userId && userId !== null && userId !== undefined && userId !== '') {
+      endpoints.push({
+        name: 'User-specific upload endpoint',
+        method: 'POST',
+        url: ENDPOINTS.USERS.UPLOAD_PROFILE(userId),
+        uploadFn: () => uploadFile(ENDPOINTS.USERS.UPLOAD_PROFILE(userId), file, 'file')
+      });
+    }
+    
+    endpoints.push(
+      {
+        name: 'Legacy profile picture endpoint',
+        method: 'PATCH',
+        url: ENDPOINTS.USERS.MY_PROFILE_PICTURE,
+        uploadFn: () => uploadFilePatch(ENDPOINTS.USERS.MY_PROFILE_PICTURE, file, 'file')
+      },
+      {
+        name: 'Generic upload endpoint',
+        method: 'POST',
+        url: ENDPOINTS.UPLOAD.SINGLE,
+        uploadFn: () => uploadFile(ENDPOINTS.UPLOAD.SINGLE, file, 'file')
+      }
+    );
+    
+    let lastError = null;
+    const errors = [];
+    
+    // Try each endpoint in sequence
+    for (let i = 0; i < endpoints.length; i++) {
+      const endpoint = endpoints[i];
+      
       try {
-        console.log(`Attempting to upload profile picture using new POST endpoint: /users/${userId}/upload-profile`);
-        console.log('Full URL will be:', import.meta.env.VITE_API_URL || 'http://157.10.73.52:8085/api/v1' + ENDPOINTS.USERS.UPLOAD_PROFILE(userId));
-        return await uploadFile(
-          ENDPOINTS.USERS.UPLOAD_PROFILE(userId),
-          file,
-          'file'
-        );
-      } catch (error) {
-        console.warn('New endpoint failed:', error.message);
+        console.log(`Attempting upload ${i + 1}/${endpoints.length}: ${endpoint.name}`);
+        console.log(`${endpoint.method} ${endpoint.url}`);
         
-        // If the new endpoint fails, try different approaches
-        if (error.status === 404) {
-          console.log('New endpoint not found (404), falling back to legacy endpoint');
-        } else if (error.status === 405) {
-          console.log('Method not allowed (405), endpoint may require different HTTP method');
-        } else {
-          console.log('New endpoint failed with error:', error.status || 'unknown');
+        const response = await endpoint.uploadFn();
+        
+        console.log(`✅ Upload successful using ${endpoint.name}:`, response);
+        
+        // Normalize response format
+        if (response && (response.profile_picture || response.url || response.path || response.filename)) {
+          return {
+            profile_picture: response.profile_picture || response.url || response.path || response.filename,
+            originalResponse: response
+          };
         }
         
-        // Fall back to the legacy endpoint if the new one fails (using PATCH method)
-        try {
-          console.log('Attempting legacy endpoint with PATCH:', ENDPOINTS.USERS.MY_PROFILE_PICTURE);
-          console.log('Full URL will be:', import.meta.env.VITE_API_URL || 'http://157.10.73.52:8085/api/v1' + ENDPOINTS.USERS.MY_PROFILE_PICTURE);
-          return await uploadFilePatch(
-            ENDPOINTS.USERS.MY_PROFILE_PICTURE,
-            file,
-            'file'
-          );
-        } catch (legacyError) {
-          console.error('Legacy endpoint also failed:', legacyError.message);
-          
-          // Try generic upload endpoint as last resort
-          try {
-            console.log('Attempting generic upload endpoint: /upload/single');
-            const genericResponse = await uploadFile(
-              ENDPOINTS.UPLOAD.SINGLE,
-              file,
-              'file'
-            );
-            
-            // If generic upload succeeds, we might need to handle the response differently
-            if (genericResponse && (genericResponse.url || genericResponse.path || genericResponse.filename)) {
-              return {
-                profile_picture: genericResponse.url || genericResponse.path || genericResponse.filename
-              };
-            }
-            
-            return genericResponse;
-          } catch (genericError) {
-            console.error('Generic upload endpoint also failed:', genericError.message);
-            throw new Error(`All endpoints failed. New: ${error.message}, Legacy: ${legacyError.message}, Generic: ${genericError.message}`);
-          }
+        return response;
+        
+      } catch (error) {
+        lastError = error;
+        const errorInfo = {
+          endpoint: endpoint.name,
+          method: endpoint.method,
+          url: endpoint.url,
+          status: error.status,
+          message: error.message
+        };
+        
+        errors.push(errorInfo);
+        console.warn(`❌ ${endpoint.name} failed:`, errorInfo);
+        
+        // For 403/401 errors, don't try other endpoints as it's likely an auth issue
+        if (error.status === 403 || error.status === 401) {
+          console.log('Authentication/authorization error detected, stopping further attempts');
+          break;
+        }
+        
+        // For 413 (payload too large), don't try other endpoints
+        if (error.status === 413) {
+          console.log('File too large error detected, stopping further attempts');
+          break;
+        }
+        
+        // Continue to next endpoint for other errors
+        if (i < endpoints.length - 1) {
+          console.log(`Trying next endpoint...`);
         }
       }
     }
     
-    // Otherwise, use the existing my-account endpoint for backward compatibility (using PATCH method)
-    console.log('Using legacy endpoint with PATCH:', ENDPOINTS.USERS.MY_PROFILE_PICTURE);
-    console.log('Full URL will be:', import.meta.env.VITE_API_URL || 'http://157.10.73.52:8085/api/v1' + ENDPOINTS.USERS.MY_PROFILE_PICTURE);
-    try {
-      return await uploadFilePatch(
-        ENDPOINTS.USERS.MY_PROFILE_PICTURE,
-        file,
-        'file'
-      );
-    } catch (error) {
-      console.error('Legacy endpoint failed:', error.message);
-      
-      // Try generic upload endpoint as last resort
-      try {
-        console.log('Attempting generic upload endpoint: /upload/single');
-        const genericResponse = await uploadFile(
-          ENDPOINTS.UPLOAD.SINGLE,
-          file,
-          'file'
-        );
-        
-        // If generic upload succeeds, we might need to handle the response differently
-        if (genericResponse && (genericResponse.url || genericResponse.path || genericResponse.filename)) {
-          return {
-            profile_picture: genericResponse.url || genericResponse.path || genericResponse.filename
-          };
-        }
-        
-        return genericResponse;
-      } catch (genericError) {
-        console.error('Generic upload endpoint also failed:', genericError.message);
-        throw new Error(`All endpoints failed. Legacy: ${error.message}, Generic: ${genericError.message}. Please check if the server supports profile picture uploads.`);
-      }
+    // All endpoints failed
+    console.error('🚫 All upload endpoints failed:', errors);
+    
+    // Return a meaningful error based on the most relevant failure
+    if (lastError?.status === 403) {
+      throw new Error('Access denied: You do not have permission to upload profile pictures. Please contact your administrator or try logging out and logging in again.');
+    } else if (lastError?.status === 401) {
+      throw new Error('Authentication failed: Your session may have expired. Please log out and log in again.');
+    } else if (lastError?.status === 413) {
+      throw new Error('File too large: Please select a smaller image file.');
+    } else if (lastError?.status === 415) {
+      throw new Error('Unsupported file type: Please select a valid image file (JPG, PNG, GIF, etc.).');
+    } else if (lastError?.status === 500) {
+      throw new Error('Server error: The server encountered an error while processing your upload. Please try again later.');
+    } else {
+      const errorMessages = errors.map(e => `${e.endpoint}: ${e.message || 'Unknown error'}`).join('; ');
+      throw new Error(`Upload failed on all endpoints: ${errorMessages}. Please check your internet connection and try again.`);
     }
   },
 

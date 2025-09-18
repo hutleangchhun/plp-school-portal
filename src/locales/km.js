@@ -59,6 +59,7 @@ export const km = {
   profilePicture: 'រូបភាពរបស់អ្នក (ឈ្មោះឯកសារ)',
   teacherNumber: 'អត្តលេខគ្រូ',
   teacherId: 'លេខសម្គាល់គ្រូ',
+  enterNewPassword: 'បញ្ចូលពាក្យសម្ងាត់ថ្មី',
   
   // Location fields
   provinceId: 'លេខកំណត់ខេត្ត',

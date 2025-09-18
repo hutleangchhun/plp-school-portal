@@ -448,6 +448,12 @@ export default function ProfileUpdate({ user, setUser }) {
 
     setPictureUploading(true);
     try {
+      // Validate auth token first
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        throw new Error('Authentication token missing. Please log in again.');
+      }
+      
       // Get user ID from form data or user prop - try multiple field names
       let userId = formData.id || formData.teacherId || 
                    user?.id || user?.userId || user?.user_id || user?.teacherId;
@@ -477,14 +483,28 @@ export default function ProfileUpdate({ user, setUser }) {
               const payload = JSON.parse(atob(tokenParts[1]));
               userId = payload.userId || payload.user_id || payload.sub || payload.id;
               console.log('Extracted user ID from JWT token:', userId);
+              
+              // Check if token is expired
+              if (payload.exp && payload.exp * 1000 < Date.now()) {
+                throw new Error('Authentication token has expired. Please log in again.');
+              }
             }
           }
         } catch (error) {
           console.warn('Could not decode JWT token:', error);
+          if (error.message.includes('expired')) {
+            throw error;
+          }
         }
       }
       
       console.log('=== UPLOAD DEBUG ===');
+      console.log('Auth token present:', !!authToken);
+      console.log('File details:', {
+        name: profilePictureFile.name,
+        size: profilePictureFile.size,
+        type: profilePictureFile.type
+      });
       console.log('Form data ID fields:', {
         id: formData.id,
         teacherId: formData.teacherId
@@ -498,13 +518,44 @@ export default function ProfileUpdate({ user, setUser }) {
       console.log('Final userId for upload:', userId);
       console.log('=== END UPLOAD DEBUG ===');
       
-      if (!userId) {
-        console.warn('No user ID found for profile picture upload, will use legacy endpoint');
+      // Validate file before upload
+      if (!profilePictureFile.type.startsWith('image/')) {
+        throw new Error('Please select a valid image file.');
       }
       
-      // Use the new endpoint if user ID is available
-      const response = await api.user.uploadProfilePicture(profilePictureFile, userId);
-      return response.profile_picture;
+      if (profilePictureFile.size > 5 * 1024 * 1024) { // 5MB limit
+        throw new Error('Image file is too large. Please select a file smaller than 5MB.');
+      }
+      
+      // Try upload with detailed error handling
+      try {
+        const response = await api.user.uploadProfilePicture(profilePictureFile, userId);
+        console.log('Upload successful:', response);
+        return response.profile_picture || response.url || response.path;
+      } catch (uploadError) {
+        console.error('Upload error details:', uploadError);
+        
+        // Handle specific error cases
+        if (uploadError.status === 403) {
+          if (uploadError.message?.includes('token')) {
+            throw new Error('Authentication failed. Please log out and log in again.');
+          } else if (uploadError.message?.includes('permission')) {
+            throw new Error('You do not have permission to upload profile pictures. Please contact your administrator.');
+          } else {
+            throw new Error('Access denied. You may not have permission to upload profile pictures, or your session may have expired. Please try logging out and logging in again.');
+          }
+        } else if (uploadError.status === 401) {
+          throw new Error('Authentication failed. Please log out and log in again.');
+        } else if (uploadError.status === 413) {
+          throw new Error('Image file is too large. Please select a smaller file.');
+        } else if (uploadError.status === 415) {
+          throw new Error('Unsupported file type. Please select a valid image file (JPG, PNG, GIF).');
+        } else if (uploadError.status === 500) {
+          throw new Error('Server error occurred while uploading. Please try again later.');
+        } else {
+          throw new Error(uploadError.message || 'Failed to upload profile picture. Please try again.');
+        }
+      }
     } catch (error) {
       console.error('Profile picture upload error:', error);
       showError(error.message || t('failedUploadPicture'));

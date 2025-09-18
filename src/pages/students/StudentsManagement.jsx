@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Trash2, Edit2, User, Users, User2, ChevronDown, Download, X, Building, Mail, Phone, Eye, Upload } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, User, Users, ChevronDown, Download, X } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -16,10 +16,7 @@ import useSelectedStudents from '../../hooks/useSelectedStudents';
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
 import { exportToExcel, exportToCSV, exportToPDF, getTimestampedFilename } from '../../utils/exportUtils';
-import Modal from '../../components/ui/Modal';
-import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
-import ProfileImage from '../../components/ui/ProfileImage';
-import { useLocationData } from '../../hooks/useLocationData';
+import StudentEditModal from '../../components/students/StudentEditModal';
 
 /**
  * StudentsManagement Component
@@ -70,29 +67,6 @@ export default function StudentsManagement() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [editingStudent, setEditingStudent] = useState(null);
-  const [editForm, setEditForm] = useState({
-    firstName: '',
-    lastName: '',
-    username: '',
-    email: '',
-    phone: '',
-    gender: '',
-    dateOfBirth: null,
-    nationality: '',
-    profilePicture: '',
-    residence: {
-      provinceId: '',
-      districtId: '',
-      communeId: '',
-      villageId: ''
-    },
-    placeOfBirth: {
-      provinceId: '',
-      districtId: '',
-      communeId: '',
-      villageId: ''
-    }
-  });
   // Use the custom hook for managing selected students
   const {
     selectedStudents,
@@ -104,84 +78,15 @@ export default function StudentsManagement() {
   } = useSelectedStudents();
   const [loading, setLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [profilePictureFile, setProfilePictureFile] = useState(null);
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
   const searchTimeoutRef = useRef(null);
   const classesInitialized = useRef(false);
-  const fileInputRef = useRef(null);
-  const dropdownRef = useRef(null);
   
   // State for all students (unfiltered) and filtered students
   const [allStudents, setAllStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
-  
-  // Location data hooks for residence
-  const {
-    provinces: residenceProvinces,
-    districts: residenceDistricts,
-    communes: residenceCommunes,
-    villages: residenceVillages,
-    selectedProvince: selectedResidenceProvince,
-    selectedDistrict: selectedResidenceDistrict,
-    selectedCommune: selectedResidenceCommune,
-    selectedVillage: selectedResidenceVillage,
-    handleProvinceChange: handleResidenceProvinceChange,
-    handleDistrictChange: handleResidenceDistrictChange,
-    handleCommuneChange: handleResidenceCommuneChange,
-    handleVillageChange: handleResidenceVillageChange,
-    getProvinceOptions: getResidenceProvinceOptions,
-    getDistrictOptions: getResidenceDistrictOptions,
-    getCommuneOptions: getResidenceCommuneOptions,
-    getVillageOptions: getResidenceVillageOptions,
-    setInitialValues: setResidenceInitialValues,
-    resetSelections: resetResidenceSelections
-  } = useLocationData();
 
-  // Location data hooks for place of birth
-  const {
-    provinces: birthProvinces,
-    districts: birthDistricts,
-    communes: birthCommunes,
-    villages: birthVillages,
-    selectedProvince: selectedBirthProvince,
-    selectedDistrict: selectedBirthDistrict,
-    selectedCommune: selectedBirthCommune,
-    selectedVillage: selectedBirthVillage,
-    handleProvinceChange: handleBirthProvinceChange,
-    handleDistrictChange: handleBirthDistrictChange,
-    handleCommuneChange: handleBirthCommuneChange,
-    handleVillageChange: handleBirthVillageChange,
-    getProvinceOptions: getBirthProvinceOptions,
-    getDistrictOptions: getBirthDistrictOptions,
-    getCommuneOptions: getBirthCommuneOptions,
-    getVillageOptions: getBirthVillageOptions,
-    setInitialValues: setBirthInitialValues,
-    resetSelections: resetBirthSelections
-  } = useLocationData();
-
-  // Profile picture handlers
-  const handleViewPicture = () => {
-    setShowImageModal(true);
-    setShowDropdown(false);
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-    setShowDropdown(false);
-  };
-
-  const handleProfilePictureChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfilePictureFile(file);
-      // Update the form data with the file URL for preview
-      const fileURL = URL.createObjectURL(file);
-      handleEditFormChange('profilePicture', fileURL);
-    }
-  };
   
   // Enhanced client-side search function
   const performClientSideSearch = useCallback((studentsData, searchQuery) => {
@@ -554,14 +459,11 @@ export default function StudentsManagement() {
       if (showExportDropdown && !event.target.closest('.export-dropdown')) {
         setShowExportDropdown(false);
       }
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
     };
     
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showExportDropdown, showDropdown]);
+  }, [showExportDropdown]);
   
   // Cleanup search timeout on unmount
   useEffect(() => {
@@ -942,172 +844,23 @@ export default function StudentsManagement() {
   };
 
   // Handle edit student
-  const handleEditStudent = async (student) => {
+  const handleEditStudent = (student) => {
     console.log('Edit button clicked for student:', student);
-    try {
-      setLoading(true);
-      
-      const userId = student.userId || student.user_id || student.id;
-      let fullData = student;
-      if (userId) {
-        const resp = await userService.getUserByID(userId);
-        // Some clients wrap data; support both shapes
-        fullData = resp?.data || resp || student;
-      }
-      setEditingStudent({ ...student, userId: userId });
-      setEditForm({
-        firstName: fullData.firstName || fullData.first_name || '',
-        lastName: fullData.lastName || fullData.last_name || '',
-        username: fullData.username || '',
-        email: fullData.email || '',
-        phone: fullData.phone || '',
-        gender: fullData.gender || '',
-        dateOfBirth: fullData.dateOfBirth ? new Date(fullData.dateOfBirth) : (fullData.date_of_birth ? new Date(fullData.date_of_birth) : null),
-        nationality: fullData.nationality || '',
-        profilePicture: fullData.profile_picture || fullData.profilePicture || '',
-        residence: {
-          provinceId: fullData.residence?.provinceId || fullData.province_id || '',
-          districtId: fullData.residence?.districtId || fullData.district_id || '',
-          communeId: fullData.residence?.communeId || fullData.commune_id || '',
-          villageId: fullData.residence?.villageId || fullData.village_id || ''
-        },
-        placeOfBirth: {
-          provinceId: fullData.placeOfBirth?.provinceId || fullData.residence?.provinceId || fullData.province_id || '',
-          districtId: fullData.placeOfBirth?.districtId || fullData.residence?.districtId || fullData.district_id || '',
-          communeId: fullData.placeOfBirth?.communeId || fullData.residence?.communeId || fullData.commune_id || '',
-          villageId: fullData.placeOfBirth?.villageId || fullData.residence?.villageId || fullData.village_id || ''
-        }
-      });
-      
-      // Initialize dropdown selections
-      const res = fullData.residence || {};
-      setResidenceInitialValues({
-        provinceId: res.provinceId || fullData.province_id || '',
-        districtId: res.districtId || fullData.district_id || '',
-        communeId: res.communeId || fullData.commune_id || '',
-        villageId: res.villageId || fullData.village_id || ''
-      });
-      
-      const birth = fullData.placeOfBirth || {};
-      setBirthInitialValues({
-        provinceId: birth.provinceId || res.provinceId || fullData.province_id || '',
-        districtId: birth.districtId || res.districtId || fullData.district_id || '',
-        communeId: birth.communeId || res.communeId || fullData.commune_id || '',
-        villageId: birth.villageId || res.villageId || fullData.village_id || ''
-      });
-      setShowEditModal(true);
-    } catch (e) {
-      console.error('Failed to fetch user by ID for edit:', e);
-      setEditingStudent(student);
-      setShowEditModal(true);
-    } finally {
-      setLoading(false);
-    }
+    setEditingStudent(student);
+    setShowEditModal(true);
   };
 
-  // Handle update student form submission
-  const handleUpdateStudent = async (e) => {
-    e.preventDefault();
-    if (!editingStudent) return;
-
-    try {
-      setLoading(true);
-      
-      const userId = editingStudent.userId || editingStudent.user_id || editingStudent.id;
-      console.log('Updating user by users_id:', userId);
-      console.log('Update data (form):', editForm);
-
-      // Normalize date to YYYY-MM-DD
-      const formatDate = (val) => {
-        if (!val) return undefined;
-        const d = val instanceof Date ? val : new Date(val);
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-      };
-
-      // Backend expects snake_case keys on updateUser
-      const payload = {
-        username: editForm.username?.trim(),
-        first_name: editForm.firstName?.trim(),
-        last_name: editForm.lastName?.trim(),
-        email: editForm.email?.trim(),
-        phone: editForm.phone?.trim(),
-        date_of_birth: formatDate(editForm.dateOfBirth),
-        gender: editForm.gender || undefined,
-        nationality: editForm.nationality?.trim() || undefined,
-        profile_picture: editForm.profilePicture || undefined,
-        residence: {
-          provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
-          districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
-          communeId: selectedResidenceCommune || editForm.residence.communeId || undefined,
-          villageId: selectedResidenceVillage || editForm.residence.villageId || undefined,
-        },
-        placeOfBirth: {
-          provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId || undefined,
-          districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId || undefined,
-          communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
-          villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
-        }
-      };
-
-      // Remove undefined/empty values
-      Object.keys(payload).forEach(k => {
-        if (payload[k] === undefined || payload[k] === null || payload[k] === '') delete payload[k];
-      });
-
-      const response = await userService.updateUser(userId, payload);
-      console.log('Update response:', response);
-
-      if (response) {
-        showSuccess(t('studentUpdatedSuccess', 'Student updated successfully'));
-        setShowEditModal(false);
-        setEditingStudent(null);
-        setEditForm({
-          firstName: '',
-          lastName: '',
-          username: '',
-          email: '',
-          phone: '',
-          gender: '',
-          dateOfBirth: null,
-          nationality: '',
-          profilePicture: '',
-          residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
-          placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
-        });
-        
-        // Reset location selections
-        resetResidenceSelections();
-        resetBirthSelections();
-        
-        // Clear profile picture state
-        setProfilePictureFile(null);
-        setShowDropdown(false);
-        
-        // Refresh the student list
-        setTimeout(async () => {
-          await fetchStudents(searchTerm, true, true); // Skip loading since we're already managing it
-        }, 500);
-      } else {
-        throw new Error('Failed to update student');
-      }
-    } catch (error) {
-      console.error('Error updating student:', error);
-      showError(t('failedUpdateStudent', 'Failed to update student: ') + (error.message || 'Unknown error'));
-    } finally {
-      setLoading(false);
-    }
+  // Handle successful student update from modal
+  const handleStudentUpdated = (updatedStudent) => {
+    console.log('Student updated successfully:', updatedStudent);
+    setShowEditModal(false);
+    setEditingStudent(null);
+    // Refresh the student list
+    setTimeout(async () => {
+      await fetchStudents(searchTerm, true, true);
+    }, 500);
   };
 
-  // Handle edit form input changes
-  const handleEditFormChange = (field, value) => {
-    setEditForm(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
 
   // Export handlers
   const handleExportExcel = async () => {
@@ -1581,439 +1334,15 @@ export default function StudentsManagement() {
       <BulkDeleteDialog />
       
       {/* Edit Student Modal */}
-      <Modal
+      <StudentEditModal
         isOpen={showEditModal}
         onClose={() => {
           setShowEditModal(false);
           setEditingStudent(null);
-          setEditForm({
-            firstName: '',
-            lastName: '',
-            username: '',
-            email: '',
-            phone: '',
-            gender: '',
-            dateOfBirth: null,
-            nationality: '',
-            profilePicture: '',
-            residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
-            placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
-          });
-          resetResidenceSelections();
-          resetBirthSelections();
-          setProfilePictureFile(null);
-          setShowDropdown(false);
         }}
-        title={t('editStudent', 'Edit Student')}
-        size="2xl"
-        height='xl'
-        stickyFooter={true}
-        footer={
-          <div className="flex items-center justify-end space-x-3">
-            <Button
-              type="button"
-              onClick={() => {
-                setShowEditModal(false);
-                setEditingStudent(null);
-                setEditForm({
-                  firstName: '',
-                  lastName: '',
-                  username: '',
-                  email: '',
-                  phone: '',
-                  gender: '',
-                  dateOfBirth: null,
-                  nationality: '',
-                  profilePicture: '',
-                  residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
-                  placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
-                });
-                resetResidenceSelections();
-                resetBirthSelections();
-                setProfilePictureFile(null);
-                setShowDropdown(false);
-              }}
-              variant="outline"
-              disabled={loading}
-            >
-              {t('cancel', 'Cancel')}
-            </Button>
-            <Button
-              type="submit"
-              form="edit-student-form"
-              variant="primary"
-              disabled={loading}
-              className="min-w-[120px]"
-            >
-              {loading ? t('updating', 'Updating...') : t('updateStudent', 'Update Student')}
-            </Button>
-          </div>
-        }
-      >
-        <form id="edit-student-form" onSubmit={handleUpdateStudent} className="space-y-6">
-          {/* Profile Picture Section */}
-          <div className="">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('profilePicture', 'Profile Picture')}
-            </label>
-            
-            {/* Profile Picture with Dropdown */}
-            <div className="relative mb-4" ref={dropdownRef}>
-              <div 
-                className="relative inline-block cursor-pointer"
-                onClick={() => setShowDropdown(!showDropdown)}
-              >
-                {profilePictureFile ? (
-                  <img 
-                    src={URL.createObjectURL(profilePictureFile)}
-                    alt="Profile Preview" 
-                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-gray-300 hover:border-blue-500 transition-colors"
-                  />
-                ) : (
-                  <ProfileImage
-                    user={{ profile_picture: editForm.profilePicture, firstName: editForm.firstName, lastName: editForm.lastName }}
-                    size="lg"
-                    alt="Profile"
-                    className="hover:border-blue-500 transition-colors"
-                    borderColor="border-gray-300"
-                    fallbackType="image"
-                    clickable={true}
-                  />
-                )}
-              </div>
-
-              {/* Dropdown Menu */}
-              {showDropdown && (
-                <div className="absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200">
-                  <div className="py-1">
-                    {editForm.profilePicture && (
-                      <Button
-                        type="button"
-                        onClick={handleViewPicture}
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        className="justify-start rounded-none"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        {t('viewPicture') || 'View Picture'}
-                      </Button>
-                    )}
-                    <Button
-                      type="button"
-                      onClick={handleUploadClick}
-                      variant="ghost"
-                      size="sm"
-                      fullWidth
-                      className="justify-start rounded-none"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      {t('uploadNewPicture') || 'Upload New Picture'}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Hidden File Input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleProfilePictureChange}
-              className="hidden"
-            />
-            
-            {profilePictureFile && (
-              <p className="mt-2 text-sm text-green-600 mb-4">
-                {t('newPictureSelected') || 'New picture selected'}: {profilePictureFile.name}
-              </p>
-            )}
-          </div>
-          <div  className='border-t pt-4'>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <User2 className="inline w-5 h-5 mr-2" />
-              {t('personalInformation', 'Personal Information')}
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('firstName', 'First Name')}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    id="firstName"
-                    value={editForm.firstName}
-                    onChange={(e) => handleEditFormChange('firstName', e.target.value)}
-                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                    placeholder={t('enterFirstName', 'Enter first name')}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('lastName', 'Last Name')}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    id="lastName"
-                    value={editForm.lastName}
-                    onChange={(e) => handleEditFormChange('lastName', e.target.value)}
-                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                    placeholder={t('enterLastName', 'Enter last name')}
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('gender', 'Gender')}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <select
-                    value={editForm.gender}
-                    onChange={(e) => handleEditFormChange('gender', e.target.value)}
-                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  >
-                  <option value="">{t('selectGender', 'Select gender')}</option>
-                  <option value="MALE">{t('male', 'Male')}</option>
-                  <option value="FEMALE">{t('female', 'Female')}</option>
-                  <option value="OTHER">{t('other', 'Other')}</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('dateOfBirth', 'Date of Birth')}
-                </label>
-                <DatePickerWithDropdowns
-                  value={editForm.dateOfBirth}
-                  onChange={(date) => handleEditFormChange('dateOfBirth', date)}
-                  placeholder={t('pickDate', 'Pick a date')}
-                />
-              </div>
-            </div>
-          </div>
-          
-          <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
-             
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('username', 'Username')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  id="username"
-                  value={editForm.username}
-                  onChange={(e) => handleEditFormChange('username', e.target.value)}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  placeholder={t('enterUsername', 'Enter username')}
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('email', 'Email')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="email"
-                  id="email"
-                  value={editForm.email}
-                  onChange={(e) => handleEditFormChange('email', e.target.value)}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  placeholder={t('enterEmail', 'Enter email address')}
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('phone', 'Phone')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Phone className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={editForm.phone}
-                  onChange={(e) => handleEditFormChange('phone', e.target.value)}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  placeholder={t('enterPhone', 'Enter phone number')}
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Current Residence */}
-          <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <Building className="inline w-5 h-5 mr-2" />
-              {t('currentResidence', 'Current Residence')}
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('province', 'Province')}
-                </label>
-                <Dropdown
-                  options={getResidenceProvinceOptions()}
-                  value={selectedResidenceProvince}
-                  onValueChange={handleResidenceProvinceChange}
-                  placeholder={t('selectProvince', 'Select Province')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                  disabled={false}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('district', 'District')}
-                </label>
-                <Dropdown
-                  options={getResidenceDistrictOptions()}
-                  value={selectedResidenceDistrict}
-                  onValueChange={handleResidenceDistrictChange}
-                  placeholder={t('selectDistrict', 'Select District')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                  disabled={!selectedResidenceProvince}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('commune', 'Commune')}
-                </label>
-                <Dropdown
-                  options={getResidenceCommuneOptions()}
-                  value={selectedResidenceCommune}
-                  onValueChange={handleResidenceCommuneChange}
-                  placeholder={t('selectCommune', 'Select Commune')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                  disabled={!selectedResidenceDistrict}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('village', 'Village')}
-                </label>
-                <Dropdown
-                  options={getResidenceVillageOptions()}
-                  value={selectedResidenceVillage}
-                  onValueChange={handleResidenceVillageChange}
-                  placeholder={t('selectVillage', 'Select Village')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                  disabled={!selectedResidenceCommune}
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Place of Birth */}
-          <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <Building className="inline w-5 h-5 mr-2" />
-              {t('placeOfBirth', 'Place of Birth')}
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('province', 'Province')}
-                </label>
-                <Dropdown
-                  options={getBirthProvinceOptions()}
-                  value={selectedBirthProvince}
-                  onValueChange={handleBirthProvinceChange}
-                  placeholder={t('selectProvince', 'Select Province')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                  disabled={false}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('district', 'District')}
-                </label>
-                <Dropdown
-                  options={getBirthDistrictOptions()}
-                  value={selectedBirthDistrict}
-                  onValueChange={handleBirthDistrictChange}
-                  placeholder={t('selectDistrict', 'Select District')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                  disabled={!selectedBirthProvince}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('commune', 'Commune')}
-                </label>
-                <Dropdown
-                  options={getBirthCommuneOptions()}
-                  value={selectedBirthCommune}
-                  onValueChange={handleBirthCommuneChange}
-                  placeholder={t('selectCommune', 'Select Commune')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                  disabled={!selectedBirthDistrict}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('village', 'Village')}
-                </label>
-                <Dropdown
-                  options={getBirthVillageOptions()}
-                  value={selectedBirthVillage}
-                  onValueChange={handleBirthVillageChange}
-                  placeholder={t('selectVillage', 'Select Village')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                  disabled={!selectedBirthCommune}
-                />
-              </div>
-            </div>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Image Modal */}
-      {showImageModal && editForm.profilePicture && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowImageModal(false)}>
-          <div className="relative max-w-4xl max-h-full p-4">
-            <Button
-              onClick={() => setShowImageModal(false)}
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 text-white hover:text-gray-300 hover:bg-white/10 z-10"
-            >
-              <X className="w-6 h-6" />
-            </Button>
-            <img 
-              src={editForm.profilePicture}
-              alt="Profile" 
-              className="max-w-full max-h-full object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        </div>
-      )}
+        student={editingStudent}
+        onStudentUpdated={handleStudentUpdated}
+      />
     </PageTransition>
   );
 }

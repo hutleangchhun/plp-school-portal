@@ -17,7 +17,28 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      // Check if token is expired before making request
+      try {
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          const now = Math.floor(Date.now() / 1000);
+          
+          // Check if token expires within the next 5 minutes (300 seconds)
+          if (payload.exp && payload.exp < (now + 300)) {
+            console.warn('Auth token is expired or expiring soon');
+            // Don't set the Authorization header for expired tokens
+            // This will trigger a 401 response which will be handled by the response interceptor
+          } else {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
+        } else {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (error) {
+        console.warn('Error parsing JWT token:', error);
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },

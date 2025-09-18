@@ -58,6 +58,7 @@ export const en = {
   profilePicture: 'Profile Picture (filename)',
   teacherNumber: 'Teacher Number',
   teacherId: 'Teacher ID',
+  enterNewPassword: 'Enter new password',
   
   // Location fields
   provinceId: 'Province ID',
