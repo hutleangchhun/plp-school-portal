@@ -490,7 +490,7 @@ const StudentEditModal = ({
           </div>
           
           {/* Contact Information */}
-          <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+          <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('username', 'Username')}
@@ -507,6 +507,26 @@ const StudentEditModal = ({
                   className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
                   placeholder={t('enterUsername', 'Enter username')}
                   required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('newPassword', 'New Password')}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="password"
+                  id="newPassword"
+                  value={editForm.newPassword}
+                  onChange={(e) => handleFormChange('newPassword', e.target.value)}
+                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                  placeholder={t('enterNewPassword')}
+                  autoComplete="new-password"
                 />
               </div>
             </div>
@@ -545,33 +565,6 @@ const StudentEditModal = ({
                   onChange={(e) => handleFormChange('phone', e.target.value)}
                   className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
                   placeholder={t('enterPhone', 'Enter phone number')}
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Password Section */}
-          <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <Lock className="inline w-5 h-5 mr-2" />
-              {t('passwordSettings', 'Password Settings')}
-            </h3>
-            <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('newPassword', 'New Password')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="password"
-                  id="newPassword"
-                  value={editForm.newPassword}
-                  onChange={(e) => handleFormChange('newPassword', e.target.value)}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  placeholder={t('enterNewPassword')}
-                  autoComplete="new-password"
                 />
               </div>
             </div>
