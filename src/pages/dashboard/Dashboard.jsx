@@ -23,7 +23,7 @@ export default function Dashboard({ user: initialUser }) {
   const [classCount, setClassCount] = useState(0);
   const [unassignedStudents, setUnassignedStudents] = useState(0);
   const [lastRefresh, setLastRefresh] = useState(new Date());
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(false); // Disabled by default to prevent excessive API calls
   const [classDetails, setClassDetails] = useState([]);
 
   const [authUser] = useState(() => {
@@ -46,13 +46,30 @@ export default function Dashboard({ user: initialUser }) {
 
   // Fetch comprehensive data
   const fetchAllData = useStableCallback(async () => {
+    console.log('🔄 Dashboard: fetchAllData called at', new Date().toISOString());
     setLoading(true);
     setError(null);
     
     try {
-      // Fetch user data
-      const response = await userService.getMyAccount();
-      const userData = response?.data || response;
+      // Fetch detailed user data with school information
+      let userData = null;
+      
+      // First try to get detailed user data with school info
+      if (authUser?.id) {
+        try {
+          const detailedResponse = await userService.getUserByID(authUser.id);
+          userData = detailedResponse?.data || detailedResponse;
+          console.log('Detailed user data with school:', userData);
+        } catch (error) {
+          console.warn('Failed to fetch detailed user data, falling back to getMyAccount:', error);
+        }
+      }
+      
+      // Fallback to getMyAccount if detailed fetch failed
+      if (!userData) {
+        const response = await userService.getMyAccount();
+        userData = response?.data || response;
+      }
       
       if (userData && (userData.username || userData.fullname || userData.email)) {
         setUserData(userData);
@@ -146,7 +163,7 @@ export default function Dashboard({ user: initialUser }) {
     } finally {
       setLoading(false);
     }
-  }, [authUser?.userId, authUser?.classIds?.length, t]); // Simplified dependencies to prevent infinite loops
+  }, [authUser?.id, t]); // Fixed: use authUser.id consistently
 
   // Initial data fetch
   useEffect(() => {
@@ -159,7 +176,7 @@ export default function Dashboard({ user: initialUser }) {
     if (autoRefresh) {
       interval = setInterval(() => {
         fetchAllData();
-      }, 7200000); // Refresh every 30 seconds
+      }, 300000); // Refresh every 5 minutes (300000ms)
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -255,7 +272,22 @@ export default function Dashboard({ user: initialUser }) {
                     <span className="truncate">{t('school')}</span>
                   </dt>
                   <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4">
-                    {user?.school?.name || t('notAssigned') || 'មិនបានកំណត់'}
+                    <div className="space-y-1">
+                      <div className="font-medium">
+                        {user?.teacher?.school?.name || user?.school?.name || t('notAssigned') || 'មិនបានកំណត់'}
+                      </div>
+                      {user?.teacher?.school?.code && (
+                        <div className="text-xs text-gray-500">
+                          {t('schoolCode') || 'School Code'}: {user.teacher.school.code}
+                        </div>
+                      )}
+                      {user?.teacher?.school?.place && (
+                        <div className="text-xs text-gray-500">
+                          {user.teacher.school.place.province?.province_name_kh || user.teacher.school.place.province?.province_name_en}, 
+                          {user.teacher.school.place.district?.district_name_kh || user.teacher.school.place.district?.district_name_en}
+                        </div>
+                      )}
+                    </div>
                   </dd>
                 </div>
               </dl>

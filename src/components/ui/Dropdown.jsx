@@ -12,7 +12,9 @@ export default function Dropdown({
   disabled = false,
   align = 'start',
   sideOffset = 4,
-  minWidth = 'min-w-[200px]'
+  minWidth = 'min-w-[200px]',
+  maxHeight = '',
+  itemsToShow = null
 }) {
   const selectedOption = options.find(option => option.value === value);
   const displayValue = selectedOption?.label || placeholder;
@@ -31,7 +33,7 @@ export default function Dropdown({
       
       <DropdownMenu.Portal>
         <DropdownMenu.Content 
-          className={`${minWidth} bg-white rounded-md shadow-lg border border-gray-200 p-1 z-[9999] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 ${contentClassName}`}
+          className={`${minWidth} bg-white rounded-md shadow-lg border border-gray-200 p-1 z-[9999] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 ${maxHeight ? maxHeight + ' overflow-y-auto' : ''} ${contentClassName}`}
           align={align}
           sideOffset={sideOffset}
         >

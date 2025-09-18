@@ -11,6 +11,8 @@ import { userService } from '../../utils/api/services/userService';
 import classService from '../../utils/api/services/classService';
 import { useStableCallback } from '../../utils/reactOptimization';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
+import SelectedStudentsManager from '../../components/students/SelectedStudentsManager';
+import useSelectedStudents from '../../hooks/useSelectedStudents';
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
 import { exportToExcel, exportToCSV, exportToPDF, getTimestampedFilename } from '../../utils/exportUtils';
@@ -91,7 +93,15 @@ export default function StudentsManagement() {
       villageId: ''
     }
   });
-  const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
+  // Use the custom hook for managing selected students
+  const {
+    selectedStudents,
+    selectedStudentsData,
+    handleSelectStudent,
+    removeStudent,
+    clearAll,
+    isSelected
+  } = useSelectedStudents();
   const [loading, setLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -621,7 +631,7 @@ export default function StudentsManagement() {
       onClose={() => setShowBulkDeleteDialog(false)}
       onConfirm={handleBulkDeleteStudents}
       title={t('moveStudentsToMaster', 'Move Students to Master Class')}
-      message={`${t('confirmMoveStudentsToMaster', 'Are you sure you want to move')} ${selectedStudentIds.size} ${t('studentsToMasterClass', 'students to the master class? This will remove them from their current classes.')}`}
+      message={`${t('confirmMoveStudentsToMaster', 'Are you sure you want to move')} ${selectedStudents.length} ${t('studentsToMasterClass', 'students to the master class? This will remove them from their current classes.')}`}
       confirmText={loading ? t('moving', 'Moving...') : t('moveToMaster', 'Move to Master')}
       confirmVariant="danger"
       cancelText={t('cancel', 'Cancel')}
@@ -737,8 +747,8 @@ export default function StudentsManagement() {
         setTimeout(async () => {
           await fetchStudents(searchTerm, true, true); // Skip loading since we're already managing it
         }, 500);
-        // Clear any selected student IDs
-        setSelectedStudentIds(new Set());
+        // Clear any selected students
+        clearAll();
       } else {
         const errorMsg = response?.data?.error || response?.error || response?.message || 'Failed to remove student from class';
         console.error('API returned unsuccessful response:', response);
@@ -768,9 +778,10 @@ export default function StudentsManagement() {
 
   // Handle bulk delete students (remove from class)
   const handleBulkDeleteStudents = async () => {
-    if (selectedStudentIds.size === 0) return;
+    if (selectedStudents.length === 0) return;
     
-    console.log('Selected Student User IDs:', Array.from(selectedStudentIds));
+    console.log('Selected Students:', selectedStudents);
+    console.log('Selected Students Data:', selectedStudentsData);
     console.log('Selected Class ID:', selectedClassId);
     console.log('Class Info:', classInfo);
     
@@ -782,27 +793,31 @@ export default function StudentsManagement() {
         throw new Error('School ID is required but not available');
       }
       
-      // Get the current list of students
-      const currentStudents = [...students];
-      console.log('Current students structure:', JSON.parse(JSON.stringify(currentStudents)));
-      
-      // Map selected student IDs to student objects
-      const studentsToRemove = currentStudents.filter(student => {
-        console.log('Checking student:', student);
-        // Use the id field which contains the numeric studentId
-        const studentId = student.id; // Use the id field which contains the numeric studentId
-        console.log('Student ID:', studentId, 'Selected IDs:', Array.from(selectedStudentIds));
-        // Check both string and number versions of the ID
-        const isSelected = selectedStudentIds.has(String(studentId)) || 
-                          selectedStudentIds.has(Number(studentId));
-        console.log('Is selected:', isSelected);
-        return isSelected;
-      });
+      // Get students to remove from the stored data
+      const studentsToRemove = selectedStudents.map(studentId => {
+        const studentData = selectedStudentsData[studentId];
+        if (!studentData) {
+          console.warn(`No data found for selected student ID: ${studentId}`);
+          // Try to find the student in the current students list as fallback
+          const fallbackStudent = students.find(s => s.id === studentId);
+          if (fallbackStudent) {
+            console.log(`Found fallback student data for ID ${studentId}:`, fallbackStudent);
+            return fallbackStudent;
+          }
+        }
+        return studentData;
+      }).filter(Boolean);
       
       console.log('Students to remove with full data:', studentsToRemove);
+      console.log('Selected students count:', selectedStudents.length);
+      console.log('Students to remove count:', studentsToRemove.length);
       
       if (studentsToRemove.length === 0) {
-        throw new Error('No matching students found for the selected IDs');
+        throw new Error(`No matching students found for the selected IDs. Selected: ${selectedStudents.length}, Found: ${studentsToRemove.length}`);
+      }
+      
+      if (studentsToRemove.length !== selectedStudents.length) {
+        console.warn(`Mismatch: Selected ${selectedStudents.length} students but only found data for ${studentsToRemove.length}`);
       }
 
       if (selectedClassId === 'all') {
@@ -912,7 +927,7 @@ export default function StudentsManagement() {
       
       // Clean up and refresh
       setShowBulkDeleteDialog(false);
-      setSelectedStudentIds(new Set()); // Clear selection
+      clearAll(); // Clear selection
       // Refresh the student list after a brief delay
       setTimeout(async () => {
         await fetchStudents(searchTerm, true, true); // Skip loading since we're already managing it
@@ -1094,37 +1109,6 @@ export default function StudentsManagement() {
     }));
   };
 
-  // Handle student selection
-  const handleStudentSelect = (studentId) => {
-    console.log('Selecting student with ID:', studentId, 'Type:', typeof studentId);
-    console.log('Current selected IDs:', Array.from(selectedStudentIds));
-    
-    setSelectedStudentIds(prev => {
-      const newSelection = new Set(prev);
-      console.log('Previous selection:', Array.from(prev));
-      
-      if (newSelection.has(studentId)) {
-        console.log('Removing student ID:', studentId);
-        newSelection.delete(studentId);
-      } else {
-        console.log('Adding student ID:', studentId);
-        newSelection.add(studentId);
-      }
-      
-      console.log('New selection:', Array.from(newSelection));
-      return newSelection;
-    });
-  };
-
-  // Handle select all students
-  const handleSelectAll = () => {
-    if (selectedStudentIds.size === students.length) {
-      setSelectedStudentIds(new Set()); // Deselect all
-    } else {
-      setSelectedStudentIds(new Set(students.map(student => student.id))); // Select all
-    }
-  };
-
   // Export handlers
   const handleExportExcel = async () => {
     try {
@@ -1183,6 +1167,20 @@ export default function StudentsManagement() {
     }
   };
 
+  // Handle select all students on current page
+  const handleSelectAll = () => {
+    if (selectedStudents.length === students.length) {
+      clearAll(); // Deselect all
+    } else {
+      // Select all current page students
+      students.forEach(student => {
+        if (!isSelected(student.id)) {
+          handleSelectStudent(student);
+        }
+      });
+    }
+  };
+
   // Define table columns
   const tableColumns = [
     {
@@ -1190,7 +1188,7 @@ export default function StudentsManagement() {
       header: (
         <input
           type="checkbox"
-          checked={selectedStudentIds.size === students.length && students.length > 0}
+          checked={selectedStudents.length === students.length && students.length > 0}
           onChange={handleSelectAll}
           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
         />
@@ -1200,8 +1198,8 @@ export default function StudentsManagement() {
       render: (student) => (
         <input
           type="checkbox"
-          checked={selectedStudentIds.has(student.id)}
-          onChange={() => handleStudentSelect(student.id)}
+          checked={isSelected(student.id)}
+          onChange={() => handleSelectStudent(student)}
           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
         />
       )
@@ -1313,8 +1311,8 @@ export default function StudentsManagement() {
         <div className="flex items-center space-x-3">
           <input
             type="checkbox"
-            checked={selectedStudentIds.has(student.id)}
-            onChange={() => handleStudentSelect(student.id)}
+            checked={isSelected(student.id)}
+            onChange={() => handleSelectStudent(student)}
             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
           />
           <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 hover:scale-110 transition-all duration-300">
@@ -1532,64 +1530,24 @@ export default function StudentsManagement() {
         </div>
 
         {/* Selected Students Display */}
-        {selectedStudentIds.size > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <div className="mb-4">
-              <h3 className="text-sm font-medium text-blue-800 mb-3">
-                សិស្សបានជ្រើសរើស ({selectedStudentIds.size}):
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {Array.from(selectedStudentIds).map(studentId => {
-                  const student = students.find(s => s.id === studentId);
-                  if (!student) return null;
-                  
-                  const studentName = student.name || 
-                    (student.firstName || student.lastName 
-                      ? `${student.firstName || ''} ${student.lastName || ''}`.trim() 
-                      : student.username || t('noName', 'No Name'));
-                  
-                  return (
-                    <span key={studentId} className="inline-flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
-                      {studentName}
-                      <button
-                        onClick={() => handleStudentSelect(studentId)}
-                        className="ml-2 flex-shrink-0 h-4 w-4 flex items-center justify-center rounded-full hover:bg-blue-200 text-blue-600 hover:text-blue-800 transition-colors"
-                        title="Remove"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-            
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-3 border-t border-blue-200">
-              <div className="text-xs text-blue-600">
-                {t('selectedStudentsActions', 'Actions for selected students')}
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  onClick={() => setSelectedStudentIds(new Set())}
-                  variant="outline"
-                  size="sm"
-                >
-                  {t('clearSelection', 'Clear Selection')}
-                </Button>
-                <Button
-                  onClick={() => setShowBulkDeleteDialog(true)}
-                  variant="danger"
-                  size="sm"
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t('moveSelectedToMaster', 'Move Selected to Master')}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        <SelectedStudentsManager
+          selectedStudents={selectedStudents}
+          selectedStudentsData={selectedStudentsData}
+          onRemoveStudent={removeStudent}
+          onClearAll={clearAll}
+          onBulkAction={(actionKey) => {
+            if (actionKey === 'moveToMaster') {
+              setShowBulkDeleteDialog(true);
+            }
+          }}
+          actions={[
+            {
+              key: 'moveToMaster',
+              label: t('moveSelectedToMaster') || 'Move Selected to Master',
+              className: 'bg-red-600 hover:bg-red-700 text-white'
+            }
+          ]}
+        />
         
         {/* Students table */}
         <FadeInSection delay={100}>

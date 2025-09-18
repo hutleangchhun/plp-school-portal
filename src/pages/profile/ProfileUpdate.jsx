@@ -125,11 +125,37 @@ export default function ProfileUpdate({ user, setUser }) {
   useEffect(() => {
     const fetchUserData = async () => {
       const startTime = performance.now();
-      console.log('🚀 Starting ProfileUpdate data fetch...');
+      console.log('🚀 ProfileUpdate: fetchUserData called at', new Date().toISOString());
       
       setDataLoading(true);
       try {
-        const userData = await api.user.getMyAccount();
+        // First try to get detailed user data with school information
+        let userData = null;
+        const authUser = (() => {
+          try {
+            const storedUser = localStorage.getItem('user');
+            return storedUser ? JSON.parse(storedUser) : null;
+          } catch (error) {
+            console.warn('Could not parse user from localStorage:', error);
+            return null;
+          }
+        })();
+        
+        // Try to get detailed user data first
+        if (authUser?.id) {
+          try {
+            const detailedResponse = await api.user.getUserByID(authUser.id);
+            userData = detailedResponse?.data || detailedResponse;
+            console.log('Detailed user data with school:', userData);
+          } catch (error) {
+            console.warn('Failed to fetch detailed user data, falling back to getMyAccount:', error);
+          }
+        }
+        
+        // Fallback to getMyAccount if detailed fetch failed
+        if (!userData) {
+          userData = await api.user.getMyAccount();
+        }
         // Debug user data structure (can be removed in production)
         if (import.meta.env.DEV) {
           console.log('=== USER DATA DEBUG ===');
@@ -187,8 +213,8 @@ export default function ProfileUpdate({ user, setUser }) {
           nationality: userData.nationality || 'Cambodian',
           roleNameEn: userData.roleNameEn || '',
           roleNameKh: userData.roleNameKh || '',
-          school_id: userData.school_id || '',
-          school: userData.school || null,
+          school_id: userData.school_id || userData.teacher?.schoolId || '',
+          school: userData.teacher?.school || userData.school || null,
           // Handle nested residence object
           residence: {
             provinceId: userData.residence?.provinceId || userData.province_id || '',
@@ -254,7 +280,7 @@ export default function ProfileUpdate({ user, setUser }) {
     };
 
     fetchUserData();
-  }, [setUser, showError, t]);
+  }, []); // Remove setUser from dependencies as it can cause infinite loops
 
   // Initialize location data when pending data is available
   useEffect(() => {
@@ -971,6 +997,8 @@ export default function ProfileUpdate({ user, setUser }) {
                             options={getResidenceProvinceOptions()}
                             placeholder={t('selectProvince')}
                             className="w-full"
+                            maxHeight="max-h-40"
+                            itemsToShow={5}
                           />
                         ) : (
                           <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
@@ -1000,6 +1028,8 @@ export default function ProfileUpdate({ user, setUser }) {
                             placeholder={t('selectDistrict')}
                             className="w-full"
                             disabled={!selectedResidenceProvince}
+                            maxHeight="max-h-40"
+                            itemsToShow={5}
                           />
                         ) : (
                           <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
@@ -1032,6 +1062,8 @@ export default function ProfileUpdate({ user, setUser }) {
                             placeholder={t('selectCommune')}
                             className="w-full"
                             disabled={!selectedResidenceDistrict}
+                            maxHeight="max-h-40"
+                            itemsToShow={5}
                           />
                         ) : (
                           <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
@@ -1061,6 +1093,8 @@ export default function ProfileUpdate({ user, setUser }) {
                             placeholder={t('selectVillage')}
                             className="w-full"
                             disabled={!selectedResidenceCommune}
+                            maxHeight="max-h-40"
+                            itemsToShow={5}
                           />
                         ) : (
                           <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
@@ -1096,6 +1130,8 @@ export default function ProfileUpdate({ user, setUser }) {
                             options={getBirthProvinceOptions()}
                             placeholder={t('selectProvince')}
                             className="w-full"
+                            maxHeight="max-h-40"
+                            itemsToShow={5}
                           />
                         ) : (
                           <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
@@ -1124,6 +1160,8 @@ export default function ProfileUpdate({ user, setUser }) {
                             placeholder={t('selectDistrict')}
                             className="w-full"
                             disabled={!selectedBirthProvince}
+                            maxHeight="max-h-40"
+                            itemsToShow={5}
                           />
                         ) : (
                           <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
@@ -1155,6 +1193,8 @@ export default function ProfileUpdate({ user, setUser }) {
                             placeholder={t('selectCommune')}
                             className="w-full"
                             disabled={!selectedBirthDistrict}
+                            maxHeight="max-h-40"
+                            itemsToShow={5}
                           />
                         ) : (
                           <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
@@ -1183,6 +1223,8 @@ export default function ProfileUpdate({ user, setUser }) {
                             placeholder={t('selectVillage')}
                             className="w-full"
                             disabled={!selectedBirthCommune}
+                            maxHeight="max-h-40"
+                            itemsToShow={5}
                           />
                         ) : (
                           <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
@@ -1198,7 +1240,7 @@ export default function ProfileUpdate({ user, setUser }) {
                 {/* School Information Section */}
                 <div className="border-t pt-4 sm:pt-6">
                   <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('schoolInformation') || 'School Information'}</h4>
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div className="space-y-4">
                     <div>
                       <label htmlFor="school_name" className="block text-sm font-medium text-gray-700">
                         {t('schoolName') || 'School Name'}
@@ -1213,29 +1255,77 @@ export default function ProfileUpdate({ user, setUser }) {
                           id="school_name"
                           readOnly
                           className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
-                          value={formData.school?.name || ''}
+                          value={formData.school?.name || t('notAssigned') || 'មិនបានកំណត់'}
                         />
                       </div>
                     </div>
 
-                    <div>
-                      <label htmlFor="school_code" className="block text-sm font-medium text-gray-700">
-                        {t('schoolCode') || 'School Code'}
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Building className="h-4 w-4 text-gray-400" />
+                    {formData.school && (
+                      <>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div>
+                            <label htmlFor="school_code" className="block text-sm font-medium text-gray-700">
+                              {t('schoolCode') || 'School Code'}
+                            </label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Building className="h-4 w-4 text-gray-400" />
+                              </div>
+                              <input
+                                type="text"
+                                name="school_code"
+                                id="school_code"
+                                readOnly
+                                className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                                value={formData.school?.code || '-'}
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label htmlFor="school_id" className="block text-sm font-medium text-gray-700">
+                              {t('schoolId') || 'School ID'}
+                            </label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Building className="h-4 w-4 text-gray-400" />
+                              </div>
+                              <input
+                                type="text"
+                                name="school_id"
+                                id="school_id"
+                                readOnly
+                                className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                                value={formData.school?.schoolId || formData.school_id || '-'}
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <input
-                          type="text"
-                          name="school_code"
-                          id="school_code"
-                          readOnly
-                          className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
-                          value={formData.school?.code || ''}
-                        />
-                      </div>
-                    </div>
+
+                        {formData.school?.place && (
+                          <div>
+                            <label htmlFor="school_location" className="block text-sm font-medium text-gray-700">
+                              {t('schoolLocation') || 'School Location'}
+                            </label>
+                            <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                              <div className="space-y-1">
+                                <div className="font-medium">
+                                  {formData.school.place.province?.province_name_kh || formData.school.place.province?.province_name_en || '-'}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {t('district') || 'District'}: {formData.school.place.district?.district_name_kh || formData.school.place.district?.district_name_en || '-'}
+                                </div>
+                                {formData.school.place.commune && (
+                                  <div className="text-sm text-gray-600">
+                                    {t('commune') || 'Commune'}: {formData.school.place.commune.commune_name_kh || formData.school.place.commune.commune_name_en || '-'}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
 
