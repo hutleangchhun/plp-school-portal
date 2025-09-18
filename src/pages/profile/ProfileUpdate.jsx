@@ -69,8 +69,10 @@ export default function ProfileUpdate({ user, setUser }) {
   // Store pending location data for setting initial values
   const [pendingResidenceData, setPendingResidenceData] = useState(null);
   const [pendingBirthData, setPendingBirthData] = useState(null);
+  const [pendingSchoolData, setPendingSchoolData] = useState(null);
   const [residenceInitialized, setResidenceInitialized] = useState(false);
   const [birthInitialized, setBirthInitialized] = useState(false);
+  const [schoolInitialized, setSchoolInitialized] = useState(false);
   const [locationDataLoading, setLocationDataLoading] = useState(false);
 
   // Initialize location data hooks for residence
@@ -106,6 +108,25 @@ export default function ProfileUpdate({ user, setUser }) {
     getVillageOptions: getBirthVillageOptions,
     setInitialValues: setBirthInitialValues
   } = useLocationData();
+
+  // Initialize location data hooks for school location
+  const {
+    selectedProvince: selectedSchoolProvince,
+    selectedDistrict: selectedSchoolDistrict,
+    selectedCommune: selectedSchoolCommune,
+    handleProvinceChange: handleSchoolProvinceChange,
+    handleDistrictChange: handleSchoolDistrictChange,
+    handleCommuneChange: handleSchoolCommuneChange,
+    getProvinceOptions: getSchoolProvinceOptions,
+    getDistrictOptions: getSchoolDistrictOptions,
+    getCommuneOptions: getSchoolCommuneOptions,
+    setInitialValues: setSchoolInitialValues
+  } = useLocationData();
+
+  // School-related state
+  const [schools, setSchools] = useState([]);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
+  const [selectedSchoolId, setSelectedSchoolId] = useState('');
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -256,13 +277,29 @@ export default function ProfileUpdate({ user, setUser }) {
           communeId: birthData.communeId,
           villageId: birthData.villageId
         } : residenceInitialData;
+
+        // Get school location data from the school object
+        const schoolData = userData.teacher?.school || userData.school || {};
+        const schoolPlace = schoolData.place || {};
+        const schoolInitialData = schoolPlace.provinceId || schoolPlace.districtId || schoolPlace.communeId ? {
+          provinceId: schoolPlace.provinceId,
+          districtId: schoolPlace.districtId,
+          communeId: schoolPlace.communeId
+        } : null;
         
         setPendingResidenceData(residenceInitialData);
         setPendingBirthData(birthInitialData);
+        setPendingSchoolData(schoolInitialData);
+        
+        // Set selected school ID if available
+        if (schoolData.schoolId) {
+          setSelectedSchoolId(schoolData.schoolId.toString());
+        }
         
         // Reset initialization flags when new user data is loaded
         setResidenceInitialized(false);
         setBirthInitialized(false);
+        setSchoolInitialized(false);
         
         // Also update the user context if needed
         if (setUser) {
@@ -331,6 +368,31 @@ export default function ProfileUpdate({ user, setUser }) {
     }
   }, [pendingBirthData, birthInitialized, setBirthInitialValues]);
 
+  // School location initialization
+  useEffect(() => {
+    if (!schoolInitialized && pendingSchoolData) {
+      const timer = setTimeout(() => {
+        console.log('🏫 Setting school data:', pendingSchoolData);
+        setLocationDataLoading(true);
+        
+        setSchoolInitialValues(pendingSchoolData)
+          .then(() => {
+            console.log('✅ School data set successfully');
+          })
+          .catch(error => {
+            console.error('❌ Error setting school initial values:', error);
+          })
+          .finally(() => {
+            setLocationDataLoading(false);
+            setSchoolInitialized(true);
+            setPendingSchoolData(null);
+          });
+      }, 1000); // Wait 1s for provinces to load
+
+      return () => clearTimeout(timer);
+    }
+  }, [pendingSchoolData, schoolInitialized, setSchoolInitialValues]);
+
   // Fallback timeout to ensure initialization happens even if there are issues
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -344,10 +406,15 @@ export default function ProfileUpdate({ user, setUser }) {
         setBirthInitialized(true);
         setPendingBirthData(null);
       }
+      if (!schoolInitialized && pendingSchoolData) {
+        console.log('Fallback: Forcing school initialization');
+        setSchoolInitialized(true);
+        setPendingSchoolData(null);
+      }
     }, 5000); // Reduced to 5 second fallback
 
     return () => clearTimeout(timeout);
-  }, [residenceInitialized, birthInitialized, pendingResidenceData, pendingBirthData]);
+  }, [residenceInitialized, birthInitialized, schoolInitialized, pendingResidenceData, pendingBirthData, pendingSchoolData]);
 
   const handleViewPicture = () => {
     setShowImageModal(true);
@@ -362,6 +429,51 @@ export default function ProfileUpdate({ user, setUser }) {
   const handleEditToggle = () => {
     setIsEditMode(!isEditMode);
   };
+
+  // Fetch schools by commune ID
+  const fetchSchoolsByCommune = useStableCallback(async (communeId) => {
+    if (!communeId) {
+      setSchools([]);
+      return;
+    }
+
+    try {
+      setSchoolsLoading(true);
+      console.log('Fetching schools for commune:', communeId);
+      
+      const response = await fetch(`http://157.10.73.52:8085/api/v1/schools/commune/${communeId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch schools: ${response.status}`);
+      }
+
+      const schoolsData = await response.json();
+      console.log('Schools fetched:', schoolsData);
+      
+      setSchools(schoolsData || []);
+    } catch (error) {
+      console.error('Error fetching schools:', error);
+      showError(t('failedToLoadSchools', 'Failed to load schools'));
+      setSchools([]);
+    } finally {
+      setSchoolsLoading(false);
+    }
+  });
+
+  // Fetch schools when school commune changes
+  useEffect(() => {
+    if (selectedSchoolCommune) {
+      fetchSchoolsByCommune(selectedSchoolCommune);
+    } else {
+      setSchools([]);
+    }
+  }, [selectedSchoolCommune, fetchSchoolsByCommune]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1291,91 +1403,163 @@ export default function ProfileUpdate({ user, setUser }) {
                 {/* School Information Section */}
                 <div className="border-t pt-4 sm:pt-6">
                   <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('schoolInformation') || 'School Information'}</h4>
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="school_name" className="block text-sm font-medium text-gray-700">
-                        {t('schoolName') || 'School Name'}
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Building className="h-4 w-4 text-gray-400" />
+                  
+                  {/* School Location Selection */}
+                  <div className="space-y-4 mb-6">
+                    <h5 className="text-sm font-medium text-gray-700">{t('schoolLocation') || 'School Location'}</h5>
+                    
+                    {/* Province and District */}
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="school-province" className="block text-sm font-medium text-gray-700">
+                          {t('province') || 'Province'}
+                        </label>
+                        <div className="mt-1">
+                          {isEditMode ? (
+                            <Dropdown
+                              value={selectedSchoolProvince}
+                              onValueChange={(value) => {
+                                handleSchoolProvinceChange(value);
+                                setFormData(prev => ({ 
+                                  ...prev, 
+                                  school: null,
+                                  school_id: ''
+                                }));
+                                setSelectedSchoolId('');
+                              }}
+                              options={getSchoolProvinceOptions()}
+                              placeholder={t('selectProvince')}
+                              className="w-full"
+                              maxHeight="max-h-40"
+                              itemsToShow={5}
+                            />
+                          ) : (
+                            <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                              {getSchoolProvinceOptions().find(p => p.value === selectedSchoolProvince)?.label || '-'}
+                            </div>
+                          )}
                         </div>
-                        <input
-                          type="text"
-                          name="school_name"
-                          id="school_name"
-                          readOnly
-                          className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
-                          value={formData.school?.name || t('notAssigned') || 'មិនបានកំណត់'}
-                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="school-district" className="block text-sm font-medium text-gray-700">
+                          {t('district') || 'District'}
+                        </label>
+                        <div className="mt-1">
+                          {isEditMode ? (
+                            <Dropdown
+                              value={selectedSchoolDistrict}
+                              onValueChange={(value) => {
+                                handleSchoolDistrictChange(value);
+                                setFormData(prev => ({ 
+                                  ...prev, 
+                                  school: null,
+                                  school_id: ''
+                                }));
+                                setSelectedSchoolId('');
+                              }}
+                              options={getSchoolDistrictOptions()}
+                              placeholder={t('selectDistrict')}
+                              className="w-full"
+                              disabled={!selectedSchoolProvince}
+                              maxHeight="max-h-40"
+                              itemsToShow={5}
+                            />
+                          ) : (
+                            <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                              {getSchoolDistrictOptions().find(d => d.value === selectedSchoolDistrict)?.label || '-'}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {formData.school && (
-                      <>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                          <div>
-                            <label htmlFor="school_code" className="block text-sm font-medium text-gray-700">
-                              {t('schoolCode') || 'School Code'}
-                            </label>
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Building className="h-4 w-4 text-gray-400" />
-                              </div>
-                              <input
-                                type="text"
-                                name="school_code"
-                                id="school_code"
-                                readOnly
-                                className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
-                                value={formData.school?.code || '-'}
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label htmlFor="school_id" className="block text-sm font-medium text-gray-700">
-                              {t('schoolId') || 'School ID'}
-                            </label>
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Building className="h-4 w-4 text-gray-400" />
-                              </div>
-                              <input
-                                type="text"
-                                name="school_id"
-                                id="school_id"
-                                readOnly
-                                className="mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
-                                value={formData.school?.schoolId || formData.school_id || '-'}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {formData.school?.place && (
-                          <div>
-                            <label htmlFor="school_location" className="block text-sm font-medium text-gray-700">
-                              {t('schoolLocation') || 'School Location'}
-                            </label>
+                    {/* Commune */}
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="school-commune" className="block text-sm font-medium text-gray-700">
+                          {t('commune') || 'Commune'}
+                        </label>
+                        <div className="mt-1">
+                          {isEditMode ? (
+                            <Dropdown
+                              value={selectedSchoolCommune}
+                              onValueChange={(value) => {
+                                handleSchoolCommuneChange(value);
+                                setFormData(prev => ({ 
+                                  ...prev, 
+                                  school: null,
+                                  school_id: ''
+                                }));
+                                setSelectedSchoolId('');
+                              }}
+                              options={getSchoolCommuneOptions()}
+                              placeholder={t('selectCommune')}
+                              className="w-full"
+                              disabled={!selectedSchoolDistrict}
+                              maxHeight="max-h-40"
+                              itemsToShow={5}
+                            />
+                          ) : (
                             <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                              <div className="space-y-1">
-                                <div className="font-medium">
-                                  {formData.school.place.province?.province_name_kh || formData.school.place.province?.province_name_en || '-'}
-                                </div>
-                                <div className="text-sm text-gray-600">
-                                  {t('district') || 'District'}: {formData.school.place.district?.district_name_kh || formData.school.place.district?.district_name_en || '-'}
-                                </div>
-                                {formData.school.place.commune && (
-                                  <div className="text-sm text-gray-600">
-                                    {t('commune') || 'Commune'}: {formData.school.place.commune.commune_name_kh || formData.school.place.commune.commune_name_en || '-'}
-                                  </div>
-                                )}
-                              </div>
+                              {getSchoolCommuneOptions().find(c => c.value === selectedSchoolCommune)?.label || '-'}
                             </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* School Selection */}
+                  <div>
+                    <label htmlFor="school_name" className="block text-sm font-medium text-gray-700">
+                      {t('schoolName') || 'School Name'}
+                    </label>
+                    <div className="mt-1">
+                      {isEditMode ? (
+                        schoolsLoading ? (
+                          <div className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span className="text-sm text-gray-600">Loading schools...</span>
                           </div>
-                        )}
-                      </>
+                        ) : (
+                          <Dropdown
+                            value={selectedSchoolId}
+                            onValueChange={(value) => {
+                              setSelectedSchoolId(value);
+                              const selectedSchool = schools.find(school => school.schoolId.toString() === value);
+                              if (selectedSchool) {
+                                setFormData(prev => ({ 
+                                  ...prev, 
+                                  school: selectedSchool,
+                                  school_id: selectedSchool.schoolId
+                                }));
+                              }
+                            }}
+                            options={[
+                              { value: '', label: t('selectSchool') || 'Select School' },
+                              ...schools.map(school => ({
+                                value: school.schoolId.toString(),
+                                label: school.name
+                              }))
+                            ]}
+                            placeholder={schools.length > 0 ? (t('selectSchool') || 'Select School') : (t('noSchoolsAvailable') || 'No schools available')}
+                            className="w-full"
+                            disabled={!selectedSchoolCommune || schools.length === 0}
+                            maxHeight="max-h-40"
+                            itemsToShow={5}
+                          />
+                        )
+                      ) : (
+                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                          {formData.school?.name || t('notAssigned') || 'មិនបានកំណត់'}
+                        </div>
+                      )}
+                    </div>
+                    {!selectedSchoolCommune && isEditMode && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        {t('selectCommuneFirst') || 'Please select a commune first to see available schools'}
+                      </p>
                     )}
                   </div>
                 </div>

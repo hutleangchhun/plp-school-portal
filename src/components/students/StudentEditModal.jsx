@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Users, User2, Building, Mail, Phone, Eye, Upload, Lock, X } from 'lucide-react';
+import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
@@ -465,8 +465,7 @@ const StudentEditModal = ({
                   options={[
                     { value: '', label: t('selectGender', 'Select gender') },
                     { value: 'MALE', label: t('male', 'Male') },
-                    { value: 'FEMALE', label: t('female', 'Female') },
-                    { value: 'OTHER', label: t('other', 'Other') }
+                    { value: 'FEMALE', label: t('female', 'Female') }
                   ]}
                   value={editForm.gender}
                   onValueChange={(value) => handleFormChange('gender', value)}
