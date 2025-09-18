@@ -16,6 +16,7 @@ export const en = {
   backToDashboard: 'Back to Dashboard',
   profile: 'Profile',
   logout: 'Logout',
+
   
   // Profile
   profileInformation: 'Profile Information',
@@ -118,14 +119,15 @@ export const en = {
   welcome: 'Welcome',
   years: 'Years',
   location: 'Location',
+  availableSeats: 'Available Seat',
 
-  // Student Management
-  addStudent: 'Add Student',
-  editStudent: 'Edit Student',
-  errorFetchingStudents: 'Error fetching students',
-  manageStudentRecords: 'Manage Student',
-  promote: 'Promote',
-  promoteStudents: 'Promote Students',
+    // Student Management
+    addStudent: 'Add Student',
+    editStudent: 'Edit Student',
+    errorFetchingStudents: 'Error fetching students',
+    manageStudentRecords: 'Manage Student',
+    promote: 'Promote',
+    promoteStudents: 'Promote Students',
   promoteStudentsToNextGrade: 'Promote students to the next grade level',
   selectStudents: 'Please select students to promote',
   selectTargetGrade: 'Please select target grade',

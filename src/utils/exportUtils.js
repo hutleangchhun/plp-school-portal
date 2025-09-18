@@ -3,41 +3,200 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
+import { userService } from './api/services/userService';
 
-export const exportToExcel = (data, filename = 'students_data.xlsx', t = null) => {
+// Resolve a student's class id and name from various possible shapes
+const getStudentClassInfo = (student) => {
+  const cls = student?.class || {};
+  const id = student?.class_id || cls.id || student?.classId || null;
+  const name = student?.class_name || cls.name || student?.className || '';
+  return { id, name };
+};
+
+// Determine if a student matches a provided class filter
+// classFilter can be: undefined|null (no filter), number|string (id or name), or { id?, name? }
+const matchesClassFilter = (student, classFilter) => {
+  if (!classFilter && classFilter !== 0) return true;
+  const { id, name } = getStudentClassInfo(student);
+
+  // Primitive filter: try id then name
+  if (typeof classFilter === 'number') {
+    return id != null ? String(id) === String(classFilter) : false;
+  }
+  if (typeof classFilter === 'string') {
+    const cf = classFilter.trim().toLowerCase();
+    // Match by id or by name
+    if (id != null && String(id).toLowerCase() === cf) return true;
+    return (name || '').trim().toLowerCase() === cf;
+  }
+
+  // Object filter
+  if (typeof classFilter === 'object') {
+    const wantId = classFilter.id;
+    const wantName = classFilter.name;
+    let ok = true;
+    if (wantId !== undefined && wantId !== null) {
+      ok = ok && (id != null ? String(id) === String(wantId) : false);
+    }
+    if (wantName) {
+      ok = ok && ((name || '').trim().toLowerCase() === String(wantName).trim().toLowerCase());
+    }
+    return ok;
+  }
+
+  return true;
+};
+
+// Helper to safely get nested value by a dot path
+const getByPath = (obj, path) => {
+  if (!obj || !path) return undefined;
+  const parts = String(path).split('.');
+  let cur = obj;
+  for (const p of parts) {
+    if (cur && Object.prototype.hasOwnProperty.call(cur, p)) {
+      cur = cur[p];
+    } else {
+      return undefined;
+    }
+  }
+  return cur;
+};
+
+// Quick heuristic to detect hash-looking values (bcrypt/argon2/scrypt/long hex)
+const looksLikeHash = (val) => {
+  if (!val || typeof val !== 'string') return false;
+  const s = val.trim();
+  if (!s) return false;
+  if (s.startsWith('$2a$') || s.startsWith('$2b$') || s.startsWith('$2y$')) return true; // bcrypt
+  if (s.startsWith('$argon2')) return true; // argon2
+  if (s.startsWith('$scrypt$')) return true; // scrypt
+  if (s.length > 40 && /^[a-fA-F0-9+/=]+$/.test(s)) return true; // long base64/hex-like
+  return false;
+};
+
+// Resolve password from various possible keys returned by APIs/forms
+const getStudentPassword = (student, options = {}) => {
+  const { passwordField, preferPlain = false, allowHash = true, passwordFallbackKey } = options;
+
+  // Prefer explicit path if provided, supports nested like 'user.password_hash'
+  if (passwordField) {
+    const custom = getByPath(student, passwordField);
+    if (custom && (!preferPlain || !looksLikeHash(custom))) return custom;
+  }
+
+  // Prefer plain-looking fields first
+  const plainCandidates = [
+    student?.password,
+    student?.tempPassword,
+    student?.newPassword,
+    student?.initialPassword,
+    student?.user?.password,
+    student?.user?.tempPassword
+  ];
+  for (const c of plainCandidates) {
+    if (c && (!preferPlain || !looksLikeHash(c))) return c;
+  }
+
+  // Then consider hash fields only if allowed
+  if (allowHash) {
+    const hashCandidates = [
+      student?.password_hash,
+      student?.passwordHash,
+      student?.user?.password_hash,
+      student?.user?.passwordHash
+    ];
+    for (const h of hashCandidates) {
+      if (h) return h;
+    }
+  }
+
+  // Fallback to another field (e.g., username or phone) if requested
+  if (passwordFallbackKey) {
+    const fb = getByPath(student, passwordFallbackKey);
+    if (fb) return fb;
+  }
+
+  return '';
+};
+
+// Enrich students by fetching each user's details for password
+export const enrichStudentsWithPasswords = async (students, options = {}) => {
+  const { passwordField = 'password_hash', concurrency = 6 } = options;
+  if (!Array.isArray(students) || students.length === 0) return [];
+
+  const result = new Array(students.length);
+  let index = 0;
+
+  const worker = async () => {
+    while (true) {
+      const i = index++;
+      if (i >= students.length) break;
+      const s = students[i] || {};
+      const userId = s.userId || s.user_id || s.id || s.user?.id || s.user?.user_id;
+      let enriched = { ...s };
+      if (userId) {
+        try {
+          const resp = await userService.getUserByID(userId);
+          const userData = resp?.data || resp || {};
+          // Attach both in root and nested for resolver compatibility
+          if (userData) {
+            if (userData.password_hash !== undefined) enriched.password_hash = userData.password_hash;
+            if (!enriched.user || typeof enriched.user !== 'object') enriched.user = {};
+            if (userData.password_hash !== undefined) enriched.user.password_hash = userData.password_hash;
+            if (userData.password !== undefined) enriched.user.password = userData.password;
+          }
+        } catch (e) {
+          console.warn('Failed to enrich user password for id', userId, e);
+        }
+      }
+      // Ensure resolver sees desired field
+      if (!getByPath(enriched, passwordField)) {
+        // no-op; leave as is; export will fallback
+      }
+      result[i] = enriched;
+    }
+  };
+
+  const workers = Array.from({ length: Math.min(concurrency, students.length) }, () => worker());
+  await Promise.all(workers);
+  return result;
+};
+
+export const exportToExcel = (data, filename = 'students_data.xlsx', t = null, options = {}) => {
   try {
+    const { classFilter } = options;
+
     // Use Khmer translations if t function is provided
     const headers = {
-      name: t ? t('name') : 'Name',
-      username: t ? t('username') : 'Username', 
-      email: t ? t('email') : 'Email',
-      phone: t ? t('phone') : 'Phone',
-      status: t ? t('status') : 'Status',
-      dateAdded: t ? t('date') : 'Date Added'
+      username: t ? t('username') : 'Username',
+      fullName: t ? t('fullName') : 'Full Name',
+      password: t ? t('password') : 'Password',
+      phone: t ? t('phone') : 'Phone Number',
+      class: t ? t('class') : 'Class'
     };
-    
-    const statusLabels = {
-      active: t ? t('active') : 'Active',
-      inactive: t ? t('inactive') : 'Inactive'
-    };
-    
-    // Transform data to a more readable format
-    const transformedData = data.map(student => ({
-      [headers.name]: student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.username || 'N/A',
-      [headers.username]: student.username || 'N/A',
-      [headers.email]: student.email || 'N/A',
-      [headers.phone]: student.phone || 'N/A',
-      [headers.status]: student.isActive ? statusLabels.active : statusLabels.inactive,
-      [headers.dateAdded]: student.createdAt ? new Date(student.createdAt).toLocaleDateString() : 'N/A'
-    }));
+
+    // Filter by class if requested
+    const filteredData = Array.isArray(data) ? data.filter((s) => matchesClassFilter(s, classFilter)) : [];
+
+    // Transform data to only requested fields
+    const transformedData = filteredData.map(student => {
+      const classInfo = getStudentClassInfo(student);
+      return {
+        [headers.username]: student.username || 'N/A',
+        [headers.fullName]: student.name || `${student.firstName || student.first_name || ''} ${student.lastName || student.last_name || ''}`.trim() || 'N/A',
+        [headers.password]: getStudentPassword(student, options) || 'N/A',
+        [headers.phone]: student.phone || 'N/A',
+        [headers.class]: classInfo.name || (classInfo.id != null ? String(classInfo.id) : 'N/A')
+      };
+    });
 
     // Create a new workbook
     const ws = XLSX.utils.json_to_sheet(transformedData);
     const wb = XLSX.utils.book_new();
-    
+
     // Add the worksheet to the workbook
     XLSX.utils.book_append_sheet(wb, ws, 'Students');
-    
+
     // Auto-size columns
     const range = XLSX.utils.decode_range(ws['!ref']);
     const colWidths = [];
@@ -56,7 +215,7 @@ export const exportToExcel = (data, filename = 'students_data.xlsx', t = null) =
       colWidths.push({ wch: Math.min(maxWidth + 2, 50) });
     }
     ws['!cols'] = colWidths;
-    
+
     // Write the file
     XLSX.writeFile(wb, filename);
     return true;
@@ -66,44 +225,46 @@ export const exportToExcel = (data, filename = 'students_data.xlsx', t = null) =
   }
 };
 
-export const exportToCSV = (data, filename = 'students_data.csv', t = null) => {
+export const exportToCSV = (data, filename = 'students_data.csv', t = null, options = {}) => {
   try {
+    const { classFilter } = options;
+
     // Use Khmer translations if t function is provided
     const headers = {
-      name: t ? t('name') : 'Name',
-      username: t ? t('username') : 'Username', 
-      email: t ? t('email') : 'Email',
-      phone: t ? t('phone') : 'Phone',
-      status: t ? t('status') : 'Status',
-      dateAdded: t ? t('date') : 'Date Added'
+      username: t ? t('username') : 'Username',
+      fullName: t ? t('fullName') : 'Full Name',
+      password: t ? t('password') : 'Password',
+      phone: t ? t('phone') : 'Phone Number',
+      class: t ? t('class') : 'Class'
     };
-    
-    const statusLabels = {
-      active: t ? t('active') : 'Active',
-      inactive: t ? t('inactive') : 'Inactive'
-    };
-    
-    // Transform data to a more readable format
-    const transformedData = data.map(student => ({
-      [headers.name]: student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.username || 'N/A',
-      [headers.username]: student.username || 'N/A',
-      [headers.email]: student.email || 'N/A',
-      [headers.phone]: student.phone || 'N/A',
-      [headers.status]: student.isActive ? statusLabels.active : statusLabels.inactive,
-      [headers.dateAdded]: student.createdAt ? new Date(student.createdAt).toLocaleDateString() : 'N/A'
-    }));
+
+    // Filter by class if requested
+    const filteredData = Array.isArray(data) ? data.filter((s) => matchesClassFilter(s, classFilter)) : [];
+
+    // Transform data to only requested fields
+    const transformedData = filteredData.map(student => {
+      const classInfo = getStudentClassInfo(student);
+      return {
+        [headers.username]: student.username || 'N/A',
+        [headers.fullName]: student.name || `${student.firstName || student.first_name || ''} ${student.lastName || student.last_name || ''}`.trim() || 'N/A',
+        [headers.password]: getStudentPassword(student, options) || 'N/A',
+        [headers.phone]: student.phone || 'N/A',
+        [headers.class]: classInfo.name || (classInfo.id != null ? String(classInfo.id) : 'N/A')
+      };
+    });
 
     // Convert to CSV
     const csvHeaders = Object.keys(transformedData[0] || {});
     const csvContent = [
-      csvHeaders.join(','), // Header row
+      csvHeaders.join(','),
       ...transformedData.map(row => 
         csvHeaders.map(header => {
           const value = row[header];
           // Escape commas and quotes in CSV
-          return typeof value === 'string' && (value.includes(',') || value.includes('"'))
-            ? `"${value.replace(/"/g, '""')}"`
-            : value;
+          const s = value == null ? '' : String(value);
+          return (s.includes(',') || s.includes('"') || s.includes('\n'))
+            ? `"${s.replace(/"/g, '""')}"`
+            : s;
         }).join(',')
       )
     ].join('\n');
@@ -118,8 +279,10 @@ export const exportToCSV = (data, filename = 'students_data.csv', t = null) => {
   }
 };
 
-export const exportToPDF = async (data, classInfo, filename = 'students_data.pdf', t = null) => {
+export const exportToPDF = async (data, classInfo, filename = 'students_data.pdf', t = null, options = {}) => {
   try {
+    const { classFilter } = options;
+
     // Use Khmer translations if t function is provided
     const labels = {
       title: t ? t('studentManagementReport') : 'Student Management Report',
@@ -128,16 +291,22 @@ export const exportToPDF = async (data, classInfo, filename = 'students_data.pdf
       section: t ? t('section') : 'Section',
       academicYear: t ? t('academicYear') : 'Academic Year',
       generated: t ? t('generated') : 'Generated',
-      name: t ? t('name') : 'Name',
       username: t ? t('username') : 'Username',
-      email: t ? t('email') : 'Email',
+      fullName: t ? t('fullName') : 'Full Name',
+      password: t ? t('password') : 'Password',
       phone: t ? t('phone') : 'Phone',
       status: t ? t('status') : 'Status',
       totalStudents: t ? t('totalStudents') : 'Total Students',
       active: t ? t('active') : 'Active',
       inactive: t ? t('inactive') : 'Inactive'
     };
-    
+
+    // Prefer explicit classFilter, else derive from provided classInfo for filtering
+    const effectiveClassFilter = classFilter || (classInfo ? { id: classInfo.classId || classInfo.id, name: classInfo.name } : undefined);
+
+    // Filter by class if requested
+    const filteredData = Array.isArray(data) ? data.filter((s) => matchesClassFilter(s, effectiveClassFilter)) : [];
+
     // Create a temporary HTML element for rendering
     const tempDiv = document.createElement('div');
     tempDiv.style.position = 'absolute';
@@ -147,7 +316,7 @@ export const exportToPDF = async (data, classInfo, filename = 'students_data.pdf
     tempDiv.style.backgroundColor = 'white';
     tempDiv.style.padding = '20px';
     tempDiv.style.fontFamily = 'Hanuman, Khmer UI, Noto Sans Khmer, Arial Unicode MS, Arial, sans-serif';
-    
+
     // Create HTML content with proper Unicode support
     const htmlContent = `
       <div style="font-family: 'Hanuman', 'Khmer UI', 'Noto Sans Khmer', 'Arial Unicode MS', 'Arial', sans-serif; padding: 20px; background: white;">
@@ -169,31 +338,30 @@ export const exportToPDF = async (data, classInfo, filename = 'students_data.pdf
         <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
           <thead>
             <tr style="background-color: #3b82f6; color: white;">
-              <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">${labels.name}</th>
               <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">${labels.username}</th>
-              <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">${labels.email}</th>
+              <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">${labels.fullName}</th>
+              <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">${labels.password}</th>
               <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">${labels.phone}</th>
-              <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">${labels.status}</th>
+              <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">${labels.class}</th>
             </tr>
           </thead>
           <tbody>
-            ${data.map((student, index) => {
-              const name = student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.username || 'N/A';
+            ${filteredData.map((student, index) => {
               const username = student.username || 'N/A';
-              const email = student.email || 'N/A';
+              const fullName = student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'N/A';
+              const password = getStudentPassword(student, options) || 'N/A';
               const phone = student.phone || 'N/A';
-              const status = student.isActive ? labels.active : labels.inactive;
+              const classObj = getStudentClassInfo(student);
+              const className = classObj.name || (classObj.id != null ? String(classObj.id) : 'N/A');
               const bgColor = index % 2 === 0 ? '#f9fafb' : 'white';
               
               return `
                 <tr style="background-color: ${bgColor};">
-                  <td style="border: 1px solid #ddd; padding: 8px;">${name}</td>
                   <td style="border: 1px solid #ddd; padding: 8px;">${username}</td>
-                  <td style="border: 1px solid #ddd; padding: 8px;">${email}</td>
+                  <td style="border: 1px solid #ddd; padding: 8px;">${fullName}</td>
+                  <td style="border: 1px solid #ddd; padding: 8px;">${password}</td>
                   <td style="border: 1px solid #ddd; padding: 8px;">${phone}</td>
-                  <td style="border: 1px solid #ddd; padding: 8px;">
-                    <span style="color: ${student.isActive ? '#10b981' : '#6b7280'};">${status}</span>
-                  </td>
+                  <td style="border: 1px solid #ddd; padding: 8px;">${className}</td>
                 </tr>
               `;
             }).join('')}
@@ -201,7 +369,7 @@ export const exportToPDF = async (data, classInfo, filename = 'students_data.pdf
         </table>
         
         <div style="margin-top: 20px; font-size: 12px; color: #6b7280;">
-          <p><strong>${labels.totalStudents}:</strong> ${data.length}</p>
+          <p><strong>${labels.totalStudents}:</strong> ${filteredData.length}</p>
         </div>
       </div>
     `;
@@ -242,6 +410,22 @@ export const exportToPDF = async (data, classInfo, filename = 'students_data.pdf
     console.error('Error exporting to PDF:', error);
     throw new Error('Failed to export to PDF');
   }
+};
+
+// Async wrappers to enrich then export
+export const prepareAndExportExcel = async (rows, filename = 'students_data.xlsx', t = null, options = {}) => {
+  const enriched = await enrichStudentsWithPasswords(rows, options);
+  return exportToExcel(enriched, filename, t, options);
+};
+
+export const prepareAndExportCSV = async (rows, filename = 'students_data.csv', t = null, options = {}) => {
+  const enriched = await enrichStudentsWithPasswords(rows, options);
+  return exportToCSV(enriched, filename, t, options);
+};
+
+export const prepareAndExportPDF = async (rows, classInfo, filename = 'students_data.pdf', t = null, options = {}) => {
+  const enriched = await enrichStudentsWithPasswords(rows, options);
+  return exportToPDF(enriched, classInfo, filename, t, options);
 };
 
 // Helper function to get current timestamp for filenames

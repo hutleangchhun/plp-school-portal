@@ -15,7 +15,7 @@ import SelectedStudentsManager from '../../components/students/SelectedStudentsM
 import useSelectedStudents from '../../hooks/useSelectedStudents';
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
-import { exportToExcel, exportToCSV, exportToPDF, getTimestampedFilename } from '../../utils/exportUtils';
+import { prepareAndExportExcel, prepareAndExportCSV, prepareAndExportPDF, getTimestampedFilename } from '../../utils/exportUtils';
 import StudentEditModal from '../../components/students/StudentEditModal';
 
 /**
@@ -872,7 +872,15 @@ export default function StudentsManagement() {
         selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data', 
         'xlsx'
       );
-      exportToExcel(students, filename, t);
+      await prepareAndExportExcel(
+        students,
+        filename,
+        t,
+        {
+          classFilter: selectedClass ? { id: selectedClass.classId, name: selectedClass.name } : undefined,
+          passwordField: 'password_hash'
+        }
+      );
       showSuccess(t('exportSuccess', 'Data exported successfully'));
       setShowExportDropdown(false);
     } catch (error) {
@@ -890,7 +898,15 @@ export default function StudentsManagement() {
         selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data', 
         'csv'
       );
-      exportToCSV(students, filename, t);
+      await prepareAndExportCSV(
+        students,
+        filename,
+        t,
+        {
+          classFilter: selectedClass ? { id: selectedClass.classId, name: selectedClass.name } : undefined,
+          passwordField: 'password_hash'
+        }
+      );
       showSuccess(t('exportSuccess', 'Data exported successfully'));
       setShowExportDropdown(false);
     } catch (error) {
@@ -909,7 +925,16 @@ export default function StudentsManagement() {
         selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data', 
         'pdf'
       );
-      await exportToPDF(students, selectedClass, filename, t);
+      await prepareAndExportPDF(
+        students,
+        selectedClass,
+        filename,
+        t,
+        {
+          classFilter: selectedClass ? { id: selectedClass.classId, name: selectedClass.name } : undefined,
+          passwordField: 'password_hash'
+        }
+      );
       showSuccess(t('exportSuccess', 'Data exported successfully'));
       setShowExportDropdown(false);
     } catch (error) {

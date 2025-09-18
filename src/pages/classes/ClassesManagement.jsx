@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Users, BookOpen, Clock, Calendar, Building, User } from 'lucide-react';
+import ClassCard from '@/components/ui/ClassCard';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import Modal from '../../components/ui/Modal';
@@ -13,6 +14,7 @@ import schoolService from '../../utils/api/services/schoolService'; // Import sc
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
 import { useStableCallback } from '../../utils/reactOptimization';
 import Dropdown from '@/components/ui/Dropdown';
+import React from 'react'; // Added for useMemo
 
 export default function ClassesManagement() {
   const { t } = useLanguage();
@@ -244,10 +246,13 @@ export default function ClassesManagement() {
           // Get students for this class
           const studentsResponse = await studentService.getMyStudents({
             classId: classId,
-            status: true
+            class: classId,
+            page: 1,
+            limit: 1,
+            status: 'active'
           });
           
-          const studentCount = studentsResponse.data?.length || 0;
+          const studentCount = studentsResponse?.pagination?.total || studentsResponse?.total || studentsResponse?.data?.length || 0;
           
           return {
             id: classId,
@@ -525,6 +530,12 @@ export default function ClassesManagement() {
     return { status: 'available', color: 'bg-green-100 text-green-800' };
   };
 
+  // Compute the class with the highest number of students
+  const mostEnrolledClass = React.useMemo(() => {
+    if (!classes || classes.length === 0) return null;
+    return classes.reduce((maxCls, cls) => (cls.enrolled > (maxCls?.enrolled ?? -1) ? cls : maxCls), null);
+  }, [classes]);
+
   return (
     <PageTransition>
       <div className="p-6">
@@ -586,17 +597,18 @@ export default function ClassesManagement() {
               gradientFrom="from-purple-500"
               gradientTo="to-purple-600"
             />
-            
             <StatsCard
-              title={t('averageLoad') || 'ការទាក់ទញជាមធ្យម'}
-              value={`${classes.length > 0 ? Math.round(classes.reduce((sum, cls) => sum + (cls.enrolled / cls.capacity), 0) / classes.length * 100) : 0}%`}
-              icon={Clock}
+              title={t('mostEnrolledClass') || 'ថ្នាក់ដែលមានសិស្សច្រើនបំផុត'}
+              value={mostEnrolledClass ? `${mostEnrolledClass.name}` : '—'}
+              icon={Users}
               enhanced={true}
               responsive={true}
-              hoverColor="hover:border-orange-200"
-              gradientFrom="from-orange-500"
-              gradientTo="to-orange-400"
+              hoverColor="hover:border-amber-200"
+              gradientFrom="from-amber-500"
+              gradientTo="to-amber-400"
             />
+            
+            
           </div>
         </FadeInSection>
 
@@ -606,70 +618,21 @@ export default function ClassesManagement() {
             {classes.map((classItem) => {
           const enrollmentStatus = getEnrollmentStatus(classItem.enrolled, classItem.capacity);
           return (
-            <div key={classItem.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">{classItem.name}</h3>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEditClass(classItem)}
-                      className="text-indigo-600 hover:text-indigo-900 p-1 rounded"
-                      title={t('editClass') || 'Edit Class'}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedClass(classItem);
-                        setShowDeleteDialog(true);
-                      }}
-                      className="text-red-600 hover:text-red-900 p-1 rounded"
-                      title={t('deleteClass') || 'Delete Class'}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-gray-800">
-                      {t('grade') || 'Grade Level'} {classItem.grade.replace('Grade ', '')}
-                    </span>
-                    
-                  </div>
-
-                  <div className="text-sm text-gray-600">
-                    <p className="flex items-center mb-1">
-                      <Users className="h-4 w-4 mr-2" />
-                      {t('Teacher:') || 'គ្រូ:'} {classItem.teacher}
-                    </p>
-                  </div>
-
-                  <div className="border-t pt-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">{t('Enrollment') || 'ចុះឈ្មោះ'}</span>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${enrollmentStatus.color}`}>
-                        {classItem.enrolled}/{classItem.capacity}
-                      </span>
-                    </div>
-                    <div className="w-full bg-green-100 rounded-full h-2">
-                      <div 
-                        className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${(classItem.enrolled / classItem.capacity) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {classItem.description && (
-                    <p className="text-sm text-gray-500 border-t pt-3">
-                      {classItem.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-              );
+            <ClassCard
+              key={classItem.id}
+              title={classItem.name}
+              subtitleParts={[
+                `${t('grade') || 'Grade'} ${classItem.grade.replace('Grade ', '')}`,
+                classItem.section ? `${t('section') || 'Section'} ${classItem.section}` : ''
+              ]}
+              enrolled={classItem.enrolled}
+              capacity={classItem.capacity}
+              idLabel={classItem.academicYear ? `${t('academicYear') || 'Academic Year'} ${classItem.academicYear}` : ''}
+              status={enrollmentStatus.status}
+              onEdit={() => handleEditClass(classItem)}
+              onDelete={() => { setSelectedClass(classItem); setShowDeleteDialog(true); }}
+            />
+          );
             })}
           </div>
         </FadeInSection>

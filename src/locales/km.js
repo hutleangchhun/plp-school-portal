@@ -152,6 +152,7 @@ export const km = {
   className: 'ឈ្មោះថ្នាក់រៀន',
   classesManagement: 'ការគ្រប់គ្រងថ្នាក់រៀន',
   editClass: 'កែប្រែថ្នាក់រៀន',
+  deleteClass: 'លុបថ្នាក់',
   grade: 'កម្រិតថ្នាក់',
   manageClassSchedules: 'គ្រប់គ្រងថ្នាក់រៀន',
   room: 'បន្ទប់រៀន',
@@ -373,6 +374,8 @@ export const km = {
   Retry: 'ព្យាយាមម្តងទៀត',
   Edit: 'កែប្រែ',
   Refresh: 'ធ្វើឱ្យទាន់សម័យ',
+  availableSeats: 'ចំនួនសិស្សដែលអាចបញ្ចូលបាន',
+
   
   // Stats cards
   'Total Classes': 'ថ្នាក់រៀនសរុប',
@@ -381,7 +384,7 @@ export const km = {
   'Average Load': 'ការទាក់ទញជាមធ្យម',
   totalClasses: 'ថ្នាក់រៀនសរុប',
   activeToday: 'សកម្មថ្ងៃនេះ',
-  averageLoad: 'ការទាក់ទញជាមធ្យម',
+  mostEnrolledClass: 'ថ្នាក់ដែលមានសិស្សច្រើនបំផុត',
   
   // Common alt texts and titles
   Remove: 'ដកចេញ',

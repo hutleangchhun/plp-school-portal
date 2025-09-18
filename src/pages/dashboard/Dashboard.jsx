@@ -21,7 +21,6 @@ export default function Dashboard({ user: initialUser }) {
   const [error, setError] = useState(null);
   const [studentCount, setStudentCount] = useState(0);
   const [classCount, setClassCount] = useState(0);
-  const [unassignedStudents, setUnassignedStudents] = useState(0);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(false); // Disabled by default to prevent excessive API calls
   const [classDetails, setClassDetails] = useState([]);
@@ -98,26 +97,12 @@ export default function Dashboard({ user: initialUser }) {
       }
 
       // Get student count from API (all students assigned to teacher)
-      const studentsResponse = await studentService.getMyStudents({});
+      const studentsResponse = await studentService.getMyStudents({ page: 1, limit: 1, status: 'active' });
       if (studentsResponse && studentsResponse.data) {
-        setStudentCount(studentsResponse.data.length);
+        const totalFromApi = studentsResponse.pagination?.total || studentsResponse.total || studentsResponse.data.length;
+        setStudentCount(totalFromApi);
       } else if (studentsResponse && Array.isArray(studentsResponse)) {
         setStudentCount(studentsResponse.length);
-      }
-
-      // Get unassigned students count (students without classes)
-      try {
-        const unassignedResponse = await studentService.getStudents({
-          roleId: 9,
-          classId: 'null', // Students with no class assigned
-          limit: 100 // Get a reasonable count
-        });
-        if (unassignedResponse && unassignedResponse.data) {
-          setUnassignedStudents(unassignedResponse.data.length);
-        }
-      } catch (error) {
-        setError(`Failed to fetch unassigned students: ${error.message}`);
-        setUnassignedStudents(0);
       }
 
       // Get detailed class information with enrollment using the new API data
@@ -126,20 +111,26 @@ export default function Dashboard({ user: initialUser }) {
           const classDetailsPromises = teacherClasses.map(async (classData) => {
             try {
               // Get students for this specific class
-              const classStudentsResponse = await studentService.getMyStudents({ classId: classData.classId });
-              const enrolledCount = classStudentsResponse.data?.length || 0;
+              const classId = classData.classId || classData.class_id || classData.id;
+              const className = classData.name || classData.class_name || classData.className || `Class ${classId}`;
+              const classStudentsResponse = await studentService.getMyStudents({ classId, class: classId, page: 1, limit: 1, status: 'active' });
+              const classStudents = Array.isArray(classStudentsResponse?.data)
+                ? classStudentsResponse.data
+                : (Array.isArray(classStudentsResponse) ? classStudentsResponse : []);
+              const enrolledCount = classStudentsResponse?.pagination?.total || classStudentsResponse?.total || classStudents.length || 0;
               
               return {
-                id: classData.classId,
-                name: classData.name,
+                id: classId,
+                name: className,
                 enrolledCount,
                 maxCapacity: classData.maxStudents || 50
               };
             } catch (error) {
-              setError(`Failed to fetch data for class ${classData.classId}: ${error.message}`);
+              const id = classData.classId || classData.class_id || classData.id;
+              setError(`Failed to fetch data for class ${id}: ${error.message}`);
               return {
-                id: classData.classId,
-                name: classData.name,
+                id: id,
+                name: classData.name || `Class ${id}`,
                 enrolledCount: 0,
                 maxCapacity: classData.maxStudents || 50
               };
@@ -220,6 +211,12 @@ export default function Dashboard({ user: initialUser }) {
       </div>
     );
   }
+
+  // Derived totals for capacity-based metrics
+  const capacityTotal = Array.isArray(classDetails)
+    ? classDetails.reduce((sum, c) => sum + (c?.maxCapacity || 50), 0)
+    : 0;
+  const availableSeats = Math.max(capacityTotal - studentCount, 0);
 
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
@@ -323,16 +320,15 @@ export default function Dashboard({ user: initialUser }) {
           />
 
           <StatsCard
-            title={t('unassignedStudents') || 'សិស្សមិនបានកំណត់'}
-            value={unassignedStudents}
-            icon={Target}
+            title={t('availableSeats') || 'Available Seats'}
+            value={availableSeats}
+            icon={Activity}
             enhanced={true}
             responsive={true}
             clickable={true}
             hoverColor="hover:border-orange-200"
             gradientFrom="from-orange-500"
             gradientTo="to-orange-600"
-            trend={unassignedStudents > 0 ? "attention" : "stable"}
           />
 
           <StatsCard
@@ -376,8 +372,8 @@ export default function Dashboard({ user: initialUser }) {
                 <div className="text-sm text-gray-500">{t('totalEnrolled') || 'សិស្សចុះឈ្មោះសរុប'}</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{unassignedStudents}</div>
-                <div className="text-sm text-gray-500">{t('awaitingAssignment') || 'រង់ចាំការកំណត់'}</div>
+                <div className="text-2xl font-bold text-green-600">{availableSeats}</div>
+                <div className="text-sm text-gray-500">{t('availableSeats') || 'Available Seats'}</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">{classCount > 0 ? Math.round(studentCount / classCount) : 0}</div>
