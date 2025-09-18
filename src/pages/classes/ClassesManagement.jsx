@@ -613,7 +613,10 @@ export default function ClassesManagement() {
         </FadeInSection>
 
         {/* Classes Grid */}
-        <FadeInSection delay={0.2}>
+        <FadeInSection delay={0.2} className='p-6 bg-white rounded-lg shadow'>
+          <div className='mb-3'>
+            <h3 className="text-lg font-medium text-gray-900">{t('yourClasses') || 'Your Classes'}</h3>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {classes.map((classItem) => {
           const enrollmentStatus = getEnrollmentStatus(classItem.enrolled, classItem.capacity);
