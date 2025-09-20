@@ -580,6 +580,11 @@ export const km = {
   
   // Loading states
   loadingText: 'កំពុងផ្ទុក...',
+  loadingClasses: 'កំពុងផ្ទុកថ្នាក់រៀន...',
+  loadingStudents: 'កំពុងផ្ទុកសិស្ស...',
+  loadingStudentSelection: 'កំពុងផ្ទុកការជ្រើសរើសសិស្ស...',
+  loadingProfile: 'កំពុងផ្ទុកព័ត៌មានផ្ទាល់ខ្លួន...',
+  loadingPage: 'កំពុងផ្ទុកទំព័រ...',
   
   // Alert dialogs and confirmation messages
   moveStudentToMaster: 'ដកសិស្សចេញពីថ្នាក់',

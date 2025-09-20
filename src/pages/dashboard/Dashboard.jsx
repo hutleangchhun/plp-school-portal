@@ -5,7 +5,6 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import WelcomeAlert from '../../components/ui/WelcomeAlert';
 import { Button } from '../../components/ui/Button';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import StatsCard from '../../components/ui/StatsCard';
 import { utils, userService } from '../../utils/api';
 import studentService from '../../utils/api/services/studentService';
@@ -17,7 +16,7 @@ export default function Dashboard({ user: initialUser }) {
   const { t } = useLanguage();
   const [user, setUserData] = useState(initialUser);
   const [showWelcome, setShowWelcome] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
   const [studentCount, setStudentCount] = useState(0);
   const [classCount, setClassCount] = useState(0);
@@ -46,7 +45,6 @@ export default function Dashboard({ user: initialUser }) {
   // Fetch comprehensive data
   const fetchAllData = useStableCallback(async () => {
     console.log('🔄 Dashboard: fetchAllData called at', new Date().toISOString());
-    setLoading(true);
     setError(null);
     
     try {
@@ -152,7 +150,7 @@ export default function Dashboard({ user: initialUser }) {
     } catch (error) {
       setError(error.message || t('failedToLoadDashboard', 'Failed to load dashboard data'));
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   }, [authUser?.id, t]); // Fixed: use authUser.id consistently
 
@@ -176,13 +174,15 @@ export default function Dashboard({ user: initialUser }) {
 
   // Profile picture URL is handled by ProfileImage component
 
-  // Loading state
-  if (loading) {
+  // Initial loading state
+  if (initialLoading) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center">
+      <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <LoadingSpinner size="xl" className="mx-auto" />
-          <p className="mt-4 text-gray-600 animate-pulse">{t('loadingDashboard') || 'កំពុងទាញយកផ្ទាំងគ្រប់គ្រង...'}</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg font-medium">
+            {t('loadingDashboard')}
+          </p>
         </div>
       </div>
     );

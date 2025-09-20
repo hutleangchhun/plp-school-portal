@@ -526,6 +526,11 @@ export const en = {
   
   // Loading states
   loadingText: 'Loading...',
+  loadingClasses: 'Loading classes...',
+  loadingStudents: 'Loading students...',
+  loadingStudentSelection: 'Loading student selection...',
+  loadingProfile: 'Loading profile...',
+  loadingPage: 'Loading page...',
   
   // Additional student management messages
   noClassesAssigned: 'No classes assigned',

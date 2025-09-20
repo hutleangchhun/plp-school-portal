@@ -56,7 +56,7 @@ export default function ProfileUpdate({ user, setUser }) {
     villageId: ''
   });
   const [loading, setLoading] = useState(false);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [pictureUploading, setPictureUploading] = useState(false);
@@ -148,7 +148,7 @@ export default function ProfileUpdate({ user, setUser }) {
       const startTime = performance.now();
       console.log('🚀 ProfileUpdate: fetchUserData called at', new Date().toISOString());
       
-      setDataLoading(true);
+      setInitialLoading(true);
       try {
         // First try to get detailed user data with school information
         let userData = null;
@@ -312,7 +312,7 @@ export default function ProfileUpdate({ user, setUser }) {
         const endTime = performance.now();
         const duration = endTime - startTime;
         console.log(`⏱️ ProfileUpdate data fetch completed in ${duration.toFixed(2)}ms`);
-        setDataLoading(false);
+        setInitialLoading(false);
       }
     };
 
@@ -709,26 +709,16 @@ export default function ProfileUpdate({ user, setUser }) {
     return true;
   };
 
-  if (dataLoading) {
+
+  // Show initial loading state
+  if (initialLoading) {
     return (
-      <div className="p-6">
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="text-gray-600 text-lg">{t('loading') || 'Loading Profile...'}</span>
-              </div>
-              <div className="text-sm text-gray-500 text-center">
-                <div>Loading user data and location information...</div>
-                {locationDataLoading && (
-                  <div className="mt-2 text-blue-600">
-                    📍 Loading location data...
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+      <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg font-medium">
+            {t('loadingProfile')}
+          </p>
         </div>
       </div>
     );

@@ -52,6 +52,7 @@ const StudentSelection = () => {
   } = useSelectedStudents();
   const [schoolId, setSchoolId] = useState(null);
   const [listLoading, setListLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pagination, setPagination] = useState({
     page: 1,
@@ -131,6 +132,13 @@ const StudentSelection = () => {
 
     fetchClassDetails();
   }, [user?.id, user?.username]);
+
+  // Set initial loading to false once classes are loaded
+  useEffect(() => {
+    if (classes.length > 0) {
+      setInitialLoading(false);
+    }
+  }, [classes.length]);
 
   // Fetch current user's school ID - try from classes first, then my-account
   const fetchSchoolId = useStableCallback(async () => {
@@ -319,6 +327,20 @@ const StudentSelection = () => {
       setAssigningStudents(false);
     }
   };
+
+  // Show initial loading state
+  if (initialLoading) {
+    return (
+      <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg font-medium">
+            {t('loadingStudentSelection')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <PageTransition variant="slideUp" duration="duration-700">

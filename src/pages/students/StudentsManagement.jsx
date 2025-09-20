@@ -77,6 +77,7 @@ export default function StudentsManagement() {
     isSelected
   } = useSelectedStudents();
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
@@ -393,7 +394,9 @@ export default function StudentsManagement() {
   useEffect(() => {
     if (classes.length > 0 && classesInitialized.current) {
       console.log('Classes available, initial fetch...');
-      fetchStudents('', true); // Force initial fetch
+      fetchStudents('', true).finally(() => {
+        setInitialLoading(false);
+      }); // Force initial fetch
     }
   }, [classes.length, fetchStudents]);
 
@@ -1159,6 +1162,20 @@ export default function StudentsManagement() {
   const handleAddStudentClick = () => {
     navigate('/students/select');
   };
+
+  // Show initial loading state
+  if (initialLoading) {
+    return (
+      <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg font-medium">
+            {t('loadingStudents')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <PageTransition variant="fade" className="p-6">      
