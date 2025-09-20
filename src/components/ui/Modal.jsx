@@ -39,23 +39,24 @@ export default function Modal({
   };
 
   // Dynamic classes based on props
-  const borderClass = showBorder || rounded ? 'border-1 border-gray-100' : 'border border-gray-100';
-  const roundedClass = rounded ? 'rounded-xl' : 'rounded-xl';
+  const borderClass = 'border border-gray-200';
+  const roundedClass = 'rounded-lg';
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay 
-          className="fixed inset-0 z-50 bg-gray-500 bg-opacity-75 transition-opacity data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+          className="fixed inset-0 z-50 bg-gray-500/75"
           onClick={closeOnOverlayClick ? onClose : undefined}
         />
         
         <Dialog.Content 
-          className={`fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%] ${roundedClass} ${borderClass} text-left shadow-xl transform transition-all w-full flex flex-col ${sizeClasses[size]} ${heightClasses[height]} ${className} data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]`}
+          className={`fixed left-1/2 top-1/2 z-50 w-full flex flex-col ${sizeClasses[size]} ${heightClasses[height]} ${roundedClass} ${borderClass} ${className} bg-white shadow-xl`}
+          style={{ transform: 'translate(-50%, -50%)' }}
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className="flex-shrink-0 rounded-t-xl bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200">
+            <div className={`flex-shrink-0 bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 ${roundedClass}`}>
               <div className="flex items-center justify-between">
                 {title && (
                   <Dialog.Title className="text-lg font-medium text-gray-900">
@@ -77,13 +78,13 @@ export default function Modal({
           )}
           <Dialog.Description className="sr-only"></Dialog.Description>
           {/* Content */}
-          <div className={`flex-1 overflow-auto bg-white px-4 pt-5 sm:p-6 ${footer && stickyFooter ? 'pb-4' : 'pb-4 rounded-b-xl'}`}>
+          <div className={`flex-1 overflow-auto bg-white px-4 pt-5 sm:p-6 ${footer && stickyFooter ? 'pb-4' : 'pb-4'}`}>
             {children}
           </div>
           
           {/* Footer */}
           {footer && (
-            <div className={`flex-shrink-0 bg-white px-4 py-4 sm:px-6 sm:pb-6 ${stickyFooter ? 'border-t border-gray-200 rounded-b-xl' : 'rounded-b-xl'}`}>
+            <div className={`flex-shrink-0 ${roundedClass} bg-white px-4 py-4 sm:px-6 sm:pb-6 ${stickyFooter ? 'border-t border-gray-200' : ''}`}>
               {footer}
             </div>
           )}

@@ -54,9 +54,12 @@ export default function ConfirmDialog({
   return (
     <AlertDialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <AlertDialog.Portal>
-        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm transition-all duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <AlertDialog.Content className="fixed left-[50%] top-[50%] z-50 max-w-sm sm:max-w-md translate-x-[-50%] translate-y-[-50%] bg-white rounded-lg sm:rounded-xl text-left overflow-hidden shadow-2xl transform transition-all duration-300 w-[90%] sm:w-full mx-auto data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]">
-          <div className="bg-white px-3 pt-4 pb-3 sm:px-4 sm:pt-5 sm:pb-4 lg:p-6 lg:pb-4">
+        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm rounded-lg" />
+        <AlertDialog.Content 
+          className="fixed left-1/2 top-1/2 z-50 max-w-sm sm:max-w-md w-[90%] sm:w-full bg-white rounded-lg border border-gray-200 shadow-2xl"
+          style={{ transform: 'translate(-50%, -50%)' }}
+        >
+          <div className="bg-white px-3 pt-4 pb-3 sm:px-4 sm:pt-5 sm:pb-4 lg:p-6 lg:pb-4 rounded-t-lg ">
             <div className="sm:flex sm:items-start">
               <div className={`mx-auto flex-shrink-0 flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full ${config.bgColor} sm:mx-0 lg:h-10 lg:w-10`}>
                 <IconComponent className={`h-5 w-5 sm:h-6 sm:w-6 ${config.iconColor}`} aria-hidden="true" />
@@ -74,7 +77,7 @@ export default function ConfirmDialog({
             </div>
           </div>
           
-          <div className="bg-gray-50 px-3 py-3 sm:px-4 sm:py-3 lg:px-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+          <div className="bg-gray-50 px-3 py-3 sm:px-4 sm:py-3 lg:px-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 rounded-b-lg">
             <AlertDialog.Cancel asChild>
               <Button
                 type="button"
