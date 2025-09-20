@@ -565,4 +565,12 @@ export const en = {
   'Total Enrolled': 'Total Enrolled',
   'Average Per Class': 'Average Per Class',
   'Awaiting Assignment': 'Awaiting Assignment',
+
+  // 404 page
+  thePageYouAreLookingForDoesNotExist: 'The page you are looking for does not exist',
+  goBackToDashboard: 'Go Back to Dashboard',
+  pageNotFound: 'Page Not Found',
+  oopsSomethingWentWrong: 'Oops! Something went wrong',
+  tryAgainLater: 'Try again later',
+  contactSupport: 'Contact Support',
 };  

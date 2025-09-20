@@ -670,4 +670,11 @@ export const km = {
   'This message will disappear in 10 seconds': 'សារនេះនឹងបាត់បង់ក្នុងរយៈពេល ១០ វិនាទី',
   
   // Additional common translations
+  // 404 page
+  thePageYouAreLookingForDoesNotExist: 'ទំព័រដែលអ្នកកំពុងស្វែងរកមិនមានទេ',
+  goBackToDashboard: 'ត្រឡប់ទៅទំព័រផ្ទាំងគ្របគ្រង',
+  pageNotFound: 'ទំព័រមិនមាន',
+  oopsSomethingWentWrong: 'អូប! មានបញ្ហាអ្វីមួយកើតឡើង',
+  tryAgainLater: 'សូមព្យាយាមម្តងទៀតនៅពេលក្រោយ',
+  contactSupport: 'ទាក់ទងការគាំទ្រ',
 };

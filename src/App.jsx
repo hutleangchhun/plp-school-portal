@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout';
 import Dashboard from './pages/dashboard/Dashboard';
 import ProfileUpdate from './pages/profile/ProfileUpdate';
 import DashboardLayout from './components/layout/DashboardLayout';
+import NotFound from './pages/NotFound';
 //import StudentGradeManagement from './pages/students/StudentGradeManagement';
 import StudentsManagement from './pages/students/StudentsManagement';
 import StudentSelection from './pages/students/StudentSelection';
@@ -108,6 +109,9 @@ function AppContent() {
               - reports, attendance, achievements, settings
               - my-grades, my-attendance, my-assignments */}
         </Route>
+        
+        {/* Catch-all route for 404 pages */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
