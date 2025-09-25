@@ -194,6 +194,7 @@ const StudentSelection = () => {
       }
 
       setListLoading(true);
+      setStudents([]); // Clear previous students data when loading starts
       
       console.log('=== STUDENT SELECTION FETCH DEBUG ===');
       console.log('School ID:', schoolId);
@@ -422,12 +423,11 @@ const StudentSelection = () => {
         {/* Students List */}
         <FadeInSection delay={400}>
           <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
-        {listLoading && (
+        {listLoading ? (
           <div className="w-full flex items-center justify-center py-8">
             <LoadingSpinner size="default" variant="primary" />
           </div>
-        )}
-        {students.length > 0 ? (
+        ) : students.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
             {students.map((student) => (
               <div key={student.id} className="group hover:bg-gray-50/50 transition-colors duration-150 border border-gray-100 rounded-lg p-4">
