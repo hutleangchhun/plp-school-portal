@@ -58,6 +58,7 @@ export default function ClassesManagement() {
       section: '',
       schoolId: '', // Will be set when schoolInfo is loaded
       teacherId: user?.teacherId || user?.id || '',
+      teacherName: `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Teacher',
       academicYear: getCurrentAcademicYear(),
       maxStudents: '30',
       subject: '',
@@ -336,6 +337,7 @@ export default function ClassesManagement() {
       section: '',
       schoolId: schoolInfo.id?.toString() || '',
       teacherId: user?.teacherId || user?.id || '', // Prefer teacherId, fallback to id if not available
+      teacherName: `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Teacher',
       academicYear: getCurrentAcademicYear(),
       maxStudents: '',
       subject: '',
@@ -386,12 +388,28 @@ export default function ClassesManagement() {
       }
       
       // Create form data - use schoolId from my-account instead of API response
+      // For teacher name, try multiple fallback sources
+      let teacherName = 'Teacher'; // default fallback
+      
+      // Try to get teacher name from API response
+      if (classData.teacher?.user?.first_name || classData.teacher?.user?.last_name) {
+        teacherName = `${classData.teacher.user.first_name || ''} ${classData.teacher.user.last_name || ''}`.trim();
+      } else if (classData.teacher?.first_name || classData.teacher?.last_name) {
+        teacherName = `${classData.teacher.first_name || ''} ${classData.teacher.last_name || ''}`.trim();
+      } else if (classData.teacher?.username) {
+        teacherName = classData.teacher.username;
+      } else {
+        // Fallback to current user's name if this is their class
+        teacherName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Teacher';
+      }
+      
       const formDataToSet = {
         name: classData.name || '',
         gradeLevel: gradeLevel,
         section: classData.section || '',
         schoolId: schoolInfo.id?.toString() || '', // Use schoolId from my-account
         teacherId: classData.teacherId?.toString() || '',
+        teacherName: teacherName,
         academicYear: academicYear,
         maxStudents: classData.maxStudents?.toString() || '30',
         subject: classData.subject || `Subject ${gradeLevel || ''}`.trim(),
@@ -816,7 +834,7 @@ export default function ClassesManagement() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('teacherId') || 'Teacher ID'} *
+                {t('teacher') || 'Teacher'} *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -824,13 +842,18 @@ export default function ClassesManagement() {
                 </div>
                 <input
                   type="text"
-                  name="teacherId"
+                  name="teacherName"
                   required
                   readOnly
-                  value={formData.teacherId}
+                  value={formData.teacherName}
                   className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
                 />
               </div>
+              <input
+                type="hidden"
+                name="teacherId"
+                value={formData.teacherId}
+              />
             </div>
           </div>
 
