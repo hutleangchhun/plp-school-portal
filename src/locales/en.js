@@ -549,6 +549,7 @@ export const en = {
 
   // Additional toast messages  
   achievementAddedSuccessfully: 'Achievement added successfully',
+  loginFailed: 'Login failed. Please check your username and password.',
   loginSuccessful: 'Login successful!',
   settingsSavedSuccessfully: 'Settings saved successfully',
   studentsAssignedSuccessfully: '{count} students assigned to {className} successfully',

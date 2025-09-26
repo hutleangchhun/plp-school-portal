@@ -24,7 +24,7 @@ export const authService = {
       const { accessToken, user } = response.data;
       
       // Validate user role (teachers only)
-      if (user.roleId !== 8 && user.roleId !== 9) {
+      if (user.roleId !== 8) {
         return {
           success: false,
           error: 'Only teachers and students can access this portal'
@@ -162,7 +162,7 @@ export const authUtils = {
    * @returns {string} Localized error message
    */
   getErrorMessage: (error, t) => {
-    const defaultMessage = t('បរាជ័យក្នុងការចូល', 'Login failed');
+    const defaultMessage = t('loginFailed', 'បរាជ័យក្នុងការចូល');
     
     if (!error) return defaultMessage;
     

@@ -608,6 +608,7 @@ export const km = {
 
   // Additional toast messages
   achievementAddedSuccessfully: 'បានបន្ថែមសមិទ្ធិផលដោយជោគជ័យ',
+  loginFailed: 'ការចូលបរាជ័យ។ សូមពិនិត្យឈ្មោះអ្នកប្រើ និងពាក្យសម្ងាត់របស់អ្នក។',
   loginSuccessful: 'បានចូលដោយជោគជ័យ!',
   settingsSavedSuccessfully: 'បានរក្សាទុកការកំណត់ដោយជោគជ័យ',
   studentsAssignedSuccessfully: 'បានកំណត់សិស្ស {count} នាក់ទៅថ្នាក់ {className} ដោយជោគជ័យ',
