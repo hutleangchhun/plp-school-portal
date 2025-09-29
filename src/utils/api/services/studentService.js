@@ -377,9 +377,19 @@ export const studentService = {
    */
   async getMyStudents(params = {}) {
     try {
-      const { classId, class: classFilter, page = 1, limit = 5, status } = params;
+      const { 
+        classId, 
+        class: classFilter, 
+        page = 1, 
+        limit = 5, 
+        status,
+        academicYear,
+        gender,
+        dateOfBirth,
+        gradeLevel
+      } = params;
       
-      // Use the proper my-students endpoint with pagination and optional classId filtering
+      // Use the proper my-students endpoint with pagination and optional filtering
       const queryParams = {
         page,
         limit
@@ -390,6 +400,10 @@ export const studentService = {
       if (status !== undefined && status !== null && status !== '') {
         queryParams.status = status;
       }
+      if (academicYear) queryParams.academicYear = academicYear;
+      if (gender) queryParams.gender = gender;
+      if (dateOfBirth) queryParams.dateOfBirth = dateOfBirth;
+      if (gradeLevel) queryParams.gradeLevel = gradeLevel;
       
       const response = await handleApiResponse(() =>
         apiClient_.get(ENDPOINTS.STUDENTS.MY_STUDENTS, {

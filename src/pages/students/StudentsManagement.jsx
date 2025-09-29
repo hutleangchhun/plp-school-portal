@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Trash2, Edit2, User, Users, ChevronDown, Download, X } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, User, Users, ChevronDown, Download, X } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -58,6 +58,7 @@ export default function StudentsManagement() {
   // State for classes information (derived from authenticated user)
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('all');
+  
   
   // Other state variables
   const [searchTerm, setSearchTerm] = useState('');
@@ -333,6 +334,7 @@ export default function StudentsManagement() {
           return;
         }
       }
+      
        
       console.log(`API request params:`, requestParams);
       console.log(`=== END FETCH STUDENTS ===`);
@@ -1078,7 +1080,7 @@ export default function StudentsManagement() {
             className="text-red-600 hover:text-red-900 hover:bg-red-50 hover:scale-110"
             title={t('moveStudentToMaster', 'Move student to master class')}
           >
-            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+            <MinusCircle className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         </div>
       )
@@ -1142,7 +1144,7 @@ export default function StudentsManagement() {
             className="text-red-600 hover:text-red-900 hover:bg-red-50 hover:scale-110 flex-shrink-0"
             title={t('moveStudentToMaster', 'Move student to master class')}
           >
-            <Trash2 className="h-4 w-4" />
+            <MinusCircle className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -1321,6 +1323,7 @@ export default function StudentsManagement() {
                 </div>
               </div>
             )}
+            
           </div>
         </div>
 
