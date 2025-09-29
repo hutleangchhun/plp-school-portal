@@ -630,13 +630,16 @@ export const studentService = {
         phone: student.phone || user.phone || '',
         gender: student.gender || user.gender || '',
         dateOfBirth: student.date_of_birth || student.dateOfBirth || user.date_of_birth || user.dateOfBirth,
+        academicYear: student.academic_year || classInfo.academicYear,
+        gradeLevel: student.grade_level || classInfo.gradeLevel,
         profilePicture: student.profile_picture || student.profilePicture || user.profile_picture || user.profilePicture,
         isActive: student.student_status === 'ACTIVE' || student.isActive !== undefined ? student.isActive : (user.is_active !== undefined ? user.is_active : true),
         username: student.username || user.username || '',
         class: {
           id: student.class_id || classInfo.classId || classInfo.id,
           name: student.class_name || classInfo.name,
-          gradeLevel: student.grade_level || classInfo.gradeLevel
+          gradeLevel: student.grade_level || classInfo.gradeLevel,
+          academicYear: student.academic_year || classInfo.academicYear
         },
         averageScore: student.averageScore || 0,
         timeSpent: student.timeSpent || 0,

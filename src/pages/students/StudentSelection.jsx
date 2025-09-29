@@ -267,15 +267,15 @@ const StudentSelection = () => {
 
   // Separate effect to trigger fetch when filters change
   useEffect(() => {
-    if (schoolId && !listLoading) {
+    if (schoolId) {
       const timer = setTimeout(() => {
-        // Reset to page 1 and fetch
+        // Only reset to page 1 if we're not already on page 1
         setPagination(prev => ({ ...prev, page: 1 }));
       }, 100); // Small delay to debounce filter changes
       
       return () => clearTimeout(timer);
     }
-  }, [filters.academicYear, filters.gender, filters.dateOfBirth, filters.gradeLevel, schoolId, listLoading]);
+  }, [filters.academicYear, filters.gender, filters.dateOfBirth, filters.gradeLevel]);
 
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -292,11 +292,7 @@ const StudentSelection = () => {
   // Handle filter changes
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
-    // Reset to first page when filters change
-    setPagination(prev => ({
-      ...prev,
-      page: 1
-    }));
+    // Page reset is handled by useEffect for filter changes
   };
 
   // Handle select all students (with current filters)
@@ -677,20 +673,42 @@ const StudentSelection = () => {
                     </div>
                     
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="text-sm font-semibold text-gray-900 truncate">
-                          {student.name}
-                        </h3>
-                        <Badge color={student.isActive ? 'green' : 'gray'} size="sm">
+                      <div className="flex justify-between space-x-2 mb-1">
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">
+                            {student.name}
+                          </h3>
+                        </div>
+                        <Badge color={student.isActive ? 'green' : 'red'} size="sm">
                           {student.isActive ? (t('active') || 'សកម្ម') : (t('inactive') || 'មិនសកម្ម')}
                         </Badge>
                       </div>
-                      <div className="flex items-center space-x-2 text-xs text-gray-500">
+                      <div className="flex items-center space-x-2 text-xs text-gray-500 mb-1">
                         <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
                           {student.studentId}
                         </span>
                         <span>•</span>
-                        <span className="truncate">{student.email}</span>
+                        <span className="truncate text-green-500">{student.section}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-xs text-gray-500">
+                        {(student.class?.gradeLevel || student.gradeLevel) && (
+                          <>
+                            <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">
+                              {t('grade', 'Grade')} {student.class?.gradeLevel || student.gradeLevel}
+                            </span>
+                            <span>•</span>
+                          </>
+                        )}
+                        {(student.class?.academicYear || student.academicYear) && (
+                          <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium">
+                            {student.class?.academicYear || student.academicYear}
+                          </span>
+                        )}
+                        {(!student.class?.gradeLevel && !student.gradeLevel && !student.class?.academicYear && !student.academicYear) && (
+                          <span className="text-gray-400 italic">
+                            {t('noClassInfo', 'No class info')}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -735,7 +753,9 @@ const StudentSelection = () => {
             </div>
           </div>
         )}
-          {/* Pagination (shadcn-styled from shared UI) */}
+        
+        {/* Pagination (shadcn-styled from shared UI) */}
+        {!listLoading && students.length > 0 && (
           <FadeInSection delay={500}>
             <UIPagination
               pagination={pagination}
@@ -743,6 +763,7 @@ const StudentSelection = () => {
               t={(key, fallback) => t(key) || fallback}
             />
           </FadeInSection>
+        )}
         </div>
         </FadeInSection>
 
