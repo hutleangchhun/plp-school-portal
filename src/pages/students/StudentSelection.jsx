@@ -55,6 +55,7 @@ const StudentSelection = () => {
   const [schoolId, setSchoolId] = useState(null);
   const [listLoading, setListLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pagination, setPagination] = useState({
     page: 1,
@@ -132,6 +133,7 @@ const StudentSelection = () => {
           
       } catch (error) {
         console.error('Error fetching class details:', error);
+        showError(t('errorFetchingClasses', 'Failed to load classes. Some features may not work properly.'));
         // Fallback to empty classes array
         setClasses([]);
       }
@@ -201,6 +203,7 @@ const StudentSelection = () => {
       }
 
       setListLoading(true);
+      setFetchError(null); // Clear any previous errors
       setStudents([]); // Clear previous students data when loading starts
       
       console.log('=== STUDENT SELECTION FETCH DEBUG ===');
@@ -251,7 +254,17 @@ const StudentSelection = () => {
       }
     } catch (error) {
       console.error('Error fetching student data from master-class:', error);
-      showError(error.message || t('errorFetchingData') || 'កំហុសក្នុងការទាញយកទិន្នន័យ');
+      
+      // Set error state for display
+      const errorMessage = error.message || t('errorFetchingData') || 'Error fetching data from server';
+      setFetchError({
+        message: errorMessage,
+        type: error.response?.status >= 500 ? 'server' : 'network',
+        canRetry: true
+      });
+      
+      // Show toast error
+      showError(errorMessage);
       setStudents([]);
     } finally {
       setListLoading(false);
@@ -354,7 +367,8 @@ const StudentSelection = () => {
       }
     } catch (error) {
       console.error('Error selecting all students:', error);
-      showError(t('errorSelectingAllStudents') || 'Failed to select all students');
+      const errorMsg = error.message || t('errorSelectingAllStudents') || 'Failed to select all students';
+      showError(`${errorMsg} - ${t('checkConnection', 'Please check your connection and try again.')}`);
     } finally {
       setSelectingAll(false);
     }
@@ -448,8 +462,36 @@ const StudentSelection = () => {
     }
   };
 
-  // Show initial loading state
+  // Show initial loading state or error
   if (initialLoading) {
+    // Show error if there's an issue loading classes
+    if (classes.length === 0 && !user?.id) {
+      return (
+        <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">
+          <div className="text-center space-y-4">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <X className="h-10 w-10 text-red-500" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-lg font-medium text-red-600">
+                {t('authenticationError', 'Authentication Error')}
+              </p>
+              <p className="text-sm text-gray-600">
+                {t('pleaseLoginAgain', 'Please login again to continue')}
+              </p>
+            </div>
+            <Button
+              onClick={() => navigate('/login')}
+              variant="primary"
+              size="sm"
+            >
+              {t('goToLogin', 'Go to Login')}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -639,10 +681,6 @@ const StudentSelection = () => {
                   }
                 </label>
               </div>
-              <div className="text-sm text-gray-500">
-                {students.length} {students.length === 1 ? t('student') || 'student' : t('students') || 'students'} 
-                {t('onThisPage') || 'on this page'}
-              </div>
             </div>
           </div>
         )}
@@ -650,6 +688,38 @@ const StudentSelection = () => {
         {listLoading ? (
           <div className="w-full flex items-center justify-center py-8">
             <LoadingSpinner size="default" variant="primary" />
+          </div>
+        ) : fetchError ? (
+          <div className="flex items-center justify-center min-h-[400px] p-6">
+            <div className="text-center space-y-4 max-w-md">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                <X className="h-10 w-10 text-red-500" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-lg font-medium text-red-600">
+                  {t('connectionError', 'Connection Error')}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {fetchError.message}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {fetchError.type === 'server' 
+                    ? (t('serverError', 'Server is temporarily unavailable. Please try again later.'))
+                    : (t('networkError', 'Please check your internet connection and try again.'))
+                  }
+                </p>
+              </div>
+              {fetchError.canRetry && (
+                <Button
+                  onClick={() => fetchData()}
+                  variant="primary"
+                  size="sm"
+                  className="mt-4"
+                >
+                  {t('retry', 'Try Again')}
+                </Button>
+              )}
+            </div>
           </div>
         ) : students.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
@@ -673,7 +743,7 @@ const StudentSelection = () => {
                     </div>
                     
                     <div className="min-w-0 flex-1">
-                      <div className="flex justify-between space-x-2 mb-1">
+                      <div className="flex justify-between space-x-2">
                         <div>
                           <h3 className="text-sm font-semibold text-gray-900 truncate">
                             {student.name}
@@ -683,33 +753,26 @@ const StudentSelection = () => {
                           {student.isActive ? (t('active') || 'សកម្ម') : (t('inactive') || 'មិនសកម្ម')}
                         </Badge>
                       </div>
-                      <div className="flex items-center space-x-2 text-xs text-gray-500 mb-1">
+                      <div className="flex items-center space-x-2 text-xs text-gray-500">
                         <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
                           {student.studentId}
                         </span>
                         <span>•</span>
-                        <span className="truncate text-green-500">{student.section}</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-xs text-gray-500">
-                        {(student.class?.gradeLevel || student.gradeLevel) && (
+                        {student.student_grade_level && (
                           <>
                             <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">
-                              {t('grade', 'Grade')} {student.class?.gradeLevel || student.gradeLevel}
+                              {t('grade', 'Grade')} {student.student_grade_level}
                             </span>
                             <span>•</span>
                           </>
                         )}
-                        {(student.class?.academicYear || student.academicYear) && (
+                        {student.student_academic_year && (
                           <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium">
-                            {student.class?.academicYear || student.academicYear}
-                          </span>
-                        )}
-                        {(!student.class?.gradeLevel && !student.gradeLevel && !student.class?.academicYear && !student.academicYear) && (
-                          <span className="text-gray-400 italic">
-                            {t('noClassInfo', 'No class info')}
+                            {student.student_academic_year}
                           </span>
                         )}
                       </div>
+                      
                     </div>
                   </div>
                 </div>

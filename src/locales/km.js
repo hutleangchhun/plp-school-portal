@@ -312,6 +312,12 @@ export const km = {
   resetFilters: 'កំណត់ការស្វែងរកឡើងវិញ',
   allDistricts: 'គ្រប់ស្រុកទាំងអស់',
   allProvinces: 'គ្រប់ខេត្តទាំងអស់',
+  selectAllStudents: 'ជ្រើសរើសសិស្សទាំងអស់',
+  selectedAllStudents: 'បានជ្រើសរើសសិស្សទាំងអស់',
+  selectingAll: 'កំពុងជ្រើសរើសសិស្សទាំងអស់...',
+  allGenders: 'គ្រប់ភេទទាំងអស់',
+  selectAllOnPage: 'ជ្រើសរើសសិស្សទាំងអស់នៅលើទំព័រនេះ',
+  deselectAllOnPage: 'លុបការជ្រើសរើសសិស្សទាំងអស់នៅលើទំព័រនេះ',
   
   // Class selection
   allClasses: 'ថ្នាក់ទាំងអស់',

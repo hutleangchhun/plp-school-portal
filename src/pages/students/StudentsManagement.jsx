@@ -17,6 +17,8 @@ import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
 import { prepareAndExportExcel, prepareAndExportCSV, prepareAndExportPDF, getTimestampedFilename } from '../../utils/exportUtils';
 import StudentEditModal from '../../components/students/StudentEditModal';
+import ErrorDisplay from '../../components/ui/ErrorDisplay';
+import { useErrorHandler } from '../../hooks/useErrorHandler';
 
 /**
  * StudentsManagement Component
@@ -31,17 +33,49 @@ export default function StudentsManagement() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
+  const { error, handleError, clearError, retry } = useErrorHandler();
+  
+  // Debug: Log error state changes
+  useEffect(() => {
+    console.log('StudentsManagement: Error state changed:', error);
+  }, [error]);
+  
+  // Debug: Add test error trigger
+  const triggerTestError = () => {
+    console.log('🧪 Triggering test error...');
+    handleError(new Error('Test network error'), {
+      toastMessage: 'Test error message'
+    });
+  };
   
   // Get authenticated user data
-  const [user, setUser] = useState(() => {
+  const [user] = useState(() => {
     try {
       const userData = localStorage.getItem('user');
       return userData ? JSON.parse(userData) : null;
-    } catch (error) {
-      console.error('Error parsing user data:', error);
+    } catch (err) {
+      console.error('Error parsing user data from localStorage:', err);
+      // Can't use handleError here since hook isn't initialized yet
       return null;
     }
   });
+
+  // Handle localStorage parsing error after hooks are initialized
+  useEffect(() => {
+    if (!user) {
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          JSON.parse(userData); // Test parsing again
+        }
+      } catch (err) {
+        handleError(err, {
+          toastMessage: t('failedToParseUserData', 'Failed to parse user data'),
+          setError: false // Don't show error display for localStorage parsing issues
+        });
+      }
+    }
+  }, [user, handleError, t]);
   
   // State for current user's school ID (fetched from my-account endpoint)
   const [schoolId, setSchoolId] = useState(null);
@@ -171,14 +205,18 @@ export default function StudentsManagement() {
         console.error('No school_id found in account data:', accountData);
         showError(t('noSchoolIdFound', 'No school ID found for your account'));
       }
-    } catch (error) {
-      console.error('Error fetching school ID:', error);
-      showError(t('failedToFetchSchoolId', 'Failed to fetch school information'));
+    } catch (err) {
+      console.error('Error fetching school ID:', err);
+      handleError(err, {
+        toastMessage: t('failedToFetchSchoolId', 'Failed to fetch school information')
+      });
+      setInitialLoading(false); // Stop loading on error
     }
-  }, [schoolId, showError, t, user?.id]);
+  }, [schoolId, showError, t, user?.id, handleError]);
   
   // Initialize classes using new classes/user API
   const initializeClasses = useStableCallback(async () => {
+    console.log('🚀 initializeClasses called');
     // Avoid re-initializing if classes are already loaded
     if (classesInitialized.current) {
       console.log('Classes already initialized, skipping');
@@ -189,22 +227,42 @@ export default function StudentsManagement() {
     console.log('Current user object:', user);
     
     if (!user?.id) {
-      console.log('No user ID available for fetching classes');
+      console.log('🚨 No user ID available for fetching classes');
+      console.log('User object:', user);
       setClasses([]);
       setSelectedClassId('all');
+      setInitialLoading(false); // Stop loading when no user
+      
+      // If there's no user, that's likely an authentication issue
+      handleError(new Error('No authenticated user found'), {
+        toastMessage: t('authenticationRequired', 'Authentication required')
+      });
       return;
     }
 
     try {
       console.log('Fetching classes using new classes/user API...');
       
+      // DEBUG: Force error for testing
+      throw new Error('NETWORK_ERROR: Connection failed');
+      
       // Get class data from new /classes/user/{userId} endpoint
+      console.log('🌐 Calling classService.getClassByUser with user ID:', user.id);
       const classResponse = await classService.getClassByUser(user.id);
+      console.log('📨 Got class response:', classResponse);
       
       if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
-        console.log('No classes found in API response:', classResponse);
+        console.log('🚨 No classes found in API response:', classResponse);
         setClasses([]);
         setSelectedClassId('all');
+        setInitialLoading(false); // Stop loading when no classes found
+        
+        // This might indicate a backend issue or authorization problem
+        if (!classResponse || !classResponse.success) {
+          handleError(new Error('Failed to fetch classes from server'), {
+            toastMessage: t('failedToFetchClasses', 'Failed to fetch classes')
+          });
+        }
         return;
       }
 
@@ -239,13 +297,35 @@ export default function StudentsManagement() {
 
       console.log(`User ${user.username} has access to ${teacherClasses.length} classes:`, 
         teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
+      
+      // Mark classes as initialized successfully
+      classesInitialized.current = true;
+      
+      // If we get here successfully, data loading should finish soon
+      // Set a fallback timer in case fetchStudents doesn't get called
+      setTimeout(() => {
+        if (initialLoading) {
+          console.log('⏰ Fallback: Setting initialLoading to false after successful class initialization');
+          setInitialLoading(false);
+        }
+      }, 2000);
         
-    } catch (error) {
-      console.error('Failed to fetch classes from API:', error);
+    } catch (err) {
+      console.error('🚨 CAUGHT ERROR in initializeClasses:', err);
+      console.log('🚨 Error details:', {
+        message: err.message,
+        response: err.response,
+        code: err.code
+      });
+      handleError(err, {
+        toastMessage: t('failedToFetchClasses', 'Failed to fetch classes')
+      });
       setClasses([]);
       setSelectedClassId('all');
+      setInitialLoading(false); // Stop loading on error
+      console.log('🚨 Set initialLoading to false after error');
     }
-  }, [user?.id, user?.username]);
+  }, [user?.id, user?.username, handleError, t]);
 
   // Fetch students with pagination and filters using my-students endpoint
   const fetchStudents = useStableCallback(async (search = searchTerm, force = false, skipLoading = false) => {
@@ -373,9 +453,11 @@ export default function StudentsManagement() {
         });
       }
        
-    } catch (error) {
-      console.error('Error fetching students from school:', error);
-      showError(error.message || t('errorFetchingStudents'));
+    } catch (err) {
+      console.error('Error fetching students from school:', err);
+      handleError(err, {
+        toastMessage: t('errorFetchingStudents', 'Failed to fetch students')
+      });
       setStudents([]);
       setAllStudents([]);
       setFilteredStudents([]);
@@ -385,11 +467,15 @@ export default function StudentsManagement() {
       }
       fetchingRef.current = false;
     }
-  }, [selectedClassId, user?.id, showError, t]);
+  }, [selectedClassId, user?.id, showError, t, handleError]);
 
   // Initialize classes when component mounts
   useEffect(() => {
-    initializeClasses();
+    console.log('🔄 Component mounted, initializing classes...');
+    initializeClasses().catch((err) => {
+      console.error('🚨 Unhandled error in initializeClasses:', err);
+      setInitialLoading(false); // Ensure loading stops
+    });
   }, [initializeClasses]);
 
   // Initial fetch when classes become available
@@ -1165,7 +1251,26 @@ export default function StudentsManagement() {
     navigate('/students/select');
   };
 
-  // Show initial loading state
+  // Show error state if error exists (prioritize over loading)  
+  console.log('🔍 StudentsManagement render check - error:', error, 'initialLoading:', initialLoading);
+  
+  if (error) {
+    console.log('✅ StudentsManagement: Showing error display for:', error);
+    return (
+      <ErrorDisplay 
+        error={error} 
+        onRetry={() => retry(() => {
+          clearError();
+          initializeClasses();
+          fetchStudents();
+        })}
+        size="lg"
+        className="min-h-screen bg-gray-50"
+      />
+    );
+  }
+
+  // Show initial loading state (only if no error)
   if (initialLoading) {
     return (
       <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">
@@ -1182,11 +1287,20 @@ export default function StudentsManagement() {
   return (
     <PageTransition variant="fade" className="p-6">      
       {/* Search and filter */}
-      <FadeInSection className="bg-white shadow rounded-lg p-4 sm:p-6 hover:shadow-xl transition-all duration-300">
+      <FadeInSection className="bg-white shadow rounded-lg p-4 sm:p-6">
         {/* Header and search bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('studentsManagement')}</h1>
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold text-gray-900">{t('studentsManagement')}</h1>
+            {/* Debug: Test error button */}
+            <button
+              onClick={triggerTestError}
+              className="px-3 py-1 text-xs text-red-600 border border-red-300 rounded hover:bg-red-50"
+            >
+              Test Error
+            </button>
+          </div>
           <div className="mt-1 space-y-1">
             <div className="flex items-center space-x-4">
               <p className="text-sm text-gray-600">

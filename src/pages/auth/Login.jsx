@@ -8,10 +8,13 @@ import { api, utils } from '../../utils/api';
 import Footer from '../../components/layout/Footer';
 import plpLogo from '../../assets/plp-logo-v2.png';
 import moeysLogo from '../../assets/moeys-logo.png';
+import ErrorDisplay from '../../components/ui/ErrorDisplay';
+import { useErrorHandler } from '../../hooks/useErrorHandler';
 
 export default function Login({ setUser }) {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
+  const { error, handleError, clearError, retry } = useErrorHandler();
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -22,6 +25,7 @@ export default function Login({ setUser }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    clearError();
 
     try {
       const response = await api.auth.login({
@@ -37,12 +41,34 @@ export default function Login({ setUser }) {
         showError(utils.auth.getErrorMessage(response, t));
       }
     } catch (err) {
-      showError(utils.auth.getErrorMessage(err, t));
+      const errorMessage = utils.auth.getErrorMessage(err, t);
+      handleError(err, {
+        toastMessage: errorMessage,
+        setError: err.response?.status === 401 ? false : true // Don't show error display for auth errors, just toast
+      });
       console.error('Login error:', err);
     } finally {
       setLoading(false);
     }
   };
+
+  // Show error display for network/server errors (not auth errors)
+  if (error && error.type !== 'auth') {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <div className="flex justify-end p-4">
+          <LanguageSwitcher />
+        </div>
+        <ErrorDisplay 
+          error={error} 
+          onRetry={() => retry()}
+          size="default"
+          className="flex-1"
+        />
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

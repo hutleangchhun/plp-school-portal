@@ -15,21 +15,42 @@ import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/acade
 import { useStableCallback } from '../../utils/reactOptimization';
 import Dropdown from '@/components/ui/Dropdown';
 import React from 'react'; // Added for useMemo
+import ErrorDisplay from '../../components/ui/ErrorDisplay';
+import { useErrorHandler } from '../../hooks/useErrorHandler';
 
 export default function ClassesManagement() {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
+  const { error, handleError, clearError, retry } = useErrorHandler();
   
   // Get authenticated user data
-  const [user, setUser] = useState(() => {
+  const [user] = useState(() => {
     try {
       const userData = localStorage.getItem('user');
       return userData ? JSON.parse(userData) : null;
-    } catch (error) {
-      console.error('Error parsing user data:', error);
+    } catch (err) {
+      console.error('Error parsing user data from localStorage:', err);
+      // Can't use handleError here since hook isn't initialized yet
       return null;
     }
   });
+
+  // Handle localStorage parsing error after hooks are initialized
+  useEffect(() => {
+    if (!user) {
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          JSON.parse(userData); // Test parsing again
+        }
+      } catch (err) {
+        handleError(err, {
+          toastMessage: t('failedToParseUserData', 'Failed to parse user data'),
+          setError: false // Don't show error display for localStorage parsing issues
+        });
+      }
+    }
+  }, [user, handleError, t]);
   
   // Add this useEffect to log the user object when the component mounts
   useEffect(() => {
@@ -132,9 +153,13 @@ export default function ClassesManagement() {
         console.log('No school ID found in account data, using default');
         setSchoolInfo({ id: null, name: 'No School Found' });
       }
-    } catch (error) {
-      console.error('Error in fetchSchoolInfo:', error);
+    } catch (err) {
+      console.error('Error in fetchSchoolInfo:', err);
+      handleError(err, {
+        toastMessage: t('failedToFetchSchoolId', 'Failed to fetch school information')
+      });
       setSchoolInfo({ id: null, name: 'Error Loading School' });
+      setInitialLoading(false); // Stop loading on error
     }
   };
 
@@ -202,8 +227,11 @@ export default function ClassesManagement() {
         console.warn('No account data received from server');
         return user;
       }
-    } catch (error) {
-      console.error('Error refreshing user data:', error);
+    } catch (err) {
+      console.error('Error refreshing user data:', err);
+      handleError(err, {
+        toastMessage: t('failedToFetchUserData', 'Failed to refresh user data')
+      });
       return user; // Return original user data if refresh fails
     }
   };
@@ -317,12 +345,15 @@ export default function ClassesManagement() {
       
     } catch (error) {
       console.error('Failed to fetch classes:', error);
-      showError(t('error.fetchingClasses') || 'Failed to fetch classes');
+      handleError(error, {
+        toastMessage: t('error.fetchingClasses') || 'Failed to fetch classes'
+      });
       setClasses([]); // Set empty array on error
+      setInitialLoading(false); // Stop loading on error
     } finally {
       setLoading(false);
     }
-  }, [showError, t, user?.id, user?.username]);
+  }, [showError, t, user?.id, user?.username, handleError]);
   useEffect(() => {
     if (user?.id) {
       console.log('User authenticated, re-fetching classes...');
@@ -565,7 +596,22 @@ export default function ClassesManagement() {
     return classes.reduce((maxCls, cls) => (cls.enrolled > (maxCls?.enrolled ?? -1) ? cls : maxCls), null);
   }, [classes]);
 
-  // Show initial loading state
+  // Show error state if error exists (prioritize over loading)
+  if (error) {
+    return (
+      <ErrorDisplay 
+        error={error} 
+        onRetry={() => retry(() => {
+          clearError();
+          window.location.reload(); // Reload the page to reinitialize everything
+        })}
+        size="lg"
+        className="min-h-screen bg-gray-50"
+      />
+    );
+  }
+
+  // Show initial loading state (only if no error)
   if (initialLoading) {
     return (
       <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">

@@ -24,7 +24,7 @@ export const authService = {
       const { accessToken, user } = response.data;
       
       // Validate user role (teachers only)
-      if (user.roleId !== 8) {
+      if (user.roleId !== 8 && user.roleId !== 7 && user.roleId !== 6 && user.roleId !== 5 && user.roleId !== 4 && user.roleId !== 3) {
         return {
           success: false,
           error: 'Only teachers and students can access this portal'

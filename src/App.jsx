@@ -19,6 +19,7 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { api, utils } from './utils/api';
 import { ProtectedRoute } from './components/common/DynamicRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function AppContent() {
   const { t } = useLanguage();
@@ -121,7 +122,9 @@ function App() {
   return (
     <LanguageProvider>
       <ToastProvider>
-        <AppContent />
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
       </ToastProvider>
     </LanguageProvider>
   );

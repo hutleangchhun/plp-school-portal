@@ -1,3 +1,5 @@
+import { se } from "date-fns/locale";
+
 // English translations
 export const en = {
   // Common
@@ -9,6 +11,19 @@ export const en = {
   delete: 'Delete',
   edit: 'Edit',
   refresh: 'Refresh',
+  
+  // Error handling
+  networkError: 'Network Error',
+  serverError: 'Server Error',
+  connectionError: 'Connection Error',
+  authenticationError: 'Authentication Error',
+  networkErrorDesc: 'Please check your internet connection and try again.',
+  serverErrorDesc: 'Server is temporarily unavailable. Please try again later.',
+  generalErrorDesc: 'Something went wrong. Please try again.',
+  authErrorDesc: 'Your session has expired. Please login again.',
+  failedToParseUserData: 'Failed to parse user data',
+  failedToFetchClasses: 'Failed to fetch classes',
+  checkConnection: 'Please check your connection and try again.',
   
   // Navigation
   dashboard: 'Dashboard',
@@ -297,6 +312,14 @@ export const en = {
   resetFilters: 'Reset Filters',
   allDistricts: 'All Districts',
   allProvinces: 'All Provinces',
+  selectAllStudents: 'Select all students',
+  selectedAllStudents: 'Selected all students',
+  selectingAllStudents: 'Selecting all students...',
+  selectingAll: 'Selecting all...',
+  allGenders: 'All Genders',
+  selectAllOnPage: 'Select all students on this page',
+  deselectAllOnPage: 'Deselect all students on this page',
+
 
   
   // Class selection

@@ -11,13 +11,15 @@ import studentService from '../../utils/api/services/studentService';
 import classService from '../../utils/api/services/classService';
 import Badge from '@/components/ui/Badge';
 import { useStableCallback } from '../../utils/reactOptimization';
+import ErrorDisplay from '../../components/ui/ErrorDisplay';
+import { useErrorHandler } from '../../hooks/useErrorHandler';
 
 export default function Dashboard({ user: initialUser }) {
   const { t } = useLanguage();
+  const { error, handleError, clearError, retry } = useErrorHandler();
   const [user, setUserData] = useState(initialUser);
   const [showWelcome, setShowWelcome] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [studentCount, setStudentCount] = useState(0);
   const [classCount, setClassCount] = useState(0);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -28,8 +30,11 @@ export default function Dashboard({ user: initialUser }) {
     try {
       const userData = localStorage.getItem('user');
       return userData ? JSON.parse(userData) : null;
-    } catch (error) {
-      setError(`Failed to parse user data from localStorage: ${error.message}`);
+    } catch (err) {
+      handleError(err, { 
+        toastMessage: t('failedToParseUserData', 'Failed to parse user data from localStorage'),
+        setError: false 
+      });
       return null;
     }
   });
@@ -45,7 +50,7 @@ export default function Dashboard({ user: initialUser }) {
   // Fetch comprehensive data
   const fetchAllData = useStableCallback(async () => {
     console.log('🔄 Dashboard: fetchAllData called at', new Date().toISOString());
-    setError(null);
+    clearError();
     
     try {
       // Fetch detailed user data with school information
@@ -70,7 +75,6 @@ export default function Dashboard({ user: initialUser }) {
       
       if (userData && (userData.username || userData.fullname || userData.email)) {
         setUserData(userData);
-        setError(null);
       } else {
         throw new Error(t('noValidUserData', 'No valid user data received from API'));
       }
@@ -125,7 +129,7 @@ export default function Dashboard({ user: initialUser }) {
               };
             } catch (error) {
               const id = classData.classId || classData.class_id || classData.id;
-              setError(`Failed to fetch data for class ${id}: ${error.message}`);
+              console.warn(`Failed to fetch data for class ${id}:`, error);
               return {
                 id: id,
                 name: classData.name || `Class ${id}`,
@@ -138,7 +142,7 @@ export default function Dashboard({ user: initialUser }) {
           const classData = await Promise.all(classDetailsPromises);
           setClassDetails(classData);
         } catch (error) {
-          setError(`Failed to fetch class details: ${error.message}`);
+          console.warn('Failed to fetch class details:', error);
           setClassDetails([]);
         }
       } else {
@@ -148,11 +152,13 @@ export default function Dashboard({ user: initialUser }) {
       setLastRefresh(new Date());
       
     } catch (error) {
-      setError(error.message || t('failedToLoadDashboard', 'Failed to load dashboard data'));
+      handleError(error, {
+        toastMessage: t('failedToLoadDashboard', 'Failed to load dashboard data')
+      });
     } finally {
       setInitialLoading(false);
     }
-  }, [authUser?.id, t]); // Fixed: use authUser.id consistently
+  }, [authUser?.id, t, handleError, clearError]); // Fixed: use authUser.id consistently
 
   // Initial data fetch
   useEffect(() => {
@@ -191,24 +197,12 @@ export default function Dashboard({ user: initialUser }) {
   // Error state
   if (error) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center">
-        <div className="text-center bg-white rounded-lg p-8 shadow-md">
-          <div className="text-red-600 mb-4">
-            <svg className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('error') || 'កំហុស'}</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <Button 
-            onClick={() => window.location.reload()} 
-            variant="primary"
-            size="default"
-          >
-            {t('retry') || 'ព្យាយាមម្តងទៀត'}
-          </Button>
-        </div>
-      </div>
+      <ErrorDisplay 
+        error={error} 
+        onRetry={() => retry(fetchAllData)}
+        size="lg"
+        className="min-h-screen bg-gray-50"
+      />
     );
   }
 
