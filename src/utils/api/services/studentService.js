@@ -373,6 +373,7 @@ export const studentService = {
    * @param {number} [params.classId] - Specific class ID to filter students
    * @param {number} [params.page=1] - Page number for pagination
    * @param {number} [params.limit=5] - Number of items per page
+   * @param {string} [params.academicYear] - Filter by academic year
    * @returns {Promise<Object>} Response with student data and pagination info
    */
   async getMyStudents(params = {}) {
@@ -475,6 +476,10 @@ export const studentService = {
    * @param {string} [params.search=''] - Search term for filtering students
    * @param {number} [params.page=1] - Page number for pagination
    * @param {number} [params.limit=10] - Number of items per page
+   * @param {string} [params.academicYear] - Filter by academic year
+   * @param {string} [params.gender] - Filter by gender (MALE/FEMALE)
+   * @param {string} [params.dateOfBirth] - Filter by date of birth (YYYY-MM-DD)
+   * @param {string|number} [params.gradeLevel] - Filter by grade level
    * @returns {Promise<Object>} Response with student data from all classes in the school
    */
   async getStudentsBySchool(schoolId, params = {}) {
@@ -483,33 +488,22 @@ export const studentService = {
         throw new Error('School ID is required to fetch students');
       }
 
-      const { 
-        search = '', 
-        page = 1, 
+      const {
+        search = '',
+        page = 1,
         limit = 10,
-        classId: incomingClassId
+        classId: incomingClassId,
+        academicYear,
+        gender,
+        dateOfBirth,
+        gradeLevel
       } = params;
+
+      // Use the provided classId or default to no filter (get all students from school)
+      const classId = incomingClassId;
 
       // Import classService here to avoid circular dependency
       const { classService } = await import('./classService.js');
-      
-      // Determine classId to query: use provided, else auto-detect the Master Class id
-      let classId = incomingClassId;
-      if (!classId) {
-        try {
-          const classesResp = await classService.getMasterClassesList(schoolId, { page: 1, limit: 50 });
-          const classes = classesResp?.data || [];
-          const master = classes.find(c => c.section === 'MASTER' || /master/i.test(c.name || ''));
-          if (master) {
-            classId = master.class_id || master.classId || master.id;
-            console.log('Auto-detected Master Class ID:', classId, 'for school', schoolId);
-          } else {
-            console.warn('Master Class not found for school', schoolId, '- falling back to no classId filter.');
-          }
-        } catch (e) {
-          console.warn('Failed to fetch master classes list; proceeding without classId filter:', e);
-        }
-      }
 
       // Use the master-class endpoint to get students from the school with search and pagination
       const apiParams = {
@@ -521,6 +515,12 @@ export const studentService = {
       if (classId) {
         apiParams.classId = String(classId);
       }
+
+      // Add additional filters
+      if (academicYear) apiParams.academicYear = academicYear;
+      if (gender) apiParams.gender = gender;
+      if (dateOfBirth) apiParams.dateOfBirth = dateOfBirth;
+      if (gradeLevel) apiParams.gradeLevel = gradeLevel;
 
       const response = await classService.getMasterClasses(schoolId, apiParams);
       

@@ -130,6 +130,10 @@ export const classService = {
    * @param {number} [params.limit=10] - Number of items per page
    * @param {string} [params.search=''] - Search term
    * @param {string|number} [params.classId] - Class ID to filter by
+   * @param {string} [params.academicYear] - Filter by academic year
+   * @param {string} [params.gender] - Filter by gender (MALE/FEMALE)
+   * @param {string} [params.dateOfBirth] - Filter by date of birth (YYYY-MM-DD)
+   * @param {string|number} [params.gradeLevel] - Filter by grade level
    * @returns {Promise<Object>} Response with students from all classes in the school
    */
   async getMasterClasses(schoolId, params = {}) {
@@ -138,11 +142,15 @@ export const classService = {
         throw new Error('School ID is required for master classes endpoint');
       }
 
-      const { 
-        page = 1, 
-        limit = 10, 
+      const {
+        page = 1,
+        limit = 10,
         search = '',
-        classId
+        classId,
+        academicYear,
+        gender,
+        dateOfBirth,
+        gradeLevel
       } = params;
 
       // Build query params for the master-class endpoint
@@ -161,10 +169,18 @@ export const classService = {
         queryParams.classId = classId;
       }
 
+      // Add additional filter parameters
+      if (academicYear) queryParams.academicYear = academicYear;
+      if (gender) queryParams.gender = gender;
+      if (dateOfBirth) queryParams.dateOfBirth = dateOfBirth;
+      if (gradeLevel) queryParams.gradeLevel = gradeLevel;
+
+      console.log('Sending master classes API request for school', schoolId, 'with queryParams:', queryParams);
+
       const response = await handleApiResponse(() =>
         apiClient_.get(ENDPOINTS.CLASSES.MASTER(schoolId), { params: queryParams })
       );
-      
+
       console.log('Raw master classes API response for school', schoolId, 'with params', queryParams, ':', response);
       
       // Handle the nested response structure from the master-class endpoint

@@ -43,7 +43,7 @@ const StudentSelection = () => {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   
-  // Use the custom hook for managing selected students
+  // Use the custom hook for managing selected students (fresh session - no persistence)
   const {
     selectedStudents,
     selectedStudentsData,
@@ -52,6 +52,66 @@ const StudentSelection = () => {
     clearAll,
     isSelected
   } = useSelectedStudents();
+
+  // Override: Always start with empty selection for StudentSelection
+  const [freshSelectedStudents, setFreshSelectedStudents] = useState([]);
+  const [freshSelectedStudentsData, setFreshSelectedStudentsData] = useState({});
+
+  // Custom handlers that don't persist to localStorage
+  const freshHandleSelectStudent = useCallback((student) => {
+    const studentId = student.id;
+    setFreshSelectedStudents(prev => {
+      if (prev.includes(studentId)) {
+        setFreshSelectedStudentsData(prevData => {
+          const newData = { ...prevData };
+          delete newData[studentId];
+          return newData;
+        });
+        return prev.filter(id => id !== studentId);
+      } else {
+        setFreshSelectedStudentsData(prevData => ({
+          ...prevData,
+          [studentId]: student
+        }));
+        return [...prev, studentId];
+      }
+    });
+  }, []);
+
+  const freshRemoveStudent = useCallback((studentId) => {
+    setFreshSelectedStudents(prev => prev.filter(id => id !== studentId));
+    setFreshSelectedStudentsData(prevData => {
+      const newData = { ...prevData };
+      delete newData[studentId];
+      return newData;
+    });
+  }, []);
+
+  const freshClearAll = useCallback(() => {
+    setFreshSelectedStudents([]);
+    setFreshSelectedStudentsData({});
+  }, []);
+
+  const freshIsSelected = useCallback((studentId) => {
+    return freshSelectedStudents.includes(studentId);
+  }, [freshSelectedStudents]);
+
+  // Use fresh state instead of persisted state
+  const actualSelectedStudents = freshSelectedStudents;
+  const actualSelectedStudentsData = freshSelectedStudentsData;
+  const actualHandleSelectStudent = freshHandleSelectStudent;
+  const actualRemoveStudent = freshRemoveStudent;
+  const actualClearAll = freshClearAll;
+  const actualIsSelected = freshIsSelected;
+
+  // Auto-open sidebar when students are selected
+  useEffect(() => {
+    if (actualSelectedStudents.length > 0) {
+      setShowSelectedStudentsSidebar(true);
+    } else {
+      setShowSelectedStudentsSidebar(false);
+    }
+  }, [actualSelectedStudents.length]);
   const [schoolId, setSchoolId] = useState(null);
   const [listLoading, setListLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -71,9 +131,13 @@ const StudentSelection = () => {
     gradeLevel: ''
   });
   const [selectedClass, setSelectedClass] = useState('');
-  const [showClassModal, setShowClassModal] = useState(false);
-  const [assigningStudents, setAssigningStudents] = useState(false);
   const [selectingAll, setSelectingAll] = useState(false);
+  const [showSelectedStudentsSidebar, setShowSelectedStudentsSidebar] = useState(false);
+
+  // Clear any persisted selected students on component mount (fresh session)
+  useEffect(() => {
+    clearAll();
+  }, []); // Empty dependency array = runs once on mount
 
   // Debounce the search input so typing doesn't trigger immediate refetch and lose focus
   useEffect(() => {
@@ -269,26 +333,21 @@ const StudentSelection = () => {
     } finally {
       setListLoading(false);
     }
-  }, [schoolId, debouncedSearch, pagination.page, pagination.limit, showError, t]);
+  }, [schoolId, debouncedSearch, pagination.page, pagination.limit, filters.academicYear, filters.gender, filters.dateOfBirth, filters.gradeLevel, showError, t]);
 
-  // Fetch students when pagination or search changes (using debounced search)
+  // Fetch students when pagination, search, or filters change
   useEffect(() => {
     if (schoolId) {
       fetchData();
     }
-  }, [schoolId, fetchData]); // Simplified dependencies
+  }, [schoolId, fetchData]); // fetchData now includes all filter dependencies
 
-  // Separate effect to trigger fetch when filters change
+  // Reset pagination to page 1 when filters change (but not when pagination changes)
   useEffect(() => {
-    if (schoolId) {
-      const timer = setTimeout(() => {
-        // Only reset to page 1 if we're not already on page 1
-        setPagination(prev => ({ ...prev, page: 1 }));
-      }, 100); // Small delay to debounce filter changes
-      
-      return () => clearTimeout(timer);
+    if (schoolId && pagination.page !== 1) {
+      setPagination(prev => ({ ...prev, page: 1 }));
     }
-  }, [filters.academicYear, filters.gender, filters.dateOfBirth, filters.gradeLevel]);
+  }, [filters.academicYear, filters.gender, filters.dateOfBirth, filters.gradeLevel, schoolId]);
 
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -339,7 +398,7 @@ const StudentSelection = () => {
       
       if (allStudentsResponse && allStudentsResponse.success && allStudentsResponse.data) {
         // Filter out students that are already selected to avoid unnecessary operations
-        const studentsToSelect = allStudentsResponse.data.filter(student => !isSelected(student.id));
+        const studentsToSelect = allStudentsResponse.data.filter(student => !actualIsSelected(student.id));
         
         // Select students in batches to avoid blocking the UI
         let selectedCount = 0;
@@ -352,7 +411,7 @@ const StudentSelection = () => {
           await new Promise(resolve => {
             setTimeout(() => {
               batch.forEach(student => {
-                handleSelectStudent(student);
+                actualHandleSelectStudent(student);
                 selectedCount++;
               });
               resolve();
@@ -376,7 +435,7 @@ const StudentSelection = () => {
 
   // Check if all current page students are selected
   const areAllCurrentStudentsSelected = () => {
-    return students.length > 0 && students.every(student => isSelected(student.id));
+    return students.length > 0 && students.every(student => actualIsSelected(student.id));
   };
 
   // Handle select/deselect all students on current page
@@ -384,83 +443,21 @@ const StudentSelection = () => {
     if (areAllCurrentStudentsSelected()) {
       // Deselect all students on current page
       students.forEach(student => {
-        if (isSelected(student.id)) {
-          removeStudent(student.id);
+        if (actualIsSelected(student.id)) {
+          actualRemoveStudent(student.id);
         }
       });
     } else {
       // Select all students on current page
       students.forEach(student => {
-        if (!isSelected(student.id)) {
-          handleSelectStudent(student);
+        if (!actualIsSelected(student.id)) {
+          actualHandleSelectStudent(student);
         }
       });
     }
   };
 
 
-  const handleAssignToClass = async () => {
-    if (!selectedClass || selectedStudents.length === 0) {
-      showError(t('selectClassFirst') || 'សូមជ្រើសរើសថ្នាក់ជាមុនសិន');
-      return;
-    }
-
-    try {
-      setAssigningStudents(true);
-      
-      // Convert selectedClass to number for API call
-      const classId = parseInt(selectedClass);
-      
-      // Find the selected class details to check capacity
-      const selectedClassData = classes.find(cls => 
-        cls.id === classId || cls.id === selectedClass || 
-        cls.id.toString() === selectedClass
-      );
-      
-      if (selectedClassData && selectedClassData.maxStudents) {
-        // Get current enrollment count for this class
-        try {
-          const currentStudentsResponse = await studentService.getMyStudents({ classId: classId });
-          const currentEnrollment = currentStudentsResponse?.data?.length || 0;
-          const maxStudents = selectedClassData.maxStudents;
-          const remainingCapacity = maxStudents - currentEnrollment;
-          
-          console.log(`Class capacity check: ${currentEnrollment}/${maxStudents} (${remainingCapacity} remaining)`);
-          
-          // Check if adding selected students would exceed capacity
-          if (selectedStudents.length > remainingCapacity) {
-            showError(
-              t('classCapacityExceeded') || 
-              `Cannot assign ${selectedStudents.length} students. Class "${selectedClassData.name}" has only ${remainingCapacity} spots remaining (${currentEnrollment}/${maxStudents} currently enrolled).`
-            );
-            return;
-          }
-        } catch (error) {
-          console.warn('Could not check current enrollment, proceeding with assignment:', error);
-        }
-      }
-      
-      await studentService.addStudentsToClass(classId, selectedStudents);
-      
-      // Show success message
-      const selectedClassName = selectedClassData?.name || 'Unknown Class';
-      showSuccess(t('studentsAssignedSuccessfully').replace('{count}', selectedStudents.length).replace('{className}', selectedClassName));
-      
-      // Reset selections and close modal
-      clearAll();
-      setSelectedClass('');
-      setShowClassModal(false);
-      
-      // Refresh the student list
-      fetchData();
-      
-    } catch (error) {
-      console.error('Error assigning students to class:', error);
-      showError(t('errorAssigningStudents') || 'កំហុសក្នុងការកំណត់សិស្សទៅថ្នាក់');
-    } finally {
-      setAssigningStudents(false);
-    }
-  };
 
   // Show initial loading state or error
   if (initialLoading) {
@@ -638,27 +635,17 @@ const StudentSelection = () => {
           
         </FadeInSection>
 
-        {/* Selected Students Display */}
-        <FadeInSection delay={300}>
-          <SelectedStudentsManager
-            selectedStudents={selectedStudents}
-            selectedStudentsData={selectedStudentsData}
-            onRemoveStudent={removeStudent}
-            onClearAll={clearAll}
-            onBulkAction={(actionKey) => {
-              if (actionKey === 'assignToClass') {
-                setShowClassModal(true);
-              }
-            }}
-            actions={[
-              {
-                key: 'assignToClass',
-                label: t('assignToClass') || 'កំណត់ទៅថ្នាក់',
-                className: 'bg-indigo-600 hover:bg-indigo-700 text-white'
-              }
-            ]}
-          />
-        </FadeInSection>
+        {/* Selected Students Sidebar */}
+        <SelectedStudentsManager
+          selectedStudents={actualSelectedStudents}
+          selectedStudentsData={actualSelectedStudentsData}
+          onRemoveStudent={actualRemoveStudent}
+          onClearAll={actualClearAll}
+          classes={classes}
+          isOpen={showSelectedStudentsSidebar}
+          onToggle={setShowSelectedStudentsSidebar}
+          autoOpen={false}
+        />
 
         {/* Students List */}
         <FadeInSection delay={400}>
@@ -732,8 +719,8 @@ const StudentSelection = () => {
                       name="students"
                       type="checkbox"
                       className="h-5 w-5 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-gray-300 rounded-md transition-colors"
-                      checked={isSelected(student.id)}
-                      onChange={() => handleSelectStudent(student)}
+                      checked={actualIsSelected(student.id)}
+                      onChange={() => actualHandleSelectStudent(student)}
                     />
                   </div>
                   
@@ -758,17 +745,41 @@ const StudentSelection = () => {
                           {student.studentId}
                         </span>
                         <span>•</span>
-                        {student.student_grade_level && (
+                        {student.gender && (
                           <>
-                            <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">
-                              {t('grade', 'Grade')} {student.student_grade_level}
+                            <span className={`px-2 py-0.5 rounded font-medium ${
+                              student.gender === 'MALE'
+                                ? 'bg-blue-100 text-blue-700'
+                                : student.gender === 'FEMALE'
+                                ? 'bg-pink-100 text-pink-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {student.gender === 'MALE' ? t('male', 'Male') :
+                               student.gender === 'FEMALE' ? t('female', 'Female') :
+                               student.gender}
                             </span>
                             <span>•</span>
                           </>
                         )}
-                        {student.student_academic_year && (
-                          <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium">
-                            {student.student_academic_year}
+                        {student.gradeLevel && (
+                          <>
+                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium">
+                              {t('grade', 'Grade')} {student.gradeLevel}
+                            </span>
+                            <span>•</span>
+                          </>
+                        )}
+                        {student.academicYear && (
+                          <>
+                            <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium">
+                              {student.academicYear}
+                            </span>
+                            <span>•</span>
+                          </>
+                        )}
+                        {student.dateOfBirth && (
+                          <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded font-medium">
+                            {new Date(student.dateOfBirth).toLocaleDateString()}
                           </span>
                         )}
                       </div>
@@ -830,83 +841,6 @@ const StudentSelection = () => {
         </div>
         </FadeInSection>
 
-      {/* Class Assignment Modal */}
-      {showClassModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowClassModal(false)}></div>
-          
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {t('assignToClass') || 'កំណត់ទៅថ្នាក់'}
-                </h3>
-                <button
-                  onClick={() => setShowClassModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5 text-gray-400" />
-                </button>
-              </div>
-              
-              <div className="mb-6">
-                <p className="text-sm text-gray-600 mb-4">
-                  {t('selectClassToAssign') || `Assign ${selectedStudents.length} selected student${selectedStudents.length !== 1 ? 's' : ''} to:`}
-                </p>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 block">
-                    {t('selectClass') || 'Select Class'}
-                  </label>
-                  <Select value={selectedClass} onValueChange={setSelectedClass}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder={t('selectClass') || 'Select a class...'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classes.map((cls) => (
-                        <SelectItem 
-                          key={cls.id} 
-                          value={cls.id.toString()}
-                        >
-                          {cls.name} - Grade {cls.gradeLevel} (Max: {cls.maxStudents || 50})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="flex space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowClassModal(false);
-                    setSelectedClass('');
-                  }}
-                  className="flex-1 h-11 border-gray-300 hover:bg-gray-50"
-                  disabled={assigningStudents}
-                >
-                  {t('cancel') || 'Cancel'}
-                </Button>
-                <Button
-                  onClick={handleAssignToClass}
-                  disabled={!selectedClass || assigningStudents}
-                  className="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300"
-                >
-                  {assigningStudents ? (
-                    <>
-                      <LoadingSpinner size="sm" variant="white" className="mr-2" />
-                      {t('assigning') || 'Assigning...'}
-                    </>
-                  ) : (
-                    <>{t('assignStudents') || 'Assign Students'}</>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       </div>
     </PageTransition>
   );

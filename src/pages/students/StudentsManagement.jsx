@@ -11,7 +11,6 @@ import { userService } from '../../utils/api/services/userService';
 import classService from '../../utils/api/services/classService';
 import { useStableCallback } from '../../utils/reactOptimization';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
-import SelectedStudentsManager from '../../components/students/SelectedStudentsManager';
 import useSelectedStudents from '../../hooks/useSelectedStudents';
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
@@ -97,6 +96,8 @@ export default function StudentsManagement() {
   // Other state variables
   const [searchTerm, setSearchTerm] = useState('');
   const [localSearchTerm, setLocalSearchTerm] = useState(''); // For immediate UI feedback
+  const [academicYearFilter, setAcademicYearFilter] = useState(''); // Academic year filter
+  const [debouncedAcademicYear, setDebouncedAcademicYear] = useState(''); // Debounced academic year
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -155,21 +156,32 @@ export default function StudentsManagement() {
   // Debounced search handler
   const handleSearchChange = useCallback((value) => {
     setLocalSearchTerm(value);
-    
+
     // Clear existing timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     // Apply client-side filter immediately for better UX
     const filtered = performClientSideSearch(allStudents, value);
     setFilteredStudents(filtered);
-    
+
     // Debounce server-side search
     searchTimeoutRef.current = setTimeout(() => {
       setSearchTerm(value);
     }, 500);
   }, [allStudents, performClientSideSearch]);
+
+  // Debounced academic year handler
+  const handleAcademicYearChange = useCallback((value) => {
+    setAcademicYearFilter(value);
+  }, []);
+
+  // Debounce the academic year filter
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedAcademicYear(academicYearFilter), 300);
+    return () => clearTimeout(id);
+  }, [academicYearFilter]);
   
   // Fetch current user's school ID - try from classes first, then my-account
   const fetchSchoolId = useStableCallback(async () => {
@@ -242,10 +254,7 @@ export default function StudentsManagement() {
 
     try {
       console.log('Fetching classes using new classes/user API...');
-      
-      // DEBUG: Force error for testing
-      throw new Error('NETWORK_ERROR: Connection failed');
-      
+
       // Get class data from new /classes/user/{userId} endpoint
       console.log('🌐 Calling classService.getClassByUser with user ID:', user.id);
       const classResponse = await classService.getClassByUser(user.id);
@@ -328,7 +337,7 @@ export default function StudentsManagement() {
   }, [user?.id, user?.username, handleError, t]);
 
   // Fetch students with pagination and filters using my-students endpoint
-  const fetchStudents = useStableCallback(async (search = searchTerm, force = false, skipLoading = false) => {
+  const fetchStudents = useStableCallback(async (search = searchTerm, force = false, skipLoading = false, academicYear = academicYearFilter) => {
     // Ensure we have classes initialized before fetching students
     if (!classesInitialized.current) {
       console.log('Classes not yet initialized, skipping student fetch...');
@@ -419,6 +428,11 @@ export default function StudentsManagement() {
       console.log(`API request params:`, requestParams);
       console.log(`=== END FETCH STUDENTS ===`);
        
+      // Add academic year filter if provided
+      if (academicYear && academicYear.trim()) {
+        requestParams.academicYear = academicYear.trim();
+      }
+
       // Use my-students endpoint (teacher-scoped)
       const response = await studentService.getMyStudents(requestParams);
        
@@ -467,7 +481,7 @@ export default function StudentsManagement() {
       }
       fetchingRef.current = false;
     }
-  }, [selectedClassId, user?.id, showError, t, handleError]);
+  }, [selectedClassId, user?.id, academicYearFilter, showError, t, handleError]);
 
   // Initialize classes when component mounts
   useEffect(() => {
@@ -492,10 +506,11 @@ export default function StudentsManagement() {
   const fetchParams = useMemo(() => ({
     searchTerm,
     selectedClassId,
+    academicYearFilter: debouncedAcademicYear,
     classesLength: classes.length,
     page: pagination.page,
     limit: pagination.limit
-  }), [searchTerm, selectedClassId, classes.length, pagination.page, pagination.limit]);
+  }), [searchTerm, selectedClassId, debouncedAcademicYear, classes.length, pagination.page, pagination.limit]);
 
   // Separate useEffect for class ID validation to avoid infinite loops
   useEffect(() => {
@@ -526,13 +541,13 @@ export default function StudentsManagement() {
     // Debounce only for search changes, immediate for filter changes
     const isSearchChange = fetchParams.searchTerm.trim() !== '';
     const delay = isSearchChange ? 500 : 100; // Small delay to batch state changes
-    
+
     console.log(`Setting timer with delay ${delay}ms to fetch students`);
     const timer = setTimeout(() => {
-      console.log(`Timer fired - calling fetchStudents with page ${fetchParams.page}, limit ${fetchParams.limit}`);
+      console.log(`Timer fired - calling fetchStudents with page ${fetchParams.page}, limit ${fetchParams.limit}, academicYear: ${debouncedAcademicYear}`);
       // Only fetch if not already fetching and has required data
       if (!fetchingRef.current && classesInitialized.current) {
-        fetchStudents(fetchParams.searchTerm, false);
+        fetchStudents(fetchParams.searchTerm, false, false, debouncedAcademicYear);
       } else {
         console.log('Skipping fetch - already fetching or classes not initialized');
       }
@@ -586,16 +601,19 @@ export default function StudentsManagement() {
   };
 
   // Reset pagination to page 1 when filters change
-  const prevFiltersRef = useRef({ selectedClassId });
+  const prevFiltersRef = useRef({ selectedClassId, academicYearFilter: debouncedAcademicYear });
   useEffect(() => {
-    if (prevFiltersRef.current.selectedClassId !== selectedClassId) {
+    const filtersChanged = prevFiltersRef.current.selectedClassId !== selectedClassId ||
+                          prevFiltersRef.current.academicYearFilter !== debouncedAcademicYear;
+
+    if (filtersChanged) {
       if (pagination.page !== 1) {
         console.log(`Filter changed - resetting pagination to page 1`);
         setPagination(prev => ({ ...prev, page: 1 }));
       }
-      prevFiltersRef.current = { selectedClassId };
+      prevFiltersRef.current = { selectedClassId, academicYearFilter: debouncedAcademicYear };
     }
-  }, [selectedClassId, pagination.page]); // Reset page when filters change
+  }, [selectedClassId, debouncedAcademicYear, pagination.page]); // Reset page when filters change
   
   // Get class information for the selected class
   const classInfo = selectedClassId !== 'all' 
@@ -1235,8 +1253,13 @@ export default function StudentsManagement() {
         </div>
       </div>
       <div className="flex justify-between items-center text-xs text-gray-500">
-        <span>{t('phone', 'Phone')}: {student.phone || 'N/A'}</span>
-        <Badge 
+        <div className="flex flex-col space-y-1">
+          <span>{t('phone', 'Phone')}: {student.phone || 'N/A'}</span>
+          {student.dateOfBirth && (
+            <span>{t('dateOfBirth', 'DOB')}: {new Date(student.dateOfBirth).toLocaleDateString()}</span>
+          )}
+        </div>
+        <Badge
           color={student.isActive ? 'green' : 'gray'}
           variant="filled"
           size="xs"
@@ -1419,6 +1442,16 @@ export default function StudentsManagement() {
                   </div>
                 )}
                 <div className="flex items-center space-x-2">
+                  <span className="text-gray-700 font-medium">{t('academicYear', 'Academic Year')}:</span>
+                  <input
+                    type="text"
+                    placeholder="2024-2025"
+                    value={academicYearFilter}
+                    onChange={(e) => handleAcademicYearChange(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 min-w-[120px]"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
                   <span className="text-gray-700 font-medium">{t('selectClass', 'Class')}:</span>
                   <Dropdown
                     value={selectedClassId}
@@ -1441,25 +1474,6 @@ export default function StudentsManagement() {
           </div>
         </div>
 
-        {/* Selected Students Display */}
-        <SelectedStudentsManager
-          selectedStudents={selectedStudents}
-          selectedStudentsData={selectedStudentsData}
-          onRemoveStudent={removeStudent}
-          onClearAll={clearAll}
-          onBulkAction={(actionKey) => {
-            if (actionKey === 'moveToMaster') {
-              setShowBulkDeleteDialog(true);
-            }
-          }}
-          actions={[
-            {
-              key: 'moveToMaster',
-              label: t('moveSelectedToMaster') || 'Move Selected to Master',
-              className: 'bg-red-600 hover:bg-red-700 text-white'
-            }
-          ]}
-        />
         
         {/* Students table */}
         <FadeInSection delay={100}>
