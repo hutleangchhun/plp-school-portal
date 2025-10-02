@@ -13,14 +13,6 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Pagination as UIPagination } from '../../components/ui/Table';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import SelectedStudentsManager from '../../components/students/SelectedStudentsManager';
-import useSelectedStudents from '../../hooks/useSelectedStudents';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../components/ui/select';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import Dropdown from '../../components/ui/Dropdown';
 
@@ -43,15 +35,7 @@ const StudentSelection = () => {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   
-  // Use the custom hook for managing selected students (fresh session - no persistence)
-  const {
-    selectedStudents,
-    selectedStudentsData,
-    handleSelectStudent,
-    removeStudent,
-    clearAll,
-    isSelected
-  } = useSelectedStudents();
+  // Using fresh state for student selection (no localStorage persistence)
 
   // Override: Always start with empty selection for StudentSelection
   const [freshSelectedStudents, setFreshSelectedStudents] = useState([]);
@@ -130,13 +114,13 @@ const StudentSelection = () => {
     dateOfBirth: null, // Date object for DatePicker
     gradeLevel: ''
   });
-  const [selectedClass, setSelectedClass] = useState('');
   const [selectingAll, setSelectingAll] = useState(false);
   const [showSelectedStudentsSidebar, setShowSelectedStudentsSidebar] = useState(false);
 
   // Clear any persisted selected students on component mount (fresh session)
   useEffect(() => {
-    clearAll();
+    localStorage.removeItem('selectedStudents');
+    localStorage.removeItem('selectedStudentsData');
   }, []); // Empty dependency array = runs once on mount
 
   // Debounce the search input so typing doesn't trigger immediate refetch and lose focus
