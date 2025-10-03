@@ -159,7 +159,25 @@ export const en = {
   studentsTo: 'student(s) to',
   studentsWillBePromoted: 'student(s) will be promoted to',
   targetGrade: 'Target Grade',
+
+  // Transfer student
+  transferStudent: 'Transfer Student',
+  selectTargetClass: 'Select the class to transfer the student to',
+  currentClass: 'Current Class',
+  targetClass: 'Target Class',
+  transfer: 'Transfer',
+  transferring: 'Transferring...',
+  studentTransferredSuccess: 'Student transferred successfully',
+  failedTransferStudent: 'Failed to transfer student',
+  noStudentOrClassSelected: 'No student or target class selected',
+  noClass: "Don't have class",
   updateStudent: 'Update Student',
+
+  // Student filters
+  classFilter: 'Class',
+  allStudents: 'All Students',
+  studentsWithoutClass: 'Without Class',
+  selectClassFilter: 'Select Class',
 
   // Class Management
   addClass: 'Add Class',
@@ -319,7 +337,7 @@ export const en = {
   allGenders: 'All Genders',
   selectAllOnPage: 'Select all students on this page',
   deselectAllOnPage: 'Deselect all students on this page',
-
+  viewSelectedStudents: 'View Selected Students',
 
   
   // Class selection

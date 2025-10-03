@@ -113,10 +113,10 @@ const SelectedStudentsManager = ({
 
   return (
     <>
-      {/* Toggle Button - Only show when students are selected */}
+      {/* Notification Badge - Only show when students are selected */}
       {selectedStudents.length > 0 && !isOpen && (
-        <div className="mb-4">
-          <Button
+        <div className="mb-4 flex justify-center">
+          <button
             onClick={() => {
               if (externalIsOpen !== undefined) {
                 onToggle?.(true);
@@ -124,12 +124,20 @@ const SelectedStudentsManager = ({
                 setInternalIsOpen(true);
               }
             }}
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-            size="sm"
+            className="group relative inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300"
+            title={t('viewSelectedStudents') || 'View Selected Students'}
           >
-            <Users className="h-4 w-4 mr-2" />
-            {t('viewSelectedStudents') || 'View Selected Students'} ({selectedStudents.length})
-          </Button>
+            <Users className="h-5 w-5" />
+            {/* Notification count badge */}
+            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md border-2 border-white">
+              {selectedStudents.length > 99 ? '99+' : selectedStudents.length}
+            </div>
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
+              {t('viewSelectedStudents') || 'View Selected Students'}
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+            </div>
+          </button>
         </div>
       )}
 
@@ -159,9 +167,7 @@ const SelectedStudentsManager = ({
                 </h4>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-2">
-                      {t('selectClass') || 'ជ្រើសរើសថ្នាក់'}
-                    </label>
+                    
                     <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto">
                       {classes.length === 0 ? (
                         <div className="p-4 text-center text-gray-500 text-sm">
@@ -206,13 +212,20 @@ const SelectedStudentsManager = ({
                         </div>
                       )}
                     </div>
-                    {selectedClass && (
-                      <div className="mt-2 text-xs text-blue-600">
-                        Selected: {classes.find(cls => (cls.id || cls.classId).toString() === selectedClass)?.name}
-                      </div>
-                    )}
                   </div>
-                  <Button
+                </div>
+              </div>
+            )}
+            <div className='flex justify-between items-center space-x-4'>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClearAll}
+              className="w-full"
+            >
+              {t('clearSelection') || 'សម្អាតការជ្រើសរើស'}
+            </Button>
+            <Button
                     onClick={handleAssignToClass}
                     disabled={!selectedClass || assigningStudents}
                     className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
@@ -227,19 +240,8 @@ const SelectedStudentsManager = ({
                       <>{t('assignStudents') || 'កំណត់សិស្ស'}</>
                     )}
                   </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Clear Selection Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onClearAll}
-              className="w-full"
-            >
-              {t('clearSelection') || 'សម្អាតការជ្រើសរើស'}
-            </Button>
+                  {/* Clear Selection Button */}
+            </div>
           </div>
         }
       >

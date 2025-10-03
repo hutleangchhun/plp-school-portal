@@ -143,7 +143,25 @@ export const km = {
   studentsTo: 'សិស្សទៅ',
   studentsWillBePromoted: 'សិស្សនឹងត្រូវបានដំឡើងថ្នាក់ទៅ',
   targetGrade: 'ថ្នាក់គោលដៅ',
+
+  // Transfer student
+  transferStudent: 'ផ្ទេរសិស្ស',
+  selectTargetClass: 'ជ្រើសរើសថ្នាក់ដើម្បីផ្ទេរសិស្សទៅ',
+  currentClass: 'ថ្នាក់បច្ចុប្បន្ន',
+  targetClass: 'ថ្នាក់គោលដៅ',
+  transfer: 'ផ្ទេរ',
+  transferring: 'កំពុងផ្ទេរ...',
+  studentTransferredSuccess: 'បានផ្ទេរសិស្សដោយជោគជ័យ',
+  failedTransferStudent: 'បរាជ័យក្នុងការផ្ទេរសិស្ស',
+  noStudentOrClassSelected: 'មិនមានសិស្សឬថ្នាក់គោលដៅត្រូវបានជ្រើសរើស',
+  noClass: 'មិនមានថ្នាក់',
   updateStudent: 'កែប្រែព័ត៌មានសិស្ស',
+
+  // Student filters
+  classFilter: 'ថ្នាក់',
+  allStudents: 'សិស្សទាំងអស់',
+  studentsWithoutClass: 'គ្មានថ្នាក់',
+  selectClassFilter: 'ជ្រើសរើសថ្នាក់',
 
   // Class Management
   addClass: 'បន្ថែមថ្នាក់រៀន',
@@ -318,7 +336,8 @@ export const km = {
   allGenders: 'គ្រប់ភេទទាំងអស់',
   selectAllOnPage: 'ជ្រើសរើសសិស្សទាំងអស់នៅលើទំព័រនេះ',
   deselectAllOnPage: 'លុបការជ្រើសរើសសិស្សទាំងអស់នៅលើទំព័រនេះ',
-  
+  viewSelectedStudents: 'ពិនិត្រមើលសិស្សដែលបានជ្រើសរើស',
+
   // Class selection
   allClasses: 'ថ្នាក់ទាំងអស់',
   

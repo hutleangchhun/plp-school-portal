@@ -88,14 +88,6 @@ const StudentSelection = () => {
   const actualClearAll = freshClearAll;
   const actualIsSelected = freshIsSelected;
 
-  // Auto-open sidebar when students are selected
-  useEffect(() => {
-    if (actualSelectedStudents.length > 0) {
-      setShowSelectedStudentsSidebar(true);
-    } else {
-      setShowSelectedStudentsSidebar(false);
-    }
-  }, [actualSelectedStudents.length]);
   const [schoolId, setSchoolId] = useState(null);
   const [listLoading, setListLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -112,7 +104,8 @@ const StudentSelection = () => {
     academicYear: '',
     gender: '',
     dateOfBirth: null, // Date object for DatePicker
-    gradeLevel: ''
+    gradeLevel: '',
+    classId: 'any' // Filter by class assignment: 'any', 'null', or specific class ID
   });
   const [selectingAll, setSelectingAll] = useState(false);
   const [showSelectedStudentsSidebar, setShowSelectedStudentsSidebar] = useState(false);
@@ -265,7 +258,7 @@ const StudentSelection = () => {
         page: pagination.page,
         limit: pagination.limit
       };
-      
+
       // Add additional filters
       if (filters.academicYear) filterParams.academicYear = filters.academicYear;
       if (filters.gender) filterParams.gender = filters.gender;
@@ -277,7 +270,12 @@ const StudentSelection = () => {
         filterParams.dateOfBirth = `${year}-${month}-${day}`;
       }
       if (filters.gradeLevel) filterParams.gradeLevel = filters.gradeLevel;
-      
+
+      // Add class filter
+      if (filters.classId && filters.classId !== 'any') {
+        filterParams.classId = filters.classId; // 'null' for no class, or specific class ID
+      }
+
       // Use the master-class endpoint to get all students from the school with filters
       const studentsResponse = await studentService.getStudentsBySchool(schoolId, filterParams);
       
@@ -317,7 +315,7 @@ const StudentSelection = () => {
     } finally {
       setListLoading(false);
     }
-  }, [schoolId, debouncedSearch, pagination.page, pagination.limit, filters.academicYear, filters.gender, filters.dateOfBirth, filters.gradeLevel, showError, t]);
+  }, [schoolId, debouncedSearch, pagination.page, pagination.limit, filters.academicYear, filters.gender, filters.dateOfBirth, filters.gradeLevel, filters.classId, showError, t]);
 
   // Fetch students when pagination, search, or filters change
   useEffect(() => {
@@ -331,7 +329,7 @@ const StudentSelection = () => {
     if (schoolId && pagination.page !== 1) {
       setPagination(prev => ({ ...prev, page: 1 }));
     }
-  }, [filters.academicYear, filters.gender, filters.dateOfBirth, filters.gradeLevel, schoolId]);
+  }, [filters.academicYear, filters.gender, filters.dateOfBirth, filters.gradeLevel, filters.classId, schoolId]);
 
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -376,7 +374,12 @@ const StudentSelection = () => {
         filterParams.dateOfBirth = `${year}-${month}-${day}`;
       }
       if (filters.gradeLevel) filterParams.gradeLevel = filters.gradeLevel;
-      
+
+      // Add class filter
+      if (filters.classId && filters.classId !== 'any') {
+        filterParams.classId = filters.classId; // 'null' for no class, or specific class ID
+      }
+
       // Fetch all students matching current filters
       const allStudentsResponse = await studentService.getStudentsBySchool(schoolId, filterParams);
       
@@ -545,12 +548,13 @@ const StudentSelection = () => {
                   )}
                 </Button>
                 <Button
-                  onClick={() => handleFilterChange({ 
-                    search: '', 
-                    academicYear: '', 
-                    gender: '', 
-                    dateOfBirth: null, 
-                    gradeLevel: '' 
+                  onClick={() => handleFilterChange({
+                    search: '',
+                    academicYear: '',
+                    gender: '',
+                    dateOfBirth: null,
+                    gradeLevel: '',
+                    classId: 'any'
                   })}
                   variant="outline"
                   size="sm"
@@ -562,7 +566,24 @@ const StudentSelection = () => {
             </div>
             
             {/* Additional Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="flex flex-col space-y-1">
+                <label className="text-sm font-medium text-gray-700">{t('classFilter', 'Class')}</label>
+                <Dropdown
+                  value={filters.classId}
+                  onValueChange={(value) => handleFilterChange({ ...filters, classId: value })}
+                  options={[
+                    { value: 'any', label: t('allStudents', 'All Students') },
+                    { value: 'null', label: t('studentsWithoutClass', 'Without Class') },
+                    ...classes.map(cls => ({
+                      value: cls.classId.toString(),
+                      label: cls.name
+                    }))
+                  ]}
+                  placeholder={t('selectClassFilter', 'Select Class')}
+                />
+              </div>
+
               <div className="flex flex-col space-y-1">
                 <label className="text-sm font-medium text-gray-700">{t('academicYear', 'Academic Year')}</label>
                 <input
@@ -573,7 +594,7 @@ const StudentSelection = () => {
                   className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
-              
+
               <div className="flex flex-col space-y-1">
                 <label className="text-sm font-medium text-gray-700">{t('gender', 'Gender')}</label>
                 <Dropdown
@@ -587,7 +608,7 @@ const StudentSelection = () => {
                   placeholder={t('selectGender', 'Select Gender')}
                 />
               </div>
-              
+
               <div className="flex flex-col space-y-1">
                 <label className="text-sm font-medium text-gray-700">{t('dateOfBirth', 'Date of Birth')}</label>
                 <DatePickerWithDropdowns
@@ -596,7 +617,7 @@ const StudentSelection = () => {
                   placeholder={t('selectDate', 'Select Date')}
                 />
               </div>
-              
+
               <div className="flex flex-col space-y-1">
                 <label className="text-sm font-medium text-gray-700">{t('gradeLevel', 'Grade Level')}</label>
                 <Dropdown
@@ -618,19 +639,6 @@ const StudentSelection = () => {
           </div>
           
         </FadeInSection>
-
-        {/* Selected Students Sidebar */}
-        <SelectedStudentsManager
-          selectedStudents={actualSelectedStudents}
-          selectedStudentsData={actualSelectedStudentsData}
-          onRemoveStudent={actualRemoveStudent}
-          onClearAll={actualClearAll}
-          classes={classes}
-          isOpen={showSelectedStudentsSidebar}
-          onToggle={setShowSelectedStudentsSidebar}
-          autoOpen={false}
-        />
-
         {/* Students List */}
         <FadeInSection delay={400}>
           <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
@@ -651,6 +659,19 @@ const StudentSelection = () => {
                     : (t('selectAllOnPage') || 'Select all on page')
                   }
                 </label>
+              </div>
+              <div className='flex'>
+                {/* Selected Students Sidebar */}
+                <SelectedStudentsManager
+                  selectedStudents={actualSelectedStudents}
+                  selectedStudentsData={actualSelectedStudentsData}
+                  onRemoveStudent={actualRemoveStudent}
+                  onClearAll={actualClearAll}
+                  classes={classes}
+                  isOpen={showSelectedStudentsSidebar}
+                  onToggle={setShowSelectedStudentsSidebar}
+                  autoOpen={false}
+                />
               </div>
             </div>
           </div>
@@ -720,11 +741,18 @@ const StudentSelection = () => {
                             {student.name}
                           </h3>
                         </div>
-                        <Badge color={student.isActive ? 'green' : 'red'} size="sm">
-                          {student.isActive ? (t('active') || 'សកម្ម') : (t('inactive') || 'មិនសកម្ម')}
-                        </Badge>
+                        {/* Display class information badge */}
+                        {student.class?.name || student.class_name ? (
+                          <Badge color="indigo" size="sm">
+                            {student.class?.name || student.class_name}
+                          </Badge>
+                        ) : (
+                          <Badge color="gray" size="sm" className="italic">
+                            {t('noClass', "Don't have class")}
+                          </Badge>
+                        )}
                       </div>
-                      <div className="flex items-center space-x-2 text-xs text-gray-500">
+                      <div className="flex items-center space-x-2 text-xs text-gray-500 flex-wrap">
                         <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
                           {student.studentId}
                         </span>
@@ -791,14 +819,15 @@ const StudentSelection = () => {
                   }
                 </p>
               </div>
-              {(debouncedSearch || filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel) && (
+              {(debouncedSearch || filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel || filters.classId !== 'any') && (
                 <Button
-                  onClick={() => handleFilterChange({ 
-                    search: '', 
-                    academicYear: '', 
-                    gender: '', 
-                    dateOfBirth: null, 
-                    gradeLevel: '' 
+                  onClick={() => handleFilterChange({
+                    search: '',
+                    academicYear: '',
+                    gender: '',
+                    dateOfBirth: null,
+                    gradeLevel: '',
+                    classId: 'any'
                   })}
                   variant="outline"
                   size="sm"

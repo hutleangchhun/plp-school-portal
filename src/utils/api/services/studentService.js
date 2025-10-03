@@ -286,32 +286,29 @@ export const studentService = {
 
   /**
    * Remove a single student from current class to master class
-   * @param {string|number} classId - The ID of the class
-   * @param {string|number} schoolId - The ID of the school
+   * @param {string|number} masterClassId - The ID of the master class (schoolId)
    * @param {string|number} studentId - The ID of the student to remove to master class
    * @returns {Promise<Object>} Remove response
    */
-  async removeStudentToMasterClass(classId, schoolId, studentId) {
+  async removeStudentToMasterClass(masterClassId, studentId) {
     try {
-      console.log('Attempting to remove student to master class:', {
-        classId: classId,
-        schoolId: schoolId,
+      console.log('Attempting to remove student from class to master class:', {
+        masterClassId: masterClassId,
         studentId: studentId,
-        endpoint: `${ENDPOINTS.CLASSES.BASE}/${classId}/students/remove-to-master/${schoolId}`
+        endpoint: `/master-class/${masterClassId}/students/${studentId}/remove-from-class`
       });
-      
+
       const response = await handleApiResponse(() =>
-        apiClient_.delete(`${ENDPOINTS.CLASSES.BASE}/${classId}/students/remove-to-master/${schoolId}`, {
-          params: { studentId: Number(studentId) },
+        apiClient_.delete(`/master-class/${masterClassId}/students/${studentId}/remove-from-class`, {
           headers: {
             'Content-Type': 'application/json'
           }
         })
       );
-      
-      console.log('Remove student to master class response:', response);
+
+      console.log('Remove student from class response:', response);
       return response;
-      
+
     } catch (error) {
       console.error('Error in removeStudentToMasterClass:', error);
       console.error('Error details:', {
@@ -326,41 +323,53 @@ export const studentService = {
 
   /**
    * Remove multiple students from current class to master class
-   * @param {string|number} classId - The ID of the class
-   * @param {string|number} schoolId - The ID of the school
+   * @param {string|number} masterClassId - The ID of the master class (schoolId)
    * @param {Array<string|number>} studentIds - Array of student IDs to remove to master class
    * @returns {Promise<Object>} Remove response
    */
-  async removeStudentsToMasterClass(classId, schoolId, studentIds) {
+  async removeStudentsToMasterClass(masterClassId, studentIds) {
     try {
       // Convert to array if it's a single ID
       const ids = Array.isArray(studentIds) ? studentIds : [studentIds];
-      
+
       // Convert all IDs to numbers
       const numericIds = ids.map(id => Number(id)).filter(id => !isNaN(id));
-      
+
       if (numericIds.length === 0) {
         throw new Error('No valid student IDs provided');
       }
-      
-      // If only one student, use the single student endpoint
-      if (numericIds.length === 1) {
-        return await this.removeStudentToMasterClass(classId, schoolId, numericIds[0]);
+
+      // Process each student individually using the new endpoint
+      const results = [];
+      for (const studentId of numericIds) {
+        try {
+          const response = await this.removeStudentToMasterClass(masterClassId, studentId);
+          results.push({ studentId, success: true, response });
+        } catch (error) {
+          console.error(`Failed to remove student ${studentId}:`, error);
+          results.push({ studentId, success: false, error: error.message });
+        }
       }
-      
-      // For multiple students, use the bulk endpoint with body
-      const response = await handleApiResponse(() =>
-        apiClient_.delete(`${ENDPOINTS.CLASSES.BASE}/${classId}/students/remove-to-master/${schoolId}`, {
-          data: { studentIds: numericIds },
-          headers: {
-            'Content-Type': 'application/json'
+
+      // Check if all succeeded
+      const allSucceeded = results.every(r => r.success);
+      const successCount = results.filter(r => r.success).length;
+
+      console.log('Remove students to master class results:', results);
+
+      return {
+        success: allSucceeded,
+        data: {
+          message: `Successfully removed ${successCount} out of ${numericIds.length} students`,
+          results,
+          summary: {
+            total: numericIds.length,
+            successful: successCount,
+            failed: numericIds.length - successCount
           }
-        })
-      );
-      
-      console.log('Remove students to master class response:', response);
-      return response;
-      
+        }
+      };
+
     } catch (error) {
       console.error('Error in removeStudentsToMasterClass:', error);
       throw error;
@@ -466,6 +475,41 @@ export const studentService = {
         data: [],
         pagination: { page: 1, limit: 5, total: 0, pages: 1 }
       };
+    }
+  },
+
+  /**
+   * Transfer a student from current class to another class
+   * @param {string|number} masterClassId - The ID of the master class
+   * @param {string|number} studentId - The ID of the student to transfer
+   * @param {string|number} targetClassId - The ID of the target class
+   * @returns {Promise<Object>} Transfer response
+   */
+  async transferStudentToClass(masterClassId, studentId, targetClassId) {
+    try {
+      console.log('Attempting to transfer student:', {
+        masterClassId,
+        studentId,
+        targetClassId,
+        endpoint: `/master-class/${masterClassId}/students/${studentId}/transfer-to-class/${targetClassId}`
+      });
+
+      const response = await handleApiResponse(() =>
+        apiClient_.post(`/master-class/${masterClassId}/students/${studentId}/transfer-to-class/${targetClassId}`)
+      );
+
+      console.log('Transfer student response:', response);
+      return response;
+
+    } catch (error) {
+      console.error('Error in transferStudentToClass:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        response: error.response?.data
+      });
+      throw error;
     }
   },
 

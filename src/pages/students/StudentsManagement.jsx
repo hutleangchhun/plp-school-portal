@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, MinusCircle, Edit2, User, Users, ChevronDown, Download, X } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, User, Users, ChevronDown, Download, X, ArrowRightLeft } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -101,8 +101,10 @@ export default function StudentsManagement() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [editingStudent, setEditingStudent] = useState(null);
+  const [transferTargetClassId, setTransferTargetClassId] = useState('');
   // Use the custom hook for managing selected students
   const {
     selectedStudents,
@@ -649,6 +651,52 @@ export default function StudentsManagement() {
       isConfirming={loading}
     />
   );
+
+  // Transfer Student Dialog
+  const TransferDialog = () => (
+    <ConfirmDialog
+      isOpen={showTransferDialog}
+      onClose={() => {
+        setShowTransferDialog(false);
+        setTransferTargetClassId('');
+      }}
+      onConfirm={handleTransferStudent}
+      title={t('transferStudent', 'Transfer Student')}
+      message={
+        <div className="space-y-4">
+          <p>{t('selectTargetClass', 'Select the class to transfer the student to')}:</p>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              {t('student', 'Student')}: <span className="font-bold">{selectedStudent?.name}</span>
+            </label>
+            <label className="block text-sm font-medium text-gray-700">
+              {t('currentClass', 'Current Class')}: <span className="font-bold">{selectedStudent?.class?.name || 'N/A'}</span>
+            </label>
+            <label className="block text-sm font-medium text-gray-700">
+              {t('targetClass', 'Target Class')}:
+            </label>
+            <Dropdown
+              value={transferTargetClassId}
+              onValueChange={setTransferTargetClassId}
+              options={classes
+                .filter(cls => cls.classId.toString() !== selectedStudent?.class?.id?.toString())
+                .map(cls => ({
+                  value: cls.classId.toString(),
+                  label: `${cls.name} - ${cls.academicYear}`
+                }))}
+              placeholder={t('selectClass', 'Select a class')}
+              minWidth="w-full"
+            />
+          </div>
+        </div>
+      }
+      confirmText={loading ? t('transferring', 'Transferring...') : t('transfer', 'Transfer')}
+      confirmVariant="primary"
+      cancelText={t('cancel', 'Cancel')}
+      isConfirming={loading}
+      confirmDisabled={!transferTargetClassId}
+    />
+  );
   
   // Handle delete student (remove from class)
   const handleDeleteStudent = async () => {
@@ -721,14 +769,13 @@ export default function StudentsManagement() {
       }
       
       console.log('Final API call parameters:', {
-        classId: studentClassInfo.classId,
-        schoolId: schoolId,
+        masterClassId: schoolId,
         studentId: numericStudentId,
         studentName: selectedStudent.name || `${selectedStudent.firstName} ${selectedStudent.lastName}`,
         className: studentClassInfo.name
       });
-      
-      const response = await studentService.removeStudentToMasterClass(studentClassInfo.classId, schoolId, numericStudentId);
+
+      const response = await studentService.removeStudentToMasterClass(schoolId, numericStudentId);
       console.log('Remove student API response:', response);
       
       // Check if the API response indicates success
@@ -860,7 +907,7 @@ export default function StudentsManagement() {
         for (const [classId, studentIds] of studentsByClass) {
           try {
             console.log(`Removing ${studentIds.length} students from class ${classId} to master class`);
-            const response = await studentService.removeStudentsToMasterClass(classId, schoolId, studentIds);
+            const response = await studentService.removeStudentsToMasterClass(schoolId, studentIds);
             console.log(`Remove response for class ${classId}:`, response);
             
             // Check if the API response indicates success
@@ -919,7 +966,6 @@ export default function StudentsManagement() {
         
         // Call the service to remove students to master class using student IDs
         const response = await studentService.removeStudentsToMasterClass(
-          classInfo.classId, 
           schoolId,
           studentIdsToRemove
         );
@@ -947,6 +993,77 @@ export default function StudentsManagement() {
     } catch (error) {
       console.error('Error removing students:', error);
       showError(t('failedRemoveStudents', 'Failed to remove students: ') + (error.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle transfer student
+  const handleTransferStudent = async () => {
+    if (!selectedStudent || !transferTargetClassId) {
+      showError(t('noStudentOrClassSelected', 'No student or target class selected'));
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Get student ID
+      const studentId = selectedStudent.id || selectedStudent.student_id || selectedStudent.user_id || selectedStudent.userId;
+
+      if (!studentId) {
+        throw new Error('No valid student ID found');
+      }
+
+      // Validate schoolId (master class ID)
+      if (!schoolId) {
+        throw new Error('School ID is required but not available');
+      }
+
+      console.log('Transfer student parameters:', {
+        masterClassId: schoolId,
+        studentId,
+        targetClassId: transferTargetClassId
+      });
+
+      const response = await studentService.transferStudentToClass(schoolId, studentId, transferTargetClassId);
+
+      console.log('Transfer student response:', response);
+
+      if (response && response.success) {
+        const apiData = response.data;
+        const successMessage = apiData?.message || t('studentTransferredSuccess', 'Student transferred successfully');
+        showSuccess(successMessage);
+
+        setShowTransferDialog(false);
+        setTransferTargetClassId('');
+        setSelectedStudent(null);
+
+        // Refresh the student list
+        setTimeout(async () => {
+          await fetchStudents(searchTerm, true, true);
+        }, 500);
+
+        clearAll();
+      } else {
+        throw new Error(response?.error || 'Failed to transfer student');
+      }
+    } catch (error) {
+      console.error('Error transferring student:', error);
+
+      let errorMessage = error.message || 'Unknown error occurred';
+
+      if (error.message?.includes('Network Error')) {
+        errorMessage = 'Network connection failed. Please check your internet connection.';
+      } else if (error.message?.includes('404')) {
+        errorMessage = 'Transfer endpoint not found. Please contact support.';
+      } else if (error.message?.includes('403')) {
+        errorMessage = 'You do not have permission to transfer students.';
+      } else if (error.message?.includes('500')) {
+        errorMessage = 'Server error occurred. Please try again later.';
+      }
+
+      showError(t('failedTransferStudent', 'Failed to transfer student: ') + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -1166,6 +1283,27 @@ export default function StudentsManagement() {
           <Button
             onClick={(e) => {
               e.stopPropagation();
+              console.log('Transfer button clicked for student:', student);
+              const studentToTransfer = {
+                ...student,
+                id: student.id || student.student_id || student.user_id,
+                student_id: student.student_id || student.id || student.user_id,
+                user_id: student.user_id || student.id || student.student_id
+              };
+              console.log('Student data being set for transfer:', studentToTransfer);
+              setSelectedStudent(studentToTransfer);
+              setShowTransferDialog(true);
+            }}
+            variant="ghost"
+            size="sm"
+            className="text-green-600 hover:text-green-900 hover:bg-green-50 hover:scale-110"
+            title={t('transferStudent', 'Transfer student to another class')}
+          >
+            <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
               console.log('Delete button clicked for student:', student);
               // Make sure we have the student ID in the expected format
               const studentToDelete = {
@@ -1226,6 +1364,27 @@ export default function StudentsManagement() {
             title={t('editStudent', 'Edit student')}
           >
             <Edit2 className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Transfer button clicked for student:', student);
+              const studentToTransfer = {
+                ...student,
+                id: student.id || student.student_id || student.user_id,
+                student_id: student.student_id || student.id || student.user_id,
+                user_id: student.user_id || student.id || student.student_id
+              };
+              console.log('Student data being set for transfer:', studentToTransfer);
+              setSelectedStudent(studentToTransfer);
+              setShowTransferDialog(true);
+            }}
+            variant="ghost"
+            size="sm"
+            className="text-green-600 hover:text-green-900 hover:bg-green-50 hover:scale-110 flex-shrink-0"
+            title={t('transferStudent', 'Transfer student to another class')}
+          >
+            <ArrowRightLeft className="h-4 w-4" />
           </Button>
           <Button
             onClick={(e) => {
@@ -1502,10 +1661,13 @@ export default function StudentsManagement() {
       
       {/* Delete Confirmation */}
       <DeleteDialog />
-      
+
       {/* Bulk Delete Confirmation */}
       <BulkDeleteDialog />
-      
+
+      {/* Transfer Confirmation */}
+      <TransferDialog />
+
       {/* Edit Student Modal */}
       <StudentEditModal
         isOpen={showEditModal}
