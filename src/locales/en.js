@@ -184,6 +184,8 @@ export const en = {
   errorAssigningStudents: 'Failed to assign students to class',
   classCapacityExceeded: 'Class capacity exceeded',
   removeSelected: 'Remove Selected',
+  unselectAll: 'Unselect All',
+  unselectedAllStudents: 'Unselected all students',
 
   // Class Management
   addClass: 'Add Class',

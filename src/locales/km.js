@@ -168,6 +168,8 @@ export const km = {
   errorAssigningStudents: 'បរាជ័យក្នុងការកំណត់សិស្សទៅថ្នាក់',
   classCapacityExceeded: 'ថ្នាក់មានចំណុះពេញហើយ',
   removeSelected: 'លុបសិស្សដែលបានជ្រើសរើស',
+  unselectAll: 'លុបការជ្រើសរើសទាំងអស់',
+  unselectedAllStudents: 'បានលុបការជ្រើសរើសសិស្សទាំងអស់',
 
   // Class Management
   addClass: 'បន្ថែមថ្នាក់រៀន',

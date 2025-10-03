@@ -352,20 +352,28 @@ const StudentSelection = () => {
     // Page reset is handled by useEffect for filter changes
   };
 
-  // Handle select all students (with current filters)
-  const handleSelectAllStudents = async () => {
+  // Handle select/unselect all students (with current filters)
+  const handleToggleSelectAllStudents = async () => {
     if (selectingAll) return;
-    
+
+    // If students are already selected, unselect all
+    if (actualSelectedStudents.length > 0) {
+      actualClearAll();
+      showSuccess(t('unselectedAllStudents', 'Unselected all students'));
+      return;
+    }
+
+    // Otherwise, select all students
     try {
       setSelectingAll(true);
-      
+
       // Build filter parameters to get all students matching current filters
       const filterParams = {
         search: debouncedSearch,
         page: 1,
         limit: 1000, // Get a large number to capture all students
       };
-      
+
       // Add additional filters
       if (filters.academicYear) filterParams.academicYear = filters.academicYear;
       if (filters.gender) filterParams.gender = filters.gender;
@@ -385,7 +393,7 @@ const StudentSelection = () => {
 
       // Fetch all students matching current filters
       const allStudentsResponse = await studentService.getStudentsBySchool(schoolId, filterParams);
-      
+
       if (allStudentsResponse && allStudentsResponse.success && allStudentsResponse.data) {
         // Filter out students that are already selected OR have a class assigned
         const studentsToSelect = allStudentsResponse.data.filter(student => {
@@ -548,8 +556,8 @@ const StudentSelection = () => {
           
               <div className="flex justify-end space-x-2">
                 <Button
-                  onClick={handleSelectAllStudents}
-                  variant="primary"
+                  onClick={handleToggleSelectAllStudents}
+                  variant={actualSelectedStudents.length > 0 ? "danger" : "primary"}
                   size="sm"
                   disabled={selectingAll}
                 >
@@ -557,6 +565,11 @@ const StudentSelection = () => {
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
                       {t('selectingAll') || 'Selecting...'}
+                    </>
+                  ) : actualSelectedStudents.length > 0 ? (
+                    <>
+                      <X className="h-4 w-4 mr-1" />
+                      {t('unselectAll') || 'Unselect All'}
                     </>
                   ) : (
                     <>
