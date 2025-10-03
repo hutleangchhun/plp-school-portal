@@ -38,6 +38,35 @@ export default function ClassesManagement() {
     }
   });
 
+  // Listen for localStorage changes (e.g., after login updates user data)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          console.log('🔄 localStorage changed, updating user state:', parsedUser);
+          setUser(parsedUser);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('Error parsing updated user data:', err);
+      }
+    };
+
+    // Listen for storage events (from other tabs/windows)
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also set up a custom event listener for same-tab updates
+    window.addEventListener('userDataUpdated', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userDataUpdated', handleStorageChange);
+    };
+  }, []);
+
   // Handle localStorage parsing error after hooks are initialized
   useEffect(() => {
     if (!user) {
@@ -54,11 +83,12 @@ export default function ClassesManagement() {
       }
     }
   }, [user, handleError, t]);
-  
+
   // Add this useEffect to log the user object when the component mounts
   useEffect(() => {
     console.log('Current user from localStorage:', user);
     console.log('User schoolId:', user?.schoolId);
+    console.log('User school_id:', user?.school_id);
   }, [user]);
 
   const [classes, setClasses] = useState([]);
@@ -126,9 +156,10 @@ export default function ClassesManagement() {
       // Fallback to my-account if no school info in classes
       console.log('Trying to get school ID from my-account...');
       const accountData = await userService.getMyAccount();
-      
+      console.log('📥 Full my-account response in ClassesManagement:', accountData);
+
       if (accountData && accountData.school_id) {
-        console.log('School ID found in account:', accountData.school_id);
+        console.log('✅ School ID found in account:', accountData.school_id);
         
         try {
           const schoolResponse = await schoolService.getSchoolInfo(accountData.school_id);
@@ -224,6 +255,7 @@ export default function ClassesManagement() {
         // Update localStorage and state with fresh data
         console.log('Updating user data with fresh class information');
         localStorage.setItem('user', JSON.stringify(updatedUser));
+        window.dispatchEvent(new Event('userDataUpdated')); // Notify other components
         setUser(updatedUser);
         return updatedUser;
       } else {
@@ -253,6 +285,14 @@ export default function ClassesManagement() {
 
     initializePage();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-fetch school info when user school_id changes (e.g., after login or transfer)
+  useEffect(() => {
+    if (user?.school_id || user?.schoolId) {
+      console.log('🔄 User school_id changed, re-fetching school info:', user.school_id || user.schoolId);
+      fetchSchoolInfo();
+    }
+  }, [user?.school_id, user?.schoolId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-fetch classes when user ID changes (after authentication)
   // Note: fetchClasses now uses my-account API directly, so we don't need to depend on user.classIds

@@ -34,8 +34,10 @@ export default function Login({ setUser }) {
       });
 
       if (response.success) {
-        const { user } = response.data;
-        setUser(user);
+        // Get fresh user data that authService saved to localStorage (includes latest school_id)
+        const freshUser = utils.user.getUserData();
+        console.log('Setting user with fresh data from localStorage:', freshUser);
+        setUser(freshUser);
         showSuccess(t('loginSuccessful', 'Login successful!'));
       } else {
         showError(utils.auth.getErrorMessage(response, t));

@@ -26,19 +26,50 @@ export default function Dashboard({ user: initialUser }) {
   const [autoRefresh, setAutoRefresh] = useState(false); // Disabled by default to prevent excessive API calls
   const [classDetails, setClassDetails] = useState([]);
 
-  const [authUser] = useState(() => {
+  const [authUser, setAuthUser] = useState(() => {
     try {
       const userData = localStorage.getItem('user');
       return userData ? JSON.parse(userData) : null;
     } catch (err) {
-      handleError(err, { 
+      handleError(err, {
         toastMessage: t('failedToParseUserData', 'Failed to parse user data from localStorage'),
-        setError: false 
+        setError: false
       });
       return null;
     }
   });
-  
+
+  // Listen for localStorage changes (e.g., after login updates user data)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          console.log('🔄 localStorage changed in Dashboard, updating authUser state:', parsedUser);
+          setAuthUser(parsedUser);
+          setUserData(parsedUser);
+        } else {
+          setAuthUser(null);
+          setUserData(null);
+        }
+      } catch (err) {
+        console.error('Error parsing updated user data:', err);
+      }
+    };
+
+    // Listen for storage events (from other tabs/windows)
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also set up a custom event listener for same-tab updates
+    window.addEventListener('userDataUpdated', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userDataUpdated', handleStorageChange);
+    };
+  }, []);
+
   // Get time-based greeting
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();

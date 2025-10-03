@@ -372,6 +372,9 @@ const userUtils = {
   saveUserData: (userData) => {
     try {
       localStorage.setItem('user', JSON.stringify(userData));
+      // Dispatch custom event to notify components in the same tab
+      window.dispatchEvent(new Event('userDataUpdated'));
+      console.log('💾 User data saved to localStorage and event dispatched');
     } catch (error) {
       console.error('Error saving user data to localStorage:', error);
     }

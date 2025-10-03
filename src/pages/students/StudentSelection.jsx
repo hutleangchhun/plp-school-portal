@@ -25,7 +25,7 @@ const StudentSelection = () => {
   useRenderTracker('StudentSelection');
 
   // Get authenticated user data
-  const [user] = useState(() => {
+  const [user, setUser] = useState(() => {
     try {
       const userData = localStorage.getItem('user');
       return userData ? JSON.parse(userData) : null;
@@ -34,7 +34,36 @@ const StudentSelection = () => {
       return null;
     }
   });
-  
+
+  // Listen for localStorage changes (e.g., after login updates user data)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          console.log('🔄 localStorage changed in StudentSelection, updating user state:', parsedUser);
+          setUser(parsedUser);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('Error parsing updated user data:', err);
+      }
+    };
+
+    // Listen for storage events (from other tabs/windows)
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also set up a custom event listener for same-tab updates
+    window.addEventListener('userDataUpdated', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userDataUpdated', handleStorageChange);
+    };
+  }, []);
+
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   
@@ -219,9 +248,10 @@ const StudentSelection = () => {
       // Fallback to my-account endpoint
       console.log('Trying school ID from my-account endpoint...');
       const accountData = await userService.getMyAccount();
-      
+      console.log('📥 Full my-account response in StudentSelection:', accountData);
+
       if (accountData && accountData.school_id) {
-        console.log('School ID fetched from account:', accountData.school_id);
+        console.log('✅ School ID fetched from account:', accountData.school_id);
         setSchoolId(accountData.school_id);
       } else {
         console.error('No school_id found in account data:', accountData);
@@ -232,6 +262,18 @@ const StudentSelection = () => {
       showError(t('failedToFetchSchoolId', 'Failed to fetch school information'));
     }
   }, [schoolId, showError, t, user?.id]);
+
+  // Re-fetch school ID when user school_id changes (e.g., after login or transfer)
+  useEffect(() => {
+    if (user?.school_id || user?.schoolId) {
+      const newSchoolId = user.school_id || user.schoolId;
+      console.log('🔄 User school_id changed in StudentSelection:', newSchoolId);
+      if (schoolId !== newSchoolId) {
+        console.log('Updating schoolId to new value');
+        setSchoolId(newSchoolId);
+      }
+    }
+  }, [user?.school_id, user?.schoolId, schoolId]);
 
   // Fetch school ID when component mounts
   useEffect(() => {
