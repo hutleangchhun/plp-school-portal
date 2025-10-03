@@ -384,16 +384,19 @@ const StudentSelection = () => {
       const allStudentsResponse = await studentService.getStudentsBySchool(schoolId, filterParams);
       
       if (allStudentsResponse && allStudentsResponse.success && allStudentsResponse.data) {
-        // Filter out students that are already selected to avoid unnecessary operations
-        const studentsToSelect = allStudentsResponse.data.filter(student => !actualIsSelected(student.id));
-        
+        // Filter out students that are already selected OR have a class assigned
+        const studentsToSelect = allStudentsResponse.data.filter(student => {
+          const hasClass = !!(student.class?.name || student.class_name || student.class?.id || student.class_id);
+          return !actualIsSelected(student.id) && !hasClass;
+        });
+
         // Select students in batches to avoid blocking the UI
         let selectedCount = 0;
         const batchSize = 50;
-        
+
         for (let i = 0; i < studentsToSelect.length; i += batchSize) {
           const batch = studentsToSelect.slice(i, i + batchSize);
-          
+
           // Use setTimeout to yield control to the UI between batches
           await new Promise(resolve => {
             setTimeout(() => {
@@ -405,10 +408,10 @@ const StudentSelection = () => {
             }, 0);
           });
         }
-        
+
         showSuccess(
-          t('selectedAllStudents') || 
-          `Selected ${selectedCount} student${selectedCount !== 1 ? 's' : ''}`
+          t('selectedAllStudents') ||
+          `Selected ${selectedCount} student${selectedCount !== 1 ? 's' : ''} (students without class)`
         );
       }
     } catch (error) {
@@ -420,23 +423,35 @@ const StudentSelection = () => {
     }
   };
 
-  // Check if all current page students are selected
+  // Check if all current page students (without class) are selected
   const areAllCurrentStudentsSelected = () => {
-    return students.length > 0 && students.every(student => actualIsSelected(student.id));
+    // Filter out students who already have a class
+    const selectableStudents = students.filter(student => {
+      const hasClass = !!(student.class?.name || student.class_name || student.class?.id || student.class_id);
+      return !hasClass;
+    });
+
+    return selectableStudents.length > 0 && selectableStudents.every(student => actualIsSelected(student.id));
   };
 
-  // Handle select/deselect all students on current page
+  // Handle select/deselect all students on current page (only students without class)
   const handleSelectAllCurrentPage = () => {
+    // Filter out students who already have a class
+    const selectableStudents = students.filter(student => {
+      const hasClass = !!(student.class?.name || student.class_name || student.class?.id || student.class_id);
+      return !hasClass;
+    });
+
     if (areAllCurrentStudentsSelected()) {
-      // Deselect all students on current page
-      students.forEach(student => {
+      // Deselect all selectable students on current page
+      selectableStudents.forEach(student => {
         if (actualIsSelected(student.id)) {
           actualRemoveStudent(student.id);
         }
       });
     } else {
-      // Select all students on current page
-      students.forEach(student => {
+      // Select all selectable students on current page
+      selectableStudents.forEach(student => {
         if (!actualIsSelected(student.id)) {
           actualHandleSelectStudent(student);
         }
@@ -715,17 +730,30 @@ const StudentSelection = () => {
           </div>
         ) : students.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
-            {students.map((student) => (
-              <div key={student.id} className="group hover:bg-gray-50/50 transition-colors duration-150 border border-gray-100 rounded-lg p-4">
+            {students.map((student) => {
+              // Check if student has a class assigned
+              const hasClass = !!(student.class?.name || student.class_name || student.class?.id || student.class_id);
+
+              return (
+              <div key={student.id} className={`group transition-colors duration-150 border rounded-lg p-4 ${
+                hasClass
+                  ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
+                  : 'hover:bg-gray-50/50 border-gray-100'
+              }`}>
                 <div className="flex items-center space-x-4">
                   <div className="flex-shrink-0">
                     <input
                       id={`student-${student.id}`}
                       name="students"
                       type="checkbox"
-                      className="h-5 w-5 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-gray-300 rounded-md transition-colors"
+                      className={`h-5 w-5 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-gray-300 rounded-md transition-colors ${
+                        hasClass
+                          ? 'text-gray-400 cursor-not-allowed'
+                          : 'text-indigo-600 cursor-pointer'
+                      }`}
                       checked={actualIsSelected(student.id)}
-                      onChange={() => actualHandleSelectStudent(student)}
+                      onChange={() => !hasClass && actualHandleSelectStudent(student)}
+                      disabled={hasClass}
                     />
                   </div>
                   
@@ -800,7 +828,8 @@ const StudentSelection = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="flex items-center justify-center min-h-[400px] p-6">
