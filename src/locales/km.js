@@ -158,10 +158,16 @@ export const km = {
   updateStudent: 'កែប្រែព័ត៌មានសិស្ស',
 
   // Student filters
-  classFilter: 'ថ្នាក់',
+  classFilter: 'ស្ថានភាពថ្នាក់',
   allStudents: 'សិស្សទាំងអស់',
   studentsWithoutClass: 'គ្មានថ្នាក់',
   selectClassFilter: 'ជ្រើសរើសថ្នាក់',
+
+  // Student assignment
+  studentsAssignedSuccess: 'បានកំណត់សិស្សដោយជោគជ័យ',
+  errorAssigningStudents: 'បរាជ័យក្នុងការកំណត់សិស្សទៅថ្នាក់',
+  classCapacityExceeded: 'ថ្នាក់មានចំណុះពេញហើយ',
+  removeSelected: 'លុបសិស្សដែលបានជ្រើសរើស',
 
   // Class Management
   addClass: 'បន្ថែមថ្នាក់រៀន',

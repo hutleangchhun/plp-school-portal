@@ -7,7 +7,7 @@ import studentService from '../../utils/api/services/studentService';
 import classService from '../../utils/api/services/classService';
 import { userService } from '../../utils/api/services/userService';
 import { Button } from '../../components/ui/Button';
-import { useStableCallback } from '../../utils/reactOptimization';
+import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
 import Badge from '../../components/ui/Badge';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Pagination as UIPagination } from '../../components/ui/Table';
@@ -20,7 +20,10 @@ const StudentSelection = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { showError, showSuccess } = useToast();
-  
+
+  // Track renders to detect infinite loops (development only)
+  useRenderTracker('StudentSelection');
+
   // Get authenticated user data
   const [user] = useState(() => {
     try {

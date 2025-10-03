@@ -3,6 +3,7 @@ import { X, Users, Folder, FolderOpen } from 'lucide-react';
 import { Button } from '../ui/Button';
 import Modal from '../ui/Modal';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
 import studentService from '../../utils/api/services/studentService';
 
 const SelectedStudentsManager = ({
@@ -20,6 +21,7 @@ const SelectedStudentsManager = ({
   autoOpen = true
 }) => {
   const { t } = useLanguage();
+  const { showSuccess, showError } = useToast();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [userManuallyClosed, setUserManuallyClosed] = useState(false);
   const [selectedClass, setSelectedClass] = useState('');
@@ -77,10 +79,11 @@ const SelectedStudentsManager = ({
 
           // Check if adding selected students would exceed capacity
           if (selectedStudents.length > remainingCapacity) {
-            // Show error (you might want to add a toast or error display here)
-            console.error(
+            const errorMsg = t('classCapacityExceeded',
               `Cannot assign ${selectedStudents.length} students. Class "${selectedClassData.name}" has only ${remainingCapacity} spots remaining (${currentEnrollment}/${maxStudents} currently enrolled).`
             );
+            console.error(errorMsg);
+            showError(errorMsg);
             return;
           }
         } catch (error) {
@@ -90,9 +93,13 @@ const SelectedStudentsManager = ({
 
       await studentService.addStudentsToClass(classId, selectedStudents);
 
-      // Show success message (you might want to add a toast here)
+      // Show success message
       const selectedClassName = selectedClassData?.name || 'Unknown Class';
-      console.log(`Students assigned successfully to ${selectedClassName}`);
+      const successMsg = t('studentsAssignedSuccess',
+        `Successfully assigned ${selectedStudents.length} student${selectedStudents.length !== 1 ? 's' : ''} to ${selectedClassName}`
+      );
+      console.log(successMsg);
+      showSuccess(successMsg);
 
       // Reset selections and close sidebar
       setSelectedClass('');
@@ -101,7 +108,8 @@ const SelectedStudentsManager = ({
 
     } catch (error) {
       console.error('Error assigning students to class:', error);
-      // Show error (you might want to add a toast here)
+      const errorMsg = error.message || t('errorAssigningStudents', 'Failed to assign students to class');
+      showError(errorMsg);
     } finally {
       setAssigningStudents(false);
     }

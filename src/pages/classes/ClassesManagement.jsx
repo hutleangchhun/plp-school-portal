@@ -12,7 +12,7 @@ import studentService from '../../utils/api/services/studentService'; // Import 
 import { userService } from '../../utils/api/services/userService'; // Import userService for my-account
 import schoolService from '../../utils/api/services/schoolService'; // Import schoolService for school info
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
-import { useStableCallback } from '../../utils/reactOptimization';
+import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
 import Dropdown from '@/components/ui/Dropdown';
 import React from 'react'; // Added for useMemo
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -22,9 +22,12 @@ export default function ClassesManagement() {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const { error, handleError, clearError, retry } = useErrorHandler();
+
+  // Track renders to detect infinite loops (development only)
+  useRenderTracker('ClassesManagement');
   
   // Get authenticated user data
-  const [user] = useState(() => {
+  const [user, setUser] = useState(() => {
     try {
       const userData = localStorage.getItem('user');
       return userData ? JSON.parse(userData) : null;
@@ -520,12 +523,13 @@ export default function ClassesManagement() {
         const response = await classService.createClass(classData);
         if (response.success) {
           showSuccess(t('classAddedSuccessfully') || 'Class added successfully');
+          clearError(); // Clear any previous errors
           setShowAddModal(false);
-          
+
           // Refresh user data from server to get updated class information
           console.log('Class created successfully, refreshing user data...');
           await refreshUserData();
-          
+
           // Then fetch classes with updated user data
           await fetchClasses();
         }
@@ -533,12 +537,13 @@ export default function ClassesManagement() {
         const response = await classService.updateClass(selectedClass.classId, classData);
         if (response.success) {
           showSuccess(t('classUpdatedSuccessfully') || 'Class updated successfully');
+          clearError(); // Clear any previous errors
           setShowEditModal(false);
-          
+
           // Refresh user data from server to get updated class information
           console.log('Class updated successfully, refreshing user data...');
           await refreshUserData();
-          
+
           // Then fetch classes with updated user data
           await fetchClasses();
         } else {
@@ -561,12 +566,13 @@ export default function ClassesManagement() {
       const response = await classService.deleteClass(selectedClass.classId);
       if (response.success) {
         showSuccess(t('classDeletedSuccessfully') || 'Class deleted successfully');
+        clearError(); // Clear any previous errors
         setShowDeleteDialog(false);
-        
+
         // Refresh user data from server to get updated class information
         console.log('Class deleted successfully, refreshing user data...');
         await refreshUserData();
-        
+
         // Then fetch classes with updated user data
         await fetchClasses();
       }
@@ -733,6 +739,7 @@ export default function ClassesManagement() {
       <Modal
         isOpen={showAddModal || showEditModal}
         onClose={() => {
+          clearError(); // Clear any errors when closing modal
           setShowAddModal(false);
           setShowEditModal(false);
         }}
@@ -744,6 +751,7 @@ export default function ClassesManagement() {
             <button
               type="button"
               onClick={() => {
+                clearError(); // Clear any errors when clicking cancel
                 setShowAddModal(false);
                 setShowEditModal(false);
               }}
@@ -930,7 +938,10 @@ export default function ClassesManagement() {
       {/* Delete Confirmation */}
       <ConfirmDialog
         isOpen={showDeleteDialog}
-        onClose={() => setShowDeleteDialog(false)}
+        onClose={() => {
+          clearError(); // Clear any errors when closing delete dialog
+          setShowDeleteDialog(false);
+        }}
         onConfirm={handleConfirmDelete}
         title={t('confirmDelete') || 'Confirm Delete'}
         message={`${t('confirmDeleteClass') || 'Are you sure you want to delete'} ${selectedClass?.name}?`}

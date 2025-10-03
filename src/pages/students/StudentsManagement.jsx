@@ -9,7 +9,7 @@ import Dropdown from '../../components/ui/Dropdown';
 import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
 import classService from '../../utils/api/services/classService';
-import { useStableCallback } from '../../utils/reactOptimization';
+import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import useSelectedStudents from '../../hooks/useSelectedStudents';
 import { Badge } from '../../components/ui/Badge';
@@ -33,7 +33,10 @@ export default function StudentsManagement() {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const { error, handleError, clearError, retry } = useErrorHandler();
-  
+
+  // Track renders to detect infinite loops (development only)
+  useRenderTracker('StudentsManagement');
+
   // Debug: Log error state changes
   useEffect(() => {
     console.log('StudentsManagement: Error state changed:', error);
@@ -1507,6 +1510,21 @@ export default function StudentsManagement() {
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          {/* Bulk Delete Button - Show when students are selected */}
+          {selectedStudents.length > 0 && (
+            <Button
+              onClick={() => setShowBulkDeleteDialog(true)}
+              variant="danger"
+              size="default"
+              className="shadow-lg"
+            >
+              <MinusCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm">
+                {t('removeSelected', 'Remove')} ({selectedStudents.length})
+              </span>
+            </Button>
+          )}
+
           {/* Export Dropdown */}
           <div className="relative export-dropdown">
             <Button
@@ -1520,7 +1538,7 @@ export default function StudentsManagement() {
               <span className="text-xs sm:text-sm">{t('export', 'Export')}</span>
               <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
             </Button>
-            
+
             {showExportDropdown && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
                 <div className="py-1">
@@ -1546,7 +1564,7 @@ export default function StudentsManagement() {
               </div>
             )}
           </div>
-          
+
           {/* Add Student Button */}
           <Button
             onClick={handleAddStudentClick}

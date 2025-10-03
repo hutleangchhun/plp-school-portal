@@ -174,10 +174,16 @@ export const en = {
   updateStudent: 'Update Student',
 
   // Student filters
-  classFilter: 'Class',
+  classFilter: 'Class Status',
   allStudents: 'All Students',
   studentsWithoutClass: 'Without Class',
   selectClassFilter: 'Select Class',
+
+  // Student assignment
+  studentsAssignedSuccess: 'Students assigned successfully',
+  errorAssigningStudents: 'Failed to assign students to class',
+  classCapacityExceeded: 'Class capacity exceeded',
+  removeSelected: 'Remove Selected',
 
   // Class Management
   addClass: 'Add Class',
