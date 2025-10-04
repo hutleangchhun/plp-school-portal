@@ -96,6 +96,37 @@ const useSelectedStudents = () => {
     localStorage.removeItem('selectedStudentsData');
   }, []);
 
+  const selectAll = useCallback((students) => {
+    console.log('Selecting all students:', students.length);
+
+    const studentIds = students.map(s => s.id);
+    const studentsDataMap = {};
+
+    students.forEach(student => {
+      studentsDataMap[student.id] = {
+        id: student.id,
+        name: student.name,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        username: student.username,
+        email: student.email,
+        studentId: student.studentId,
+        isActive: student.isActive,
+        // Additional fields needed for StudentsManagement operations
+        classId: student.classId,
+        class_id: student.class_id,
+        class: student.class,
+        userId: student.userId,
+        user_id: student.user_id,
+        schoolId: student.schoolId,
+        school_id: student.school_id
+      };
+    });
+
+    setSelectedStudents(studentIds);
+    setSelectedStudentsData(studentsDataMap);
+  }, []);
+
   const isSelected = useCallback((studentId) => {
     return selectedStudents.includes(studentId);
   }, [selectedStudents]);
@@ -110,6 +141,7 @@ const useSelectedStudents = () => {
     handleSelectStudent,
     removeStudent,
     clearAll,
+    selectAll,
     isSelected,
     getSelectedStudentsData,
     selectedCount: selectedStudents.length

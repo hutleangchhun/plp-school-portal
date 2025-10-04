@@ -16,6 +16,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
 import { prepareAndExportExcel, prepareAndExportCSV, prepareAndExportPDF, getTimestampedFilename } from '../../utils/exportUtils';
 import StudentEditModal from '../../components/students/StudentEditModal';
+import BulkTransferModal from '../../components/students/BulkTransferModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 
@@ -126,9 +127,11 @@ export default function StudentsManagement() {
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [showBulkTransferDialog, setShowBulkTransferDialog] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [editingStudent, setEditingStudent] = useState(null);
   const [transferTargetClassId, setTransferTargetClassId] = useState('');
+  const [bulkTransferTargetClassId, setBulkTransferTargetClassId] = useState('');
   // Use the custom hook for managing selected students
   const {
     selectedStudents,
@@ -136,6 +139,7 @@ export default function StudentsManagement() {
     handleSelectStudent,
     removeStudent,
     clearAll,
+    selectAll,
     isSelected
   } = useSelectedStudents();
   const [loading, setLoading] = useState(false);
@@ -742,6 +746,7 @@ export default function StudentsManagement() {
       confirmDisabled={!transferTargetClassId}
     />
   );
+
   
   // Handle delete student (remove from class)
   const handleDeleteStudent = async () => {
@@ -1114,6 +1119,109 @@ export default function StudentsManagement() {
     }
   };
 
+  // Handle bulk transfer students
+  const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClassId) => {
+    if (selectedStudents.length === 0) {
+      showError(t('noStudentsSelected', 'No students selected'));
+      return;
+    }
+
+    if (!targetClassId) {
+      showError(t('noTargetClassSelected', 'No target class selected'));
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Validate schoolId
+      if (!schoolId) {
+        throw new Error('School ID is required but not available');
+      }
+
+      // Get students to transfer from the stored data
+      const studentsToTransfer = selectedStudents.map(studentId => {
+        const studentData = selectedStudentsData[studentId];
+        if (!studentData) {
+          console.warn(`No data found for selected student ID: ${studentId}`);
+          // Try to find the student in the current students list as fallback
+          const fallbackStudent = students.find(s => s.id === studentId);
+          if (fallbackStudent) {
+            console.log(`Found fallback student data for ID ${studentId}:`, fallbackStudent);
+            return fallbackStudent;
+          }
+        }
+        return studentData;
+      }).filter(Boolean);
+
+      console.log('Students to transfer with full data:', studentsToTransfer);
+
+      if (studentsToTransfer.length === 0) {
+        throw new Error(`No matching students found for the selected IDs. Selected: ${selectedStudents.length}, Found: ${studentsToTransfer.length}`);
+      }
+
+      // Transfer students one by one (similar to bulk delete)
+      let totalTransferred = 0;
+      const results = [];
+
+      for (const student of studentsToTransfer) {
+        try {
+          // Get student ID
+          const studentId = student.id || student.student_id || student.user_id || student.userId;
+
+          if (!studentId) {
+            console.warn('No valid student ID found for student:', student);
+            results.push({ student, success: false, error: 'No valid student ID' });
+            continue;
+          }
+
+          console.log(`Transferring student ${studentId} to class ${targetClassId}`);
+
+          const response = await studentService.transferStudentToClass(schoolId, studentId, targetClassId);
+
+          if (response && response.success) {
+            totalTransferred++;
+            results.push({ student, success: true, response });
+          } else {
+            results.push({ student, success: false, error: response?.error || 'Unknown error' });
+          }
+        } catch (error) {
+          console.error(`Error transferring student ${student.id}:`, error);
+          results.push({ student, success: false, error: error.message });
+        }
+      }
+
+      // Show results
+      if (totalTransferred > 0) {
+        const targetClass = classes.find(c => c.classId.toString() === targetClassId);
+        const successMessage = t('studentsTransferredSuccess', `Successfully transferred ${totalTransferred} student(s) to ${targetClass?.name || 'the selected class'}`);
+        showSuccess(successMessage);
+      }
+
+      const failedResults = results.filter(r => !r.success);
+      if (failedResults.length > 0) {
+        console.error('Some transfers failed:', failedResults);
+        showError(t('someStudentsNotTransferred', `Some students could not be transferred. Check console for details.`));
+      }
+
+      // Clean up and refresh
+      setShowBulkTransferDialog(false);
+      setBulkTransferTargetClassId('');
+      clearAll(); // Clear selection
+
+      // Refresh the student list after a brief delay
+      setTimeout(async () => {
+        await fetchStudents(searchTerm, true, true); // Skip loading since we're already managing it
+      }, 500);
+
+    } catch (error) {
+      console.error('Error transferring students:', error);
+      showError(t('failedTransferStudents', 'Failed to transfer students: ') + (error.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle edit student
   const handleEditStudent = (student) => {
     console.log('Edit button clicked for student:', student);
@@ -1218,15 +1326,11 @@ export default function StudentsManagement() {
 
   // Handle select all students on current page
   const handleSelectAll = () => {
-    if (selectedStudents.length === students.length) {
+    if (selectedStudents.length === students.length && students.length > 0) {
       clearAll(); // Deselect all
     } else {
-      // Select all current page students
-      students.forEach(student => {
-        if (!isSelected(student.id)) {
-          handleSelectStudent(student);
-        }
-      });
+      // Select all current page students using batch operation
+      selectAll(students);
     }
   };
 
@@ -1545,6 +1649,46 @@ export default function StudentsManagement() {
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          {/* Select All / Deselect All Button */}
+          {students.length > 0 && (
+            <Button
+              onClick={handleSelectAll}
+              variant="outline"
+              size="default"
+              className="shadow-lg"
+            >
+              {selectedStudents.length === students.length && students.length > 0 ? (
+                <>
+                  <X className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                  <span className="text-xs sm:text-sm">{t('deselectAll', 'Deselect All')}</span>
+                </>
+              ) : (
+                <>
+                  <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                  <span className="text-xs sm:text-sm">
+                    {t('selectAll', 'Select All')}
+                    {selectedStudents.length > 0 && ` (${selectedStudents.length}/${students.length})`}
+                  </span>
+                </>
+              )}
+            </Button>
+          )}
+
+          {/* Bulk Transfer Button - Show when students are selected */}
+          {selectedStudents.length > 0 && (
+            <Button
+              onClick={() => setShowBulkTransferDialog(true)}
+              variant="secondary"
+              size="default"
+              className="shadow-lg"
+            >
+              <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm">
+                {t('transferSelected', 'Transfer')} ({selectedStudents.length})
+              </span>
+            </Button>
+          )}
+
           {/* Bulk Delete Button - Show when students are selected */}
           {selectedStudents.length > 0 && (
             <Button
@@ -1720,6 +1864,21 @@ export default function StudentsManagement() {
 
       {/* Transfer Confirmation */}
       <TransferDialog />
+
+      {/* Bulk Transfer Modal */}
+      <BulkTransferModal
+        isOpen={showBulkTransferDialog}
+        onClose={() => {
+          setShowBulkTransferDialog(false);
+          setBulkTransferTargetClassId('');
+        }}
+        selectedStudents={selectedStudents}
+        selectedStudentsData={selectedStudentsData}
+        classes={classes}
+        onTransfer={handleBulkTransferStudents}
+        loading={loading}
+        onRemoveStudent={removeStudent}
+      />
 
       {/* Edit Student Modal */}
       <StudentEditModal
