@@ -42,14 +42,6 @@ export default function StudentsManagement() {
     console.log('StudentsManagement: Error state changed:', error);
   }, [error]);
   
-  // Debug: Add test error trigger
-  const triggerTestError = () => {
-    console.log('🧪 Triggering test error...');
-    handleError(new Error('Test network error'), {
-      toastMessage: 'Test error message'
-    });
-  };
-  
   // Get authenticated user data
   const [user, setUser] = useState(() => {
     try {
@@ -411,11 +403,16 @@ export default function StudentsManagement() {
         page: pagination.page,
         limit: pagination.limit
       };
-       
+
+      // Add search parameter if provided
+      if (search && search.trim()) {
+        requestParams.search = search.trim();
+      }
+
       console.log(`=== FETCH STUDENTS CALLED ===`);
       console.log(`Current pagination state:`, pagination);
       console.log(`Request params being sent to API:`, requestParams);
-       
+
       // Add class filter if specific class is selected
       if (selectedClassId !== 'all') {
         const selectedClassIdInt = parseInt(selectedClassId);
@@ -1523,13 +1520,6 @@ export default function StudentsManagement() {
         <div>
           <div className="flex items-center space-x-4">
             <h1 className="text-2xl font-bold text-gray-900">{t('studentsManagement')}</h1>
-            {/* Debug: Test error button */}
-            <button
-              onClick={triggerTestError}
-              className="px-3 py-1 text-xs text-red-600 border border-red-300 rounded hover:bg-red-50"
-            >
-              Test Error
-            </button>
           </div>
           <div className="mt-1 space-y-1">
             <div className="flex items-center space-x-4">
