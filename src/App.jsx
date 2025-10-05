@@ -10,6 +10,7 @@ import NotFound from './pages/NotFound';
 import StudentsManagement from './pages/students/StudentsManagement';
 import StudentSelection from './pages/students/StudentSelection';
 import ClassesManagement from './pages/classes/ClassesManagement';
+import TeachersManagement from './pages/teachers/TeachersManagement';
 // Temporarily removed imports (will be re-enabled later):
 // import Reports from './pages/reports/Reports';
 // import Attendance from './pages/attendance/Attendance';
@@ -97,7 +98,15 @@ function AppContent() {
           }>
             <Route index element={<ClassesManagement />} />
           </Route>
-          
+
+          <Route path="teachers" element={
+            <ProtectedRoute path="/teachers" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<TeachersManagement />} />
+          </Route>
+
           <Route path="profile" element={
             <ProtectedRoute path="/profile" user={user}>
               <DashboardLayout user={user} onLogout={handleLogout} />

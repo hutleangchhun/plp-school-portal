@@ -1,15 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Users, 
-  ChevronLeft, 
+import {
+  Home,
+  Users,
+  ChevronLeft,
   ChevronRight,
   BookOpen,
   FileText,
   Calendar,
   Trophy,
   Settings as SettingsIcon,
-  GraduationCap
+  GraduationCap,
+  UserCheck
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -25,6 +26,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/dashboard': Home,
     '/students': Users,
     '/classes': BookOpen,
+    '/teachers': UserCheck,
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/attendance': Calendar,
     // '/reports': FileText,
@@ -40,6 +42,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/dashboard': 'blue',
     '/students': 'purple',
     '/classes': 'green',
+    '/teachers': 'orange',
     // Temporarily removed color mappings (will be re-enabled later):
     // '/attendance': 'teal',
     // '/reports': 'yellow',
