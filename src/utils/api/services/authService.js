@@ -23,11 +23,11 @@ export const authService = {
     if (response.success) {
       const { accessToken, user } = response.data;
 
-      // Validate user role (teachers only)
-      if (user.roleId !== 8 && user.roleId !== 7 && user.roleId !== 6 && user.roleId !== 5 && user.roleId !== 4 && user.roleId !== 3) {
+      // IMPORTANT: Only directors can access this portal
+      if (user.isDirector !== true) {
         return {
           success: false,
-          error: 'Only teachers and students can access this portal'
+          error: 'Only directors can access this portal. Please contact your administrator.'
         };
       }
 
@@ -137,11 +137,14 @@ export const authService = {
   },
 
   /**
-   * Check if user is authenticated
+   * Check if user is authenticated and is a director
    * @returns {boolean} Authentication status
    */
   isAuthenticated: () => {
-    return tokenManager.hasToken() && userUtils.getUserData() !== null;
+    const hasToken = tokenManager.hasToken();
+    const userData = userUtils.getUserData();
+    // User must have token, valid user data, and be a director
+    return hasToken && userData !== null && userData.isDirector === true;
   },
 
   /**
@@ -175,12 +178,21 @@ export const authService = {
  */
 export const authUtils = {
   /**
-   * Validate teacher role
+   * Check if user is a director (required for all portal access)
    * @param {Object} user - User object
-   * @returns {boolean} Whether user is a teacher
+   * @returns {boolean} Whether user is a director
+   */
+  isDirector: (user) => {
+    return user && user.isDirector === true;
+  },
+
+  /**
+   * Validate teacher role (must also be a director)
+   * @param {Object} user - User object
+   * @returns {boolean} Whether user is a teacher and director
    */
   isTeacher: (user) => {
-    return user && user.roleId === 8;
+    return user && user.roleId === 8 && user.isDirector === true;
   },
 
   /**

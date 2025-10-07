@@ -42,15 +42,21 @@ export const routePermissions = {
 /**
  * Check if user has access to a route
  * @param {string} path - Route path
- * @param {Object} user - User object with roleId
+ * @param {Object} user - User object with roleId and isDirector
  * @returns {boolean} Whether user has access
  */
 export const hasRouteAccess = (path, user) => {
   if (!user || !path) return false;
-  
+
+  // IMPORTANT: Only directors can access any route
+  if (user.isDirector !== true) {
+    return false;
+  }
+
   const routeConfig = routePermissions[path];
   if (!routeConfig) return false;
-  
+
+  // Check if user's role is allowed for this route
   return routeConfig.allowedRoles.includes(user.roleId);
 };
 

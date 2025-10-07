@@ -31,6 +31,16 @@ function AppContent() {
     const isAuth = api.auth.isAuthenticated();
     if (isAuth) {
       const userData = utils.user.getUserData();
+
+      // IMPORTANT: Only directors can access this portal
+      if (userData && userData.isDirector !== true) {
+        console.warn('Non-director user detected. Logging out.');
+        utils.user.removeUserData();
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       setUser(userData);
     }
     setLoading(false);

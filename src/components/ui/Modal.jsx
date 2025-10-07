@@ -66,7 +66,7 @@ export default function Modal({
                 {showCloseButton && (
                   <Dialog.Close asChild>
                     <button
-                      className="rounded-xl text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 p-1"
+                      className="rounded-xl text-gray-400 hover:text-gray-600 duration-300 ease-in-out p-1"
                       aria-label={t('បិទ', 'Close')}
                     >
                       <X className="h-6 w-6" />

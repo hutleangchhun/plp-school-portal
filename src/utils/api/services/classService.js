@@ -36,6 +36,51 @@ export const classService = {
       throw error;
     }
   },
+  async getBySchool(schoolId) {
+    try {
+      if (!schoolId) {
+        throw new Error('School ID is required for getBySchool');
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.CLASSES.CLASS_BY_SCHOOL(schoolId))
+      );
+
+      console.log('Raw classes by school API response:', response);
+
+      // Handle response structure: { message, classes: [...], total, schoolInfo }
+      const responseData = response.data || response;
+      const classesArray = responseData.classes || responseData.data || [];
+
+      if (Array.isArray(classesArray)) {
+        const formattedData = classesArray.map(cls => {
+          console.log('Raw class before formatting:', cls);
+          const formatted = classService.utils.formatClassData(cls);
+          console.log('Formatted class:', formatted);
+          return formatted;
+        });
+
+        return {
+          success: true,
+          message: responseData.message,
+          classes: formattedData,
+          data: formattedData,
+          total: responseData.total || formattedData.length,
+          schoolInfo: responseData.schoolInfo
+        };
+      }
+      return {
+        success: true,
+        classes: [],
+        data: [],
+        total: 0,
+        schoolInfo: responseData.schoolInfo
+      };
+    } catch (error) {
+      console.error('Error fetching classes by school:', error);
+      throw error;
+    }
+  },
 
   /**
    * Get class by ID
@@ -269,7 +314,7 @@ export const classService = {
      */
     formatClassData(cls) {
       if (!cls) return null;
-      
+
       return {
         id: cls.classId,
         classId: cls.classId,
@@ -282,7 +327,10 @@ export const classService = {
         maxStudents: cls.maxStudents,
         status: cls.status,
         createdAt: cls.created_at,
-        updatedAt: cls.updated_at
+        updatedAt: cls.updated_at,
+        // Include nested objects if available
+        school: cls.school,
+        teacher: cls.teacher
       };
     }
   },

@@ -134,7 +134,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
           />
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-gray-800">{t('teacherPortal')}</span>
+              <span className="text-sm font-semibold text-gray-800">{t('schoolPortal')}</span>
             </div>
           )}
         </div>

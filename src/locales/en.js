@@ -27,7 +27,7 @@ export const en = {
   
   // Navigation
   dashboard: 'Dashboard',
-  teacherPortal: 'Teacher Portal',
+  schoolPortal: 'School Portal',
   backToDashboard: 'Back to Dashboard',
   profile: 'Profile',
   logout: 'Logout',
@@ -89,6 +89,7 @@ export const en = {
   classes: 'Classes',
   gradeLevels: 'Grade Levels',
   teacher: 'Teacher',
+  director: 'Director',
   
   // Validation messages
   usernameRequiredMsg: 'Username is required',
@@ -159,6 +160,16 @@ export const en = {
   studentsTo: 'student(s) to',
   studentsWillBePromoted: 'student(s) will be promoted to',
   targetGrade: 'Target Grade',
+
+  // Teacher Management
+  addTeacher: 'Add Teacher',
+  editTeacher: 'Edit Teacher',
+  manageTeachers: 'Manage Teachers',
+  teacherDetails: 'Teacher Details',
+  teacherIdRequired: 'Teacher ID is required',
+  errorFetchingTeachers: 'Error fetching teachers',
+  teachersManagement: 'Teachers Management',
+  teachers: 'Teachers',
 
   // Transfer student
   transferStudent: 'Transfer Student',
@@ -435,6 +446,9 @@ export const en = {
   Enrollment: 'Enrollment',
   Capacity: 'Capacity',
   Schedule: 'Schedule',
+  searchTeachers: 'Search teachers...',
+  hireDate: 'Hire Date',
+  updateTeacher: 'Update Teacher',
   
   // Days of the week
   Monday: 'Monday',
@@ -564,7 +578,7 @@ export const en = {
   pagination: 'Pagination',
   
   // Additional organization info
-  organizationTeacherPortal: 'Teacher Portal',
+  organizationSchoolPortal: 'School Portal',
   primaryEducationDepartment: 'Primary Education Department',
   moeysOfCambodia: 'Moeys of Cambodia',
   schoolInformation: 'School Information',

@@ -11,6 +11,7 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
 import { prepareAndExportExcel, prepareAndExportCSV, prepareAndExportPDF, getTimestampedFilename } from '../../utils/exportUtils';
+import TeacherEditModal from '../../components/teachers/TeacherEditModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 
@@ -75,7 +76,9 @@ export default function TeachersManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [editingTeacher, setEditingTeacher] = useState(null);
   const [selectedTeachers, setSelectedTeachers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -419,6 +422,24 @@ export default function TeachersManagement() {
     }
   };
 
+  // Handle edit teacher
+  const handleEditTeacher = (teacher) => {
+    console.log('Edit button clicked for teacher:', teacher);
+    setEditingTeacher(teacher);
+    setShowEditModal(true);
+  };
+
+  // Handle successful teacher update from modal
+  const handleTeacherUpdated = (updatedTeacher) => {
+    console.log('Teacher updated successfully:', updatedTeacher);
+    setShowEditModal(false);
+    setEditingTeacher(null);
+    // Refresh the teacher list
+    setTimeout(async () => {
+      await fetchTeachers(searchTerm, true);
+    }, 500);
+  };
+
   // Define table columns
   const tableColumns = [
     {
@@ -474,16 +495,6 @@ export default function TeachersManagement() {
       )
     },
     {
-      key: 'email',
-      header: t('email', 'Email'),
-      accessor: 'email',
-      cellClassName: 'text-xs sm:text-sm text-gray-700',
-      responsive: 'hidden lg:table-cell',
-      render: (teacher) => (
-        <p>{teacher.email || 'N/A'}</p>
-      )
-    },
-    {
       key: 'hireDate',
       header: t('hireDate', 'Hire Date'),
       accessor: 'hireDate',
@@ -529,8 +540,7 @@ export default function TeachersManagement() {
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Edit teacher:', teacher);
-              showSuccess(t('featureComingSoon', 'This feature is coming soon'));
+              handleEditTeacher(teacher);
             }}
             variant="ghost"
             size="sm"
@@ -584,8 +594,7 @@ export default function TeachersManagement() {
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Edit teacher:', teacher);
-              showSuccess(t('featureComingSoon', 'This feature is coming soon'));
+              handleEditTeacher(teacher);
             }}
             variant="ghost"
             size="sm"
@@ -813,6 +822,17 @@ export default function TeachersManagement() {
         confirmVariant="danger"
         cancelText={t('cancel', 'Cancel')}
         isConfirming={loading}
+      />
+
+      {/* Edit Teacher Modal */}
+      <TeacherEditModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingTeacher(null);
+        }}
+        teacher={editingTeacher}
+        onTeacherUpdated={handleTeacherUpdated}
       />
     </PageTransition>
   );

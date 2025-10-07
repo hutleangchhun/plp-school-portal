@@ -80,6 +80,14 @@ const ENDPOINTS = {
       SUBJECT: (studentId, subjectId) => `/students/${studentId}/grades/${subjectId}`,
     },
   },
+  PARENTS: {
+    BASE: '/parents',
+    BY_USER: (userId) => `/parents/user/${userId}`,
+    BY_ID: (parentId) => `/parents/${parentId}`,
+    CREATE: '/parents',
+    UPDATE: (parentId) => `/parents/${parentId}`,
+    DELETE: (parentId) => `/parents/${parentId}`,
+  },
   TEACHERS:{
     BASE: '/teachers',
     TEACHER_ID: (teacherId) => `/teachers/${teacherId}`,
@@ -94,6 +102,7 @@ const ENDPOINTS = {
     MASTER: (schoolId) => `/master-class/${schoolId}/students`,
     MASTER_CLASSES: (schoolId) => `/master-class/${schoolId}/classes`,
     BY_USER: (userId) => `/classes/user/${userId}`,
+    CLASS_BY_SCHOOL: (schoolId) => `/classes/school/${schoolId}`,
   },
   SUBJECTS: {
     BASE: '/subjects',

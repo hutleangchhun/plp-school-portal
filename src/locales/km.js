@@ -12,7 +12,7 @@ export const km = {
   
   // Navigation
   dashboard: 'ផ្ទាំងគ្រប់គ្រង',
-  teacherPortal: 'ប្រព័ន្ធរដ្ឋបាលសម្រាប់គ្រូ',
+  schoolPortal: 'ប្រព័ន្ធរដ្ឋបាលសម្រាប់សាលារៀន',
   backToDashboard: 'ត្រឡប់ទៅកាន់ផ្ទាំងគ្រប់គ្រង',
   profile: 'ព័ត៌មានផ្ទាល់ខ្លួន',
   logout: 'ចាកចេញ',
@@ -74,6 +74,7 @@ export const km = {
   classes: 'ថ្នាក់រៀន',
   gradeLevels: 'កម្រិតថ្នាក់',
   teacher: 'គ្រូបង្រៀន',
+  director: 'នាយក',
   
   // Validation messages
   usernameRequiredMsg: 'ឈ្មោះអ្នកប្រើត្រូវបានទាមទារ',
@@ -143,6 +144,18 @@ export const km = {
   studentsTo: 'សិស្សទៅ',
   studentsWillBePromoted: 'សិស្សនឹងត្រូវបានដំឡើងថ្នាក់ទៅ',
   targetGrade: 'ថ្នាក់គោលដៅ',
+
+  // Teacher Management
+  addTeacher: 'បន្ថែមគ្រូ',
+  editTeacher: 'កែប្រែគ្រូ',
+  manageTeachers: 'គ្រប់គ្រងគ្រូបង្រៀន',
+  teacherDetails: 'ព័ត៌មានលម្អិតគ្រូបង្រៀន',
+  teacherIdRequired: 'អត្តលេខគ្រូត្រូវបានទាមទារ',
+  errorFetchingTeachers: 'កំហុសក្នុងការទាញយកព័ត៌មានគ្រូ',
+  teachersManagement: 'ការគ្រប់គ្រងគ្រូ',
+  teachers: 'គ្រូ',
+
+
 
   // Transfer student
   transferStudent: 'ផ្ទេរសិស្ស',
@@ -435,6 +448,9 @@ export const km = {
   Enrollment: 'ចំនួនសិស្សក្នុងថ្នាក់',
   Capacity: 'ចំណុះ',
   Schedule: 'កាលវិភាគ',
+  searchTeachers: 'ស្វែងរកគ្រូ...',
+  hireDate: 'ថ្ងៃចូលបម្រើការ',
+  updateTeacher: 'កែប្រែគ្រូ',
   
   // Days of the week
   Monday: 'ថ្ងៃច័ន្ទ',
@@ -602,7 +618,7 @@ export const km = {
   pagination: 'ការបែងចែកទំព័រ',
   
   // Additional organization info
-  organizationTeacherPortal: 'ប្រព័ន្ធរដ្ឋបាលសម្រាប់គ្រូ',
+  organizationSchoolPortal: 'ប្រព័ន្ធរដ្ឋបាលសម្រាប់សាលារៀន',
   primaryEducationDepartment: 'នាយកដ្ឋានអប់រំបឋម',
   moeysOfCambodia: 'ក្រសួងអប់រំ យុវជន និងកីឡា កម្ពុជា',
   schoolInformation: 'ព័ត៌មានសាលារៀន',

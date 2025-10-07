@@ -11,6 +11,7 @@ import classService from '../../utils/api/services/classService'; // Import the 
 import studentService from '../../utils/api/services/studentService'; // Import the studentService
 import { userService } from '../../utils/api/services/userService'; // Import userService for my-account
 import schoolService from '../../utils/api/services/schoolService'; // Import schoolService for school info
+import { teacherService } from '../../utils/api/services/teacherService'; // Import teacherService for teacher selection
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
 import Dropdown from '@/components/ui/Dropdown';
@@ -99,6 +100,7 @@ export default function ClassesManagement() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [schoolInfo, setSchoolInfo] = useState({ id: null, name: 'Loading...' });
+  const [availableTeachers, setAvailableTeachers] = useState([]);
 
   // Add this useEffect to log school info changes (after schoolInfo is declared)
   useEffect(() => {
@@ -133,6 +135,41 @@ export default function ClassesManagement() {
 
   // Generate academic years dynamically (2 past, current, 3 future for better coverage)
   const academicYears = generateAcademicYears(2, 3);
+
+  // Fetch teachers for the school
+  const fetchTeachers = async (schoolId) => {
+    try {
+      if (!schoolId) {
+        console.log('No school ID available for fetching teachers');
+        setAvailableTeachers([]);
+        return;
+      }
+
+      console.log('Fetching teachers for school:', schoolId);
+      const response = await teacherService.getTeachersBySchool(schoolId);
+
+      if (response && response.success && response.data && Array.isArray(response.data)) {
+        // Format teachers for dropdown
+        const formattedTeachers = response.data.map(teacher => ({
+          value: teacher.teacherId?.toString() || '',
+          label: `${teacher.user?.first_name || ''} ${teacher.user?.last_name || ''}`.trim() || teacher.user?.username || `Teacher ${teacher.teacherId}`,
+          teacherData: teacher
+        }));
+
+        console.log('Formatted teachers:', formattedTeachers);
+        setAvailableTeachers(formattedTeachers);
+      } else {
+        console.log('No teachers found for school:', schoolId);
+        setAvailableTeachers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching teachers:', error);
+      handleError(error, {
+        toastMessage: t('failedToFetchTeachers', 'Failed to fetch teachers')
+      });
+      setAvailableTeachers([]);
+    }
+  };
 
   // Fetch school information - first try from classes, then from my-account
   const fetchSchoolInfo = async () => {
@@ -294,6 +331,14 @@ export default function ClassesManagement() {
     }
   }, [user?.school_id, user?.schoolId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Fetch teachers when school info is loaded
+  useEffect(() => {
+    if (schoolInfo?.id) {
+      console.log('School ID available, fetching teachers...');
+      fetchTeachers(schoolInfo.id);
+    }
+  }, [schoolInfo?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Re-fetch classes when user ID changes (after authentication)
   // Note: fetchClasses now uses my-account API directly, so we don't need to depend on user.classIds
   
@@ -301,18 +346,24 @@ export default function ClassesManagement() {
   const fetchClasses = useStableCallback(async () => {
     try {
       setLoading(true);
-      
+
       if (!user?.id) {
         console.log('No user ID available for fetching classes');
         setClasses([]);
         return;
       }
-      
-      console.log('Fetching classes using new classes/user API...');
-      
-      // Get class data from new /classes/user/{userId} endpoint
-      const classResponse = await classService.getClassByUser(user.id);
-      
+
+      if (!schoolInfo?.id) {
+        console.log('No school ID available for fetching classes');
+        setClasses([]);
+        return;
+      }
+
+      console.log('Fetching classes using classes by school API for school ID:', schoolInfo.id);
+
+      // Get class data from /classes/school/{schoolId} endpoint
+      const classResponse = await classService.getBySchool(schoolInfo.id);
+
       if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
         console.log('No classes found in API response:', classResponse);
         setClasses([]);
@@ -396,13 +447,13 @@ export default function ClassesManagement() {
     } finally {
       setLoading(false);
     }
-  }, [showError, t, user?.id, user?.username, handleError]);
+  }, [showError, t, user?.id, user?.username, handleError, schoolInfo?.id]);
   useEffect(() => {
-    if (user?.id) {
-      console.log('User authenticated, re-fetching classes...');
+    if (user?.id && schoolInfo?.id) {
+      console.log('User authenticated and school loaded, re-fetching classes...');
       fetchClasses();
     }
-  }, [user?.id, fetchClasses]); // Only depend on user ID, not entire user object
+  }, [user?.id, schoolInfo?.id, fetchClasses]); // Depend on both user ID and school ID
 
   const handleAddClass = () => {
     setFormData({
@@ -930,19 +981,39 @@ export default function ClassesManagement() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('teacher') || 'Teacher'} *
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  name="teacherName"
-                  required
-                  readOnly
-                  value={formData.teacherName}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+              {availableTeachers.length > 0 ? (
+                <Dropdown
+                  value={formData.teacherId}
+                  onValueChange={(value) => {
+                    // Find the selected teacher to get the name
+                    const selectedTeacher = availableTeachers.find(t => t.value === value);
+                    const teacherName = selectedTeacher?.label || '';
+                    setFormData(prev => ({
+                      ...prev,
+                      teacherId: value,
+                      teacherName: teacherName
+                    }));
+                  }}
+                  options={availableTeachers}
+                  placeholder={t('selectTeacher') || 'Select Teacher'}
+                  className="w-full"
+                  icon={User}
                 />
-              </div>
+              ) : (
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    name="teacherName"
+                    required
+                    readOnly
+                    value={availableTeachers.length === 0 && schoolInfo?.id ? t('loadingTeachers', 'Loading teachers...') : formData.teacherName}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                  />
+                </div>
+              )}
               <input
                 type="hidden"
                 name="teacherId"

@@ -10,7 +10,7 @@ export default function Footer() {
         <div className="py-6">
           <div className="text-center text-sm text-gray-600">
             <p>
-              © {currentYear} {t('teacherPortal', 'Teacher Portal')} - {t('allRightsReserved', 'All rights reserved')}
+              © {currentYear} {t('schoolPortal', 'Teacher Portal')} - {t('allRightsReserved', 'All rights reserved')}
             </p>
             <p className="mt-2">
               {t('poweredBy', 'Powered by')} PLP & Sangapac
