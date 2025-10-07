@@ -18,7 +18,8 @@ const SelectedStudentsManager = ({
   showActions = true,
   isOpen: externalIsOpen,
   onToggle,
-  autoOpen = true
+  autoOpen = true,
+  onRefresh
 }) => {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
@@ -105,6 +106,12 @@ const SelectedStudentsManager = ({
       setSelectedClass('');
       onClearAll();
       handleClose();
+
+      // Refresh parent component data to reflect changes
+      if (onRefresh) {
+        console.log('Refreshing parent component data after student assignment');
+        onRefresh();
+      }
 
     } catch (error) {
       console.error('Error assigning students to class:', error);

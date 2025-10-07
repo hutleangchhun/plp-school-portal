@@ -110,18 +110,25 @@ export default function Dashboard({ user: initialUser }) {
         throw new Error(t('noValidUserData', 'No valid user data received from API'));
       }
 
-      // Get class data from new /classes/user/{userId} endpoint
+      // Get class data from /classes/school/{schoolId} endpoint
       let teacherClasses = [];
       if (authUser?.id) {
         try {
-          const classResponse = await classService.getClassByUser(authUser.id);
-          
-          if (classResponse && classResponse.success && classResponse.classes && Array.isArray(classResponse.classes)) {
-            teacherClasses = classResponse.classes;
-            setClassCount(teacherClasses.length);
-          } else {
-            console.log('No classes found in API response:', classResponse);
+          // Get school ID from user data
+          const schoolId = userData?.school_id || userData?.schoolId;
+          if (!schoolId) {
+            console.warn('No school ID found in user data');
             setClassCount(0);
+          } else {
+            const classResponse = await classService.getBySchool(schoolId);
+
+            if (classResponse && classResponse.success && classResponse.classes && Array.isArray(classResponse.classes)) {
+              teacherClasses = classResponse.classes;
+              setClassCount(teacherClasses.length);
+            } else {
+              console.log('No classes found in API response:', classResponse);
+              setClassCount(0);
+            }
           }
         } catch (error) {
           console.error('Failed to fetch classes from API:', error);

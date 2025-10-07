@@ -1,0 +1,270 @@
+import { useState } from 'react';
+import { User, ArrowRightLeft, MinusCircle, X, Trash2, Users } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { Button } from '../ui/Button';
+import Modal from '../ui/Modal';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Badge } from '../ui/Badge';
+
+const StudentActionsModal = ({
+  isOpen,
+  onClose,
+  selectedStudents,
+  selectedStudentsData,
+  classes,
+  onTransfer,
+  onRemove,
+  loading = false,
+  onRemoveStudent,
+  onClearAll
+}) => {
+  const { t } = useLanguage();
+  const [targetClassId, setTargetClassId] = useState('');
+  const [activeTab, setActiveTab] = useState('transfer'); // 'transfer' or 'remove'
+
+  // Get array of student data from selected IDs
+  const studentsArray = selectedStudents.map(id => selectedStudentsData[id]).filter(Boolean);
+
+  const handleTransfer = () => {
+    if (targetClassId) {
+      onTransfer(targetClassId);
+      handleClose();
+    }
+  };
+
+  const handleRemove = () => {
+    if (window.confirm(t('confirmRemoveStudents', `Are you sure you want to remove ${studentsArray.length} student(s) from their classes?`))) {
+      onRemove();
+      handleClose();
+    }
+  };
+
+  const handleClose = () => {
+    setTargetClassId('');
+    setActiveTab('transfer');
+    onClose();
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={
+        <div className="flex items-center space-x-2">
+          <Users className="h-5 w-5 text-blue-600" />
+          <span>{t('manageSelectedStudents', 'Manage Selected Students')}</span>
+          <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2 py-1 rounded-full">
+            {studentsArray.length}
+          </span>
+        </div>
+      }
+      size="xl"
+      height="lg"
+      footer={
+        <div className="flex justify-between items-center w-full">
+          <Button
+            variant="outline"
+            onClick={onClearAll}
+            disabled={loading}
+            size="sm"
+          >
+            {t('clearSelection', 'Clear Selection')}
+          </Button>
+          <div className="flex space-x-3">
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              disabled={loading}
+            >
+              {t('cancel', 'Cancel')}
+            </Button>
+            {activeTab === 'transfer' ? (
+              <Button
+                variant="primary"
+                onClick={handleTransfer}
+                disabled={!targetClassId || loading || studentsArray.length === 0}
+              >
+                <ArrowRightLeft className="h-4 w-4 mr-2" />
+                {loading ? t('transferring', 'Transferring...') : t('transfer', 'Transfer')}
+              </Button>
+            ) : (
+              <Button
+                variant="danger"
+                onClick={handleRemove}
+                disabled={loading || studentsArray.length === 0}
+              >
+                <MinusCircle className="h-4 w-4 mr-2" />
+                {loading ? t('removing', 'Removing...') : t('remove', 'Remove')}
+              </Button>
+            )}
+          </div>
+        </div>
+      }
+      stickyFooter
+    >
+      <div className="space-y-6">
+        {/* Action Tabs */}
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('transfer')}
+            className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+              activeTab === 'transfer'
+                ? 'border-b-2 border-blue-600 text-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <ArrowRightLeft className="h-4 w-4 inline mr-2" />
+            {t('transferStudents', 'Transfer Students')}
+          </button>
+          <button
+            onClick={() => setActiveTab('remove')}
+            className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+              activeTab === 'remove'
+                ? 'border-b-2 border-red-600 text-red-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <MinusCircle className="h-4 w-4 inline mr-2" />
+            {t('removeStudents', 'Remove from Class')}
+          </button>
+        </div>
+
+        {/* Transfer Tab Content */}
+        {activeTab === 'transfer' && (
+          <div className="space-y-4">
+            {/* Target Class Selector */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('selectTargetClass', 'Select Target Class')}
+              </label>
+              <Select value={targetClassId} onValueChange={setTargetClassId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t('chooseClass', 'Choose a class...')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {classes.map(cls => (
+                    <SelectItem key={cls.classId} value={cls.classId.toString()}>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{cls.name}</span>
+                        <span className="text-xs text-gray-500 ml-2">{cls.academicYear}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-600 mt-2">
+                {t('transferringCount', `Transferring ${studentsArray.length} student(s) to selected class`)}
+              </p>
+            </div>
+
+            {/* Summary */}
+            {studentsArray.length > 0 && targetClassId && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <ArrowRightLeft className="h-5 w-5 text-green-600 mt-0.5 mr-3" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-900">
+                      {t('readyToTransfer', 'Ready to Transfer')}
+                    </p>
+                    <p className="text-xs text-green-700 mt-1">
+                      {studentsArray.length} {studentsArray.length === 1 ? t('student', 'student') : t('students', 'students')} {' '}
+                      {t('willBeTransferredTo', 'will be transferred to')}{' '}
+                      <span className="font-semibold">
+                        {classes.find(c => c.classId.toString() === targetClassId)?.name}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Remove Tab Content */}
+        {activeTab === 'remove' && (
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <Trash2 className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-900">
+                    {t('removeStudentsWarning', 'Remove Students from Classes')}
+                  </p>
+                  <p className="text-xs text-red-700 mt-1">
+                    {t('removeStudentsDescription', `This will remove ${studentsArray.length} student(s) from their current classes. They will be moved back to the master class.`)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Selected Students List */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-900">
+              {t('selectedStudents', 'Selected Students')} ({studentsArray.length})
+            </h3>
+          </div>
+
+          {/* Student Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-2">
+            {studentsArray.length === 0 ? (
+              <div className="col-span-2 text-center py-8 text-gray-500">
+                <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>{t('noStudentsSelected', 'No students selected')}</p>
+              </div>
+            ) : (
+              studentsArray.map(student => (
+                <div
+                  key={student.id}
+                  className="relative bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all"
+                >
+                  {/* Remove button */}
+                  {onRemoveStudent && (
+                    <button
+                      onClick={() => onRemoveStudent(student.id)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full p-1 transition-colors"
+                      title={t('removeFromSelection', 'Remove from selection')}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+
+                  {/* Student Info */}
+                  <div className="flex items-start space-x-3">
+                    {/* Avatar */}
+                    <div className="flex-shrink-0 h-12 w-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                      <User className="h-6 w-6" />
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Unknown'}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {student.username || student.email || 'N/A'}
+                      </p>
+
+                      {/* Current Class Badge */}
+                      {student.class?.name && (
+                        <div className="mt-2">
+                          <Badge variant="outline" size="sm" className="text-xs">
+                            {t('currentClass', 'Current')}: {student.class.name}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+export default StudentActionsModal;

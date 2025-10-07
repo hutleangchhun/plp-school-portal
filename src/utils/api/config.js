@@ -95,7 +95,6 @@ const ENDPOINTS = {
   },
   CLASSES: {
     BASE: '/classes',
-    MY_CLASS: '/classes/my-class',
     STUDENTS: (classId) => `/classes/${classId}/students`,
     SUBJECTS: (classId) => `/classes/${classId}/subjects`,
     SCHEDULE: (classId) => `/classes/${classId}/schedule`,

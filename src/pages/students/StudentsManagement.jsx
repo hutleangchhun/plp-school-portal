@@ -16,7 +16,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
 import { prepareAndExportExcel, prepareAndExportCSV, prepareAndExportPDF, getTimestampedFilename } from '../../utils/exportUtils';
 import StudentEditModal from '../../components/students/StudentEditModal';
-import BulkTransferModal from '../../components/students/BulkTransferModal';
+import StudentActionsModal from '../../components/students/StudentActionsModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 
@@ -127,7 +127,7 @@ export default function StudentsManagement() {
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
-  const [showBulkTransferDialog, setShowBulkTransferDialog] = useState(false);
+  const [showStudentActionsModal, setShowStudentActionsModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [editingStudent, setEditingStudent] = useState(null);
   const [transferTargetClassId, setTransferTargetClassId] = useState('');
@@ -213,40 +213,26 @@ export default function StudentsManagement() {
     return () => clearTimeout(id);
   }, [academicYearFilter]);
   
-  // Fetch current user's school ID - try from classes first, then my-account
+  // Fetch current user's school ID from my-account endpoint
   const fetchSchoolId = useStableCallback(async () => {
     try {
       if (schoolId) {
         console.log('School ID already available:', schoolId);
-        return;
+        return schoolId;
       }
 
-      console.log('Fetching school ID from classes API...');
-      
-      // First try to get school ID from classes API
-      if (user?.id) {
-        const classResponse = await classService.getClassByUser(user.id);
-        if (classResponse && classResponse.success && classResponse.classes && classResponse.classes.length > 0) {
-          const firstClass = classResponse.classes[0];
-          if (firstClass.schoolId) {
-            console.log('School ID found in classes:', firstClass.schoolId);
-            setSchoolId(firstClass.schoolId);
-            return;
-          }
-        }
-      }
-
-      // Fallback to my-account endpoint
-      console.log('Trying school ID from my-account endpoint...');
+      console.log('Fetching school ID from my-account endpoint...');
       const accountData = await userService.getMyAccount();
       console.log('📥 Full my-account response in StudentsManagement:', accountData);
 
       if (accountData && accountData.school_id) {
         console.log('✅ School ID fetched from account:', accountData.school_id);
         setSchoolId(accountData.school_id);
+        return accountData.school_id;
       } else {
         console.error('No school_id found in account data:', accountData);
         showError(t('noSchoolIdFound', 'No school ID found for your account'));
+        return null;
       }
     } catch (err) {
       console.error('Error fetching school ID:', err);
@@ -254,8 +240,9 @@ export default function StudentsManagement() {
         toastMessage: t('failedToFetchSchoolId', 'Failed to fetch school information')
       });
       setInitialLoading(false); // Stop loading on error
+      return null;
     }
-  }, [schoolId, showError, t, user?.id, handleError]);
+  }, [schoolId, showError, t, handleError]);
   
   // Initialize classes using new classes/user API
   const initializeClasses = useStableCallback(async () => {
@@ -284,11 +271,24 @@ export default function StudentsManagement() {
     }
 
     try {
-      console.log('Fetching classes using new classes/user API...');
+      console.log('Fetching classes using CLASS_BY_SCHOOL API...');
 
-      // Get class data from new /classes/user/{userId} endpoint
-      console.log('🌐 Calling classService.getClassByUser with user ID:', user.id);
-      const classResponse = await classService.getClassByUser(user.id);
+      // Need to get school ID first
+      let currentSchoolId = schoolId;
+      if (!currentSchoolId) {
+        console.log('🚨 No school ID available, fetching from my-account...');
+        currentSchoolId = await fetchSchoolId();
+        if (!currentSchoolId) {
+          setClasses([]);
+          setSelectedClassId('all');
+          setInitialLoading(false);
+          return;
+        }
+      }
+
+      // Get class data from /classes/school/{schoolId} endpoint
+      console.log('🌐 Calling classService.getBySchool with school ID:', currentSchoolId);
+      const classResponse = await classService.getBySchool(currentSchoolId);
       console.log('📨 Got class response:', classResponse);
       
       if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
@@ -365,7 +365,7 @@ export default function StudentsManagement() {
       setInitialLoading(false); // Stop loading on error
       console.log('🚨 Set initialLoading to false after error');
     }
-  }, [user?.id, user?.username, handleError, t]);
+  }, [user?.id, user?.username, handleError, t, schoolId, fetchSchoolId]);
 
   // Fetch students with pagination and filters using my-students endpoint
   const fetchStudents = useStableCallback(async (search = searchTerm, force = false, skipLoading = false, academicYear = academicYearFilter) => {
@@ -1033,6 +1033,7 @@ export default function StudentsManagement() {
       }
       
       // Clean up and refresh
+      setShowStudentActionsModal(false);
       setShowBulkDeleteDialog(false);
       clearAll(); // Clear selection
       // Refresh the student list after a brief delay
@@ -1205,7 +1206,7 @@ export default function StudentsManagement() {
       }
 
       // Clean up and refresh
-      setShowBulkTransferDialog(false);
+      setShowStudentActionsModal(false);
       setBulkTransferTargetClassId('');
       clearAll(); // Clear selection
 
@@ -1674,32 +1675,17 @@ export default function StudentsManagement() {
             </Button>
           )}
 
-          {/* Bulk Transfer Button - Show when students are selected */}
+          {/* Student Actions Button - Show when students are selected */}
           {selectedStudents.length > 0 && (
             <Button
-              onClick={() => setShowBulkTransferDialog(true)}
-              variant="secondary"
+              onClick={() => setShowStudentActionsModal(true)}
+              variant="primary"
               size="default"
-              className="shadow-lg"
+              className="shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
             >
-              <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
               <span className="text-xs sm:text-sm">
-                {t('transferSelected', 'Transfer')} ({selectedStudents.length})
-              </span>
-            </Button>
-          )}
-
-          {/* Bulk Delete Button - Show when students are selected */}
-          {selectedStudents.length > 0 && (
-            <Button
-              onClick={() => setShowBulkDeleteDialog(true)}
-              variant="danger"
-              size="default"
-              className="shadow-lg"
-            >
-              <MinusCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-              <span className="text-xs sm:text-sm">
-                {t('removeSelected', 'Remove')} ({selectedStudents.length})
+                {t('manageStudents', 'Manage')} ({selectedStudents.length})
               </span>
             </Button>
           )}
@@ -1798,16 +1784,6 @@ export default function StudentsManagement() {
                   </div>
                 )}
                 <div className="flex items-center space-x-2">
-                  <span className="text-gray-700 font-medium">{t('academicYear', 'Academic Year')}:</span>
-                  <input
-                    type="text"
-                    placeholder="2024-2025"
-                    value={academicYearFilter}
-                    onChange={(e) => handleAcademicYearChange(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 min-w-[120px]"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
                   <span className="text-gray-700 font-medium">{t('selectClass', 'Class')}:</span>
                   <Dropdown
                     value={selectedClassId}
@@ -1865,19 +1841,18 @@ export default function StudentsManagement() {
       {/* Transfer Confirmation */}
       <TransferDialog />
 
-      {/* Bulk Transfer Modal */}
-      <BulkTransferModal
-        isOpen={showBulkTransferDialog}
-        onClose={() => {
-          setShowBulkTransferDialog(false);
-          setBulkTransferTargetClassId('');
-        }}
+      {/* Student Actions Modal - Unified modal for transfer and remove */}
+      <StudentActionsModal
+        isOpen={showStudentActionsModal}
+        onClose={() => setShowStudentActionsModal(false)}
         selectedStudents={selectedStudents}
         selectedStudentsData={selectedStudentsData}
         classes={classes}
         onTransfer={handleBulkTransferStudents}
+        onRemove={handleBulkDeleteStudents}
         loading={loading}
         onRemoveStudent={removeStudent}
+        onClearAll={clearAll}
       />
 
       {/* Edit Student Modal */}

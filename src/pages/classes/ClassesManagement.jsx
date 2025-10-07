@@ -175,23 +175,9 @@ export default function ClassesManagement() {
   const fetchSchoolInfo = async () => {
     try {
       console.log('Fetching school information...');
-      
-      // First try to get school info from classes API
-      const classResponse = await classService.getClassByUser(user.id);
-      if (classResponse && classResponse.success && classResponse.classes && classResponse.classes.length > 0) {
-        const firstClass = classResponse.classes[0];
-        if (firstClass.school) {
-          console.log('School info found from classes API:', firstClass.school);
-          setSchoolInfo({
-            id: firstClass.school.schoolId,
-            name: firstClass.school.name
-          });
-          return;
-        }
-      }
-      
-      // Fallback to my-account if no school info in classes
-      console.log('Trying to get school ID from my-account...');
+
+      // Get school ID from my-account endpoint
+      console.log('Getting school ID from my-account...');
       const accountData = await userService.getMyAccount();
       console.log('📥 Full my-account response in ClassesManagement:', accountData);
 

@@ -155,7 +155,7 @@ const StudentSelection = () => {
   }, [filters.search]);
 
 
-  // Initialize classes using new classes/user API
+  // Initialize classes using CLASS_BY_SCHOOL API
   useEffect(() => {
     const fetchClassDetails = async () => {
       if (!user?.id) {
@@ -165,10 +165,22 @@ const StudentSelection = () => {
       }
 
       try {
-        console.log('Fetching classes using new classes/user API...');
-        
-        // Get class data from new /classes/user/{userId} endpoint
-        const classResponse = await classService.getClassByUser(user.id);
+        console.log('Fetching classes using CLASS_BY_SCHOOL API...');
+
+        // Get school ID from my-account endpoint
+        const accountData = await userService.getMyAccount();
+        if (!accountData || !accountData.school_id) {
+          console.error('No school_id found in account data:', accountData);
+          showError(t('noSchoolIdFound', 'No school ID found for your account'));
+          setClasses([]);
+          return;
+        }
+
+        const schoolId = accountData.school_id;
+        console.log('✅ School ID fetched from account:', schoolId);
+
+        // Get class data from /classes/school/{schoolId} endpoint
+        const classResponse = await classService.getBySchool(schoolId);
         
         if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
           console.log('No classes found in API response:', classResponse);
@@ -194,16 +206,16 @@ const StudentSelection = () => {
         }));
 
         setClasses(teacherClasses);
-        
-        // Extract and set school ID from the first class if not already set
-        if (!schoolId && teacherClasses.length > 0 && teacherClasses[0].schoolId) {
+
+        // Store school ID for later use
+        if (teacherClasses.length > 0 && teacherClasses[0].schoolId) {
           console.log('Setting school ID from classes data:', teacherClasses[0].schoolId);
           setSchoolId(teacherClasses[0].schoolId);
         }
-        
-        console.log(`User ${user.username} has access to ${teacherClasses.length} classes for student selection:`, 
+
+        console.log(`User ${user.username} has access to ${teacherClasses.length} classes for student selection:`,
           teacherClasses.map(c => `${c.name} (ID: ${c.classId}, Max: ${c.maxStudents})`));
-          
+
       } catch (error) {
         console.error('Error fetching class details:', error);
         showError(t('errorFetchingClasses', 'Failed to load classes. Some features may not work properly.'));
@@ -213,7 +225,7 @@ const StudentSelection = () => {
     };
 
     fetchClassDetails();
-  }, [user?.id, user?.username]);
+  }, [user?.id, user?.username, showError, t]);
 
   // Set initial loading to false once classes are loaded
   useEffect(() => {
@@ -222,7 +234,7 @@ const StudentSelection = () => {
     }
   }, [classes.length]);
 
-  // Fetch current user's school ID - try from classes first, then my-account
+  // Fetch current user's school ID from my-account endpoint
   const fetchSchoolId = useStableCallback(async () => {
     try {
       if (schoolId) {
@@ -230,23 +242,7 @@ const StudentSelection = () => {
         return;
       }
 
-      console.log('Fetching school ID from classes API...');
-      
-      // First try to get school ID from classes API
-      if (user?.id) {
-        const classResponse = await classService.getClassByUser(user.id);
-        if (classResponse && classResponse.success && classResponse.classes && classResponse.classes.length > 0) {
-          const firstClass = classResponse.classes[0];
-          if (firstClass.schoolId) {
-            console.log('School ID found in classes:', firstClass.schoolId);
-            setSchoolId(firstClass.schoolId);
-            return;
-          }
-        }
-      }
-
-      // Fallback to my-account endpoint
-      console.log('Trying school ID from my-account endpoint...');
+      console.log('Fetching school ID from my-account endpoint...');
       const accountData = await userService.getMyAccount();
       console.log('📥 Full my-account response in StudentSelection:', accountData);
 
@@ -744,6 +740,7 @@ const StudentSelection = () => {
                   isOpen={showSelectedStudentsSidebar}
                   onToggle={setShowSelectedStudentsSidebar}
                   autoOpen={false}
+                  onRefresh={fetchData}
                 />
               </div>
             </div>
