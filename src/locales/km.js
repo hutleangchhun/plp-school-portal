@@ -144,6 +144,9 @@ export const km = {
   studentsTo: 'សិស្សទៅ',
   studentsWillBePromoted: 'សិស្សនឹងត្រូវបានដំឡើងថ្នាក់ទៅ',
   targetGrade: 'ថ្នាក់គោលដៅ',
+  deselectAll: 'លុបការជ្រើសរើសទាំងអស់',
+  readyToTransfer: 'ការរៀបចំការផ្ទេរ',
+  manageSelectedStudents: 'គ្រប់គ្រងការជ្រើសរើសសិស្ស',
 
   // Teacher Management
   addTeacher: 'បន្ថែមគ្រូ',

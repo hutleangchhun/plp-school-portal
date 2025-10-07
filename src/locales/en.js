@@ -160,6 +160,10 @@ export const en = {
   studentsTo: 'student(s) to',
   studentsWillBePromoted: 'student(s) will be promoted to',
   targetGrade: 'Target Grade',
+  deselectAll: 'Deselect All',
+  readyToTransfer: 'Ready To Transfter',
+    manageSelectedStudents: 'Manage Selected Students',
+
 
   // Teacher Management
   addTeacher: 'Add Teacher',

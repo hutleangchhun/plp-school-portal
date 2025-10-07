@@ -139,11 +139,11 @@ export default function StudentsManagement() {
     handleSelectStudent,
     removeStudent,
     clearAll,
-    selectAll,
     isSelected
   } = useSelectedStudents();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [selectingAll, setSelectingAll] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
@@ -1326,12 +1326,51 @@ export default function StudentsManagement() {
   };
 
   // Handle select all students on current page
-  const handleSelectAll = () => {
+  const handleSelectAll = async () => {
+    if (selectingAll) return;
+
+    // If all students are already selected, deselect all
     if (selectedStudents.length === students.length && students.length > 0) {
       clearAll(); // Deselect all
-    } else {
-      // Select all current page students using batch operation
-      selectAll(students);
+      return;
+    }
+
+    // Otherwise, select all students with loading animation
+    try {
+      setSelectingAll(true);
+
+      // Select students in batches to avoid blocking the UI
+      const batchSize = 50;
+      let selectedCount = 0;
+
+      for (let i = 0; i < students.length; i += batchSize) {
+        const batch = students.slice(i, i + batchSize);
+
+        // Use setTimeout to yield control to the UI between batches
+        await new Promise(resolve => {
+          setTimeout(() => {
+            batch.forEach(student => {
+              if (!isSelected(student.id)) {
+                handleSelectStudent(student);
+                selectedCount++;
+              }
+            });
+            resolve();
+          }, 0);
+        });
+      }
+
+      if (selectedCount > 0) {
+        showSuccess(
+          t('selectedAllStudents') ||
+          `Selected ${selectedCount} student${selectedCount !== 1 ? 's' : ''}`
+        );
+      }
+    } catch (error) {
+      console.error('Error selecting all students:', error);
+      showError(t('errorSelectingAllStudents', 'Failed to select all students'));
+    } finally {
+      setSelectingAll(false);
     }
   };
 
@@ -1340,12 +1379,19 @@ export default function StudentsManagement() {
     {
       key: 'select',
       header: (
-        <input
-          type="checkbox"
-          checked={selectedStudents.length === students.length && students.length > 0}
-          onChange={handleSelectAll}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
+        <div className="flex items-center">
+          {selectingAll ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          ) : (
+            <input
+              type="checkbox"
+              checked={selectedStudents.length === students.length && students.length > 0}
+              onChange={handleSelectAll}
+              disabled={selectingAll}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+          )}
+        </div>
       ),
       headerClassName: 'w-12',
       cellClassName: 'w-12',
@@ -1657,8 +1703,14 @@ export default function StudentsManagement() {
               variant="outline"
               size="default"
               className="shadow-lg"
+              disabled={selectingAll}
             >
-              {selectedStudents.length === students.length && students.length > 0 ? (
+              {selectingAll ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-1 sm:mr-2"></div>
+                  <span className="text-xs sm:text-sm">{t('selectingAll', 'Selecting...')}</span>
+                </>
+              ) : selectedStudents.length === students.length && students.length > 0 ? (
                 <>
                   <X className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
                   <span className="text-xs sm:text-sm">{t('deselectAll', 'Deselect All')}</span>
@@ -1675,19 +1727,26 @@ export default function StudentsManagement() {
             </Button>
           )}
 
-          {/* Student Actions Button - Show when students are selected */}
+          {/* Student Actions Floating Button - Show when students are selected */}
           {selectedStudents.length > 0 && (
-            <Button
-              onClick={() => setShowStudentActionsModal(true)}
-              variant="primary"
-              size="default"
-              className="shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-            >
-              <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-              <span className="text-xs sm:text-sm">
-                {t('manageStudents', 'Manage')} ({selectedStudents.length})
-              </span>
-            </Button>
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowStudentActionsModal(true)}
+                className="group relative inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                title={t('manageStudents', 'Manage Selected Students')}
+              >
+                <Users className="h-5 w-5" />
+                {/* Notification count badge */}
+                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md border-2 border-white">
+                  {selectedStudents.length > 99 ? '99+' : selectedStudents.length}
+                </div>
+                {/* Tooltip */}
+                <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
+                  {t('manageStudents', 'Manage Selected Students')}
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                </div>
+              </button>
+            </div>
           )}
 
           {/* Export Dropdown */}

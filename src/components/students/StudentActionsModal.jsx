@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { User, ArrowRightLeft, MinusCircle, X, Trash2, Users } from 'lucide-react';
+import { User, ArrowRightLeft, MinusCircle, X, Trash2, Users, Folder, FolderOpen } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Button } from '../ui/Button';
 import Modal from '../ui/Modal';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/Badge';
 
 const StudentActionsModal = ({
@@ -58,8 +57,8 @@ const StudentActionsModal = ({
           </span>
         </div>
       }
-      size="xl"
-      height="lg"
+      size="2xl"
+      height="xl"
       footer={
         <div className="flex justify-between items-center w-full">
           <Button
@@ -114,7 +113,7 @@ const StudentActionsModal = ({
             }`}
           >
             <ArrowRightLeft className="h-4 w-4 inline mr-2" />
-            {t('transferStudents', 'Transfer Students')}
+            {t('transferStudent', 'Transfer Students')}
           </button>
           <button
             onClick={() => setActiveTab('remove')}
@@ -131,35 +130,66 @@ const StudentActionsModal = ({
 
         {/* Transfer Tab Content */}
         {activeTab === 'transfer' && (
-          <div className="space-y-4">
+          <div className="space-y-4 space-x-4 flex items-center">
             {/* Target Class Selector */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className='w-full'>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 {t('selectTargetClass', 'Select Target Class')}
               </label>
-              <Select value={targetClassId} onValueChange={setTargetClassId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t('chooseClass', 'Choose a class...')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {classes.map(cls => (
-                    <SelectItem key={cls.classId} value={cls.classId.toString()}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{cls.name}</span>
-                        <span className="text-xs text-gray-500 ml-2">{cls.academicYear}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-gray-600 mt-2">
-                {t('transferringCount', `Transferring ${studentsArray.length} student(s) to selected class`)}
-              </p>
+              <div className={`border border-gray-300 rounded-md ${classes.length > 3 ? 'max-h-[180px] overflow-y-auto' : ''}`}>
+                {classes.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500 text-sm">
+                    {t('loadingClasses') || 'Loading classes...'}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {classes.map((cls) => {
+                      const classId = cls.classId.toString();
+                      const isSelected = targetClassId === classId;
+                      return (
+                        <div
+                          key={classId}
+                          onClick={() => setTargetClassId(isSelected ? '' : classId)}
+                          className={`flex items-center p-3 cursor-pointer transition-colors hover:bg-gray-50 ${
+                            isSelected ? 'bg-blue-50 border-blue-200' : ''
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3 flex-1">
+                            {isSelected ? (
+                              <FolderOpen className="h-5 w-5 text-blue-600" />
+                            ) : (
+                              <Folder className="h-5 w-5 text-gray-500" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {cls.name}
+                                </p>
+                                {isSelected && (
+                                  <div className="w-2 h-2 bg-blue-600 rounded-full ml-2"></div>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                Grade {cls.gradeLevel} • {cls.academicYear} • Max: {cls.maxStudents || 50} students
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              {targetClassId && (
+                <p className="text-xs text-blue-600 mt-2 font-medium">
+                  {t('transferringCount', `Transferring ${studentsArray.length} student(s) to selected class`)}
+                </p>
+              )}
             </div>
 
             {/* Summary */}
             {studentsArray.length > 0 && targetClassId && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 w-full">
                 <div className="flex items-start">
                   <ArrowRightLeft className="h-5 w-5 text-green-600 mt-0.5 mr-3" />
                   <div className="flex-1">
@@ -207,8 +237,8 @@ const StudentActionsModal = ({
             </h3>
           </div>
 
-          {/* Student Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-2">
+          {/* Student Cards Grid - Max 2 rows visible, then scroll */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-2">
             {studentsArray.length === 0 ? (
               <div className="col-span-2 text-center py-8 text-gray-500">
                 <User className="h-12 w-12 mx-auto mb-2 opacity-50" />

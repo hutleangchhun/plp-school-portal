@@ -136,29 +136,51 @@ export default function Dashboard({ user: initialUser }) {
         }
       }
 
-      // Get student count from API (all students assigned to teacher)
-      const studentsResponse = await studentService.getMyStudents({ page: 1, limit: 1, status: 'active' });
-      if (studentsResponse && studentsResponse.data) {
-        const totalFromApi = studentsResponse.pagination?.total || studentsResponse.total || studentsResponse.data.length;
-        setStudentCount(totalFromApi);
-      } else if (studentsResponse && Array.isArray(studentsResponse)) {
-        setStudentCount(studentsResponse.length);
+      // Get student count from API (all students in the school)
+      const schoolId = userData?.school_id || userData?.schoolId;
+      if (schoolId) {
+        try {
+          const studentsResponse = await classService.getMasterClasses(schoolId, {
+            page: 1,
+            limit: 1
+          });
+          const totalFromApi = studentsResponse?.total || 0;
+          setStudentCount(totalFromApi);
+        } catch (error) {
+          console.error('Failed to fetch student count:', error);
+          setStudentCount(0);
+        }
+      } else {
+        // Fallback to teacher-specific students if no school ID
+        const studentsResponse = await studentService.getMyStudents({ page: 1, limit: 1, status: 'active' });
+        if (studentsResponse && studentsResponse.data) {
+          const totalFromApi = studentsResponse.pagination?.total || studentsResponse.total || studentsResponse.data.length;
+          setStudentCount(totalFromApi);
+        } else if (studentsResponse && Array.isArray(studentsResponse)) {
+          setStudentCount(studentsResponse.length);
+        }
       }
 
-      // Get detailed class information with enrollment using the new API data
+      // Get detailed class information with enrollment using the school's master class data
       if (teacherClasses.length > 0) {
         try {
+          const schoolId = userData?.school_id || userData?.schoolId;
+
           const classDetailsPromises = teacherClasses.map(async (classData) => {
             try {
-              // Get students for this specific class
+              // Get students for this specific class from master class endpoint
               const classId = classData.classId || classData.class_id || classData.id;
               const className = classData.name || classData.class_name || classData.className || `Class ${classId}`;
-              const classStudentsResponse = await studentService.getMyStudents({ classId, class: classId, page: 1, limit: 1, status: 'active' });
-              const classStudents = Array.isArray(classStudentsResponse?.data)
-                ? classStudentsResponse.data
-                : (Array.isArray(classStudentsResponse) ? classStudentsResponse : []);
-              const enrolledCount = classStudentsResponse?.pagination?.total || classStudentsResponse?.total || classStudents.length || 0;
-              
+
+              // Use master class endpoint to get students by class
+              const classStudentsResponse = await classService.getMasterClasses(schoolId, {
+                classId: classId,
+                page: 1,
+                limit: 1
+              });
+
+              const enrolledCount = classStudentsResponse?.total || classStudentsResponse?.data?.length || 0;
+
               return {
                 id: classId,
                 name: className,
@@ -413,35 +435,73 @@ export default function Dashboard({ user: initialUser }) {
               </div>
             </div>
 
-            {/* Real Class List with Enrollment */}
+            {/* Class Cards Grid */}
             <div className="space-y-3">
-              <h4 className="text-lg font-medium text-gray-900 mb-3">{t('yourClasses') || 'ថ្នាក់របស់អ្នក'}</h4>
+              <h4 className="text-lg font-medium text-gray-900 mb-3">{t('schoolClasses') || 'School Classes'}</h4>
               {classDetails.length > 0 ? (
-                classDetails.map((classDetail) => (
-                  <div key={classDetail.id} className="bg-transparent rounded-lg p-4 border border-gray-100">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-medium text-gray-900">{classDetail.name}</h5>
-                      <span className="text-sm text-gray-500">
-                        {classDetail.enrolledCount}/{classDetail.maxCapacity} {t('students') || 'សិស្ស'}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-1 bg-blue-100 rounded-full h-2">
-                        <div 
-                          className="bg-blue-400 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${Math.min((classDetail.enrolledCount / classDetail.maxCapacity) * 100, 100)}%` }}
-                        ></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {classDetails.map((classDetail) => {
+                    const percentage = Math.round((classDetail.enrolledCount / classDetail.maxCapacity) * 100);
+                    const getEnrollmentStatus = () => {
+                      if (percentage >= 90) return { status: 'full', color: 'red', bgColor: 'bg-red-50', borderColor: 'border-red-200' };
+                      if (percentage >= 70) return { status: 'high', color: 'orange', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' };
+                      return { status: 'normal', color: 'green', bgColor: 'bg-green-50', borderColor: 'border-green-200' };
+                    };
+                    const enrollmentStatus = getEnrollmentStatus();
+
+                    return (
+                      <div
+                        key={classDetail.id}
+                        className={`bg-white rounded-lg p-5 border-2 ${enrollmentStatus.borderColor} hover:shadow-lg transition-all duration-300 cursor-pointer`}
+                        onClick={() => window.location.href = '/classes'}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h5 className="font-semibold text-gray-900 text-lg mb-1">{classDetail.name}</h5>
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                              <Users className="h-4 w-4" />
+                              <span>{classDetail.enrolledCount}/{classDetail.maxCapacity}</span>
+                            </div>
+                          </div>
+                          <div className={`px-3 py-1 rounded-full text-xs font-semibold ${enrollmentStatus.bgColor} text-${enrollmentStatus.color}-700`}>
+                            {percentage}%
+                          </div>
+                        </div>
+
+                        <div className="mb-3">
+                          <div className="flex-1 bg-gray-200 rounded-full h-2.5">
+                            <div
+                              className={`h-2.5 rounded-full transition-all duration-300 ${
+                                enrollmentStatus.status === 'full' ? 'bg-red-500' :
+                                enrollmentStatus.status === 'high' ? 'bg-orange-500' : 'bg-green-500'
+                              }`}
+                              style={{ width: `${Math.min(percentage, 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span className="flex items-center">
+                            <BookOpen className="h-3 w-3 mr-1" />
+                            {t('viewDetails', 'View Details')}
+                          </span>
+                          <span className={`font-medium ${
+                            enrollmentStatus.status === 'full' ? 'text-red-600' :
+                            enrollmentStatus.status === 'high' ? 'text-orange-600' : 'text-green-600'
+                          }`}>
+                            {enrollmentStatus.status === 'full' ? t('full', 'Full') :
+                             enrollmentStatus.status === 'high' ? t('nearFull', 'Near Full') : t('available', 'Available')}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-sm font-medium text-blue-600">
-                        {Math.round((classDetail.enrolledCount / classDetail.maxCapacity) * 100)}%
-                      </div>
-                    </div>
-                  </div>
-                ))
+                    );
+                  })}
+                </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <BookOpen className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                  <p>{t('noClassesAssigned') || 'មិនមានថ្នាក់រៀនដែលបានកំណត់'}</p>
+                <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <BookOpen className="h-16 w-16 mx-auto mb-3 text-gray-300" />
+                  <p className="text-lg font-medium">{t('noClassesAssigned') || 'No Classes Available'}</p>
+                  <p className="text-sm mt-1">{t('contactAdmin', 'Contact administrator to add classes')}</p>
                 </div>
               )}
             </div>
