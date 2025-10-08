@@ -14,6 +14,7 @@ import Badge from '@/components/ui/Badge';
 import { useStableCallback } from '../../utils/reactOptimization';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
+import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 
 export default function Dashboard({ user: initialUser }) {
   const { t } = useLanguage();
@@ -184,14 +185,10 @@ export default function Dashboard({ user: initialUser }) {
   // Initial loading state
   if (initialLoading) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg font-medium">
-            {t('loadingDashboard')}
-          </p>
-        </div>
-      </div>
+      <PageLoader
+        message={t('loadingDashboard')}
+        className="min-h-screen bg-gray-50"
+      />
     );
   }
 

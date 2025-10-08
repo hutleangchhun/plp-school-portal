@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BarChart3, Download, Filter, TrendingUp, Users, BookOpen, Award, Calendar } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
+import DynamicLoader from '../../components/ui/DynamicLoader';
 
 export default function Reports() {
   const { t } = useLanguage();
@@ -342,8 +343,12 @@ export default function Reports() {
     if (loading) {
       return (
         <div className="bg-white rounded-lg shadow p-12 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading report data...</p>
+          <DynamicLoader
+            type="spinner"
+            size="xl"
+            variant="primary"
+            message="Loading report data..."
+          />
         </div>
       );
     }

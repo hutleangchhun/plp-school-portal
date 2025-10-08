@@ -18,6 +18,7 @@ import Dropdown from '@/components/ui/Dropdown';
 import React from 'react'; // Added for useMemo
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
+import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 
 export default function ClassesManagement() {
   const { t } = useLanguage();
@@ -630,14 +631,10 @@ export default function ClassesManagement() {
   // Show initial loading state (only if no error)
   if (initialLoading) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg font-medium">
-            {t('loadingClasses')}
-          </p>
-        </div>
-      </div>
+      <PageLoader
+        message={t('loadingClasses')}
+        className="min-h-screen bg-gray-50"
+      />
     );
   }
 

@@ -15,6 +15,7 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import SelectedStudentsManager from '../../components/students/SelectedStudentsManager';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import Dropdown from '../../components/ui/Dropdown';
+import DynamicLoader from '../../components/ui/DynamicLoader';
 
 const StudentSelection = () => {
   const navigate = useNavigate();
@@ -543,10 +544,12 @@ const StudentSelection = () => {
     return (
       <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg font-medium">
-            {t('loadingStudentSelection')}
-          </p>
+          <DynamicLoader
+            type="spinner"
+            size="xl"
+            variant="primary"
+            message={t('loadingStudentSelection')}
+          />
         </div>
       </div>
     );
@@ -600,10 +603,12 @@ const StudentSelection = () => {
                   disabled={selectingAll}
                 >
                   {selectingAll ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
-                      {t('selectingAll') || 'Selecting...'}
-                    </>
+                    <DynamicLoader
+                      type="spinner"
+                      size="sm"
+                      variant="white"
+                      message={t('selectingAll') || 'Selecting...'}
+                    />
                   ) : actualSelectedStudents.length > 0 ? (
                     <>
                       <X className="h-4 w-4 mr-1" />

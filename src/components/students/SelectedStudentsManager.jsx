@@ -5,6 +5,7 @@ import Modal from '../ui/Modal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import studentService from '../../utils/api/services/studentService';
+import DynamicLoader from '../ui/DynamicLoader';
 
 const SelectedStudentsManager = ({
   selectedStudents = [],
@@ -255,10 +256,12 @@ const SelectedStudentsManager = ({
                     size="sm"
                   >
                     {assigningStudents ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        {t('assigning') || 'កំពុងកំណត់...'}
-                      </>
+                      <DynamicLoader
+                        type="spinner"
+                        size="sm"
+                        variant="white"
+                        message={t('assigning') || 'កំពុងកំណត់...'}
+                      />
                     ) : (
                       <>{t('assignStudents') || 'កំណត់សិស្ស'}</>
                     )}

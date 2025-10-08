@@ -9,6 +9,7 @@ export const km = {
   delete: 'លុប',
   edit: 'កែប្រែ',
   refresh: 'ធ្វើឱ្យទាន់សម័យ',
+  loadingTeachers: 'កំពុងទាយយកទិន្នន័យគ្រូ',
   
   // Navigation
   dashboard: 'ផ្ទាំងគ្រប់គ្រង',
@@ -161,6 +162,8 @@ export const km = {
   selectedAllTeachers: 'បានជ្រើសរើសគ្រូទាំងអស់',
   deselectedAllStudents: 'បានលុបការជ្រើសរើសសិស្សទាំងអស់',
   deselectedAllTeachers: 'បានលុបការជ្រើសរើសគ្រូទាំងអស់',
+    manageTeacherRecords: 'គ្រប់គ្រងទិន្នន័យគ្រូនៅក្នុងសាលារៀន',
+
 
 
 
@@ -174,7 +177,7 @@ export const km = {
   studentTransferredSuccess: 'បានផ្ទេរសិស្សដោយជោគជ័យ',
   failedTransferStudent: 'បរាជ័យក្នុងការផ្ទេរសិស្ស',
   noStudentOrClassSelected: 'មិនមានសិស្សឬថ្នាក់គោលដៅត្រូវបានជ្រើសរើស',
-  noClass: 'មិនមានថ្នាក់',
+  noClasses: 'មិនមានថ្នាក់',
   updateStudent: 'កែប្រែព័ត៌មានសិស្ស',
 
   // Student filters
@@ -635,12 +638,12 @@ export const km = {
   capacityPlaceholder: 'អតិបរមា ២០០ សិស្ស',
   
   // Loading states
-  loadingText: 'កំពុងផ្ទុក...',
-  loadingClasses: 'កំពុងផ្ទុកថ្នាក់រៀន...',
-  loadingStudents: 'កំពុងផ្ទុកសិស្ស...',
-  loadingStudentSelection: 'កំពុងផ្ទុកការជ្រើសរើសសិស្ស...',
-  loadingProfile: 'កំពុងផ្ទុកព័ត៌មានផ្ទាល់ខ្លួន...',
-  loadingPage: 'កំពុងផ្ទុកទំព័រ...',
+  loadingText: 'កំពុងទាញ...',
+  loadingClasses: 'កំពុងទាញថ្នាក់រៀន...',
+  loadingStudents: 'កំពុងទាញសិស្ស...',
+  loadingStudentSelection: 'កំពុងទាញការជ្រើសរើសសិស្ស...',
+  loadingProfile: 'កំពុងទាញព័ត៌មានផ្ទាល់ខ្លួន...',
+  loadingPage: 'កំពុងទាញទំព័រ...',
   
   // Alert dialogs and confirmation messages
   moveStudentToMaster: 'ដកសិស្សចេញពីថ្នាក់',

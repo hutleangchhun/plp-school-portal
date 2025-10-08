@@ -11,6 +11,8 @@ export const en = {
   delete: 'Delete',
   edit: 'Edit',
   refresh: 'Refresh',
+    loadingTeachers: 'Loading Teachers',
+
   
   // Error handling
   networkError: 'Network Error',
@@ -176,6 +178,7 @@ export const en = {
   errorFetchingTeachers: 'Error fetching teachers',
   teachersManagement: 'Teachers Management',
   teachers: 'Teachers',
+  manageTeacherRecords: 'Manage teacher records for your school',
 
   // Transfer student
   transferStudent: 'Transfer Student',

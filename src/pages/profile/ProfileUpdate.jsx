@@ -11,6 +11,7 @@ import { api, utils } from '../../utils/api';
 import Dropdown from '../../components/ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { useStableCallback } from '../../utils/reactOptimization';
+import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 
 export default function ProfileUpdate({ user, setUser }) {
   const { t } = useLanguage();
@@ -713,14 +714,10 @@ export default function ProfileUpdate({ user, setUser }) {
   // Show initial loading state
   if (initialLoading) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg font-medium">
-            {t('loadingProfile')}
-          </p>
-        </div>
-      </div>
+      <PageLoader
+        message={t('loadingProfile')}
+        className="min-h-screen bg-gray-50"
+      />
     );
   }
 
@@ -1122,10 +1119,12 @@ export default function ProfileUpdate({ user, setUser }) {
                   <div className="flex items-center justify-between mb-3 sm:mb-4">
                     <h4 className="text-base sm:text-lg font-medium text-gray-900">{t('currentResidence') || 'Current Residence'}</h4>
                     {locationDataLoading && (
-                      <div className="flex items-center space-x-2 text-sm text-blue-600">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                        <span>Loading location data...</span>
-                      </div>
+                      <DynamicLoader
+                        type="dots"
+                        size="sm"
+                        message="Loading location data..."
+                        className="text-sm text-blue-600"
+                      />
                     )}
                   </div>
                   
@@ -1508,9 +1507,13 @@ export default function ProfileUpdate({ user, setUser }) {
                     <div className="mt-1">
                       {isEditMode ? (
                         schoolsLoading ? (
-                          <div className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                            <span className="text-sm text-gray-600">Loading schools...</span>
+                          <div className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                            <DynamicLoader
+                              type="dots"
+                              size="sm"
+                              message="Loading schools..."
+                              className="text-sm text-gray-600"
+                            />
                           </div>
                         ) : (
                           <Dropdown

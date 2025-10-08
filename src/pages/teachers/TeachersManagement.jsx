@@ -15,6 +15,7 @@ import { exportTeachersToExcel, exportTeachersToCSV, exportTeachersToPDF, getTim
 import TeacherEditModal from '../../components/teachers/TeacherEditModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
+import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 
 export default function TeachersManagement() {
   const { t } = useLanguage();
@@ -578,14 +579,14 @@ export default function TeachersManagement() {
               <Badge
                 key={classItem.classId || index}
                 color="blue"
-                variant="outline"
+                variant="filled"
                 size="xs"
               >
                 {classItem.name || `${classItem.gradeLevel}${classItem.section}`}
               </Badge>
             ))
           ) : (
-            <span className="text-gray-400 text-xs">{t('noClasses', 'No classes')}</span>
+            <Badge color='red' variant='filled' size='xs'>{t('noClasses', 'No classes')}</Badge>
           )}
         </div>
       )
@@ -607,7 +608,7 @@ export default function TeachersManagement() {
             className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 hover:scale-110"
             title={t('editTeacher', 'Edit teacher')}
           >
-            <Edit2 className="h-4 w-4 sm:h-5 sm:w-5" />
+            <Edit2 className="h-4 w-4" />
           </Button>
           <Button
             onClick={() => showSuccess(t('featureComingSoon', 'This feature is coming soon'))}
@@ -617,7 +618,7 @@ export default function TeachersManagement() {
             disabled
             title={t('deleteTeacher', 'Delete teacher (Coming Soon)')}
           >
-            <MinusCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+            <MinusCircle className="h-4 w-4" />
           </Button>
         </div>
       )
@@ -733,14 +734,10 @@ export default function TeachersManagement() {
   // Show initial loading state
   if (initialLoading) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg font-medium">
-            {t('loadingTeachers', 'Loading teachers...')}
-          </p>
-        </div>
-      </div>
+      <PageLoader
+        message={t('loadingTeachers', 'Loading teachers...')}
+        className="min-h-screen bg-gray-50"
+      />
     );
   }
 
@@ -782,10 +779,12 @@ export default function TeachersManagement() {
                 disabled={selectingAll}
               >
                 {selectingAll ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-1 sm:mr-2"></div>
-                    <span className="text-xs sm:text-sm">{t('selectingAll', 'Selecting...')}</span>
-                  </>
+                  <DynamicLoader
+                    type="spinner"
+                    size="sm"
+                    variant="primary"
+                    message={t('selectingAll', 'Selecting...')}
+                  />
                 ) : selectedTeachers.length === teachers.length && teachers.length > 0 ? (
                   <>
                     <X className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
