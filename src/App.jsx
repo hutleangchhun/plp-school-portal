@@ -11,6 +11,7 @@ import StudentsManagement from './pages/students/StudentsManagement';
 import StudentSelection from './pages/students/StudentSelection';
 import ClassesManagement from './pages/classes/ClassesManagement';
 import TeachersManagement from './pages/teachers/TeachersManagement';
+import ParentsManagement from './pages/parents/ParentsManagement';
 // Temporarily removed imports (will be re-enabled later):
 // import Reports from './pages/reports/Reports';
 // import Attendance from './pages/attendance/Attendance';
@@ -116,6 +117,14 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<TeachersManagement />} />
+          </Route>
+
+          <Route path="parents" element={
+            <ProtectedRoute path="/parents" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<ParentsManagement />} />
           </Route>
 
           <Route path="profile" element={

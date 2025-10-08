@@ -34,6 +34,10 @@ export const routePermissions = {
     allowedRoles: [ROLES.TEACHER],
     component: 'TeachersManagement'
   },
+  '/parents': {
+    allowedRoles: [ROLES.TEACHER],
+    component: 'ParentsManagement'
+  },
   // Temporarily removed routes (will be re-enabled later):
   // '/reports', '/attendance', '/achievements', '/settings'
   // '/my-grades', '/my-attendance', '/my-assignments'
@@ -104,6 +108,11 @@ export const getNavigationItems = (user, t) => {
     {
       name: t('students') || 'សិស្ស',
       href: '/students',
+      allowedRoles: [ROLES.TEACHER]
+    },
+    {
+      name: t('parents') || 'ឪពុកម្តាយ',
+      href: '/parents',
       allowedRoles: [ROLES.TEACHER]
     },
 

@@ -10,6 +10,11 @@ export const km = {
   edit: 'កែប្រែ',
   refresh: 'ធ្វើឱ្យទាន់សម័យ',
   loadingTeachers: 'កំពុងទាយយកទិន្នន័យគ្រូ',
+  people: 'នាក់',
+  schoolPopulationDistribution: 'ការបែងចែកប្រភេទបុគ្គលិកក្នុងសាលារៀន',
+
+  //chart
+   classStudentCounts: 'ចំនួនសិស្សតាមថ្នាក់និមួយៗ',
   
   // Navigation
   dashboard: 'ផ្ទាំងគ្រប់គ្រង',
@@ -164,8 +169,48 @@ export const km = {
   deselectedAllTeachers: 'បានលុបការជ្រើសរើសគ្រូទាំងអស់',
     manageTeacherRecords: 'គ្រប់គ្រងទិន្នន័យគ្រូនៅក្នុងសាលារៀន',
 
-
-
+  // Parent Management
+  parents: 'ឪពុកម្តាយ',
+  parentsManagement: 'ការគ្រប់គ្រងឪពុកម្តាយ',
+  addParent: 'បន្ថែមឪពុកម្តាយ',
+  editParent: 'កែប្រែឪពុកម្តាយ',
+  parentDetails: 'ព័ត៌មានលម្អិតឪពុកម្តាយ',
+  manageParentsDescription: 'គ្រប់គ្រងព័ត៌មាននិងទំនាក់ទំនងឪពុកម្តាយ',
+  loadingParents: 'កំពុងផ្ទុកឪពុកម្តាយ...',
+  failedToLoadParents: 'បរាជ័យក្នុងការផ្ទុកឪពុកម្តាយ',
+  noParentsFound: 'រកមិនឃើញឪពុកម្តាយ',
+  noParentsMatchSearch: 'គ្មានឪពុកម្តាយដែលត្រូវនឹងលក្ខខណ្ឌស្វែងរកទេ',
+  getStartedAddParent: 'ចាប់ផ្តើមដោយបន្ថែមឪពុកម្តាយថ្មី',
+  addFirstParent: 'បន្ថែមឪពុកម្តាយដំបូង',
+  searchParents: 'ស្វែងរកឪពុកម្តាយតាមឈ្មោះ អ៊ីមែល ឬលេខទូរស័ព្ទ...',
+  parentCreatedSuccess: 'បានបង្កើតឪពុកម្តាយដោយជោគជ័យ',
+  parentUpdatedSuccess: 'បានកែប្រែឪពុកម្តាយដោយជោគជ័យ',
+  parentDeletedSuccess: 'បានលុបឪពុកម្តាយដោយជោគជ័យ',
+  failedToCreateParent: 'បរាជ័យក្នុងការបង្កើតឪពុកម្តាយ',
+  failedToUpdateParent: 'បរាជ័យក្នុងការកែប្រែឪពុកម្តាយ',
+  failedToDeleteParent: 'បរាជ័យក្នុងការលុបឪពុកម្តាយ',
+  failedToSaveParent: 'បរាជ័យក្នុងការរក្សាទុកឪពុកម្តាយ',
+  confirmDeleteParent: 'លុបឪពុកម្តាយ',
+  confirmDeleteParentMessage: 'តើអ្នកប្រាកដថាចង់លុបឪពុកម្តាយនេះទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+  creatingParent: 'កំពុងបង្កើតឪពុកម្តាយ...',
+  updatingParent: 'កំពុងកែប្រែឪពុកម្តាយ...',
+  deletingParent: 'កំពុងលុបឪពុកម្តាយ...',
+  relationship: 'ទំនាក់ទំនង',
+  father: 'ឪពុក',
+  mother: 'ម្តាយ',
+  guardian: 'អាណាព្យាបាល',
+  occupation: 'មុខរបរ',
+  emergencyContact: 'ទំនាក់ទំនងបន្ទាន់',
+  enterFullName: 'បញ្ចូលឈ្មោះពេញ',
+  fullNameHelp: 'ទុកទំនេរដើម្បីបង្កើតដោយស្វ័យប្រវត្តិពីនាមខ្លួននិងនាមត្រកូល',
+  enterEmergencyContact: 'បញ្ចូលលេខទំនាក់ទំនងបន្ទាន់',
+  enterOccupation: 'បញ្ចូលមុខរបរ',
+  enterAddress: 'បញ្ចូលអាសយដ្ឋាន',
+  enterNotes: 'បញ្ចូលចំណាំបន្ថែម',
+  phoneRequired: 'ត្រូវការលេខទូរស័ព្ទ',
+  contactInformation: 'ព័ត៌មានទំនាក់ទំនង',
+  additionalInformation: 'ព័ត៌មានបន្ថែម',
+  unnamed: 'គ្មានឈ្មោះ',
 
   // Transfer student
   transferStudent: 'ផ្ទេរសិស្ស',

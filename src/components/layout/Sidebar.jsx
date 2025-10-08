@@ -12,7 +12,8 @@ import {
   GraduationCap,
   UserCheck,
   UserStar,
-  User
+  User,
+  UserCircle
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -29,6 +30,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/students': Users,
     '/classes': BookOpen,
     '/teachers': UserStar,
+    '/parents': UserCircle,
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/attendance': Calendar,
     // '/reports': FileText,
@@ -45,6 +47,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/students': 'purple',
     '/classes': 'green',
     '/teachers': 'orange',
+    '/parents': 'pink',
     // Temporarily removed color mappings (will be re-enabled later):
     // '/attendance': 'teal',
     // '/reports': 'yellow',

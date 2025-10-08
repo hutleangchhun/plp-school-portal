@@ -1,6 +1,8 @@
 import { User, Edit,Edit2, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, RefreshCw, TrendingUp, Clock, Target, Activity, Settings, BarChart3, Zap, User2 } from 'lucide-react';
+import ClassStudentCountChart from '../../components/ui/ClassStudentCountChart';
+import SchoolOverviewChart from '../../components/ui/SchoolOverviewChart';
 import { Link } from 'react-router-dom';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import WelcomeAlert from '../../components/ui/WelcomeAlert';
@@ -19,7 +21,7 @@ import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 export default function Dashboard({ user: initialUser }) {
   const { t } = useLanguage();
   const { error, handleError, clearError, retry } = useErrorHandler();
-  const { startLoading, stopLoading, isLoading } = useLoading();
+  const { startLoading, stopLoading } = useLoading();
   const [user, setUserData] = useState(initialUser);
   const [showWelcome, setShowWelcome] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -208,207 +210,6 @@ export default function Dashboard({ user: initialUser }) {
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-6">
-        {/* Clean Header Section */}
-        <FadeInSection className="mb-8">
-          <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                    <User className="w-6 h-6 text-gray-600" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-                      {getTimeBasedGreeting()}, {utils.user.getDisplayName(user) || user?.username || (user?.teacher?.isDirector ? t('director') : t('teacher'))}
-                    </h1>
-                    <p className="text-gray-600">{t('welcomeToDashboard', 'Welcome to your Teacher Portal Dashboard')}</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Badge color="blue" variant="outline" size="sm">
-                    {user?.teacher?.isDirector ? t('director') : (user?.roleNameKh || user?.roleNameEn || t('teacher'))}
-                  </Badge>
-                  <Badge color="green" variant="outline" size="sm">
-                    {user?.teacher?.school?.name || user?.school?.name || 'School'}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="flex-shrink-0">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {new Date().getFullYear()}
-                  </div>
-                  <div className="text-gray-500 text-sm">
-                    {t('academicYear', 'Academic Year')}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </FadeInSection>
-
-
-
-        {/* Detailed Information Cards
-        <FadeInSection delay={200} className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3">
-          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 sm:border-2 overflow-hidden hover:shadow-lg hover:scale-[1.01] transition-all duration-300 group">
-            <div className="bg-blue-100 px-3 py-3 sm:px-6 sm:py-4 border-b border-gray-200 group-hover:bg-blue-200 transition-colors duration-300">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
-                <User className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-gray-600 group-hover:text-blue-600 transition-colors duration-300 flex-shrink-0" />
-                <span className="truncate">{t('personalInformation')}</span>
-              </h3>
-            </div>
-            <div className="p-3 sm:p-4 lg:p-6">
-              <dl className="space-y-2 sm:space-y-3 lg:space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('fullName')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4 break-words">{user?.fullname || '-'}</dd>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <Mail className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('email')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4 break-all">{user?.email || '-'}</dd>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <Phone className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('phone')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4">{user?.phone || '-'}</dd>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('dateOfBirth')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4">{user?.date_of_birth || '-'}</dd>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('gender')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4">
-                    {user?.gender === 'FEMALE' ? t('female') : user?.gender === 'MALE' ? t('male') : '-'}
-                  </dd>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <Globe className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('nationality')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4">{user?.nationality || '-'}</dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 sm:border-2 overflow-hidden hover:shadow-lg hover:scale-[1.01] transition-all duration-300 group">
-            <div className="bg-blue-100 px-3 py-3 sm:px-6 sm:py-4 border-b border-gray-200 group-hover:bg-blue-200 transition-colors duration-300">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
-                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-gray-600 group-hover:text-blue-600 transition-colors duration-300 flex-shrink-0" />
-                <span className="truncate">{t('accountInformation')}</span>
-              </h3>
-            </div>
-            <div className="p-3 sm:p-4 lg:p-6">
-              <dl className="space-y-2 sm:space-y-3 lg:space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('username')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4 break-words">{user?.username || '-'}</dd>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('role')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4 break-words">{user?.roleNameKh || user?.roleNameEn || '-'}</dd>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('teacherId')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4">
-                    {user?.teacherId || t('notAssigned') || 'មិនបានកំណត់'}
-                  </dd>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('teacherId')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4">
-                    {user?.school?.name || t('notAssigned') || 'មិនបានកំណត់'}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 sm:border-2 overflow-hidden hover:shadow-lg hover:scale-[1.01] transition-all duration-300 group">
-            <div className="bg-blue-100 px-3 py-3 sm:px-6 sm:py-4 border-b border-gray-200 group-hover:bg-blue-200 transition-colors duration-300">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
-                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-gray-600 group-hover:text-blue-600 transition-colors duration-300 flex-shrink-0" />
-                <span className="truncate">{t('schoolInformation')}</span>
-              </h3>
-            </div>
-            <div className="p-3 sm:p-4 lg:p-6">
-              <dl className="space-y-2 sm:space-y-3 lg:space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('username')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4 break-words">{user?.username || '-'}</dd>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('role')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4 break-words">{user?.roleNameKh || user?.roleNameEn || '-'}</dd>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                    <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('teacherId')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4">
-                    {user?.teacherId || t('notAssigned') || 'មិនបានកំណត់'}
-                  </dd>
-                </div>
-                {user?.placeOfBirth && (
-                  <div className="flex flex-col sm:flex-row sm:items-center">
-                    <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                      <span className="truncate">{t('placeOfBirth')}</span>
-                    </dt>
-                    <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4 break-words">{user.placeOfBirth}</dd>
-                  </div>
-                )}
-                {user?.residence && (
-                  <div className="flex flex-col sm:flex-row sm:items-center">
-                    <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32 mb-1 sm:mb-0">
-                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                      <span className="truncate">{t('residence')}</span>
-                    </dt>
-                    <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4 break-words">{user.residence}</dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-          </div>
-        </FadeInSection>
-        */}
         
         {/* School Statistics */}
         <FadeInSection delay={200} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -457,83 +258,17 @@ export default function Dashboard({ user: initialUser }) {
           />
         </FadeInSection>
 
-        {/* Clean Information Cards */}
-        <FadeInSection delay={300} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Personal Information Card */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                <User className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{t('personalInformation', 'Personal Information')}</h3>
-                <p className="text-sm text-gray-500">{t('yourAccountDetails', 'Your account details')}</p>
-              </div>
-            </div>
+        {/* Charts Grid */}
+        <FadeInSection delay={300} className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Class Student Count Chart */}
+          <ClassStudentCountChart
+            schoolId={user?.school_id || user?.school?.id || user?.teacher?.school?.id || '76525'}
+          />
 
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm font-medium text-gray-600">{t('username') || 'Username'}</span>
-                <span className="text-sm font-semibold text-gray-900">{user?.username || '-'}</span>
-              </div>
-
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm font-medium text-gray-600">{t('fullName') || 'Full Name'}</span>
-                <span className="text-sm font-semibold text-gray-900 truncate">{utils.user.getDisplayName(user) || '-'}</span>
-              </div>
-
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm font-medium text-gray-600">{t('email') || 'Email'}</span>
-                <span className="text-sm font-semibold text-gray-900 truncate">{user?.email || '-'}</span>
-              </div>
-
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm font-medium text-gray-600">{t('role') || 'Role'}</span>
-                  {user?.teacher?.isDirector ? t('director') : (user?.roleNameKh || user?.roleNameEn || t('teacher'))}
-              </div>
-            </div>
-          </div>
-
-          {/* School Information Card */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{t('schoolInformation', 'School Information')}</h3>
-                <p className="text-sm text-gray-500">{t('yourSchoolDetails', 'Your school details')}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm font-medium text-gray-600">{t('school') || 'School'}</span>
-                <span className="text-sm font-semibold text-gray-900 truncate">{user?.teacher?.school?.name || user?.school?.name || '-'}</span>
-              </div>
-
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm font-medium text-gray-600">{t('schoolCode') || 'School Code'}</span>
-                <span className="text-sm font-semibold text-gray-900">{user?.teacher?.school?.code || '-'}</span>
-              </div>
-
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm font-medium text-gray-600">{t('province') || 'Province'}</span>
-                <span className="text-sm font-semibold text-gray-900 truncate">
-                  {user?.teacher?.school?.place?.province?.province_name_kh ||
-                   user?.teacher?.school?.place?.province?.province_name_en || '-'}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm font-medium text-gray-600">{t('district') || 'District'}</span>
-                <span className="text-sm font-semibold text-gray-900 truncate">
-                  {user?.teacher?.school?.place?.district?.district_name_kh ||
-                   user?.teacher?.school?.place?.district?.district_name_en || '-'}
-                </span>
-              </div>
-            </div>
-          </div>
+          {/* School Overview Chart */}
+          <SchoolOverviewChart
+            schoolStats={schoolStats}
+          />
         </FadeInSection>
 
 
