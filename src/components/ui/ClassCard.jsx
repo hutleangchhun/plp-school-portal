@@ -11,6 +11,7 @@ import Badge from '@/components/ui/Badge';
  * - enrolled: number
  * - capacity: number
  * - idLabel: string (e.g., `ID #20`)
+ * - badges: array of badge objects [{ label: string, color?: string, variant?: string }]
  * - status: 'available' | 'high' | 'full' (controls accent color)
  * - accentColor?: { bar: string, track: string, pillText?: string } tailwind classes
  * - onManage?: function
@@ -24,21 +25,26 @@ export default function ClassCard({
   enrolled = 0,
   capacity = 0,
   idLabel,
-  status = 'available',
+  badges = [],
+  status: propStatus, // Rename to avoid conflict
   accentColor,
   onEdit,
   onDelete,
 }) {
   const percent = capacity > 0 ? Math.min(Math.round((enrolled / capacity) * 100), 100) : 0;
 
+  // Calculate status based on percentage if not provided
+  const status = propStatus || (percent >= 90 ? 'full' : percent >= 70 ? 'high' : 'available');
+
+
   const palette = (() => {
     if (accentColor) return accentColor;
-    if (status === 'full') return { bar: 'bg-red-500', track: 'bg-gray-100', pillText: 'text-red-800' };
-    if (status === 'high') return { bar: 'bg-amber-500', track: 'bg-gray-100', pillText: 'text-amber-800' };
-    return { bar: 'bg-green-600', track: 'bg-gray-100', pillText: 'text-green-800' };
+    if (status === 'full') return { bar: 'bg-red-500', track: 'bg-red-100', pillText: 'text-red-800' };
+    if (status === 'high') return { bar: 'bg-yellow-500', track: 'bg-yellow-100', pillText: 'text-yellow-800' };
+    return { bar: 'bg-green-500', track: 'bg-green-100', pillText: 'text-green-800' };
   })();
 
-  const badgeColor = status === 'full' ? 'red' : status === 'high' ? 'amber' : 'green';
+  const badgeColor = status === 'full' ? 'red' : status === 'high' ? 'yellow' : 'green';
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 shadow-sm transition-all">
@@ -74,8 +80,26 @@ export default function ClassCard({
         </div>
 
         <div className="mt-4 flex items-center justify-between">
-          <div className="text-sm text-gray-500">
-            {idLabel}
+          <div className="flex-1">
+            {idLabel && (
+              <div className="text-sm text-gray-500 mb-2">
+                {idLabel}
+              </div>
+            )}
+            {badges.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {badges.map((badge, index) => (
+                  <Badge
+                    key={index}
+                    color={badge.color || 'blue'}
+                    variant={badge.variant || 'outline'}
+                    size="xs"
+                  >
+                    {badge.label}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {onEdit && (

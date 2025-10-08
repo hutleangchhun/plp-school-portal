@@ -328,6 +328,8 @@ export const classService = {
         status: cls.status,
         createdAt: cls.created_at,
         updatedAt: cls.updated_at,
+        // Include student count if available
+        studentCount: cls.studentCount,
         // Include nested objects if available
         school: cls.school,
         teacher: cls.teacher

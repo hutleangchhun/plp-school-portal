@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Search, Plus, MinusCircle, Edit2, User, Users, ChevronDown, Download, X } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
 import { teacherService } from '../../utils/api/services/teacherService';
@@ -19,6 +20,7 @@ export default function TeachersManagement() {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const { error, handleError, clearError, retry } = useErrorHandler();
+  const { startLoading, stopLoading, isLoading } = useLoading();
 
   // Track renders to detect infinite loops (development only)
   useRenderTracker('TeachersManagement');
@@ -261,7 +263,7 @@ export default function TeachersManagement() {
       setAllTeachers([]);
       setFilteredTeachers([]);
     } finally {
-      setLoading(false);
+      stopLoading('fetchTeachers');
       fetchingRef.current = false;
     }
   }, [schoolId, searchTerm, pagination.page, pagination.limit, performClientSideSearch, showError, t, handleError]);
@@ -346,7 +348,7 @@ export default function TeachersManagement() {
   // Export handlers
   const handleExportExcel = async () => {
     try {
-      setLoading(true);
+      startLoading('exportExcel', t('exporting', 'Exporting Excel...'));
       const filename = getTimestampedFilename('teachers_data', 'xlsx');
       await exportTeachersToExcel(teachers, filename, t);
       showSuccess(t('exportSuccess', 'Data exported successfully'));
@@ -361,7 +363,7 @@ export default function TeachersManagement() {
 
   const handleExportCSV = async () => {
     try {
-      setLoading(true);
+      startLoading('exportCSV', t('exporting', 'Exporting CSV...'));
       const filename = getTimestampedFilename('teachers_data', 'csv');
       await exportTeachersToCSV(teachers, filename, t);
       showSuccess(t('exportSuccess', 'Data exported successfully'));
@@ -370,13 +372,13 @@ export default function TeachersManagement() {
       console.error('Export error:', error);
       showError(t('exportError', 'Failed to export data'));
     } finally {
-      setLoading(false);
+      stopLoading('exportCSV');
     }
   };
 
   const handleExportPDF = async () => {
     try {
-      setLoading(true);
+      startLoading('exportPDF', t('exporting', 'Exporting PDF...'));
       const filename = getTimestampedFilename('teachers_data', 'pdf');
       await exportTeachersToPDF(teachers, filename, t);
       showSuccess(t('exportSuccess', 'Data exported successfully'));
@@ -385,7 +387,7 @@ export default function TeachersManagement() {
       console.error('Export error:', error);
       showError(t('exportError', 'Failed to export data'));
     } finally {
-      setLoading(false);
+      stopLoading('exportPDF');
     }
   };
 
@@ -888,7 +890,7 @@ export default function TeachersManagement() {
             <Table
               columns={tableColumns}
               data={teachers}
-              loading={loading}
+              loading={isLoading('fetchTeachers')}
               emptyMessage={t('noTeachersFound', 'No teachers found')}
               showPagination={true}
               pagination={pagination}
@@ -906,10 +908,10 @@ export default function TeachersManagement() {
         onConfirm={handleDeleteTeacher}
         title={t('deleteTeacher', 'Delete Teacher')}
         message={`${t('confirmDeleteTeacher', 'Are you sure you want to delete')} ${selectedTeacher?.firstName || t('thisTeacher', 'this teacher')}? ${t('thisActionCannotBeUndone', 'This action cannot be undone.')}`}
-        confirmText={loading ? t('deleting', 'Deleting...') : t('delete', 'Delete')}
+        confirmText={isLoading('deleteTeacher') ? t('deleting', 'Deleting...') : t('delete', 'Delete')}
         confirmVariant="danger"
         cancelText={t('cancel', 'Cancel')}
-        isConfirming={loading}
+        isConfirming={isLoading('deleteTeacher')}
       />
 
       {/* Edit Teacher Modal */}

@@ -2,6 +2,7 @@ import { User, Edit,Edit2, Building2, Users, Phone, Mail, Calendar, Globe, MapPi
 import { Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import WelcomeAlert from '../../components/ui/WelcomeAlert';
 import { Button } from '../../components/ui/Button';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
@@ -17,6 +18,7 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 export default function Dashboard({ user: initialUser }) {
   const { t } = useLanguage();
   const { error, handleError, clearError, retry } = useErrorHandler();
+  const { startLoading, stopLoading, isLoading } = useLoading();
   const [user, setUserData] = useState(initialUser);
   const [showWelcome, setShowWelcome] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -85,6 +87,7 @@ export default function Dashboard({ user: initialUser }) {
     clearError();
 
     try {
+      startLoading('fetchUserData', t('loadingDashboard', 'Loading dashboard...'));
       // Fetch detailed user data with school information
       let userData = null;
 
@@ -166,6 +169,7 @@ export default function Dashboard({ user: initialUser }) {
         toastMessage: t('failedToLoadDashboard', 'Failed to load dashboard data')
       });
     } finally {
+      stopLoading('fetchUserData');
       setInitialLoading(false);
     }
   }, [authUser?.id, t, handleError, clearError]);

@@ -377,6 +377,87 @@ export const studentService = {
   },
 
   /**
+   * Get students from school using the new /students/school/{schoolId}/classes endpoint
+   * @param {string|number} schoolId - The ID of the school
+   * @param {Object} params - Query parameters for filtering and pagination
+   * @param {number} [params.page=1] - Page number for pagination
+   * @param {number} [params.limit=10] - Number of items per page
+   * @param {string} [params.search] - Search term for filtering students
+   * @returns {Promise<Object>} Response with student data and pagination info
+   */
+  async getStudentsBySchoolClasses(schoolId, params = {}) {
+    try {
+      if (!schoolId) {
+        throw new Error('School ID is required to fetch students');
+      }
+
+      const {
+        page = 1,
+        limit = 10,
+        search = ''
+      } = params;
+
+      const queryParams = {
+        page,
+        limit
+      };
+
+      if (search && search.trim()) {
+        queryParams.search = search.trim();
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(`/students/school/${schoolId}/classes`, {
+          params: queryParams
+        })
+      );
+
+      console.log('=== SCHOOL CLASSES STUDENTS API RESPONSE ===');
+      console.log('Request params:', queryParams);
+      console.log('Response data:', response.data);
+      console.log('=== END RESPONSE ===');
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch students from school');
+      }
+
+      const d = response.data;
+      const studentsData = Array.isArray(d?.data) ? d.data : [];
+
+      // Format student data using the new structure
+      const formattedStudents = studentsData.map(student => {
+        return studentService.utils.formatSchoolClassesStudentData(student);
+      }).filter(student => student !== null);
+
+      // Use server-side pagination
+      const pagination = {
+        page: d.page || page,
+        limit: d.limit || limit,
+        total: d.total || formattedStudents.length,
+        pages: d.totalPages || Math.max(1, Math.ceil((d.total || formattedStudents.length) / (d.limit || limit)))
+      };
+
+      console.log(`getStudentsBySchoolClasses: Found ${formattedStudents.length} students from school ${schoolId}`);
+
+      return {
+        success: true,
+        data: formattedStudents,
+        pagination,
+        schoolInfo: d.schoolInfo
+      };
+
+    } catch (error) {
+      console.error('Error in getStudentsBySchoolClasses:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch students from school',
+        data: [],
+        pagination: { page: 1, limit: 10, total: 0, pages: 1 }
+      };
+    }
+  },
+
+  /**
    * Get current teacher's students
    * @param {Object} params - Optional parameters for filtering and pagination
    * @param {number} [params.classId] - Specific class ID to filter students
@@ -624,6 +705,53 @@ export const studentService = {
    * Utility functions for student data transformation
    */
   utils: {
+    /**
+     * Format student data from /students/school/{schoolId}/classes endpoint
+     * @param {Object} student - Raw student data from school classes API
+     * @returns {Object} Formatted student data
+     */
+    formatSchoolClassesStudentData(student) {
+      if (!student) return null;
+
+      const user = student.user || {};
+      const classInfo = student.class || {};
+
+      return {
+        id: student.studentId,
+        userId: user.id,
+        studentId: student.studentId,
+        name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown Student',
+        firstName: user.first_name || '',
+        lastName: user.last_name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        gender: user.gender || '',
+        dateOfBirth: user.date_of_birth || user.dateOfBirth,
+        academicYear: student.academicYear,
+        gradeLevel: student.gradeLevel,
+        profilePicture: user.profile_picture || user.profilePicture,
+        isActive: true, // Assume active since they're in classes
+        username: user.username || '',
+        class: {
+          id: classInfo.classId,
+          name: classInfo.name,
+          gradeLevel: classInfo.gradeLevel,
+          academicYear: student.academicYear
+        },
+        averageScore: student.averageScore || 0,
+        timeSpent: student.timeSpent || 0,
+        scores: student.scores || [],
+        problemPoints: student.problemPoints || [],
+        role: {
+          id: 9, // Student role
+          nameEn: 'Student',
+          nameKh: 'សិស្ស'
+        },
+        createdAt: user.created_at,
+        updatedAt: user.updated_at
+      };
+    },
+
     /**
      * Format raw student data from API to consistent format
      * @param {Object} student - Raw student data from API

@@ -923,3 +923,24 @@ export const getTimestampedFilename = (baseName, extension) => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
   return `${baseName}_${timestamp}.${extension}`;
 };
+
+// Utility function to calculate enrollment percentage
+export const calculateEnrollmentPercentage = (enrolled, capacity) => {
+  if (!capacity || capacity === 0) return 0;
+  return Math.round((enrolled / capacity) * 100);
+};
+
+// Utility function to get enrollment status based on percentage
+export const getEnrollmentStatus = (enrolled, capacity) => {
+  const percentage = calculateEnrollmentPercentage(enrolled, capacity);
+  if (percentage >= 90) return { status: 'full', color: 'bg-red-100 text-red-800', percentage };
+  if (percentage >= 70) return { status: 'high', color: 'bg-yellow-100 text-yellow-800', percentage };
+  return { status: 'available', color: 'bg-green-100 text-green-800', percentage };
+};
+
+// Utility function to format enrollment display text
+export const formatEnrollmentDisplay = (enrolled, capacity, showPercentage = true) => {
+  const percentage = calculateEnrollmentPercentage(enrolled, capacity);
+  const baseText = `${enrolled || 0}/${capacity || 50}`;
+  return showPercentage ? `${baseText} (${percentage}%)` : baseText;
+};

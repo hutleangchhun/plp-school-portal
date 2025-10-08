@@ -174,7 +174,7 @@ const StudentActionsModal = ({
                                 )}
                               </div>
                               <p className="text-xs text-gray-500">
-                                Grade {cls.gradeLevel} • {cls.academicYear} • Max: {cls.maxStudents || 50} students
+                                Grade {cls.gradeLevel} • {cls.academicYear} • {cls.studentCount || 0}/{cls.maxStudents || 50} students ({Math.round(((cls.studentCount || 0) / (cls.maxStudents || 50)) * 100)}%)
                               </p>
                             </div>
                           </div>

@@ -92,7 +92,15 @@ const SelectedStudentsManager = ({
         }
       }
 
-      await studentService.addStudentsToClass(classId, selectedStudents);
+      const response = await studentService.addStudentsToClass(classId, selectedStudents);
+
+      // Check if the API call was successful
+      if (!response.success) {
+        const errorMsg = response.error || 'Failed to assign students to class';
+        console.error('API call failed:', errorMsg);
+        showError(errorMsg);
+        return;
+      }
 
       // Show success message
       const selectedClassName = selectedClassData?.name || 'Unknown Class';
@@ -217,7 +225,7 @@ const SelectedStudentsManager = ({
                                       )}
                                     </div>
                                     <p className="text-xs text-gray-500">
-                                      Grade {cls.gradeLevel} • Max: {cls.maxStudents || 50} students
+                                      Grade {cls.gradeLevel} • {cls.studentCount || 0}/{cls.maxStudents || 50} students ({Math.round(((cls.studentCount || 0) / (cls.maxStudents || 50)) * 100)}%)
                                     </p>
                                   </div>
                                 </div>

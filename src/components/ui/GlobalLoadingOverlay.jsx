@@ -3,10 +3,10 @@ import { useLoading } from '../../contexts/LoadingContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 const GlobalLoadingOverlay = () => {
-  const { isLoading, loadingMessage } = useLoading();
+  const { isGlobalLoading, loadingMessage } = useLoading();
   const { t } = useLanguage();
 
-  if (!isLoading) {
+  if (!isGlobalLoading) {
     return null;
   }
 

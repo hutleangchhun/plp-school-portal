@@ -18,6 +18,7 @@ import TeachersManagement from './pages/teachers/TeachersManagement';
 // import Settings from './pages/settings/Settings';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { LoadingProvider } from './contexts/LoadingContext';
 import { api, utils } from './utils/api';
 import { ProtectedRoute } from './components/common/DynamicRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -141,9 +142,11 @@ function App() {
   return (
     <LanguageProvider>
       <ToastProvider>
-        <ErrorBoundary>
-          <AppContent />
-        </ErrorBoundary>
+        <LoadingProvider>
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
+        </LoadingProvider>
       </ToastProvider>
     </LanguageProvider>
   );

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, MinusCircle, Edit2, User, Users, ChevronDown, Download, X, ArrowRightLeft } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
 import Dropdown from '../../components/ui/Dropdown';
@@ -34,6 +35,7 @@ export default function StudentsManagement() {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const { error, handleError, clearError, retry } = useErrorHandler();
+  const { startLoading, stopLoading, isLoading } = useLoading();
 
   // Track renders to detect infinite loops (development only)
   useRenderTracker('StudentsManagement');
@@ -116,8 +118,19 @@ export default function StudentsManagement() {
   // State for classes information (derived from authenticated user)
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('all');
-  
-  
+  const [selectedGradeId, setSelectedGradeId] = useState('all');
+
+  // Grade level options for filtering
+  const gradeOptions = [
+    { value: 'all', label: t('allGrades', 'All Grades') },
+    { value: '1', label: t('grade1', 'Grade 1') },
+    { value: '2', label: t('grade2', 'Grade 2') },
+    { value: '3', label: t('grade3', 'Grade 3') },
+    { value: '4', label: t('grade4', 'Grade 4') },
+    { value: '5', label: t('grade5', 'Grade 5') },
+    { value: '6', label: t('grade6', 'Grade 6') }
+  ];
+
   // Other state variables
   const [searchTerm, setSearchTerm] = useState('');
   const [localSearchTerm, setLocalSearchTerm] = useState(''); // For immediate UI feedback
@@ -141,9 +154,8 @@ export default function StudentsManagement() {
     clearAll,
     isSelected
   } = useSelectedStudents();
-  const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
   const [selectingAll, setSelectingAll] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
@@ -155,14 +167,14 @@ export default function StudentsManagement() {
   const [filteredStudents, setFilteredStudents] = useState([]);
 
   
-  // Enhanced client-side search function
+  // Enhanced client-side search function for class-filtered results
   const performClientSideSearch = useCallback((studentsData, searchQuery) => {
     if (!searchQuery || searchQuery.trim() === '') {
       return studentsData;
     }
-    
+
     const query = searchQuery.trim().toLowerCase();
-    
+
     return studentsData.filter(student => {
       // Search in multiple fields
       const searchFields = [
@@ -176,14 +188,14 @@ export default function StudentsManagement() {
         (student.class?.name || ''),
         (student.className || '')
       ];
-      
-      return searchFields.some(field => 
+
+      return searchFields.some(field =>
         field.toLowerCase().includes(query)
       );
     });
   }, []);
-  
-  // Debounced search handler
+
+  // Debounced search handler - now triggers server-side search
   const handleSearchChange = useCallback((value) => {
     setLocalSearchTerm(value);
 
@@ -192,15 +204,11 @@ export default function StudentsManagement() {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // Apply client-side filter immediately for better UX
-    const filtered = performClientSideSearch(allStudents, value);
-    setFilteredStudents(filtered);
-
     // Debounce server-side search
     searchTimeoutRef.current = setTimeout(() => {
       setSearchTerm(value);
     }, 500);
-  }, [allStudents, performClientSideSearch]);
+  }, []);
 
   // Debounced academic year handler
   const handleAcademicYearChange = useCallback((value) => {
@@ -318,7 +326,8 @@ export default function StudentsManagement() {
         teacherId: classData.teacherId,
         maxStudents: classData.maxStudents,
         schoolId: classData.schoolId,
-        status: classData.status
+        status: classData.status,
+        studentCount: classData.studentCount || 0
       }));
 
       setClasses(teacherClasses);
@@ -367,42 +376,41 @@ export default function StudentsManagement() {
     }
   }, [user?.id, user?.username, handleError, t, schoolId, fetchSchoolId]);
 
-  // Fetch students with pagination and filters using my-students endpoint
+  // Fetch students with pagination and filters using school classes endpoint
   const fetchStudents = useStableCallback(async (search = searchTerm, force = false, skipLoading = false, academicYear = academicYearFilter) => {
-    // Ensure we have classes initialized before fetching students
-    if (!classesInitialized.current) {
-      console.log('Classes not yet initialized, skipping student fetch...');
+    // Ensure we have school ID before fetching students
+    if (!schoolId) {
+      console.log('School ID not available, skipping student fetch...');
       return;
     }
 
     // Create a unique key for current fetch parameters
     const currentParams = JSON.stringify({
       search,
-      selectedClassId,
-      userId: user?.id,
+      schoolId,
       page: pagination.page,
       limit: pagination.limit
     });
-    
+
     // Prevent duplicate fetches with same parameters unless forced
     if (!force && (fetchingRef.current || lastFetchParams.current === currentParams)) {
       console.log('Skipping duplicate fetch with same parameters');
       return;
     }
-    
+
     fetchingRef.current = true;
     lastFetchParams.current = currentParams;
     try {
       if (!skipLoading) {
-        setLoading(true);
+        startLoading('fetchStudents', t('loadingStudents', 'Loading students...'));
       }
-       
-      console.log(`=== FETCH STUDENTS (MY-STUDENTS) ===`);
-      console.log(`Selected class ID: ${selectedClassId}`);
+
+      console.log(`=== FETCH STUDENTS (SCHOOL CLASSES) ===`);
+      console.log(`School ID: ${schoolId}`);
       console.log(`Search term: ${search}`);
-      console.log(`Available classes: ${classes.map(c => c.classId).join(', ')}`);
-       
-      // Always use server-side pagination like before
+      console.log(`Page: ${pagination.page}, Limit: ${pagination.limit}`);
+
+      // Request params for the new endpoint
       const requestParams = {
         page: pagination.page,
         limit: pagination.limit
@@ -413,85 +421,31 @@ export default function StudentsManagement() {
         requestParams.search = search.trim();
       }
 
-      console.log(`=== FETCH STUDENTS CALLED ===`);
-      console.log(`Current pagination state:`, pagination);
-      console.log(`Request params being sent to API:`, requestParams);
-
-      // Add class filter if specific class is selected
-      if (selectedClassId !== 'all') {
-        const selectedClassIdInt = parseInt(selectedClassId);
-         
-        // SECURITY: Ensure the selected class ID is actually in the teacher's authorized classes
-        const authorizedClassIds = classes.map(c => c.classId);
-        if (authorizedClassIds.length > 0) {
-          if (!authorizedClassIds.includes(selectedClassIdInt)) {
-            console.warn(`Teacher ${user?.username} attempted to access unauthorized class ID: ${selectedClassId}`);
-            showError(t('unauthorizedClassAccess', 'You do not have permission to view students from this class'));
-            setStudents([]);
-            setAllStudents([]);
-            setFilteredStudents([]);
-            return;
-          }
-        } else {
-          console.warn('No classes found for teacher, cannot validate class access');
-          showError(t('noClassesAssigned', 'No classes assigned to your account'));
-          setStudents([]);
-          setAllStudents([]);
-          setFilteredStudents([]);
-          return;
-        }
-         
-        // Send both camelCase and snake_case to be safe with backend
-        requestParams.classId = selectedClassIdInt;
-        requestParams.class_id = selectedClassIdInt;
-        console.log(`Filtering by authorized class ${selectedClassIdInt}`);
-      } else {
-        // When fetching all students, ensure we only get students from authorized classes
-        if (classes.length > 0) {
-          console.log(`Fetching students from authorized classes: ${classes.map(c => c.classId).join(', ')}`);
-          // The my-students endpoint should automatically filter by teacher's classes
-        } else {
-          console.warn('No classes found for teacher, cannot fetch students');
-          showError(t('noClassesAssigned', 'No classes assigned to your account'));
-          setStudents([]);
-          setAllStudents([]);
-          setFilteredStudents([]);
-          return;
-        }
-      }
-      
-       
       console.log(`API request params:`, requestParams);
-      console.log(`=== END FETCH STUDENTS ===`);
-       
-      // Add academic year filter if provided
-      if (academicYear && academicYear.trim()) {
-        requestParams.academicYear = academicYear.trim();
-      }
 
-      // Use my-students endpoint (teacher-scoped)
-      const response = await studentService.getMyStudents(requestParams);
-       
-      console.log('=== API RESPONSE (MY-STUDENTS) ===');
+      // Use the new school classes endpoint
+      const response = await studentService.getStudentsBySchoolClasses(schoolId, requestParams);
+
+      console.log('=== API RESPONSE (SCHOOL CLASSES) ===');
       console.log('Full API response:', response);
       console.log('Response success:', response?.success);
       console.log('Response data length:', response?.data?.length);
       console.log('=== END API RESPONSE ===');
-       
+
       if (!response || !response.success) {
         throw new Error(response?.error || 'Failed to fetch students from school');
       }
-       
+
       let data = response.data || [];
-       
-      console.log(`Fetched ${data.length} students from school ${schoolId} for ${selectedClassId === 'all' ? 'all classes' : `class ${selectedClassId}`}`);
-       
+
+      console.log(`Fetched ${data.length} students from school ${schoolId}`);
+
       console.log('Raw students data from API:', data);
-       
+
       // Store for reference
       setAllStudents(data);
       setFilteredStudents(data);
-       
+
       // Server-side pagination: use returned data and server pagination info
       setStudents(data);
       if (response.pagination) {
@@ -502,7 +456,7 @@ export default function StudentsManagement() {
           pages: response.pagination.pages
         });
       }
-       
+
     } catch (err) {
       console.error('Error fetching students from school:', err);
       handleError(err, {
@@ -513,11 +467,11 @@ export default function StudentsManagement() {
       setFilteredStudents([]);
     } finally {
       if (!skipLoading) {
-        setLoading(false);
+        stopLoading('fetchStudents');
       }
       fetchingRef.current = false;
     }
-  }, [selectedClassId, user?.id, academicYearFilter, showError, t, handleError]);
+  }, [schoolId, showError, t, handleError]);
 
   // Re-fetch school ID when user school_id changes (e.g., after login or transfer)
   useEffect(() => {
@@ -543,30 +497,27 @@ export default function StudentsManagement() {
     });
   }, [initializeClasses]);
 
-  // Initial fetch when classes become available
+  // Initial fetch when school ID becomes available
   useEffect(() => {
-    if (classes.length > 0 && classesInitialized.current) {
-      console.log('Classes available, initial fetch...');
+    if (schoolId) {
+      console.log('School ID available, initial fetch...');
       fetchStudents('', true).finally(() => {
         setInitialLoading(false);
       }); // Force initial fetch
     }
-  }, [classes.length, fetchStudents]);
+  }, [schoolId, fetchStudents]);
 
   // Memoized fetch parameters to avoid unnecessary re-renders
   const fetchParams = useMemo(() => ({
     searchTerm,
-    selectedClassId,
-    academicYearFilter: debouncedAcademicYear,
-    classesLength: classes.length,
     page: pagination.page,
     limit: pagination.limit
-  }), [searchTerm, selectedClassId, debouncedAcademicYear, classes.length, pagination.page, pagination.limit]);
+  }), [searchTerm, pagination.page, pagination.limit]);
 
   // Separate useEffect for class ID validation to avoid infinite loops
   useEffect(() => {
     if (classes.length === 0) return; // Wait for classes to load
-    
+
     // SECURITY: Validate that selectedClassId belongs to teacher's authorized classes
     if (selectedClassId !== 'all') {
       const selectedClassIdInt = parseInt(selectedClassId);
@@ -579,14 +530,44 @@ export default function StudentsManagement() {
     }
   }, [selectedClassId, user?.username, classes]);
 
+  // Client-side filtering for class and grade selection since new endpoint returns all students
+  useEffect(() => {
+    if (allStudents.length === 0) return;
+
+    let filtered = allStudents;
+
+    // Filter by class if selected
+    if (selectedClassId !== 'all') {
+      const selectedClassIdInt = parseInt(selectedClassId);
+      filtered = filtered.filter(student =>
+        student.class?.id === selectedClassIdInt ||
+        student.classId === selectedClassIdInt ||
+        student.class_id === selectedClassIdInt
+      );
+    }
+
+    // Filter by grade level if selected
+    if (selectedGradeId !== 'all') {
+      const selectedGradeIdInt = parseInt(selectedGradeId);
+      filtered = filtered.filter(student =>
+        student.class?.gradeLevel === selectedGradeIdInt ||
+        student.gradeLevel === selectedGradeIdInt ||
+        student.grade_level === selectedGradeIdInt
+      );
+    }
+
+    setFilteredStudents(filtered);
+    setStudents(filtered.slice(0, pagination.limit)); // Apply pagination
+  }, [selectedClassId, selectedGradeId, allStudents, pagination.limit]);
+
   // Single useEffect to handle all data fetching
   useEffect(() => {
     console.log(`=== USE EFFECT TRIGGERED ===`);
     console.log(`Current fetch params:`, fetchParams);
-    
-    if (fetchParams.classesLength === 0) {
-      console.log(`Waiting for classes to load...`);
-      return; // Wait for classes to load
+
+    if (!schoolId) {
+      console.log(`Waiting for school ID...`);
+      return; // Wait for school ID
     }
 
     // Debounce only for search changes, immediate for filter changes
@@ -595,20 +576,20 @@ export default function StudentsManagement() {
 
     console.log(`Setting timer with delay ${delay}ms to fetch students`);
     const timer = setTimeout(() => {
-      console.log(`Timer fired - calling fetchStudents with page ${fetchParams.page}, limit ${fetchParams.limit}, academicYear: ${debouncedAcademicYear}`);
-      // Only fetch if not already fetching and has required data
-      if (!fetchingRef.current && classesInitialized.current) {
-        fetchStudents(fetchParams.searchTerm, false, false, debouncedAcademicYear);
+      console.log(`Timer fired - calling fetchStudents with page ${fetchParams.page}, limit ${fetchParams.limit}`);
+      // Only fetch if not already fetching
+      if (!fetchingRef.current) {
+        fetchStudents(fetchParams.searchTerm, false, false);
       } else {
-        console.log('Skipping fetch - already fetching or classes not initialized');
+        console.log('Skipping fetch - already fetching');
       }
     }, delay);
-    
+
     return () => {
       console.log(`Cleaning up timer`);
       clearTimeout(timer);
     };
-  }, [fetchParams, fetchStudents]);
+  }, [fetchParams, fetchStudents, schoolId]);
   
   // Close export dropdown when clicking outside
   useEffect(() => {
@@ -652,9 +633,10 @@ export default function StudentsManagement() {
   };
 
   // Reset pagination to page 1 when filters change
-  const prevFiltersRef = useRef({ selectedClassId, academicYearFilter: debouncedAcademicYear });
+  const prevFiltersRef = useRef({ selectedClassId, selectedGradeId, academicYearFilter: debouncedAcademicYear });
   useEffect(() => {
     const filtersChanged = prevFiltersRef.current.selectedClassId !== selectedClassId ||
+                          prevFiltersRef.current.selectedGradeId !== selectedGradeId ||
                           prevFiltersRef.current.academicYearFilter !== debouncedAcademicYear;
 
     if (filtersChanged) {
@@ -662,9 +644,9 @@ export default function StudentsManagement() {
         console.log(`Filter changed - resetting pagination to page 1`);
         setPagination(prev => ({ ...prev, page: 1 }));
       }
-      prevFiltersRef.current = { selectedClassId, academicYearFilter: debouncedAcademicYear };
+      prevFiltersRef.current = { selectedClassId, selectedGradeId, academicYearFilter: debouncedAcademicYear };
     }
-  }, [selectedClassId, debouncedAcademicYear, pagination.page]); // Reset page when filters change
+  }, [selectedClassId, selectedGradeId, debouncedAcademicYear, pagination.page]); // Reset page when filters change
   
   // Get class information for the selected class
   const classInfo = selectedClassId !== 'all' 
@@ -679,10 +661,10 @@ export default function StudentsManagement() {
       onConfirm={handleDeleteStudent}
       title={t('moveStudentToMaster', 'Move Student to Master Class')}
       message={`${t('confirmMoveStudentToMaster', 'Are you sure you want to move')} ${selectedStudent?.firstName || t('thisStudent', 'this student')} ${t('toMasterClass', 'to the master class? This will remove them from the current class.')}`}
-      confirmText={loading ? t('moving', 'Moving...') : t('moveToMaster', 'Move to Master')}
+      confirmText={isLoading('bulkDelete') ? t('moving', 'Moving...') : t('moveToMaster', 'Move to Master')}
       confirmVariant="danger"
       cancelText={t('cancel', 'Cancel')}
-      isConfirming={loading}
+      isConfirming={isLoading('bulkDelete')}
     />
   );
 
@@ -694,10 +676,10 @@ export default function StudentsManagement() {
       onConfirm={handleBulkDeleteStudents}
       title={t('moveStudentsToMaster', 'Move Students to Master Class')}
       message={`${t('confirmMoveStudentsToMaster', 'Are you sure you want to move')} ${selectedStudents.length} ${t('studentsToMasterClass', 'students to the master class? This will remove them from their current classes.')}`}
-      confirmText={loading ? t('moving', 'Moving...') : t('moveToMaster', 'Move to Master')}
+      confirmText={isLoading('deleteStudent') ? t('moving', 'Moving...') : t('moveToMaster', 'Move to Master')}
       confirmVariant="danger"
       cancelText={t('cancel', 'Cancel')}
-      isConfirming={loading}
+      isConfirming={isLoading('deleteStudent')}
     />
   );
 
@@ -731,7 +713,7 @@ export default function StudentsManagement() {
                 .filter(cls => cls.classId.toString() !== selectedStudent?.class?.id?.toString())
                 .map(cls => ({
                   value: cls.classId.toString(),
-                  label: `${cls.name} - ${cls.academicYear}`
+                  label: `${cls.name} - ${cls.academicYear} (${cls.studentCount || 0}/${cls.maxStudents || 50} - ${Math.round(((cls.studentCount || 0) / (cls.maxStudents || 50)) * 100)}%)`
                 }))}
               placeholder={t('selectClass', 'Select a class')}
               minWidth="w-full"
@@ -739,10 +721,10 @@ export default function StudentsManagement() {
           </div>
         </div>
       }
-      confirmText={loading ? t('transferring', 'Transferring...') : t('transfer', 'Transfer')}
+      confirmText={isLoading('transferStudent') ? t('transferring', 'Transferring...') : t('transfer', 'Transfer')}
       confirmVariant="primary"
       cancelText={t('cancel', 'Cancel')}
-      isConfirming={loading}
+      isConfirming={isLoading('transferStudent')}
       confirmDisabled={!transferTargetClassId}
     />
   );
@@ -789,7 +771,7 @@ export default function StudentsManagement() {
     console.log('Proceeding to remove student from class:', studentClassInfo.classId);
     
     try {
-      setLoading(true);
+      startLoading('bulkTransfer', t('transferring', 'Transferring students...'));
       
       // Get the student ID - try multiple fields to ensure we get the right ID
       const studentId = selectedStudent.id || selectedStudent.student_id || selectedStudent.user_id || selectedStudent.userId;
@@ -880,7 +862,7 @@ export default function StudentsManagement() {
       
       showError(t('failedRemoveStudent', 'Failed to remove student: ') + errorMessage);
     } finally {
-      setLoading(false);
+      stopLoading('bulkDelete');
     }
   };
 
@@ -894,7 +876,7 @@ export default function StudentsManagement() {
     console.log('Class Info:', classInfo);
     
     try {
-      setLoading(true);
+      startLoading('bulkDelete', t('moving', 'Moving students...'));
       
       // Validate schoolId
       if (!schoolId) {
@@ -1045,7 +1027,7 @@ export default function StudentsManagement() {
       console.error('Error removing students:', error);
       showError(t('failedRemoveStudents', 'Failed to remove students: ') + (error.message || 'Unknown error'));
     } finally {
-      setLoading(false);
+      stopLoading('deleteStudent');
     }
   };
 
@@ -1057,7 +1039,7 @@ export default function StudentsManagement() {
     }
 
     try {
-      setLoading(true);
+      startLoading('deleteStudent', t('moving', 'Moving student...'));
 
       // Get student ID
       const studentId = selectedStudent.id || selectedStudent.student_id || selectedStudent.user_id || selectedStudent.userId;
@@ -1066,24 +1048,19 @@ export default function StudentsManagement() {
         throw new Error('No valid student ID found');
       }
 
-      // Validate schoolId (master class ID)
-      if (!schoolId) {
-        throw new Error('School ID is required but not available');
-      }
-
       console.log('Transfer student parameters:', {
-        masterClassId: schoolId,
         studentId,
         targetClassId: transferTargetClassId
       });
 
-      const response = await studentService.transferStudentToClass(schoolId, studentId, transferTargetClassId);
+      // Use the same addStudentsToClass method that works for bulk transfers
+      const response = await studentService.addStudentsToClass(transferTargetClassId, [studentId]);
 
       console.log('Transfer student response:', response);
 
       if (response && response.success) {
-        const apiData = response.data;
-        const successMessage = apiData?.message || t('studentTransferredSuccess', 'Student transferred successfully');
+        const targetClass = classes.find(c => c.classId.toString() === transferTargetClassId);
+        const successMessage = t('studentTransferredSuccess', `Student transferred successfully to ${targetClass?.name || 'the selected class'}`);
         showSuccess(successMessage);
 
         setShowTransferDialog(false);
@@ -1116,94 +1093,67 @@ export default function StudentsManagement() {
 
       showError(t('failedTransferStudent', 'Failed to transfer student: ') + errorMessage);
     } finally {
-      setLoading(false);
+      stopLoading('transferStudent');
     }
   };
+// Handle bulk transfer students
+const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClassId) => {
+  if (selectedStudents.length === 0) {
+    showError(t('noStudentsSelected', 'No students selected'));
+    return;
+  }
 
-  // Handle bulk transfer students
-  const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClassId) => {
-    if (selectedStudents.length === 0) {
-      showError(t('noStudentsSelected', 'No students selected'));
-      return;
-    }
+  if (!targetClassId) {
+    showError(t('noTargetClassSelected', 'No target class selected'));
+    return;
+  }
 
-    if (!targetClassId) {
-      showError(t('noTargetClassSelected', 'No target class selected'));
-      return;
-    }
+  try {
+    startLoading('transferStudent', t('transferring', 'Transferring student...'));
 
-    try {
-      setLoading(true);
-
-      // Validate schoolId
-      if (!schoolId) {
-        throw new Error('School ID is required but not available');
-      }
-
-      // Get students to transfer from the stored data
-      const studentsToTransfer = selectedStudents.map(studentId => {
-        const studentData = selectedStudentsData[studentId];
-        if (!studentData) {
-          console.warn(`No data found for selected student ID: ${studentId}`);
-          // Try to find the student in the current students list as fallback
-          const fallbackStudent = students.find(s => s.id === studentId);
-          if (fallbackStudent) {
-            console.log(`Found fallback student data for ID ${studentId}:`, fallbackStudent);
-            return fallbackStudent;
-          }
-        }
-        return studentData;
-      }).filter(Boolean);
-
-      console.log('Students to transfer with full data:', studentsToTransfer);
-
-      if (studentsToTransfer.length === 0) {
-        throw new Error(`No matching students found for the selected IDs. Selected: ${selectedStudents.length}, Found: ${studentsToTransfer.length}`);
-      }
-
-      // Transfer students one by one (similar to bulk delete)
-      let totalTransferred = 0;
-      const results = [];
-
-      for (const student of studentsToTransfer) {
-        try {
-          // Get student ID
-          const studentId = student.id || student.student_id || student.user_id || student.userId;
-
-          if (!studentId) {
-            console.warn('No valid student ID found for student:', student);
-            results.push({ student, success: false, error: 'No valid student ID' });
-            continue;
-          }
-
-          console.log(`Transferring student ${studentId} to class ${targetClassId}`);
-
-          const response = await studentService.transferStudentToClass(schoolId, studentId, targetClassId);
-
-          if (response && response.success) {
-            totalTransferred++;
-            results.push({ student, success: true, response });
-          } else {
-            results.push({ student, success: false, error: response?.error || 'Unknown error' });
-          }
-        } catch (error) {
-          console.error(`Error transferring student ${student.id}:`, error);
-          results.push({ student, success: false, error: error.message });
+    // Get students to transfer from the stored data
+    const studentsToTransfer = selectedStudents.map(studentId => {
+      const studentData = selectedStudentsData[studentId];
+      if (!studentData) {
+        console.warn(`No data found for selected student ID: ${studentId}`);
+        // Try to find the student in the current students list as fallback
+        const fallbackStudent = students.find(s => s.id === studentId);
+        if (fallbackStudent) {
+          console.log(`Found fallback student data for ID ${studentId}:`, fallbackStudent);
+          return fallbackStudent;
         }
       }
+      return studentData;
+    }).filter(Boolean);
 
-      // Show results
-      if (totalTransferred > 0) {
-        const targetClass = classes.find(c => c.classId.toString() === targetClassId);
-        const successMessage = t('studentsTransferredSuccess', `Successfully transferred ${totalTransferred} student(s) to ${targetClass?.name || 'the selected class'}`);
-        showSuccess(successMessage);
-      }
+    console.log('Students to transfer with full data:', studentsToTransfer);
 
-      const failedResults = results.filter(r => !r.success);
-      if (failedResults.length > 0) {
-        console.error('Some transfers failed:', failedResults);
-        showError(t('someStudentsNotTransferred', `Some students could not be transferred. Check console for details.`));
+    if (studentsToTransfer.length === 0) {
+      throw new Error(`No matching students found for the selected IDs. Selected: ${selectedStudents.length}, Found: ${studentsToTransfer.length}`);
+    }
+
+    // Extract student IDs for the API call
+    const studentIdsToTransfer = studentsToTransfer.map(student => {
+      const studentId = student.id || student.student_id || student.user_id || student.userId;
+      if (!studentId) {
+        console.warn('No valid student ID found for student:', student);
       }
+      return studentId;
+    }).filter(Boolean);
+
+    if (studentIdsToTransfer.length === 0) {
+      throw new Error('No valid student IDs found for transfer');
+    }
+
+    console.log(`Transferring ${studentIdsToTransfer.length} students to class ${targetClassId}`);
+
+    // Use the same addStudentsToClass method that works in StudentSelection
+    const response = await studentService.addStudentsToClass(targetClassId, studentIdsToTransfer);
+
+    if (response && response.success) {
+      const targetClass = classes.find(c => c.classId.toString() === targetClassId);
+      const successMessage = t('studentsTransferredSuccess', `Successfully transferred ${studentIdsToTransfer.length} student(s) to ${targetClass?.name || 'the selected class'}`);
+      showSuccess(successMessage);
 
       // Clean up and refresh
       setShowStudentActionsModal(false);
@@ -1214,14 +1164,17 @@ export default function StudentsManagement() {
       setTimeout(async () => {
         await fetchStudents(searchTerm, true, true); // Skip loading since we're already managing it
       }, 500);
-
-    } catch (error) {
-      console.error('Error transferring students:', error);
-      showError(t('failedTransferStudents', 'Failed to transfer students: ') + (error.message || 'Unknown error'));
-    } finally {
-      setLoading(false);
+    } else {
+      throw new Error(response?.error || 'Failed to transfer students');
     }
-  };
+
+  } catch (error) {
+    console.error('Error transferring students:', error);
+    showError(t('failedTransferStudents', 'Failed to transfer students: ') + (error.message || 'Unknown error'));
+  } finally {
+    stopLoading('bulkTransfer');
+  }
+};
 
   // Handle edit student
   const handleEditStudent = (student) => {
@@ -1297,7 +1250,7 @@ export default function StudentsManagement() {
 
   const handleExportPDF = async () => {
     try {
-      setLoading(true);
+      startLoading('exportPDF', t('exporting', 'Exporting PDF...'));
       const selectedClass = selectedClassId !== 'all' 
         ? classes.find(c => c.classId.toString() === selectedClassId) 
         : null;
@@ -1321,7 +1274,7 @@ export default function StudentsManagement() {
       console.error('Export error:', error);
       showError(t('exportError', 'Failed to export data'));
     } finally {
-      setLoading(false);
+      stopLoading('exportPDF');
     }
   };
 
@@ -1857,18 +1810,25 @@ export default function StudentsManagement() {
             
             {classes.length > 0 && (
               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm">
-                {selectedClassId !== 'all' && (
+                {(selectedClassId !== 'all' || selectedGradeId !== 'all') && (
                   <div className="flex items-center space-x-2 text-xs text-gray-500">
                     {(() => {
                       const selectedClass = classes.find(c => c.classId.toString() === selectedClassId);
-                      return selectedClass ? (
+                      const selectedGrade = gradeOptions.find(g => g.value === selectedGradeId);
+                      return (
                         <>
-                          <Badge color="orange" className="text-xs">
-                            {selectedClass.name}
-                          </Badge>
-                          <span>{selectedClass.academicYear}</span>
+                          {selectedClass && (
+                            <Badge color="orange" className="text-xs">
+                              {selectedClass.name}
+                            </Badge>
+                          )}
+                          {selectedGrade && selectedGrade.value !== 'all' && (
+                            <Badge color="blue" className="text-xs">
+                              {selectedGrade.label}
+                            </Badge>
+                          )}
                         </>
-                      ) : null;
+                      );
                     })()}
                   </div>
                 )}
@@ -1881,12 +1841,22 @@ export default function StudentsManagement() {
                       { value: 'all', label: t('allClasses', 'ថ្នាក់ទាំងអស់') },
                       ...classes.map(cls => ({
                         value: cls.classId.toString(),
-                        label: cls.name
+                        label: `${cls.name} (${cls.studentCount || 0}/${cls.maxStudents || 50} - ${Math.round(((cls.studentCount || 0) / (cls.maxStudents || 50)) * 100)}%)`
                       }))
                     ]}
                     placeholder={t('selectClass', 'ជ្រើសរើសថ្នាក់')}
                     minWidth="min-w-[200px]"
                     contentClassName="max-h-[200px] overflow-y-auto"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-700 font-medium">{t('grade', 'Grade')}:</span>
+                  <Dropdown
+                    value={selectedGradeId}
+                    onValueChange={setSelectedGradeId}
+                    options={gradeOptions}
+                    placeholder={t('selectGrade', 'Select Grade')}
+                    minWidth="min-w-[150px]"
                   />
                 </div>
               </div>
@@ -1909,7 +1879,7 @@ export default function StudentsManagement() {
             <Table
               columns={tableColumns}
               data={students}
-              loading={loading}
+              loading={isLoading('fetchStudents')}
               emptyMessage={t('noStudentsFound', 'No students found')}
               showPagination={true}
               pagination={pagination}
@@ -1939,7 +1909,7 @@ export default function StudentsManagement() {
         classes={classes}
         onTransfer={handleBulkTransferStudents}
         onRemove={handleBulkDeleteStudents}
-        loading={loading}
+        loading={isLoading('bulkTransfer') || isLoading('bulkDelete')}
         onRemoveStudent={removeStudent}
         onClearAll={clearAll}
       />

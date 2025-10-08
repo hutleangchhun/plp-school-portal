@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import GlobalLoadingOverlay from '../ui/GlobalLoadingOverlay';
 export default function DashboardLayout({ user, onLogout }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -66,6 +67,9 @@ export default function DashboardLayout({ user, onLogout }) {
         confirmText={t('logout')}
         cancelText={t('cancel')}
       />
+
+      {/* Global Loading Overlay */}
+      <GlobalLoadingOverlay />
     </div>
   );
 }

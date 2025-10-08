@@ -3,12 +3,12 @@ import { Plus, Edit2, Trash2, Users, BookOpen, Clock, Calendar, Building, User }
 import ClassCard from '@/components/ui/ClassCard';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import StatsCard from '../../components/ui/StatsCard';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import classService from '../../utils/api/services/classService'; // Import the classService
-import studentService from '../../utils/api/services/studentService'; // Import the studentService
 import { userService } from '../../utils/api/services/userService'; // Import userService for my-account
 import schoolService from '../../utils/api/services/schoolService'; // Import schoolService for school info
 import { teacherService } from '../../utils/api/services/teacherService'; // Import teacherService for teacher selection
@@ -23,6 +23,7 @@ export default function ClassesManagement() {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const { error, handleError, clearError, retry } = useErrorHandler();
+  const { startLoading, stopLoading, isLoading } = useLoading();
 
   // Track renders to detect infinite loops (development only)
   useRenderTracker('ClassesManagement');
@@ -46,7 +47,6 @@ export default function ClassesManagement() {
         const userData = localStorage.getItem('user');
         if (userData) {
           const parsedUser = JSON.parse(userData);
-          console.log('🔄 localStorage changed, updating user state:', parsedUser);
           setUser(parsedUser);
         } else {
           setUser(null);
@@ -85,12 +85,6 @@ export default function ClassesManagement() {
     }
   }, [user, handleError, t]);
 
-  // Add this useEffect to log the user object when the component mounts
-  useEffect(() => {
-    console.log('Current user from localStorage:', user);
-    console.log('User schoolId:', user?.schoolId);
-    console.log('User school_id:', user?.school_id);
-  }, [user]);
 
   const [classes, setClasses] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -102,10 +96,6 @@ export default function ClassesManagement() {
   const [schoolInfo, setSchoolInfo] = useState({ id: null, name: 'Loading...' });
   const [availableTeachers, setAvailableTeachers] = useState([]);
 
-  // Add this useEffect to log school info changes (after schoolInfo is declared)
-  useEffect(() => {
-    console.log('School info updated:', schoolInfo);
-  }, [schoolInfo]);
 
   const [formData, setFormData] = useState(() => {
     return {
@@ -125,12 +115,12 @@ export default function ClassesManagement() {
   });
 
   const grades = [
-    { value: '1', label: 'Grade 1' },
-    { value: '2', label: 'Grade 2' },
-    { value: '3', label: 'Grade 3' },
-    { value: '4', label: 'Grade 4' },
-    { value: '5', label: 'Grade 5' },
-    { value: '6', label: 'Grade 6' }
+    { value: '1', label: t('grade1', 'Grade 1') },
+    { value: '2', label: t('grade2', 'Grade 2') },
+    { value: '3', label: t('grade3', 'Grade 3') },
+    { value: '4', label: t('grade4', 'Grade 4') },
+    { value: '5', label: t('grade5', 'Grade 5') },
+    { value: '6', label: t('grade6', 'Grade 6') }
   ];
 
   // Generate academic years dynamically (2 past, current, 3 future for better coverage)
@@ -140,12 +130,10 @@ export default function ClassesManagement() {
   const fetchTeachers = async (schoolId) => {
     try {
       if (!schoolId) {
-        console.log('No school ID available for fetching teachers');
         setAvailableTeachers([]);
         return;
       }
 
-      console.log('Fetching teachers for school:', schoolId);
       const response = await teacherService.getTeachersBySchool(schoolId);
 
       if (response && response.success && response.data && Array.isArray(response.data)) {
@@ -156,10 +144,8 @@ export default function ClassesManagement() {
           teacherData: teacher
         }));
 
-        console.log('Formatted teachers:', formattedTeachers);
         setAvailableTeachers(formattedTeachers);
       } else {
-        console.log('No teachers found for school:', schoolId);
         setAvailableTeachers([]);
       }
     } catch (error) {
@@ -174,19 +160,13 @@ export default function ClassesManagement() {
   // Fetch school information - first try from classes, then from my-account
   const fetchSchoolInfo = async () => {
     try {
-      console.log('Fetching school information...');
-
       // Get school ID from my-account endpoint
-      console.log('Getting school ID from my-account...');
       const accountData = await userService.getMyAccount();
-      console.log('📥 Full my-account response in ClassesManagement:', accountData);
 
       if (accountData && accountData.school_id) {
-        console.log('✅ School ID found in account:', accountData.school_id);
         
         try {
           const schoolResponse = await schoolService.getSchoolInfo(accountData.school_id);
-          console.log('School service response:', schoolResponse);
           
           if (schoolResponse && schoolResponse.data) {
             setSchoolInfo({
@@ -207,7 +187,6 @@ export default function ClassesManagement() {
           });
         }
       } else {
-        console.log('No school ID found in account data, using default');
         setSchoolInfo({ id: null, name: 'No School Found' });
       }
     } catch (err) {
@@ -223,33 +202,19 @@ export default function ClassesManagement() {
   // Function to refresh user authentication data from server
   const refreshUserData = async () => {
     try {
-      console.log('Refreshing user authentication data...');
-      console.log('Current user before refresh:', user);
-      
       const accountData = await userService.getMyAccount();
-      console.log('Account data from server:', accountData);
       
       if (accountData) {
-        // Check what fields are available in the account data
-        console.log('Available fields in accountData:', Object.keys(accountData));
-        
         // Extract class information from the new API response structure
         let classIds = [];
         let classNames = [];
         let gradeLevels = [];
-        
+
         if (accountData.classes && Array.isArray(accountData.classes)) {
           classIds = accountData.classes.map(cls => parseInt(cls.class_id));
           classNames = accountData.classes.map(cls => cls.name);
           gradeLevels = accountData.classes.map(cls => cls.grade_level);
-          
-          console.log('Extracted from classes array:', {
-            classIds,
-            classNames,
-            gradeLevels
-          });
         } else {
-          console.warn('No classes array found in account data, keeping original user data');
           classIds = user?.classIds || [];
           classNames = user?.classNames || [];
           gradeLevels = user?.gradeLevels || [];
@@ -267,16 +232,7 @@ export default function ClassesManagement() {
           schoolId: accountData.school_id || user.schoolId, // For backward compatibility
         };
         
-        console.log('Updated user data comparison:', {
-          originalClassIds: user?.classIds,
-          newClassIds: updatedUser.classIds,
-          originalClassNames: user?.classNames,
-          newClassNames: updatedUser.classNames,
-          classesArrayLength: accountData.classes?.length || 0
-        });
-        
         // Update localStorage and state with fresh data
-        console.log('Updating user data with fresh class information');
         localStorage.setItem('user', JSON.stringify(updatedUser));
         window.dispatchEvent(new Event('userDataUpdated')); // Notify other components
         setUser(updatedUser);
@@ -312,7 +268,6 @@ export default function ClassesManagement() {
   // Re-fetch school info when user school_id changes (e.g., after login or transfer)
   useEffect(() => {
     if (user?.school_id || user?.schoolId) {
-      console.log('🔄 User school_id changed, re-fetching school info:', user.school_id || user.schoolId);
       fetchSchoolInfo();
     }
   }, [user?.school_id, user?.schoolId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -320,7 +275,6 @@ export default function ClassesManagement() {
   // Fetch teachers when school info is loaded
   useEffect(() => {
     if (schoolInfo?.id) {
-      console.log('School ID available, fetching teachers...');
       fetchTeachers(schoolInfo.id);
     }
   }, [schoolInfo?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -331,98 +285,91 @@ export default function ClassesManagement() {
 
   const fetchClasses = useStableCallback(async () => {
     try {
-      setLoading(true);
+      startLoading('fetchClasses', t('loadingClasses', 'Loading classes...'));
 
       if (!user?.id) {
-        console.log('No user ID available for fetching classes');
         setClasses([]);
         return;
       }
 
       if (!schoolInfo?.id) {
-        console.log('No school ID available for fetching classes');
         setClasses([]);
         return;
       }
 
-      console.log('Fetching classes using classes by school API for school ID:', schoolInfo.id);
 
       // Get class data from /classes/school/{schoolId} endpoint
       const classResponse = await classService.getBySchool(schoolInfo.id);
 
       if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
-        console.log('No classes found in API response:', classResponse);
         setClasses([]);
         return;
       }
 
-      console.log('Found classes in API response:', classResponse.classes);
 
-      // Process each class from the new API response
-      const classPromises = classResponse.classes.map(async (classData) => {
-        const classId = classData.classId;
-        
+      // Process classes from the new API response - use studentCount directly from API
+      // First, collect all unique teacher IDs to fetch full teacher data
+      const teacherIds = [...new Set(classResponse.classes
+        .filter(classData => classData.teacher?.teacherId)
+        .map(classData => classData.teacher.teacherId)
+      )];
+
+      // Fetch full teacher details for all teachers in these classes
+      const teacherDetailsMap = new Map();
+      if (teacherIds.length > 0) {
         try {
-          // Get students for this class
-          const studentsResponse = await studentService.getMyStudents({
-            classId: classId,
-            class: classId,
-            page: 1,
-            limit: 1,
-            status: 'active'
-          });
-          
-          const studentCount = studentsResponse?.pagination?.total || studentsResponse?.total || studentsResponse?.data?.length || 0;
-          
-          return {
-            id: classId,
-            name: classData.name,
-            grade: `Grade ${classData.gradeLevel}`,
-            section: classData.section || 'A',
-            subject: `Subject ${classData.gradeLevel}`,
-            teacher: `${classData.teacher?.user?.first_name || ''} ${classData.teacher?.user?.last_name || ''}`.trim() || 'Teacher',
-            schedule: 'Mon, Wed, Fri',
-            room: `Room ${classId}`,
-            capacity: classData.maxStudents || 50,
-            enrolled: studentCount,
-            description: `Class ${classData.name} - Grade ${classData.gradeLevel} (${classData.section})`,
-            classId: classId,
-            maxStudents: classData.maxStudents || 50,
-            academicYear: classData.academicYear,
-            status: classData.status,
-            school: classData.school
-          };
-        } catch (error) {
-          console.error(`Error fetching students for class ${classId}:`, error);
-          // Return the class with 0 students if there's an error
-          return {
-            id: classId,
-            name: classData.name,
-            grade: `Grade ${classData.gradeLevel}`,
-            section: classData.section || 'A',
-            subject: `Subject ${classData.gradeLevel}`,
-            teacher: `${classData.teacher?.user?.first_name || ''} ${classData.teacher?.user?.last_name || ''}`.trim() || 'Teacher',
-            schedule: 'Mon, Wed, Fri',
-            room: `Room ${classId}`,
-            capacity: classData.maxStudents || 50,
-            enrolled: 0,
-            description: `Class ${classData.name} - Grade ${classData.gradeLevel} (${classData.section})`,
-            classId: classId,
-            maxStudents: classData.maxStudents || 50,
-            academicYear: classData.academicYear,
-            status: classData.status,
-            school: classData.school
-          };
+          const teachersResponse = await teacherService.getTeachersBySchool(schoolInfo.id);
+          if (teachersResponse && teachersResponse.success && teachersResponse.data) {
+            teachersResponse.data.forEach(teacher => {
+              if (teacher.teacherId) {
+                teacherDetailsMap.set(teacher.teacherId, teacher);
+              }
+            });
+          }
+        } catch (teacherError) {
+          console.warn('Failed to fetch teacher details:', teacherError);
         }
-      });
+      }
 
-      // Wait for all class promises to resolve and filter out any null values
-      const formattedClasses = (await Promise.all(classPromises)).filter(cls => cls !== null);
+      const formattedClasses = classResponse.classes.map((classData) => {
+        // Get full teacher details if available
+        const teacherDetails = classData.teacher?.teacherId ? teacherDetailsMap.get(classData.teacher.teacherId) : null;
+
+        // Construct teacher name with full details
+        let teacherName = 'Teacher';
+        if (teacherDetails) {
+          // Use full teacher details from teacherService
+          teacherName = `${teacherDetails.user?.firstName || ''} ${teacherDetails.user?.lastName || ''}`.trim() || teacherDetails.user?.username || `Teacher ${teacherDetails.teacherId}`;
+        } else if (classData.teacher) {
+          // Fallback to class teacher data
+          teacherName = `${classData.teacher.user?.firstName || classData.teacher.firstName || ''} ${classData.teacher.user?.lastName || classData.teacher.lastName || ''}`.trim() || classData.teacher.user?.username || classData.teacher.username || `Teacher ${classData.teacher.teacherId}`;
+        }
+
+        return {
+          id: classData.classId,
+          name: classData.name,
+          grade: `Grade ${classData.gradeLevel}`,
+          section: classData.section || 'A',
+          subject: `Subject ${classData.gradeLevel}`,
+          teacher: teacherName,
+          teacherId: classData.teacher?.teacherId,
+          userId: classData.teacher?.userId,
+          teacherUser: classData.teacher?.user,
+          schedule: 'Mon, Wed, Fri',
+          room: `Room ${classData.classId}`,
+          capacity: classData.maxStudents || 50,
+          enrolled: classData.studentCount || 0, // Use studentCount directly from API
+          description: `Class ${classData.name} - Grade ${classData.gradeLevel} (${classData.section})`,
+          classId: classData.classId,
+          maxStudents: classData.maxStudents || 50,
+          academicYear: classData.academicYear,
+          status: classData.status,
+          school: classData.school
+        };
+      });
       setClasses(formattedClasses);
-      
-      console.log(`Loaded ${formattedClasses.length} classes for user ${user.username}`);
-      console.log('Formatted classes data:', formattedClasses);
-      
+
+
     } catch (error) {
       console.error('Failed to fetch classes:', error);
       handleError(error, {
@@ -431,12 +378,11 @@ export default function ClassesManagement() {
       setClasses([]); // Set empty array on error
       setInitialLoading(false); // Stop loading on error
     } finally {
-      setLoading(false);
+      stopLoading('fetchClasses');
     }
   }, [showError, t, user?.id, user?.username, handleError, schoolInfo?.id]);
   useEffect(() => {
     if (user?.id && schoolInfo?.id) {
-      console.log('User authenticated and school loaded, re-fetching classes...');
       fetchClasses();
     }
   }, [user?.id, schoolInfo?.id, fetchClasses]); // Depend on both user ID and school ID
@@ -462,22 +408,17 @@ export default function ClassesManagement() {
   const handleEditClass = async (classItem) => {
     try {
       setLoading(true);
-      
+
       // Fetch the latest class data from the API
       const response = await classService.getClassById(classItem.classId || classItem.id);
-      
+
       if (!response) {
         throw new Error('Failed to fetch class details');
       }
-      
+
       const classData = response.data || response;
-      
-      // SECURITY: The server will validate permissions when we make the API call
-      // This client-side check was causing issues after updates due to stale state
-      console.log('Proceeding to edit class:', classData.classId || classData.id);
-      
-      console.log('Fetched class data for editing:', classData);
-      
+
+
       // Extract grade level from class name if not available in gradeLevel
       let gradeLevel = classData.gradeLevel || classData.grade?.replace('Grade ', '') || '';
       if (!gradeLevel && classData.name) {
@@ -486,22 +427,22 @@ export default function ClassesManagement() {
           gradeLevel = gradeMatch[0];
         }
       }
-      
+
       // Convert gradeLevel to string to match select option values
       gradeLevel = gradeLevel ? gradeLevel.toString() : '';
-      
+
       // Get academic year from class data
       let academicYear = classData.academicYear || '';
-      
+
       // If we don't have an academic year, use the current academic year
       if (!academicYear) {
         academicYear = getCurrentAcademicYear();
       }
-      
+
       // Create form data - use schoolId from my-account instead of API response
       // For teacher name, try multiple fallback sources
       let teacherName = 'Teacher'; // default fallback
-      
+
       // Try to get teacher name from API response
       if (classData.teacher?.user?.first_name || classData.teacher?.user?.last_name) {
         teacherName = `${classData.teacher.user.first_name || ''} ${classData.teacher.user.last_name || ''}`.trim();
@@ -513,7 +454,7 @@ export default function ClassesManagement() {
         // Fallback to current user's name if this is their class
         teacherName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Teacher';
       }
-      
+
       const formDataToSet = {
         name: classData.name || '',
         gradeLevel: gradeLevel,
@@ -528,9 +469,8 @@ export default function ClassesManagement() {
         room: classData.room || `Room ${classData.classId || ''}`.trim(),
         description: classData.description || ''
       };
-      
-      console.log('Setting form data with schoolId from my-account:', formDataToSet);
-      
+
+
       setSelectedClass(classData);
       setFormData(formDataToSet);
       setShowEditModal(true);
@@ -556,18 +496,15 @@ export default function ClassesManagement() {
 
       // Validate school information is available
       if (!schoolInfo.id) {
-        console.log('Current schoolInfo state:', schoolInfo);
-        
         // If school info is still loading, just show a loading message
         if (schoolInfo.name === 'Loading...' || schoolInfo.name === t('loadingText')) {
           showError(t('schoolInfoStillLoading') || 'School information is still loading. Please wait a moment and try again.');
           return;
         }
-        
+
         // If school info failed to load, try to refetch it automatically
-        console.log('School info not available, attempting to refetch...');
         await fetchSchoolInfo();
-        
+
         // Check again after refetch
         if (!schoolInfo.id) {
           showError(t('schoolInfoNotAvailable') || 'School information is not available. Please try refreshing the page or contact administrator.');
@@ -604,11 +541,12 @@ export default function ClassesManagement() {
           setShowAddModal(false);
 
           // Refresh user data from server to get updated class information
-          console.log('Class created successfully, refreshing user data...');
           await refreshUserData();
 
           // Then fetch classes with updated user data
           await fetchClasses();
+        } else {
+          throw new Error(response.message || response.error || 'Failed to create class');
         }
       } else if (showEditModal) {
         const response = await classService.updateClass(selectedClass.classId, classData);
@@ -618,7 +556,6 @@ export default function ClassesManagement() {
           setShowEditModal(false);
 
           // Refresh user data from server to get updated class information
-          console.log('Class updated successfully, refreshing user data...');
           await refreshUserData();
 
           // Then fetch classes with updated user data
@@ -626,12 +563,12 @@ export default function ClassesManagement() {
         } else {
           // Handle server-side errors (including authorization)
           const errorMessage = response.message || response.error || t('errorUpdatingClass') || 'Error updating class';
-          showError(errorMessage);
+          throw new Error(errorMessage);
         }
       }
     } catch (error) {
       console.error('Error saving class:', error);
-      showError(t('errorSavingClass') || 'Error saving class');
+      showError(error.message || t('errorSavingClass') || 'Error saving class');
     } finally {
       setLoading(false);
     }
@@ -647,15 +584,16 @@ export default function ClassesManagement() {
         setShowDeleteDialog(false);
 
         // Refresh user data from server to get updated class information
-        console.log('Class deleted successfully, refreshing user data...');
         await refreshUserData();
 
         // Then fetch classes with updated user data
         await fetchClasses();
+      } else {
+        throw new Error(response.message || response.error || 'Failed to delete class');
       }
     } catch (error) {
       console.error('Error deleting class:', error);
-      showError(t('errorDeletingClass') || 'Error deleting class');
+      showError(error.message || t('errorDeletingClass') || 'Error deleting class');
     } finally {
       setLoading(false);
     }
@@ -666,12 +604,7 @@ export default function ClassesManagement() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const getEnrollmentStatus = (enrolled, capacity) => {
-    const percentage = (enrolled / capacity) * 100;
-    if (percentage >= 90) return { status: 'full', color: 'bg-red-100 text-red-800' };
-    if (percentage >= 70) return { status: 'high', color: 'bg-yellow-100 text-yellow-800' };
-    return { status: 'available', color: 'bg-green-100 text-green-800' };
-  };
+  // Use the shared enrollment status utility from exportUtils
 
   // Compute the class with the highest number of students
   const mostEnrolledClass = React.useMemo(() => {
@@ -725,7 +658,8 @@ export default function ClassesManagement() {
               </div>
               <button
                 onClick={handleAddClass}
-                className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+                disabled={schoolInfo.name === 'Loading...' || schoolInfo.name.includes('Error') || !schoolInfo.id}
+                className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 {t('addClass') || 'Add Class'}
@@ -791,24 +725,39 @@ export default function ClassesManagement() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {classes.map((classItem) => {
-          const enrollmentStatus = getEnrollmentStatus(classItem.enrolled, classItem.capacity);
-          return (
-            <ClassCard
-              key={classItem.id}
-              title={classItem.name}
-              subtitleParts={[
-                `${t('grade') || 'Grade'} ${classItem.grade.replace('Grade ', '')}`,
-                classItem.section ? `${t('section') || 'Section'} ${classItem.section}` : ''
-              ]}
-              enrolled={classItem.enrolled}
-              capacity={classItem.capacity}
-              idLabel={classItem.academicYear ? `${t('academicYear') || 'Academic Year'} ${classItem.academicYear}` : ''}
-              status={enrollmentStatus.status}
-              onEdit={() => handleEditClass(classItem)}
-              onDelete={() => { setSelectedClass(classItem); setShowDeleteDialog(true); }}
-            />
-          );
-            })}
+              const badges = [];
+
+              if (classItem.teacher) {
+                badges.push({
+                  label: classItem.teacher,
+                  color: 'blue',
+                  variant: 'outline'
+                });
+              }
+              if (classItem.academicYear) {
+                badges.push({
+                  label: classItem.academicYear,
+                  color: 'orange',
+                  variant: 'outline'
+                });
+              }
+
+           return (
+             <ClassCard
+               key={classItem.id}
+               title={classItem.name}
+               subtitleParts={[
+                 `${t('grade') || 'Grade'} ${classItem.grade.replace('Grade ', '')}`,
+                 classItem.section ? `${t('section') || 'Section'} ${classItem.section}` : ''
+               ]}
+               enrolled={classItem.enrolled}
+               capacity={classItem.capacity}
+               badges={badges}
+               onEdit={() => handleEditClass(classItem)}
+               onDelete={() => { setSelectedClass(classItem); setShowDeleteDialog(true); }}
+             />
+           );
+             })}
           </div>
         </FadeInSection>
 
@@ -817,6 +766,7 @@ export default function ClassesManagement() {
         isOpen={showAddModal || showEditModal}
         onClose={() => {
           clearError(); // Clear any errors when closing modal
+          setLoading(false); // Reset loading state when closing modal
           setShowAddModal(false);
           setShowEditModal(false);
         }}
@@ -839,7 +789,7 @@ export default function ClassesManagement() {
             <button
               type="submit"
               form="class-form"
-              disabled={loading}
+              disabled={loading || schoolInfo.name === 'Loading...' || schoolInfo.name.includes('Error') || !schoolInfo.id}
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors"
             >
               {loading ? (t('saving') || 'Saving...') : (showAddModal ? (t('addClass') || 'Add Class') : (t('updateClass') || 'Update Class'))}
@@ -1037,6 +987,7 @@ export default function ClassesManagement() {
         isOpen={showDeleteDialog}
         onClose={() => {
           clearError(); // Clear any errors when closing delete dialog
+          setLoading(false); // Reset loading state when closing delete dialog
           setShowDeleteDialog(false);
         }}
         onConfirm={handleConfirmDelete}
@@ -1045,7 +996,7 @@ export default function ClassesManagement() {
         type="danger"
         confirmText={t('delete') || 'Delete'}
         cancelText={t('cancel') || 'Cancel'}
-        loading={loading}
+        loading={isLoading('fetchClasses')}
       />
       </div>
     </PageTransition>
