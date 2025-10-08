@@ -136,6 +136,8 @@ export const en = {
   years: 'Years',
   location: 'Location',
   availableSeats: 'Available Seat',
+  totalTeachers: 'Total Teachers',
+
 
     // Student Management
     addStudent: 'Add Student',
@@ -318,7 +320,6 @@ export const en = {
   confirmRemoveStudents: 'Are you sure you want to remove',
   studentsFromClass: 'students from your class? This action cannot be undone.',
   clearSelection: 'Clear Selection',
-  removeSelected: 'Remove Selected',
   
   // Export functionality
   export: 'Export',
@@ -348,15 +349,18 @@ export const en = {
   selectClassFirst: 'Please select a class first',
   assignStudents: 'Assign Students',
   assigning: 'Assigning...',
-  errorAssigningStudents: 'Error assigning students to class',
   selectedStudentsActions: 'Actions for selected students',
   resetFilters: 'Reset Filters',
   allDistricts: 'All Districts',
   allProvinces: 'All Provinces',
   selectAllStudents: 'Select all students',
   selectedAllStudents: 'Selected all students',
+  deselectedAllStudents: 'All students deselected',
   selectingAllStudents: 'Selecting all students...',
   selectingAll: 'Selecting all...',
+  selectedAllTeachers: 'Selected all teachers',
+  deselectedAllTeachers: 'All teachers deselected',
+  errorSelectingAllTeachers: 'Failed to select all teachers',
   allGenders: 'All Genders',
   selectAllOnPage: 'Select all students on this page',
   deselectAllOnPage: 'Deselect all students on this page',
@@ -646,4 +650,7 @@ export const en = {
   oopsSomethingWentWrong: 'Oops! Something went wrong',
   tryAgainLater: 'Try again later',
   contactSupport: 'Contact Support',
+
+  // Export utilities
+  notAvailable: 'N/A',
 };  

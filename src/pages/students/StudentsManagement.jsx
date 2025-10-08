@@ -1332,6 +1332,7 @@ export default function StudentsManagement() {
     // If all students are already selected, deselect all
     if (selectedStudents.length === students.length && students.length > 0) {
       clearAll(); // Deselect all
+      showSuccess(t('deselectedAllStudents', 'All students deselected'));
       return;
     }
 
@@ -1449,7 +1450,7 @@ export default function StudentsManagement() {
       key: 'status',
       header: t('status', 'Status'),
       render: (student) => (
-        <Badge 
+        <Badge
           color={student.isActive ? 'green' : 'gray'}
           variant="filled"
         >
@@ -1607,11 +1608,40 @@ export default function StudentsManagement() {
           </Button>
         </div>
       </div>
-      <div className="flex justify-between items-center text-xs text-gray-500">
-        <div className="flex flex-col space-y-1">
-          <span>{t('phone', 'Phone')}: {student.phone || 'N/A'}</span>
-          {student.dateOfBirth && (
-            <span>{t('dateOfBirth', 'DOB')}: {new Date(student.dateOfBirth).toLocaleDateString()}</span>
+      <div className="flex justify-between items-start text-xs text-gray-500 mt-2">
+        <div className="flex flex-col space-y-1 flex-1">
+          <span><span className="font-medium">{t('firstName', 'First Name')}:</span> {student.firstName || student.first_name || 'N/A'}</span>
+          <span><span className="font-medium">{t('lastName', 'Last Name')}:</span> {student.lastName || student.last_name || 'N/A'}</span>
+          <span><span className="font-medium">{t('username', 'Username')}:</span> {student.username || 'N/A'}</span>
+          <span><span className="font-medium">{t('email', 'Email')}:</span> {student.email || 'N/A'}</span>
+          <span><span className="font-medium">{t('phone', 'Phone')}:</span> {student.phone || 'N/A'}</span>
+          {student.gender && (
+            <span><span className="font-medium">{t('gender', 'Gender')}:</span> {student.gender === 'male' ? t('male', 'Male') : t('female', 'Female')}</span>
+          )}
+          {(student.dateOfBirth || student.date_of_birth) && (
+            <span><span className="font-medium">{t('dateOfBirth', 'DOB')}:</span> {new Date(student.dateOfBirth || student.date_of_birth).toLocaleDateString()}</span>
+          )}
+          {student.nationality && (
+            <span><span className="font-medium">{t('nationality', 'Nationality')}:</span> {student.nationality}</span>
+          )}
+          {(() => {
+            const province = student.province || student.province_name || student.residence?.province || '';
+            const district = student.district || student.district_name || student.residence?.district || '';
+            const commune = student.commune || student.commune_name || student.residence?.commune || '';
+            const village = student.village || student.village_name || student.residence?.village || '';
+            const residence = [village, commune, district, province].filter(Boolean).join(', ');
+            return residence ? <span><span className="font-medium">{t('currentResidence', 'Residence')}:</span> {residence}</span> : null;
+          })()}
+          {(() => {
+            const birthProvince = student.placeOfBirth?.province || '';
+            const birthDistrict = student.placeOfBirth?.district || '';
+            const birthCommune = student.placeOfBirth?.commune || '';
+            const birthVillage = student.placeOfBirth?.village || '';
+            const placeOfBirth = [birthVillage, birthCommune, birthDistrict, birthProvince].filter(Boolean).join(', ');
+            return placeOfBirth ? <span><span className="font-medium">{t('placeOfBirth', 'Place of Birth')}:</span> {placeOfBirth}</span> : null;
+          })()}
+          {student.class?.name && (
+            <span><span className="font-medium">{t('class', 'Class')}:</span> {student.class.name}</span>
           )}
         </div>
         <Badge

@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Button } from '../ui/Button';
 import Modal from '../ui/Modal';
 import { Badge } from '../ui/Badge';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 const StudentActionsModal = ({
   isOpen,
@@ -20,6 +21,7 @@ const StudentActionsModal = ({
   const { t } = useLanguage();
   const [targetClassId, setTargetClassId] = useState('');
   const [activeTab, setActiveTab] = useState('transfer'); // 'transfer' or 'remove'
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Get array of student data from selected IDs
   const studentsArray = selectedStudents.map(id => selectedStudentsData[id]).filter(Boolean);
@@ -32,10 +34,12 @@ const StudentActionsModal = ({
   };
 
   const handleRemove = () => {
-    if (window.confirm(t('confirmRemoveStudents', `Are you sure you want to remove ${studentsArray.length} student(s) from their classes?`))) {
-      onRemove();
-      handleClose();
-    }
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmRemove = () => {
+    onRemove();
+    handleClose();
   };
 
   const handleClose = () => {
@@ -293,6 +297,18 @@ const StudentActionsModal = ({
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        onConfirm={handleConfirmRemove}
+        title={t('confirmRemoveStudents', 'Confirm Remove Students')}
+        message={t('confirmRemoveStudentsMessage', `Are you sure you want to remove ${studentsArray.length} student(s) from their classes? This action cannot be undone.`)}
+        type="danger"
+        confirmText={t('remove', 'Remove')}
+        cancelText={t('cancel', 'Cancel')}
+        loading={loading}
+      />
     </Modal>
   );
 };

@@ -412,20 +412,20 @@ const userUtils = {
    */
   getDisplayName: (user) => {
     if (!user) return 'User';
-    
+
     // Handle both camelCase and snake_case property names
     const firstName = user.firstName || user.first_name;
     const lastName = user.lastName || user.last_name;
-    
+
     if (firstName && lastName) {
-      return `${firstName} ${lastName}`.trim();
+      return `${lastName} ${firstName}`.trim();
     }
-    
+
     // Fallback to fullname if available
     if (user.fullname) {
       return user.fullname;
     }
-    
+
     return user.username || user.email || 'User';
   },
 

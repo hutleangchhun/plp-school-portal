@@ -10,7 +10,7 @@ import { useStableCallback, useRenderTracker } from '../../utils/reactOptimizati
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
-import { prepareAndExportExcel, prepareAndExportCSV, prepareAndExportPDF, getTimestampedFilename } from '../../utils/exportUtils';
+import { exportTeachersToExcel, exportTeachersToCSV, exportTeachersToPDF, getTimestampedFilename } from '../../utils/exportUtils';
 import TeacherEditModal from '../../components/teachers/TeacherEditModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
@@ -82,6 +82,7 @@ export default function TeachersManagement() {
   const [selectedTeachers, setSelectedTeachers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [selectingAll, setSelectingAll] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
@@ -229,7 +230,8 @@ export default function TeachersManagement() {
         hireDate: teacher.hire_date,
         isDirector: teacher.isDirector,
         status: teacher.status,
-        isActive: teacher.status === 'ACTIVE'
+        isActive: teacher.status === 'ACTIVE',
+        classes: teacher.classes || []
       }));
 
       console.log('Mapped teacher data:', data);
@@ -336,53 +338,39 @@ export default function TeachersManagement() {
 
   // Handle delete teacher
   const handleDeleteTeacher = async () => {
-    if (!selectedTeacher) {
-      showError(t('noTeacherSelected', 'No teacher selected'));
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // Implement delete logic here when API is ready
-      showSuccess(t('teacherDeleted', 'Teacher deleted successfully'));
-      setShowDeleteDialog(false);
-      setSelectedTeacher(null);
-
-      setTimeout(async () => {
-        await fetchTeachers(searchTerm, true);
-      }, 500);
-
-    } catch (error) {
-      console.error('Error deleting teacher:', error);
-      showError(t('failedDeleteTeacher', 'Failed to delete teacher: ') + error.message);
-    } finally {
-      setLoading(false);
-    }
+    showSuccess(t('featureComingSoon', 'This feature is coming soon'));
+    setShowDeleteDialog(false);
+    setSelectedTeacher(null);
   };
 
   // Export handlers
   const handleExportExcel = async () => {
     try {
+      setLoading(true);
       const filename = getTimestampedFilename('teachers_data', 'xlsx');
-      await prepareAndExportExcel(teachers, filename, t);
+      await exportTeachersToExcel(teachers, filename, t);
       showSuccess(t('exportSuccess', 'Data exported successfully'));
       setShowExportDropdown(false);
     } catch (error) {
       console.error('Export error:', error);
       showError(t('exportError', 'Failed to export data'));
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleExportCSV = async () => {
     try {
+      setLoading(true);
       const filename = getTimestampedFilename('teachers_data', 'csv');
-      await prepareAndExportCSV(teachers, filename, t);
+      await exportTeachersToCSV(teachers, filename, t);
       showSuccess(t('exportSuccess', 'Data exported successfully'));
       setShowExportDropdown(false);
     } catch (error) {
       console.error('Export error:', error);
       showError(t('exportError', 'Failed to export data'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -390,7 +378,7 @@ export default function TeachersManagement() {
     try {
       setLoading(true);
       const filename = getTimestampedFilename('teachers_data', 'pdf');
-      await prepareAndExportPDF(teachers, null, filename, t);
+      await exportTeachersToPDF(teachers, filename, t);
       showSuccess(t('exportSuccess', 'Data exported successfully'));
       setShowExportDropdown(false);
     } catch (error) {
@@ -413,13 +401,59 @@ export default function TeachersManagement() {
     });
   };
 
-  // Handle select all
-  const handleSelectAll = () => {
+  // Handle select all teachers on current page
+  const handleSelectAll = async () => {
+    if (selectingAll) return;
+
+    // If all teachers are already selected, deselect all
     if (selectedTeachers.length === teachers.length && teachers.length > 0) {
-      setSelectedTeachers([]);
-    } else {
-      setSelectedTeachers([...teachers]);
+      clearAllTeachers();
+      showSuccess(t('deselectedAllTeachers', 'All teachers deselected'));
+      return;
     }
+
+    // Otherwise, select all teachers with loading animation
+    try {
+      setSelectingAll(true);
+
+      // Select teachers in batches to avoid blocking the UI
+      const batchSize = 50;
+      let selectedCount = 0;
+
+      for (let i = 0; i < teachers.length; i += batchSize) {
+        const batch = teachers.slice(i, i + batchSize);
+
+        // Use setTimeout to yield control to the UI between batches
+        await new Promise(resolve => {
+          setTimeout(() => {
+            batch.forEach(teacher => {
+              if (!selectedTeachers.some(t => t.id === teacher.id)) {
+                handleSelectTeacher(teacher);
+                selectedCount++;
+              }
+            });
+            resolve();
+          }, 0);
+        });
+      }
+
+      if (selectedCount > 0) {
+        showSuccess(
+          t('selectedAllTeachers') ||
+          `Selected ${selectedCount} teacher${selectedCount !== 1 ? 's' : ''}`
+        );
+      }
+    } catch (error) {
+      console.error('Error selecting all teachers:', error);
+      showError(t('errorSelectingAllTeachers', 'Failed to select all teachers'));
+    } finally {
+      setSelectingAll(false);
+    }
+  };
+
+  // Clear all selected teachers
+  const clearAllTeachers = () => {
+    setSelectedTeachers([]);
   };
 
   // Handle edit teacher
@@ -531,6 +565,30 @@ export default function TeachersManagement() {
       )
     },
     {
+      key: 'classes',
+      header: t('classes', 'Classes'),
+      cellClassName: 'text-xs sm:text-sm text-gray-700',
+      responsive: 'hidden lg:table-cell',
+      render: (teacher) => (
+        <div className="flex flex-wrap gap-1">
+          {teacher.classes && teacher.classes.length > 0 ? (
+            teacher.classes.map((classItem, index) => (
+              <Badge
+                key={classItem.classId || index}
+                color="blue"
+                variant="outline"
+                size="xs"
+              >
+                {classItem.name || `${classItem.gradeLevel}${classItem.section}`}
+              </Badge>
+            ))
+          ) : (
+            <span className="text-gray-400 text-xs">{t('noClasses', 'No classes')}</span>
+          )}
+        </div>
+      )
+    },
+    {
       key: 'actions',
       header: t('actions', 'Actions'),
       headerClassName: 'relative',
@@ -550,15 +608,12 @@ export default function TeachersManagement() {
             <Edit2 className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
           <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedTeacher(teacher);
-              setShowDeleteDialog(true);
-            }}
+            onClick={() => showSuccess(t('featureComingSoon', 'This feature is coming soon'))}
             variant="ghost"
             size="sm"
-            className="text-red-600 hover:text-red-900 hover:bg-red-50 hover:scale-110"
-            title={t('deleteTeacher', 'Delete teacher')}
+            className="text-red-600 opacity-50 cursor-not-allowed"
+            disabled
+            title={t('deleteTeacher', 'Delete teacher (Coming Soon)')}
           >
             <MinusCircle className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
@@ -604,15 +659,12 @@ export default function TeachersManagement() {
             <Edit2 className="h-4 w-4" />
           </Button>
           <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedTeacher(teacher);
-              setShowDeleteDialog(true);
-            }}
+            onClick={() => showSuccess(t('featureComingSoon', 'This feature is coming soon'))}
             variant="ghost"
             size="sm"
-            className="text-red-600 hover:text-red-900 hover:bg-red-50 hover:scale-110 flex-shrink-0"
-            title={t('deleteTeacher', 'Delete teacher')}
+            className="text-red-600 opacity-50 cursor-not-allowed flex-shrink-0"
+            disabled
+            title={t('deleteTeacher', 'Delete teacher (Coming Soon)')}
           >
             <MinusCircle className="h-4 w-4" />
           </Button>
@@ -631,6 +683,23 @@ export default function TeachersManagement() {
               {teacher.isDirector ? t('director', 'Director') : t('teacher', 'Teacher')}
             </Badge>
           </div>
+          {teacher.classes && teacher.classes.length > 0 && (
+            <div className="mt-2">
+              <span className="text-xs font-medium text-gray-600">{t('classes', 'Classes')}:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {teacher.classes.map((classItem, index) => (
+                  <Badge
+                    key={classItem.classId || index}
+                    color="blue"
+                    variant="outline"
+                    size="xs"
+                  >
+                    {classItem.name || `${classItem.gradeLevel}${classItem.section}`}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <Badge
           color={teacher.isActive ? 'green' : 'gray'}
@@ -701,15 +770,34 @@ export default function TeachersManagement() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            {selectedTeachers.length > 0 && (
+            {/* Select All / Deselect All Button */}
+            {teachers.length > 0 && (
               <Button
                 onClick={handleSelectAll}
                 variant="outline"
                 size="default"
                 className="shadow-lg"
+                disabled={selectingAll}
               >
-                <X className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                <span className="text-xs sm:text-sm">{t('deselectAll', 'Deselect All')}</span>
+                {selectingAll ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-1 sm:mr-2"></div>
+                    <span className="text-xs sm:text-sm">{t('selectingAll', 'Selecting...')}</span>
+                  </>
+                ) : selectedTeachers.length === teachers.length && teachers.length > 0 ? (
+                  <>
+                    <X className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                    <span className="text-xs sm:text-sm">{t('deselectAll', 'Deselect All')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                    <span className="text-xs sm:text-sm">
+                      {t('selectAll', 'Select All')}
+                      {selectedTeachers.length > 0 && ` (${selectedTeachers.length}/${teachers.length})`}
+                    </span>
+                  </>
+                )}
               </Button>
             )}
 

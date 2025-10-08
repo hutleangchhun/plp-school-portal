@@ -7,8 +7,8 @@ import { Button } from '../../components/ui/Button';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import StatsCard from '../../components/ui/StatsCard';
 import { utils, userService } from '../../utils/api';
-import studentService from '../../utils/api/services/studentService';
 import classService from '../../utils/api/services/classService';
+import { teacherService } from '../../utils/api/services/teacherService';
 import Badge from '@/components/ui/Badge';
 import { useStableCallback } from '../../utils/reactOptimization';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -20,11 +20,12 @@ export default function Dashboard({ user: initialUser }) {
   const [user, setUserData] = useState(initialUser);
   const [showWelcome, setShowWelcome] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [studentCount, setStudentCount] = useState(0);
-  const [classCount, setClassCount] = useState(0);
-  const [lastRefresh, setLastRefresh] = useState(new Date());
-  const [autoRefresh, setAutoRefresh] = useState(false); // Disabled by default to prevent excessive API calls
-  const [classDetails, setClassDetails] = useState([]);
+  const [schoolStats, setSchoolStats] = useState({
+    totalClasses: 0,
+    totalStudents: 0,
+    totalTeachers: 0,
+    totalDirectors: 0
+  });
 
   const [authUser, setAuthUser] = useState(() => {
     try {
@@ -78,15 +79,15 @@ export default function Dashboard({ user: initialUser }) {
     return t('goodEvening') || 'សាយណ្ហសួស្តី';
   };
 
-  // Fetch comprehensive data
-  const fetchAllData = useStableCallback(async () => {
-    console.log('🔄 Dashboard: fetchAllData called at', new Date().toISOString());
+  // Fetch user data and school statistics
+  const fetchUserData = useStableCallback(async () => {
+    console.log('🔄 Dashboard: fetchUserData called at', new Date().toISOString());
     clearError();
-    
+
     try {
       // Fetch detailed user data with school information
       let userData = null;
-      
+
       // First try to get detailed user data with school info
       if (authUser?.id) {
         try {
@@ -97,120 +98,69 @@ export default function Dashboard({ user: initialUser }) {
           console.warn('Failed to fetch detailed user data, falling back to getMyAccount:', error);
         }
       }
-      
-      // Fallback to getMyAccount if detailed fetch failed
-      if (!userData) {
-        const response = await userService.getMyAccount();
-        userData = response?.data || response;
+
+      // Always get account data from my-account endpoint
+      const accountResponse = await userService.getMyAccount();
+      const accountData = accountResponse?.data || accountResponse;
+      console.log('📥 Dashboard my-account response:', accountData);
+
+      // Use accountData as fallback for userData if needed
+      if (!userData && accountData) {
+        userData = accountData;
       }
-      
+
       if (userData && (userData.username || userData.fullname || userData.email)) {
         setUserData(userData);
       } else {
         throw new Error(t('noValidUserData', 'No valid user data received from API'));
       }
 
-      // Get class data from /classes/school/{schoolId} endpoint
-      let teacherClasses = [];
-      if (authUser?.id) {
+      // Fetch school statistics if we have school ID
+      if (accountData && accountData.school_id) {
         try {
-          // Get school ID from user data
-          const schoolId = userData?.school_id || userData?.schoolId;
-          if (!schoolId) {
-            console.warn('No school ID found in user data');
-            setClassCount(0);
-          } else {
-            const classResponse = await classService.getBySchool(schoolId);
+          // Get classes count
+          const classesResponse = await classService.getBySchool(accountData.school_id);
+          const totalClasses = classesResponse?.classes?.length || 0;
 
-            if (classResponse && classResponse.success && classResponse.classes && Array.isArray(classResponse.classes)) {
-              teacherClasses = classResponse.classes;
-              setClassCount(teacherClasses.length);
-            } else {
-              console.log('No classes found in API response:', classResponse);
-              setClassCount(0);
-            }
-          }
-        } catch (error) {
-          console.error('Failed to fetch classes from API:', error);
-          setClassCount(0);
-        }
-      }
-
-      // Get student count from API (all students in the school)
-      const schoolId = userData?.school_id || userData?.schoolId;
-      if (schoolId) {
-        try {
-          const studentsResponse = await classService.getMasterClasses(schoolId, {
+          // Get students count (from master classes endpoint)
+          const studentsResponse = await classService.getMasterClasses(accountData.school_id, {
             page: 1,
             limit: 1
           });
-          const totalFromApi = studentsResponse?.total || 0;
-          setStudentCount(totalFromApi);
-        } catch (error) {
-          console.error('Failed to fetch student count:', error);
-          setStudentCount(0);
-        }
-      } else {
-        // Fallback to teacher-specific students if no school ID
-        const studentsResponse = await studentService.getMyStudents({ page: 1, limit: 1, status: 'active' });
-        if (studentsResponse && studentsResponse.data) {
-          const totalFromApi = studentsResponse.pagination?.total || studentsResponse.total || studentsResponse.data.length;
-          setStudentCount(totalFromApi);
-        } else if (studentsResponse && Array.isArray(studentsResponse)) {
-          setStudentCount(studentsResponse.length);
-        }
-      }
+          const totalStudents = studentsResponse?.total || 0;
 
-      // Get detailed class information with enrollment using the school's master class data
-      if (teacherClasses.length > 0) {
-        try {
-          const schoolId = userData?.school_id || userData?.schoolId;
-
-          const classDetailsPromises = teacherClasses.map(async (classData) => {
-            try {
-              // Get students for this specific class from master class endpoint
-              const classId = classData.classId || classData.class_id || classData.id;
-              const className = classData.name || classData.class_name || classData.className || `Class ${classId}`;
-
-              // Use master class endpoint to get students by class
-              const classStudentsResponse = await classService.getMasterClasses(schoolId, {
-                classId: classId,
-                page: 1,
-                limit: 1
-              });
-
-              const enrolledCount = classStudentsResponse?.total || classStudentsResponse?.data?.length || 0;
-
-              return {
-                id: classId,
-                name: className,
-                enrolledCount,
-                maxCapacity: classData.maxStudents || 50
-              };
-            } catch (error) {
-              const id = classData.classId || classData.class_id || classData.id;
-              console.warn(`Failed to fetch data for class ${id}:`, error);
-              return {
-                id: id,
-                name: classData.name || `Class ${id}`,
-                enrolledCount: 0,
-                maxCapacity: classData.maxStudents || 50
-              };
-            }
+          // Get teachers count from the teachers endpoint
+          const teachersResponse = await teacherService.getTeachersBySchool(accountData.school_id, {
+            page: 1,
+            limit: 1000 // Get all teachers to count properly
           });
 
-          const classData = await Promise.all(classDetailsPromises);
-          setClassDetails(classData);
+          // Count based on isDirector field
+          const allTeachers = teachersResponse?.data || [];
+          const regularTeachers = allTeachers.filter(teacher => !teacher.isDirector);
+          const directors = allTeachers.filter(teacher => teacher.isDirector === true);
+
+          const totalTeachers = regularTeachers.length;
+          const totalDirectors = directors.length;
+
+          setSchoolStats({
+            totalClasses,
+            totalStudents,
+            totalTeachers,
+            totalDirectors
+          });
+
+          console.log('✅ Dashboard school stats:', { totalClasses, totalStudents, totalTeachers });
         } catch (error) {
-          console.warn('Failed to fetch class details:', error);
-          setClassDetails([]);
+          console.warn('Failed to fetch school statistics:', error);
+          setSchoolStats({
+            totalClasses: 0,
+            totalStudents: 0,
+            totalTeachers: 0
+          });
         }
-      } else {
-        setClassDetails([]);
       }
 
-      setLastRefresh(new Date());
-      
     } catch (error) {
       handleError(error, {
         toastMessage: t('failedToLoadDashboard', 'Failed to load dashboard data')
@@ -218,25 +168,12 @@ export default function Dashboard({ user: initialUser }) {
     } finally {
       setInitialLoading(false);
     }
-  }, [authUser?.id, t, handleError, clearError]); // Fixed: use authUser.id consistently
+  }, [authUser?.id, t, handleError, clearError]);
 
   // Initial data fetch
   useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
-
-  // Auto-refresh functionality
-  useEffect(() => {
-    let interval;
-    if (autoRefresh) {
-      interval = setInterval(() => {
-        fetchAllData();
-      }, 300000); // Refresh every 5 minutes (300000ms)
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [autoRefresh, fetchAllData]);
+    fetchUserData();
+  }, [fetchUserData]);
 
   // Profile picture URL is handled by ProfileImage component
 
@@ -257,256 +194,61 @@ export default function Dashboard({ user: initialUser }) {
   // Error state
   if (error) {
     return (
-      <ErrorDisplay 
-        error={error} 
-        onRetry={() => retry(fetchAllData)}
+      <ErrorDisplay
+        error={error}
+        onRetry={() => retry(fetchUserData)}
         size="lg"
         className="min-h-screen bg-gray-50"
       />
     );
   }
 
-  // Derived totals for capacity-based metrics
-  const capacityTotal = Array.isArray(classDetails)
-    ? classDetails.reduce((sum, c) => sum + (c?.maxCapacity || 50), 0)
-    : 0;
-  const availableSeats = Math.max(capacityTotal - studentCount, 0);
 
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-6">
-        {/* Header Section */}
-        <FadeInSection className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="mb-3 bg-gradient-to-br from-gray-50 to-blue-100 border border-blue-200 rounded-xl ">
-            <div className="px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 gap-4">
-              {/* Time-based greeting */}
-              <div className="flex items-start justify-between">
-                <div className="">
-                  <h2 className="text-xl text-gray-600 font-semibold">
-                    {getTimeBasedGreeting()}, {utils.user.getDisplayName(user) || user?.username || t('teacher')}
-                  </h2>
-                  <div className='flex flex-row items-start justify-center text-xs text-gray-500 mt-1'>
-                    {t('lastUpdated')}: {lastRefresh.toLocaleTimeString()}
+        {/* Clean Header Section */}
+        <FadeInSection className="mb-8">
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                    <User className="w-6 h-6 text-gray-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-semibold text-gray-900 mb-1">
+                      {getTimeBasedGreeting()}, {utils.user.getDisplayName(user) || user?.username || (user?.teacher?.isDirector ? t('director') : t('teacher'))}
+                    </h1>
+                    <p className="text-gray-600">{t('welcomeToDashboard', 'Welcome to your Teacher Portal Dashboard')}</p>
                   </div>
                 </div>
-                <div>
-                  <Badge color='blue' size='sm' variant='filled' className='mt-1'>{user?.roleNameKh || user?.roleNameEn || '-'}</Badge>
+
+                <div className="flex flex-wrap gap-2">
+                  <Badge color="blue" variant="outline" size="sm">
+                    {user?.teacher?.isDirector ? t('director') : (user?.roleNameKh || user?.roleNameEn || t('teacher'))}
+                  </Badge>
+                  <Badge color="green" variant="outline" size="sm">
+                    {user?.teacher?.school?.name || user?.school?.name || 'School'}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="flex-shrink-0">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {new Date().getFullYear()}
+                  </div>
+                  <div className="text-gray-500 text-sm">
+                    {t('academicYear', 'Academic Year')}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          {/* School Information */}
-          <div className="mb-3 bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 sm:border-2 overflow-hidden transition-all duration-300 group">
-            <div className="flex items-center justify-between bg-gradient-to-bl from-gray-50 to-blue-100 px-3 py-3 sm:px-6 sm:py-4 border-b border-blue-100">
-              <h3 className="text-base font-semibold text-gray-700 flex">
-                <User className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-gray-600 group-hover:text-blue-600 transition-colors duration-300 flex-shrink-0" />
-                <span className="truncate">{t('accountInformation')}</span>
-              </h3>
-              <div>
-                <Link to="/profile">
-                  <Edit className="h-4 w-4 text-gray-500 group-hover:text-blue-600 transition-colors duration-300 inline mr-1" />
-                </Link>
-              </div>
-            </div>
-            <div className="p-3 sm:p-4 lg:p-6">
-              <dl className="space-y-2 sm:space-y-3 lg:space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <dt className="flex text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32">
-                    <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('username')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4 break-words">{user?.username || '-'}</dd>
-                </div>
-                <div className="flex sm:flex-row sm:items-center">
-                  <dt className="flex items-center text-xs sm:text-sm font-medium text-gray-500 sm:w-28 lg:w-32">
-                    <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                    <span className="truncate">{t('school')}</span>
-                  </dt>
-                  <dd className="text-sm text-gray-900 sm:ml-2 lg:ml-4">
-                    <div className="space-y-1">
-                      <div className="font-medium">
-                        {user?.teacher?.school?.name || user?.school?.name || t('notAssigned') || 'មិនបានកំណត់'}
-                      </div>
-                      {user?.teacher?.school?.code && (
-                        <div className="text-xs text-gray-500">
-                          {t('schoolCode') || 'School Code'}: {user.teacher.school.code}
-                        </div>
-                      )}
-                      {user?.teacher?.school?.place && (
-                        <div className="text-xs text-gray-500">
-                          {user.teacher.school.place.province?.province_name_kh || user.teacher.school.place.province?.province_name_en}, 
-                          {user.teacher.school.place.district?.district_name_kh || user.teacher.school.place.district?.district_name_en}
-                        </div>
-                      )}
-                    </div>
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-        
-        </FadeInSection>
-
-        {/* Enhanced Stats Grid */}
-        <FadeInSection className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4">
-          <StatsCard
-            title={t('classes') || 'ថ្នាក់រៀន'}
-            value={classCount}
-            icon={BookOpen}
-            enhanced={true}
-            responsive={true}
-            clickable={true}
-            hoverColor="hover:border-blue-200"
-            gradientFrom="from-blue-500"
-            gradientTo="to-blue-600"
-          />
-
-          <StatsCard
-            title={t('assignedStudents') || 'សិស្សបានកំណត់'}
-            value={studentCount}
-            icon={Users}
-            enhanced={true}
-            responsive={true}
-            clickable={true}
-            hoverColor="hover:border-green-200"
-            gradientFrom="from-green-500"
-            gradientTo="to-green-600"
-          />
-
-          <StatsCard
-            title={t('availableSeats') || 'Available Seats'}
-            value={availableSeats}
-            icon={Activity}
-            enhanced={true}
-            responsive={true}
-            clickable={true}
-            hoverColor="hover:border-orange-200"
-            gradientFrom="from-orange-500"
-            gradientTo="to-orange-600"
-          />
-
-          <StatsCard
-            title={t('avgEnrollment') || 'ការចុះឈ្មោះជាមធ្យម'}
-            value={`${classCount > 0 ? Math.round(studentCount / classCount) : 0}`}
-            icon={TrendingUp}
-            enhanced={true}
-            responsive={true}
-            clickable={true}
-            hoverColor="hover:border-purple-200"
-            gradientFrom="from-purple-500"
-            gradientTo="to-purple-600"
-          />
         </FadeInSection>
 
 
-        {/* Class Enrollment Overview */}
-        <FadeInSection delay={150} className="mb-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                <BarChart3 className="h-6 w-6 mr-3 text-indigo-600" />
-                {t('classEnrollment') || 'ការចុះឈ្មោះថ្នាក់រៀន'}
-              </h3>
-              <div className="flex items-center space-x-4 text-sm text-gray-500">
-                <span className="flex items-center">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                  {t('enrolled') || 'បានចុះឈ្មោះ'}
-                </span>
-                <span className="flex items-center">
-                  <div className="w-3 h-3 bg-gray-300 rounded-full mr-2"></div>
-                  {t('capacity') || 'សមត្ថភាព'}
-                </span>
-              </div>
-            </div>
-
-            {/* Summary Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{studentCount}</div>
-                <div className="text-sm text-gray-500">{t('totalEnrolled') || 'សិស្សចុះឈ្មោះសរុប'}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{availableSeats}</div>
-                <div className="text-sm text-gray-500">{t('availableSeats') || 'Available Seats'}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{classCount > 0 ? Math.round(studentCount / classCount) : 0}</div>
-                <div className="text-sm text-gray-500">{t('avgPerClass') || 'ជាមធ្យមក្នុងមួយថ្នាក់'}</div>
-              </div>
-            </div>
-
-            {/* Class Cards Grid */}
-            <div className="space-y-3">
-              <h4 className="text-lg font-medium text-gray-900 mb-3">{t('schoolClasses') || 'School Classes'}</h4>
-              {classDetails.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {classDetails.map((classDetail) => {
-                    const percentage = Math.round((classDetail.enrolledCount / classDetail.maxCapacity) * 100);
-                    const getEnrollmentStatus = () => {
-                      if (percentage >= 90) return { status: 'full', color: 'red', bgColor: 'bg-red-50', borderColor: 'border-red-200' };
-                      if (percentage >= 70) return { status: 'high', color: 'orange', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' };
-                      return { status: 'normal', color: 'green', bgColor: 'bg-green-50', borderColor: 'border-green-200' };
-                    };
-                    const enrollmentStatus = getEnrollmentStatus();
-
-                    return (
-                      <div
-                        key={classDetail.id}
-                        className={`bg-white rounded-lg p-5 border-2 ${enrollmentStatus.borderColor} hover:shadow-lg transition-all duration-300 cursor-pointer`}
-                        onClick={() => window.location.href = '/classes'}
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h5 className="font-semibold text-gray-900 text-lg mb-1">{classDetail.name}</h5>
-                            <div className="flex items-center space-x-2 text-sm text-gray-500">
-                              <Users className="h-4 w-4" />
-                              <span>{classDetail.enrolledCount}/{classDetail.maxCapacity}</span>
-                            </div>
-                          </div>
-                          <div className={`px-3 py-1 rounded-full text-xs font-semibold ${enrollmentStatus.bgColor} text-${enrollmentStatus.color}-700`}>
-                            {percentage}%
-                          </div>
-                        </div>
-
-                        <div className="mb-3">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2.5">
-                            <div
-                              className={`h-2.5 rounded-full transition-all duration-300 ${
-                                enrollmentStatus.status === 'full' ? 'bg-red-500' :
-                                enrollmentStatus.status === 'high' ? 'bg-orange-500' : 'bg-green-500'
-                              }`}
-                              style={{ width: `${Math.min(percentage, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span className="flex items-center">
-                            <BookOpen className="h-3 w-3 mr-1" />
-                            {t('viewDetails', 'View Details')}
-                          </span>
-                          <span className={`font-medium ${
-                            enrollmentStatus.status === 'full' ? 'text-red-600' :
-                            enrollmentStatus.status === 'high' ? 'text-orange-600' : 'text-green-600'
-                          }`}>
-                            {enrollmentStatus.status === 'full' ? t('full', 'Full') :
-                             enrollmentStatus.status === 'high' ? t('nearFull', 'Near Full') : t('available', 'Available')}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                  <BookOpen className="h-16 w-16 mx-auto mb-3 text-gray-300" />
-                  <p className="text-lg font-medium">{t('noClassesAssigned') || 'No Classes Available'}</p>
-                  <p className="text-sm mt-1">{t('contactAdmin', 'Contact administrator to add classes')}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </FadeInSection>
 
         {/* Detailed Information Cards
         <FadeInSection delay={200} className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3">
@@ -667,12 +409,139 @@ export default function Dashboard({ user: initialUser }) {
         </FadeInSection>
         */}
         
+        {/* School Statistics */}
+        <FadeInSection delay={200} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <StatsCard
+            title={t('totalClasses') || 'Total Classes'}
+            value={schoolStats.totalClasses}
+            icon={BookOpen}
+            enhanced={true}
+            gradientFrom="from-blue-500"
+            gradientTo="to-blue-600"
+            hoverColor="hover:border-blue-200"
+            responsive={true}
+          />
+
+          <StatsCard
+            title={t('totalStudents') || 'Total Students'}
+            value={schoolStats.totalStudents}
+            icon={Users}
+            enhanced={true}
+            gradientFrom="from-green-500"
+            gradientTo="to-green-600"
+            hoverColor="hover:border-green-200"
+            responsive={true}
+          />
+
+          <StatsCard
+            title={t('totalTeachers') || 'Total Teachers'}
+            value={schoolStats.totalTeachers}
+            icon={User}
+            enhanced={true}
+            gradientFrom="from-purple-500"
+            gradientTo="to-purple-600"
+            hoverColor="hover:border-purple-200"
+            responsive={true}
+          />
+
+          <StatsCard
+            title={t('totalDirectors') || 'Total Directors'}
+            value={schoolStats.totalDirectors}
+            icon={Award}
+            enhanced={true}
+            gradientFrom="from-orange-500"
+            gradientTo="to-orange-600"
+            hoverColor="hover:border-orange-200"
+            responsive={true}
+          />
+        </FadeInSection>
+
+        {/* Clean Information Cards */}
+        <FadeInSection delay={300} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Personal Information Card */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                <User className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{t('personalInformation', 'Personal Information')}</h3>
+                <p className="text-sm text-gray-500">{t('yourAccountDetails', 'Your account details')}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium text-gray-600">{t('username') || 'Username'}</span>
+                <span className="text-sm font-semibold text-gray-900">{user?.username || '-'}</span>
+              </div>
+
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium text-gray-600">{t('fullName') || 'Full Name'}</span>
+                <span className="text-sm font-semibold text-gray-900 truncate">{utils.user.getDisplayName(user) || '-'}</span>
+              </div>
+
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium text-gray-600">{t('email') || 'Email'}</span>
+                <span className="text-sm font-semibold text-gray-900 truncate">{user?.email || '-'}</span>
+              </div>
+
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium text-gray-600">{t('role') || 'Role'}</span>
+                  {user?.teacher?.isDirector ? t('director') : (user?.roleNameKh || user?.roleNameEn || t('teacher'))}
+              </div>
+            </div>
+          </div>
+
+          {/* School Information Card */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                <Building2 className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{t('schoolInformation', 'School Information')}</h3>
+                <p className="text-sm text-gray-500">{t('yourSchoolDetails', 'Your school details')}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium text-gray-600">{t('school') || 'School'}</span>
+                <span className="text-sm font-semibold text-gray-900 truncate">{user?.teacher?.school?.name || user?.school?.name || '-'}</span>
+              </div>
+
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium text-gray-600">{t('schoolCode') || 'School Code'}</span>
+                <span className="text-sm font-semibold text-gray-900">{user?.teacher?.school?.code || '-'}</span>
+              </div>
+
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium text-gray-600">{t('province') || 'Province'}</span>
+                <span className="text-sm font-semibold text-gray-900 truncate">
+                  {user?.teacher?.school?.place?.province?.province_name_kh ||
+                   user?.teacher?.school?.place?.province?.province_name_en || '-'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium text-gray-600">{t('district') || 'District'}</span>
+                <span className="text-sm font-semibold text-gray-900 truncate">
+                  {user?.teacher?.school?.place?.district?.district_name_kh ||
+                   user?.teacher?.school?.place?.district?.district_name_en || '-'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </FadeInSection>
+
+
         {/* Welcome Alert */}
         {showWelcome && (
-          <WelcomeAlert 
-            user={user} 
-            t={t} 
-            onClose={() => setShowWelcome(false)} 
+          <WelcomeAlert
+            user={user}
+            t={t}
+            onClose={() => setShowWelcome(false)}
           />
         )}
       </div>

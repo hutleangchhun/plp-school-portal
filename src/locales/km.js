@@ -120,6 +120,7 @@ export const km = {
   welcome: 'សូមស្វាគមន៍',
   years: 'ឆ្នាំ',
   location: 'ទីតាំង',
+  totalTeachers: 'គ្រូបង្រៀនសរុប',
 
   // Student Management
   addStudent: 'បន្ថែមសិស្ស',
@@ -157,6 +158,9 @@ export const km = {
   errorFetchingTeachers: 'កំហុសក្នុងការទាញយកព័ត៌មានគ្រូ',
   teachersManagement: 'ការគ្រប់គ្រងគ្រូ',
   teachers: 'គ្រូ',
+  selectedAllTeachers: 'បានជ្រើសរើសគ្រូទាំងអស់',
+  deselectedAllStudents: 'បានលុបការជ្រើសរើសសិស្សទាំងអស់',
+  deselectedAllTeachers: 'បានលុបការជ្រើសរើសគ្រូទាំងអស់',
 
 
 
@@ -317,8 +321,6 @@ export const km = {
   removeStudents: 'ដកសិស្សចេញ',
   confirmRemoveStudents: 'តើអ្នកប្រាកដថាចង់ដកសិស្ស',
   studentsFromClass: 'សិស្សពីថ្នាក់របស់អ្នកមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
-  clearSelection: 'សម្អាតការជ្រើសរើស',
-  removeSelected: 'ដកចេញអ្នកដែលបានជ្រើសរើស',
   
   // Export functionality
   export: 'នាំចេញ',
@@ -348,8 +350,6 @@ export const km = {
   selectClassFirst: 'សូមជ្រើសរើសថ្នាក់ជាមុនសិន',
   assignStudents: 'កំណត់សិស្ស',
   assigning: 'កំពុងកំណត់...',
-  errorAssigningStudents: 'កំហុសក្នុងការកំណត់សិស្សទៅថ្នាក់',
-  classCapacityExceeded: 'មិនអាចកំណត់សិស្សបានទេ ថ្នាក់រៀនពេញហើយ',
   selectedStudentsActions: 'សកម្មភាពសម្រាប់សិស្សដែលបានជ្រើសរើស',
   resetFilters: 'កំណត់ការស្វែងរកឡើងវិញ',
   allDistricts: 'គ្រប់ស្រុកទាំងអស់',
@@ -579,6 +579,10 @@ export const km = {
   avgPerClass: 'ជាមធ្យមក្នុងមួយថ្នាក់',
   yourClasses: 'ថ្នាក់របស់អ្នក',
   noClassesAssigned: 'មិនមានថ្នាក់រៀនដែលបានកំណត់',
+  welcomeToDashboard: 'សូមស្វាគមន៍មកកាន់ផ្ទាំងគ្រប់គ្រងប្រព័ន្ធគ្រូបង្រៀនរបស់អ្នក',
+  yourAccountDetails: 'ព័ត៌មានគណនីរបស់អ្នក',
+  yourSchoolDetails: 'ព័ត៌មានសាលារៀនរបស់អ្នក',
+  totalDirectors: 'នាយកសរុប',
   
   // Student management with master-class endpoint
   noSchoolIdFound: 'រកមិនឃើញលេខសម្គាល់សាលារៀនសម្រាប់គណនីរបស់អ្នក',
@@ -735,4 +739,7 @@ export const km = {
   oopsSomethingWentWrong: 'អូប! មានបញ្ហាអ្វីមួយកើតឡើង',
   tryAgainLater: 'សូមព្យាយាមម្តងទៀតនៅពេលក្រោយ',
   contactSupport: 'ទាក់ទងការគាំទ្រ',
+
+  // Export utilities
+  notAvailable: 'មិនមាន',
 };

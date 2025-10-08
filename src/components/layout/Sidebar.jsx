@@ -10,7 +10,9 @@ import {
   Trophy,
   Settings as SettingsIcon,
   GraduationCap,
-  UserCheck
+  UserCheck,
+  UserStar,
+  User
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -26,7 +28,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/dashboard': Home,
     '/students': Users,
     '/classes': BookOpen,
-    '/teachers': UserCheck,
+    '/teachers': UserStar,
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/attendance': Calendar,
     // '/reports': FileText,

@@ -87,23 +87,23 @@ export const getNavigationItems = (user, t) => {
       name: t('dashboard') || 'ផ្ទាំងគ្រប់គ្រង',
       href: '/dashboard',
       allowedRoles: [ROLES.TEACHER, ROLES.STUDENT]
+    },
+    {
+      name: t('teachers') || 'គ្រូបង្រៀន',
+      href: '/teachers',
+      allowedRoles: [ROLES.TEACHER]
     }
   ];
 
   const teacherItems = [
-    {
-      name: t('students') || 'សិស្ស',
-      href: '/students',
-      allowedRoles: [ROLES.TEACHER]
-    },
     {
       name: t('classes') || 'ថ្នាក់រៀន',
       href: '/classes',
       allowedRoles: [ROLES.TEACHER]
     },
     {
-      name: t('teachers') || 'គ្រូបង្រៀន',
-      href: '/teachers',
+      name: t('students') || 'សិស្ស',
+      href: '/students',
       allowedRoles: [ROLES.TEACHER]
     },
 
