@@ -117,6 +117,17 @@ export const studentService = {
   },
 
   /**
+   * Bulk register multiple students
+   * @param {Array} studentsData - Array of student data objects
+   * @returns {Promise<Object>} Bulk registration response with success_count, failed_count, successful_students, and errors
+   */
+  async bulkRegister(studentsData) {
+    return handleApiResponse(() =>
+      apiClient_.post('/api/v1/students/bulk-register', { students: studentsData })
+    );
+  },
+
+  /**
    * Update a student
    * @param {string|number} studentId - The ID of the student to update
    * @param {Object} studentData - Updated student data
