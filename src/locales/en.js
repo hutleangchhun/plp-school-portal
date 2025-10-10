@@ -249,6 +249,7 @@ export const en = {
   // Student filters
   classFilter: 'Class Status',
   allStudents: 'All Students',
+  filterByStudent: 'Filter by Student',
   studentsWithoutClass: 'Without Class',
   selectClassFilter: 'Select Class',
 
@@ -405,6 +406,9 @@ export const en = {
   selectClassFirst: 'Please select a class first',
   assignStudents: 'Assign Students',
   assigning: 'Assigning...',
+  assignStudentsToParent: 'Assign Students to Parent',
+  selectStudentsFor: 'Select students for',
+  alreadyAssigned: 'Already assigned',
   selectedStudentsActions: 'Actions for selected students',
   resetFilters: 'Reset Filters',
   allDistricts: 'All Districts',

@@ -161,21 +161,34 @@ export default function ParentViewModal({ isOpen, onClose, parent }) {
             <div className="grid grid-cols-1 gap-3">
               {parent.students.map((student, index) => (
                 <div
-                  key={student.id || index}
+                  key={student.studentId || student.id || index}
                   className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
                 >
                   <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-semibold">
-                    {(student.firstName?.[0] || student.fullname?.[0] || 'S').toUpperCase()}
+                    {(student.user?.first_name?.[0] || student.firstName?.[0] || student.fullname?.[0] || 'S').toUpperCase()}
                   </div>
                   <div className="flex-1">
                     <div className="font-medium text-gray-900">
-                      {student.fullname || `${student.firstName || ''} ${student.lastName || ''}`.trim()}
+                      {student.user
+                        ? `${student.user.first_name || ''} ${student.user.last_name || ''}`.trim() || student.user.username
+                        : student.fullname || `${student.firstName || ''} ${student.lastName || ''}`.trim()
+                      }
                     </div>
-                    {student.className && (
-                      <div className="text-sm text-gray-500">
-                        {t('class', 'Class')}: {student.className}
-                      </div>
-                    )}
+                    <div className="text-sm text-gray-500">
+                      {t('studentId', 'Student ID')}: {student.studentNumber || student.studentId}
+                      {student.class && (
+                        <>
+                          {' • '}
+                          {t('class', 'Class')}: {student.class.name}
+                        </>
+                      )}
+                      {student.relationship && (
+                        <>
+                          {' • '}
+                          {student.relationship}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

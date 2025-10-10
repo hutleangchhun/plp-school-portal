@@ -43,9 +43,15 @@ export default function ParentsManagement() {
       try {
         const userData = localStorage.getItem('user');
         if (userData) {
-          setUser(JSON.parse(userData));
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
+          // Update schoolId when user data changes
+          if (parsedUser?.school_id || parsedUser?.schoolId) {
+            setSchoolId(parsedUser.school_id || parsedUser.schoolId);
+          }
         } else {
           setUser(null);
+          setSchoolId(null);
         }
       } catch (err) {
         console.error('Error parsing updated user data:', err);
@@ -55,14 +61,20 @@ export default function ParentsManagement() {
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('userDataUpdated', handleStorageChange);
 
+    // Initialize schoolId from current user data
+    if (user?.school_id || user?.schoolId) {
+      setSchoolId(user.school_id || user.schoolId);
+    }
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('userDataUpdated', handleStorageChange);
     };
-  }, []);
+  }, [user]);
 
   // State management
   const [parents, setParents] = useState([]);
+  const [schoolId, setSchoolId] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -129,6 +141,13 @@ export default function ParentsManagement() {
       return;
     }
 
+    // Ensure we have schoolId before fetching
+    if (!schoolId) {
+      console.log('No school ID available, cannot fetch parents');
+      setInitialLoading(false);
+      return;
+    }
+
     fetchingRef.current = true;
     clearError();
 
@@ -136,9 +155,9 @@ export default function ParentsManagement() {
       const loadingKey = 'fetchParents';
       startLoading(loadingKey, t('loadingParents', 'Loading parents...'));
 
-      console.log('Fetching parents with params:', { page: pagination.page, limit: pagination.limit, search: searchTerm });
+      console.log('Fetching parents with params:', { schoolId, page: pagination.page, limit: pagination.limit, search: searchTerm });
 
-      const response = await parentService.getAllParents({
+      const response = await parentService.getParentsBySchool(schoolId, {
         page: pagination.page,
         limit: pagination.limit,
         search: searchTerm
@@ -149,8 +168,24 @@ export default function ParentsManagement() {
       if (response.success) {
         const parentsData = response.data || [];
 
+        // Transform data to match expected format - the API returns parents with students array
+        const transformedParents = parentsData.map(parent => ({
+          ...parent.user, // Spread user data as the main parent object
+          parentId: parent.parentId,
+          id: parent.user.id,
+          students: parent.students || [], // Use students array from API response
+          fullname: parent.user.first_name && parent.user.last_name
+            ? `${parent.user.first_name} ${parent.user.last_name}`
+            : parent.user.username,
+          firstName: parent.user.first_name,
+          lastName: parent.user.last_name,
+          email: parent.user.email,
+          phone: parent.user.phone,
+          occupation: parent.occupation
+        }));
+
         // Apply client-side search if needed
-        const filtered = performClientSideSearch(parentsData, searchTerm);
+        const filtered = performClientSideSearch(transformedParents, searchTerm);
 
         setParents(filtered);
         setPagination(prev => ({
@@ -173,12 +208,14 @@ export default function ParentsManagement() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [pagination.page, pagination.limit, searchTerm, t, handleError, clearError, performClientSideSearch]);
+  }, [schoolId, pagination.page, pagination.limit, searchTerm, t, handleError, clearError, performClientSideSearch]);
 
   // Initial fetch
   useEffect(() => {
-    fetchParents();
-  }, [fetchParents]);
+    if (schoolId) {
+      fetchParents();
+    }
+  }, [schoolId, fetchParents]);
 
   // Handle select parent
   const handleSelectParent = useCallback((parent) => {
@@ -376,14 +413,28 @@ export default function ParentsManagement() {
     {
       key: 'students',
       header: t('students', 'Students'),
-      render: (parent) => (
-        <div className="flex items-center">
-          <Users className="h-4 w-4 mr-1 text-gray-400" />
-          <span className="text-sm text-gray-600">
-            {parent.students?.length || 0}
-          </span>
-        </div>
-      )
+      render: (parent) => {
+        const studentNames = parent.students?.map(student =>
+          student.user?.first_name && student.user?.last_name
+            ? `${student.user.first_name} ${student.user.last_name}`
+            : student.user?.username || 'Unknown Student'
+        ) || [];
+
+        return (
+          <div className="space-y-1">
+            <div className="flex items-center text-sm text-gray-600">
+              <Users className="h-4 w-4 mr-1 text-gray-400" />
+              {studentNames.length} {t('students', 'students')}
+            </div>
+            {studentNames.length > 0 && (
+              <div className="text-xs text-gray-500 max-w-xs">
+                {studentNames.slice(0, 2).join(', ')}
+                {studentNames.length > 2 && ` +${studentNames.length - 2} more`}
+              </div>
+            )}
+          </div>
+        );
+      }
     },
     {
       key: 'actions',
@@ -504,7 +555,7 @@ export default function ParentsManagement() {
         </FadeInSection>
 
         {/* Parents Table */}
-        <FadeInSection delay={200}>
+        <FadeInSection delay={200} className="bg-white shadow rounded-lg p-4 sm:p-6">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             {loading ? (
               <div className="p-12 text-center">
@@ -587,9 +638,21 @@ export default function ParentsManagement() {
                               {parent.phone}
                             </div>
                           )}
-                          <div className="flex items-center text-gray-600">
-                            <Users className="h-4 w-4 mr-2" />
-                            {parent.students?.length || 0} {t('students', 'students')}
+                          <div className="space-y-1">
+                            <div className="flex items-center text-gray-600">
+                              <Users className="h-4 w-4 mr-2" />
+                              {parent.students?.length || 0} {t('students', 'students')}
+                            </div>
+                            {parent.students?.length > 0 && (
+                              <div className="text-xs text-gray-500 ml-6">
+                                {parent.students.slice(0, 2).map(student =>
+                                  student.user?.first_name && student.user?.last_name
+                                    ? `${student.user.first_name} ${student.user.last_name}`
+                                    : student.user?.username || 'Unknown Student'
+                                ).join(', ')}
+                                {parent.students.length > 2 && ` +${parent.students.length - 2} more`}
+                              </div>
+                            )}
                           </div>
                         </div>
 

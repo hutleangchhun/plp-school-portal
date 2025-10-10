@@ -383,6 +383,9 @@ export const studentService = {
    * @param {number} [params.page=1] - Page number for pagination
    * @param {number} [params.limit=10] - Number of items per page
    * @param {string} [params.search] - Search term for filtering students
+   * @param {string|number} [params.classId] - Filter by specific class ID
+   * @param {string|number} [params.gradeLevel] - Filter by grade level (1-6)
+   * @param {boolean|string} [params.status] - Filter by active status (true/false/'active'/'inactive')
    * @returns {Promise<Object>} Response with student data and pagination info
    */
   async getStudentsBySchoolClasses(schoolId, params = {}) {
@@ -394,7 +397,10 @@ export const studentService = {
       const {
         page = 1,
         limit = 10,
-        search = ''
+        search = '',
+        classId,
+        gradeLevel,
+        status
       } = params;
 
       const queryParams = {
@@ -405,6 +411,34 @@ export const studentService = {
       if (search && search.trim()) {
         queryParams.search = search.trim();
       }
+
+      // Add classId filter if provided
+      if (classId !== undefined && classId !== null && classId !== '' && classId !== 'all') {
+        queryParams.classId = Number(classId);
+      }
+
+      // Add gradeLevel filter if provided
+      if (gradeLevel !== undefined && gradeLevel !== null && gradeLevel !== '' && gradeLevel !== 'all') {
+        queryParams.gradeLevel = Number(gradeLevel);
+      }
+
+      // Add status filter if provided
+      if (status !== undefined && status !== null && status !== '' && status !== 'all') {
+        // Normalize status to boolean
+        if (typeof status === 'string') {
+          if (status.toLowerCase() === 'active') {
+            queryParams.status = true;
+          } else if (status.toLowerCase() === 'inactive') {
+            queryParams.status = false;
+          }
+        } else if (typeof status === 'boolean') {
+          queryParams.status = status;
+        }
+      }
+
+      console.log('=== FETCHING STUDENTS WITH FILTERS ===');
+      console.log('School ID:', schoolId);
+      console.log('Query params:', queryParams);
 
       const response = await handleApiResponse(() =>
         apiClient_.get(`/students/school/${schoolId}/classes`, {

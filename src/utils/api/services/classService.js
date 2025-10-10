@@ -336,6 +336,51 @@ export const classService = {
       };
     }
   },
+  /**
+   * Get classes for a school with pagination and search
+   * @param {string|number} schoolId - The ID of the school
+   * @param {Object} params - Query parameters
+   * @param {number} [params.page=1] - Page number
+   * @param {number} [params.limit=10] - Number of items per page
+   * @param {string} [params.search=''] - Search term
+   * @returns {Promise<Object>} Response with classes data
+   */
+  async getClassesBySchool(schoolId, params = {}) {
+    try {
+      if (!schoolId) {
+        throw new Error('School ID is required');
+      }
+
+      const { page = 1, limit = 10, search = '' } = params;
+      const queryParams = { page, limit };
+
+      if (search.trim()) {
+        queryParams.search = search.trim();
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(`/students/school/${schoolId}/classes`, { params: queryParams })
+      );
+
+      const data = response?.data || {};
+      const classes = Array.isArray(data.data) ? data.data : [];
+
+      return {
+        success: true,
+        data: classes,
+        pagination: {
+          page: data.page || page,
+          limit: data.limit || limit,
+          total: data.total || classes.length,
+          totalPages: data.totalPages || Math.ceil((data.total || classes.length) / (data.limit || limit))
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching classes by school:', error);
+      throw error;
+    }
+  },
+
   async getClassByUser(userId) {
     try {
       const response = await handleApiResponse(() =>

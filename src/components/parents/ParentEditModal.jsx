@@ -1,109 +1,306 @@
-import { useState, useEffect } from 'react';
-import { X, Save, User, Mail, Phone, Users, Home } from 'lucide-react';
-import Modal from '../ui/Modal';
-import { Button } from '../ui/Button';
+import { useState, useRef, useEffect } from 'react';
+import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X, Save } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
-import * as RadioGroup from '@radix-ui/react-radio-group';
+import { Button } from '../ui/Button';
+import Modal from '../ui/Modal';
+import { DatePickerWithDropdowns } from '../ui/date-picker-with-dropdowns';
+import ProfileImage from '../ui/ProfileImage';
+import Dropdown from '../ui/Dropdown';
+import { useLocationData } from '../../hooks/useLocationData';
+import { userService } from '../../utils/api/services/userService';
 
-export default function ParentEditModal({ isOpen, onClose, onSave, parent }) {
+const ParentEditModal = ({
+  isOpen,
+  onClose,
+  parent,
+  onParentUpdated
+}) => {
   const { t } = useLanguage();
-  const { showError } = useToast();
-  const [loading, setLoading] = useState(false);
+  const { showSuccess, showError } = useToast();
 
-  const [formData, setFormData] = useState({
+  const [loading, setLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const fileInputRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  const [editForm, setEditForm] = useState({
     firstName: '',
     lastName: '',
-    fullname: '',
+    username: '',
     email: '',
     phone: '',
-    relationship: 'FATHER',
+    gender: '',
+    dateOfBirth: null,
+    nationality: '',
+    profilePicture: '',
+    newPassword: '',
     occupation: '',
-    address: '',
-    emergencyContact: '',
-    notes: ''
+    relationship: 'FATHER',
+    residence: {
+      provinceId: '',
+      districtId: '',
+      communeId: '',
+      villageId: ''
+    },
+    placeOfBirth: {
+      provinceId: '',
+      districtId: '',
+      communeId: '',
+      villageId: ''
+    }
   });
 
-  // Populate form when editing
-  useEffect(() => {
-    if (parent) {
-      setFormData({
-        firstName: parent.firstName || '',
-        lastName: parent.lastName || '',
-        fullname: parent.fullname || '',
-        email: parent.email || '',
-        phone: parent.phone || '',
-        relationship: parent.relationship || 'FATHER',
-        occupation: parent.occupation || '',
-        address: parent.address || '',
-        emergencyContact: parent.emergencyContact || '',
-        notes: parent.notes || ''
-      });
-    } else {
-      // Reset form for new parent
-      setFormData({
-        firstName: '',
-        lastName: '',
-        fullname: '',
-        email: '',
-        phone: '',
-        relationship: 'FATHER',
-        occupation: '',
-        address: '',
-        emergencyContact: '',
-        notes: ''
-      });
-    }
-  }, [parent]);
+  // Location data hooks for residence
+  const {
+    selectedProvince: selectedResidenceProvince,
+    selectedDistrict: selectedResidenceDistrict,
+    selectedCommune: selectedResidenceCommune,
+    selectedVillage: selectedResidenceVillage,
+    handleProvinceChange: handleResidenceProvinceChange,
+    handleDistrictChange: handleResidenceDistrictChange,
+    handleCommuneChange: handleResidenceCommuneChange,
+    handleVillageChange: handleResidenceVillageChange,
+    getProvinceOptions: getResidenceProvinceOptions,
+    getDistrictOptions: getResidenceDistrictOptions,
+    getCommuneOptions: getResidenceCommuneOptions,
+    getVillageOptions: getResidenceVillageOptions,
+    setInitialValues: setResidenceInitialValues,
+    resetSelections: resetResidenceSelections
+  } = useLocationData();
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
+  // Location data hooks for place of birth
+  const {
+    selectedProvince: selectedBirthProvince,
+    selectedDistrict: selectedBirthDistrict,
+    selectedCommune: selectedBirthCommune,
+    selectedVillage: selectedBirthVillage,
+    handleProvinceChange: handleBirthProvinceChange,
+    handleDistrictChange: handleBirthDistrictChange,
+    handleCommuneChange: handleBirthCommuneChange,
+    handleVillageChange: handleBirthVillageChange,
+    getProvinceOptions: getBirthProvinceOptions,
+    getDistrictOptions: getBirthDistrictOptions,
+    getCommuneOptions: getBirthCommuneOptions,
+    getVillageOptions: getBirthVillageOptions,
+    setInitialValues: setBirthInitialValues,
+    resetSelections: resetBirthSelections
+  } = useLocationData();
+
+  // Initialize form data when parent changes
+  useEffect(() => {
+    if (parent && isOpen) {
+      initializeFormData();
+    }
+  }, [parent, isOpen]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const initializeFormData = async () => {
+    if (!parent) return;
+
+    try {
+      setLoading(true);
+
+      const userId = parent.userId || parent.user_id || parent.id;
+      let fullData = parent;
+
+      if (userId) {
+        try {
+          const resp = await userService.getUserByID(userId);
+          fullData = resp?.data || resp || parent;
+        } catch (error) {
+          console.warn('Failed to fetch full user data:', error);
+        }
+      }
+
+      setEditForm({
+        firstName: fullData.firstName || fullData.first_name || '',
+        lastName: fullData.lastName || fullData.last_name || '',
+        username: fullData.username || '',
+        email: fullData.email || '',
+        phone: fullData.phone || '',
+        gender: fullData.gender || '',
+        dateOfBirth: fullData.dateOfBirth ? new Date(fullData.dateOfBirth) : (fullData.date_of_birth ? new Date(fullData.date_of_birth) : null),
+        nationality: fullData.nationality || '',
+        profilePicture: fullData.profile_picture || fullData.profilePicture || '',
+        newPassword: '', // Always empty for security
+        occupation: fullData.occupation || '',
+        relationship: fullData.relationship || 'FATHER',
+        residence: {
+          provinceId: fullData.residence?.provinceId || fullData.residence?.province?.id || fullData.province_id || '',
+          districtId: fullData.residence?.districtId || fullData.residence?.district?.id || fullData.district_id || '',
+          communeId: fullData.residence?.communeId || fullData.residence?.commune?.id || fullData.commune_id || '',
+          villageId: fullData.residence?.villageId || fullData.residence?.village?.id || fullData.village_id || ''
+        },
+        placeOfBirth: {
+          provinceId: fullData.placeOfBirth?.provinceId || fullData.placeOfBirth?.province?.id || fullData.residence?.provinceId || fullData.residence?.province?.id || fullData.province_id || '',
+          districtId: fullData.placeOfBirth?.districtId || fullData.placeOfBirth?.district?.id || fullData.residence?.districtId || fullData.residence?.district?.id || fullData.district_id || '',
+          communeId: fullData.placeOfBirth?.communeId || fullData.placeOfBirth?.commune?.id || fullData.residence?.communeId || fullData.residence?.commune?.id || fullData.commune_id || '',
+          villageId: fullData.placeOfBirth?.villageId || fullData.placeOfBirth?.village?.id || fullData.residence?.villageId || fullData.residence?.village?.id || fullData.village_id || ''
+        }
+      });
+
+      // Initialize dropdown selections
+      const res = fullData.residence || {};
+      setResidenceInitialValues({
+        provinceId: res.provinceId || res.province?.id || fullData.province_id || '',
+        districtId: res.districtId || res.district?.id || fullData.district_id || '',
+        communeId: res.communeId || res.commune?.id || fullData.commune_id || '',
+        villageId: res.villageId || res.village?.id || fullData.village_id || ''
+      });
+
+      const birth = fullData.placeOfBirth || {};
+      setBirthInitialValues({
+        provinceId: birth.provinceId || birth.province?.id || res.provinceId || res.province?.id || fullData.province_id || '',
+        districtId: birth.districtId || birth.district?.id || res.districtId || res.district?.id || fullData.district_id || '',
+        communeId: birth.communeId || birth.commune?.id || res.communeId || res.commune?.id || fullData.commune_id || '',
+        villageId: birth.villageId || birth.village?.id || res.villageId || res.village?.id || fullData.village_id || ''
+      });
+    } catch (error) {
+      console.error('Error initializing form data:', error);
+      showError(t('failedToLoadParentData', 'Failed to load parent data'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setEditForm({
+      firstName: '',
+      lastName: '',
+      username: '',
+      email: '',
+      phone: '',
+      gender: '',
+      dateOfBirth: null,
+      nationality: '',
+      profilePicture: '',
+      newPassword: '',
+      occupation: '',
+      relationship: 'FATHER',
+      residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
+      placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
+    });
+    resetResidenceSelections();
+    resetBirthSelections();
+    setProfilePictureFile(null);
+    setShowDropdown(false);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const handleFormChange = (field, value) => {
+    setEditForm(prev => ({
       ...prev,
-      [name]: value
+      [field]: value
     }));
   };
 
-  const validateForm = () => {
-    if (!formData.firstName?.trim() && !formData.fullname?.trim()) {
-      showError(t('firstNameRequired', 'First name or full name is required'));
-      return false;
+  const handleViewPicture = () => {
+    setShowImageModal(true);
+    setShowDropdown(false);
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+    setShowDropdown(false);
+  };
+
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePictureFile(file);
+      const fileURL = URL.createObjectURL(file);
+      handleFormChange('profilePicture', fileURL);
     }
-    if (!formData.lastName?.trim() && !formData.fullname?.trim()) {
-      showError(t('lastNameRequired', 'Last name or full name is required'));
-      return false;
-    }
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      showError(t('validEmailRequired', 'Please enter a valid email address'));
-      return false;
-    }
-    if (!formData.phone?.trim()) {
-      showError(t('phoneRequired', 'Phone number is required'));
-      return false;
-    }
-    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!parent) return;
 
-    if (!validateForm()) {
-      return;
-    }
-
-    setLoading(true);
     try {
-      // If fullname is provided, use it; otherwise construct from firstName and lastName
-      const dataToSave = {
-        ...formData,
-        fullname: formData.fullname || `${formData.firstName} ${formData.lastName}`.trim()
+      setLoading(true);
+
+      const userId = parent.userId || parent.user_id || parent.id;
+
+      // Normalize date to YYYY-MM-DD
+      const formatDate = (val) => {
+        if (!val) return undefined;
+        const d = val instanceof Date ? val : new Date(val);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
       };
 
-      await onSave(dataToSave);
-      onClose();
+      // Backend expects snake_case keys on updateUser
+      const payload = {
+        username: editForm.username?.trim(),
+        first_name: editForm.firstName?.trim(),
+        last_name: editForm.lastName?.trim(),
+        email: editForm.email?.trim(),
+        phone: editForm.phone?.trim(),
+        date_of_birth: formatDate(editForm.dateOfBirth),
+        gender: editForm.gender || undefined,
+        nationality: editForm.nationality?.trim() || undefined,
+        profile_picture: editForm.profilePicture || undefined,
+        occupation: editForm.occupation?.trim() || undefined,
+        relationship: editForm.relationship || undefined,
+        residence: {
+          provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
+          districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
+          communeId: selectedResidenceCommune || editForm.residence.communeId || undefined,
+          villageId: selectedResidenceVillage || editForm.residence.villageId || undefined,
+        },
+        placeOfBirth: {
+          provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId || undefined,
+          districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId || undefined,
+          communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
+          villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
+        }
+      };
+
+      // Add password if provided
+      if (editForm.newPassword && editForm.newPassword.trim()) {
+        payload.newPassword = editForm.newPassword.trim();
+      }
+
+      // Remove undefined/empty values
+      Object.keys(payload).forEach(k => {
+        if (payload[k] === undefined || payload[k] === null || payload[k] === '') delete payload[k];
+      });
+
+      const response = await userService.updateUser(userId, payload);
+
+      if (response) {
+        showSuccess(t('parentUpdatedSuccess', 'Parent updated successfully'));
+        handleClose();
+        if (onParentUpdated) {
+          onParentUpdated(response);
+        }
+      } else {
+        throw new Error('Failed to update parent');
+      }
     } catch (error) {
-      console.error('Error saving parent:', error);
-      showError(error.message || t('failedToSaveParent', 'Failed to save parent'));
+      console.error('Error updating parent:', error);
+      showError(t('failedUpdateParent', 'Failed to update parent: ') + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -117,227 +314,462 @@ export default function ParentEditModal({ isOpen, onClose, onSave, parent }) {
   ];
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={parent ? t('editParent', 'Edit Parent') : t('addParent', 'Add Parent')}
-      size="lg"
-    >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-            <User className="h-5 w-5 mr-2 text-purple-600" />
-            {t('basicInformation', 'Basic Information')}
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('firstName', 'First Name')} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder={t('enterFirstName', 'Enter first name')}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('lastName', 'Last Name')} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder={t('enterLastName', 'Enter last name')}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="fullname" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('fullName', 'Full Name')} {t('optional', '(Optional)')}
-            </label>
-            <input
-              type="text"
-              id="fullname"
-              name="fullname"
-              value={formData.fullname}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder={t('enterFullName', 'Enter full name')}
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              {t('fullNameHelp', 'Leave empty to auto-generate from first and last name')}
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('relationship', 'Relationship')} <span className="text-red-500">*</span>
-            </label>
-            <RadioGroup.Root
-              value={formData.relationship}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, relationship: value }))}
-              className="flex flex-wrap gap-3"
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={handleClose}
+        title={t('editParent', 'Edit Parent')}
+        size="2xl"
+        height='xl'
+        stickyFooter={true}
+        footer={
+          <div className="flex items-center justify-end space-x-3">
+            <Button
+              type="button"
+              onClick={handleClose}
+              variant="outline"
+              disabled={loading}
             >
-              {relationshipOptions.map((option) => (
-                <div key={option.value} className="flex items-center space-x-2">
-                  <RadioGroup.Item
-                    value={option.value}
-                    id={`relationship-${option.value}`}
-                    className="w-4 h-4 rounded-full border border-gray-300 data-[state=checked]:border-purple-600 data-[state=checked]:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                  >
-                    <RadioGroup.Indicator className="flex items-center justify-center w-full h-full relative after:content-[''] after:w-2 after:h-2 after:rounded-full after:bg-white" />
-                  </RadioGroup.Item>
-                  <label htmlFor={`relationship-${option.value}`} className="text-sm text-gray-700 cursor-pointer">
-                    {option.label}
-                  </label>
+              {t('cancel', 'Cancel')}
+            </Button>
+            <Button
+              type="submit"
+              form="edit-parent-form"
+              variant="primary"
+              disabled={loading}
+              className="min-w-[120px]"
+            >
+              {loading ? t('updating', 'Updating...') : t('updateParent', 'Update Parent')}
+            </Button>
+          </div>
+        }
+      >
+        <form id="edit-parent-form" onSubmit={handleSubmit} className="space-y-6">
+          {/* Profile Picture Section */}
+          <div className="">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('profilePicture', 'Profile Picture')}
+            </label>
+
+            {/* Profile Picture with Dropdown */}
+            <div className="relative mb-4" ref={dropdownRef}>
+              <div
+                className="relative inline-block cursor-pointer"
+                onClick={() => setShowDropdown(!showDropdown)}
+              >
+                {profilePictureFile ? (
+                  <img
+                    src={URL.createObjectURL(profilePictureFile)}
+                    alt="Profile Preview"
+                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-gray-300 hover:border-blue-500 transition-colors"
+                  />
+                ) : (
+                  <ProfileImage
+                    user={{ profile_picture: editForm.profilePicture, firstName: editForm.firstName, lastName: editForm.lastName }}
+                    size="lg"
+                    alt="Profile"
+                    className="hover:border-blue-500 transition-colors"
+                    borderColor="border-gray-300"
+                    fallbackType="image"
+                    clickable={true}
+                  />
+                )}
+              </div>
+
+              {/* Dropdown Menu */}
+              {showDropdown && (
+                <div className="absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200">
+                  <div className="py-1">
+                    {editForm.profilePicture && (
+                      <Button
+                        type="button"
+                        onClick={handleViewPicture}
+                        variant="ghost"
+                        size="sm"
+                        fullWidth
+                        className="justify-start rounded-none"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        {t('viewPicture') || 'View Picture'}
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      onClick={handleUploadClick}
+                      variant="ghost"
+                      size="sm"
+                      fullWidth
+                      className="justify-start rounded-none"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {t('uploadNewPicture') || 'Upload New Picture'}
+                    </Button>
+                  </div>
                 </div>
-              ))}
-            </RadioGroup.Root>
+              )}
+            </div>
+
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleProfilePictureChange}
+              className="hidden"
+            />
+
+            {profilePictureFile && (
+              <p className="mt-2 text-sm text-green-600 mb-4">
+                {t('newPictureSelected') || 'New picture selected'}: {profilePictureFile.name}
+              </p>
+            )}
+          </div>
+
+          {/* Personal Information */}
+          <div className='border-t pt-4'>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <User2 className="inline w-5 h-5 mr-2" />
+              {t('personalInformation', 'Personal Information')}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('firstName', 'First Name')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    id="firstName"
+                    value={editForm.firstName}
+                    onChange={(e) => handleFormChange('firstName', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterFirstName', 'Enter first name')}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('lastName', 'Last Name')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    id="lastName"
+                    value={editForm.lastName}
+                    onChange={(e) => handleFormChange('lastName', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterLastName', 'Enter last name')}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('gender', 'Gender')}
+                </label>
+                <Dropdown
+                  options={[
+                    { value: '', label: t('selectGender', 'Select gender') },
+                    { value: 'MALE', label: t('male', 'Male') },
+                    { value: 'FEMALE', label: t('female', 'Female') }
+                  ]}
+                  value={editForm.gender}
+                  onValueChange={(value) => handleFormChange('gender', value)}
+                  placeholder={t('selectGender', 'Select gender')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={false}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('dateOfBirth', 'Date of Birth')}
+                </label>
+                <DatePickerWithDropdowns
+                  value={editForm.dateOfBirth}
+                  onChange={(date) => handleFormChange('dateOfBirth', date)}
+                  placeholder={t('pickDate', 'Pick a date')}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('username', 'Username')}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  id="username"
+                  value={editForm.username}
+                  onChange={(e) => handleFormChange('username', e.target.value)}
+                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                  placeholder={t('enterUsername', 'Enter username')}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('newPassword', 'New Password')}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="password"
+                  id="newPassword"
+                  value={editForm.newPassword}
+                  onChange={(e) => handleFormChange('newPassword', e.target.value)}
+                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                  placeholder={t('enterNewPassword')}
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('email', 'Email')}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="email"
+                  id="email"
+                  value={editForm.email}
+                  onChange={(e) => handleFormChange('email', e.target.value)}
+                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                  placeholder={t('enterEmail', 'Enter email address')}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('phone', 'Phone')}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={editForm.phone}
+                  onChange={(e) => handleFormChange('phone', e.target.value)}
+                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                  placeholder={t('enterPhone', 'Enter phone number')}
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Information */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="occupation" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('occupation', 'Occupation')}
+              </label>
+              <input
+                type="text"
+                id="occupation"
+                value={editForm.occupation}
+                onChange={(e) => handleFormChange('occupation', e.target.value)}
+                className="mt-1 block w-full rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                placeholder={t('enterOccupation', 'Enter occupation')}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('relationship', 'Relationship')}
+              </label>
+              <Dropdown
+                options={[
+                  { value: 'FATHER', label: t('father', 'Father') },
+                  { value: 'MOTHER', label: t('mother', 'Mother') },
+                  { value: 'GUARDIAN', label: t('guardian', 'Guardian') },
+                  { value: 'OTHER', label: t('other', 'Other') }
+                ]}
+                value={editForm.relationship}
+                onValueChange={(value) => handleFormChange('relationship', value)}
+                placeholder={t('selectRelationship', 'Select relationship')}
+                contentClassName="max-h-[200px] overflow-y-auto"
+                disabled={false}
+              />
+            </div>
+          </div>
+
+          {/* Current Residence */}
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <Building className="inline w-5 h-5 mr-2" />
+              {t('currentResidence', 'Current Residence')}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('province', 'Province')}
+                </label>
+                <Dropdown
+                  options={getResidenceProvinceOptions()}
+                  value={selectedResidenceProvince}
+                  onValueChange={handleResidenceProvinceChange}
+                  placeholder={t('selectProvince', 'Select Province')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={false}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('district', 'District')}
+                </label>
+                <Dropdown
+                  options={getResidenceDistrictOptions()}
+                  value={selectedResidenceDistrict}
+                  onValueChange={handleResidenceDistrictChange}
+                  placeholder={t('selectDistrict', 'Select District')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={!selectedResidenceProvince}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('commune', 'Commune')}
+                </label>
+                <Dropdown
+                  options={getResidenceCommuneOptions()}
+                  value={selectedResidenceCommune}
+                  onValueChange={handleResidenceCommuneChange}
+                  placeholder={t('selectCommune', 'Select Commune')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={!selectedResidenceDistrict}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('village', 'Village')}
+                </label>
+                <Dropdown
+                  options={getResidenceVillageOptions()}
+                  value={selectedResidenceVillage}
+                  onValueChange={handleResidenceVillageChange}
+                  placeholder={t('selectVillage', 'Select Village')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={!selectedResidenceCommune}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Place of Birth */}
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <Building className="inline w-5 h-5 mr-2" />
+              {t('placeOfBirth', 'Place of Birth')}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('province', 'Province')}
+                </label>
+                <Dropdown
+                  options={getBirthProvinceOptions()}
+                  value={selectedBirthProvince}
+                  onValueChange={handleBirthProvinceChange}
+                  placeholder={t('selectProvince', 'Select Province')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={false}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('district', 'District')}
+                </label>
+                <Dropdown
+                  options={getBirthDistrictOptions()}
+                  value={selectedBirthDistrict}
+                  onValueChange={handleBirthDistrictChange}
+                  placeholder={t('selectDistrict', 'Select District')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={!selectedBirthProvince}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('commune', 'Commune')}
+                </label>
+                <Dropdown
+                  options={getBirthCommuneOptions()}
+                  value={selectedBirthCommune}
+                  onValueChange={handleBirthCommuneChange}
+                  placeholder={t('selectCommune', 'Select Commune')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={!selectedBirthDistrict}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('village', 'Village')}
+                </label>
+                <Dropdown
+                  options={getBirthVillageOptions()}
+                  value={selectedBirthVillage}
+                  onValueChange={handleBirthVillageChange}
+                  placeholder={t('selectVillage', 'Select Village')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={!selectedBirthCommune}
+                />
+              </div>
+            </div>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Image Modal */}
+      {showImageModal && editForm.profilePicture && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowImageModal(false)}>
+          <div className="relative max-w-4xl max-h-full p-4">
+            <Button
+              onClick={() => setShowImageModal(false)}
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 text-white hover:text-gray-300 hover:bg-white/10 z-10"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+            <img
+              src={editForm.profilePicture}
+              alt="Profile"
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         </div>
-
-        {/* Contact Information */}
-        <div className="space-y-4 pt-4 border-t">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Phone className="h-5 w-5 mr-2 text-purple-600" />
-            {t('contactInformation', 'Contact Information')}
-          </h3>
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              <Mail className="h-4 w-4 inline mr-1" />
-              {t('email', 'Email')}
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder={t('enterEmail', 'Enter email address')}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-              <Phone className="h-4 w-4 inline mr-1" />
-              {t('phone', 'Phone Number')} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder={t('enterPhone', 'Enter phone number')}
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="emergencyContact" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('emergencyContact', 'Emergency Contact')}
-            </label>
-            <input
-              type="tel"
-              id="emergencyContact"
-              name="emergencyContact"
-              value={formData.emergencyContact}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder={t('enterEmergencyContact', 'Enter emergency contact number')}
-            />
-          </div>
-        </div>
-
-        {/* Additional Information */}
-        <div className="space-y-4 pt-4 border-t">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Home className="h-5 w-5 mr-2 text-purple-600" />
-            {t('additionalInformation', 'Additional Information')}
-          </h3>
-
-          <div>
-            <label htmlFor="occupation" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('occupation', 'Occupation')}
-            </label>
-            <input
-              type="text"
-              id="occupation"
-              name="occupation"
-              value={formData.occupation}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder={t('enterOccupation', 'Enter occupation')}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('address', 'Address')}
-            </label>
-            <textarea
-              id="address"
-              name="address"
-              value={formData.address}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder={t('enterAddress', 'Enter address')}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('notes', 'Notes')}
-            </label>
-            <textarea
-              id="notes"
-              name="notes"
-              value={formData.notes}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder={t('enterNotes', 'Enter any additional notes')}
-            />
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center justify-end space-x-3 pt-6 border-t">
-          <Button
-            type="button"
-            onClick={onClose}
-            variant="outline"
-            disabled={loading}
-          >
-            <X className="h-4 w-4 mr-2" />
-            {t('cancel', 'Cancel')}
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={loading}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {loading ? t('saving', 'Saving...') : t('save', 'Save')}
-          </Button>
-        </div>
-      </form>
-    </Modal>
+      )}
+    </>
   );
-}
+};
+
+export default ParentEditModal;

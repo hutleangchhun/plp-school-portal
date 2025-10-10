@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
+import StudentRegistration from './pages/auth/StudentRegistration';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/dashboard/Dashboard';
 import ProfileUpdate from './pages/profile/ProfileUpdate';
@@ -9,6 +10,7 @@ import NotFound from './pages/NotFound';
 //import StudentGradeManagement from './pages/students/StudentGradeManagement';
 import StudentsManagement from './pages/students/StudentsManagement';
 import StudentSelection from './pages/students/StudentSelection';
+import BulkStudentImport from './pages/students/BulkStudentImport';
 import ClassesManagement from './pages/classes/ClassesManagement';
 import TeachersManagement from './pages/teachers/TeachersManagement';
 import ParentsManagement from './pages/parents/ParentsManagement';
@@ -64,11 +66,23 @@ function AppContent() {
   return (
     <Router>
       <Routes>
-        <Route 
-          path="/login" 
-          element={!user ? <Login setUser={setUser} /> : <Navigate to="/dashboard" />} 
+        <Route
+          path="/login"
+          element={!user ? <Login setUser={setUser} /> : <Navigate to="/dashboard" />}
         />
-        
+
+        {/* Public student registration route */}
+        <Route
+          path="/register/student"
+          element={<StudentRegistration />}
+        />
+
+        {/* Public bulk student import route */}
+        <Route
+          path="/students/bulk-import"
+          element={<BulkStudentImport />}
+        />
+
         {/* Protected routes with Layout */}
         <Route 
           path="/" 

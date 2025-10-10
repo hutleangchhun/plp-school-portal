@@ -110,6 +110,49 @@ export const parentService = {
             error: response.error
         };
     },
+
+    // Fetch parents with their children from school endpoint
+    getParentsBySchool: async (schoolId, params = {}) => {
+        const { page = 1, limit = 10, search, studentId } = params;
+
+        // Build query parameters
+        const queryParams = { page, limit };
+
+        if (search && search.trim()) {
+            queryParams.search = search.trim();
+        }
+
+        // Add studentId filter if provided
+        if (studentId !== undefined && studentId !== null && studentId !== '' && studentId !== 'all') {
+            queryParams.studentId = Number(studentId);
+        }
+
+        console.log('🔍 Fetching parents by school with params:', queryParams);
+
+        const response = await handleApiResponse(() =>
+            apiClient_.get(ENDPOINTS.PARENTS.BY_SCHOOL(schoolId), { params: queryParams })
+        );
+
+        console.log('📥 Parents by school response:', response);
+
+        // Extract data from response
+        const data = response?.data;
+        const parents = Array.isArray(data?.data) ? data.data : [];
+        const pagination = data?.pagination || {};
+        const total = pagination.total || parents.length;
+        const currentPage = pagination.page || page;
+        const totalPages = pagination.totalPages || Math.ceil(total / limit);
+
+        return {
+            success: response.success,
+            data: parents,
+            total,
+            page: currentPage,
+            totalPages,
+            schoolInfo: data?.schoolInfo,
+            error: response.error
+        };
+    },
 };
 
 export default parentService;

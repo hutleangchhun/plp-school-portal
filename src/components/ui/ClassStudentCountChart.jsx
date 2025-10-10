@@ -123,8 +123,6 @@ export default function ClassStudentCountChart({ schoolId, className = "" }) {
               tickLine={false}
               axisLine={false}
               className="text-xs"
-              angle={-45}
-              textAnchor="end"
               height={80}
             />
             <YAxis

@@ -120,6 +120,20 @@ export default function StudentsManagement() {
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('all');
   const [selectedGradeId, setSelectedGradeId] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+
+  // Debug: Log filter changes
+  useEffect(() => {
+    console.log('🔍 selectedClassId changed:', selectedClassId, 'type:', typeof selectedClassId);
+  }, [selectedClassId]);
+
+  useEffect(() => {
+    console.log('🔍 selectedGradeId changed:', selectedGradeId, 'type:', typeof selectedGradeId);
+  }, [selectedGradeId]);
+
+  useEffect(() => {
+    console.log('🔍 selectedStatus changed:', selectedStatus, 'type:', typeof selectedStatus);
+  }, [selectedStatus]);
 
   // Grade level options for filtering
   const gradeOptions = [
@@ -130,6 +144,13 @@ export default function StudentsManagement() {
     { value: '4', label: t('grade4', 'Grade 4') },
     { value: '5', label: t('grade5', 'Grade 5') },
     { value: '6', label: t('grade6', 'Grade 6') }
+  ];
+
+  // Status options for filtering
+  const statusOptions = [
+    { value: 'all', label: t('allStatus', 'All Status') },
+    { value: 'active', label: t('active', 'Active') },
+    { value: 'inactive', label: t('inactive', 'Inactive') }
   ];
 
   // Other state variables
@@ -166,6 +187,22 @@ export default function StudentsManagement() {
   // State for all students (unfiltered) and filtered students
   const [allStudents, setAllStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
+
+  // Memoize class dropdown options to prevent unnecessary re-renders
+  const classDropdownOptions = useMemo(() => {
+    const options = [
+      { value: 'all', label: t('allClasses', 'ថ្នាក់ទាំងអស់') },
+      ...classes.map(cls => ({
+        value: String(cls.classId),
+        label: `${cls.name} (${cls.studentCount || 0}/${cls.maxStudents || 50} - ${Math.round(((cls.studentCount || 0) / (cls.maxStudents || 50)) * 100)}%)`
+      }))
+    ];
+    console.log('🔄 Recalculating class dropdown options:', options.length, 'options');
+    console.log('🔄 Current selectedClassId:', selectedClassId);
+    const match = options.find(o => o.value === selectedClassId);
+    console.log('🔄 Matching option:', match);
+    return options;
+  }, [classes, t, selectedClassId]);
 
   
   // Enhanced client-side search function for class-filtered results
@@ -385,12 +422,15 @@ export default function StudentsManagement() {
       return;
     }
 
-    // Create a unique key for current fetch parameters
+    // Create a unique key for current fetch parameters (including filters)
     const currentParams = JSON.stringify({
       search,
       schoolId,
       page: pagination.page,
-      limit: pagination.limit
+      limit: pagination.limit,
+      classId: selectedClassId,
+      gradeLevel: selectedGradeId,
+      status: selectedStatus
     });
 
     // Prevent duplicate fetches with same parameters unless forced
@@ -409,9 +449,12 @@ export default function StudentsManagement() {
       console.log(`=== FETCH STUDENTS (SCHOOL CLASSES) ===`);
       console.log(`School ID: ${schoolId}`);
       console.log(`Search term: ${search}`);
+      console.log(`Class ID: ${selectedClassId} (type: ${typeof selectedClassId})`);
+      console.log(`Grade Level: ${selectedGradeId} (type: ${typeof selectedGradeId})`);
+      console.log(`Status: ${selectedStatus} (type: ${typeof selectedStatus})`);
       console.log(`Page: ${pagination.page}, Limit: ${pagination.limit}`);
 
-      // Request params for the new endpoint
+      // Request params for the new endpoint with server-side filters
       const requestParams = {
         page: pagination.page,
         limit: pagination.limit
@@ -422,9 +465,27 @@ export default function StudentsManagement() {
         requestParams.search = search.trim();
       }
 
-      console.log(`API request params:`, requestParams);
+      // Add class filter if selected (server-side filtering)
+      if (selectedClassId && selectedClassId !== 'all') {
+        requestParams.classId = selectedClassId;
+      }
 
-      // Use the new school classes endpoint
+      // Add grade level filter if selected (server-side filtering)
+      if (selectedGradeId && selectedGradeId !== 'all') {
+        requestParams.gradeLevel = selectedGradeId;
+      }
+
+      // Add status filter if selected (server-side filtering)
+      if (selectedStatus && selectedStatus !== 'all') {
+        requestParams.status = selectedStatus;
+      }
+
+      console.log(`=== FINAL API REQUEST PARAMS ===`);
+      console.log(`API request params:`, requestParams);
+      console.log(`JSON stringified:`, JSON.stringify(requestParams));
+      console.log(`=== END API REQUEST PARAMS ===`);
+
+      // Use the new school classes endpoint with filters
       const response = await studentService.getStudentsBySchoolClasses(schoolId, requestParams);
 
       console.log('=== API RESPONSE (SCHOOL CLASSES) ===');
@@ -447,7 +508,7 @@ export default function StudentsManagement() {
       setAllStudents(data);
       setFilteredStudents(data);
 
-      // Server-side pagination: use returned data and server pagination info
+      // Server-side pagination and filtering: use returned data directly
       setStudents(data);
       if (response.pagination) {
         setPagination({
@@ -472,7 +533,7 @@ export default function StudentsManagement() {
       }
       fetchingRef.current = false;
     }
-  }, [schoolId, showError, t, handleError]);
+  }, [schoolId, showError, t, handleError, selectedClassId, selectedGradeId, selectedStatus]);
 
   // Re-fetch school ID when user school_id changes (e.g., after login or transfer)
   useEffect(() => {
@@ -512,8 +573,11 @@ export default function StudentsManagement() {
   const fetchParams = useMemo(() => ({
     searchTerm,
     page: pagination.page,
-    limit: pagination.limit
-  }), [searchTerm, pagination.page, pagination.limit]);
+    limit: pagination.limit,
+    classId: selectedClassId,
+    gradeLevel: selectedGradeId,
+    status: selectedStatus
+  }), [searchTerm, pagination.page, pagination.limit, selectedClassId, selectedGradeId, selectedStatus]);
 
   // Separate useEffect for class ID validation to avoid infinite loops
   useEffect(() => {
@@ -521,9 +585,14 @@ export default function StudentsManagement() {
 
     // SECURITY: Validate that selectedClassId belongs to teacher's authorized classes
     if (selectedClassId !== 'all') {
-      const selectedClassIdInt = parseInt(selectedClassId);
-      const authorizedClassIds = classes.map(c => c.classId);
-      const isValidClass = authorizedClassIds.includes(selectedClassIdInt);
+      // Convert both to strings for comparison since dropdown values are strings
+      const authorizedClassIds = classes.map(c => String(c.classId));
+      const isValidClass = authorizedClassIds.includes(String(selectedClassId));
+      console.log('🔐 Class validation:', {
+        selectedClassId,
+        authorizedClassIds,
+        isValidClass
+      });
       if (!isValidClass) {
         console.warn(`Invalid class ID ${selectedClassId} selected for teacher ${user?.username}. Resetting to 'all'.`);
         setSelectedClassId('all');
@@ -531,35 +600,8 @@ export default function StudentsManagement() {
     }
   }, [selectedClassId, user?.username, classes]);
 
-  // Client-side filtering for class and grade selection since new endpoint returns all students
-  useEffect(() => {
-    if (allStudents.length === 0) return;
-
-    let filtered = allStudents;
-
-    // Filter by class if selected
-    if (selectedClassId !== 'all') {
-      const selectedClassIdInt = parseInt(selectedClassId);
-      filtered = filtered.filter(student =>
-        student.class?.id === selectedClassIdInt ||
-        student.classId === selectedClassIdInt ||
-        student.class_id === selectedClassIdInt
-      );
-    }
-
-    // Filter by grade level if selected
-    if (selectedGradeId !== 'all') {
-      const selectedGradeIdInt = parseInt(selectedGradeId);
-      filtered = filtered.filter(student =>
-        student.class?.gradeLevel === selectedGradeIdInt ||
-        student.gradeLevel === selectedGradeIdInt ||
-        student.grade_level === selectedGradeIdInt
-      );
-    }
-
-    setFilteredStudents(filtered);
-    setStudents(filtered.slice(0, pagination.limit)); // Apply pagination
-  }, [selectedClassId, selectedGradeId, allStudents, pagination.limit]);
+  // Removed client-side filtering - now using server-side filtering via API
+  // The fetchStudents function now passes selectedClassId and selectedGradeId to the API
 
   // Single useEffect to handle all data fetching
   useEffect(() => {
@@ -634,20 +676,37 @@ export default function StudentsManagement() {
   };
 
   // Reset pagination to page 1 when filters change
-  const prevFiltersRef = useRef({ selectedClassId, selectedGradeId, academicYearFilter: debouncedAcademicYear });
+  const prevFiltersRef = useRef({ selectedClassId, selectedGradeId, selectedStatus, academicYearFilter: debouncedAcademicYear });
   useEffect(() => {
     const filtersChanged = prevFiltersRef.current.selectedClassId !== selectedClassId ||
                           prevFiltersRef.current.selectedGradeId !== selectedGradeId ||
+                          prevFiltersRef.current.selectedStatus !== selectedStatus ||
                           prevFiltersRef.current.academicYearFilter !== debouncedAcademicYear;
 
     if (filtersChanged) {
+      console.log(`=== FILTER CHANGED ===`);
+      console.log(`Previous filters:`, prevFiltersRef.current);
+      console.log(`New filters:`, { selectedClassId, selectedGradeId, selectedStatus, academicYearFilter: debouncedAcademicYear });
+      console.log(`Class changed: ${prevFiltersRef.current.selectedClassId} -> ${selectedClassId}`);
+      console.log(`Grade changed: ${prevFiltersRef.current.selectedGradeId} -> ${selectedGradeId}`);
+      console.log(`Status changed: ${prevFiltersRef.current.selectedStatus} -> ${selectedStatus}`);
+      console.log(`=== END FILTER CHANGE ===`);
+
+      // Clear last fetch params to allow new fetch with new filters
+      lastFetchParams.current = null;
       if (pagination.page !== 1) {
-        console.log(`Filter changed - resetting pagination to page 1`);
+        console.log(`Resetting pagination to page 1`);
         setPagination(prev => ({ ...prev, page: 1 }));
+      } else {
+        // If already on page 1, force a fetch with new filters
+        console.log(`Already on page 1, forcing fetch with new filters`);
+        if (schoolId) {
+          fetchStudents(searchTerm, true, false);
+        }
       }
-      prevFiltersRef.current = { selectedClassId, selectedGradeId, academicYearFilter: debouncedAcademicYear };
+      prevFiltersRef.current = { selectedClassId, selectedGradeId, selectedStatus, academicYearFilter: debouncedAcademicYear };
     }
-  }, [selectedClassId, selectedGradeId, debouncedAcademicYear, pagination.page]); // Reset page when filters change
+  }, [selectedClassId, selectedGradeId, selectedStatus, debouncedAcademicYear, pagination.page, schoolId, searchTerm, fetchStudents]); // Reset page when filters change
   
   // Get class information for the selected class
   const classInfo = selectedClassId !== 'all' 
@@ -1809,11 +1868,12 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
             
             {classes.length > 0 && (
               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm">
-                {(selectedClassId !== 'all' || selectedGradeId !== 'all') && (
+                {(selectedClassId !== 'all' || selectedGradeId !== 'all' || selectedStatus !== 'all') && (
                   <div className="flex items-center space-x-2 text-xs text-gray-500">
                     {(() => {
                       const selectedClass = classes.find(c => c.classId.toString() === selectedClassId);
                       const selectedGrade = gradeOptions.find(g => g.value === selectedGradeId);
+                      const selectedStatusOption = statusOptions.find(s => s.value === selectedStatus);
                       return (
                         <>
                           {selectedClass && (
@@ -1826,6 +1886,11 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
                               {selectedGrade.label}
                             </Badge>
                           )}
+                          {selectedStatusOption && selectedStatusOption.value !== 'all' && (
+                            <Badge color={selectedStatus === 'active' ? 'green' : 'gray'} className="text-xs">
+                              {selectedStatusOption.label}
+                            </Badge>
+                          )}
                         </>
                       );
                     })()}
@@ -1835,14 +1900,12 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
                   <span className="text-gray-700 font-medium">{t('selectClass', 'Class')}:</span>
                   <Dropdown
                     value={selectedClassId}
-                    onValueChange={setSelectedClassId}
-                    options={[
-                      { value: 'all', label: t('allClasses', 'ថ្នាក់ទាំងអស់') },
-                      ...classes.map(cls => ({
-                        value: cls.classId.toString(),
-                        label: `${cls.name} (${cls.studentCount || 0}/${cls.maxStudents || 50} - ${Math.round(((cls.studentCount || 0) / (cls.maxStudents || 50)) * 100)}%)`
-                      }))
-                    ]}
+                    onValueChange={(newValue) => {
+                      console.log('📝 Dropdown onValueChange called with:', newValue, 'type:', typeof newValue);
+                      console.log('📝 Previous selectedClassId:', selectedClassId, 'type:', typeof selectedClassId);
+                      setSelectedClassId(newValue);
+                    }}
+                    options={classDropdownOptions}
                     placeholder={t('selectClass', 'ជ្រើសរើសថ្នាក់')}
                     minWidth="min-w-[200px]"
                     contentClassName="max-h-[200px] overflow-y-auto"
@@ -1855,6 +1918,16 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
                     onValueChange={setSelectedGradeId}
                     options={gradeOptions}
                     placeholder={t('selectGrade', 'Select Grade')}
+                    minWidth="min-w-[150px]"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-700 font-medium">{t('status', 'Status')}:</span>
+                  <Dropdown
+                    value={selectedStatus}
+                    onValueChange={setSelectedStatus}
+                    options={statusOptions}
+                    placeholder={t('selectStatus', 'Select Status')}
                     minWidth="min-w-[150px]"
                   />
                 </div>
