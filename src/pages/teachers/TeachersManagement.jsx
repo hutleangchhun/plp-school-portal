@@ -891,6 +891,11 @@ export default function TeachersManagement() {
               data={teachers}
               loading={isLoading('fetchTeachers')}
               emptyMessage={t('noTeachersFound', 'No teachers found')}
+              emptyIcon={Users}
+              emptyVariant='info'
+              emptyDescription={t('noDataFound', 'No data found')}
+              emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
+              onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
               showPagination={true}
               pagination={pagination}
               onPageChange={handlePageChange}

@@ -1,21 +1,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Plus, Edit2, Eye, Trash2, Users, Download, X, Phone, Mail } from 'lucide-react';
+import { Search, Plus, Edit2, Eye, Trash2, Users, Download, X, Phone, Mail, Filter, UserRoundX} from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
 import parentService from '../../utils/api/services/parentService';
-import { userService } from '../../utils/api/services/userService';
+import { classService } from '../../utils/api/services/classService';
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Badge } from '../../components/ui/Badge';
-import { Table, MobileCards } from '../../components/ui/Table';
+import { Table, MobileCards, Pagination } from '../../components/ui/Table';
+import Dropdown from '../../components/ui/Dropdown';
 import ParentEditModal from '../../components/parents/ParentEditModal';
-import ParentViewModal from '../../components/parents/ParentViewModal';
+import Modal from '../../components/ui/Modal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
+
 
 export default function ParentsManagement() {
   const { t } = useLanguage();
@@ -92,6 +94,15 @@ export default function ParentsManagement() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [selectingAll, setSelectingAll] = useState(false);
+  const [classInfoMap, setClassInfoMap] = useState({});
+
+  // Filter states
+  const [classes, setClasses] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [selectedClassId, setSelectedClassId] = useState('all');
+  const [selectedStudentId, setSelectedStudentId] = useState('all');
+  const [loadingClasses, setLoadingClasses] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
 
   const fetchingRef = useRef(false);
   const searchTimeoutRef = useRef(null);
@@ -134,6 +145,113 @@ export default function ParentsManagement() {
     }, 500);
   }, []);
 
+  // Fetch classes for filter
+  const fetchClasses = useStableCallback(async () => {
+    if (!schoolId) return;
+
+    setLoadingClasses(true);
+    try {
+      const response = await classService.getBySchool(schoolId);
+      if (response.success && response.classes) {
+        setClasses(response.classes);
+      }
+    } catch (err) {
+      console.error('Error fetching classes:', err);
+    } finally {
+      setLoadingClasses(false);
+    }
+  }, [schoolId]);
+
+  // Fetch students for filter (based on selected class)
+  const fetchStudents = useStableCallback(async (classId) => {
+    if (!schoolId || !classId || classId === 'all') {
+      setStudents([]);
+      return;
+    }
+
+    setLoadingStudents(true);
+    try {
+
+      const response = await classService.getClassStudents(classId);
+
+      if (response.data && Array.isArray(response.data)) {
+
+        // Format student data for dropdown
+        const formattedStudents = response.data
+          .filter(student => {
+            if (!student) return false;
+            // Prioritize studentId (relationship ID) for filtering parents
+            const hasId = student.studentId || student.id || student.userId || student.user_id;
+            if (!hasId) {
+              console.warn('⚠️ Student without ID:', student);
+            }
+            return hasId;
+          })
+          .map(student => {
+            
+            const enrollmentId = student.studentId || student.student_id;
+            const userId = student.id || student.userId || student.user_id || student.user?.id;
+
+            // Prefer enrollmentId, fall back to userId if not found
+            const id = enrollmentId || userId;
+
+            const firstName = student.firstName || student.first_name || student.user?.first_name || '';
+            const lastName = student.lastName || student.last_name || student.user?.last_name || '';
+            const fullName = student.fullName || student.full_name || `${firstName} ${lastName}`.trim();
+            const username = student.username || student.user?.username || '';
+
+            return {
+              id: id,
+              fullName: fullName || username || 'Unknown',
+              firstName: firstName,
+              lastName: lastName,
+              username: username
+            };
+          });
+
+        console.log('✅ Formatted students for dropdown:', formattedStudents);
+        setStudents(formattedStudents);
+      } else {
+        console.warn('⚠️ Invalid students response format:', response);
+        setStudents([]);
+      }
+    } catch (err) {
+      console.error('❌ Error fetching students:', err);
+      setStudents([]);
+    } finally {
+      setLoadingStudents(false);
+    }
+  }, [schoolId]);
+
+  // Handle class selection change
+  const handleClassChange = useStableCallback((classId) => {
+    setSelectedClassId(classId);
+    setSelectedStudentId('all'); // Reset student selection
+
+    // Fetch students for the selected class
+    if (classId && classId !== 'all') {
+      fetchStudents(classId);
+    } else {
+      setStudents([]);
+    }
+
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, [fetchStudents]);
+
+  // Handle student selection change
+  const handleStudentChange = useStableCallback((studentId) => {
+    setSelectedStudentId(studentId);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, []);
+
+  // Initial fetch of classes
+  useEffect(() => {
+    if (schoolId) {
+      fetchClasses();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolId]);
+
   // Fetch parents
   const fetchParents = useStableCallback(async (forceRefresh = false) => {
     if (fetchingRef.current && !forceRefresh) {
@@ -155,13 +273,25 @@ export default function ParentsManagement() {
       const loadingKey = 'fetchParents';
       startLoading(loadingKey, t('loadingParents', 'Loading parents...'));
 
-      console.log('Fetching parents with params:', { schoolId, page: pagination.page, limit: pagination.limit, search: searchTerm });
-
-      const response = await parentService.getParentsBySchool(schoolId, {
+      const params = {
         page: pagination.page,
         limit: pagination.limit,
         search: searchTerm
-      });
+      };
+
+      // Add studentId filter if selected
+      // Note: studentId is the enrollment/relationship ID (e.g., 919751), NOT the user.id
+      // This filters parents by which student enrollment they are associated with
+      if (selectedStudentId && selectedStudentId !== 'all') {
+        const studentIdNum = parseInt(selectedStudentId, 10);
+        if (!isNaN(studentIdNum)) {
+          params.studentId = studentIdNum;
+        }
+      }
+
+      console.log('🔍 Fetching parents with params:', { schoolId, ...params });
+
+      const response = await parentService.getParentsBySchool(schoolId, params);
 
       console.log('Parents API response:', response);
 
@@ -208,7 +338,7 @@ export default function ParentsManagement() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [schoolId, pagination.page, pagination.limit, searchTerm, t, handleError, clearError, performClientSideSearch]);
+  }, [schoolId, pagination.page, pagination.limit, searchTerm, selectedStudentId, t, handleError, clearError, performClientSideSearch]);
 
   // Initial fetch
   useEffect(() => {
@@ -246,6 +376,24 @@ export default function ParentsManagement() {
   const handleViewParent = useCallback((parent) => {
     setSelectedParent(parent);
     setShowViewModal(true);
+    try {
+      const classIds = Array.isArray(parent?.students)
+        ? Array.from(new Set(parent.students.map(s => s.classId).filter(id => !!id)))
+        : [];
+      if (classIds.length === 0) return;
+      (async () => {
+        const results = await Promise.allSettled(classIds.map(id => classService.getClassById(id)));
+        const map = {};
+        results.forEach((res, idx) => {
+          const id = classIds[idx];
+          if (res.status === 'fulfilled' && res.value) {
+            const cls = res.value.data || res.value; // getClassById returns formatted object
+            map[id] = cls;
+          }
+        });
+        setClassInfoMap(prev => ({ ...prev, ...map }));
+      })();
+    } catch {}
   }, []);
 
   // Handle edit parent
@@ -373,7 +521,7 @@ export default function ParentsManagement() {
       key: 'name',
       header: t('name', 'Name'),
       render: (parent) => (
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 text-sm">
           <div className="flex-shrink-0">
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center text-white font-semibold">
               {(parent.firstName?.[0] || parent.fullname?.[0] || 'P').toUpperCase()}
@@ -395,20 +543,31 @@ export default function ParentsManagement() {
       header: t('contact', 'Contact'),
       render: (parent) => (
         <div className="space-y-1">
-          {parent.email && (
-            <div className="flex items-center text-sm text-gray-600">
-              <Mail className="h-3 w-3 mr-1" />
-              {parent.email}
-            </div>
-          )}
           {parent.phone && (
             <div className="flex items-center text-sm text-gray-600">
-              <Phone className="h-3 w-3 mr-1" />
               {parent.phone}
             </div>
           )}
         </div>
       )
+    },
+    {
+      key: 'relationship',
+      header: t('relationship', 'Relationship'),
+      render: (parent) => {
+        const relationship = parent.students.map(student => student.relationship);
+        return (
+          <div>
+            {relationship.length > 0 ? (
+              <span title={relationship} className="text-sm text-gray-600">
+                {relationship}
+              </span>
+            ) : (
+              <span className="text-sm text-gray-600">{relationship}</span>
+            )}
+          </div>
+        );
+      }
     },
     {
       key: 'students',
@@ -422,12 +581,8 @@ export default function ParentsManagement() {
 
         return (
           <div className="space-y-1">
-            <div className="flex items-center text-sm text-gray-600">
-              <Users className="h-4 w-4 mr-1 text-gray-400" />
-              {studentNames.length} {t('students', 'students')}
-            </div>
             {studentNames.length > 0 && (
-              <div className="text-xs text-gray-500 max-w-xs">
+              <div className="text-sm text-gray-500 max-w-xs">
                 {studentNames.slice(0, 2).join(', ')}
                 {studentNames.length > 2 && ` +${studentNames.length - 2} more`}
               </div>
@@ -440,7 +595,7 @@ export default function ParentsManagement() {
       key: 'actions',
       header: t('actions', 'Actions'),
       render: (parent) => (
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center">
           <Button
             onClick={() => handleViewParent(parent)}
             variant="ghost"
@@ -527,77 +682,124 @@ export default function ParentsManagement() {
                   className="shadow-lg"
                 >
                   <Plus className="h-5 w-5 mr-2" />
-                  {t('addParent', 'Add Parent')}
+                  <span className='text-xs sm:text-sm'>{t('addParent', 'Add Parent')}</span>
                 </Button>
               </div>
             </div>
-          </div>
-        </FadeInSection>
 
-        {/* Search and Filters */}
-        <FadeInSection delay={100} className="mb-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder={t('searchParents', 'Search parents by name, email, or phone...')}
-                    value={localSearchTerm}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
+            <div className="my-6">
+              <div className="flex items-center justify-between gap-4">
+                {/* Search Bar */}
+                <div className="">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder={t('searchParents', 'Search parents by name, email, or phone...')}
+                      value={localSearchTerm}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Cascade Filters */}
+                <div className="flex justify-between items-center gap-4">
+                  {/* Class Filter */}
+                  <div className="flex justify-center items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      {t('filterByClass', 'Filter by Class')}
+                    </label>
+                    <Dropdown
+                      value={selectedClassId}
+                      onValueChange={handleClassChange}
+                      options={[
+                        { value: 'all', label: t('allClasses', 'All Classes') },
+                        ...classes.map((cls) => ({
+                          value: cls.id.toString(),
+                          label: cls.className || cls.name || `Grade ${cls.gradeLevel}`
+                        }))
+                      ]}
+                      placeholder={t('selectClass', 'Select class...')}
+                      disabled={loadingClasses}
+                      minWidth="min-w-[200px]"
+                      contentClassName="max-h-[200px] overflow-y-auto"
+                    />
+                  </div>
+
+                  {/* Student Filter */}
+                  <div className="flex justify-center items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      {t('filterByStudent', 'Filter by Student')}
+                    </label>
+                    <Dropdown
+                      value={selectedStudentId}
+                      onValueChange={handleStudentChange}
+                      options={[
+                        {
+                          value: 'all',
+                          label: selectedClassId === 'all'
+                            ? t('selectClassFirst', 'Select a class first')
+                            : t('allStudents', 'All Students')
+                        },
+                        ...students
+                          .filter(student => student && student.id)
+                          .map((student) => ({
+                            value: student.id.toString(),
+                            label: student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.username || 'Unknown'
+                          }))
+                      ]}
+                      placeholder={t('selectStudent', 'Select student...')}
+                      disabled={loadingStudents || selectedClassId === 'all'}
+                      minWidth="min-w-[200px]"
+                      contentClassName="max-h-[200px] overflow-y-auto"
+                    />
+                  </div>
+
+                  {/* Clear Filters Button */}
+                  {(selectedClassId !== 'all' || selectedStudentId !== 'all') && (
+                    <div className="flex items-end">
+                      <Button
+                        onClick={() => {
+                          setSelectedClassId('all');
+                          setSelectedStudentId('all');
+                          setStudents([]);
+                          setPagination(prev => ({ ...prev, page: 1 }));
+                        }}
+                        variant="outline"
+                        size="default"
+                        className="whitespace-nowrap"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        <span className='text-xs sm:text-sm'>{t('resetFilters', 'Reset Filters')}</span>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
-        </FadeInSection>
-
-        {/* Parents Table */}
-        <FadeInSection delay={200} className="bg-white shadow rounded-lg p-4 sm:p-6">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            {loading ? (
-              <div className="p-12 text-center">
-                <DynamicLoader
-                  type="spinner"
-                  size="xl"
-                  variant="primary"
-                  message={t('loadingParents', 'Loading parents...')}
+            <div className="bg-white overflow-hidden">
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table
+                  columns={tableColumns}
+                  data={parents}
+                  loading={loading}
+                  emptyMessage={t('noParentsFound', 'No parents found')}
+                  emptyIcon={Users}
+                  emptyVariant='info'
+                  emptyDescription={t('noDataFound', 'No data found')}
+                  emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
+                  onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
+                  showPagination={true}
+                  pagination={pagination}
+                  onPageChange={handlePageChange}
+                  t={t}
                 />
               </div>
-            ) : parents.length === 0 ? (
-              <div className="p-12 text-center">
-                <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {t('noParentsFound', 'No parents found')}
-                </h3>
-                <p className="text-gray-500 mb-6">
-                  {searchTerm ?
-                    t('noParentsMatchSearch', 'No parents match your search criteria') :
-                    t('getStartedAddParent', 'Get started by adding a new parent')
-                  }
-                </p>
-                {!searchTerm && (
-                  <Button onClick={handleAddParent} variant="primary">
-                    <Plus className="h-5 w-5 mr-2" />
-                    {t('addFirstParent', 'Add First Parent')}
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <>
-                {/* Desktop Table */}
-                <div className="hidden md:block overflow-x-auto">
-                  <Table
-                    columns={tableColumns}
-                    data={parents}
-                    pagination={pagination}
-                    onPageChange={handlePageChange}
-                  />
-                </div>
 
-                {/* Mobile Cards */}
+              {/* Mobile Cards */}
+              {parents.length > 0 && (
                 <div className="md:hidden">
                   <MobileCards
                     data={parents}
@@ -685,12 +887,16 @@ export default function ParentsManagement() {
                         </div>
                       </div>
                     )}
+                  />
+                  {/* Mobile Pagination */}
+                  <Pagination
                     pagination={pagination}
                     onPageChange={handlePageChange}
+                    t={t}
                   />
                 </div>
-              </>
-            )}
+              )}
+            </div>
           </div>
         </FadeInSection>
       </div>
@@ -709,16 +915,118 @@ export default function ParentsManagement() {
       )}
 
       {/* View Modal */}
-      {showViewModal && selectedParent && (
-        <ParentViewModal
-          isOpen={showViewModal}
-          onClose={() => {
-            setShowViewModal(false);
-            setSelectedParent(null);
-          }}
-          parent={selectedParent}
-        />
-      )}
+      <Modal
+        isOpen={showViewModal && !!selectedParent}
+        onClose={() => { setShowViewModal(false); setSelectedParent(null); }}
+        title={t('parentDetails', 'Parent Details')}
+        size="lg"
+        height="xl"
+      >
+        {selectedParent && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center text-white font-semibold">
+                {(selectedParent.firstName?.[0] || selectedParent.fullname?.[0] || 'P').toUpperCase()}
+              </div>
+              <div>
+                <div className="font-semibold text-gray-900">
+                  {selectedParent.fullname || `${selectedParent.firstName || ''} ${selectedParent.lastName || ''}`.trim()}
+                </div>
+                {selectedParent.relationship && (
+                  <div className="text-xs text-gray-500">{selectedParent.relationship}</div>
+                )}
+              </div>
+            </div>
+
+            {/* Account & Contact */}
+            <div className="grid grid-cols-1 gap-3 text-sm">
+              <div className="bg-gray-50 border border-gray-100 rounded-md p-3">
+                <div className="text-xs font-medium text-gray-500 mb-2">{t('account', 'Account')}</div>
+                <div className="space-y-1">
+                  {selectedParent.username && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500">{t('username', 'Username')}</span>
+                      <span className="text-gray-900">{selectedParent.username}</span>
+                    </div>
+                  )}
+                  {(selectedParent.firstName || selectedParent.lastName) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500">{t('name', 'Name')}</span>
+                      <span className="text-gray-900">{`${selectedParent.firstName || ''} ${selectedParent.lastName || ''}`.trim()}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-100 rounded-md p-3">
+                <div className="text-xs font-medium text-gray-500 mb-2">{t('contact', 'Contact')}</div>
+                <div className="space-y-1">
+                  {selectedParent.email && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500">{t('email', 'Email')}</span>
+                      <span className="text-gray-900">{selectedParent.email}</span>
+                    </div>
+                  )}
+                  {selectedParent.phone && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500">{t('phone', 'Phone')}</span>
+                      <span className="text-gray-900">{selectedParent.phone}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {(selectedParent.occupation || selectedParent.address) && (
+                <div className="bg-gray-50 border border-gray-100 rounded-md p-3">
+                  <div className="text-xs font-medium text-gray-500 mb-2">{t('additionalInfo', 'Additional info')}</div>
+                  <div className="space-y-1">
+                    {selectedParent.occupation && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500">{t('occupation', 'Occupation')}</span>
+                        <span className="text-gray-900">{selectedParent.occupation}</span>
+                      </div>
+                    )}
+                    {selectedParent.address && (
+                      <div className="flex items-start justify-between">
+                        <span className="text-gray-500 mr-3">{t('address', 'Address')}</span>
+                        <span className="text-gray-900 text-right">{selectedParent.address}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Students */}
+            {Array.isArray(selectedParent.students) && selectedParent.students.length > 0 && (
+              <div className="bg-gray-50 border border-gray-100 rounded-md p-3">
+                <div className="text-xs font-medium text-gray-500 mb-2">{t('students', 'Students')}</div>
+                <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
+                  {selectedParent.students.map((s, idx) => (
+                    <li key={idx} className="flex items-center justify-between">
+                      <span>
+                        {s.user?.first_name && s.user?.last_name
+                          ? `${s.user.first_name} ${s.user.last_name}`
+                          : s.user?.username || 'Unknown Student'}
+                      </span>
+                      <span className="text-xs text-gray-500 ml-3">
+                        {(() => {
+                          const info = classInfoMap?.[s.classId];
+                          if (info) {
+                            const bits = [info.name, info.section ? `${t('section', 'Section')} ${info.section}` : '', info.gradeLevel ? `${t('grade', 'Grade')} ${info.gradeLevel}` : ''].filter(Boolean);
+                            return bits.join(' • ');
+                          }
+                          return s.class?.name || `${t('class', 'Class')} ${s.classId}`;
+                        })()}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
@@ -734,6 +1042,8 @@ export default function ParentsManagement() {
         confirmText={t('delete', 'Delete')}
         cancelText={t('cancel', 'Cancel')}
       />
+
+      {/* SelectedParentsManager removed as requested */}
     </PageTransition>
   );
 }

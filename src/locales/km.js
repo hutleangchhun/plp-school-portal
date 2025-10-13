@@ -211,6 +211,7 @@ export const km = {
   contactInformation: 'ព័ត៌មានទំនាក់ទំនង',
   additionalInformation: 'ព័ត៌មានបន្ថែម',
   unnamed: 'គ្មានឈ្មោះ',
+  account: 'គណនី',
 
   // Transfer student
   transferStudent: 'ផ្ទេរសិស្ស',
@@ -228,9 +229,10 @@ export const km = {
   // Student filters
   classFilter: 'ស្ថានភាពថ្នាក់',
   allStudents: 'សិស្សទាំងអស់',
-  filterByStudent: 'ច្រោះតាមសិស្ស',
+  filterByStudent: 'ជ្រើសរើសសិស្ស',
   studentsWithoutClass: 'គ្មានថ្នាក់',
   selectClassFilter: 'ជ្រើសរើសថ្នាក់',
+  filterByClass: 'ជ្រើសរើសថ្នាក់',
 
   // Student assignment
   studentsAssignedSuccess: 'បានកំណត់សិស្សដោយជោគជ័យ',
@@ -323,7 +325,7 @@ export const km = {
 
   // Other
   address: 'អាសយដ្ឋាន',
-  contact: 'ទំនាក់ទំនង',
+  contact: 'លេខទំនាក់ទំនង',
   
   // StudentsManagement component
   failedLoadAvailableStudents: 'បរាជ័យក្នុងការទាញយកសិស្សដែលអាចប្រើបាន',

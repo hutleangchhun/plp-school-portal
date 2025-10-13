@@ -1846,6 +1846,11 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
               data={students}
               loading={isLoading('fetchStudents')}
               emptyMessage={t('noStudentsFound', 'No students found')}
+              emptyIcon={Users}
+              emptyVariant='info'
+              emptyDescription={t('noStudentsFoundMatchingCriteria', 'No students found matching your criteria.')}
+              emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
+              onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
               showPagination={true}
               pagination={pagination}
               onPageChange={handlePageChange}

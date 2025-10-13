@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button } from './Button';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Database, ChevronsUpDown } from 'lucide-react';
+import EmptyState from '@/components/ui/EmptyState';
 
 const Table = ({
   columns = [],
@@ -14,8 +15,57 @@ const Table = ({
   rowClassName = "",
   onRowClick = null,
   t = null,
+  // New optional props to customize EmptyState
+  emptyIcon: EmptyIcon = Database,
+  emptyVariant = 'neutral',
+  emptyDescription = '',
+  emptyActionLabel,
+  onEmptyAction,
+  // New shadcn-like features
+  stickyHeader = true,
+  dense = false,
+  enableSort = true,
+  defaultSortKey = null,
+  defaultSortDir = 'asc', // 'asc' | 'desc'
+  onSortChange,
   ...props
 }) => {
+  const [sortKey, setSortKey] = useState(defaultSortKey);
+  const [sortDir, setSortDir] = useState(defaultSortDir);
+
+  const handleHeaderSort = (col) => {
+    if (!enableSort) return;
+    const key = col.accessor || col.key;
+    if (!key || col.disableSort) return;
+
+    let nextDir = 'asc';
+    if (sortKey === key) {
+      nextDir = sortDir === 'asc' ? 'desc' : 'asc';
+    }
+    setSortKey(key);
+    setSortDir(nextDir);
+    if (onSortChange) onSortChange({ key, dir: nextDir });
+  };
+
+  const sortedData = useMemo(() => {
+    if (!enableSort || !sortKey) return data;
+    const copy = Array.isArray(data) ? [...data] : [];
+    copy.sort((a, b) => {
+      const aVal = getNestedValue(a, sortKey);
+      const bVal = getNestedValue(b, sortKey);
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return sortDir === 'asc' ? -1 : 1;
+      if (bVal == null) return sortDir === 'asc' ? 1 : -1;
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return sortDir === 'asc'
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+    return copy;
+  }, [data, enableSort, sortKey, sortDir]);
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -24,11 +74,16 @@ const Table = ({
     );
   }
 
-  if (data.length === 0) {
+  if (sortedData.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        {emptyMessage}
-      </div>
+      <EmptyState
+        icon={EmptyIcon}
+        title={emptyMessage}
+        description={emptyDescription}
+        variant={emptyVariant}
+        actionLabel={emptyActionLabel}
+        onAction={onEmptyAction}
+      />
     );
   }
 
@@ -38,53 +93,75 @@ const Table = ({
     }
   };
 
+  const headerBase = stickyHeader
+    ? 'sticky top-0 z-10 bg-slate-50/95 backdrop-blur supports-[backdrop-filter]:bg-slate-50/75'
+    : 'bg-slate-50';
+
   return (
-    <div className="overflow-x-auto">
-      <table className={`min-w-full divide-y divide-gray-200 ${className}`} {...props}>
-        <thead className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200">
-          <tr>
-            {columns.map((column, index) => (
-              <th
-                key={column.key || index}
-                scope="col"
-                className={`px-4 sm:px-6 py-4 text-left text-sm font-semibold text-gray-800 uppercase tracking-wider border-b-2 border-transparent hover:border-blue-300 transition-colors duration-200 ${
-                  column.headerClassName || ''
-                } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
-              >
-                {column.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {data.map((item, rowIndex) => (
-            <tr
-              key={item.id || rowIndex}
-              className={`hover:bg-gray-50 transition-all duration-200 ${rowClassName} ${
-                onRowClick ? 'cursor-pointer' : ''
-              }`}
-              onClick={() => handleRowClick(item, rowIndex)}
-              style={{ animationDelay: `${rowIndex * 50}ms` }}
-            >
-              {columns.map((column, colIndex) => (
-                <td
-                  key={column.key || colIndex}
-                  className={`px-3 sm:px-6 py-4 whitespace-nowrap ${
-                    column.cellClassName || ''
-                  } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
-                >
-                  {column.render 
-                    ? column.render(item, rowIndex)
-                    : column.accessor 
-                    ? getNestedValue(item, column.accessor)
-                    : item[column.key]
-                  }
-                </td>
-              ))}
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="overflow-x-auto">
+        <table className={`w-full text-sm ${className}`} {...props}>
+          <thead className={`${headerBase} border-b border-gray-200`}> 
+            <tr>
+              {columns.map((column, index) => {
+                const isSortable = enableSort && !(column.disableSort) && (column.accessor || column.key);
+                const isActive = isSortable && (sortKey === (column.accessor || column.key));
+                return (
+                  <th
+                    key={column.key || index}
+                    scope="col"
+                    className={`px-3 sm:px-4 ${dense ? 'py-2' : 'py-3.5'} text-left font-medium text-gray-700 uppercase tracking-wide align-middle ${
+                      column.headerClassName || ''
+                    } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
+                  >
+                    {isSortable ? (
+                      <button
+                        type="button"
+                        onClick={() => handleHeaderSort(column)}
+                        className="inline-flex items-center gap-1 text-gray-700 hover:text-gray-900"
+                        title={t ? t('sort', 'Sort') : 'Sort'}
+                      >
+                        <span className="whitespace-nowrap">{column.header}</span>
+                        <ChevronsUpDown className={`h-3.5 w-3.5 ${isActive ? 'opacity-100' : 'opacity-40'}`} />
+                      </button>
+                    ) : (
+                      <span className="whitespace-nowrap">{column.header}</span>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {sortedData.map((item, rowIndex) => (
+              <tr
+                key={item.id || rowIndex}
+                className={`hover:bg-gray-50 transition-colors ${rowClassName} ${
+                  onRowClick ? 'cursor-pointer' : ''
+                }`}
+                onClick={() => handleRowClick(item, rowIndex)}
+                style={{ animationDelay: `${rowIndex * 30}ms` }}
+              >
+                {columns.map((column, colIndex) => (
+                  <td
+                    key={column.key || colIndex}
+                    className={`px-3 sm:px-6 ${dense ? 'py-2.5' : 'py-3.5'} whitespace-nowrap align-middle ${
+                      column.cellClassName || ''
+                    } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
+                  >
+                    {column.render 
+                      ? column.render(item, rowIndex)
+                      : column.accessor 
+                      ? getNestedValue(item, column.accessor)
+                      : item[column.key]
+                    }
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {showPagination && pagination && onPageChange && (
         <Pagination 

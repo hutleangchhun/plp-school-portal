@@ -12,7 +12,6 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import { DatePicker } from '../../components/ui/date-picker';
 import * as XLSX from 'xlsx';
-import * as XLSXStyle from 'xlsx-js-style';
 
 // CustomDateInput Component - Text input for dd/mm/yyyy format with validation
 const CustomDateInput = ({ value, onChange, className = "" }) => {
@@ -1162,7 +1161,12 @@ export default function BulkStudentImport() {
     }
   }, [showError, showSuccess]);
 
-  const downloadTemplate = useCallback(() => {
+  const downloadTemplate = useCallback(async () => {
+    // Dynamically import xlsx-js-style for styling support
+    const XLSXStyleModule = await import('xlsx-js-style');
+    // xlsx-js-style exports as default, but we need to handle both cases
+    const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
+
     // Create comprehensive template with Cambodian school headers
     const templateData = [
       // Official Cambodian School Header - Row 1
@@ -1438,11 +1442,11 @@ export default function BulkStudentImport() {
     }
 
     // Apply cell styles (borders only, no background colors)
-    const range = XLSX.utils.decode_range(ws['!ref']);
+    const range = XLSXStyle.utils.decode_range(ws['!ref']);
 
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        const cellAddress = XLSXStyle.utils.encode_cell({ r: R, c: C });
         if (!ws[cellAddress]) continue;
 
         const cell = ws[cellAddress];
