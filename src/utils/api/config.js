@@ -67,9 +67,11 @@ const ENDPOINTS = {
   },
   STUDENTS: {
     BASE: '/students',
+    REGISTER: '/students/register',
     MY_STUDENTS: '/students/my-students',
     AVAILABLE: '/students/available',
     ADD_TO_CLASS: '/students/add-to-class',
+    BULK_REGISTER: '/students/bulk-register',
     REMOVE_FROM_CLASS: (studentId) => `/students/${studentId}/remove-from-class`,
     ATTENDANCE: {
       BASE: (studentId) => `/students/${studentId}/attendance`,

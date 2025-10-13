@@ -2,6 +2,7 @@
 export * from './grades.js';
 export * from './achievements.js';
 export * from './ui.js';
+export * from './relationships.js';
 
 // Application-wide constants
 export const APP_CONFIG = {

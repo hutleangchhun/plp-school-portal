@@ -836,7 +836,7 @@ const StudentSelection = () => {
                           </Badge>
                         ) : (
                           <Badge color="gray" size="sm" className="italic">
-                            {t('noClass', "Don't have class")}
+                            {t('noClasses', "Don't have class")}
                           </Badge>
                         )}
                       </div>

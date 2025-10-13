@@ -40,11 +40,6 @@ export default function StudentsManagement() {
 
   // Track renders to detect infinite loops (development only)
   useRenderTracker('StudentsManagement');
-
-  // Debug: Log error state changes
-  useEffect(() => {
-    console.log('StudentsManagement: Error state changed:', error);
-  }, [error]);
   
   // Get authenticated user data
   const [user, setUser] = useState(() => {
@@ -119,39 +114,12 @@ export default function StudentsManagement() {
   // State for classes information (derived from authenticated user)
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('all');
-  const [selectedGradeId, setSelectedGradeId] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
 
   // Debug: Log filter changes
-  useEffect(() => {
-    console.log('🔍 selectedClassId changed:', selectedClassId, 'type:', typeof selectedClassId);
-  }, [selectedClassId]);
+  // useEffect(() => {
+  //   console.log('🔍 selectedClassId changed:', selectedClassId, 'type:', typeof selectedClassId);
+  // }, [selectedClassId]);
 
-  useEffect(() => {
-    console.log('🔍 selectedGradeId changed:', selectedGradeId, 'type:', typeof selectedGradeId);
-  }, [selectedGradeId]);
-
-  useEffect(() => {
-    console.log('🔍 selectedStatus changed:', selectedStatus, 'type:', typeof selectedStatus);
-  }, [selectedStatus]);
-
-  // Grade level options for filtering
-  const gradeOptions = [
-    { value: 'all', label: t('allGrades', 'All Grades') },
-    { value: '1', label: t('grade1', 'Grade 1') },
-    { value: '2', label: t('grade2', 'Grade 2') },
-    { value: '3', label: t('grade3', 'Grade 3') },
-    { value: '4', label: t('grade4', 'Grade 4') },
-    { value: '5', label: t('grade5', 'Grade 5') },
-    { value: '6', label: t('grade6', 'Grade 6') }
-  ];
-
-  // Status options for filtering
-  const statusOptions = [
-    { value: 'all', label: t('allStatus', 'All Status') },
-    { value: 'active', label: t('active', 'Active') },
-    { value: 'inactive', label: t('inactive', 'Inactive') }
-  ];
 
   // Other state variables
   const [searchTerm, setSearchTerm] = useState('');
@@ -194,15 +162,11 @@ export default function StudentsManagement() {
       { value: 'all', label: t('allClasses', 'ថ្នាក់ទាំងអស់') },
       ...classes.map(cls => ({
         value: String(cls.classId),
-        label: `${cls.name} (${cls.studentCount || 0}/${cls.maxStudents || 50} - ${Math.round(((cls.studentCount || 0) / (cls.maxStudents || 50)) * 100)}%)`
+        label: cls.name
       }))
     ];
-    console.log('🔄 Recalculating class dropdown options:', options.length, 'options');
-    console.log('🔄 Current selectedClassId:', selectedClassId);
-    const match = options.find(o => o.value === selectedClassId);
-    console.log('🔄 Matching option:', match);
     return options;
-  }, [classes, t, selectedClassId]);
+  }, [classes, t]);
 
   
   // Enhanced client-side search function for class-filtered results
@@ -428,9 +392,7 @@ export default function StudentsManagement() {
       schoolId,
       page: pagination.page,
       limit: pagination.limit,
-      classId: selectedClassId,
-      gradeLevel: selectedGradeId,
-      status: selectedStatus
+      classId: selectedClassId
     });
 
     // Prevent duplicate fetches with same parameters unless forced
@@ -449,9 +411,7 @@ export default function StudentsManagement() {
       console.log(`=== FETCH STUDENTS (SCHOOL CLASSES) ===`);
       console.log(`School ID: ${schoolId}`);
       console.log(`Search term: ${search}`);
-      console.log(`Class ID: ${selectedClassId} (type: ${typeof selectedClassId})`);
-      console.log(`Grade Level: ${selectedGradeId} (type: ${typeof selectedGradeId})`);
-      console.log(`Status: ${selectedStatus} (type: ${typeof selectedStatus})`);
+      console.log(`Class ID: ${selectedClassId}`);
       console.log(`Page: ${pagination.page}, Limit: ${pagination.limit}`);
 
       // Request params for the new endpoint with server-side filters
@@ -470,15 +430,6 @@ export default function StudentsManagement() {
         requestParams.classId = selectedClassId;
       }
 
-      // Add grade level filter if selected (server-side filtering)
-      if (selectedGradeId && selectedGradeId !== 'all') {
-        requestParams.gradeLevel = selectedGradeId;
-      }
-
-      // Add status filter if selected (server-side filtering)
-      if (selectedStatus && selectedStatus !== 'all') {
-        requestParams.status = selectedStatus;
-      }
 
       console.log(`=== FINAL API REQUEST PARAMS ===`);
       console.log(`API request params:`, requestParams);
@@ -533,7 +484,7 @@ export default function StudentsManagement() {
       }
       fetchingRef.current = false;
     }
-  }, [schoolId, showError, t, handleError, selectedClassId, selectedGradeId, selectedStatus]);
+  }, [schoolId, showError, t, handleError, selectedClassId]);
 
   // Re-fetch school ID when user school_id changes (e.g., after login or transfer)
   useEffect(() => {
@@ -574,10 +525,8 @@ export default function StudentsManagement() {
     searchTerm,
     page: pagination.page,
     limit: pagination.limit,
-    classId: selectedClassId,
-    gradeLevel: selectedGradeId,
-    status: selectedStatus
-  }), [searchTerm, pagination.page, pagination.limit, selectedClassId, selectedGradeId, selectedStatus]);
+    classId: selectedClassId
+  }), [searchTerm, pagination.page, pagination.limit, selectedClassId]);
 
   // Separate useEffect for class ID validation to avoid infinite loops
   useEffect(() => {
@@ -676,37 +625,21 @@ export default function StudentsManagement() {
   };
 
   // Reset pagination to page 1 when filters change
-  const prevFiltersRef = useRef({ selectedClassId, selectedGradeId, selectedStatus, academicYearFilter: debouncedAcademicYear });
+  const prevFiltersRef = useRef({ selectedClassId, academicYearFilter: debouncedAcademicYear });
   useEffect(() => {
     const filtersChanged = prevFiltersRef.current.selectedClassId !== selectedClassId ||
-                          prevFiltersRef.current.selectedGradeId !== selectedGradeId ||
-                          prevFiltersRef.current.selectedStatus !== selectedStatus ||
                           prevFiltersRef.current.academicYearFilter !== debouncedAcademicYear;
 
     if (filtersChanged) {
-      console.log(`=== FILTER CHANGED ===`);
-      console.log(`Previous filters:`, prevFiltersRef.current);
-      console.log(`New filters:`, { selectedClassId, selectedGradeId, selectedStatus, academicYearFilter: debouncedAcademicYear });
-      console.log(`Class changed: ${prevFiltersRef.current.selectedClassId} -> ${selectedClassId}`);
-      console.log(`Grade changed: ${prevFiltersRef.current.selectedGradeId} -> ${selectedGradeId}`);
-      console.log(`Status changed: ${prevFiltersRef.current.selectedStatus} -> ${selectedStatus}`);
-      console.log(`=== END FILTER CHANGE ===`);
-
       // Clear last fetch params to allow new fetch with new filters
       lastFetchParams.current = null;
       if (pagination.page !== 1) {
-        console.log(`Resetting pagination to page 1`);
         setPagination(prev => ({ ...prev, page: 1 }));
-      } else {
-        // If already on page 1, force a fetch with new filters
-        console.log(`Already on page 1, forcing fetch with new filters`);
-        if (schoolId) {
-          fetchStudents(searchTerm, true, false);
-        }
       }
-      prevFiltersRef.current = { selectedClassId, selectedGradeId, selectedStatus, academicYearFilter: debouncedAcademicYear };
+      // If already on page 1, the main useEffect will handle the fetch automatically
+      prevFiltersRef.current = { selectedClassId, academicYearFilter: debouncedAcademicYear };
     }
-  }, [selectedClassId, selectedGradeId, selectedStatus, debouncedAcademicYear, pagination.page, schoolId, searchTerm, fetchStudents]); // Reset page when filters change
+  }, [selectedClassId, debouncedAcademicYear, pagination.page, schoolId, searchTerm, fetchStudents]); // Reset page when filters change
   
   // Get class information for the selected class
   const classInfo = selectedClassId !== 'all' 
@@ -797,38 +730,33 @@ export default function StudentsManagement() {
       return;
     }
     
-    console.log('=== HANDLE DELETE STUDENT DEBUG ===');
-    console.log('Selected student data:', selectedStudent);
-    console.log('Current classInfo:', classInfo);
-    console.log('Available classes:', classes);
-    console.log('Selected class ID:', selectedClassId);
-    
     // Get class info from selected student when viewing "all classes"
     const studentClassInfo = classInfo || (() => {
-      const studentClassId = selectedStudent.classId || selectedStudent.class_id || 
+      const studentClassId = selectedStudent.classId || selectedStudent.class_id ||
         (selectedStudent.class && selectedStudent.class.classId) || (selectedStudent.class && selectedStudent.class.id);
-      
-      console.log('Student class ID extracted:', studentClassId);
-      
+
       if (!studentClassId) {
-        console.error('No class ID found in student data:', selectedStudent);
         return null;
       }
-      
-      const foundClass = classes.find(c => c.classId === studentClassId || c.classId === Number(studentClassId));
-      console.log('Found class info:', foundClass);
+
+      // Try multiple ways to find the class
+      const foundClass = classes.find(c => {
+        // Compare classId as both string and number
+        return c.classId === studentClassId ||
+               c.classId === Number(studentClassId) ||
+               c.classId === String(studentClassId) ||
+               c.id === studentClassId ||
+               c.id === Number(studentClassId);
+      });
+
       return foundClass;
     })();
-    
-    if (!studentClassInfo) {
-      console.error('Cannot determine student class. Student data:', selectedStudent);
-      showError(t('cannotFindStudentClass', 'Cannot determine student\'s class. The student may not be assigned to any class.'));
-      return;
-    }
-    
+
+    // Note: studentClassInfo might be null if the student is in the master class or a class
+    // not assigned to this teacher. This is fine - the API will handle the removal.
+
     // SECURITY: The server will validate permissions when we make the API call
     // This client-side check was causing issues after updates due to stale state
-    console.log('Proceeding to remove student from class:', studentClassInfo.classId);
     
     try {
       startLoading('bulkTransfer', t('transferring', 'Transferring students...'));
@@ -895,7 +823,7 @@ export default function StudentsManagement() {
         setSelectedStudent(null);
         // Refresh the student list after a brief delay
         setTimeout(async () => {
-          await fetchStudents(searchTerm, true, true); // Skip loading since we're already managing it
+          await fetchStudents(undefined, true, true); // Skip loading since we're already managing it, use current search state
         }, 500);
         // Clear any selected students
         clearAll();
@@ -1080,7 +1008,7 @@ export default function StudentsManagement() {
       clearAll(); // Clear selection
       // Refresh the student list after a brief delay
       setTimeout(async () => {
-        await fetchStudents(searchTerm, true, true); // Skip loading since we're already managing it
+        await fetchStudents(undefined, true, true); // Skip loading since we're already managing it, use current search state
       }, 500);
       
     } catch (error) {
@@ -1129,7 +1057,7 @@ export default function StudentsManagement() {
 
         // Refresh the student list
         setTimeout(async () => {
-          await fetchStudents(searchTerm, true, true);
+          await fetchStudents(undefined, true, true);
         }, 500);
 
         clearAll();
@@ -1222,7 +1150,7 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
 
       // Refresh the student list after a brief delay
       setTimeout(async () => {
-        await fetchStudents(searchTerm, true, true); // Skip loading since we're already managing it
+        await fetchStudents(undefined, true, true); // Skip loading since we're already managing it
       }, 500);
     } else {
       throw new Error(response?.error || 'Failed to transfer students');
@@ -1250,7 +1178,7 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
     setEditingStudent(null);
     // Refresh the student list
     setTimeout(async () => {
-      await fetchStudents(searchTerm, true, true);
+      await fetchStudents(undefined, true, true);
     }, 500);
   };
 
@@ -1672,8 +1600,7 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
     navigate('/students/select');
   };
 
-  // Show error state if error exists (prioritize over loading)  
-  console.log('🔍 StudentsManagement render check - error:', error, 'initialLoading:', initialLoading);
+  // Show error state if error exists (prioritize over loading)
   
   if (error) {
     console.log('✅ StudentsManagement: Showing error display for:', error);
@@ -1868,27 +1795,15 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
             
             {classes.length > 0 && (
               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm">
-                {(selectedClassId !== 'all' || selectedGradeId !== 'all' || selectedStatus !== 'all') && (
+                {selectedClassId !== 'all' && (
                   <div className="flex items-center space-x-2 text-xs text-gray-500">
                     {(() => {
                       const selectedClass = classes.find(c => c.classId.toString() === selectedClassId);
-                      const selectedGrade = gradeOptions.find(g => g.value === selectedGradeId);
-                      const selectedStatusOption = statusOptions.find(s => s.value === selectedStatus);
                       return (
                         <>
                           {selectedClass && (
                             <Badge color="orange" className="text-xs">
                               {selectedClass.name}
-                            </Badge>
-                          )}
-                          {selectedGrade && selectedGrade.value !== 'all' && (
-                            <Badge color="blue" className="text-xs">
-                              {selectedGrade.label}
-                            </Badge>
-                          )}
-                          {selectedStatusOption && selectedStatusOption.value !== 'all' && (
-                            <Badge color={selectedStatus === 'active' ? 'green' : 'gray'} className="text-xs">
-                              {selectedStatusOption.label}
                             </Badge>
                           )}
                         </>
@@ -1901,34 +1816,12 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
                   <Dropdown
                     value={selectedClassId}
                     onValueChange={(newValue) => {
-                      console.log('📝 Dropdown onValueChange called with:', newValue, 'type:', typeof newValue);
-                      console.log('📝 Previous selectedClassId:', selectedClassId, 'type:', typeof selectedClassId);
                       setSelectedClassId(newValue);
                     }}
                     options={classDropdownOptions}
                     placeholder={t('selectClass', 'ជ្រើសរើសថ្នាក់')}
                     minWidth="min-w-[200px]"
                     contentClassName="max-h-[200px] overflow-y-auto"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-700 font-medium">{t('grade', 'Grade')}:</span>
-                  <Dropdown
-                    value={selectedGradeId}
-                    onValueChange={setSelectedGradeId}
-                    options={gradeOptions}
-                    placeholder={t('selectGrade', 'Select Grade')}
-                    minWidth="min-w-[150px]"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-700 font-medium">{t('status', 'Status')}:</span>
-                  <Dropdown
-                    value={selectedStatus}
-                    onValueChange={setSelectedStatus}
-                    options={statusOptions}
-                    placeholder={t('selectStatus', 'Select Status')}
-                    minWidth="min-w-[150px]"
                   />
                 </div>
               </div>

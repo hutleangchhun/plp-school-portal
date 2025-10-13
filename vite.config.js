@@ -9,7 +9,11 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      stream: 'stream-browserify',
     },
+  },
+  optimizeDeps: {
+    exclude: ['xlsx-js-style'],
   },
   server: {
     host: '0.0.0.0', // Listen on all network interfaces

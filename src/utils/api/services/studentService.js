@@ -122,8 +122,21 @@ export const studentService = {
    * @returns {Promise<Object>} Bulk registration response with success_count, failed_count, successful_students, and errors
    */
   async bulkRegister(studentsData) {
+    console.log('🚀 Bulk register request data:', JSON.stringify({ students: studentsData }, null, 2));
     return handleApiResponse(() =>
-      apiClient_.post('/api/v1/students/bulk-register', { students: studentsData })
+      apiClient_.post(ENDPOINTS.STUDENTS.BULK_REGISTER, { students: studentsData })
+    );
+  },
+
+  /**
+   * Register a single student (same format as bulk register)
+   * @param {Object} studentData - Single student data object
+   * @returns {Promise<Object>} Registration response
+   */
+  async register(studentData) {
+    console.log('🚀 Single register request data:', JSON.stringify(studentData, null, 2));
+    return handleApiResponse(() =>
+      apiClient_.post(ENDPOINTS.STUDENTS.BULK_REGISTER, studentData)
     );
   },
 
@@ -395,7 +408,7 @@ export const studentService = {
    * @param {number} [params.limit=10] - Number of items per page
    * @param {string} [params.search] - Search term for filtering students
    * @param {string|number} [params.classId] - Filter by specific class ID
-   * @param {string|number} [params.gradeLevel] - Filter by grade level (1-6)
+   * @param {string|number} [params.gradeLevel] - Filter by grade level (1-6) - sent as gradeId to backend
    * @param {boolean|string} [params.status] - Filter by active status (true/false/'active'/'inactive')
    * @returns {Promise<Object>} Response with student data and pagination info
    */
@@ -430,7 +443,7 @@ export const studentService = {
 
       // Add gradeLevel filter if provided
       if (gradeLevel !== undefined && gradeLevel !== null && gradeLevel !== '' && gradeLevel !== 'all') {
-        queryParams.gradeLevel = Number(gradeLevel);
+        queryParams.gradeId = Number(gradeLevel);
       }
 
       // Add status filter if provided
@@ -541,7 +554,7 @@ export const studentService = {
       if (academicYear) queryParams.academicYear = academicYear;
       if (gender) queryParams.gender = gender;
       if (dateOfBirth) queryParams.dateOfBirth = dateOfBirth;
-      if (gradeLevel) queryParams.gradeLevel = gradeLevel;
+      if (gradeLevel) queryParams.gradeId = gradeLevel;
       if (search) queryParams.search = search;
       
       const response = await handleApiResponse(() =>
@@ -693,7 +706,7 @@ export const studentService = {
       if (academicYear) apiParams.academicYear = academicYear;
       if (gender) apiParams.gender = gender;
       if (dateOfBirth) apiParams.dateOfBirth = dateOfBirth;
-      if (gradeLevel) apiParams.gradeLevel = gradeLevel;
+      if (gradeLevel) apiParams.gradeId = gradeLevel;
 
       const response = await classService.getMasterClasses(schoolId, apiParams);
       

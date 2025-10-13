@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Trash2, Upload, Download, Save, X, Copy, Scissors, Clipboard, FileSpreadsheet, Calendar } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -14,71 +14,103 @@ import { DatePicker } from '../../components/ui/date-picker';
 import * as XLSX from 'xlsx';
 import * as XLSXStyle from 'xlsx-js-style';
 
-// CustomDateInput Component - Simple HTML5 date input that works well in tables
+// CustomDateInput Component - Text input for dd/mm/yyyy format with validation
 const CustomDateInput = ({ value, onChange, className = "" }) => {
-  // Convert various date formats to yyyy-mm-dd for HTML5 date input
-  const inputValue = useMemo(() => {
-    if (!value) return '';
+  const [localValue, setLocalValue] = useState(value || '');
+  const [isInvalid, setIsInvalid] = useState(false);
 
-    // If already in yyyy-mm-dd format
-    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      return value;
-    }
-
-    // If in dd/mm/yy format, convert to yyyy-mm-dd
-    if (typeof value === 'string' && /^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(value)) {
-      const [day, month, year] = value.split('/');
-      const fullYear = year.length === 2 ? `20${year}` : year;
-      return `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    }
-
-    // If it's a Date object
-    if (value instanceof Date && !isNaN(value.getTime())) {
-      const year = value.getFullYear();
-      const month = String(value.getMonth() + 1).padStart(2, '0');
-      const day = String(value.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-
-    // Try to parse and format
-    if (typeof value === 'string') {
-      const parsed = new Date(value);
-      if (!isNaN(parsed.getTime())) {
-        const year = parsed.getFullYear();
-        const month = String(parsed.getMonth() + 1).padStart(2, '0');
-        const day = String(parsed.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+  useEffect(() => {
+    setLocalValue(value || '');
+    // Validate existing value
+    if (value) {
+      const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (match) {
+        const [, day, month, year] = match;
+        const d = parseInt(day);
+        const m = parseInt(month);
+        const y = parseInt(year);
+        setIsInvalid(!(d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100));
+      } else if (value !== '') {
+        setIsInvalid(true);
+      } else {
+        setIsInvalid(false);
       }
+    } else {
+      setIsInvalid(false);
     }
-
-    return '';
   }, [value]);
 
   const handleChange = useCallback((e) => {
-    const newValue = e.target.value;
-    if (newValue) {
-      // Convert yyyy-mm-dd back to dd/mm/yy format
-      const [year, month, day] = newValue.split('-');
-      onChange(`${day}/${month}/${year.slice(-2)}`);
-    } else {
-      onChange('');
+    let input = e.target.value;
+
+    // Remove all non-digit characters except /
+    input = input.replace(/[^\d/]/g, '');
+
+    // Auto-add slashes
+    if (input.length === 2 && !input.includes('/')) {
+      input = input + '/';
+    } else if (input.length === 5 && input.split('/').length === 2) {
+      input = input + '/';
     }
-  }, [onChange]);
+
+    // Limit to dd/mm/yyyy format
+    const parts = input.split('/');
+    if (parts[0] && parts[0].length > 2) parts[0] = parts[0].slice(0, 2);
+    if (parts[1] && parts[1].length > 2) parts[1] = parts[1].slice(0, 2);
+    if (parts[2] && parts[2].length > 4) parts[2] = parts[2].slice(0, 4);
+    input = parts.join('/');
+
+    setLocalValue(input);
+    setIsInvalid(false); // Clear invalid state while typing
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    // Validate and format on blur
+    const match = localValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (match) {
+      const [, day, month, year] = match;
+      const d = parseInt(day);
+      const m = parseInt(month);
+      const y = parseInt(year);
+
+      // Basic validation
+      if (d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100) {
+        const formatted = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+        setLocalValue(formatted);
+        onChange(formatted);
+        setIsInvalid(false);
+      } else {
+        setIsInvalid(true);
+      }
+    } else if (localValue === '') {
+      onChange('');
+      setIsInvalid(false);
+    } else {
+      // Invalid format
+      setIsInvalid(true);
+    }
+  }, [localValue, onChange]);
 
   return (
     <div className="relative">
       <input
-        type="date"
-        value={inputValue}
+        type="text"
+        value={localValue}
         onChange={handleChange}
-        className={`w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white ${className}`}
+        onBlur={handleBlur}
+        placeholder="dd/mm/yyyy"
+        className={`w-full px-2 py-1.5 text-xs border rounded focus:ring-2 focus:border-blue-500 bg-white ${className} ${
+          isInvalid
+            ? 'border-red-500 text-red-600 focus:ring-red-500'
+            : 'border-gray-300 focus:ring-blue-500'
+        }`}
         style={{
           minHeight: '32px',
           position: 'relative',
           zIndex: 5
         }}
-        min="1960-01-01"
-        max={new Date().toISOString().split('T')[0]}
+        maxLength={10}
+        title={isInvalid ? 'Invalid date format. Use dd/mm/yyyy' : ''}
       />
     </div>
   );
@@ -181,14 +213,18 @@ export default function BulkStudentImport() {
       // Parent info
       fatherFirstName: '',
       fatherLastName: '',
+      fatherEmail: '',
       fatherPhone: '',
+      fatherDateOfBirth: '',
       fatherGender: '',
       fatherOccupation: '',
       fatherResidenceFullAddress: '',
 
       motherFirstName: '',
       motherLastName: '',
+      motherEmail: '',
       motherPhone: '',
+      motherDateOfBirth: '',
       motherGender: '',
       motherOccupation: '',
       motherResidenceFullAddress: '',
@@ -527,42 +563,98 @@ export default function BulkStudentImport() {
     // Validate file type
     const allowedTypes = [
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-      'application/vnd.ms-excel' // .xls
+      'application/vnd.ms-excel', // .xls
+      'text/csv', // .csv
+      'application/csv' // .csv (alternative MIME type)
     ];
 
-    if (!allowedTypes.includes(file.type)) {
-      showError('សូមជ្រើសរើសឯកសារ Excel (.xlsx ឬ .xls) តែប៉ុណ្ណោះ');
+    // Also check file extension for CSV files (some browsers don't set correct MIME type)
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    const allowedExtensions = ['xlsx', 'xls', 'csv'];
+
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      showError('សូមជ្រើសរើសឯកសារ Excel (.xlsx, .xls) ឬ CSV (.csv) តែប៉ុណ្ណោះ');
       return;
     }
 
     try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { cellDates: true, cellNF: true });
+      let workbook;
+
+      // Handle CSV files differently to support UTF-8 encoding (for Khmer text)
+      if (fileExtension === 'csv') {
+        const text = await file.text(); // Use text() to properly handle UTF-8
+        workbook = XLSX.read(text, {
+          type: 'string',
+          raw: true,
+          cellDates: true,
+          cellNF: true,
+          codepage: 65001 // UTF-8
+        });
+      } else {
+        // For Excel files, use arrayBuffer
+        const data = await file.arrayBuffer();
+        workbook = XLSX.read(data, { cellDates: true, cellNF: true });
+      }
+
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
 
       if (jsonData.length < 2) {
         showError('ឯកសារ Excel ត្រូវការយ៉ាងហោចណាស់ 2 ជួរ (ក្បាលនិងទិន្នន័យ)');
         return;
       }
 
-      // Check if we have hierarchical headers (main headers in row 0, sub headers in row 1)
-      const mainHeaderRow = jsonData[0];
-      const subHeaderRow = jsonData[1];
+      // Find the actual header rows by looking for our main section headers
+      const mainHeaders = ['ព័ត៌មានសិស្ស', 'ព័ត៌មានឪពុក', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានបន្ថែម'];
+      const subHeaders = ['អត្តលេខ', 'គោត្តនាម', 'នាម', 'ភេទ', 'ថ្ងៃខែឆ្នាំកំណើត'];
 
-      // Check if main header row contains our main section headers
-      const mainHeaders = ['ព័ត៌មានសិស្ស', 'អាសយដ្ឋានស្នាក់នៅ', 'ទីកន្លែងកំណើត', 'ព័ត៌មានឪពុក', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានបន្ថែម'];
-      const hasHierarchicalHeaders = mainHeaderRow && mainHeaders.some(header =>
-        mainHeaderRow.some(cell => String(cell || '').includes(header))
-      );
+      let mainHeaderRowIndex = -1;
+      let subHeaderRowIndex = -1;
 
-      // Determine data start index (skip header rows)
-      const dataStartIndex = hasHierarchicalHeaders ? 2 : (subHeaderRow && subHeaderRow.length >= 10 ? 1 : 0);
+      // Search for the main header row (contains section headers like 'ព័ត៌មានសិស្ស')
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        if (row && mainHeaders.some(header =>
+          row.some(cell => String(cell || '').includes(header))
+        )) {
+          mainHeaderRowIndex = i;
+          break;
+        }
+      }
 
-      // Define hasHeaders and firstRow for backward compatibility
-      const hasHeaders = hasHierarchicalHeaders || (subHeaderRow && subHeaderRow.length >= 10);
-      const firstRow = hasHierarchicalHeaders ? subHeaderRow : (hasHeaders ? subHeaderRow : null);
+      // Search for the sub-header row (contains field names like 'អត្តលេខ', 'គោត្តនាម')
+      for (let i = mainHeaderRowIndex >= 0 ? mainHeaderRowIndex : 0; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        if (row && subHeaders.some(header =>
+          row.some(cell => String(cell || '').includes(header))
+        )) {
+          subHeaderRowIndex = i;
+          break;
+        }
+      }
+
+      // Determine data start index based on found headers
+      let dataStartIndex = 0;
+      let hasHeaders = false;
+      let firstRow = null;
+
+      if (mainHeaderRowIndex >= 0 && subHeaderRowIndex >= 0) {
+        // Template format with both main and sub headers
+        hasHeaders = true;
+        dataStartIndex = subHeaderRowIndex + 1;
+        firstRow = jsonData[subHeaderRowIndex];
+      } else if (subHeaderRowIndex >= 0) {
+        // Simple format with just column headers
+        hasHeaders = true;
+        dataStartIndex = subHeaderRowIndex + 1;
+        firstRow = jsonData[subHeaderRowIndex];
+      } else {
+        // No headers found, assume data starts from row 0
+        dataStartIndex = 0;
+        hasHeaders = false;
+        firstRow = null;
+      }
 
       // Define expected headers for filtering
       const expectedHeaders = [
@@ -584,19 +676,18 @@ export default function BulkStudentImport() {
           rowText.includes(header.toLowerCase())
         );
 
-        // Skip administrative/school header rows - use more specific keywords
-        // Avoid overly broad words that might appear in student data
+        // Skip administrative/school header rows - use very specific keywords only
+        // Avoid common words that appear in student addresses or data
         const adminKeywords = [
           'ព្រះរាជាណាចក្រកម្ពុជា', 'kingdom of cambodia', 'ជាតិសាសនា', 'ព្រះមហាក្សត្រ',
-          'king', 'nation religion', 'កម្រងហស', 'សាលា', 'school', 'បញ្ជីរាយនាម',
-          'student list', 'ថ្នាក់ទី', 'class', 'ឆ្នាំសិក្សា', 'academic year',
-          'ខេត្ត', 'province', 'ស្រុក', 'district', 'ឃុំ', 'commune', 'ភូមិ', 'village',
-          'លេខទូរស័ព្ទ', 'phone', 'អាសយដ្ឋាន', 'address', 'គ្រូ', 'teacher',
+          'king', 'nation religion', 'កម្រងហស', 'សាលា', 'បញ្ជីរាយនាម',
+          'student list', 'ថ្នាក់ទី', 'ឆ្នាំសិក្សា', 'academic year',
+          'គ្រូប្រចាំថ្នាក់', 'class teacher',
           'បញ្ឈប៉បញ្ជី', 'នាក់', 'រោងឆស័ក', 'ព.ស២៥៦៨',
-          'ធ្វើនៅថ្ងៃទី', 'ខែ', 'ឆ្នាំ', 'បានឃើញនិងឯកភាព', 'គ្រូប្រចាំថ្នាក់',
+          'ធ្វើនៅថ្ងៃទី', 'បានឃើញនិងឯកភាព',
           'នាយកសាលា', 'principal', 'director', 'signature', 'approved', 'certified',
-          'ត្រឹមលេខរៀង', 'total', 'summary', 'statistics', 'ចំនួន', 'count',
-          'សរុប', 'grand total', 'ចុះហត្ថលេខា', 'signed', 'អនុម័ត', 'approved by'
+          'ត្រឹមលេខរៀង', 'summary', 'statistics',
+          'grand total', 'ចុះហត្ថលេខា', 'signed', 'អនុម័ត', 'approved by'
         ];
 
         const isAdminRow = adminKeywords.some(keyword =>
@@ -662,41 +753,125 @@ export default function BulkStudentImport() {
 
         // If we detected headers, try to find columns by header names
         if (hasHeaders && firstRow) {
+          // First, find section boundaries by looking for unique column headers
+          // Since parent columns don't have prefixes, we need to detect sections
+          let studentSectionEnd = -1;
+          let fatherSectionStart = -1;
+          let fatherSectionEnd = -1;
+          let motherSectionStart = -1;
+          let motherSectionEnd = -1;
+
+          // Find section boundaries by looking for specific unique headers
+          for (let i = 0; i < firstRow.length; i++) {
+            const h = String(firstRow[i] || '').toLowerCase().trim();
+            if (h.includes('អាសយដ្ឋានពេញឪពុក') || (h.includes('អាសយដ្ឋាន') && h.includes('ឪពុក'))) {
+              fatherSectionEnd = i;
+            } else if (h.includes('អាសយដ្ឋានពេញម្តាយ') || (h.includes('អាសយដ្ឋាន') && h.includes('ម្តាយ'))) {
+              motherSectionEnd = i;
+            } else if (h.includes('អាសយដ្ឋានពេញ') && !h.includes('ឪពុក') && !h.includes('ម្តាយ') && studentSectionEnd === -1) {
+              studentSectionEnd = i;
+            }
+          }
+
+          // Set section starts based on ends
+          if (fatherSectionEnd > 0) fatherSectionStart = studentSectionEnd + 1;
+          if (motherSectionEnd > 0) motherSectionStart = fatherSectionEnd + 1;
+
           firstRow.forEach((header, idx) => {
             const headerStr = String(header || '').toLowerCase().trim();
 
             // Explicitly ignore sequential number columns
-            if (headerStr.includes('ល.រ') || headerStr.includes('លេខរៀង') || headerStr === 'no.' || headerStr === 'no' || headerStr === 'n°') {
+            if (headerStr === '#' || headerStr.includes('ល.រ') || headerStr.includes('លេខរៀង') || headerStr === 'no.' || headerStr === 'no' || headerStr === 'n°') {
               return; // Skip this column entirely
             }
 
-            if (headerStr.includes('អត្តលេខ') || headerStr.includes('id') || (headerStr.includes('student') && headerStr.includes('id'))) {
-              idIndex = idx;
-            } else if (headerStr.includes('គោត្តនាម') || (headerStr.includes('last') && headerStr.includes('name'))) {
-              lastNameIndex = idx;
-            } else if ((headerStr.includes('នាម') && !headerStr.includes('គោត្ត')) || (headerStr.includes('first') && headerStr.includes('name'))) {
-              firstNameIndex = idx;
-            } else if (headerStr.includes('ភេទ') || headerStr.includes('gender') || headerStr.includes('sex')) {
-              genderIndex = idx;
-            } else if (headerStr.includes('ថ្ងៃខែឆ្នាំកំណើត') || (headerStr.includes('date') && headerStr.includes('birth'))) {
-              dobIndex = idx;
-            } else if ((headerStr.includes('ឪពុក') && headerStr.includes('ឈ្មោះ')) || (headerStr.includes('father') && headerStr.includes('name'))) {
+            // Determine which section we're in
+            const isInFatherSection = fatherSectionStart > 0 && idx >= fatherSectionStart && idx <= fatherSectionEnd;
+            const isInMotherSection = motherSectionStart > 0 && idx >= motherSectionStart && idx <= motherSectionEnd;
+            const isInStudentSection = idx <= studentSectionEnd;
+
+            // Check parent-specific columns first (more specific patterns with ឪពុក/ម្តាយ in header)
+            if ((headerStr.includes('ឪពុក') && headerStr.includes('នាម') && !headerStr.includes('គោត្ត')) || (headerStr.includes('father') && headerStr.includes('first'))) {
               fatherFirstNameIndex = idx;
+            } else if ((headerStr.includes('ឪពុក') && headerStr.includes('គោត្តនាម')) || (headerStr.includes('father') && headerStr.includes('last'))) {
+              fatherLastNameIndex = idx;
+            } else if ((headerStr.includes('ឪពុក') && headerStr.includes('ទូរស័ព្ទ')) || (headerStr.includes('father') && headerStr.includes('phone'))) {
+              fatherPhoneIndex = idx;
+            } else if ((headerStr.includes('ឪពុក') && headerStr.includes('ភេទ')) || (headerStr.includes('father') && headerStr.includes('gender'))) {
+              fatherGenderIndex = idx;
             } else if ((headerStr.includes('ឪពុក') && headerStr.includes('មុខរបរ')) || (headerStr.includes('father') && headerStr.includes('occupation'))) {
               fatherOccupationIndex = idx;
             } else if ((headerStr.includes('ឪពុក') && headerStr.includes('អាសយដ្ឋាន')) || (headerStr.includes('father') && headerStr.includes('address'))) {
               fatherResidenceFullAddressIndex = idx;
-            } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('ឈ្មោះ')) || (headerStr.includes('mother') && headerStr.includes('name'))) {
+            } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('នាម') && !headerStr.includes('គោត្ត')) || (headerStr.includes('mother') && headerStr.includes('first'))) {
               motherFirstNameIndex = idx;
+            } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('គោត្តនាម')) || (headerStr.includes('mother') && headerStr.includes('last'))) {
+              motherLastNameIndex = idx;
+            } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('ទូរស័ព្ទ')) || (headerStr.includes('mother') && headerStr.includes('phone'))) {
+              motherPhoneIndex = idx;
+            } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('ភេទ')) || (headerStr.includes('mother') && headerStr.includes('gender'))) {
+              motherGenderIndex = idx;
             } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('មុខរបរ')) || (headerStr.includes('mother') && headerStr.includes('occupation'))) {
               motherOccupationIndex = idx;
             } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('អាសយដ្ឋាន')) || (headerStr.includes('mother') && headerStr.includes('address'))) {
               motherResidenceFullAddressIndex = idx;
+            }
+            // Handle columns without parent prefix based on section
+            else if (isInFatherSection && headerStr === 'នាម') {
+              fatherFirstNameIndex = idx;
+            } else if (isInFatherSection && headerStr === 'គោត្តនាម') {
+              fatherLastNameIndex = idx;
+            } else if (isInFatherSection && headerStr === 'ទូរស័ព្ទ') {
+              fatherPhoneIndex = idx;
+            } else if (isInFatherSection && headerStr === 'ភេទ') {
+              fatherGenderIndex = idx;
+            } else if (isInFatherSection && headerStr === 'មុខរបរ') {
+              fatherOccupationIndex = idx;
+            } else if (isInMotherSection && headerStr === 'នាម') {
+              motherFirstNameIndex = idx;
+            } else if (isInMotherSection && headerStr === 'គោត្តនាម') {
+              motherLastNameIndex = idx;
+            } else if (isInMotherSection && headerStr === 'ទូរស័ព្ទ') {
+              motherPhoneIndex = idx;
+            } else if (isInMotherSection && headerStr === 'ភេទ') {
+              motherGenderIndex = idx;
+            } else if (isInMotherSection && headerStr === 'មុខរបរ') {
+              motherOccupationIndex = idx;
+            }
+            // Then check student-specific columns (less specific, checked after parent columns)
+            else if (headerStr.includes('អត្តលេខ') || headerStr.includes('id') || (headerStr.includes('student') && headerStr.includes('id'))) {
+              idIndex = idx;
+            } else if (isInStudentSection && (headerStr === 'គោត្តនាម' || (headerStr.includes('last') && headerStr.includes('name')))) {
+              lastNameIndex = idx;
+            } else if (isInStudentSection && (headerStr === 'នាម' || (headerStr.includes('first') && headerStr.includes('name')))) {
+              firstNameIndex = idx;
+            } else if (headerStr.includes('អ៊ីមែល') || headerStr.includes('email')) {
+              emailIndex = idx;
+            } else if (headerStr.includes('ឈ្មោះអ្នកប្រើ') || headerStr.includes('username')) {
+              usernameIndex = idx;
+            } else if (headerStr.includes('ពាក្យសម្ងាត់') || headerStr.includes('password')) {
+              passwordIndex = idx;
+            } else if (isInStudentSection && (headerStr === 'ភេទ' || headerStr.includes('gender') || headerStr.includes('sex'))) {
+              genderIndex = idx;
+            } else if (headerStr.includes('ថ្ងៃខែឆ្នាំកំណើត') || (headerStr.includes('date') && headerStr.includes('birth'))) {
+              dobIndex = idx;
+            } else if (isInStudentSection && (headerStr === 'លេខទូរស័ព្ទ' || headerStr === 'ទូរស័ព្ទ' || headerStr.includes('phone'))) {
+              phoneIndex = idx;
+            } else if (headerStr.includes('សញ្ជាតិ') || headerStr.includes('nationality')) {
+              nationalityIndex = idx;
+            } else if (headerStr.includes('លេខសិស្ស') || (headerStr.includes('student') && headerStr.includes('number'))) {
+              studentNumberIndex = idx;
+            } else if (headerStr.includes('លេខសាលា') || (headerStr.includes('school') && headerStr.includes('id'))) {
+              schoolIdIndex = idx;
+            } else if (headerStr.includes('ឆ្នាំសិក្សា') || (headerStr.includes('academic') && headerStr.includes('year'))) {
+              academicYearIndex = idx;
+            } else if (headerStr.includes('កម្រិតថ្នាក់') || (headerStr.includes('grade') && headerStr.includes('level'))) {
+              gradeLevelIndex = idx;
             } else if (headerStr.includes('អាសយដ្ឋាន') || headerStr.includes('address')) {
               residenceFullAddressIndex = idx;
             } else if (headerStr.includes('ជនជាតិ') || headerStr.includes('ethnic')) {
               ethnicIndex = idx;
-            } else if (headerStr.includes('តម្រូវការ') || headerStr.includes('accessibility') || headerStr.includes('disability')) {
+            } else if (headerStr.includes('លក្ខណៈពិសេស') || headerStr.includes('accessibility') || headerStr.includes('disability')) {
               accessIndex = idx;
             }
           });
@@ -755,15 +930,26 @@ export default function BulkStudentImport() {
 
         // Map accessibility (comma-separated)
         const mapAccessibility = (access) => {
-          if (!access) return [];
-          return access.split(',').map(item => item.trim()).filter(item => {
-            if (!item) return false;
+          if (!access || !String(access).trim()) return [];
+
+          const accessStr = String(access).trim();
+
+          // Split by comma for multiple values
+          const items = accessStr.split(',').map(item => item.trim()).filter(item => item);
+
+          const mapped = items.map(item => {
+            // Try to find exact match by value or label
             const found = accessibilityOptions.find(opt =>
-              opt.label.toLowerCase().includes(item.toLowerCase()) ||
-              opt.value === item
+              opt.value.toLowerCase() === item.toLowerCase() ||
+              opt.label.toLowerCase() === item.toLowerCase() ||
+              opt.label.includes(item) ||
+              item.includes(opt.label)
             );
-            return found ? found.value : false;
-          });
+
+            return found ? found.value : null;
+          }).filter(v => v !== null);
+
+          return mapped;
         };
 
         // Handle dynamic column detection for files without headers
@@ -856,10 +1042,10 @@ export default function BulkStudentImport() {
           // Handle JavaScript Date objects (XLSX returns these for dates)
           if (dateStr instanceof Date) {
             if (!isNaN(dateStr.getTime())) {
-              // Format as dd/mm/yy
+              // Format as dd/mm/yyyy
               const day = dateStr.getDate().toString().padStart(2, '0');
               const month = (dateStr.getMonth() + 1).toString().padStart(2, '0');
-              const year = dateStr.getFullYear().toString().slice(-2);
+              const year = dateStr.getFullYear().toString();
               return `${day}/${month}/${year}`;
             } else {
               return ''; // Invalid date
@@ -875,7 +1061,7 @@ export default function BulkStudentImport() {
             if (!isNaN(jsDate.getTime())) {
               const day = jsDate.getDate().toString().padStart(2, '0');
               const month = (jsDate.getMonth() + 1).toString().padStart(2, '0');
-              const year = jsDate.getFullYear().toString().slice(-2);
+              const year = jsDate.getFullYear().toString();
               return `${day}/${month}/${year}`;
             }
           }
@@ -883,16 +1069,24 @@ export default function BulkStudentImport() {
           // Check if it's already a date string in various formats
           const dateString = String(dateStr).trim();
 
-          // If it's already in dd/mm/yy or dd.mm.yy format, return as is
-          if (dateString.match(/^\d{1,2}[/.]\d{1,2}[/.]\d{2,4}$/)) {
-            return dateString;
+          // If it's already in dd/mm/yyyy format (4-digit year), return as is
+          if (dateString.match(/^\d{1,2}[/.]\d{1,2}[/.]\d{4}$/)) {
+            return dateString.replace(/\./g, '/'); // Normalize dots to slashes
           }
 
-          // If it's in yyyy-mm-dd format, convert to dd/mm/yy
+          // If it's in dd/mm/yy format (2-digit year), convert to 4-digit year
+          const ddmmyyMatch = dateString.match(/^(\d{1,2})[/.](\d{1,2})[/.](\d{2})$/);
+          if (ddmmyyMatch) {
+            const [, day, month, year] = ddmmyyMatch;
+            const fullYear = `20${year}`;
+            return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${fullYear}`;
+          }
+
+          // If it's in yyyy-mm-dd format, convert to dd/mm/yyyy
           const yyyymmddMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
           if (yyyymmddMatch) {
             const [, year, month, day] = yyyymmddMatch;
-            return `${day}/${month}/${year.slice(-2)}`;
+            return `${day}/${month}/${year}`;
           }
 
           // Try to parse as other date formats
@@ -901,7 +1095,7 @@ export default function BulkStudentImport() {
             if (!isNaN(parsedDate.getTime())) {
               const day = parsedDate.getDate().toString().padStart(2, '0');
               const month = (parsedDate.getMonth() + 1).toString().padStart(2, '0');
-              const year = parsedDate.getFullYear().toString().slice(-2);
+              const year = parsedDate.getFullYear().toString();
               return `${day}/${month}/${year}`;
             }
           } catch (e) {
@@ -1023,8 +1217,8 @@ export default function BulkStudentImport() {
       [
         '',
         '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-        '', '', '', '', '', '',
-        '', '', '', '', '', '',
+        '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '', '',
         '', ''
       ],
       // Instructions row (row 8)
@@ -1041,7 +1235,7 @@ export default function BulkStudentImport() {
         'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', // 15 columns for student info
         'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', // 6 columns for father
         'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', // 6 columns for mother
-        'ព័ត៌មានបន្ថែម', 'ព័ត៌មានបន្ថែម' // 2 columns for additional info
+        'ជនជាតិភាគតិច', 'លក្ខណៈពិសេស' // 2 columns for additional info
       ],
       // Sub headers (row 10)
       [
@@ -1091,7 +1285,7 @@ export default function BulkStudentImport() {
         '2', '', '', '', '', '', '',
         '', '', '', '', '', '', '', '',
         '',
-        '', '', '', '', '', '',
+        '', '', '', '', '',
         '', '', '', '', '', '',
         '', ''
       ],
@@ -1099,7 +1293,7 @@ export default function BulkStudentImport() {
         '3', '', '', '', '', '', '',
         '', '', '', '', '', '', '', '',
         '',
-        '', '', '', '', '', '',
+        '', '', '', '', '',
         '', '', '', '', '', '',
         '', ''
       ],
@@ -1107,7 +1301,7 @@ export default function BulkStudentImport() {
         '4', '', '', '', '', '', '',
         '', '', '', '', '', '', '', '',
         '',
-        '', '', '', '', '', '',
+        '', '', '', '', '',
         '', '', '', '', '', '',
         '', ''
       ],
@@ -1115,7 +1309,7 @@ export default function BulkStudentImport() {
         '5', '', '', '', '', '', '',
         '', '', '', '', '', '', '', '',
         '',
-        '', '', '', '', '', '',
+        '', '', '', '', '',
         '', '', '', '', '', '',
         '', ''
       ],
@@ -1123,7 +1317,7 @@ export default function BulkStudentImport() {
         '6', '', '', '', '', '', '',
         '', '', '', '', '', '', '', '',
         '',
-        '', '', '', '', '', '',
+        '', '', '', '', '',
         '', '', '', '', '', '',
         '', ''
       ],
@@ -1131,7 +1325,7 @@ export default function BulkStudentImport() {
         '7', '', '', '', '', '', '',
         '', '', '', '', '', '', '', '',
         '',
-        '', '', '', '', '', '',
+        '', '', '', '', '',
         '', '', '', '', '', '',
         '', ''
       ],
@@ -1139,7 +1333,7 @@ export default function BulkStudentImport() {
         '8', '', '', '', '', '', '',
         '', '', '', '', '', '', '', '',
         '',
-        '', '', '', '', '', '',
+        '', '', '', '', '',
         '', '', '', '', '', '',
         '', ''
       ],
@@ -1147,7 +1341,7 @@ export default function BulkStudentImport() {
         '9', '', '', '', '', '', '',
         '', '', '', '', '', '', '', '',
         '',
-        '', '', '', '', '', '',
+        '', '', '', '', '',
         '', '', '', '', '', '',
         '', ''
       ],
@@ -1155,7 +1349,7 @@ export default function BulkStudentImport() {
         '10', '', '', '', '', '', '',
         '', '', '', '', '', '', '', '',
         '',
-        '', '', '', '', '', '',
+        '', '', '', '', '',
         '', '', '', '', '', '',
         '', ''
       ]
@@ -1203,30 +1397,30 @@ export default function BulkStudentImport() {
 
     // Merge cells for headers (row 1-6 are headers)
     // Row 1: Kingdom header spans all columns
-    ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 29 } });
+    ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 31 } });
 
     // Row 2: Nation/Religion/King spans all columns
-    ws['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 29 } });
+    ws['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 31 } });
 
     // Row 3: Administrative district spans all columns
-    ws['!merges'].push({ s: { r: 2, c: 0 }, e: { r: 2, c: 29 } });
+    ws['!merges'].push({ s: { r: 2, c: 0 }, e: { r: 2, c: 31 } });
 
     // Row 4: School name spans all columns
-    ws['!merges'].push({ s: { r: 3, c: 0 }, e: { r: 3, c: 29 } });
+    ws['!merges'].push({ s: { r: 3, c: 0 }, e: { r: 3, c: 31 } });
 
     // Row 5: Student list title spans all columns
-    ws['!merges'].push({ s: { r: 4, c: 0 }, e: { r: 4, c: 29 } });
+    ws['!merges'].push({ s: { r: 4, c: 0 }, e: { r: 4, c: 31 } });
 
     // Row 6: Class and academic year spans all columns
-    ws['!merges'].push({ s: { r: 5, c: 0 }, e: { r: 5, c: 29 } });
+    ws['!merges'].push({ s: { r: 5, c: 0 }, e: { r: 5, c: 31 } });
 
     // Row 8: Instructions spans all columns
-    ws['!merges'].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 29 } });
+    ws['!merges'].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 31 } });
 
     // Row 9: Main headers - merge student info columns
     ws['!merges'].push({ s: { r: 8, c: 1 }, e: { r: 8, c: 15 } }); // Student info
-    ws['!merges'].push({ s: { r: 8, c: 16 }, e: { r: 8, c: 21 } }); // Father info
-    ws['!merges'].push({ s: { r: 8, c: 22 }, e: { r: 8, c: 27 } }); // Mother info
+    ws['!merges'].push({ s: { r: 8, c: 16 }, e: { r: 8, c: 21 } }); // Father info (6 columns now)
+    ws['!merges'].push({ s: { r: 8, c: 22 }, e: { r: 8, c: 27 } }); // Mother info (6 columns now)
     ws['!merges'].push({ s: { r: 8, c: 28 }, e: { r: 8, c: 29 } }); // Additional info
 
     // Set row heights for better readability
@@ -1417,14 +1611,18 @@ export default function BulkStudentImport() {
       // Parent info
       fatherFirstName: '',
       fatherLastName: '',
+      fatherEmail: '',
       fatherPhone: '',
+      fatherDateOfBirth: '',
       fatherGender: '',
       fatherOccupation: '',
       fatherResidenceFullAddress: '',
 
       motherFirstName: '',
       motherLastName: '',
+      motherEmail: '',
       motherPhone: '',
+      motherDateOfBirth: '',
       motherGender: '',
       motherOccupation: '',
       motherResidenceFullAddress: '',
@@ -1436,9 +1634,7 @@ export default function BulkStudentImport() {
   };
 
   const removeRow = (index) => {
-    if (students.length > 1) {
-      setStudents(prev => prev.filter((_, i) => i !== index));
-    }
+    setStudents(prev => prev.filter((_, i) => i !== index));
   };
 
 
@@ -1448,17 +1644,55 @@ export default function BulkStudentImport() {
       const loadingKey = 'bulkImport';
       startLoading(loadingKey, 'កំពុងនាំចូលសិស្ស...');
 
-      // Validate data
-      const validStudents = students.filter(student =>
-        student.firstName.trim() &&
-        student.lastName.trim() &&
-        (student.studentNumber.trim() || student.id.trim())
+      // Show initial toast notification
+      showSuccess('កំពុងចាប់ផ្តើមនាំចូលសិស្ស...');
+
+      // Validate date format function
+      const isValidDate = (dateStr) => {
+        if (!dateStr || dateStr.trim() === '') return true; // Empty is valid (optional field)
+        const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (!match) return false;
+        const [, day, month, year] = match;
+        const d = parseInt(day);
+        const m = parseInt(month);
+        const y = parseInt(year);
+        return d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100;
+      };
+
+      // Check for invalid dates
+      const invalidDates = students.filter(student =>
+        student.dateOfBirth && !isValidDate(student.dateOfBirth)
       );
 
-      if (validStudents.length === 0) {
-        showError('សូមបញ្ចូលព័ត៌មានសិស្សយ៉ាងហោចណាស់ម្នាក់ (ត្រូវការនាម គោត្តនាម និងលេខសិស្ស)');
+      if (invalidDates.length > 0) {
+        showError(`មានកាលបរិច្ឆេទមិនត្រឹមត្រូវ ${invalidDates.length} កន្លែង។ សូមពិនិត្យទម្រង់ dd/mm/yyyy (ឧទាហរណ៍: 22/03/2025)`, { duration: 5000 });
+        stopLoading(loadingKey);
+        setLoading(false);
         return;
       }
+
+      // Validate data - check required fields according to API specification
+      const validStudents = students.filter(student => {
+        const hasRequiredFields =
+          student.firstName && student.firstName.trim() &&
+          student.lastName && student.lastName.trim() &&
+          student.username && student.username.trim() &&
+          student.dateOfBirth && student.dateOfBirth.trim() &&
+          student.gender &&
+          (student.schoolId || student.schoolId === 0);
+
+        return hasRequiredFields;
+      });
+
+      if (validStudents.length === 0) {
+        showError('សូមបញ្ចូលព័ត៌មានសិស្សយ៉ាងហោចណាស់ម្នាក់ (ត្រូវការនាម គោត្តនាម ឈ្មោះអ្នកប្រើ ថ្ងៃខែឆ្នាំកំណើត ភេទ និងលេខសាលា)', { duration: 5000 });
+        stopLoading(loadingKey);
+        setLoading(false);
+        return;
+      }
+
+      // Show validation success toast
+      showSuccess(`សូមអភ័យទោស! បានធ្វើការផ្ទៀងផ្ទាត់ទិន្នន័យ ${validStudents.length} សិស្សដោយជោគជ័យ`);
 
       // Helper function to convert dd/mm/yy to yyyy-mm-dd for API
       const convertDateFormat = (dateStr) => {
@@ -1490,57 +1724,95 @@ export default function BulkStudentImport() {
         return undefined;
       };
 
-      // Transform data for API - match the expected format with multiple parents
-      const transformedData = validStudents.map(student => ({
-        first_name: student.firstName.trim(),
-        last_name: student.lastName.trim(),
-        email: student.email.trim() || undefined,
-        username: student.username.trim() || undefined,
-        password: student.password.trim() || 'Student@123', // Default password
-        date_of_birth: convertDateFormat(student.dateOfBirth),
-        gender: student.gender || undefined,
-        phone: student.phone.trim() || undefined,
-        nationality: student.nationality.trim() || 'Cambodian',
-        student_number: student.studentNumber.trim() || student.id.trim(),
-        school_id: student.schoolId ? parseInt(student.schoolId) : undefined,
-        academic_year: student.academicYear.trim() || '2025-2026',
-        grade_level: student.gradeLevel.trim() || '1',
-        residence: student.residenceFullAddress ? {
-          fullAddress: student.residenceFullAddress.trim()
-        } : undefined,
-        parents: [
-          // Father
-          ...(student.fatherFirstName.trim() ? [{
+      // Transform data for API - match the expected format with required/optional fields
+      const transformedData = validStudents.map(student => {
+        // Build the base student object with required fields
+        const studentData = {
+          first_name: student.firstName.trim(),
+          last_name: student.lastName.trim(),
+          email: student.email.trim() || undefined,
+          username: student.username.trim() || `${student.firstName.trim().toLowerCase()}.${student.lastName.trim().toLowerCase()}`,
+          password: student.password.trim() || 'Student@123', // Default password for required field
+          date_of_birth: convertDateFormat(student.dateOfBirth),
+          gender: student.gender ? student.gender.toUpperCase() : undefined,
+          school_id: parseInt(student.schoolId || '1'), // Required field, default to '1' if not provided
+        };
+
+        // Add optional fields only if they have values
+        if (student.phone && student.phone.trim()) {
+          studentData.phone = student.phone.trim();
+        }
+
+        // Temporarily remove nationality - API may not expect this field
+        // if (student.nationality && student.nationality.trim()) {
+        //   studentData.nationality = student.nationality.trim();
+        // }
+
+        // Temporarily remove student_number - API may auto-generate or expect different format
+        // if (student.studentNumber && student.studentNumber.trim()) {
+        //   studentData.student_number = student.studentNumber.trim();
+        // } else if (student.id && student.id.trim()) {
+        //   studentData.student_number = student.id.trim();
+        // }
+
+        // Remove academic_year - API may not expect this field or it might cause validation issues
+        // if (student.academicYear && student.academicYear.trim()) {
+        //   studentData.academic_year = student.academicYear.trim();
+        // }
+
+        if (student.gradeLevel && student.gradeLevel.trim()) {
+          studentData.grade_level = parseInt(student.gradeLevel.trim());
+        }
+
+        if (student.residenceFullAddress && student.residenceFullAddress.trim()) {
+          studentData.residence = {
+            full_address: student.residenceFullAddress.trim()
+          };
+        }
+
+        // Add parents data if available
+        const parents = [];
+
+        // Add father if father info is provided
+        if (student.fatherFirstName && student.fatherFirstName.trim()) {
+          parents.push({
             first_name: student.fatherFirstName.trim(),
             last_name: student.fatherLastName.trim() || '',
-            email: student.fatherEmail.trim() || undefined,
             phone: student.fatherPhone.trim() || undefined,
-            date_of_birth: convertDateFormat(student.fatherDateOfBirth),
-            gender: student.fatherGender || 'MALE',
+            gender: student.fatherGender ? student.fatherGender.toUpperCase() : undefined,
             occupation: student.fatherOccupation.trim() || undefined,
-            relationship: 'FATHER',
-            is_primary_contact: true,
-            residence: student.fatherResidenceFullAddress ? {
-              fullAddress: student.fatherResidenceFullAddress.trim()
-            } : undefined
-          }] : []),
-          // Mother
-          ...(student.motherFirstName.trim() ? [{
+            residence: student.fatherResidenceFullAddress && student.fatherResidenceFullAddress.trim() ? {
+              full_address: student.fatherResidenceFullAddress.trim()
+            } : undefined,
+            relationship: 'FATHER'
+          });
+        }
+
+        // Add mother if mother info is provided
+        if (student.motherFirstName && student.motherFirstName.trim()) {
+          parents.push({
             first_name: student.motherFirstName.trim(),
             last_name: student.motherLastName.trim() || '',
-            email: student.motherEmail.trim() || undefined,
             phone: student.motherPhone.trim() || undefined,
-            date_of_birth: convertDateFormat(student.motherDateOfBirth),
-            gender: student.motherGender || 'FEMALE',
+            gender: student.motherGender ? student.motherGender.toUpperCase() : undefined,
             occupation: student.motherOccupation.trim() || undefined,
-            relationship: 'MOTHER',
-            is_primary_contact: false,
-            residence: student.motherResidenceFullAddress ? {
-              fullAddress: student.motherResidenceFullAddress.trim()
-            } : undefined
-          }] : [])
-        ]
-      }));
+            residence: student.motherResidenceFullAddress && student.motherResidenceFullAddress.trim() ? {
+              full_address: student.motherResidenceFullAddress.trim()
+            } : undefined,
+            relationship: 'MOTHER'
+          });
+        }
+
+        // Add parents to student data if any exist
+        if (parents.length > 0) {
+          studentData.parents = parents;
+        }
+
+        return studentData;
+      });
+
+      // Show API call start notification
+      showSuccess(`កំពុងផ្ញើទិន្នន័យ ${transformedData.length} សិស្សទៅកាន់ម៉ាស៊ីនមេ...`);
 
       // Use the new bulk register API
       const response = await studentService.bulkRegister(transformedData);
@@ -1549,11 +1821,11 @@ export default function BulkStudentImport() {
       const { success_count, failed_count, successful_students, errors } = response.data || response;
 
       if (success_count > 0) {
-        showSuccess(`បាននាំចូលសិស្សចំនួន ${success_count} នាក់ដោយជោគជ័យ`);
+        showSuccess(`🎉 បាននាំចូលសិស្សចំនួន ${success_count} នាក់ដោយជោគជ័យ!`, { duration: 5000 });
       }
 
       if (failed_count > 0) {
-        showError(`មានកំហុស ${failed_count} នាក់`);
+        showError(`⚠️ មានកំហុស ${failed_count} នាក់ក្នុងការនាំចូល។ សូមពិនិត្យទិន្នន័យឡើងវិញ`, { duration: 7000 });
         // Log errors for debugging
         console.error('Bulk import errors:', errors);
       }
@@ -1583,14 +1855,18 @@ export default function BulkStudentImport() {
           // Parent info
           fatherFirstName: '',
           fatherLastName: '',
+          fatherEmail: '',
           fatherPhone: '',
+          fatherDateOfBirth: '',
           fatherGender: '',
           fatherOccupation: '',
           fatherResidenceFullAddress: '',
-
+    
           motherFirstName: '',
           motherLastName: '',
+          motherEmail: '',
           motherPhone: '',
+          motherDateOfBirth: '',
           motherGender: '',
           motherOccupation: '',
           motherResidenceFullAddress: '',
@@ -1604,8 +1880,20 @@ export default function BulkStudentImport() {
       stopLoading(loadingKey);
     } catch (err) {
       console.error('Bulk import error:', err);
+
+      // Show specific error toast based on error type
+      if (err.response?.status === 400) {
+        showError('❌ កំហុសក្នុងការផ្ទៀងផ្ទាត់ទិន្នន័យ៖ សូមពិនិត្យទិន្នន័យសិស្សឡើងវិញ', { duration: 8000 });
+      } else if (err.response?.status === 500) {
+        showError('🔧 មានបញ្ហាក្នុងម៉ាស៊ីនមេ៖ សូមព្យាយាមម្តងទៀតក្រោយមក', { duration: 6000 });
+      } else if (err.message?.includes('network') || err.message?.includes('timeout')) {
+        showError('🌐 កំហុសក្នុងការតភ្ជាប់បណ្តាញ៖ សូមពិនិត្យអ៊ីនធឺណិតរបស់អ្នក', { duration: 6000 });
+      } else {
+        showError('💥 ការនាំចូលបានបរាជ័យ៖ ' + (err.message || 'មិនស្គាល់កំហុស'), { duration: 7000 });
+      }
+
       handleError(err, {
-        toastMessage: 'ការនាំចូលបានបរាជ័យ'
+        toastMessage: false // Disable default error toast since we show custom ones
       });
     } finally {
       setLoading(false);
@@ -1645,10 +1933,10 @@ export default function BulkStudentImport() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">
-                    នាំចូលសិស្សច្រើននាក់
+                    ការចុះឈ្មោះសិស្ស
                   </h1>
                   <p className="text-gray-600 text-sm">
-                    បញ្ចូលព័ត៌មានសិស្សជាបណ្តុំដូច Excel
+                    ការចុះឈ្មោះសិស្សសម្រាប់ប្រើប្រាស់ប្រព័ន្ធPLP
                   </p>
                 </div>
               </div>
@@ -1658,18 +1946,18 @@ export default function BulkStudentImport() {
                   {students.length} {students.length === 1 ? 'សិស្ស' : 'សិស្ស'}
                 </Badge>
 
-                {/* Excel Import */}
+                {/* Excel/CSV Import */}
                 <label className="inline-block">
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".xlsx,.xls"
+                    accept=".xlsx,.xls,.csv"
                     onChange={handleExcelImport}
                     className="hidden"
                   />
                   <div className="inline-flex items-center px-4 py-2 border border-gray-300 rounded text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer">
                     <FileSpreadsheet className="h-5 w-5 mr-2 text-green-600" />
-                    នាំចូល Excel
+                    នាំចូល Excel/CSV
                   </div>
                 </label>
 
@@ -1716,19 +2004,19 @@ export default function BulkStudentImport() {
                     #
                   </th>
                   {/* Student Basic Info */}
-                  <th colSpan="15" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-blue-50 border-r border-gray-200">
+                  <th colSpan="15" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-blue-100 border-r border-gray-200">
                     ព័ត៌មានសិស្ស
                   </th>
                   {/* Father Info */}
-                  <th colSpan="6" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-purple-50 border-r border-gray-200">
+                  <th colSpan="6" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-green-100 border-r border-gray-200">
                     ព័ត៌មានឪពុក
                   </th>
                   {/* Mother Info */}
-                  <th colSpan="6" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-pink-50 border-r border-gray-200">
+                  <th colSpan="6" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-rose-100 border-r border-gray-200">
                     ព័ត៌មានម្តាយ
                   </th>
                   {/* Additional Info */}
-                  <th colSpan="2" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-orange-50">
+                  <th colSpan="2" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-amber-100">
                     ព័ត៌មានបន្ថែម
                   </th>
                 </tr>
@@ -1783,10 +2071,9 @@ export default function BulkStudentImport() {
                                 variant="outline"
                                 size="sm"
                                 disabled={students.length === 1}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 border-red-200 h-8 px-2"
+                                className="text-red-600 hover:text-red-700 border-none hover:scale-105 hover:shadow-none h-8 px-2"
                               >
-                                <Trash2 className="h-4 w-4 mr-1" />
-                                លុប
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           ) : column.type === 'select' ? (

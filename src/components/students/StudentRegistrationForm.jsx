@@ -45,7 +45,12 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
         email: '',
         phone: '',
         occupation: '',
-        relationship: 'FATHER'
+        residence: {
+          provinceId: '',
+          districtId: '',
+          communeId: '',
+          villageId: ''
+        }
       },
       {
         firstName: '',
@@ -53,7 +58,13 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
         email: '',
         phone: '',
         occupation: '',
-        relationship: 'MOTHER'
+        relationship: 'MOTHER',
+        residence: {
+          provinceId: '',
+          districtId: '',
+          communeId: '',
+          villageId: ''
+        }
       }
     ]
   });
@@ -115,10 +126,11 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
       isValid = false;
     }
 
-    if (!registrationForm.studentNumber.trim()) {
-      errors.studentNumber = 'លេខសិស្សត្រូវបានទាមទារ';
-      isValid = false;
-    }
+    // Student number is now optional
+    // if (!registrationForm.studentNumber.trim()) {
+    //   errors.studentNumber = 'លេខសិស្សត្រូវបានទាមទារ';
+    //   isValid = false;
+    // }
 
     // Phone is now optional for students
     // if (!registrationForm.phone.trim()) {
@@ -172,7 +184,6 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
       gender: '',
       dateOfBirth: null,
       nationality: '',
-      relationship: 'FATHER',
       accessibility: [],
       minorityEthnicGroup: '',
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
@@ -184,7 +195,12 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
           email: '',
           phone: '',
           occupation: '',
-          relationship: 'FATHER'
+          residence: {
+            provinceId: '',
+            districtId: '',
+            communeId: '',
+            villageId: ''
+          }
         },
         {
           firstName: '',
@@ -192,7 +208,13 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
           email: '',
           phone: '',
           occupation: '',
-          relationship: 'MOTHER'
+          relationship: 'MOTHER',
+          residence: {
+            provinceId: '',
+            districtId: '',
+            communeId: '',
+            villageId: ''
+          }
         }
       ]
     });
@@ -279,14 +301,14 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
     try {
       setLoading(true);
 
-      // Normalize date to YYYY-MM-DD
+      // Normalize date to dd/mm/yyyy format
       const formatDate = (val) => {
         if (!val) return undefined;
         const d = val instanceof Date ? val : new Date(val);
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
+        return `${day}/${m}/${y}`;
       };
 
       // Prepare student data for registration
@@ -298,7 +320,6 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
         date_of_birth: formatDate(registrationForm.dateOfBirth),
         gender: registrationForm.gender || undefined,
         nationality: registrationForm.nationality?.trim() || undefined,
-        relationship: registrationForm.relationship || undefined,
         accessibility: registrationForm.accessibility?.length > 0 ? registrationForm.accessibility : undefined,
         minority_ethnic_group: registrationForm.minorityEthnicGroup?.trim() || undefined,
         roleId: 9, // Student role ID
@@ -321,7 +342,13 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
           email: parent.email?.trim(),
           phone: parent.phone?.trim(),
           occupation: parent.occupation?.trim() || undefined,
-          relationship: parent.relationship || 'FATHER'
+          relationship: parent.relationship || 'FATHER',
+          residence: {
+            provinceId: parent.residence?.provinceId || undefined,
+            districtId: parent.residence?.districtId || undefined,
+            communeId: parent.residence?.communeId || undefined,
+            villageId: parent.residence?.villageId || undefined,
+          }
         }))
       };
 
@@ -338,7 +365,7 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
         delete studentData.placeOfBirth;
       }
 
-      const response = await studentService.createStudent(studentData);
+      const response = await studentService.register(studentData);
 
       if (response) {
         showSuccess('ការចុះឈ្មោះសិស្សបានជោគជ័យ!');
@@ -562,7 +589,7 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="studentNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                    លេខសិស្ស *
+                    លេខសិស្ស
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -577,7 +604,6 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
                         formErrors.studentNumber ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
                       } hover:border-gray-400 focus:scale-[1.01] hover:shadow-md px-3 py-2`}
                       placeholder="បញ្ចូលលេខសិស្ស"
-                      required
                     />
                   </div>
                   {formErrors.studentNumber && (
@@ -611,13 +637,16 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
                   <label htmlFor="nationality" className="block text-sm font-medium text-gray-700 mb-2">
                     សញ្ជាតិ
                   </label>
-                  <input
-                    type="text"
-                    id="nationality"
+                  <Dropdown
+                    options={[
+                      { value: '', label: 'ជ្រើសរើសសញ្ជាតិ' },
+                      { value: 'ខ្មែរ', label: 'ខ្មែរ' }
+                    ]}
                     value={registrationForm.nationality}
-                    onChange={(e) => handleFormChange('nationality', e.target.value)}
-                    className="mt-1 block w-full rounded-lg shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md px-3 py-2"
-                    placeholder="បញ្ចូលសញ្ជាតិ"
+                    onValueChange={(value) => handleFormChange('nationality', value)}
+                    placeholder="ជ្រើសរើសសញ្ជាតិ"
+                    contentClassName="max-h-[200px] overflow-y-auto"
+                    disabled={false}
                   />
                 </div>
                 <div>
@@ -955,6 +984,76 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
                         className="mt-1 block w-full rounded-lg shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md px-3 py-2"
                         placeholder="បញ្ចូលមុខរបរ"
                       />
+                    </div>
+                  </div>
+
+                  {/* Parent Residence */}
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                      <Building className="w-5 h-5 mr-2 text-purple-600" />
+                      អាសយដ្ឋានអាណាព្យាបាល
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          ខេត្ត
+                        </label>
+                        <Dropdown
+                          options={getResidenceProvinceOptions()}
+                          value={parent.residence?.provinceId || ''}
+                          onValueChange={(value) => handleFormChange('parent', {
+                            residence: { ...parent.residence, provinceId: value }
+                          }, index)}
+                          placeholder="ជ្រើសរើសខេត្ត"
+                          contentClassName="max-h-[200px] overflow-y-auto"
+                          disabled={false}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          ស្រុក
+                        </label>
+                        <Dropdown
+                          options={getResidenceDistrictOptions()}
+                          value={parent.residence?.districtId || ''}
+                          onValueChange={(value) => handleFormChange('parent', {
+                            residence: { ...parent.residence, districtId: value }
+                          }, index)}
+                          placeholder="ជ្រើសរើសស្រុក"
+                          contentClassName="max-h-[200px] overflow-y-auto"
+                          disabled={!parent.residence?.provinceId}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          ឃុំ
+                        </label>
+                        <Dropdown
+                          options={getResidenceCommuneOptions()}
+                          value={parent.residence?.communeId || ''}
+                          onValueChange={(value) => handleFormChange('parent', {
+                            residence: { ...parent.residence, communeId: value }
+                          }, index)}
+                          placeholder="ជ្រើសរើសឃុំ"
+                          contentClassName="max-h-[200px] overflow-y-auto"
+                          disabled={!parent.residence?.districtId}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          ភូមិ
+                        </label>
+                        <Dropdown
+                          options={getResidenceVillageOptions()}
+                          value={parent.residence?.villageId || ''}
+                          onValueChange={(value) => handleFormChange('parent', {
+                            residence: { ...parent.residence, villageId: value }
+                          }, index)}
+                          placeholder="ជ្រើសរើសភូមិ"
+                          contentClassName="max-h-[200px] overflow-y-auto"
+                          disabled={!parent.residence?.communeId}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
