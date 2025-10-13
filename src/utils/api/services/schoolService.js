@@ -46,6 +46,28 @@ export const schoolService = {
         }
     },
 
+    async getSchoolsByDistrict(districtId) {
+        try {
+            const response = await handleApiResponse(() =>
+                apiClient_.get(ENDPOINTS.SCHOOLS.SCHOOL_BY_DISTRICT(districtId))
+            );
+            console.log('Raw schools by district API response:', response);
+            if (response.data && Array.isArray(response.data)) {
+                const formattedData = response.data.map(school => {
+                    console.log('Raw school before formatting:', school);
+                    const formatted = schoolService.utils.formatSchoolData(school);
+                    console.log('Formatted school:', formatted);
+                    return formatted;
+                });
+                return { data: formattedData };
+            }
+            return { data: [] };
+        } catch (error) {
+            console.error('Error fetching schools by district:', error);
+            throw error;
+        }
+    },
+
     utils: {
         formatSchoolData(school) {
             // Format school data with correct field mapping
