@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { User, ArrowRightLeft, MinusCircle, X, Trash2, Users, Folder, FolderOpen } from 'lucide-react';
+import { User, ArrowRightLeft, MinusCircle, Trash2, Users, Folder, FolderOpen } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Button } from '../ui/Button';
 import Modal from '../ui/Modal';
-import { Badge } from '../ui/Badge';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import SelectedCard from '../ui/SelectedCard';
 
 const StudentActionsModal = ({
   isOpen,
@@ -242,57 +242,29 @@ const StudentActionsModal = ({
           </div>
 
           {/* Student Cards Grid - Max 2 rows visible, then scroll */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-2">
             {studentsArray.length === 0 ? (
               <div className="col-span-2 text-center py-8 text-gray-500">
                 <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>{t('noStudentsSelected', 'No students selected')}</p>
               </div>
             ) : (
-              studentsArray.map(student => (
-                <div
-                  key={student.id}
-                  className="relative bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all"
-                >
-                  {/* Remove button */}
-                  {onRemoveStudent && (
-                    <button
-                      onClick={() => onRemoveStudent(student.id)}
-                      className="absolute top-2 right-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full p-1 transition-colors"
-                      title={t('removeFromSelection', 'Remove from selection')}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
+              studentsArray.map(student => {
+                const displayName = student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Unknown';
+                const subtitle = student.class?.name
+                  ? `${student.username || student.email || 'N/A'} • ${student.class.name}`
+                  : (student.username || student.email || 'N/A');
 
-                  {/* Student Info */}
-                  <div className="flex items-start space-x-3">
-                    {/* Avatar */}
-                    <div className="flex-shrink-0 h-12 w-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                      <User className="h-6 w-6" />
-                    </div>
-
-                    {/* Details */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Unknown'}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {student.username || student.email || 'N/A'}
-                      </p>
-
-                      {/* Current Class Badge */}
-                      {student.class?.name && (
-                        <div className="mt-2">
-                          <Badge variant="outline" size="sm" className="text-xs">
-                            {t('currentClass', 'Current')}: {student.class.name}
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
+                return (
+                  <SelectedCard
+                    key={student.id}
+                    title={displayName}
+                    subtitle={subtitle}
+                    statusColor="blue"
+                    onRemove={() => onRemoveStudent(student.id)}
+                  />
+                );
+              })
             )}
           </div>
         </div>

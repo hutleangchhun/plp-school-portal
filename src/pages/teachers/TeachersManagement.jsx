@@ -16,6 +16,8 @@ import TeacherEditModal from '../../components/teachers/TeacherEditModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
+import Modal from '../../components/ui/Modal';
+import SelectedCard from '../../components/ui/SelectedCard';
 
 export default function TeachersManagement() {
   const { t } = useLanguage();
@@ -83,6 +85,7 @@ export default function TeachersManagement() {
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [selectedTeachers, setSelectedTeachers] = useState([]);
+  const [showTeachersManagerOpen, setShowTeachersManagerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [selectingAll, setSelectingAll] = useState(false);
@@ -769,6 +772,21 @@ export default function TeachersManagement() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            {/* View Selected Teachers Button */}
+            {selectedTeachers.length > 0 && (
+              <Button
+                onClick={() => setShowTeachersManagerOpen(true)}
+                variant="outline"
+                size="default"
+                className="shadow-lg"
+              >
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                <span className="text-xs sm:text-sm">
+                  {t('viewSelected', 'View Selected')} ({selectedTeachers.length})
+                </span>
+              </Button>
+            )}
+
             {/* Select All / Deselect All Button */}
             {teachers.length > 0 && (
               <Button
@@ -928,6 +946,52 @@ export default function TeachersManagement() {
         teacher={editingTeacher}
         onTeacherUpdated={handleTeacherUpdated}
       />
+
+      {/* Selected Teachers Modal */}
+      <Modal
+        isOpen={showTeachersManagerOpen}
+        onClose={() => setShowTeachersManagerOpen(false)}
+        title={
+          <div className="flex items-center space-x-2">
+            <Users className="h-5 w-5 text-blue-600" />
+            <span>{t('selectedTeachers', 'Selected Teachers')}</span>
+            <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2 py-1 rounded-full">
+              {selectedTeachers.length}
+            </span>
+          </div>
+        }
+        size="lg"
+        height="xl"
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <Button variant="outline" size="sm" onClick={clearAllTeachers}>
+              {t('clearSelection', 'Clear Selection')}
+            </Button>
+          </div>
+        }
+      >
+        {selectedTeachers.length === 0 ? (
+          <div className="p-6 text-center text-sm text-gray-500">
+            {t('noTeachersSelected', 'No teachers selected')}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {selectedTeachers.map((teacher) => {
+              const displayName = teacher.name || `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || teacher.username || `Teacher ${teacher.id}`;
+              const subtitle = [teacher.email, teacher.phone].filter(Boolean).join(' • ');
+              return (
+                <SelectedCard
+                  key={teacher.id}
+                  title={displayName}
+                  subtitle={subtitle}
+                  statusColor="purple"
+                  onRemove={() => setSelectedTeachers(prev => prev.filter(t => t.id !== teacher.id))}
+                />
+              );
+            })}
+          </div>
+        )}
+      </Modal>
     </PageTransition>
   );
 }

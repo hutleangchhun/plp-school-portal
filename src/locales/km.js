@@ -212,6 +212,7 @@ export const km = {
   additionalInformation: 'ព័ត៌មានបន្ថែម',
   unnamed: 'គ្មានឈ្មោះ',
   account: 'គណនី',
+  viewSelectedParents: 'មើលអាណាព្យាបាលដែលបានជ្រើសរើស',
 
   // Transfer student
   transferStudent: 'ផ្ទេរសិស្ស',

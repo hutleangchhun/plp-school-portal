@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from './Button';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Database, ChevronsUpDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Database } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 
 const Table = ({
@@ -94,23 +94,22 @@ const Table = ({
   };
 
   const headerBase = stickyHeader
-    ? 'sticky top-0 z-10 bg-slate-50/95 backdrop-blur supports-[backdrop-filter]:bg-slate-50/75'
-    : 'bg-slate-50';
+    ? 'sticky top-0 z-10 bg-blue-600 backdrop-blur supports-[backdrop-filter]:bg-blue-600 text-white'
+    : 'bg-blue-600';
 
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto"> 
         <table className={`w-full text-sm ${className}`} {...props}>
           <thead className={`${headerBase} border-b border-gray-200`}> 
-            <tr>
+            <tr className="group/header">
               {columns.map((column, index) => {
                 const isSortable = enableSort && !(column.disableSort) && (column.accessor || column.key);
-                const isActive = isSortable && (sortKey === (column.accessor || column.key));
                 return (
                   <th
                     key={column.key || index}
                     scope="col"
-                    className={`px-3 sm:px-4 ${dense ? 'py-2' : 'py-3.5'} text-left font-medium text-gray-700 uppercase tracking-wide align-middle ${
+                    className={`px-3 sm:px-6 ${dense ? 'py-2' : 'py-3.5'} text-left font-medium text-white uppercase tracking-wide align-middle transition-colors duration-500 hover:bg-blue-700 hover:font-bold ${
                       column.headerClassName || ''
                     } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
                   >
@@ -118,11 +117,10 @@ const Table = ({
                       <button
                         type="button"
                         onClick={() => handleHeaderSort(column)}
-                        className="inline-flex items-center gap-1 text-gray-700 hover:text-gray-900"
+                        className="inline-flex items-center text-white"
                         title={t ? t('sort', 'Sort') : 'Sort'}
                       >
                         <span className="whitespace-nowrap">{column.header}</span>
-                        <ChevronsUpDown className={`h-3.5 w-3.5 ${isActive ? 'opacity-100' : 'opacity-40'}`} />
                       </button>
                     ) : (
                       <span className="whitespace-nowrap">{column.header}</span>

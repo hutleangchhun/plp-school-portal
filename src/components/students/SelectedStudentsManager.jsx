@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, Folder, FolderOpen } from 'lucide-react';
+import { Users, Folder, FolderOpen } from 'lucide-react';
 import { Button } from '../ui/Button';
 import Modal from '../ui/Modal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import studentService from '../../utils/api/services/studentService';
 import DynamicLoader from '../ui/DynamicLoader';
+import SelectedCard from '../ui/SelectedCard';
 
 const SelectedStudentsManager = ({
   selectedStudents = [],
@@ -288,41 +289,13 @@ const SelectedStudentsManager = ({
               : 'Student data not available';
 
             return (
-              <div
+              <SelectedCard
                 key={studentId}
-                className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                  student
-                    ? 'bg-blue-50 border-blue-200 hover:bg-blue-100'
-                    : 'bg-orange-50 border-orange-200 hover:bg-orange-100'
-                }`}
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-2 h-2 rounded-full ${
-                      student ? 'bg-blue-500' : 'bg-orange-500'
-                    }`} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {studentName}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {studentInfo}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => onRemoveStudent(studentId)}
-                  className={`ml-2 flex justify-center items-center h-8 w-8 p-0  transition-all duration-200 ${
-                    student
-                      ? 'text-red-500 border-red-300 hover:text-white hover:rounded-md hover:bg-red-500 hover:border-red-400 hover:scale-110'
-                      : 'text-orange-500 border-orange-300 hover:text-orange-700 hover:bg-orange-50 hover:border-orange-400 hover:scale-110'
-                  }`}
-                  title={t('remove') || 'ដកចេញ'}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+                title={studentName}
+                subtitle={studentInfo}
+                statusColor={student ? "blue" : "orange"}
+                onRemove={() => onRemoveStudent(studentId)}
+              />
             );
           })}
         </div>

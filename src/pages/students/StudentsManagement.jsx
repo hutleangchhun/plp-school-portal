@@ -1416,7 +1416,7 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
             className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 hover:scale-110"
             title={t('editStudent', 'Edit student')}
           >
-            <Edit2 className="h-4 w-4 sm:h-5 sm:w-5" />
+            <Edit2 className="h-4 w-4" />
           </Button>
           <Button
             onClick={(e) => {
@@ -1437,7 +1437,7 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
             className="text-green-600 hover:text-green-900 hover:bg-green-50 hover:scale-110"
             title={t('transferStudent', 'Transfer student to another class')}
           >
-            <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+            <ArrowRightLeft className="h-4 w-4" />
           </Button>
           <Button
             onClick={(e) => {
@@ -1460,7 +1460,7 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
             className="text-red-600 hover:text-red-900 hover:bg-red-50 hover:scale-110"
             title={t('moveStudentToMaster', 'Move student to master class')}
           >
-            <MinusCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+            <MinusCircle className="h-4 w-4" />
           </Button>
         </div>
       )

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Plus, Edit2, Eye, Trash2, Users, Download, X, Phone, Mail, Filter, UserRoundX} from 'lucide-react';
+import { Search, Plus, Edit2, Eye, Trash2, Users, Download, X, Phone, Mail, Filter, User} from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -17,6 +17,7 @@ import Modal from '../../components/ui/Modal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
+import SelectedCard from '../../components/ui/SelectedCard';
 
 
 export default function ParentsManagement() {
@@ -91,6 +92,8 @@ export default function ParentsManagement() {
   const [selectedParent, setSelectedParent] = useState(null);
   const [editingParent, setEditingParent] = useState(null);
   const [selectedParents, setSelectedParents] = useState([]);
+  const [isParentsManagerOpen, setIsParentsManagerOpen] = useState(false);
+  const [bulkDeletingParents, setBulkDeletingParents] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [selectingAll, setSelectingAll] = useState(false);
@@ -408,6 +411,32 @@ export default function ParentsManagement() {
     setShowDeleteDialog(true);
   }, []);
 
+  // Bulk delete selected parents
+  const handleBulkDeleteSelectedParents = useCallback(async () => {
+    if (selectedParents.length === 0) return;
+    try {
+      setBulkDeletingParents(true);
+      for (const pid of selectedParents) {
+        const parentId = pid; // already id
+        try {
+          await parentService.deleteParent(parentId);
+        } catch (e) {
+          console.error('Failed to delete parent', parentId, e);
+        }
+      }
+      setSelectedParents([]);
+      setIsParentsManagerOpen(false);
+      // refresh
+      fetchParents(true);
+      showSuccess(t('parentDeletedSuccess', 'Parent deleted successfully'));
+    } catch (err) {
+      console.error('Bulk delete error:', err);
+      showError(t('failedToDeleteParent', 'Failed to delete parent'));
+    } finally {
+      setBulkDeletingParents(false);
+    }
+  }, [selectedParents, fetchParents, showSuccess, showError, t]);
+
   // Confirm delete
   const confirmDelete = useStableCallback(async () => {
     if (!selectedParent) return;
@@ -523,9 +552,8 @@ export default function ParentsManagement() {
       render: (parent) => (
         <div className="flex items-center space-x-3 text-sm">
           <div className="flex-shrink-0">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center text-white font-semibold">
-              {(parent.firstName?.[0] || parent.fullname?.[0] || 'P').toUpperCase()}
-            </div>
+            <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 hover:scale-110 transition-all duration-300">
+              <User className="h-4 w-4 sm:h-5 sm:w-5" />            </div>
           </div>
           <div>
             <div className="font-medium text-gray-900">
@@ -656,9 +684,6 @@ export default function ParentsManagement() {
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Users className="h-6 w-6 text-white" />
-                </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">
                     {t('parentsManagement', 'Parents Management')}
@@ -670,11 +695,16 @@ export default function ParentsManagement() {
               </div>
 
               <div className="flex items-center gap-3">
-                {selectedParents.length > 0 && (
-                  <Badge color="blue" variant="solid" size="lg">
-                    {selectedParents.length} {t('selected', 'selected')}
-                  </Badge>
-                )}
+                <Button
+                  onClick={() => setIsParentsManagerOpen(true)}
+                  variant="outline"
+                  size="default"
+                  disabled={selectedParents.length === 0}
+                  title={t('viewSelectedParents', 'View Selected Parents')}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  <span className='text-xs sm:text-sm'>{t('viewSelectedParents', 'View Selected')}</span>
+                </Button>
                 <Button
                   onClick={handleAddParent}
                   variant="primary"
@@ -919,7 +949,7 @@ export default function ParentsManagement() {
         isOpen={showViewModal && !!selectedParent}
         onClose={() => { setShowViewModal(false); setSelectedParent(null); }}
         title={t('parentDetails', 'Parent Details')}
-        size="lg"
+        size="2xl"
         height="xl"
       >
         {selectedParent && (
@@ -1043,7 +1073,53 @@ export default function ParentsManagement() {
         cancelText={t('cancel', 'Cancel')}
       />
 
-      {/* SelectedParentsManager removed as requested */}
+      {/* Floating trigger removed; modal controlled by header button */}
+
+      {/* Selected Parents modal with bulk delete */}
+      <Modal
+        isOpen={isParentsManagerOpen}
+        onClose={() => setIsParentsManagerOpen(false)}
+        title={
+          <div className="flex items-center space-x-2">
+            <Users className="h-5 w-5 text-blue-600" />
+            <span>{t('selectedParents', 'Selected Parents')}</span>
+            <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2 py-1 rounded-full">{selectedParents.length}</span>
+          </div>
+        }
+        size="lg"
+        height="xl"
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <Button variant="outline" size="sm" onClick={() => setSelectedParents([])}>
+              {t('clearSelection', 'Clear Selection')}
+            </Button>
+            <Button onClick={handleBulkDeleteSelectedParents} disabled={bulkDeletingParents || selectedParents.length === 0} size="sm" className="bg-red-600 hover:bg-red-700 text-white">
+              {bulkDeletingParents ? t('deleting', 'Deleting...') : t('deleteSelected', 'Delete Selected')}
+            </Button>
+          </div>
+        }
+      >
+        {selectedParents.length === 0 ? (
+          <div className="p-6 text-center text-sm text-gray-500">{t('noParentsSelected', 'No parents selected')}</div>
+        ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {selectedParents.map((pid) => {
+            const parent = parents.find(p => (p.id || p.parentId) === pid) || {};
+            const displayName = parent.fullname || `${parent.firstName || ''} ${parent.lastName || ''}`.trim() || parent.username || `Parent ${pid}`;
+            const contact = [parent.email, parent.phone].filter(Boolean).join(' • ');
+            return (
+              <SelectedCard
+                key={pid}
+                title={displayName}
+                subtitle={contact}
+                statusColor="blue"
+                onRemove={() => setSelectedParents(prev => prev.filter(id => id !== pid))}
+              />
+            );
+          })}
+        </div>
+        )}
+      </Modal>
     </PageTransition>
   );
 }
