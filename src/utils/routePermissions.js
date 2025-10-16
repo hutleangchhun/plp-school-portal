@@ -6,20 +6,18 @@
 // Role constants
 export const ROLES = {
   TEACHER: 8,
-  STUDENT: 9
+  DIRECTOR: 8, // Same roleId as teacher, but isDirector = true
 };
 
 // Route permissions configuration
 export const routePermissions = {
-  // Dashboard - accessible to both teachers and students
+  // Director (role_id = 8 && isDirector = true) can access all routes below
   '/dashboard': {
-    allowedRoles: [ROLES.TEACHER, ROLES.STUDENT],
+    allowedRoles: [ROLES.TEACHER],
     component: 'Dashboard'
   },
-  
-  // Profile - accessible to both
   '/profile': {
-    allowedRoles: [ROLES.TEACHER, ROLES.STUDENT],
+    allowedRoles: [ROLES.TEACHER],
     component: 'ProfileUpdate'
   },
   '/students': {
@@ -38,9 +36,18 @@ export const routePermissions = {
     allowedRoles: [ROLES.TEACHER],
     component: 'ParentsManagement'
   },
-  // Temporarily removed routes (will be re-enabled later):
-  // '/reports', '/attendance', '/achievements', '/settings'
-  // '/my-grades', '/my-attendance', '/my-assignments'
+  '/attendance': {
+    allowedRoles: [ROLES.TEACHER],
+    component: 'Attendance'
+  },
+  '/my-classes': {
+    allowedRoles: [ROLES.TEACHER],
+    component: 'TeacherClasses'
+  },
+  '/my-students': {
+    allowedRoles: [ROLES.TEACHER],
+    component: 'TeacherStudentsManagement'
+  }
 };
 
 /**
@@ -52,16 +59,17 @@ export const routePermissions = {
 export const hasRouteAccess = (path, user) => {
   if (!user || !path) return false;
 
-  // IMPORTANT: Only directors can access any route
-  if (user.isDirector !== true) {
-    return false;
+  // Director: roleId = 8 && isDirector = true can access all routes
+  if (user.roleId === ROLES.DIRECTOR && user.isDirector === true) {
+    return !!routePermissions[path];
   }
 
-  const routeConfig = routePermissions[path];
-  if (!routeConfig) return false;
+  // Teacher: roleId = 8 && isDirector = false can only access /attendance, /my-classes, and /my-students
+  if (user.roleId === ROLES.TEACHER && user.isDirector === false) {
+    return path === '/attendance' || path === '/my-classes' || path === '/my-students';
+  }
 
-  // Check if user's role is allowed for this route
-  return routeConfig.allowedRoles.includes(user.roleId);
+  return false;
 };
 
 /**
@@ -79,55 +87,67 @@ export const getAccessibleRoutes = (user) => {
 
 /**
  * Get navigation items based on user role
- * @param {Object} user - User object with roleId
+ * @param {Object} user - User object with roleId and isDirector
  * @param {Function} t - Translation function
  * @returns {Array} Array of navigation items
  */
 export const getNavigationItems = (user, t) => {
   if (!user) return [];
-  
-  const commonItems = [
+
+  // Director gets all navigation items
+  const directorItems = [
     {
       name: t('dashboard') || 'ផ្ទាំងគ្រប់គ្រង',
       href: '/dashboard',
-      allowedRoles: [ROLES.TEACHER, ROLES.STUDENT]
     },
     {
       name: t('teachers') || 'គ្រូបង្រៀន',
       href: '/teachers',
-      allowedRoles: [ROLES.TEACHER]
-    }
-  ];
-
-  const teacherItems = [
+    },
     {
       name: t('classes') || 'ថ្នាក់រៀន',
       href: '/classes',
-      allowedRoles: [ROLES.TEACHER]
     },
     {
       name: t('students') || 'សិស្ស',
       href: '/students',
-      allowedRoles: [ROLES.TEACHER]
     },
     {
       name: t('parents') || 'ឪពុកម្តាយ',
       href: '/parents',
-      allowedRoles: [ROLES.TEACHER]
     },
-
+    {
+      name: t('attendance') || 'វត្តមាន',
+      href: '/attendance',
+    },
     // Temporarily removed navigation items:
-    // attendance, reports, achievements, settings
+    // reports, achievements, settings
   ];
 
-  const studentItems = [
-    // Temporarily removed student navigation items:
-    // my-grades, my-attendance, my-assignments
+  // Teacher gets my-classes, my-students, and attendance
+  const teacherItems = [
+    {
+      name: t('myClasses', 'My Classes'),
+      href: '/my-classes',
+    },
+    {
+      name: t('myStudents', 'My Students'),
+      href: '/my-students',
+    },
+    {
+      name: t('attendance') || 'វត្តមាន',
+      href: '/attendance',
+    },
   ];
 
-  const allItems = [...commonItems, ...teacherItems, ...studentItems];
-  
-  return allItems.filter(item => 
-    item.allowedRoles.includes(user.roleId)
-  );
+  // Return appropriate items based on user role
+  if (user.roleId === ROLES.DIRECTOR && user.isDirector === true) {
+    return directorItems;
+  }
+
+  if (user.roleId === ROLES.TEACHER && user.isDirector === false) {
+    return teacherItems;
+  }
+
+  return [];
 };

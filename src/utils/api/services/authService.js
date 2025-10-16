@@ -23,11 +23,13 @@ export const authService = {
     if (response.success) {
       const { accessToken, user } = response.data;
 
-      // IMPORTANT: Only directors can access this portal
-      if (user.isDirector !== true) {
+      // Allow only users with roleId = 8 (both teachers and directors) to access this portal
+      // Teacher: roleId = 8 && isDirector = false
+      // Director: roleId = 8 && isDirector = true
+      if (user.roleId !== 8) {
         return {
           success: false,
-          error: 'Only directors can access this portal. Please contact your administrator.'
+          error: 'Only teachers or directors can access this portal. Please contact your administrator.'
         };
       }
 
@@ -137,14 +139,14 @@ export const authService = {
   },
 
   /**
-   * Check if user is authenticated and is a director
+   * Check if user is authenticated (teacher or director)
    * @returns {boolean} Authentication status
    */
   isAuthenticated: () => {
     const hasToken = tokenManager.hasToken();
     const userData = userUtils.getUserData();
-    // User must have token, valid user data, and be a director
-    return hasToken && userData !== null && userData.isDirector === true;
+    // User must have token, valid user data, and roleId = 8 (teacher or director)
+    return hasToken && userData !== null && userData.roleId === 8;
   },
 
   /**
@@ -178,21 +180,21 @@ export const authService = {
  */
 export const authUtils = {
   /**
-   * Check if user is a director (required for all portal access)
+   * Check if user is a director (roleId = 8 && isDirector = true)
    * @param {Object} user - User object
    * @returns {boolean} Whether user is a director
    */
   isDirector: (user) => {
-    return user && user.isDirector === true;
+    return user && user.roleId === 8 && user.isDirector === true;
   },
 
   /**
-   * Validate teacher role (must also be a director)
+   * Validate teacher role (roleId = 8 && isDirector = false)
    * @param {Object} user - User object
-   * @returns {boolean} Whether user is a teacher and director
+   * @returns {boolean} Whether user is a teacher (not a director)
    */
   isTeacher: (user) => {
-    return user && user.roleId === 8 && user.isDirector === true;
+    return user && user.roleId === 8 && user.isDirector === false;
   },
 
   /**

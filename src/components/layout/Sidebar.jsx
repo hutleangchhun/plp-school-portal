@@ -24,6 +24,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
   const { t } = useLanguage();
   const location = useLocation();
 
+
   // Icon mapping for routes
   const iconMap = {
     '/dashboard': Home,
@@ -31,8 +32,9 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/classes': BookOpen,
     '/teachers': UserStar,
     '/parents': UserCircle,
+    '/attendance': Calendar,
+    '/my-classes': GraduationCap, // Add icon for My Classes
     // Temporarily removed icon mappings (will be re-enabled later):
-    // '/attendance': Calendar,
     // '/reports': FileText,
     // '/achievements': Trophy,
     // '/settings': SettingsIcon,
@@ -48,8 +50,9 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/classes': 'green',
     '/teachers': 'orange',
     '/parents': 'pink',
+    '/attendance': 'teal',
+    '/my-classes': 'orange', // Add color for My Classes
     // Temporarily removed color mappings (will be re-enabled later):
-    // '/attendance': 'teal',
     // '/reports': 'yellow',
     // '/achievements': 'red',
     // '/settings': 'gray',
@@ -115,6 +118,12 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
         icon: 'text-gray-600',
         hover: 'hover:bg-gray-50',
         iconHover: 'group-hover:text-gray-500'
+      },
+      pink: {
+        active: 'bg-pink-100 text-pink-700 border-pink-200',
+        icon: 'text-pink-600',
+        hover: 'hover:bg-pink-50',
+        iconHover: 'group-hover:text-pink-500'
       }
     };
 

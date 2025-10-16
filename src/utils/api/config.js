@@ -115,13 +115,6 @@ const ENDPOINTS = {
   },
   ATTENDANCE: {
     BASE: '/attendance',
-    MARK: '/attendance/mark',
-    BATCH_UPDATE: '/attendance/batch-update',
-    REPORT: {
-      MONTHLY: (year, month) => `/attendance/report/monthly/${year}/${month}`,
-      STUDENT: (studentId, from, to) => `/attendance/report/student/${studentId}?from=${from}&to=${to}`,
-      CLASS: (classId, date) => `/attendance/report/class/${classId}?date=${date}`,
-    },
   },
   GRADES: {
     BASE: '/grades',

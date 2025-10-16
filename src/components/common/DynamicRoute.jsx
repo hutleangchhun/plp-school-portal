@@ -58,17 +58,26 @@ export default function DynamicRoute({
  * ProtectedRoute Component
  * Wraps routes with role-based access control
  */
-export function ProtectedRoute({ children, path, user, fallbackPath = "/dashboard" }) {
+export function ProtectedRoute({ children, path, user, fallbackPath }) {
   const isAuthenticated = api.auth.isAuthenticated();
-  
+
   // Check if user is authenticated
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
+  // Determine fallback: teachers (roleId=8, !isDirector) go to /attendance, others to /dashboard
+  let computedFallback = "/dashboard";
+  if (user && user.roleId === 8 && !user.isDirector) {
+    computedFallback = "/attendance";
+  }
+  if (typeof fallbackPath === 'string') {
+    computedFallback = fallbackPath;
+  }
+
   // Check if user has access to this specific route
   if (!hasRouteAccess(path, user)) {
-    return <Navigate to={fallbackPath} replace />;
+    return <Navigate to={computedFallback} replace />;
   }
 
   return children;

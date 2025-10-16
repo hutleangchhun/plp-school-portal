@@ -1,3 +1,5 @@
+import TeacherClasses from './pages/teachers/TeacherClasses';
+import TeacherStudentsManagement from './pages/teachers/TeacherStudentsManagement';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -16,7 +18,7 @@ import TeachersManagement from './pages/teachers/TeachersManagement';
 import ParentsManagement from './pages/parents/ParentsManagement';
 // Temporarily removed imports (will be re-enabled later):
 // import Reports from './pages/reports/Reports';
-// import Attendance from './pages/attendance/Attendance';
+import Attendance from './pages/attendance/Attendance';
 // import Achievements from './pages/achievements/Achievements';
 // import Settings from './pages/settings/Settings';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
@@ -36,9 +38,9 @@ function AppContent() {
     if (isAuth) {
       const userData = utils.user.getUserData();
 
-      // IMPORTANT: Only directors can access this portal
-      if (userData && userData.isDirector !== true) {
-        console.warn('Non-director user detected. Logging out.');
+      // IMPORTANT: Only teachers (roleId=8) and directors (roleId=8, isDirector=true) can access this portal
+      if (userData && userData.roleId !== 8) {
+        console.warn('Non-teacher/director user detected. Logging out.');
         utils.user.removeUserData();
         setUser(null);
         setLoading(false);
@@ -68,7 +70,10 @@ function AppContent() {
       <Routes>
         <Route
           path="/login"
-          element={!user ? <Login setUser={setUser} /> : <Navigate to="/dashboard" />}
+          element={
+            !user ? <Login setUser={setUser} /> :
+            (user && user.roleId === 8 && !user.isDirector ? <Navigate to="/attendance" /> : <Navigate to="/dashboard" />)
+          }
         />
 
         {/* Public student registration route */}
@@ -97,7 +102,7 @@ function AppContent() {
             )
           }
         >
-          <Route index element={<Navigate to="/dashboard" />} />
+          <Route index element={user && user.roleId === 8 && !user.isDirector ? <Navigate to="/attendance" /> : <Navigate to="/dashboard" />} />
           
           {/* Dashboard routes with sidebar */}
           <Route path="dashboard/*" element={
@@ -147,6 +152,30 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<ProfileUpdate user={user} setUser={setUser} />} />
+          </Route>
+
+          <Route path="attendance" element={
+            <ProtectedRoute path="/attendance" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Attendance />} />
+          </Route>
+
+          <Route path="my-classes" element={
+            <ProtectedRoute path="/my-classes" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<TeacherClasses user={user} />} />
+          </Route>
+
+          <Route path="my-students" element={
+            <ProtectedRoute path="/my-students" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<TeacherStudentsManagement user={user} />} />
           </Route>
 
           {/* Temporarily removed routes (will be re-enabled later):

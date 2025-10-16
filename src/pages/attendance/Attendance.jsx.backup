@@ -1,0 +1,782 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Calendar, Check, X, Clock, Users, Search, Filter, AlertCircle, Save, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
+import { useLoading } from '../../contexts/LoadingContext';
+import { attendanceService } from '../../utils/api/services/attendanceService';
+import { classService } from '../../utils/api/services/classService';
+import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
+import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
+import ErrorDisplay from '../../components/ui/ErrorDisplay';
+import { useErrorHandler } from '../../hooks/useErrorHandler';
+import { Button } from '../../components/ui/Button';
+
+export default function Attendance() {
+  const { t } = useLanguage();
+  const { showSuccess, showError } = useToast();
+  const { startLoading, stopLoading } = useLoading();
+  const { error, handleError, clearError, retry } = useErrorHandler();
+
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedClass, setSelectedClass] = useState('');
+  const [students, setStudents] = useState([]);
+  const [weeklyAttendance, setWeeklyAttendance] = useState({}); // { studentId: { date: { status, time, id } } }
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [classes, setClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()));
+
+  const fetchingRef = useRef(false);
+
+  // Helper function to get the start of the week (Monday)
+  function getWeekStart(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    return new Date(d.setDate(diff));
+  }
+
+  // Generate array of dates for the current week
+  function getWeekDates(startDate) {
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      dates.push(date);
+    }
+    return dates;
+  }
+
+  const weekDates = getWeekDates(currentWeekStart);
+
+  // Get authenticated user data
+  const [user, setUser] = useState(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      return userData ? JSON.parse(userData) : null;
+    } catch (err) {
+      console.error('Error parsing user data:', err);
+      return null;
+    }
+  });
+
+  const [schoolId, setSchoolId] = useState(user?.school_id || user?.schoolId || null);
+
+  // Listen for localStorage changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
+          if (parsedUser?.school_id || parsedUser?.schoolId) {
+            setSchoolId(parsedUser.school_id || parsedUser.schoolId);
+          }
+        } else {
+          setUser(null);
+          setSchoolId(null);
+        }
+      } catch (err) {
+        console.error('Error parsing updated user data:', err);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('userDataUpdated', handleStorageChange);
+
+    if (user?.school_id || user?.schoolId) {
+      setSchoolId(user.school_id || user.schoolId);
+    }
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userDataUpdated', handleStorageChange);
+    };
+  }, [user]);
+
+  // Fetch classes for the school
+  const fetchClasses = useCallback(async () => {
+    if (!schoolId) return;
+
+    setLoadingClasses(true);
+    try {
+      const response = await classService.getBySchool(schoolId);
+      if (response.success && response.classes) {
+        setClasses([{ id: '', name: t('allClasses', 'All Classes') }, ...response.classes]);
+      }
+    } catch (err) {
+      console.error('Error fetching classes:', err);
+      handleError(err, {
+        toastMessage: t('failedToLoadClasses', 'Failed to load classes')
+      });
+    } finally {
+      setLoadingClasses(false);
+    }
+  }, [schoolId, t, handleError]);
+
+  // Fetch students and weekly attendance
+  const fetchStudents = useCallback(async () => {
+    if (fetchingRef.current) {
+      console.log('Already fetching students, skipping...');
+      return;
+    }
+
+    if (!selectedClass) {
+      setStudents([]);
+      setWeeklyAttendance({});
+      setInitialLoading(false);
+      return;
+    }
+
+    fetchingRef.current = true;
+    setLoading(true);
+    clearError();
+
+    try {
+      const loadingKey = 'fetchStudents';
+      startLoading(loadingKey, t('loadingStudents', 'Loading students...'));
+
+      // Fetch students from the selected class
+      const studentsResponse = await classService.getClassStudents(selectedClass);
+
+      if (studentsResponse.data && Array.isArray(studentsResponse.data)) {
+        const formattedStudents = studentsResponse.data
+          .filter(student => student && (student.userId || student.user_id || student.id))
+          .map(student => {
+            const userId = student.userId || student.user_id || student.id || student.user?.id;
+            const firstName = student.firstName || student.first_name || student.user?.first_name || '';
+            const lastName = student.lastName || student.last_name || student.user?.last_name || '';
+            const fullName = student.fullName || student.full_name || `${firstName} ${lastName}`.trim();
+            const username = student.username || student.user?.username || '';
+
+            return {
+              id: userId,
+              studentId: student.studentId || student.student_id,
+              name: fullName || username || 'Unknown',
+              firstName,
+              lastName,
+              username,
+              classId: selectedClass
+            };
+          });
+
+        setStudents(formattedStudents);
+
+        // Fetch attendance for each day of the week
+        const weeklyAttendanceData = {};
+
+        for (const date of weekDates) {
+          const dateStr = date.toISOString().split('T')[0];
+
+          try {
+            const attendanceResponse = await attendanceService.getAttendance({
+              classId: selectedClass,
+              date: dateStr,
+              limit: 1000
+            });
+
+            if (attendanceResponse.data && Array.isArray(attendanceResponse.data)) {
+              attendanceResponse.data.forEach(record => {
+                const userId = record.userId;
+
+                if (!weeklyAttendanceData[userId]) {
+                  weeklyAttendanceData[userId] = {};
+                }
+
+                weeklyAttendanceData[userId][dateStr] = {
+                  status: record.status?.toLowerCase() || 'present',
+                  time: record.createdAt ? new Date(record.createdAt).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                  }) : null,
+                  id: record.id
+                };
+              });
+            }
+          } catch (err) {
+            console.error(`Error fetching attendance for ${dateStr}:`, err);
+          }
+        }
+
+        setWeeklyAttendance(weeklyAttendanceData);
+        setUnsavedChanges(false);
+      } else {
+        setStudents([]);
+        setWeeklyAttendance({});
+      }
+
+      stopLoading(loadingKey);
+    } catch (err) {
+      console.error('Error fetching students:', err);
+      handleError(err, {
+        toastMessage: t('errorFetchingStudentData', 'Error fetching student data')
+      });
+    } finally {
+      setLoading(false);
+      setInitialLoading(false);
+      fetchingRef.current = false;
+    }
+  }, [selectedClass, weekDates, t, handleError, clearError, startLoading, stopLoading]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (schoolId) {
+      fetchClasses();
+    }
+  }, [schoolId, fetchClasses]);
+
+  useEffect(() => {
+    if (selectedClass) {
+      fetchStudents();
+    } else {
+      setInitialLoading(false);
+    }
+  }, [selectedClass, currentWeekStart, fetchStudents]);
+
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (student.studentId && student.studentId.toString().toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesSearch;
+  });
+
+  // Mark attendance for a specific student on a specific date
+  const markAttendance = useCallback((studentId, date, status) => {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+
+    setWeeklyAttendance(prev => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        [dateStr]: {
+          status,
+          time: status === 'absent' ? null : timeString,
+          id: prev[studentId]?.[dateStr]?.id // Keep existing record ID if updating
+        }
+      }
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  // Mark all students for a specific date
+  const markAllForDate = useCallback((date, status) => {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+
+    setWeeklyAttendance(prev => {
+      const updated = { ...prev };
+      filteredStudents.forEach(student => {
+        if (!updated[student.id]) {
+          updated[student.id] = {};
+        }
+        updated[student.id][dateStr] = {
+          status,
+          time: status === 'absent' ? null : timeString,
+          id: prev[student.id]?.[dateStr]?.id
+        };
+      });
+      return updated;
+    });
+    setUnsavedChanges(true);
+    showSuccess(t('markedAllStudents', `Marked all students as ${status}`));
+  }, [filteredStudents, showSuccess, t]);
+
+  // Week navigation
+  const goToPreviousWeek = useCallback(() => {
+    const newStart = new Date(currentWeekStart);
+    newStart.setDate(newStart.getDate() - 7);
+    setCurrentWeekStart(newStart);
+  }, [currentWeekStart]);
+
+  const goToNextWeek = useCallback(() => {
+    const newStart = new Date(currentWeekStart);
+    newStart.setDate(newStart.getDate() + 7);
+    setCurrentWeekStart(newStart);
+  }, [currentWeekStart]);
+
+  const goToCurrentWeek = useCallback(() => {
+    setCurrentWeekStart(getWeekStart(new Date()));
+  }, []);
+
+  const saveAttendance = useCallback(async () => {
+    if (!selectedClass || students.length === 0) {
+      showError(t('selectClassFirst', 'Please select a class first'));
+      return;
+    }
+
+    setLoading(true);
+    const loadingKey = 'saveAttendance';
+
+    try {
+      startLoading(loadingKey, t('savingAttendance', 'Saving attendance...'));
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Process each student's attendance for each day
+      for (const student of students) {
+        const studentAttendance = weeklyAttendance[student.id] || {};
+
+        for (const date of weekDates) {
+          const dateStr = date.toISOString().split('T')[0];
+          const attendanceRecord = studentAttendance[dateStr];
+
+          // Skip if no attendance marked for this date
+          if (!attendanceRecord) continue;
+
+          const attendanceData = {
+            classId: parseInt(selectedClass),
+            userId: student.id,
+            date: dateStr,
+            status: attendanceRecord.status.toUpperCase()
+          };
+
+          try {
+            if (attendanceRecord.id) {
+              // Update existing record
+              await attendanceService.updateAttendance(attendanceRecord.id, {
+                status: attendanceRecord.status.toUpperCase()
+              });
+              successCount++;
+            } else {
+              // Create new record
+              await attendanceService.createAttendance(attendanceData);
+              successCount++;
+            }
+          } catch (err) {
+            console.error(`Error saving attendance for student ${student.id} on ${dateStr}:`, err);
+            errorCount++;
+          }
+        }
+      }
+
+      if (successCount > 0) {
+        showSuccess(t('attendanceSavedSuccessfully', `Attendance saved successfully (${successCount} records)`));
+        setUnsavedChanges(false);
+        // Refresh to get updated data
+        await fetchStudents();
+      }
+
+      if (errorCount > 0) {
+        showError(t('someAttendanceFailedToSave', `${errorCount} records failed to save`));
+      }
+
+      stopLoading(loadingKey);
+    } catch (err) {
+      console.error('Error saving attendance:', err);
+      handleError(err, {
+        toastMessage: t('errorSavingAttendance', 'Error saving attendance')
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedClass, students, weeklyAttendance, weekDates, t, showSuccess, showError, startLoading, stopLoading, handleError, fetchStudents]);
+
+  // Get weekly attendance stats
+  const getWeeklyStats = () => {
+    let totalMarked = 0;
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+
+    filteredStudents.forEach(student => {
+      const studentAtt = weeklyAttendance[student.id] || {};
+      weekDates.forEach(date => {
+        const dateStr = date.toISOString().split('T')[0];
+        const record = studentAtt[dateStr];
+        if (record) {
+          totalMarked++;
+          if (record.status === 'present') present++;
+          else if (record.status === 'absent') absent++;
+          else if (record.status === 'late') late++;
+        }
+      });
+    });
+
+    return { total: filteredStudents.length * 7, totalMarked, present, absent, late };
+  };
+
+  const stats = getWeeklyStats();
+
+  // Helper to check if date is today
+  const isToday = (date) => {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  // Helper to check if date is weekend
+  const isWeekend = (date) => {
+    const day = date.getDay();
+    return day === 0 || day === 6;
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'present':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'absent':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'late':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'excused':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // Initial loading state
+  if (initialLoading && selectedClass) {
+    return (
+      <PageLoader
+        message={t('loadingStudents', 'Loading students...')}
+        className="min-h-screen bg-gray-50"
+      />
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <ErrorDisplay
+        error={error}
+        onRetry={() => retry(fetchStudents)}
+        size="lg"
+        className="min-h-screen bg-gray-50"
+      />
+    );
+  }
+
+  return (
+    <PageTransition variant="fade" className="flex-1 bg-gray-50">
+      <div className="p-4 sm:p-6 lg:p-8">
+        {/* Header */}
+        <FadeInSection className="mb-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {t('attendanceTracking') || 'Attendance Tracking'}
+                </h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  {t('trackStudentAttendance') || 'Track and manage student attendance records'}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {unsavedChanges && (
+                  <div className="flex items-center text-amber-600 text-sm">
+                    <AlertCircle className="h-4 w-4 mr-1" />
+                    {t('unsavedChanges', 'Unsaved changes')}
+                  </div>
+                )}
+                <Button
+                  onClick={saveAttendance}
+                  disabled={loading || !selectedClass || students.length === 0}
+                  variant="primary"
+                  size="default"
+                  className="shadow-lg"
+                >
+                  <Save className="h-5 w-5 mr-2" />
+                  <span className='text-xs sm:text-sm'>
+                    {loading ? t('saving', 'Saving...') : (t('saveAttendance') || 'Save Attendance')}
+                  </span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </FadeInSection>
+
+        {/* Filters & Week Navigation */}
+        <FadeInSection>
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('class') || 'Class'}
+                </label>
+                <div className="relative">
+                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <select
+                    className="pl-10 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                    disabled={loadingClasses}
+                  >
+                    {classes.map(cls => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name || cls.className || `Grade ${cls.gradeLevel}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('search') || 'Search'}
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder={t('searchStudents') || 'Search students...'}
+                    className="pl-10 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-end">
+                <div className="bg-indigo-50 rounded-lg p-3 flex items-center w-full justify-center">
+                  <Users className="h-5 w-5 text-indigo-600 mr-2" />
+                  <span className="text-sm font-medium text-indigo-600">
+                    {filteredStudents.length} {t('students') || 'Students'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Week Navigation */}
+            <div className="flex items-center justify-between border-t pt-4">
+              <Button
+                onClick={goToPreviousWeek}
+                variant="outline"
+                size="sm"
+                disabled={loading}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                {t('previousWeek', 'Previous Week')}
+              </Button>
+
+              <div className="text-center">
+                <div className="text-sm font-medium text-gray-900">
+                  {currentWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} -{' '}
+                  {weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
+                <Button
+                  onClick={goToCurrentWeek}
+                  variant="ghost"
+                  size="sm"
+                  className="mt-1 text-xs"
+                >
+                  {t('currentWeek', 'Current Week')}
+                </Button>
+              </div>
+
+              <Button
+                onClick={goToNextWeek}
+                variant="outline"
+                size="sm"
+                disabled={loading}
+              >
+                {t('nextWeek', 'Next Week')}
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        </FadeInSection>
+
+        {/* Stats Cards */}
+        {selectedClass && (
+          <FadeInSection>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div className="flex items-center">
+                  <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Check className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Present</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.present}</p>
+                    <p className="text-sm text-green-600">{stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0}%</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div className="flex items-center">
+                  <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <X className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Absent</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.absent}</p>
+                    <p className="text-sm text-red-600">{stats.total > 0 ? Math.round((stats.absent / stats.total) * 100) : 0}%</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div className="flex items-center">
+                  <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Late</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.late}</p>
+                    <p className="text-sm text-yellow-600">{stats.total > 0 ? Math.round((stats.late / stats.total) * 100) : 0}%</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div className="flex items-center">
+                  <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Users className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Total</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                    <p className="text-sm text-blue-600">Students</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeInSection>
+        )}
+
+        {/* Attendance List */}
+        {selectedClass ? (
+          <FadeInSection>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {t('attendanceFor') || 'Attendance for'} {new Date(selectedDate).toLocaleDateString()}
+                </h3>
+              </div>
+
+              {loading ? (
+                <div className="p-12 text-center">
+                  <DynamicLoader
+                    type="spinner"
+                    size="xl"
+                    variant="primary"
+                    message={t('loadingStudents', 'Loading students...')}
+                  />
+                </div>
+              ) : filteredStudents.length === 0 ? (
+                <div className="p-12 text-center">
+                  <Users className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                    {t('noStudentsFound', 'No students found')}
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {searchTerm
+                      ? t('tryDifferentSearch', 'Try a different search term')
+                      : t('noStudentsInClass', 'No students in this class')}
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {filteredStudents.map((student) => (
+                    <div key={student.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-600 flex items-center justify-center">
+                            <span className="text-sm font-medium text-white">
+                              {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                            <div className="text-sm text-gray-500">
+                              {student.studentId ? `ID: ${student.studentId}` : student.username}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-4">
+                          {attendance[student.id] && (
+                            <div className="flex items-center space-x-2">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(attendance[student.id].status)}`}>
+                                {attendance[student.id].status === 'present' && 'Present'}
+                                {attendance[student.id].status === 'absent' && 'Absent'}
+                                {attendance[student.id].status === 'late' && 'Late'}
+                                {attendance[student.id].status === 'excused' && 'Excused'}
+                              </span>
+                              {attendance[student.id].time && (
+                                <span className="text-xs text-gray-500">
+                                  {attendance[student.id].time}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => markAttendance(student.id, 'present')}
+                              className={`p-2 rounded-lg transition-all ${
+                                attendance[student.id]?.status === 'present'
+                                  ? 'bg-green-100 text-green-600 ring-2 ring-green-300'
+                                  : 'bg-gray-100 text-gray-400 hover:bg-green-50 hover:text-green-600'
+                              }`}
+                              title={t('markPresent', 'Mark as present')}
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => markAttendance(student.id, 'late')}
+                              className={`p-2 rounded-lg transition-all ${
+                                attendance[student.id]?.status === 'late'
+                                  ? 'bg-yellow-100 text-yellow-600 ring-2 ring-yellow-300'
+                                  : 'bg-gray-100 text-gray-400 hover:bg-yellow-50 hover:text-yellow-600'
+                              }`}
+                              title={t('markLate', 'Mark as late')}
+                            >
+                              <Clock className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => markAttendance(student.id, 'absent')}
+                              className={`p-2 rounded-lg transition-all ${
+                                attendance[student.id]?.status === 'absent'
+                                  ? 'bg-red-100 text-red-600 ring-2 ring-red-300'
+                                  : 'bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-600'
+                              }`}
+                              title={t('markAbsent', 'Mark as absent')}
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </FadeInSection>
+        ) : (
+          <FadeInSection>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+              <Filter className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-4 text-lg font-medium text-gray-900">
+                {t('selectClassToStart', 'Select a class to start')}
+              </h3>
+              <p className="mt-2 text-sm text-gray-500">
+                {t('chooseClassFromDropdown', 'Choose a class from the dropdown above to view and manage attendance')}
+              </p>
+            </div>
+          </FadeInSection>
+        )}
+      </div>
+    </PageTransition>
+  );
+}

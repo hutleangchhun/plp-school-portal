@@ -7,17 +7,23 @@ export { API_CONFIG, ENDPOINTS, HTTP_STATUS, getBestApiUrl, testApiConnection, g
 export { authService, authUtils } from './services/authService.js';
 export { userService, userUtils } from './services/userService.js';
 export { studentService } from './services/studentService.js';
+export { attendanceService } from './services/attendanceService.js';
+export { classService } from './services/classService.js';
 
 // Import services for convenience objects
 import { authService, authUtils } from './services/authService.js';
 import { userService, userUtils } from './services/userService.js';
 import { studentService } from './services/studentService.js';
+import { attendanceService } from './services/attendanceService.js';
+import { classService } from './services/classService.js';
 
 // Convenience exports for common operations
 export const api = {
   auth: authService,
   user: userService,
-  student: studentService
+  student: studentService,
+  attendance: attendanceService,
+  class: classService
 };
 
 export const utils = {
