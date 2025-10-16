@@ -134,7 +134,7 @@ export default function Attendance() {
   }, [schoolId, t, handleError]);
 
   // Fetch students and weekly attendance
-  const fetchStudents = useCallback(async () => {
+  const fetchStudents = useCallback(async (searchQuery = '') => {
     if (fetchingRef.current) {
       console.log('Already fetching students, skipping...');
       return;
@@ -157,7 +157,7 @@ export default function Attendance() {
 
       // Fetch students from the selected class with search term
       const studentsResponse = await classService.getClassStudents(selectedClass, {
-        search: searchTerm || undefined
+        search: searchQuery || undefined
       });
 
       if (studentsResponse.data && Array.isArray(studentsResponse.data)) {
@@ -199,7 +199,7 @@ export default function Attendance() {
               classId: selectedClass,
               startDate,
               endDate,
-              studentName: searchTerm || undefined,
+              studentName: searchQuery || undefined,
               page: currentPage,
               limit: 400 // Increased limit to reduce number of requests
             });
@@ -269,37 +269,91 @@ export default function Attendance() {
     }
   }, [schoolId, fetchClasses]);
 
-  useEffect(() => {
-    if (selectedClass) {
-      fetchStudents();
-    } else {
-      setInitialLoading(false);
+  // Filter students based on search term
+  // Server-side filtering may not work, so we apply client-side filtering as well
+  const displayedStudents = useMemo(() => {
+    if (!searchTerm || searchTerm.trim() === '') {
+      return students;
     }
-  }, [selectedClass, currentWeekStart, fetchStudents]);
 
-  // Use students directly as we'll filter on the server side
-  const displayedStudents = students;
+    const searchLower = searchTerm.toLowerCase().trim();
+
+    return students.filter(student => {
+      // Get all student name fields
+      const name = (student.name || '').toLowerCase();
+      const firstName = (student.firstName || '').toLowerCase();
+      const lastName = (student.lastName || '').toLowerCase();
+      const username = (student.username || '').toLowerCase();
+      const fullName = `${firstName} ${lastName}`.trim().toLowerCase();
+
+      // Check both lowercase (for English) and original (for Khmer)
+      return (
+        name.includes(searchLower) ||
+        firstName.includes(searchLower) ||
+        lastName.includes(searchLower) ||
+        username.includes(searchLower) ||
+        fullName.includes(searchLower) ||
+        // Support Khmer text (case-sensitive)
+        (student.name || '').includes(searchTerm) ||
+        (student.firstName || '').includes(searchTerm) ||
+        (student.lastName || '').includes(searchTerm) ||
+        `${student.firstName || ''} ${student.lastName || ''}`.trim().includes(searchTerm)
+      );
+    });
+  }, [students, searchTerm]);
 
   // Debounce search to avoid too many API calls
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((term) => {
-        if (selectedClass) {
-          fetchStudents();
-        }
-      }, 500),
-    [selectedClass, currentWeekStart, fetchStudents]
-  );
+  const debouncedFetchRef = useRef(null);
+  const previousSearchRef = useRef(searchTerm);
+  const previousClassRef = useRef(selectedClass);
+  const previousWeekRef = useRef(currentWeekStart);
 
-  // Effect to handle search term changes
+  // Effect to handle class/week changes and search
   useEffect(() => {
-    if (selectedClass) {
-      debouncedSearch(searchTerm);
+    if (!selectedClass) {
+      setInitialLoading(false);
+      setStudents([]);
+      setWeeklyAttendance({});
+      previousClassRef.current = selectedClass;
+      previousWeekRef.current = currentWeekStart;
+      previousSearchRef.current = searchTerm;
+      return;
     }
+
+    // Check if class or week changed (these should trigger immediate fetch)
+    const classChanged = previousClassRef.current !== selectedClass;
+    const weekChanged = previousWeekRef.current?.getTime() !== currentWeekStart?.getTime();
+    const searchChanged = previousSearchRef.current !== searchTerm;
+
+    // Update refs
+    previousClassRef.current = selectedClass;
+    previousWeekRef.current = currentWeekStart;
+    previousSearchRef.current = searchTerm;
+
+    // Cancel any pending debounced calls
+    if (debouncedFetchRef.current) {
+      debouncedFetchRef.current.cancel();
+    }
+
+    // If class or week changed, fetch immediately
+    if (classChanged || weekChanged) {
+      fetchStudents(searchTerm);
+    }
+    // If only search changed, debounce
+    else if (searchChanged) {
+      debouncedFetchRef.current = debounce(() => {
+        fetchStudents(searchTerm);
+      }, 500);
+      debouncedFetchRef.current();
+    }
+
     return () => {
-      debouncedSearch.cancel();
+      if (debouncedFetchRef.current) {
+        debouncedFetchRef.current.cancel();
+      }
     };
-  }, [searchTerm, selectedClass, debouncedSearch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClass, currentWeekStart, searchTerm]);
 
 
   // Week navigation

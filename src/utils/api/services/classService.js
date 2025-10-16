@@ -96,11 +96,22 @@ export const classService = {
   /**
    * Get students in a specific class
    * @param {string|number} classId - The ID of the class
+   * @param {Object} params - Query parameters
+   * @param {string} [params.search] - Search term to filter students by name
    * @returns {Promise<Array>} List of students in the class
    */
-  async getClassStudents(classId) {
+  async getClassStudents(classId, params = {}) {
+    const queryParams = {};
+
+    // Add search parameter if provided
+    if (params.search && params.search.trim()) {
+      queryParams.search = params.search.trim();
+    }
+
     return handleApiResponse(() =>
-      apiClient_.get(ENDPOINTS.CLASSES.STUDENTS(classId))
+      apiClient_.get(ENDPOINTS.CLASSES.STUDENTS(classId), {
+        params: Object.keys(queryParams).length > 0 ? queryParams : undefined
+      })
     ).then(response => ({
       data: Array.isArray(response.data) ? response.data : []
     }));
