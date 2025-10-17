@@ -17,6 +17,7 @@ import { DatePicker } from '../../components/ui/date-picker';
 import Badge from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
 import EmptyState from '@/components/ui/EmptyState';
+import AttendanceExport from '../../components/attendance/AttendanceExport';
 
 export default function Attendance() {
   const { t, setLanguage } = useLanguage();
@@ -488,7 +489,7 @@ export default function Attendance() {
                   <input
                     type="text"
                     placeholder={t('searchStudents') || 'Search students...'}
-                    className="pl-10 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="pl-10 w-full border text-sm border-gray-300 rounded-sm px-3 py-2"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -547,6 +548,16 @@ export default function Attendance() {
                     >
                       <ChevronRight className="h-4 w-4" />
                     </Button>
+
+                    {/* Export Component */}
+                    <AttendanceExport
+                      students={displayedStudents}
+                      attendance={weeklyAttendance}
+                      className={classes.find(cls => cls.id === selectedClass)?.name || 'Unknown-Class'}
+                      selectedDate={currentWeekStart}
+                      exportType="monthly"
+                      disabled={loading}
+                    />
                   </div>
                 </div>
               </div>
