@@ -185,18 +185,18 @@ export default function AttendanceExport({
       ];
 
       // Category header row - Row 7 (for "ចំនួនអវត្តមាន")
-      const categoryRow = ['', '', '', ''];
+      const categoryRow = ['ល.រ', 'អត្តសញ្ញាណ', 'ឈ្មោះ', 'ភេទ'];
       for (let i = 1; i <= 31; i++) {
-        categoryRow.push('');
+        categoryRow.push(i.toString());
       }
       categoryRow.push('ចំនួនអវត្តមាន', '', '', ''); // Merged across ម អ យឺត ផ្សេងៗ
       while (categoryRow.length < 39) categoryRow.push('');
       templateData.push(categoryRow);
 
-      // Column header row - Row 8
-      const headerRow = ['ល.រ', 'អត្តសញ្ញាណ', 'ឈ្មោះ', 'ភេទ'];
+      // Column header row - Row 8 (only for columns under "ចំនួនអវត្តមាន")
+      const headerRow = ['', '', '', ''];
       for (let i = 1; i <= 31; i++) {
-        headerRow.push(i.toString());
+        headerRow.push('');
       }
       headerRow.push('ម', 'អ', 'យឺត', 'ផ្សេងៗ');
       while (headerRow.length < 39) headerRow.push('');
