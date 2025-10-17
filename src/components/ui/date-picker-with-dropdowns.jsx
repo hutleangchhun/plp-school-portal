@@ -28,6 +28,8 @@ export function DatePickerWithDropdowns({
   disabled = false,
   fromYear = 1960,
   toYear = new Date().getFullYear(),
+  fromDate,
+  toDate,
   ...props
 }) {
   const [open, setOpen] = React.useState(false)
@@ -120,8 +122,8 @@ export function DatePickerWithDropdowns({
           onSelect={handleDateSelect}
           month={currentMonth}
           onMonthChange={setCurrentMonth}
-          fromYear={fromYear}
-          toYear={toYear}
+          fromDate={fromDate || new Date(fromYear, 0, 1)}
+          toDate={toDate || new Date(toYear, 11, 31)}
           disabled={disabled}
           hideNavigation
         />

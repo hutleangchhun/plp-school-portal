@@ -294,6 +294,17 @@ export const km = {
   selectClassToViewAttendance: 'សូមជ្រើសរើសថ្នាក់ដើម្បីមើលវត្តមានសិស្សក្នុងថ្នាក់',
   pleaseSelectClassAbove: 'សូមជ្រើសរើសថ្នាក់នៅកក្នុងកម្រងខាងលើ',
   noStudentsInClass: 'មិនមានសិស្សនៅក្នុងថ្នាក់នេះទេ',
+  enterReason: 'មូលហេតុ...',
+  markAllPresent: 'កំណត់សិស្សទាំងអស់ថាមាន៖ វត្តមាន',
+  markStudentAttendance: 'កំណត់វត្តមានសិស្សប្រចាំថ្ងៃ',
+  markedAllPresent: 'សិស្សទាំងអស់ត្រូវបានកំណត់ថាមាន៖ វត្តមាន',
+  contactAdminToAssignClasses: 'សូមទាក់ទងអ្នកគ្រប់គ្រងរបស់អ្នកដើម្បីកំណត់ថ្នាក់',
+  noClassesAssignedMessage: 'អ្នកមិនត្រូវបានកំណត់ថ្នាក់ណាមួយទេ។ សូមទាក់ទងអ្នកគ្រប់គ្រង។',
+
+  // Teacher Information
+  teacherInfo: 'ព័ត៌មានគ្រូបង្រៀន',
+  attendanceRate: 'អត្រាវត្តមាន',
+  todayAttendanceOverview: 'ទិដ្ឋភាពទូទៅនៃវត្តមានថ្ងៃនេះ',
 
   // Reports & Analytics
   academicPerformance: 'ការអនុវត្តន៍សិក្សា',
@@ -662,10 +673,15 @@ export const km = {
   yourAccountDetails: 'ព័ត៌មានគណនីរបស់អ្នក',
   yourSchoolDetails: 'ព័ត៌មានសាលារៀនរបស់អ្នក',
   totalDirectors: 'នាយកសរុប',
+  dashboardGreeting: 'សូមស្វាគមន៍មកកាន់ប្រព័ន្ធរដ្ធបាលសាលារៀន',
+  loadingAttendance: 'កំពុងទាញយកវត្តមាន...',
+  noAttendanceData: 'មិនមានទិន្នន័យវត្តមាន',
+  noAttendanceDataMessage: 'មិនមានទិន្នន័យវត្តមានសម្រាប់ថ្នាក់របស់អ្នកនៅពេលនេះ។',
   
   // Student management with master-class endpoint
   noSchoolIdFound: 'រកមិនឃើញលេខសម្គាល់សាលារៀនសម្រាប់គណនីរបស់អ្នក',
   failedToFetchSchoolId: 'បរាជ័យក្នុងការទាញយកព័ត៌មានសាលារៀន',
+  noStudents: 'មិនមានសិស្ស',
   
   // Export functionality
   exportToExcel: 'ទាញទិន្នន័យជា Excel',
@@ -754,7 +770,9 @@ export const km = {
   errorFetchingStudentData: 'កំហុសក្នុងការទាញយកទិន្នន័យសិស្ស',
   attendanceSavedSuccessfully: 'បានរក្សាទុកវត្តមានដោយជោគជ័យ',
   errorSavingAttendance: 'កំហុសក្នុងការរក្សាទុកវត្តមាន',
-  
+  cannotEditPastAttendance: 'មិនអាចកែវត្តមានសម្រាប់កាលបរិច្ឆេទកន្លងមកបានទេ',
+  viewingPastAttendance: 'អ្នកកំពុងមើលវត្តមានសម្រាប់កាលបរិច្ឆេទកន្លងមក។ មិនអាចកែប្រែបានទេ។',
+
   // Form field labels and placeholders
   enterFirstName: 'បញ្ចូលនាមខ្លួន',
   enterLastName: 'បញ្ចូលនាមត្រកូល',

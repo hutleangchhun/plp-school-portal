@@ -21,6 +21,8 @@ export function DatePicker({
   disabled = false,
   fromYear = 1960,
   toYear = new Date().getFullYear(),
+  fromDate,
+  toDate,
   ...props
 }) {
   return (
@@ -48,8 +50,8 @@ export function DatePicker({
           onSelect={onChange}
           disabled={disabled}
           captionLayout="dropdown-buttons"
-          fromDate={new Date(fromYear, 0, 1)}
-          toDate={new Date(toYear, 11, 31)}
+          fromDate={fromDate || new Date(fromYear, 0, 1)}
+          toDate={toDate || new Date(toYear, 11, 31)}
           initialFocus
           showOutsideDays={false}
         />

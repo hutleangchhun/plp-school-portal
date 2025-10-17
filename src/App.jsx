@@ -1,5 +1,7 @@
 import TeacherClasses from './pages/teachers/TeacherClasses';
 import TeacherStudentsManagement from './pages/teachers/TeacherStudentsManagement';
+import TeacherAttendance from './pages/teachers/TeacherAttendance';
+import TeacherDashboard from './pages/teachers/TeacherDashboard';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -72,7 +74,7 @@ function AppContent() {
           path="/login"
           element={
             !user ? <Login setUser={setUser} /> :
-            (user && user.roleId === 8 && !user.isDirector ? <Navigate to="/attendance" /> : <Navigate to="/dashboard" />)
+            (user && user.roleId === 8 && !user.isDirector ? <Navigate to="/my-classes" /> : <Navigate to="/dashboard" />)
           }
         />
 
@@ -102,7 +104,7 @@ function AppContent() {
             )
           }
         >
-          <Route index element={user && user.roleId === 8 && !user.isDirector ? <Navigate to="/attendance" /> : <Navigate to="/dashboard" />} />
+          <Route index element={user && user.roleId === 8 && !user.isDirector ? <Navigate to="/my-classes" /> : <Navigate to="/dashboard" />} />
           
           {/* Dashboard routes with sidebar */}
           <Route path="dashboard/*" element={
@@ -159,7 +161,11 @@ function AppContent() {
               <DashboardLayout user={user} onLogout={handleLogout} />
             </ProtectedRoute>
           }>
-            <Route index element={<Attendance />} />
+            <Route index element={
+              user && user.roleId === 8 && !user.isDirector
+                ? <TeacherAttendance user={user} />
+                : <Attendance />
+            } />
           </Route>
 
           <Route path="my-classes" element={
@@ -167,7 +173,7 @@ function AppContent() {
               <DashboardLayout user={user} onLogout={handleLogout} />
             </ProtectedRoute>
           }>
-            <Route index element={<TeacherClasses user={user} />} />
+            <Route index element={<TeacherDashboard user={user} />} />
           </Route>
 
           <Route path="my-students" element={

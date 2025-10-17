@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { classService } from '../../utils/api/services/classService';
-import { Card } from '../../components/ui/card';
-import { Collapse } from '../../components/ui/Collapse';
-import { Users } from 'lucide-react';
+import { Users, BookOpen } from 'lucide-react';
+import ClassCard from '../../components/ui/ClassCard';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function TeacherClasses({ user }) {
   const { t } = useLanguage();
   const [classes, setClasses] = useState([]);
-  const [expanded, setExpanded] = useState(null);
-  const [studentsByClass, setStudentsByClass] = useState({});
 
   useEffect(() => {
     async function fetchClasses() {
@@ -28,58 +26,45 @@ export default function TeacherClasses({ user }) {
     fetchClasses();
   }, [user]);
 
-  const handleExpand = async (classId) => {
-    setExpanded(expanded === classId ? null : classId);
-    if (!studentsByClass[classId]) {
-      try {
-        // Fetch students for this class using classService
-        const res = await classService.getClassStudents(classId);
-        console.log('Students for class', classId, ':', res);
-        if (res.data && Array.isArray(res.data)) {
-          setStudentsByClass(prev => ({ ...prev, [classId]: res.data }));
-        }
-      } catch (error) {
-        console.error('Error fetching students for class:', error);
-      }
-    }
-  };
-
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <h2 className="text-xl font-bold mb-4">{t('yourClasses', 'Your Classes')}</h2>
-      {classes.length === 0 ? (
-        <div className="text-gray-500">{t('noClassesAssigned', 'No classes assigned.')}</div>
-      ) : (
-        classes.map(cls => (
-          <Card key={cls.id} className="mb-4">
-            <div className="flex items-center justify-between cursor-pointer" onClick={() => handleExpand(cls.id)}>
-              <div>
-                <div className="font-semibold text-lg">{cls.name || t('class', 'Class')} {cls.className || ''}</div>
-                <div className="text-sm text-gray-500">{t('classId', 'Class ID')}: {cls.id}</div>
-              </div>
-              <Users className="h-5 w-5 text-indigo-500" />
+    <div className="p-6">
+      <div className='bg-white p-4 border-2 rounded-lg border-gray-100 shadow-sm'>
+        <div className='flex items-center gap-3 mb-6'>
+          <div className='h-10 w-10 bg-blue-100 rounded-lg border border-blue-200 flex items-center justify-center'>
+            <BookOpen className="inline h-4 w-4 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-base mb-4">{t('yourClasses', 'Your Classes')}</h2>
+          </div>
+        </div>
+        {classes.length === 0 ? (
+          <div className='mx-auto w-full'>
+            <EmptyState
+              icon={Users}
+              title={t('noClassesAssigned', 'No classes assigned.')}
+              description={t('contactAdminToAssignClasses', 'Please contact your administrator to assign classes.')}
+              variant="info"
+            />
+          </div>
+        ) : (
+          classes.map(cls => (
+            <div className='grid grid-cols-4 gap-2'>
+              <ClassCard
+                key={cls.id}
+                title={cls.name || t('untitledClass', 'Untitled Class')}
+                subtitleParts={[
+                  cls.grade ? `${t('grade', 'Grade')} ${cls.grade}` : null,
+                  cls.section ? `${t('section', 'Section')} ${cls.section}` : null,
+                  cls.academicYear || null,
+                  user ? user.name : null,
+                ].filter(Boolean)}
+                enrolled={cls.enrolledCount || 0}
+                capacity={cls.maxStudents || 0}
+              />
             </div>
-            <Collapse isOpen={expanded === cls.id}>
-              <div className="mt-2">
-                <h4 className="font-medium mb-2">{t('students', 'Students')}</h4>
-                {studentsByClass[cls.id] ? (
-                  studentsByClass[cls.id].length > 0 ? (
-                    <ul className="list-disc pl-5">
-                      {studentsByClass[cls.id].map(stu => (
-                        <li key={stu.id} className="mb-1">{stu.name} <span className="text-xs text-gray-400">({stu.studentId || stu.username})</span></li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="text-gray-400">{t('noStudentsInClass', 'No students in this class.')}</div>
-                  )
-                ) : (
-                  <div className="text-gray-400">{t('loading', 'Loading...')}</div>
-                )}
-              </div>
-            </Collapse>
-          </Card>
-        ))
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }

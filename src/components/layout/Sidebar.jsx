@@ -33,7 +33,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/teachers': UserStar,
     '/parents': UserCircle,
     '/attendance': Calendar,
-    '/my-classes': GraduationCap, // Add icon for My Classes
+    '/my-classes': GraduationCap,
+    '/my-students': Users,
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/reports': FileText,
     // '/achievements': Trophy,
@@ -51,7 +52,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/teachers': 'orange',
     '/parents': 'pink',
     '/attendance': 'teal',
-    '/my-classes': 'orange', // Add color for My Classes
+    '/my-classes': 'orange',
+    '/my-students': 'purple',
     // Temporarily removed color mappings (will be re-enabled later):
     // '/reports': 'yellow',
     // '/achievements': 'red',

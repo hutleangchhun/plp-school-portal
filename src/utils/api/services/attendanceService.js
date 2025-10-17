@@ -44,7 +44,11 @@ export const attendanceService = {
     if (endDate !== undefined) queryParams.endDate = endDate;
     if (studentName !== undefined) queryParams.studentName = studentName;
 
-    console.log('Attendance API request params:', queryParams);
+    console.log('=== ATTENDANCE SERVICE REQUEST ===');
+    console.log('Endpoint:', ENDPOINTS.ATTENDANCE.BASE);
+    console.log('Query params:', queryParams);
+    console.log('Date param specifically:', queryParams.date);
+
     const response = await handleApiResponse(() =>
       apiClient_.get(`${ENDPOINTS.ATTENDANCE.BASE}`, { params: queryParams })
     );
