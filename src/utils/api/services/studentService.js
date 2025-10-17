@@ -883,6 +883,18 @@ export const studentService = {
           nameEn: student.roleNameEn || user.roleNameEn,
           nameKh: student.roleNameKh || user.roleNameKh
         },
+        // Parent information
+        parents: student.parents || user.parents || [],
+        // Address information
+        residence: student.residence || user.residence,
+        placeOfBirth: student.place_of_birth || student.placeOfBirth || user.place_of_birth || user.placeOfBirth,
+        nationality: student.nationality || user.nationality,
+        minority: student.minority || user.minority,
+        specialNeeds: student.special_needs || student.specialNeeds || user.special_needs || user.specialNeeds,
+        village: student.village || user.village,
+        commune: student.commune || user.commune,
+        district: student.district || user.district,
+        province: student.province || user.province,
         createdAt: student.student_created_at || student.createdAt || student.created_at || user.created_at,
         updatedAt: student.student_updated_at || student.updatedAt || student.updated_at || user.updated_at
       };

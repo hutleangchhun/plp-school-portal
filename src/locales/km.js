@@ -814,6 +814,8 @@ export const km = {
   selectDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
   schoolName: 'ឈ្មោះសាលារៀន',
   schoolCode: 'លេខកូដសាលារៀន',
+  schoolDetails: 'ព័ត៌មានសាលារៀន',
+  place: 'ទីកន្លែង',
   
   // Common UI Components translations
   'បិទ': 'បិទ',

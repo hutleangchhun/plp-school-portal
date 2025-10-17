@@ -470,6 +470,7 @@ export default function TeacherAttendance({ user }) {
                   students={students}
                   attendance={attendance}
                   className={classes.find(cls => String(cls.classId || cls.id) === selectedClassId)?.name || 'Unknown-Class'}
+                  schoolName={user?.school?.name || user?.schoolName || 'សាលា'}
                   selectedDate={selectedDate}
                   exportType="daily"
                   disabled={studentsLoading}

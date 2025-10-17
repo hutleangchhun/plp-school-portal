@@ -72,6 +72,23 @@ export const schoolService = {
         formatSchoolData(school) {
             // Format school data with correct field mapping
             console.log('Formatting school data:', school);
+
+            // Format place - handle both string and object
+            let placeText = '';
+            if (school.place) {
+                if (typeof school.place === 'string') {
+                    placeText = school.place;
+                } else if (typeof school.place === 'object') {
+                    // Format place object as readable string
+                    const parts = [
+                        school.place.commune_name_kh || school.place.commune_name_en,
+                        school.place.district_name_kh || school.place.district_name_en,
+                        school.place.province_name_kh || school.place.province_name_en
+                    ].filter(Boolean);
+                    placeText = parts.join(', ');
+                }
+            }
+
             return {
                 id: school.schoolId || school.id, // API returns 'schoolId', fallback to 'id'
                 name: school.name,
@@ -80,7 +97,8 @@ export const schoolService = {
                 email: school.email,
                 code: school.code,
                 status: school.status,
-                place: school.place,
+                place: placeText,
+                placeObject: school.place, // Keep original place object for reference
                 establishedYear: school.established_year,
                 createdAt: school.createdAt,
                 updatedAt: school.updatedAt

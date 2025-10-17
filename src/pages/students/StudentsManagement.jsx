@@ -1183,25 +1183,253 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
   };
 
 
-  // Export handlers
+  // Export handlers - Export in BulkStudentImport template format
   const handleExportExcel = async () => {
     try {
-      const selectedClass = selectedClassId !== 'all' 
-        ? classes.find(c => c.classId.toString() === selectedClassId) 
+      const selectedClass = selectedClassId !== 'all'
+        ? classes.find(c => c.classId.toString() === selectedClassId)
         : null;
+
+      // Dynamically import xlsx-js-style for styling support
+      const XLSXStyleModule = await import('xlsx-js-style');
+      const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
+
+      // Get class info for headers
+      const className = selectedClass?.name || 'បញ្ជីរាយនាមសិស្ស';
+      const academicYear = selectedClass?.academicYear || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
+      const gradeLevel = selectedClass?.gradeLevel || '';
+
+      // Create comprehensive template with Cambodian school headers
+      const templateData = [
+        // Official Cambodian School Header - Row 1
+        ['ព្រះរាជាណាចក្រកម្ពុជា', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // Nation, Religion, King - Row 2
+        ['ជាតិ       សាសនា       ព្រះមហាក្សត្រ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // School Administrative Info - Row 3
+        ['កម្រងហស ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // School Name - Row 4
+        ['សាលាបឋមសិក្សា ហ៊ុន សែន ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // Student List Title - Row 5
+        [`បញ្ជីរាយនាមសិស្ស ${className}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // Class and Academic Year - Row 6
+        [`${gradeLevel ? `ថ្នាក់ទី ${gradeLevel}` : 'ថ្នាក់'} ឆ្នាំសិក្សា ${academicYear}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // Empty row for spacing - Row 7
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // Instructions row (row 8)
+        ['សូមបញ្ចូលព័ត៌មានសិស្សដូចឧទាហរណ៍ខាងក្រោម។ សូមលុបជួរឧទាហរណ៍និងបញ្ចូលព័ត៌មានសិស្សពិតប្រាកដ។', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // Main headers (row 9)
+        [
+          '#',
+          'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស',
+          'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក',
+          'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ',
+          'ជនជាតិភាគតិច', 'លក្ខណៈពិសេស'
+        ],
+        // Sub headers (row 10)
+        [
+          '#',
+          'អត្តលេខ', 'គោត្តនាម', 'នាម', 'អ៊ីមែល', 'ឈ្មោះអ្នកប្រើ', 'ពាក្យសម្ងាត់',
+          'ថ្ងៃខែឆ្នាំកំណើត', 'ភេទ', 'លេខទូរស័ព្ទ', 'សញ្ជាតិ', 'លេខសិស្ស', 'លេខសាលា', 'ឆ្នាំសិក្សា', 'កម្រិតថ្នាក់',
+          'អាសយដ្ឋានពេញ',
+          'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញឪពុក',
+          'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញម្តាយ',
+          'ជនជាតិភាគតិច', 'លក្ខណៈពិសេស'
+        ]
+      ];
+
+      // Add student data rows
+      students.forEach((student, index) => {
+        // Format date of birth
+        const dob = student.dateOfBirth || student.date_of_birth;
+        const formattedDob = dob ? new Date(dob).toLocaleDateString('en-GB').replace(/\//g, '/') : '';
+
+        // Format gender
+        const gender = student.gender === 'MALE' || student.gender === 'male' ? 'ប្រុស' :
+                      student.gender === 'FEMALE' || student.gender === 'female' ? 'ស្រី' : '';
+
+        // Format full address for student
+        const studentAddress = [
+          student.residence?.village || student.village,
+          student.residence?.commune || student.commune,
+          student.residence?.district || student.district,
+          student.residence?.province || student.province
+        ].filter(Boolean).join(' ');
+
+        // Get parent data
+        const fatherData = student.parents?.find(p => p.relationship === 'FATHER') || {};
+        const motherData = student.parents?.find(p => p.relationship === 'MOTHER') || {};
+
+        // Format parent addresses
+        const fatherAddress = [
+          fatherData.village,
+          fatherData.commune,
+          fatherData.district,
+          fatherData.province
+        ].filter(Boolean).join(' ') || studentAddress;
+
+        const motherAddress = [
+          motherData.village,
+          motherData.commune,
+          motherData.district,
+          motherData.province
+        ].filter(Boolean).join(' ') || studentAddress;
+
+        // Format parent genders
+        const fatherGender = fatherData.gender === 'MALE' || fatherData.gender === 'male' ? 'ប្រុស' : '';
+        const motherGender = motherData.gender === 'FEMALE' || motherData.gender === 'female' ? 'ស្រី' : '';
+
+        const row = [
+          index + 1, // Row number
+          student.studentId || student.id || '', // អត្តលេខ
+          student.lastName || student.last_name || '', // គោត្តនាម
+          student.firstName || student.first_name || '', // នាម
+          student.email || '', // អ៊ីមែល
+          student.username || '', // ឈ្មោះអ្នកប្រើ
+          '', // ពាក្យសម្ងាត់ (leave empty for security)
+          formattedDob, // ថ្ងៃខែឆ្នាំកំណើត
+          gender, // ភេទ
+          student.phone || '', // លេខទូរស័ព្ទ
+          student.nationality || 'ខ្មែរ', // សញ្ជាតិ
+          student.studentId || '', // លេខសិស្ស
+          '', // លេខសាលា (can be filled manually)
+          selectedClass?.academicYear || academicYear, // ឆ្នាំសិក្សា
+          selectedClass?.gradeLevel || '', // កម្រិតថ្នាក់
+          studentAddress, // អាសយដ្ឋានពេញ
+          // Father info
+          fatherData.firstName || fatherData.first_name || '', // នាមឪពុក
+          fatherData.lastName || fatherData.last_name || '', // គោត្តនាមឪពុក
+          fatherData.phone || '', // ទូរស័ព្ទឪពុក
+          fatherGender, // ភេទឪពុក
+          fatherData.occupation || '', // មុខរបរឪពុក
+          fatherAddress, // អាសយដ្ឋានពេញឪពុក
+          // Mother info
+          motherData.firstName || motherData.first_name || '', // នាមម្តាយ
+          motherData.lastName || motherData.last_name || '', // គោត្តនាមម្តាយ
+          motherData.phone || '', // ទូរស័ព្ទម្តាយ
+          motherGender, // ភេទម្តាយ
+          motherData.occupation || '', // មុខរបរម្តាយ
+          motherAddress, // អាសយដ្ឋានពេញម្តាយ
+          student.minority || '', // ជនជាតិភាគតិច
+          student.specialNeeds || '' // លក្ខណៈពិសេស
+        ];
+
+        templateData.push(row);
+      });
+
+      // Create worksheet
+      const ws = XLSXStyle.utils.aoa_to_sheet(templateData);
+
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 5 },  // #
+        { wch: 12 }, // អត្តលេខ
+        { wch: 12 }, // គោត្តនាម
+        { wch: 12 }, // នាម
+        { wch: 25 }, // អ៊ីមែល
+        { wch: 15 }, // ឈ្មោះអ្នកប្រើ
+        { wch: 12 }, // ពាក្យសម្ងាត់
+        { wch: 12 }, // ថ្ងៃខែឆ្នាំកំណើត
+        { wch: 8 },  // ភេទ
+        { wch: 12 }, // លេខទូរស័ព្ទ
+        { wch: 10 }, // សញ្ជាតិ
+        { wch: 12 }, // លេខសិស្ស
+        { wch: 10 }, // លេខសាលា
+        { wch: 12 }, // ឆ្នាំសិក្សា
+        { wch: 10 }, // កម្រិតថ្នាក់
+        { wch: 40 }, // អាសយដ្ឋានពេញ
+        // Father columns
+        { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 40 },
+        // Mother columns
+        { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 40 },
+        // Additional
+        { wch: 12 }, { wch: 20 }
+      ];
+
+      // Apply styling
+      const range = XLSXStyle.utils.decode_range(ws['!ref']);
+      for (let R = range.s.r; R <= range.e.r; R++) {
+        for (let C = range.s.c; C <= range.e.c; C++) {
+          const cellAddress = XLSXStyle.utils.encode_cell({ r: R, c: C });
+
+          if (!ws[cellAddress]) {
+            ws[cellAddress] = { t: 's', v: '' };
+          }
+
+          // Header rows (0-6) - No borders, centered, bold
+          if (R < 7) {
+            ws[cellAddress].s = {
+              alignment: { vertical: 'center', horizontal: 'center' },
+              font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+            };
+          }
+          // Instructions row (7)
+          else if (R === 7) {
+            ws[cellAddress].s = {
+              alignment: { vertical: 'center', horizontal: 'left' },
+              font: { name: 'Khmer OS Battambang', sz: 9, italic: true },
+              fill: { fgColor: { rgb: 'FFF9E6' } }
+            };
+          }
+          // Main headers (8-9) - Gray background, borders, bold
+          else if (R === 8 || R === 9) {
+            ws[cellAddress].s = {
+              fill: { fgColor: { rgb: 'E0E0E0' } },
+              border: {
+                top: { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left: { style: 'thin', color: { rgb: '000000' } },
+                right: { style: 'thin', color: { rgb: '000000' } }
+              },
+              alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+              font: { name: 'Khmer OS Battambang', sz: 10, bold: true }
+            };
+          }
+          // Data rows (10+) - Borders
+          else {
+            ws[cellAddress].s = {
+              border: {
+                top: { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left: { style: 'thin', color: { rgb: '000000' } },
+                right: { style: 'thin', color: { rgb: '000000' } }
+              },
+              alignment: { vertical: 'center', horizontal: 'left' },
+              font: { name: 'Khmer OS Battambang', sz: 10 }
+            };
+          }
+        }
+      }
+
+      // Merge cells for headers
+      ws['!merges'] = [
+        // Row 1-8 (full width merges)
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 28 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 28 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 28 } },
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 28 } },
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 28 } },
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 28 } },
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 28 } },
+        { s: { r: 7, c: 0 }, e: { r: 7, c: 28 } },
+        // Row 9 (main headers)
+        { s: { r: 8, c: 1 }, e: { r: 8, c: 15 } },  // ព័ត៌មានសិស្ស
+        { s: { r: 8, c: 16 }, e: { r: 8, c: 21 } }, // ព័ត៌មានឪពុក
+        { s: { r: 8, c: 22 }, e: { r: 8, c: 27 } }, // ព័ត៌មានម្តាយ
+      ];
+
+      // Create workbook
+      const wb = XLSXStyle.utils.book_new();
+      XLSXStyle.utils.book_append_sheet(wb, ws, 'បញ្ជីសិស្ស');
+
+      // Generate filename
       const filename = getTimestampedFilename(
-        selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data', 
+        selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data',
         'xlsx'
       );
-      await prepareAndExportExcel(
-        students,
-        filename,
-        t,
-        {
-          classFilter: selectedClass ? { id: selectedClass.classId, name: selectedClass.name } : undefined,
-          passwordField: 'password_hash'
-        }
-      );
+
+      // Export file
+      XLSXStyle.writeFile(wb, filename);
+
       showSuccess(t('exportSuccess', 'Data exported successfully'));
       setShowExportDropdown(false);
     } catch (error) {

@@ -495,15 +495,6 @@ export default function Attendance() {
                   />
                 </div>
               </div>
-
-              <div className="flex items-end">
-                <div className="bg-indigo-50 rounded-lg p-3 flex items-center w-full justify-center">
-                  <Users className="h-5 w-5 text-indigo-600 mr-2" />
-                  <span className="text-sm font-medium text-indigo-600">
-                    {displayedStudents.length} {t('students') || 'Students'}
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
         </FadeInSection>
@@ -511,49 +502,52 @@ export default function Attendance() {
         {selectedClass ? (
           <FadeInSection>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <div className="px-6 py-4 border-b border-gray-200 bg-white">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <div className='flex flex-row items-center gap-2'>
+                      <div className='w-12 h-12 rounded-md bg-indigo-100 flex justify-center items-center'>
+                        <Calendar className="inline-block h-5 w-5 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
                       {t('weeklyAttendance', 'Weekly Attendance')}
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {currentWeekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {weekDates[6].toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                    </p>
+                      </div>
+                    </div>
+                    <div className='flex justify-center items-center gap-3 mt-3'>
+                      <button
+                        onClick={goToPreviousWeek}
+                        variant="outline"
+                        size="sm"
+                        disabled={loading}
+                        className="hover:text-blue-500 transition-colors duration-300"
+                      >
+                        <ChevronLeft className="h-6 w-6" />
+                      </button>
+                      <div className="text-center mt-1">
+                        <p className="text-sm text-gray-600">
+                          {currentWeekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {weekDates[6].toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <button
+                        onClick={goToNextWeek}
+                        variant="outline"
+                        size="sm"
+                        disabled={loading}
+                        className="hover:text-blue-500 transition-colors duration-300"
+                      >
+                        <ChevronRight className="h-6 w-6" />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                    <Button
-                      onClick={goToPreviousWeek}
-                      variant="outline"
-                      size="sm"
-                      disabled={loading}
-                      className="px-2"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      onClick={goToCurrentWeek}
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs px-2"
-                    >
-                      {t('currentWeek', 'Current Week')}
-                    </Button>
-                    <Button
-                      onClick={goToNextWeek}
-                      variant="outline"
-                      size="sm"
-                      disabled={loading}
-                      className="px-2"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-
                     {/* Export Component */}
                     <AttendanceExport
                       students={displayedStudents}
                       attendance={weeklyAttendance}
                       className={classes.find(cls => cls.id === selectedClass)?.name || 'Unknown-Class'}
+                      schoolName={user?.school?.name || user?.schoolName || 'សាលា'}
                       selectedDate={currentWeekStart}
                       exportType="monthly"
                       disabled={loading}
@@ -583,10 +577,10 @@ export default function Attendance() {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-blue-50">
                       <tr>
-                        <th className="sticky left-0 z-10 bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-700 uppercase tracking-wider border-r">
-                          {t('students', 'Students')}
+                        <th className="sticky left-0 z-10 bg-blue-50 px-4 py-3 text-left text-sm font-medium text-blue-700 uppercase tracking-wider border-r">
+                          <div className='ml-3'>{t('students', 'Students')}</div>
                         </th>
                         {/* Khmer day names mapping */}
                         {(() => {
@@ -600,10 +594,10 @@ export default function Attendance() {
                               <th
                                 key={idx}
                                 className={`px-3 py-3 text-center text-xs font-medium uppercase tracking-wider ${isCurrentDay
-                                    ? 'bg-blue-200 text-blue-900'
-                                    : isWeekendDay
-                                      ? 'bg-gray-100 text-gray-700'
-                                      : 'text-gray-700'
+                                  ? 'bg-blue-200 text-blue-900'
+                                  : isWeekendDay
+                                    ? 'bg-red-100 text-red-700'
+                                    : 'text-gray-700'
                                   }`}
                               >
                                 <div className="flex flex-col items-center">
@@ -706,7 +700,7 @@ export default function Attendance() {
                               return (
                                 <td
                                   key={idx}
-                                  className={`px-2 py-3 text-center min-h-10 align-middle ${isWeekendDay ? 'bg-gray-50' : ''
+                                  className={`px-2 py-3 text-center min-h-10 align-middle ${isWeekendDay ? 'bg-transparent' : ''
                                     }`}
                                 >
                                   <div className="flex flex-col items-center gap-1">

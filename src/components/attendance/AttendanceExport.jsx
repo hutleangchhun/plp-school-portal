@@ -14,6 +14,7 @@ import { useToast } from '../../contexts/ToastContext';
  * @param {Array} props.students - Array of student objects
  * @param {Object} props.attendance - Attendance data object
  * @param {string} props.className - Name of the class
+ * @param {string} props.schoolName - Name of the school
  * @param {Date} props.selectedDate - Selected date for export
  * @param {string} props.exportType - 'daily' or 'monthly'
  * @param {boolean} props.disabled - Disable export button
@@ -22,6 +23,7 @@ export default function AttendanceExport({
   students = [],
   attendance = {},
   className = 'Unknown-Class',
+  schoolName = 'សាលា',
   selectedDate = new Date(),
   exportType = 'monthly', // 'daily' or 'monthly'
   disabled = false
@@ -164,23 +166,34 @@ export default function AttendanceExport({
       const currentDate = new Date(selectedDate);
       const monthName = currentDate.toLocaleDateString('km-KH', { month: 'long', year: 'numeric' });
 
-      // Create template with headers
+      // Create template with headers (38 columns total)
+      const emptyRow = Array(38).fill('');
+
       const templateData = [
         // Official Header - Row 1
-        ['ព្រះរាជាណាចក្រកម្ពុជា', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['ព្រះរាជាណាចក្រកម្ពុជា', ...Array(37).fill('')],
         // Nation Religion King - Row 2
-        ['ជាតិ       សាសនា       ព្រះមហាក្សត្រ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['ជាតិ       សាសនា       ព្រះមហាក្សត្រ', ...Array(37).fill('')],
         // School Info - Row 3
-        ['សាលា: _______________', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        [schoolName, ...Array(37).fill('')],
         // Attendance Title - Row 4
-        [`បញ្ជីកត់ត្រាវត្តមាន - ${className}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        [`បញ្ជីកត់ត្រាវត្តមាន - ${className}`, ...Array(37).fill('')],
         // Month/Year - Row 5
-        [`ខែ: ${monthName}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        [`ខែ: ${monthName}`, ...Array(37).fill('')],
         // Empty row - Row 6
-        ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        [...emptyRow],
       ];
 
-      // Header row - Row 7
+      // Category header row - Row 7 (for "ចំនួនអវត្តមាន")
+      const categoryRow = ['', '', '', ''];
+      for (let i = 1; i <= 31; i++) {
+        categoryRow.push('');
+      }
+      categoryRow.push('ចំនួនអវត្តមាន', '', ''); // Merged across ម អ យឺត
+      while (categoryRow.length < 38) categoryRow.push('');
+      templateData.push(categoryRow);
+
+      // Column header row - Row 8
       const headerRow = ['ល.រ', 'អត្តសញ្ញាណ', 'ឈ្មោះ', 'ភេទ'];
       for (let i = 1; i <= 31; i++) {
         headerRow.push(i.toString());
@@ -261,7 +274,7 @@ export default function AttendanceExport({
               }
             };
           }
-          // Column header row (row 6) - Gray background, borders, bold
+          // Category header row (row 6) - "ចំនួនអវត្តមាន" - Gray background, borders, bold
           else if (R === 6) {
             ws[cellAddress].s = {
               fill: {
@@ -284,7 +297,30 @@ export default function AttendanceExport({
               }
             };
           }
-          // Data rows (7+) - Borders, centered except name column
+          // Column header row (row 7) - Gray background, borders, bold
+          else if (R === 7) {
+            ws[cellAddress].s = {
+              fill: {
+                fgColor: { rgb: 'E0E0E0' }
+              },
+              border: {
+                top: { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left: { style: 'thin', color: { rgb: '000000' } },
+                right: { style: 'thin', color: { rgb: '000000' } }
+              },
+              alignment: {
+                vertical: 'center',
+                horizontal: 'center'
+              },
+              font: {
+                name: 'Khmer OS Battambang',
+                sz: 10,
+                bold: true
+              }
+            };
+          }
+          // Data rows (8+) - Borders, centered except name column
           else {
             ws[cellAddress].s = {
               border: {
@@ -305,6 +341,19 @@ export default function AttendanceExport({
           }
         }
       }
+
+      // Merge header cells
+      ws['!merges'] = [
+        // Main headers (rows 0-5) - full width
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 37 } }, // Row 1: ព្រះរាជាណាចក្រកម្ពុជា
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 37 } }, // Row 2: ជាតិ សាសនា ព្រះមហាក្សត្រ
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 37 } }, // Row 3: សាលា
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 37 } }, // Row 4: បញ្ជីកត់ត្រាវត្តមាន
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 37 } }, // Row 5: ខែ
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 37 } }, // Row 6: Empty row
+        // Category header (row 6) - "ចំនួនអវត្តមាន" merged across summary columns (35-37 = AI-AK)
+        { s: { r: 6, c: 35 }, e: { r: 6, c: 37 } }, // Row 7: ចំនួនអវត្តមាន over ម អ យឺត
+      ];
 
       // Create workbook
       const wb = XLSXStyle.utils.book_new();

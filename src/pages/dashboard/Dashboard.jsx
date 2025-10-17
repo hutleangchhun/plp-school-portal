@@ -1,4 +1,4 @@
-import { User, Edit,Edit2, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, RefreshCw, TrendingUp, Clock, Target, Activity, Settings, BarChart3, Zap, User2 } from 'lucide-react';
+import { User, Edit,Edit2, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, IdCard} from 'lucide-react';
 import ClassStudentCountChart from '../../components/ui/ClassStudentCountChart';
 import SchoolOverviewChart from '../../components/ui/SchoolOverviewChart';
 import { Link } from 'react-router-dom';
@@ -6,12 +6,13 @@ import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import WelcomeAlert from '../../components/ui/WelcomeAlert';
-import { Button } from '../../components/ui/Button';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import StatsCard from '../../components/ui/StatsCard';
 import { utils, userService } from '../../utils/api';
 import classService from '../../utils/api/services/classService';
 import { teacherService } from '../../utils/api/services/teacherService';
+import schoolService from '../../utils/api/services/schoolService';
+import { studentService } from '../../utils/api/services/studentService';
 import Badge from '@/components/ui/Badge';
 import { useStableCallback } from '../../utils/reactOptimization';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -29,8 +30,11 @@ export default function Dashboard({ user: initialUser }) {
     totalClasses: 0,
     totalStudents: 0,
     totalTeachers: 0,
-    totalDirectors: 0
+    totalDirectors: 0,
+    maleStudents: 0,
+    femaleStudents: 0
   });
+  const [schoolInfo, setSchoolInfo] = useState(null);
 
   const [authUser, setAuthUser] = useState(() => {
     try {
@@ -121,19 +125,37 @@ export default function Dashboard({ user: initialUser }) {
         throw new Error(t('noValidUserData', 'No valid user data received from API'));
       }
 
-      // Fetch school statistics if we have school ID
+      // Fetch school information and statistics if we have school ID
       if (accountData && accountData.school_id) {
         try {
+          // Get school information
+          const schoolResponse = await schoolService.getSchoolInfo(accountData.school_id);
+          if (schoolResponse?.data) {
+            setSchoolInfo(schoolResponse.data);
+            console.log('✅ Dashboard school info:', schoolResponse.data);
+          }
+
           // Get classes count
           const classesResponse = await classService.getBySchool(accountData.school_id);
           const totalClasses = classesResponse?.classes?.length || 0;
 
-          // Get students count (from master classes endpoint)
-          const studentsResponse = await classService.getMasterClasses(accountData.school_id, {
+          // Get all students to count by gender
+          const studentsResponse = await studentService.getStudentsBySchoolClasses(accountData.school_id, {
             page: 1,
-            limit: 1
+            limit: 10000 // Get all students
           });
-          const totalStudents = studentsResponse?.total || 0;
+
+          const allStudents = studentsResponse?.data || [];
+          const totalStudents = studentsResponse?.pagination?.total || allStudents.length;
+
+          // Count students by gender
+          const maleStudents = allStudents.filter(student =>
+            student.gender === 'MALE' || student.gender === 'male' || student.gender === 'M'
+          ).length;
+
+          const femaleStudents = allStudents.filter(student =>
+            student.gender === 'FEMALE' || student.gender === 'female' || student.gender === 'F'
+          ).length;
 
           // Get teachers count from the teachers endpoint
           const teachersResponse = await teacherService.getTeachersBySchool(accountData.school_id, {
@@ -153,10 +175,18 @@ export default function Dashboard({ user: initialUser }) {
             totalClasses,
             totalStudents,
             totalTeachers,
-            totalDirectors
+            totalDirectors,
+            maleStudents,
+            femaleStudents
           });
 
-          console.log('✅ Dashboard school stats:', { totalClasses, totalStudents, totalTeachers });
+          console.log('✅ Dashboard school stats:', {
+            totalClasses,
+            totalStudents,
+            totalTeachers,
+            maleStudents,
+            femaleStudents
+          });
         } catch (error) {
           console.warn('Failed to fetch school statistics:', error);
           setSchoolStats({
@@ -210,9 +240,42 @@ export default function Dashboard({ user: initialUser }) {
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-6">
-        
+
+        {/* School Information Card */}
+        {schoolInfo && (
+          <FadeInSection delay={100} className="mb-6">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md">
+                    <Building2 className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">{schoolInfo.name || t('schoolInformation', 'School Information')}</h2>
+                    <p className="text-sm text-gray-500">{t('schoolDetails', 'School Details')}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex">
+                {/* School Code */}
+                {schoolInfo.code && (
+                  <Badge variant="outline" size='md' color='purple'>
+                    {t('schoolCode', 'School Code')}: {schoolInfo.code}
+                  </Badge>
+                )}
+
+                {/* Place */}
+                {schoolInfo.place && (
+                  <Badge variant="outline" size='md' color='green' className="ml-2">{t('place', 'Place')}: {schoolInfo.place}</Badge>
+                )}
+              </div>
+            </div>
+          </FadeInSection>
+        )}
+
         {/* School Statistics */}
-        <FadeInSection delay={200} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <FadeInSection delay={200} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <StatsCard
             title={t('totalClasses') || 'Total Classes'}
             value={schoolStats.totalClasses}
@@ -232,6 +295,28 @@ export default function Dashboard({ user: initialUser }) {
             gradientFrom="from-green-500"
             gradientTo="to-green-600"
             hoverColor="hover:border-green-200"
+            responsive={true}
+          />
+
+          <StatsCard
+            title={t('maleStudents') || 'Male Students'}
+            value={schoolStats.maleStudents}
+            icon={User}
+            enhanced={true}
+            gradientFrom="from-cyan-500"
+            gradientTo="to-cyan-600"
+            hoverColor="hover:border-cyan-200"
+            responsive={true}
+          />
+
+          <StatsCard
+            title={t('femaleStudents') || 'Female Students'}
+            value={schoolStats.femaleStudents}
+            icon={User}
+            enhanced={true}
+            gradientFrom="from-pink-500"
+            gradientTo="to-pink-600"
+            hoverColor="hover:border-pink-200"
             responsive={true}
           />
 
