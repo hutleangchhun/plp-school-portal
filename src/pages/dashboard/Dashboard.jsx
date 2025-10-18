@@ -30,9 +30,7 @@ export default function Dashboard({ user: initialUser }) {
     totalClasses: 0,
     totalStudents: 0,
     totalTeachers: 0,
-    totalDirectors: 0,
-    maleStudents: 0,
-    femaleStudents: 0
+    totalDirectors: 0
   });
   const [schoolInfo, setSchoolInfo] = useState(null);
 
@@ -139,23 +137,13 @@ export default function Dashboard({ user: initialUser }) {
           const classesResponse = await classService.getBySchool(accountData.school_id);
           const totalClasses = classesResponse?.classes?.length || 0;
 
-          // Get all students to count by gender
+          // Get total students count
           const studentsResponse = await studentService.getStudentsBySchoolClasses(accountData.school_id, {
             page: 1,
-            limit: 10000 // Get all students
+            limit: 1 // Only need the count from pagination
           });
 
-          const allStudents = studentsResponse?.data || [];
-          const totalStudents = studentsResponse?.pagination?.total || allStudents.length;
-
-          // Count students by gender
-          const maleStudents = allStudents.filter(student =>
-            student.gender === 'MALE' || student.gender === 'male' || student.gender === 'M'
-          ).length;
-
-          const femaleStudents = allStudents.filter(student =>
-            student.gender === 'FEMALE' || student.gender === 'female' || student.gender === 'F'
-          ).length;
+          const totalStudents = studentsResponse?.pagination?.total || 0;
 
           // Get teachers count from the teachers endpoint
           const teachersResponse = await teacherService.getTeachersBySchool(accountData.school_id, {
@@ -175,17 +163,14 @@ export default function Dashboard({ user: initialUser }) {
             totalClasses,
             totalStudents,
             totalTeachers,
-            totalDirectors,
-            maleStudents,
-            femaleStudents
+            totalDirectors
           });
 
           console.log('✅ Dashboard school stats:', {
             totalClasses,
             totalStudents,
             totalTeachers,
-            maleStudents,
-            femaleStudents
+            totalDirectors
           });
         } catch (error) {
           console.warn('Failed to fetch school statistics:', error);
@@ -275,7 +260,7 @@ export default function Dashboard({ user: initialUser }) {
         )}
 
         {/* School Statistics */}
-        <FadeInSection delay={200} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <FadeInSection delay={200} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <StatsCard
             title={t('totalClasses') || 'Total Classes'}
             value={schoolStats.totalClasses}
@@ -295,28 +280,6 @@ export default function Dashboard({ user: initialUser }) {
             gradientFrom="from-green-500"
             gradientTo="to-green-600"
             hoverColor="hover:border-green-200"
-            responsive={true}
-          />
-
-          <StatsCard
-            title={t('maleStudents') || 'Male Students'}
-            value={schoolStats.maleStudents}
-            icon={User}
-            enhanced={true}
-            gradientFrom="from-cyan-500"
-            gradientTo="to-cyan-600"
-            hoverColor="hover:border-cyan-200"
-            responsive={true}
-          />
-
-          <StatsCard
-            title={t('femaleStudents') || 'Female Students'}
-            value={schoolStats.femaleStudents}
-            icon={User}
-            enhanced={true}
-            gradientFrom="from-pink-500"
-            gradientTo="to-pink-600"
-            hoverColor="hover:border-pink-200"
             responsive={true}
           />
 
