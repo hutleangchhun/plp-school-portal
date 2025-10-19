@@ -13,6 +13,7 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import Dropdown from '../../components/ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
+import BulkImportProgressTracker from '../../components/students/BulkImportProgressTracker';
 import * as XLSX from 'xlsx';
 
 // CustomDateInput Component - Text input for dd/mm/yyyy format with validation
@@ -203,7 +204,6 @@ export default function BulkStudentImport() {
       gender: '',
       phone: '',
       nationality: '',
-      studentNumber: '',
       schoolId: '',
       academicYear: '',
       gradeLevel: '',
@@ -238,6 +238,12 @@ export default function BulkStudentImport() {
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
+
+  // Progress tracker state
+  const [showProgressTracker, setShowProgressTracker] = useState(false);
+  const [importResults, setImportResults] = useState([]);
+  const [isImporting, setIsImporting] = useState(false);
+  const [processedCount, setProcessedCount] = useState(0);
 
   // Location cascade for school selection
   const locationData = useLocationData();
@@ -305,7 +311,6 @@ export default function BulkStudentImport() {
     { key: 'gender', header: 'ភេទ', width: 'min-w-[80px]', type: 'select', options: genderOptions },
     { key: 'phone', header: 'លេខទូរស័ព្ទ', width: 'min-w-[150px]' },
     { key: 'nationality', header: 'សញ្ជាតិ', width: 'min-w-[80px]', type: 'select', options: nationalityOptions },
-    { key: 'studentNumber', header: 'លេខសិស្ស', width: 'min-w-[200px]' },
     { key: 'schoolId', header: 'លេខសាលា', width: 'min-w-[200px]' },
     { key: 'academicYear', header: 'ឆ្នាំសិក្សា', width: 'min-w-[150px]' },
     { key: 'gradeLevel', header: 'កម្រិតថ្នាក់', width: 'min-w-[80px]' },
@@ -778,7 +783,6 @@ export default function BulkStudentImport() {
         let genderIndex = -1;
         let phoneIndex = -1;
         let nationalityIndex = -1;
-        let studentNumberIndex = -1;
         let schoolIdIndex = -1;
         let academicYearIndex = -1;
         let gradeLevelIndex = -1;
@@ -886,7 +890,7 @@ export default function BulkStudentImport() {
               motherOccupationIndex = idx;
             }
             // Then check student-specific columns (less specific, checked after parent columns)
-            else if (headerStr.includes('អត្តលេខ') || headerStr.includes('id') || (headerStr.includes('student') && headerStr.includes('id'))) {
+            else if (headerStr.includes('អត្តលេខ') || (headerStr.includes('student') && (headerStr.includes('id') || headerStr.includes('number')))) {
               idIndex = idx;
             } else if (isInStudentSection && (headerStr === 'គោត្តនាម' || (headerStr.includes('last') && headerStr.includes('name')))) {
               lastNameIndex = idx;
@@ -906,8 +910,6 @@ export default function BulkStudentImport() {
               phoneIndex = idx;
             } else if (headerStr.includes('សញ្ជាតិ') || headerStr.includes('nationality')) {
               nationalityIndex = idx;
-            } else if (headerStr.includes('លេខសិស្ស') || (headerStr.includes('student') && headerStr.includes('number'))) {
-              studentNumberIndex = idx;
             } else if (headerStr.includes('លេខសាលា') || (headerStr.includes('school') && headerStr.includes('id'))) {
               schoolIdIndex = idx;
             } else if (headerStr.includes('ឆ្នាំសិក្សា') || (headerStr.includes('academic') && headerStr.includes('year'))) {
@@ -935,25 +937,24 @@ export default function BulkStudentImport() {
           genderIndex = 7;
           phoneIndex = 8;
           nationalityIndex = 9;
-          studentNumberIndex = 10;
-          schoolIdIndex = 11;
-          academicYearIndex = 12;
-          gradeLevelIndex = 13;
-          residenceFullAddressIndex = 14;
-          fatherFirstNameIndex = 15;
-          fatherLastNameIndex = 16;
-          fatherPhoneIndex = 17;
-          fatherGenderIndex = 18;
-          fatherOccupationIndex = 19;
-          fatherResidenceFullAddressIndex = 20;
-          motherFirstNameIndex = 21;
-          motherLastNameIndex = 22;
-          motherPhoneIndex = 23;
-          motherGenderIndex = 24;
-          motherOccupationIndex = 25;
-          motherResidenceFullAddressIndex = 26;
-          ethnicIndex = 27;
-          accessIndex = 28;
+          schoolIdIndex = 10;
+          academicYearIndex = 11;
+          gradeLevelIndex = 12;
+          residenceFullAddressIndex = 13;
+          fatherFirstNameIndex = 14;
+          fatherLastNameIndex = 15;
+          fatherPhoneIndex = 16;
+          fatherGenderIndex = 17;
+          fatherOccupationIndex = 18;
+          fatherResidenceFullAddressIndex = 19;
+          motherFirstNameIndex = 20;
+          motherLastNameIndex = 21;
+          motherPhoneIndex = 22;
+          motherGenderIndex = 23;
+          motherOccupationIndex = 24;
+          motherResidenceFullAddressIndex = 25;
+          ethnicIndex = 26;
+          accessIndex = 27;
         }
 
         // Map gender values
@@ -1010,7 +1011,6 @@ export default function BulkStudentImport() {
         let actualGenderIndex = genderIndex;
         let actualPhoneIndex = phoneIndex;
         let actualNationalityIndex = nationalityIndex;
-        let actualStudentNumberIndex = studentNumberIndex;
         let actualSchoolIdIndex = schoolIdIndex;
         let actualAcademicYearIndex = academicYearIndex;
         let actualGradeLevelIndex = gradeLevelIndex;
@@ -1049,25 +1049,24 @@ export default function BulkStudentImport() {
             actualGenderIndex = 8;
             actualPhoneIndex = 9;
             actualNationalityIndex = 10;
-            actualStudentNumberIndex = 11;
-            actualSchoolIdIndex = 12;
-            actualAcademicYearIndex = 13;
-            actualGradeLevelIndex = 14;
-            actualResidenceFullAddressIndex = 15;
-            actualFatherFirstNameIndex = 16;
-            actualFatherLastNameIndex = 17;
-            actualFatherPhoneIndex = 18;
-            actualFatherGenderIndex = 19;
-            actualFatherOccupationIndex = 20;
-            actualFatherResidenceFullAddressIndex = 21;
-            actualMotherFirstNameIndex = 22;
-            actualMotherLastNameIndex = 23;
-            actualMotherPhoneIndex = 24;
-            actualMotherGenderIndex = 25;
-            actualMotherOccupationIndex = 26;
-            actualMotherResidenceFullAddressIndex = 27;
-            actualEthnicIndex = 28;
-            actualAccessIndex = 29;
+            actualSchoolIdIndex = 11;
+            actualAcademicYearIndex = 12;
+            actualGradeLevelIndex = 13;
+            actualResidenceFullAddressIndex = 14;
+            actualFatherFirstNameIndex = 15;
+            actualFatherLastNameIndex = 16;
+            actualFatherPhoneIndex = 17;
+            actualFatherGenderIndex = 18;
+            actualFatherOccupationIndex = 19;
+            actualFatherResidenceFullAddressIndex = 20;
+            actualMotherFirstNameIndex = 21;
+            actualMotherLastNameIndex = 22;
+            actualMotherPhoneIndex = 23;
+            actualMotherGenderIndex = 24;
+            actualMotherOccupationIndex = 25;
+            actualMotherResidenceFullAddressIndex = 26;
+            actualEthnicIndex = 27;
+            actualAccessIndex = 28;
           }
         }
 
@@ -1165,7 +1164,6 @@ export default function BulkStudentImport() {
           gender: actualGenderIndex >= 0 ? mapGender(getValue(actualGenderIndex)) : '',
           phone: actualPhoneIndex >= 0 ? getValue(actualPhoneIndex) : '',
           nationality: actualNationalityIndex >= 0 ? getValue(actualNationalityIndex) : '',
-          studentNumber: actualStudentNumberIndex >= 0 ? getValue(actualStudentNumberIndex) : studentId,
           schoolId: actualSchoolIdIndex >= 0 ? getValue(actualSchoolIdIndex) : '',
           academicYear: actualAcademicYearIndex >= 0 ? getValue(actualAcademicYearIndex) : '',
           gradeLevel: actualGradeLevelIndex >= 0 ? getValue(actualGradeLevelIndex) : '',
@@ -1260,7 +1258,7 @@ export default function BulkStudentImport() {
       // Class and Academic Year - Row 6
       [
         'ថ្នាក់ទី ៤ ( ខ )ឆ្នាំសិក្សា ២០២៤-២០២៥',
-        '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '', '', '', '', '', '', '',
         '', '', '', '', '', '',
         '', '', '', '', '', '',
         '', ''
@@ -1268,7 +1266,7 @@ export default function BulkStudentImport() {
       // Empty row for spacing - Row 7
       [
         '',
-        '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '', '', '', '', '', '', '',
         '', '', '', '', '', '', '', '',
         '', '', '', '', '', '', '', '',
         '', ''
@@ -1276,7 +1274,7 @@ export default function BulkStudentImport() {
       // Instructions row (row 8)
       [
         'សូមបញ្ចូលព័ត៌មានសិស្សដូចឧទាហរណ៍ខាងក្រោម។ សូមលុបជួរឧទាហរណ៍និងបញ្ចូលព័ត៌មានសិស្សពិតប្រាកដ។',
-        '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '', '', '', '', '', '', '',
         '', '', '', '', '', '',
         '', '', '', '', '', '',
         '', ''
@@ -1284,16 +1282,16 @@ export default function BulkStudentImport() {
       // Main headers (row 9) - Repeat text for each merged cell to ensure visibility
       [
         '#', // Row number
-        'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', // 15 columns for student info
+        'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', // 14 columns for student info (without address)
         'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', // 6 columns for father
         'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', // 6 columns for mother
-        'ជនជាតិភាគតិច', 'លក្ខណៈពិសេស' // 2 columns for additional info
+        'ព័ត៌មានបន្ថែម', 'ព័ត៌មានបន្ថែម' // 2 columns for additional info
       ],
       // Sub headers (row 10)
       [
         '#',
         'អត្តលេខ', 'គោត្តនាម', 'នាម', 'អ៊ីមែល', 'ឈ្មោះអ្នកប្រើ', 'ពាក្យសម្ងាត់',
-        'ថ្ងៃខែឆ្នាំកំណើត', 'ភេទ', 'លេខទូរស័ព្ទ', 'សញ្ជាតិ', 'លេខសិស្ស', 'លេខសាលា', 'ឆ្នាំសិក្សា', 'កម្រិតថ្នាក់',
+        'ថ្ងៃខែឆ្នាំកំណើត', 'ភេទ', 'លេខទូរស័ព្ទ', 'សញ្ជាតិ', 'លេខសាលា', 'ឆ្នាំសិក្សា', 'កម្រិតថ្នាក់',
         'អាសយដ្ឋានពេញ',
         'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញឪពុក',
         'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញម្តាយ',
@@ -1312,7 +1310,6 @@ export default function BulkStudentImport() {
         'ស្រី', // ភេទ (ប្រុស ឬ ស្រី)
         '012345678', // លេខទូរស័ព្ទ
         'ខ្មែរ', // សញ្ជាតិ
-        'STD001', // លេខសិស្ស
         '123', // លេខសាលា
         '2024-2025', // ឆ្នាំសិក្សា
         '4', // កម្រិតថ្នាក់
@@ -1335,7 +1332,7 @@ export default function BulkStudentImport() {
       // Empty rows for user input (rows 12-20)
       [
         '2', '', '', '', '', '', '',
-        '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '',
         '',
         '', '', '', '', '',
         '', '', '', '', '', '',
@@ -1343,7 +1340,7 @@ export default function BulkStudentImport() {
       ],
       [
         '3', '', '', '', '', '', '',
-        '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '',
         '',
         '', '', '', '', '',
         '', '', '', '', '', '',
@@ -1351,7 +1348,7 @@ export default function BulkStudentImport() {
       ],
       [
         '4', '', '', '', '', '', '',
-        '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '',
         '',
         '', '', '', '', '',
         '', '', '', '', '', '',
@@ -1359,7 +1356,7 @@ export default function BulkStudentImport() {
       ],
       [
         '5', '', '', '', '', '', '',
-        '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '',
         '',
         '', '', '', '', '',
         '', '', '', '', '', '',
@@ -1367,7 +1364,7 @@ export default function BulkStudentImport() {
       ],
       [
         '6', '', '', '', '', '', '',
-        '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '',
         '',
         '', '', '', '', '',
         '', '', '', '', '', '',
@@ -1375,7 +1372,7 @@ export default function BulkStudentImport() {
       ],
       [
         '7', '', '', '', '', '', '',
-        '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '',
         '',
         '', '', '', '', '',
         '', '', '', '', '', '',
@@ -1383,7 +1380,7 @@ export default function BulkStudentImport() {
       ],
       [
         '8', '', '', '', '', '', '',
-        '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '',
         '',
         '', '', '', '', '',
         '', '', '', '', '', '',
@@ -1391,7 +1388,7 @@ export default function BulkStudentImport() {
       ],
       [
         '9', '', '', '', '', '', '',
-        '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '',
         '',
         '', '', '', '', '',
         '', '', '', '', '', '',
@@ -1399,7 +1396,7 @@ export default function BulkStudentImport() {
       ],
       [
         '10', '', '', '', '', '', '',
-        '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '',
         '',
         '', '', '', '', '',
         '', '', '', '', '', '',
@@ -1412,7 +1409,7 @@ export default function BulkStudentImport() {
     // Set column widths for better readability
     const colWidths = [
       { wch: 5 }, // #
-      { wch: 12 }, // ID
+      { wch: 12 }, // ID (អត្តលេខ)
       { wch: 15 }, // Last Name
       { wch: 15 }, // First Name
       { wch: 35 }, // Email
@@ -1422,7 +1419,6 @@ export default function BulkStudentImport() {
       { wch: 8 }, // Gender
       { wch: 18 }, // Phone
       { wch: 12 }, // Nationality
-      { wch: 15 }, // Student Number
       { wch: 12 }, // School ID
       { wch: 12 }, // Academic Year
       { wch: 12 }, // Grade Level
@@ -1449,31 +1445,31 @@ export default function BulkStudentImport() {
 
     // Merge cells for headers (row 1-6 are headers)
     // Row 1: Kingdom header spans all columns
-    ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 31 } });
+    ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 28 } });
 
     // Row 2: Nation/Religion/King spans all columns
-    ws['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 31 } });
+    ws['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 28 } });
 
     // Row 3: Administrative district spans all columns
-    ws['!merges'].push({ s: { r: 2, c: 0 }, e: { r: 2, c: 31 } });
+    ws['!merges'].push({ s: { r: 2, c: 0 }, e: { r: 2, c: 28 } });
 
     // Row 4: School name spans all columns
-    ws['!merges'].push({ s: { r: 3, c: 0 }, e: { r: 3, c: 31 } });
+    ws['!merges'].push({ s: { r: 3, c: 0 }, e: { r: 3, c: 28 } });
 
     // Row 5: Student list title spans all columns
-    ws['!merges'].push({ s: { r: 4, c: 0 }, e: { r: 4, c: 31 } });
+    ws['!merges'].push({ s: { r: 4, c: 0 }, e: { r: 4, c: 28 } });
 
     // Row 6: Class and academic year spans all columns
-    ws['!merges'].push({ s: { r: 5, c: 0 }, e: { r: 5, c: 31 } });
+    ws['!merges'].push({ s: { r: 5, c: 0 }, e: { r: 5, c: 28 } });
 
     // Row 8: Instructions spans all columns
-    ws['!merges'].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 31 } });
+    ws['!merges'].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 28 } });
 
     // Row 9: Main headers - merge student info columns
-    ws['!merges'].push({ s: { r: 8, c: 1 }, e: { r: 8, c: 15 } }); // Student info
-    ws['!merges'].push({ s: { r: 8, c: 16 }, e: { r: 8, c: 21 } }); // Father info (6 columns now)
-    ws['!merges'].push({ s: { r: 8, c: 22 }, e: { r: 8, c: 27 } }); // Mother info (6 columns now)
-    ws['!merges'].push({ s: { r: 8, c: 28 }, e: { r: 8, c: 29 } }); // Additional info
+    ws['!merges'].push({ s: { r: 8, c: 1 }, e: { r: 8, c: 14 } }); // Student info (14 columns)
+    ws['!merges'].push({ s: { r: 8, c: 15 }, e: { r: 8, c: 20 } }); // Father info (6 columns)
+    ws['!merges'].push({ s: { r: 8, c: 21 }, e: { r: 8, c: 26 } }); // Mother info (6 columns)
+    ws['!merges'].push({ s: { r: 8, c: 27 }, e: { r: 8, c: 28 } }); // Additional info (2 columns)
 
     // Set row heights for better readability
     ws['!rows'] = [];
@@ -1652,7 +1648,6 @@ export default function BulkStudentImport() {
       gender: '',
       phone: '',
       nationality: '',
-      studentNumber: '',
       schoolId: selectedSchool?.id?.toString() || '', // Auto-populate with selected school
       academicYear: '',
       gradeLevel: '',
@@ -1808,10 +1803,8 @@ export default function BulkStudentImport() {
         //   studentData.nationality = student.nationality.trim();
         // }
 
-        // Temporarily remove student_number - API may auto-generate or expect different format
-         if (student.studentNumber && student.studentNumber.trim()) {
-           studentData.student_number = student.studentNumber.trim();
-         } else if (student.id && student.id.trim()) {
+        // Map student ID to student_number for API
+         if (student.id && student.id.trim()) {
            studentData.student_number = student.id.trim();
          }
 
@@ -1884,14 +1877,48 @@ export default function BulkStudentImport() {
         return studentData;
       });
 
-      // Show API call start notification
-      showSuccess(`កំពុងផ្ញើទិន្នន័យ ${transformedData.length} សិស្សទៅកាន់ម៉ាស៊ីនមេ...`);
+      // Initialize progress tracker
+      setShowProgressTracker(true);
+      setIsImporting(true);
+      setImportResults([]);
+      setProcessedCount(0);
+
+      // Initialize results array with all students
+      const initialResults = validStudents.map((student) => ({
+        studentName: `${student.firstName} ${student.lastName}`,
+        studentId: student.id,
+        username: student.username,
+        processing: false,
+        success: false,
+        error: null
+      }));
+      setImportResults(initialResults);
 
       // Use the new bulk register API
       const response = await studentService.bulkRegister(transformedData);
 
       // Handle the new response format
       const { success_count, failed_count, successful_students, errors } = response.data || response;
+
+      // Update results based on API response
+      const updatedResults = initialResults.map((result, index) => {
+        const studentData = transformedData[index];
+        const hasError = errors && errors.find(e =>
+          e.username === studentData.username ||
+          e.email === studentData.email
+        );
+
+        return {
+          ...result,
+          processing: false,
+          success: !hasError,
+          error: hasError ? (hasError.message || hasError.error || 'Unknown error') : null
+        };
+      });
+
+      setImportResults(updatedResults);
+      setProcessedCount(transformedData.length);
+      setIsImporting(false);
 
       if (success_count > 0) {
         showSuccess(`🎉 បាននាំចូលសិស្សចំនួន ${success_count} នាក់ដោយជោគជ័យ!`, { duration: 5000 });
@@ -1917,7 +1944,6 @@ export default function BulkStudentImport() {
           gender: '',
           phone: '',
           nationality: '',
-          studentNumber: '',
           schoolId: '',
           academicYear: '',
           gradeLevel: '',
@@ -1953,6 +1979,18 @@ export default function BulkStudentImport() {
       stopLoading(loadingKey);
     } catch (err) {
       console.error('Bulk import error:', err);
+
+      // Mark all as failed in progress tracker
+      setIsImporting(false);
+      if (importResults.length > 0) {
+        const failedResults = importResults.map(result => ({
+          ...result,
+          processing: false,
+          success: false,
+          error: err.message || 'Unknown error'
+        }));
+        setImportResults(failedResults);
+      }
 
       // Show specific error toast based on error type
       if (err.response?.status === 400) {
@@ -2015,10 +2053,6 @@ export default function BulkStudentImport() {
               </div>
 
               <div className="flex items-center gap-3">
-                <Badge color="blue" variant="solid" size="lg">
-                  {students.length} {students.length === 1 ? 'សិស្ស' : 'សិស្ស'}
-                </Badge>
-
                 {/* Excel/CSV Import */}
                 <label className="inline-block">
                   <input
@@ -2056,7 +2090,7 @@ export default function BulkStudentImport() {
                   onClick={handleSubmit}
                   variant="primary"
                   size="default"
-                  disabled={loading}
+                  disabled={loading || !selectedSchool || !selectedSchool.id}
                 >
                   <Save className="h-5 w-5 mr-2" />
                   {loading ? 'កំពុងនាំចូល...' : 'នាំចូល'}
@@ -2285,6 +2319,16 @@ export default function BulkStudentImport() {
           </div>
         </FadeInSection>
       </div>
+
+      {/* Bulk Import Progress Tracker */}
+      <BulkImportProgressTracker
+        isOpen={showProgressTracker}
+        onClose={() => setShowProgressTracker(false)}
+        importResults={importResults}
+        isProcessing={isImporting}
+        totalStudents={importResults.length}
+        processedCount={processedCount}
+      />
     </PageTransition>
   );
 }

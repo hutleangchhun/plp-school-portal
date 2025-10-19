@@ -457,6 +457,8 @@ export const km = {
   // Class selection
   allClasses: 'ថ្នាក់ទាំងអស់',
   clearSelection: 'លុបការជ្រើសរើស',
+  noOptionsFound: 'មិនមានជម្រើសដែលបានរកឃើញ',
+  noOptionsAvailable: 'មិនមានជម្រើសដែលអាចប្រើបាន',
   
   // General UI
   errorFetchingData: 'កំហុសក្នុងការទាញយកទិន្នន័យ',

@@ -1,5 +1,6 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ChevronDown, Check } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function Dropdown({ 
   value, 
@@ -18,6 +19,7 @@ export default function Dropdown({
 }) {
   const selectedOption = options.find(option => option.value === value);
   const displayValue = selectedOption?.label || placeholder;
+  const {t} = useLanguage();
 
   return (
     <DropdownMenu.Root modal={false}>
@@ -58,7 +60,7 @@ export default function Dropdown({
           ))}
           {options.length === 0 && (
             <div className="px-3 py-2 text-sm text-gray-500 text-center">
-              No options available
+              {t('noOptionsAvailable', 'No options available')}
             </div>
           )}
         </DropdownMenu.Content>
