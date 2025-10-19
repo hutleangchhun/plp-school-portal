@@ -3,6 +3,7 @@ import { Download, ChevronDown } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
+import { formatDateKhmer } from '../../utils/formatters';
 
 /**
  * AttendanceExport Component
@@ -164,7 +165,7 @@ export default function AttendanceExport({
       const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
 
       const currentDate = new Date(selectedDate);
-      const monthName = currentDate.toLocaleDateString('km-KH', { month: 'long', year: 'numeric' });
+      const monthName = formatDateKhmer(currentDate, 'monthYear');
 
       // Create template with headers (39 columns total: 4 info + 31 days + 4 summary)
       const emptyRow = Array(39).fill('');
@@ -431,7 +432,7 @@ export default function AttendanceExport({
 
       const dateStr = formatDateToString(selectedDate);
       const currentDate = new Date(selectedDate);
-      const monthName = currentDate.toLocaleDateString('km-KH', { month: 'long', year: 'numeric' });
+      const monthName = formatDateKhmer(currentDate, 'monthYear');
 
       // Convert data to CSV format manually for better control
       const headers = Object.keys(exportData[0]);

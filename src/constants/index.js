@@ -58,3 +58,31 @@ export const DAYS_OF_WEEK = [
   { value: 'saturday', label: 'Saturday', khmer: 'ថ្ងៃសៅរ៍', short: 'Sat', khmerShort: 'ស' },
   { value: 'sunday', label: 'Sunday', khmer: 'ថ្ងៃអាទិត្យ', short: 'Sun', khmerShort: 'អា' }
 ];
+
+// Months of the year
+export const MONTHS = [
+  { value: 0, label: 'January', khmer: 'មករា', short: 'Jan', khmerShort: 'មករា' },
+  { value: 1, label: 'February', khmer: 'កុម្ភៈ', short: 'Feb', khmerShort: 'កុម្ភៈ' },
+  { value: 2, label: 'March', khmer: 'មីនា', short: 'Mar', khmerShort: 'មីនា' },
+  { value: 3, label: 'April', khmer: 'មេសា', short: 'Apr', khmerShort: 'មេសា' },
+  { value: 4, label: 'May', khmer: 'ឧសភា', short: 'May', khmerShort: 'ឧសភា' },
+  { value: 5, label: 'June', khmer: 'មិថុនា', short: 'Jun', khmerShort: 'មិថុនា' },
+  { value: 6, label: 'July', khmer: 'កក្កដា', short: 'Jul', khmerShort: 'កក្កដា' },
+  { value: 7, label: 'August', khmer: 'សីហា', short: 'Aug', khmerShort: 'សីហា' },
+  { value: 8, label: 'September', khmer: 'កញ្ញា', short: 'Sep', khmerShort: 'កញ្ញា' },
+  { value: 9, label: 'October', khmer: 'តុលា', short: 'Oct', khmerShort: 'តុលា' },
+  { value: 10, label: 'November', khmer: 'វិច្ឆិកា', short: 'Nov', khmerShort: 'វិច្ឆិកា' },
+  { value: 11, label: 'December', khmer: 'ធ្នូ', short: 'Dec', khmerShort: 'ធ្នូ' }
+];
+
+// Month names arrays for quick access
+export const MONTH_NAMES_EN = MONTHS.map(m => m.label);
+export const MONTH_NAMES_KH = MONTHS.map(m => m.khmer);
+export const MONTH_NAMES_SHORT_EN = MONTHS.map(m => m.short);
+export const MONTH_NAMES_SHORT_KH = MONTHS.map(m => m.khmerShort);
+
+// Day names arrays for quick access
+export const DAY_NAMES_EN = DAYS_OF_WEEK.map(d => d.label);
+export const DAY_NAMES_KH = DAYS_OF_WEEK.map(d => d.khmer);
+export const DAY_NAMES_SHORT_EN = DAYS_OF_WEEK.map(d => d.short);
+export const DAY_NAMES_SHORT_KH = DAYS_OF_WEEK.map(d => d.khmerShort);

@@ -9,6 +9,20 @@ import { DayPicker, getDefaultClassNames } from "react-day-picker";
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
 
+// Khmer locale configuration
+const khmerLocale = {
+  localize: {
+    month: (n) => [
+      "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
+      "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
+    ][n],
+    day: (n) => ["អាទិត្យ", "ច័ន្ទ", "អង្គារ", "ពុធ", "ព្រហស្បតិ៍", "សុក្រ", "សៅរ៍"][n],
+  },
+  formatLong: {
+    date: () => "dd/MM/yyyy",
+  },
+}
+
 function Calendar({
   className,
   classNames,
@@ -17,9 +31,33 @@ function Calendar({
   buttonVariant = "ghost",
   formatters,
   components,
+  locale = khmerLocale,
   ...props
 }) {
   const defaultClassNames = getDefaultClassNames()
+
+  // Khmer formatters
+  const khmerFormatters = {
+    formatMonthDropdown: (date) => {
+      const months = [
+        "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
+        "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
+      ];
+      return months[date.getMonth()];
+    },
+    formatWeekdayName: (date) => {
+      const days = ["អា", "ច", "អ", "ព", "ព្រ", "សុ", "ស"];
+      return days[date.getDay()];
+    },
+    formatCaption: (date) => {
+      const months = [
+        "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
+        "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
+      ];
+      return `${months[date.getMonth()]} ${date.getFullYear()}`;
+    },
+    ...formatters,
+  };
 
   return (
     <DayPicker
@@ -31,11 +69,8 @@ function Calendar({
         className
       )}
       captionLayout={captionLayout}
-      formatters={{
-        formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
-        ...formatters,
-      }}
+      locale={locale}
+      formatters={khmerFormatters}
       classNames={{
         root: cn("w-fit", defaultClassNames.root),
         months: cn("relative flex flex-col gap-4 md:flex-row", defaultClassNames.months),

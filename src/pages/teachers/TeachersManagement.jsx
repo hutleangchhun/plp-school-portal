@@ -18,6 +18,7 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import Modal from '../../components/ui/Modal';
 import SelectedCard from '../../components/ui/SelectedCard';
+import { formatDateKhmer } from '../../utils/formatters';
 
 export default function TeachersManagement() {
   const { t } = useLanguage();
@@ -541,7 +542,7 @@ export default function TeachersManagement() {
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden xl:table-cell',
       render: (teacher) => (
-        <p>{teacher.hireDate ? new Date(teacher.hireDate).toLocaleDateString() : 'N/A'}</p>
+        <p>{teacher.hireDate ? formatDateKhmer(teacher.hireDate, 'short') : 'N/A'}</p>
       )
     },
     {
@@ -679,7 +680,7 @@ export default function TeachersManagement() {
       <div className="flex justify-between items-start text-xs text-gray-500">
         <div className="flex flex-col space-y-1">
           <span>{t('username', 'Username')}: {teacher.username || 'N/A'}</span>
-          <span>{t('hireDate', 'Hire Date')}: {teacher.hireDate ? new Date(teacher.hireDate).toLocaleDateString() : 'N/A'}</span>
+          <span>{t('hireDate', 'Hire Date')}: {teacher.hireDate ? formatDateKhmer(teacher.hireDate, 'short') : 'N/A'}</span>
           <div className="flex items-center space-x-2 mt-1">
             <Badge
               color={teacher.isDirector ? 'blue' : 'purple'}

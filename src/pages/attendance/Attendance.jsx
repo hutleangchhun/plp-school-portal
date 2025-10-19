@@ -18,6 +18,7 @@ import Badge from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
 import EmptyState from '@/components/ui/EmptyState';
 import AttendanceExport from '../../components/attendance/AttendanceExport';
+import { formatDateKhmer } from '../../utils/formatters';
 
 export default function Attendance() {
   const { t, setLanguage } = useLanguage();
@@ -527,7 +528,7 @@ export default function Attendance() {
                       </button>
                       <div className="text-center mt-1">
                         <p className="text-sm text-gray-600">
-                          {currentWeekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {weekDates[6].toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                          {formatDateKhmer(currentWeekStart, 'dayMonth')} - {formatDateKhmer(weekDates[6], 'short')}
                         </p>
                       </div>
                       <button
@@ -685,7 +686,7 @@ export default function Attendance() {
                                         {attendance.reason && (
                                           <div className="mb-1"><span className="font-semibold">{t('reason', 'Reason')}:</span> {attendance.reason}</div>
                                         )}
-                                        <div className="text-xs text-gray-500">{t('created', 'Created')}: {attendance.createdAt ? new Date(attendance.createdAt).toLocaleString() : '-'}</div>
+                                        <div className="text-xs text-gray-500">{t('created', 'Created')}: {attendance.createdAt ? formatDateKhmer(attendance.createdAt, 'full') : '-'}</div>
                                       </div>
                                     }
                                   >

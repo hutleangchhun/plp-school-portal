@@ -12,19 +12,29 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { formatDateKhmer } from "@/utils/formatters"
 
 export function DatePicker({
   value,
   onChange,
-  placeholder = "Pick a date",
+  placeholder = "ជ្រើសរើសកាលបរិច្ឆេទ",
   className,
   disabled = false,
   fromYear = 1960,
   toYear = new Date().getFullYear(),
   fromDate,
   toDate,
+  locale = "km",
   ...props
 }) {
+  const formatDisplayDate = (date) => {
+    if (!date) return null;
+    if (locale === "km") {
+      return formatDateKhmer(date, "short");
+    }
+    return format(date, "PPP");
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -40,7 +50,7 @@ export function DatePicker({
           {...props}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, "PPP") : <span>{placeholder}</span>}
+          {value ? formatDisplayDate(value) : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

@@ -408,7 +408,7 @@ export const studentService = {
    * @param {number} [params.limit=10] - Number of items per page
    * @param {string} [params.search] - Search term for filtering students
    * @param {string|number} [params.classId] - Filter by specific class ID
-   * @param {string|number} [params.gradeLevel] - Filter by grade level (1-6) - sent as gradeId to backend
+   * @param {string|number} [params.gradeLevel] - Filter by grade level (1-6)
    * @param {boolean|string} [params.status] - Filter by active status (true/false/'active'/'inactive')
    * @returns {Promise<Object>} Response with student data and pagination info
    */
@@ -706,7 +706,7 @@ export const studentService = {
       if (academicYear) apiParams.academicYear = academicYear;
       if (gender) apiParams.gender = gender;
       if (dateOfBirth) apiParams.dateOfBirth = dateOfBirth;
-      if (gradeLevel) apiParams.gradeId = gradeLevel;
+      if (gradeLevel) apiParams.gradeLevel = gradeLevel;
 
       const response = await classService.getMasterClasses(schoolId, apiParams);
       

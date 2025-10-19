@@ -19,11 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { formatDateKhmer } from "@/utils/formatters"
 
 export function DatePickerWithDropdowns({
   value,
   onChange,
-  placeholder = "Pick a date",
+  placeholder = "ជ្រើសរើសកាលបរិច្ឆេទ",
   className,
   disabled = false,
   fromYear = 1960,
@@ -38,8 +39,8 @@ export function DatePickerWithDropdowns({
   )
 
   const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
+    "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
   ]
 
   // Generate all years for scrollable dropdown
@@ -78,7 +79,7 @@ export function DatePickerWithDropdowns({
           {...props}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, "PPP") : <span>{placeholder}</span>}
+          {value ? formatDateKhmer(value, "short") : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -88,7 +89,7 @@ export function DatePickerWithDropdowns({
             onValueChange={handleMonthChange}
           >
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="Month" />
+              <SelectValue placeholder="ខែ" />
             </SelectTrigger>
             <SelectContent className="max-h-[200px]">
               {months.map((month, index) => (
@@ -104,7 +105,7 @@ export function DatePickerWithDropdowns({
             onValueChange={handleYearChange}
           >
             <SelectTrigger className="w-20">
-              <SelectValue placeholder="Year" />
+              <SelectValue placeholder="ឆ្នាំ" />
             </SelectTrigger>
             <SelectContent className="max-h-[200px]">
               {years.map((year) => (

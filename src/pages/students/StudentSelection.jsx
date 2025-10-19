@@ -16,6 +16,7 @@ import SelectedStudentsManager from '../../components/students/SelectedStudentsM
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import Dropdown from '../../components/ui/Dropdown';
 import DynamicLoader from '../../components/ui/DynamicLoader';
+import { formatDateKhmer } from '../../utils/formatters';
 
 const StudentSelection = () => {
   const navigate = useNavigate();
@@ -311,6 +312,7 @@ const StudentSelection = () => {
         const day = String(filters.dateOfBirth.getDate()).padStart(2, '0');
         filterParams.dateOfBirth = `${year}-${month}-${day}`;
       }
+      // gradeLevel is sent to API as gradeLevel parameter
       if (filters.gradeLevel) filterParams.gradeLevel = filters.gradeLevel;
 
       // Add class filter
@@ -320,12 +322,11 @@ const StudentSelection = () => {
 
       // Use the master-class endpoint to get all students from the school with filters
       const studentsResponse = await studentService.getStudentsBySchool(schoolId, filterParams);
-      
+
       console.log('Master-class response:', studentsResponse);
-      
+
       if (studentsResponse && studentsResponse.success && studentsResponse.data) {
-        // For student selection, we might want to show all students or filter by some criteria
-        // The user can then choose which students to assign to which classes
+        // Server handles gradeLevel filtering via gradeId parameter
         setStudents(studentsResponse.data);
         console.log(`Loaded ${studentsResponse.data.length} students from school ${schoolId} for selection`);
         
@@ -699,12 +700,12 @@ const StudentSelection = () => {
                   onValueChange={(value) => handleFilterChange({ ...filters, gradeLevel: value })}
                   options={[
                     { value: '', label: t('allGrades', 'All Grades') },
-                    { value: '1', label: t('grade1', 'Grade 1') },
-                    { value: '2', label: t('grade2', 'Grade 2') },
-                    { value: '3', label: t('grade3', 'Grade 3') },
-                    { value: '4', label: t('grade4', 'Grade 4') },
-                    { value: '5', label: t('grade5', 'Grade 5') },
-                    { value: '6', label: t('grade6', 'Grade 6') }
+                    { value: 1, label: t('grade1', 'Grade 1') },
+                    { value: 2, label: t('grade2', 'Grade 2') },
+                    { value: 3, label: t('grade3', 'Grade 3') },
+                    { value: 4, label: t('grade4', 'Grade 4') },
+                    { value: 5, label: t('grade5', 'Grade 5') },
+                    { value: 6, label: t('grade6', 'Grade 6') }
                   ]}
                   placeholder={t('selectGrade', 'Select Grade')}
                 />
@@ -879,7 +880,7 @@ const StudentSelection = () => {
                         )}
                         {student.dateOfBirth && (
                           <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded font-medium">
-                            {new Date(student.dateOfBirth).toLocaleDateString()}
+                            {formatDateKhmer(student.dateOfBirth, 'short')}
                           </span>
                         )}
                       </div>

@@ -227,7 +227,7 @@ const SelectedStudentsManager = ({
                                       )}
                                     </div>
                                     <p className="text-xs text-gray-500">
-                                      Grade {cls.gradeLevel} • {cls.studentCount || 0}/{cls.maxStudents || 50} students ({Math.round(((cls.studentCount || 0) / (cls.maxStudents || 50)) * 100)}%)
+                                      ថ្នាក់ទី{cls.gradeLevel} • {cls.academicYear}
                                     </p>
                                   </div>
                                 </div>

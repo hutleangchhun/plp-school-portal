@@ -10,8 +10,7 @@ import { studentService } from '../../utils/api/services/studentService';
 import { schoolService } from '../../utils/api/services/schoolService';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
-import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
-import { DatePicker } from '../../components/ui/date-picker';
+import { PageLoader } from '../../components/ui/DynamicLoader';
 import Dropdown from '../../components/ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import * as XLSX from 'xlsx';
@@ -1810,11 +1809,11 @@ export default function BulkStudentImport() {
         // }
 
         // Temporarily remove student_number - API may auto-generate or expect different format
-        // if (student.studentNumber && student.studentNumber.trim()) {
-        //   studentData.student_number = student.studentNumber.trim();
-        // } else if (student.id && student.id.trim()) {
-        //   studentData.student_number = student.id.trim();
-        // }
+         if (student.studentNumber && student.studentNumber.trim()) {
+           studentData.student_number = student.studentNumber.trim();
+         } else if (student.id && student.id.trim()) {
+           studentData.student_number = student.id.trim();
+         }
 
         // Remove academic_year - API may not expect this field or it might cause validation issues
         // if (student.academicYear && student.academicYear.trim()) {
@@ -1829,6 +1828,19 @@ export default function BulkStudentImport() {
           studentData.residence = {
             full_address: student.residenceFullAddress.trim()
           };
+        }
+
+        // Add ethnic group if provided
+        if (student.ethnicGroup && student.ethnicGroup.trim()) {
+          studentData.ethnic_group = student.ethnicGroup.trim();
+        }
+
+        // Add accessibility if provided - convert to Khmer labels
+        if (student.accessibility && student.accessibility.length > 0) {
+          studentData.accessibility = student.accessibility.map(value => {
+            const option = accessibilityOptions.find(opt => opt.value === value);
+            return option ? option.label : value;
+          });
         }
 
         // Add parents data if available
@@ -2249,7 +2261,7 @@ export default function BulkStudentImport() {
                           ) : (
                             <input
                               type="text"
-                              value={student[column.key] || ''}
+                              value={column.key === 'schoolId' ? (selectedSchool?.name || '') : (student[column.key] || '')}
                               onChange={(e) => {
                                 e.stopPropagation();
                                 updateCell(rowIndex, column.key, e.target.value);

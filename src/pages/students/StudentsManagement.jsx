@@ -21,6 +21,7 @@ import StudentActionsModal from '../../components/students/StudentActionsModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
+import { formatDateKhmer } from '../../utils/formatters';
 
 /**
  * StudentsManagement Component
@@ -706,7 +707,7 @@ export default function StudentsManagement() {
                 .filter(cls => cls.classId.toString() !== selectedStudent?.class?.id?.toString())
                 .map(cls => ({
                   value: cls.classId.toString(),
-                  label: `${cls.name} - ${cls.academicYear} (${cls.studentCount || 0}/${cls.maxStudents || 50} - ${Math.round(((cls.studentCount || 0) / (cls.maxStudents || 50)) * 100)}%)`
+                  label: `${cls.name} - ${cls.academicYear}`
                 }))}
               placeholder={t('selectClass', 'Select a class')}
               minWidth="w-full"
@@ -1241,7 +1242,7 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
       students.forEach((student, index) => {
         // Format date of birth
         const dob = student.dateOfBirth || student.date_of_birth;
-        const formattedDob = dob ? new Date(dob).toLocaleDateString('en-GB').replace(/\//g, '/') : '';
+        const formattedDob = dob ? formatDateKhmer(dob, 'dateOnly') : '';
 
         // Format gender
         const gender = student.gender === 'MALE' || student.gender === 'male' ? 'ប្រុស' :
@@ -1788,7 +1789,7 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
             <span><span className="font-medium">{t('gender', 'Gender')}:</span> {student.gender === 'male' ? t('male', 'Male') : t('female', 'Female')}</span>
           )}
           {(student.dateOfBirth || student.date_of_birth) && (
-            <span><span className="font-medium">{t('dateOfBirth', 'DOB')}:</span> {new Date(student.dateOfBirth || student.date_of_birth).toLocaleDateString()}</span>
+            <span><span className="font-medium">{t('dateOfBirth', 'DOB')}:</span> {formatDateKhmer(student.dateOfBirth || student.date_of_birth, 'short')}</span>
           )}
           {student.nationality && (
             <span><span className="font-medium">{t('nationality', 'Nationality')}:</span> {student.nationality}</span>

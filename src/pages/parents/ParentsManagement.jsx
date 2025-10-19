@@ -583,15 +583,21 @@ export default function ParentsManagement() {
       key: 'relationship',
       header: t('relationship', 'Relationship'),
       render: (parent) => {
-        const relationship = parent.students.map(student => student.relationship);
+        const relationships = parent.students.map(student => {
+          const rel = student.relationship;
+          if (rel === 'FATHER') return t('father', 'Father');
+          if (rel === 'MOTHER') return t('mother', 'Mother');
+          return rel;
+        });
+        const displayRelationship = [...new Set(relationships)].join(', ');
         return (
           <div>
-            {relationship.length > 0 ? (
-              <span title={relationship} className="text-sm text-gray-600">
-                {relationship}
+            {displayRelationship ? (
+              <span title={displayRelationship} className="text-sm text-gray-600">
+                {displayRelationship}
               </span>
             ) : (
-              <span className="text-sm text-gray-600">{relationship}</span>
+              <span className="text-sm text-gray-400">-</span>
             )}
           </div>
         );

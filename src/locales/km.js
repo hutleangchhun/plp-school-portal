@@ -12,6 +12,8 @@ export const km = {
   loadingTeachers: 'កំពុងទាយយកទិន្នន័យគ្រូ',
   people: 'នាក់',
   schoolPopulationDistribution: 'ការបែងចែកប្រភេទបុគ្គលិកក្នុងសាលារៀន',
+  schoolPopulationDistributionDesc: 'ការបែងចែកប្រភេទបុគ្គលិក',
+
 
   //chart
    classStudentCounts: 'ចំនួនសិស្សតាមថ្នាក់និមួយៗ',
@@ -454,6 +456,7 @@ export const km = {
 
   // Class selection
   allClasses: 'ថ្នាក់ទាំងអស់',
+  clearSelection: 'លុបការជ្រើសរើស',
   
   // General UI
   errorFetchingData: 'កំហុសក្នុងការទាញយកទិន្នន័យ',
@@ -563,6 +566,31 @@ export const km = {
   'Mon, Wed, Fri': 'ច, ព, សុ',
   'Tue, Thu': 'អ, ព្រ',
   'Mon-Fri': 'ច-សុ',
+
+  // Months of the year
+  January: 'មករា',
+  February: 'កុម្ភៈ',
+  March: 'មីនា',
+  April: 'មេសា',
+  May: 'ឧសភា',
+  June: 'មិថុនា',
+  July: 'កក្កដា',
+  August: 'សីហា',
+  September: 'កញ្ញា',
+  October: 'តុលា',
+  November: 'វិច្ឆិកា',
+  December: 'ធ្នូ',
+  Jan: 'មករា',
+  Feb: 'កុម្ភៈ',
+  Mar: 'មីនា',
+  Apr: 'មេសា',
+  Jun: 'មិថុនា',
+  Jul: 'កក្កដា',
+  Aug: 'សីហា',
+  Sep: 'កញ្ញា',
+  Oct: 'តុលា',
+  Nov: 'វិច្ឆិកា',
+  Dec: 'ធ្នូ',
   
   // Grade levels
   'Grade': 'ថ្នាក់ទី',
@@ -838,6 +866,8 @@ export const km = {
   oopsSomethingWentWrong: 'អូប! មានបញ្ហាអ្វីមួយកើតឡើង',
   tryAgainLater: 'សូមព្យាយាមម្តងទៀតនៅពេលក្រោយ',
   contactSupport: 'ទាក់ទងការគាំទ្រ',
+
+  clearFilters: 'កំណត់ការស្វែងរកឡើងវិញ',
 
   // Export utilities
   notAvailable: 'មិនមាន',

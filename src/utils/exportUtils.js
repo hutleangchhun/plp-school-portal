@@ -3,6 +3,7 @@ import { jsPDF } from 'jspdf';
 import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import { userService } from './api/services/userService';
+import { formatDateKhmer } from './formatters';
 
 // Resolve a student's class id and name from various possible shapes
 const getStudentClassInfo = (student) => {
@@ -271,7 +272,7 @@ export const exportToExcel = (data, filename = 'students_data.xlsx', t = null, o
         [headers.email]: student.email || '',
         [headers.phone]: student.phone || '',
         [headers.gender]: student.gender ? (student.gender === 'male' || student.gender === 'MALE' ? (t ? t('male') : 'ប្រុស') : (t ? t('female') : 'ស្រី')) : '',
-        [headers.dateOfBirth]: student.dateOfBirth || student.date_of_birth ? new Date(student.dateOfBirth || student.date_of_birth).toLocaleDateString() : '',
+        [headers.dateOfBirth]: student.dateOfBirth || student.date_of_birth ? formatDateKhmer(student.dateOfBirth || student.date_of_birth, 'dateOnly') : '',
         [headers.nationality]: student.nationality || '',
         [headers.password]: getStudentPassword(student, options) || '',
         [headers.residenceProvince]: residenceProvince || '',
@@ -363,7 +364,7 @@ export const exportToCSV = (data, filename = 'students_data.csv', t = null, opti
         [headers.email]: student.email || '',
         [headers.phone]: student.phone || '',
         [headers.gender]: student.gender ? (student.gender === 'male' ? (t ? t('male') : 'ប្រុស') : (t ? t('female') : 'ស្រី')) : '',
-        [headers.dateOfBirth]: student.dateOfBirth || student.date_of_birth ? new Date(student.dateOfBirth || student.date_of_birth).toLocaleDateString() : '',
+        [headers.dateOfBirth]: student.dateOfBirth || student.date_of_birth ? formatDateKhmer(student.dateOfBirth || student.date_of_birth, 'dateOnly') : '',
         [headers.nationality]: student.nationality || '',
         [headers.password]: getStudentPassword(student, options) || '',
         [headers.residenceProvince]: getLocationName(student, 'residence', 'province') || '',
@@ -452,11 +453,11 @@ export const exportToPDF = async (data, classInfo, filename = 'students_data.pdf
             <p><strong>${labels.class}:</strong> ${classInfo.name || ''}</p>
             <p><strong>${labels.grade}:</strong> ${classInfo.gradeLevel || ''} | <strong>${labels.section}:</strong> ${classInfo.section || ''}</p>
             <p><strong>${labels.academicYear}:</strong> ${classInfo.academicYear || ''}</p>
-            <p><strong>${labels.generated}:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>${labels.generated}:</strong> ${formatDateKhmer(new Date(), 'short')}</p>
           </div>
         ` : `
           <div style="margin-bottom: 15px; font-size: 10px;">
-            <p><strong>${labels.generated}:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>${labels.generated}:</strong> ${formatDateKhmer(new Date(), 'short')}</p>
           </div>
         `}
 
@@ -646,7 +647,7 @@ export const exportTeachersToExcel = async (data, filename = 'teachers_data.xlsx
         [headers.email]: blankIfNA(teacher.email),
         [headers.phone]: blankIfNA(teacher.phone),
         [headers.gender]: teacher.gender ? (teacher.gender === 'male' || teacher.gender === 'MALE' ? (t ? t('male') : 'ប្រុស') : (t ? t('female') : 'ស្រី')) : '',
-        [headers.dateOfBirth]: teacher.dateOfBirth || teacher.date_of_birth ? new Date(teacher.dateOfBirth || teacher.date_of_birth).toLocaleDateString() : '',
+        [headers.dateOfBirth]: teacher.dateOfBirth || teacher.date_of_birth ? formatDateKhmer(teacher.dateOfBirth || teacher.date_of_birth, 'dateOnly') : '',
         [headers.nationality]: teacher.nationality || '',
         [headers.password]: getStudentPassword(teacher, options) || '',
         [headers.residenceProvince]: getLocationName(teacher, 'residence', 'province') || '',
@@ -740,7 +741,7 @@ export const exportTeachersToCSV = async (data, filename = 'teachers_data.csv', 
         [headers.email]: blankIfNA(teacher.email),
         [headers.phone]: blankIfNA(teacher.phone),
         [headers.gender]: teacher.gender ? (teacher.gender === 'male' || teacher.gender === 'MALE' ? (t ? t('male') : 'ប្រុស') : (t ? t('female') : 'ស្រី')) : '',
-        [headers.dateOfBirth]: teacher.dateOfBirth || teacher.date_of_birth ? new Date(teacher.dateOfBirth || teacher.date_of_birth).toLocaleDateString() : '',
+        [headers.dateOfBirth]: teacher.dateOfBirth || teacher.date_of_birth ? formatDateKhmer(teacher.dateOfBirth || teacher.date_of_birth, 'dateOnly') : '',
         [headers.nationality]: teacher.nationality || '',
         [headers.password]: getStudentPassword(teacher, options) || '',
         [headers.residenceProvince]: getLocationName(teacher, 'residence', 'province') || '',

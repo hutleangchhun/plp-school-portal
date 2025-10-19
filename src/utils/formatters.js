@@ -1,5 +1,6 @@
 // Utility functions for formatting data
 import { format, parseISO } from 'date-fns';
+import { MONTH_NAMES_KH, DAY_NAMES_KH } from '@/constants';
 
 /**
  * Format a date using the specified format
@@ -9,7 +10,7 @@ import { format, parseISO } from 'date-fns';
  */
 export const formatDate = (date, formatStr = 'MMM dd, yyyy') => {
   if (!date) return '';
-  
+
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : date;
     return format(dateObj, formatStr);
@@ -17,6 +18,74 @@ export const formatDate = (date, formatStr = 'MMM dd, yyyy') => {
     console.warn('Date formatting error:', error);
     return date.toString();
   }
+};
+
+/**
+ * Format a date in Khmer
+ * @param {Date|string} date - Date to format
+ * @param {string} formatType - Format type: 'full', 'short', 'monthYear', 'dateOnly'
+ * @returns {string} Formatted date string in Khmer
+ */
+export const formatDateKhmer = (date, formatType = 'full') => {
+  if (!date) return '';
+
+  try {
+    const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date);
+    const day = dateObj.getDate();
+    const month = dateObj.getMonth();
+    const year = dateObj.getFullYear();
+    const dayOfWeek = dateObj.getDay();
+
+    switch (formatType) {
+      case 'full':
+        // Format: ថ្ងៃច័ន្ទ ទី១៥ ខែមករា ឆ្នាំ២០២៥
+        return `${DAY_NAMES_KH[dayOfWeek === 0 ? 6 : dayOfWeek - 1]} ទី${day} ខែ${MONTH_NAMES_KH[month]} ឆ្នាំ${year}`;
+      case 'short':
+        // Format: ១៥ មករា ២០២៥
+        return `${day} ${MONTH_NAMES_KH[month]} ${year}`;
+      case 'monthYear':
+        // Format: មករា ២០២៥
+        return `${MONTH_NAMES_KH[month]} ${year}`;
+      case 'dateOnly':
+        // Format: ១៥/០១/២០២៥
+        return `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`;
+      case 'dayMonth':
+        // Format: ១៥ មករា
+        return `${day} ${MONTH_NAMES_KH[month]}`;
+      default:
+        return `${day} ${MONTH_NAMES_KH[month]} ${year}`;
+    }
+  } catch (error) {
+    console.warn('Khmer date formatting error:', error);
+    return date.toString();
+  }
+};
+
+/**
+ * Format date for display based on locale
+ * @param {Date|string} date - Date to format
+ * @param {string} locale - Locale ('km' or 'en')
+ * @param {string} formatType - Format type
+ * @returns {string} Formatted date string
+ */
+export const formatDateLocale = (date, locale = 'km', formatType = 'short') => {
+  if (!date) return '';
+
+  if (locale === 'km') {
+    return formatDateKhmer(date, formatType);
+  }
+
+  // English formatting
+  const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date);
+  const options = {
+    full: { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
+    short: { year: 'numeric', month: 'short', day: 'numeric' },
+    monthYear: { year: 'numeric', month: 'long' },
+    dateOnly: { year: 'numeric', month: '2-digit', day: '2-digit' },
+    dayMonth: { month: 'short', day: 'numeric' }
+  };
+
+  return dateObj.toLocaleDateString('en-US', options[formatType] || options.short);
 };
 
 /**
