@@ -303,6 +303,7 @@ export default function AttendanceExport({
       // Apply borders and styling to all cells
       const totalRows = templateData.length;
       const totalCols = 39; // 4 info + 31 days + 4 summary = 39 columns (A-AM)
+      const dataEndRow = 8 + dataRows.length - 1; // Last row of actual student data
 
       for (let R = 0; R < totalRows; R++) {
         for (let C = 0; C < totalCols; C++) {
@@ -372,8 +373,8 @@ export default function AttendanceExport({
               }
             };
           }
-          // Data rows (8+) - Borders, centered except name column
-          else {
+          // Data rows (8 to dataEndRow) - Borders, centered except name column
+          else if (R >= 8 && R <= dataEndRow) {
             ws[cellAddress].s = {
               border: {
                 top: { style: 'thin', color: { rgb: '000000' } },
@@ -384,6 +385,19 @@ export default function AttendanceExport({
               alignment: {
                 vertical: 'center',
                 horizontal: C === 2 ? 'left' : 'center' // Column C (ឈ្មោះ) left-aligned
+              },
+              font: {
+                name: 'Khmer OS Battambang',
+                sz: 10
+              }
+            };
+          }
+          // Footer rows (after dataEndRow) - No borders, left-aligned
+          else {
+            ws[cellAddress].s = {
+              alignment: {
+                vertical: 'center',
+                horizontal: 'left'
               },
               font: {
                 name: 'Khmer OS Battambang',
