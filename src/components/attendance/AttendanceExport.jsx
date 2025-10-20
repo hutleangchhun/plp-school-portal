@@ -167,6 +167,11 @@ export default function AttendanceExport({
       const currentDate = new Date(selectedDate);
       const monthName = formatDateKhmer(currentDate, 'monthYear');
 
+      // Calculate student counts for header
+      const totalStudents = students.length;
+      const femaleStudents = students.filter(s => s.gender === 'FEMALE').length;
+      const maleStudents = totalStudents - femaleStudents;
+
       // Create template with headers (39 columns total: 4 info + 31 days + 4 summary)
       const emptyRow = Array(39).fill('');
 
@@ -174,22 +179,30 @@ export default function AttendanceExport({
         // Official Header - Row 1
         ['ព្រះរាជាណាចក្រកម្ពុជា', ...Array(38).fill('')],
         // Nation Religion King - Row 2
-        ['ជាតិ     សាសនា     ព្រះមហាក្សត្រ', ...Array(38).fill('')],
-        // School Info - Row 3
-        ['មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............', ...Array(0).fill('')],
-        ['ការិយាល័យអប់រំ យុវជន និងកីឡារដ្ឋបាលក្រុង/ស្រុក/ខណ្ឌ.......................................', ...Array(0).fill('')],
-        [schoolName, ...Array(0).fill('')],
-        // Attendance Title - Row 4
+        ['ជាតិ       សាសនា       ព្រះមហាក្សត្រ', ...Array(38).fill('')],
+        // Department Info - Row 3
+        ['មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............', ...Array(38).fill('')],
+        // Office Info - Row 4
+        ['ការិយាល័យអប់រំ យុវជន និងកីឡារដ្ឋបាលក្រុង/ស្រុក/ខណ្ឌ.......................................', ...Array(38).fill('')],
+        // School Info - Row 5
+        [schoolName, ...Array(38).fill('')],
+        // Attendance Title - Row 6
         ['បញ្ជីហៅឈ្មោះសិស្ស', ...Array(38).fill('')],
-        [`ផ្នែកអវត្តមានប្រចាំខែ - ${className}`,...Array(38).fill('')],
-
-        // Month/Year - Row 5
+        // Section Title - Row 7
+        [`ផ្នែកអវត្តមានប្រចាំខែ - ${className}`, ...Array(38).fill('')],
+        // Month/Year - Row 8
         [`ខែ: ${monthName}`, ...Array(38).fill('')],
-        // Empty row - Row 6
+        // Empty row - Row 9
         [...emptyRow],
       ];
 
-      // Category header row - Row 7 (for "ចំនួនអវត្តមាន")
+      // Info row above table - Row 10 (month/year on left, student counts on right)
+      const infoRow = [...emptyRow];
+      infoRow[0] = 'ប្រចាំខែ.................. ឆ្នាំសិក្សា............................';
+      infoRow[20] = `សិស្សសរុបៈ ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
+      templateData.push(infoRow);
+
+      // Category header row - Row 11 (for "ចំនួនអវត្តមាន")
       const categoryRow = ['ល.រ', 'អត្តលេខ', 'ឈ្មោះ', 'ភេទ'];
       for (let i = 1; i <= 31; i++) {
         categoryRow.push(i.toString());
@@ -230,11 +243,7 @@ export default function AttendanceExport({
 
       templateData.push(...dataRows);
 
-      // Calculate basic student counts for footer
-      const totalStudents = students.length;
-      const femaleStudents = students.filter(s => s.gender === 'FEMALE').length;
-      const maleStudents = totalStudents - femaleStudents;
-
+      // Note: Student counts already calculated earlier for use in header and footer
       // Note: Other calculation fields (attendance counts, percentage) left blank for manual entry as per standard format
 
       // Add footer section (summary statistics) - Structured format
@@ -311,7 +320,7 @@ export default function AttendanceExport({
       // Apply borders and styling to all cells
       const totalRows = templateData.length;
       const totalCols = 39; // 4 info + 31 days + 4 summary = 39 columns (A-AM)
-      const dataEndRow = 8 + dataRows.length - 1; // Last row of actual student data
+      const dataEndRow = 13 + dataRows.length - 1; // Last row of actual student data (headers 0-9, info row 10, table headers 11-12, data starts at 13)
 
       for (let R = 0; R < totalRows; R++) {
         for (let C = 0; C < totalCols; C++) {
@@ -321,8 +330,8 @@ export default function AttendanceExport({
             ws[cellAddress] = { t: 's', v: '' };
           }
 
-          // Header section (rows 0-5) - No borders, centered, bold
-          if (R < 6) {
+          // Header section (rows 0-8) - No borders, centered, bold
+          if (R < 9) {
             ws[cellAddress].s = {
               alignment: {
                 vertical: 'center',
@@ -335,8 +344,34 @@ export default function AttendanceExport({
               }
             };
           }
-          // Category header row (row 6) - "ចំនួនអវត្តមាន" - Gray background, borders, bold
-          else if (R === 6) {
+          // Empty row (row 9) - No borders, centered
+          else if (R === 9) {
+            ws[cellAddress].s = {
+              alignment: {
+                vertical: 'center',
+                horizontal: 'center'
+              },
+              font: {
+                name: 'Khmer OS Battambang',
+                sz: 10
+              }
+            };
+          }
+          // Info row (row 10) - No borders, left-aligned
+          else if (R === 10) {
+            ws[cellAddress].s = {
+              alignment: {
+                vertical: 'center',
+                horizontal: 'left'
+              },
+              font: {
+                name: 'Khmer OS Battambang',
+                sz: 10
+              }
+            };
+          }
+          // Category header row (row 11) - "ចំនួនអវត្តមាន" - Gray background, borders, bold
+          else if (R === 11) {
             ws[cellAddress].s = {
               fill: {
                 fgColor: { rgb: 'E0E0E0' }
@@ -358,8 +393,8 @@ export default function AttendanceExport({
               }
             };
           }
-          // Column header row (row 7) - Gray background, borders, bold
-          else if (R === 7) {
+          // Column header row (row 12) - Gray background, borders, bold
+          else if (R === 12) {
             ws[cellAddress].s = {
               fill: {
                 fgColor: { rgb: 'E0E0E0' }
@@ -381,8 +416,8 @@ export default function AttendanceExport({
               }
             };
           }
-          // Data rows (8 to dataEndRow) - Borders, centered except name column
-          else if (R >= 8 && R <= dataEndRow) {
+          // Data rows (13 to dataEndRow) - Borders, centered except name column
+          else if (R >= 13 && R <= dataEndRow) {
             ws[cellAddress].s = {
               border: {
                 top: { style: 'thin', color: { rgb: '000000' } },
@@ -418,52 +453,56 @@ export default function AttendanceExport({
 
       // Merge header cells
       ws['!merges'] = [
-        // Main headers (rows 0-5) - full width (39 columns)
+        // Main headers (rows 0-8) - full width (39 columns)
         { s: { r: 0, c: 0 }, e: { r: 0, c: 38 } }, // Row 1: ព្រះរាជាណាចក្រកម្ពុជា
         { s: { r: 1, c: 0 }, e: { r: 1, c: 38 } }, // Row 2: ជាតិ សាសនា ព្រះមហាក្សត្រ
-        { s: { r: 2, c: 0 }, e: { r: 2, c: 38 } }, // Row 3: សាលា
-        { s: { r: 3, c: 0 }, e: { r: 3, c: 38 } }, // Row 4: បញ្ជីកត់ត្រាវត្តមាន
-        { s: { r: 4, c: 0 }, e: { r: 4, c: 38 } }, // Row 5: ខែ
-        { s: { r: 5, c: 0 }, e: { r: 5, c: 38 } }, // Row 6: Empty row
-        // Category header (row 6) - "ចំនួនអវត្តមាន" merged across summary columns (35-38 = AI-AM)
-        { s: { r: 6, c: 35 }, e: { r: 6, c: 38 } }, // Row 7: ចំនួនអវត្តមាន over ម អ យឺត ផ្សេងៗ
-        // Merge individual column headers (row 7) that have category header above
-        { s: { r: 6, c: 0 }, e: { r: 7, c: 0 } },   // ល.រ (merge row 7-8)
-        { s: { r: 6, c: 1 }, e: { r: 7, c: 1 } },   // អត្តសញ្ញាណ (merge row 7-8)
-        { s: { r: 6, c: 2 }, e: { r: 7, c: 2 } },   // ឈ្មោះ (merge row 7-8)
-        { s: { r: 6, c: 3 }, e: { r: 7, c: 3 } },   // ភេទ (merge row 7-8)
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 38 } }, // Row 3: មន្ទីរអប់រំ យុវជន និងកីឡា
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 38 } }, // Row 4: ការិយាល័យអប់រំ
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 38 } }, // Row 5: សាលា
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 38 } }, // Row 6: បញ្ជីហៅឈ្មោះសិស្ស
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 38 } }, // Row 7: ផ្នែកអវត្តមានប្រចាំខែ
+        { s: { r: 7, c: 0 }, e: { r: 7, c: 38 } }, // Row 8: ខែ
+        { s: { r: 8, c: 0 }, e: { r: 8, c: 38 } }, // Row 9: Empty row
+        // Row 10: Info row (month/year and student counts) - no merge, spans naturally
+        // Category header (row 11) - "ចំនួនអវត្តមាន" merged across summary columns (35-38 = AI-AM)
+        { s: { r: 11, c: 35 }, e: { r: 11, c: 38 } }, // Row 12: ចំនួនអវត្តមាន over ម អ យឺត ផ្សេងៗ
+        // Merge individual column headers (rows 11-12) that have category header above
+        { s: { r: 11, c: 0 }, e: { r: 12, c: 0 } },   // ល.រ (merge row 12-13)
+        { s: { r: 11, c: 1 }, e: { r: 12, c: 1 } },   // អត្តសញ្ញាណ (merge row 12-13)
+        { s: { r: 11, c: 2 }, e: { r: 12, c: 2 } },   // ឈ្មោះ (merge row 12-13)
+        { s: { r: 11, c: 3 }, e: { r: 12, c: 3 } },   // ភេទ (merge row 12-13)
         // Merge day columns (4-34 = E-AI)
-        { s: { r: 6, c: 4 }, e: { r: 7, c: 4 } },   // Day 1
-        { s: { r: 6, c: 5 }, e: { r: 7, c: 5 } },   // Day 2
-        { s: { r: 6, c: 6 }, e: { r: 7, c: 6 } },   // Day 3
-        { s: { r: 6, c: 7 }, e: { r: 7, c: 7 } },   // Day 4
-        { s: { r: 6, c: 8 }, e: { r: 7, c: 8 } },   // Day 5
-        { s: { r: 6, c: 9 }, e: { r: 7, c: 9 } },   // Day 6
-        { s: { r: 6, c: 10 }, e: { r: 7, c: 10 } }, // Day 7
-        { s: { r: 6, c: 11 }, e: { r: 7, c: 11 } }, // Day 8
-        { s: { r: 6, c: 12 }, e: { r: 7, c: 12 } }, // Day 9
-        { s: { r: 6, c: 13 }, e: { r: 7, c: 13 } }, // Day 10
-        { s: { r: 6, c: 14 }, e: { r: 7, c: 14 } }, // Day 11
-        { s: { r: 6, c: 15 }, e: { r: 7, c: 15 } }, // Day 12
-        { s: { r: 6, c: 16 }, e: { r: 7, c: 16 } }, // Day 13
-        { s: { r: 6, c: 17 }, e: { r: 7, c: 17 } }, // Day 14
-        { s: { r: 6, c: 18 }, e: { r: 7, c: 18 } }, // Day 15
-        { s: { r: 6, c: 19 }, e: { r: 7, c: 19 } }, // Day 16
-        { s: { r: 6, c: 20 }, e: { r: 7, c: 20 } }, // Day 17
-        { s: { r: 6, c: 21 }, e: { r: 7, c: 21 } }, // Day 18
-        { s: { r: 6, c: 22 }, e: { r: 7, c: 22 } }, // Day 19
-        { s: { r: 6, c: 23 }, e: { r: 7, c: 23 } }, // Day 20
-        { s: { r: 6, c: 24 }, e: { r: 7, c: 24 } }, // Day 21
-        { s: { r: 6, c: 25 }, e: { r: 7, c: 25 } }, // Day 22
-        { s: { r: 6, c: 26 }, e: { r: 7, c: 26 } }, // Day 23
-        { s: { r: 6, c: 27 }, e: { r: 7, c: 27 } }, // Day 24
-        { s: { r: 6, c: 28 }, e: { r: 7, c: 28 } }, // Day 25
-        { s: { r: 6, c: 29 }, e: { r: 7, c: 29 } }, // Day 26
-        { s: { r: 6, c: 30 }, e: { r: 7, c: 30 } }, // Day 27
-        { s: { r: 6, c: 31 }, e: { r: 7, c: 31 } }, // Day 28
-        { s: { r: 6, c: 32 }, e: { r: 7, c: 32 } }, // Day 29
-        { s: { r: 6, c: 33 }, e: { r: 7, c: 33 } }, // Day 30
-        { s: { r: 6, c: 34 }, e: { r: 7, c: 34 } }, // Day 31
+        { s: { r: 11, c: 4 }, e: { r: 12, c: 4 } },   // Day 1
+        { s: { r: 11, c: 5 }, e: { r: 12, c: 5 } },   // Day 2
+        { s: { r: 11, c: 6 }, e: { r: 12, c: 6 } },   // Day 3
+        { s: { r: 11, c: 7 }, e: { r: 12, c: 7 } },   // Day 4
+        { s: { r: 11, c: 8 }, e: { r: 12, c: 8 } },   // Day 5
+        { s: { r: 11, c: 9 }, e: { r: 12, c: 9 } },   // Day 6
+        { s: { r: 11, c: 10 }, e: { r: 12, c: 10 } }, // Day 7
+        { s: { r: 11, c: 11 }, e: { r: 12, c: 11 } }, // Day 8
+        { s: { r: 11, c: 12 }, e: { r: 12, c: 12 } }, // Day 9
+        { s: { r: 11, c: 13 }, e: { r: 12, c: 13 } }, // Day 10
+        { s: { r: 11, c: 14 }, e: { r: 12, c: 14 } }, // Day 11
+        { s: { r: 11, c: 15 }, e: { r: 12, c: 15 } }, // Day 12
+        { s: { r: 11, c: 16 }, e: { r: 12, c: 16 } }, // Day 13
+        { s: { r: 11, c: 17 }, e: { r: 12, c: 17 } }, // Day 14
+        { s: { r: 11, c: 18 }, e: { r: 12, c: 18 } }, // Day 15
+        { s: { r: 11, c: 19 }, e: { r: 12, c: 19 } }, // Day 16
+        { s: { r: 11, c: 20 }, e: { r: 12, c: 20 } }, // Day 17
+        { s: { r: 11, c: 21 }, e: { r: 12, c: 21 } }, // Day 18
+        { s: { r: 11, c: 22 }, e: { r: 12, c: 22 } }, // Day 19
+        { s: { r: 11, c: 23 }, e: { r: 12, c: 23 } }, // Day 20
+        { s: { r: 11, c: 24 }, e: { r: 12, c: 24 } }, // Day 21
+        { s: { r: 11, c: 25 }, e: { r: 12, c: 25 } }, // Day 22
+        { s: { r: 11, c: 26 }, e: { r: 12, c: 26 } }, // Day 23
+        { s: { r: 11, c: 27 }, e: { r: 12, c: 27 } }, // Day 24
+        { s: { r: 11, c: 28 }, e: { r: 12, c: 28 } }, // Day 25
+        { s: { r: 11, c: 29 }, e: { r: 12, c: 29 } }, // Day 26
+        { s: { r: 11, c: 30 }, e: { r: 12, c: 30 } }, // Day 27
+        { s: { r: 11, c: 31 }, e: { r: 12, c: 31 } }, // Day 28
+        { s: { r: 11, c: 32 }, e: { r: 12, c: 32 } }, // Day 29
+        { s: { r: 11, c: 33 }, e: { r: 12, c: 33 } }, // Day 30
+        { s: { r: 11, c: 34 }, e: { r: 12, c: 34 } }, // Day 31
       ];
 
       // Create workbook
