@@ -59,7 +59,7 @@ export default function AttendanceExport({
 
       const row = {
         'ល.រ': index + 1,
-        'អត្តសញ្ញាណ': student.studentId || student.id || '',
+        'អត្តលេខ': student.studentId || student.id || '',
         'ឈ្មោះ': student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.username || '',
         'ភេទ': student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : '',
       };
@@ -118,7 +118,7 @@ export default function AttendanceExport({
 
       const row = {
         'ល.រ': index + 1,
-        'អត្តសញ្ញាណ': student.studentId || student.id || '',
+        'អត្តលេខ': student.studentId || student.id || '',
         'ឈ្មោះ': student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.username || '',
         'ភេទ': student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : '',
       };
@@ -186,7 +186,7 @@ export default function AttendanceExport({
       ];
 
       // Category header row - Row 7 (for "ចំនួនអវត្តមាន")
-      const categoryRow = ['ល.រ', 'អត្តសញ្ញាណ', 'ឈ្មោះ', 'ភេទ'];
+      const categoryRow = ['ល.រ', 'អត្តលេខ', 'ឈ្មោះ', 'ភេទ'];
       for (let i = 1; i <= 31; i++) {
         categoryRow.push(i.toString());
       }
@@ -207,7 +207,7 @@ export default function AttendanceExport({
       const dataRows = exportData.map(row => {
         const arr = [
           row['ល.រ'],
-          row['អត្តសញ្ញាណ'],
+          row['អត្តលេខ'],
           row['ឈ្មោះ'],
           row['ភេទ']
         ];

@@ -2174,7 +2174,7 @@ export default function BulkStudentImport() {
                     #
                   </th>
                   {/* Student Basic Info */}
-                  <th colSpan="15" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-blue-100 border-r border-gray-200">
+                  <th colSpan="14" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-blue-100 border-r border-gray-200">
                     ព័ត៌មានសិស្ស
                   </th>
                   {/* Father Info */}
