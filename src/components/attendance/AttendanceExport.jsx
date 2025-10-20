@@ -226,55 +226,50 @@ export default function AttendanceExport({
 
       templateData.push(...dataRows);
 
-      // Calculate totals for footer
+      // Calculate basic student counts for footer
       const totalStudents = students.length;
       const femaleStudents = students.filter(s => s.gender === 'FEMALE').length;
       const maleStudents = totalStudents - femaleStudents;
 
-      let totalPresent = 0;
-      let totalAbsent = 0;
-      let totalLate = 0;
+      // Note: Other calculation fields (attendance counts, percentage) left blank for manual entry as per standard format
 
-      dataRows.forEach(row => {
-        totalPresent += parseInt(row[35]) || 0;  // ម column
-        totalAbsent += parseInt(row[36]) || 0;   // អ column
-        totalLate += parseInt(row[37]) || 0;     // យឺត column
-      });
-
-      const totalDaysToAttend = daysInMonth * totalStudents;
-      const totalDaysAttended = totalPresent + totalLate; // Including late as attended
-      const absencePercentage = totalDaysToAttend > 0
-        ? ((totalAbsent / totalDaysToAttend) * 100).toFixed(2)
-        : '0.00';
-
-      // Add footer section (summary statistics)
+      // Add footer section (summary statistics) - Structured format
       const emptyFooterRow = Array(39).fill('');
 
       // Empty row for spacing
       templateData.push([...emptyFooterRow]);
 
-      // Summary statistics row
-      const summaryText = `x100 - ចំនួនសិស្សក្នុងបញ្ជី..........${totalStudents}នាក់  ប្រុស........${maleStudents}នាក់  ស្រី........${femaleStudents}នាក់  ចំនួនពេលដែលសិស្សត្រូវមករៀន.....${totalDaysToAttend}  ចំនួនពេលអវត្តមាន......${totalAbsent}  ចំនួនពេលដែលសិស្សមករៀនពិតប្រាកដ...........${totalDaysAttended}  ភាគរយអវត្តមានៈ = ${absencePercentage}%`;
-      templateData.push([summaryText, ...Array(38).fill('')]);
+      // First summary row with calculations
+      const summaryRow1 = [...emptyFooterRow];
+      summaryRow1[0] = `- ចំនួនសិស្សក្នុងបញ្ជី.........${totalStudents} ប្រុស.......${maleStudents} ស្រី........${femaleStudents} ចំនួនពេលដែលសិស្សត្រូវមករៀន... ចំនួនពេលអវត្តមាន...... ចំនួនពេលដែលសិស្សមករៀនពិតប្រាកដ........... គណនាភាគរយៈ  x100  = .............. %`;
+      templateData.push(summaryRow1);
 
-      // List stopped row
-      templateData.push([`- បញ្ឈប់បញ្ជីក្នុងខែនេះនូវចំនួន..........ពេល`, ...Array(38).fill('')]);
+      // Second row - times list stopped
+      const summaryRow2 = [...emptyFooterRow];
+      summaryRow2[0] = '- បញ្ឈប់បញ្ជីក្នុងខែនេះនូវចំនួន..........ពេល';
+      templateData.push(summaryRow2);
 
-      // Empty rows for dates and signatures
+      // Empty row
       templateData.push([...emptyFooterRow]);
-      templateData.push([`ថ្ងៃ.............................. ខែ................ ឆ្នាំ......... .............. ព.ស.២៥...........`, ...Array(38).fill('')]);
+
+      // Date row with signature preparation areas
+      const dateRow = [...emptyFooterRow];
+      dateRow[0] = '.... ថ្ងៃ........... ខែ .........  ឆ្នាំ.២៥.......';
+      dateRow[20] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ១៩០.......';
+      templateData.push(dateRow);
+
+      // Empty row
       templateData.push([...emptyFooterRow]);
 
       // Signature labels row
       const signatureRow = [...emptyFooterRow];
       signatureRow[0] = 'បានឃើញ';
-      signatureRow[20] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............... ឆ្នាំ២០.......';
+      signatureRow[20] = 'គ្រូប្រចាំថ្នាក់';
       templateData.push(signatureRow);
 
       // Position labels row
       const positionRow = [...emptyFooterRow];
       positionRow[0] = 'នាយកសាលា';
-      positionRow[20] = 'គ្រូប្រចាំថ្នាក់';
       templateData.push(positionRow);
 
       // Empty rows for actual signatures
