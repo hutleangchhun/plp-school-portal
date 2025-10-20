@@ -180,43 +180,46 @@ export default function AttendanceExport({
         ['ព្រះរាជាណាចក្រកម្ពុជា', ...Array(38).fill('')],
         // Nation Religion King - Row 2
         ['ជាតិ       សាសនា       ព្រះមហាក្សត្រ', ...Array(38).fill('')],
-        // Department Info - Row 3
-        ['មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............', ...Array(38).fill('')],
-        // Office Info - Row 4
-        ['ការិយាល័យអប់រំ យុវជន និងកីឡារដ្ឋបាលក្រុង/ស្រុក/ខណ្ឌ.......................................', ...Array(38).fill('')],
-        // School Info - Row 5
-        [schoolName, ...Array(38).fill('')],
-        // Attendance Title - Row 6
-        ['បញ្ជីហៅឈ្មោះសិស្ស', ...Array(38).fill('')],
-        // Section Title - Row 7
-        [`ផ្នែកអវត្តមានប្រចាំខែ - ${className}`, ...Array(38).fill('')],
-        // Month/Year - Row 8
-        [`ខែ: ${monthName}`, ...Array(38).fill('')],
-        // Empty row - Row 9
-        [...emptyRow],
       ];
+
+      // Department Info - Row 3 (left aligned)
+      const deptRow = [...emptyRow];
+      deptRow[0] = 'មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............';
+      templateData.push(deptRow);
+
+      // Office and School Info - Row 4 (office on left, school on right)
+      const officeSchoolRow = [...emptyRow];
+      officeSchoolRow[0] = 'ការិយាល័យអប់រំ យុវជន និងកីឡារដ្ឋបាលក្រុង/ស្រុក/ខណ្ឌ.......................................';
+      officeSchoolRow[30] = schoolName;
+      templateData.push(officeSchoolRow);
+
+      // Continue with remaining headers
+      templateData.push(
+        // Attendance Title - Row 5
+        ['បញ្ជីហៅឈ្មោះសិស្ស', ...Array(38).fill('')],
+        // Section Title - Row 6
+        [`ផ្នែកអវត្តមានប្រចាំខែ - ${className}`, ...Array(38).fill('')],
+        // Month/Year - Row 7
+        [`ខែ: ${monthName}`, ...Array(38).fill('')],
+        // Empty row - Row 8
+        [...emptyRow]
+      );
 
       // Info row above table - Row 10 (month/year on left, student counts on right)
       const infoRow = [...emptyRow];
-      infoRow[0] = 'ប្រចាំខែ.................. ឆ្នាំសិក្សា............................';
-      infoRow[20] = `សិស្សសរុបៈ ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
+      infoRow[0] = 'ប្រចាំខែ:.............................';
+      infoRow[25] = `សិស្សសរុប: ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
       templateData.push(infoRow);
 
-      // Category header row - Row 11 (for "ចំនួនអវត្តមាន")
-      const categoryRow = ['ល.រ', 'អត្តលេខ', 'ឈ្មោះ', 'ភេទ'];
+      // Single header row - Row 11
+      const headerRow = ['ល.រ', 'អត្តលេខ', 'ឈ្មោះ', 'ភេទ'];
       for (let i = 1; i <= 31; i++) {
-        categoryRow.push(i.toString());
+        headerRow.push(i.toString());
       }
-      categoryRow.push('ចំនួនអវត្តមាន', '', '', ''); // Merged across ម អ យឺត ផ្សេងៗ
-      while (categoryRow.length < 39) categoryRow.push('');
-      templateData.push(categoryRow);
-
-      // Column header row - Row 8 (only for columns under "ចំនួនអវត្តមាន")
-      const headerRow = ['', '', '', ''];
-      for (let i = 1; i <= 31; i++) {
-        headerRow.push('');
-      }
-      headerRow.push('ម', 'អ', 'យឺត', 'ផ្សេងៗ');
+      headerRow.push('ចំនួនអវត្តមាន');
+      headerRow.push('ម');
+      headerRow.push('អ');
+      headerRow.push('យឺត');
       while (headerRow.length < 39) headerRow.push('');
       templateData.push(headerRow);
 
@@ -265,28 +268,31 @@ export default function AttendanceExport({
       // Empty row
       templateData.push([...emptyFooterRow]);
 
-      // First date row - left side only
+      // First date row - right aligned
       const dateRow1 = [...emptyFooterRow];
-      dateRow1[33] = 'ថ្ងៃ........... ខែ .........  ឆ្នាំ.......  ព.ស.២៥...........';
+      dateRow1[30] = 'ថ្ងៃ........... ខែ ......... ថា្...... ព.ស.២៥...........';
       templateData.push(dateRow1);
 
-      // Second date row - right side
+      // Empty row between dates
+      templateData.push([...emptyFooterRow]);
+
+      // Second date row - right aligned
       const dateRow2 = [...emptyFooterRow];
-      dateRow2[33] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
+      dateRow2[30] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
       templateData.push(dateRow2);
 
       // Empty row
       templateData.push([...emptyFooterRow]);
 
-      // Signature labels row
+      // Signature labels row - left and right
       const signatureRow = [...emptyFooterRow];
-      signatureRow[3] = 'បានឃើញ';
-      signatureRow[37] = 'គ្រូប្រចាំថ្នាក់';
+      signatureRow[5] = 'បានឃើញ';
+      signatureRow[33] = 'គ្រូប្រចាំថ្នាក់';
       templateData.push(signatureRow);
 
-      // Position labels row
+      // Position labels row - left side only
       const positionRow = [...emptyFooterRow];
-      positionRow[3] = 'នាយកសាលា';
+      positionRow[4] = 'នាយកសាលា';
       templateData.push(positionRow);
 
       // Empty rows for actual signatures
@@ -320,7 +326,7 @@ export default function AttendanceExport({
       // Apply borders and styling to all cells
       const totalRows = templateData.length;
       const totalCols = 39; // 4 info + 31 days + 4 summary = 39 columns (A-AM)
-      const dataEndRow = 13 + dataRows.length - 1; // Last row of actual student data (headers 0-9, info row 10, table headers 11-12, data starts at 13)
+      const dataEndRow = 11 + dataRows.length; // Last row of actual student data (headers 0-9, info row 10, table header 11, data starts at 12)
 
       for (let R = 0; R < totalRows; R++) {
         for (let C = 0; C < totalCols; C++) {
@@ -330,8 +336,36 @@ export default function AttendanceExport({
             ws[cellAddress] = { t: 's', v: '' };
           }
 
-          // Header section (rows 0-8) - No borders, centered, bold
-          if (R < 9) {
+          // Header section rows 0-1 - No borders, centered, bold
+          if (R < 2) {
+            ws[cellAddress].s = {
+              alignment: {
+                vertical: 'center',
+                horizontal: 'center'
+              },
+              font: {
+                name: 'Khmer OS Battambang',
+                sz: 11,
+                bold: true
+              }
+            };
+          }
+          // Department and office rows (rows 2-3) - No borders, left-aligned, bold
+          else if (R >= 2 && R < 4) {
+            ws[cellAddress].s = {
+              alignment: {
+                vertical: 'center',
+                horizontal: 'left'
+              },
+              font: {
+                name: 'Khmer OS Battambang',
+                sz: 11,
+                bold: true
+              }
+            };
+          }
+          // Remaining header section (rows 4-8) - No borders, centered, bold
+          else if (R >= 4 && R < 9) {
             ws[cellAddress].s = {
               alignment: {
                 vertical: 'center',
@@ -370,7 +404,7 @@ export default function AttendanceExport({
               }
             };
           }
-          // Category header row (row 11) - "ចំនួនអវត្តមាន" - Gray background, borders, bold
+          // Table header row (row 11) - Gray background, borders, bold
           else if (R === 11) {
             ws[cellAddress].s = {
               fill: {
@@ -393,31 +427,8 @@ export default function AttendanceExport({
               }
             };
           }
-          // Column header row (row 12) - Gray background, borders, bold
-          else if (R === 12) {
-            ws[cellAddress].s = {
-              fill: {
-                fgColor: { rgb: 'E0E0E0' }
-              },
-              border: {
-                top: { style: 'thin', color: { rgb: '000000' } },
-                bottom: { style: 'thin', color: { rgb: '000000' } },
-                left: { style: 'thin', color: { rgb: '000000' } },
-                right: { style: 'thin', color: { rgb: '000000' } }
-              },
-              alignment: {
-                vertical: 'center',
-                horizontal: 'center'
-              },
-              font: {
-                name: 'Khmer OS Battambang',
-                sz: 10,
-                bold: true
-              }
-            };
-          }
-          // Data rows (13 to dataEndRow) - Borders, centered except name column
-          else if (R >= 13 && R <= dataEndRow) {
+          // Data rows (12 to dataEndRow) - Borders, centered except name column
+          else if (R >= 12 && R <= dataEndRow) {
             ws[cellAddress].s = {
               border: {
                 top: { style: 'thin', color: { rgb: '000000' } },
@@ -453,56 +464,17 @@ export default function AttendanceExport({
 
       // Merge header cells
       ws['!merges'] = [
-        // Main headers (rows 0-8) - full width (39 columns)
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 38 } }, // Row 1: ព្រះរាជាណាចក្រកម្ពុជា
-        { s: { r: 1, c: 0 }, e: { r: 1, c: 38 } }, // Row 2: ជាតិ សាសនា ព្រះមហាក្សត្រ
-        { s: { r: 2, c: 0 }, e: { r: 2, c: 38 } }, // Row 3: មន្ទីរអប់រំ យុវជន និងកីឡា
-        { s: { r: 3, c: 0 }, e: { r: 3, c: 38 } }, // Row 4: ការិយាល័យអប់រំ
-        { s: { r: 4, c: 0 }, e: { r: 4, c: 38 } }, // Row 5: សាលា
-        { s: { r: 5, c: 0 }, e: { r: 5, c: 38 } }, // Row 6: បញ្ជីហៅឈ្មោះសិស្ស
-        { s: { r: 6, c: 0 }, e: { r: 6, c: 38 } }, // Row 7: ផ្នែកអវត្តមានប្រចាំខែ
-        { s: { r: 7, c: 0 }, e: { r: 7, c: 38 } }, // Row 8: ខែ
-        { s: { r: 8, c: 0 }, e: { r: 8, c: 38 } }, // Row 9: Empty row
-        // Row 10: Info row (month/year and student counts) - no merge, spans naturally
-        // Category header (row 11) - "ចំនួនអវត្តមាន" merged across summary columns (35-38 = AI-AM)
-        { s: { r: 11, c: 35 }, e: { r: 11, c: 38 } }, // Row 12: ចំនួនអវត្តមាន over ម អ យឺត ផ្សេងៗ
-        // Merge individual column headers (rows 11-12) that have category header above
-        { s: { r: 11, c: 0 }, e: { r: 12, c: 0 } },   // ល.រ (merge row 12-13)
-        { s: { r: 11, c: 1 }, e: { r: 12, c: 1 } },   // អត្តសញ្ញាណ (merge row 12-13)
-        { s: { r: 11, c: 2 }, e: { r: 12, c: 2 } },   // ឈ្មោះ (merge row 12-13)
-        { s: { r: 11, c: 3 }, e: { r: 12, c: 3 } },   // ភេទ (merge row 12-13)
-        // Merge day columns (4-34 = E-AI)
-        { s: { r: 11, c: 4 }, e: { r: 12, c: 4 } },   // Day 1
-        { s: { r: 11, c: 5 }, e: { r: 12, c: 5 } },   // Day 2
-        { s: { r: 11, c: 6 }, e: { r: 12, c: 6 } },   // Day 3
-        { s: { r: 11, c: 7 }, e: { r: 12, c: 7 } },   // Day 4
-        { s: { r: 11, c: 8 }, e: { r: 12, c: 8 } },   // Day 5
-        { s: { r: 11, c: 9 }, e: { r: 12, c: 9 } },   // Day 6
-        { s: { r: 11, c: 10 }, e: { r: 12, c: 10 } }, // Day 7
-        { s: { r: 11, c: 11 }, e: { r: 12, c: 11 } }, // Day 8
-        { s: { r: 11, c: 12 }, e: { r: 12, c: 12 } }, // Day 9
-        { s: { r: 11, c: 13 }, e: { r: 12, c: 13 } }, // Day 10
-        { s: { r: 11, c: 14 }, e: { r: 12, c: 14 } }, // Day 11
-        { s: { r: 11, c: 15 }, e: { r: 12, c: 15 } }, // Day 12
-        { s: { r: 11, c: 16 }, e: { r: 12, c: 16 } }, // Day 13
-        { s: { r: 11, c: 17 }, e: { r: 12, c: 17 } }, // Day 14
-        { s: { r: 11, c: 18 }, e: { r: 12, c: 18 } }, // Day 15
-        { s: { r: 11, c: 19 }, e: { r: 12, c: 19 } }, // Day 16
-        { s: { r: 11, c: 20 }, e: { r: 12, c: 20 } }, // Day 17
-        { s: { r: 11, c: 21 }, e: { r: 12, c: 21 } }, // Day 18
-        { s: { r: 11, c: 22 }, e: { r: 12, c: 22 } }, // Day 19
-        { s: { r: 11, c: 23 }, e: { r: 12, c: 23 } }, // Day 20
-        { s: { r: 11, c: 24 }, e: { r: 12, c: 24 } }, // Day 21
-        { s: { r: 11, c: 25 }, e: { r: 12, c: 25 } }, // Day 22
-        { s: { r: 11, c: 26 }, e: { r: 12, c: 26 } }, // Day 23
-        { s: { r: 11, c: 27 }, e: { r: 12, c: 27 } }, // Day 24
-        { s: { r: 11, c: 28 }, e: { r: 12, c: 28 } }, // Day 25
-        { s: { r: 11, c: 29 }, e: { r: 12, c: 29 } }, // Day 26
-        { s: { r: 11, c: 30 }, e: { r: 12, c: 30 } }, // Day 27
-        { s: { r: 11, c: 31 }, e: { r: 12, c: 31 } }, // Day 28
-        { s: { r: 11, c: 32 }, e: { r: 12, c: 32 } }, // Day 29
-        { s: { r: 11, c: 33 }, e: { r: 12, c: 33 } }, // Day 30
-        { s: { r: 11, c: 34 }, e: { r: 12, c: 34 } }, // Day 31
+        // Main headers (rows 0-8)
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 38 } }, // Row 1: ព្រះរាជាណាចក្រកម្ពុជា - full width
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 38 } }, // Row 2: ជាតិ សាសនា ព្រះមហាក្សត្រ - full width
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 38 } }, // Row 3: មន្ទីរអប់រំ យុវជន និងកីឡា - full width
+        // Row 4: ការិយាល័យអប់រំ on left, school name on right (column 30) - no merge to allow both
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 38 } }, // Row 5: បញ្ជីហៅឈ្មោះសិស្ស - full width
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 38 } }, // Row 6: ផ្នែកអវត្តមានប្រចាំខែ - full width
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 38 } }, // Row 7: ខែ - full width
+        { s: { r: 7, c: 0 }, e: { r: 7, c: 38 } }, // Row 8: Empty row - full width
+        // Row 9: Info row (month/year and student counts) - no merge, spans naturally
+        // Row 10: Single table header row - no merges needed, all columns have their own headers
       ];
 
       // Create workbook
