@@ -134,7 +134,7 @@ export default function AttendanceExport({
             row[day.toString()] = statusMark;
           } else {
             row[day.toString()] = '';
-          }f
+          }
         } else {
           row[day.toString()] = '';
         }
@@ -221,17 +221,36 @@ export default function AttendanceExport({
       infoRow[25] = `សិស្សសរុប: ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
       templateData.push(infoRow);
 
-      // Single header row - Row 10
-      const headerRow = ['ល.រ', 'អត្តលេខ', 'ឈ្មោះ', 'ភេទ'];
+      // Two-row header structure
+      // Row 10: First header row with category labels
+      const headerRow1 = [...emptyRow];
+      headerRow1[0] = 'ល.រ';
+      headerRow1[1] = 'អត្តលេខ';
+      headerRow1[2] = 'គោត្តនាម និងនាម';
+      headerRow1[3] = 'ភេទ';
+      // Days section spans columns 4-34 (31 days)
+      // Leave empty for now, will be merged
+      headerRow1[35] = 'ចំនួនអវត្តមាន'; // Spans columns 35-37
+      headerRow1[38] = 'សេចក្តីប្រកាស';
+      templateData.push(headerRow1);
+
+      // Row 11: Second header row with day numbers
+      const headerRow2 = [...emptyRow];
+      // First 4 columns are merged with row above, leave empty
+      headerRow2[0] = '';
+      headerRow2[1] = '';
+      headerRow2[2] = '';
+      headerRow2[3] = '';
+      // Day numbers 1-31
       for (let i = 1; i <= 31; i++) {
-        headerRow.push(i.toString());
+        headerRow2[3 + i] = i.toString(); // Columns 4-34
       }
-      headerRow.push('ម');
-      headerRow.push('អ');
-      headerRow.push('យឺត');
-      headerRow.push(''); // Empty column for remarks/other
-      while (headerRow.length < 39) headerRow.push('');
-      templateData.push(headerRow);
+      // Summary columns
+      headerRow2[35] = 'ម';
+      headerRow2[36] = 'អ';
+      headerRow2[37] = 'យឺត';
+      headerRow2[38] = ''; // Merged with row above
+      templateData.push(headerRow2);
 
       // Data rows starting from row 8
       const dataRows = exportData.map(row => {
@@ -274,18 +293,11 @@ export default function AttendanceExport({
       const summaryRow2 = [...emptyFooterRow];
       summaryRow2[0] = '- បញ្ឈប់បញ្ជីក្នុងខែនេះនូវចំនួន..........ពេល';
       templateData.push(summaryRow2);
-
-      // Empty row
-      templateData.push([...emptyFooterRow]);
-
+      
       // First date row - right aligned
       const dateRow1 = [...emptyFooterRow];
-      dateRow1[30] = 'ថ្ងៃ........... ខែ ......... ថា្...... ព.ស.២៥...........';
+      dateRow1[30] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ...... ព.ស.២៥...........';
       templateData.push(dateRow1);
-
-      // Empty row between dates
-      templateData.push([...emptyFooterRow]);
-
       // Second date row - right aligned
       const dateRow2 = [...emptyFooterRow];
       dateRow2[30] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
@@ -336,7 +348,7 @@ export default function AttendanceExport({
       // Apply borders and styling to all cells
       const totalRows = templateData.length;
       const totalCols = 39; // 4 info + 31 days + 4 summary = 39 columns (A-AM)
-      const dataEndRow = 10 + dataRows.length; // Last row of actual student data (headers 0-8, info row 9, table header 10, data starts at 11)
+      const dataEndRow = 11 + dataRows.length; // Last row of actual student data (headers 0-8, info row 9, table headers 10-11, data starts at 12)
 
       for (let R = 0; R < totalRows; R++) {
         for (let C = 0; C < totalCols; C++) {
@@ -415,8 +427,8 @@ export default function AttendanceExport({
               }
             };
           }
-          // Row 10: Table header - Gray background, borders, bold
-          else if (R === 10) {
+          // Rows 10-11: Table header (two rows) - Gray background, borders, bold
+          else if (R === 10 || R === 11) {
             ws[cellAddress].s = {
               fill: {
                 fgColor: { rgb: 'E0E0E0' }
@@ -438,8 +450,8 @@ export default function AttendanceExport({
               }
             };
           }
-          // Data rows (11 to dataEndRow) - Borders, centered except name column
-          else if (R >= 11 && R <= dataEndRow) {
+          // Data rows (12 to dataEndRow) - Borders, centered except name column
+          else if (R >= 12 && R <= dataEndRow) {
             ws[cellAddress].s = {
               border: {
                 top: { style: 'thin', color: { rgb: '000000' } },
@@ -493,7 +505,17 @@ export default function AttendanceExport({
         // Row 8: Empty row - full width
         { s: { r: 8, c: 0 }, e: { r: 8, c: 38 } },
         // Row 9: Info row - no merge (spans naturally)
-        // Row 10: Table header - no merge (each column has its own header)
+
+        // Two-row table header merges (Rows 10-11)
+        // Merge first 4 columns vertically (ល.រ, អត្តលេខ, គោត្តនាម និងនាម, ភេទ)
+        { s: { r: 10, c: 0 }, e: { r: 11, c: 0 } }, // ល.រ
+        { s: { r: 10, c: 1 }, e: { r: 11, c: 1 } }, // អត្តលេខ
+        { s: { r: 10, c: 2 }, e: { r: 11, c: 2 } }, // គោត្តនាម និងនាម
+        { s: { r: 10, c: 3 }, e: { r: 11, c: 3 } }, // ភេទ
+        // Merge "ចំនួនអវត្តមាន" horizontally across columns 35-37 in row 10
+        { s: { r: 10, c: 35 }, e: { r: 10, c: 37 } }, // ចំនួនអវត្តមាន
+        // Merge "សេចក្តីប្រកាស" vertically in column 38
+        { s: { r: 10, c: 38 }, e: { r: 11, c: 38 } }, // សេចក្តីប្រកាស
       ];
 
       // Create workbook
