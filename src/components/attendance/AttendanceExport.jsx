@@ -217,7 +217,7 @@ export default function AttendanceExport({
 
       // Row 9: Info row with student counts
       const infoRow = [...emptyRow];
-      infoRow[0] = 'ប្រចាំខែ:.............................';
+      infoRow[0] = 'ប្រចាំខែ:............................. ឆ្នាំសិក្សា............................';
       infoRow[25] = `សិស្សសរុប: ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
       templateData.push(infoRow);
 
@@ -226,10 +226,10 @@ export default function AttendanceExport({
       for (let i = 1; i <= 31; i++) {
         headerRow.push(i.toString());
       }
-      headerRow.push('ចំនួនអវត្តមាន');
       headerRow.push('ម');
       headerRow.push('អ');
       headerRow.push('យឺត');
+      headerRow.push(''); // Empty column for remarks/other
       while (headerRow.length < 39) headerRow.push('');
       templateData.push(headerRow);
 
