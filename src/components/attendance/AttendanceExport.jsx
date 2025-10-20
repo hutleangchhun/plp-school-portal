@@ -175,37 +175,47 @@ export default function AttendanceExport({
       // Create template with headers (39 columns total: 4 info + 31 days + 4 summary)
       const emptyRow = Array(39).fill('');
 
-      const templateData = [
-        // Official Header - Row 1
-        ['ព្រះរាជាណាចក្រកម្ពុជា', ...Array(38).fill('')],
-        // Nation Religion King - Row 2
-        ['ជាតិ       សាសនា       ព្រះមហាក្សត្រ', ...Array(38).fill('')],
-      ];
+      // Build header rows
+      const templateData = [];
 
-      // Department Info - Row 3 (left aligned)
+      // Row 1: Official Header - centered
+      templateData.push(['ព្រះរាជាណាចក្រកម្ពុជា', ...Array(38).fill('')]);
+
+      // Row 2: Nation Religion King - centered, with 3 columns
+      const nationRow = [...emptyRow];
+      nationRow[0] = 'ជាតិ';
+      nationRow[15] = 'សាសនា';
+      nationRow[30] = 'ព្រះមហាក្សត្រ';
+      templateData.push(nationRow);
+
+      // Row 3: Department Info - left aligned
       const deptRow = [...emptyRow];
       deptRow[0] = 'មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............';
       templateData.push(deptRow);
 
-      // Office and School Info - Row 4 (office on left, school on right)
-      const officeSchoolRow = [...emptyRow];
-      officeSchoolRow[0] = 'ការិយាល័យអប់រំ យុវជន និងកីឡារដ្ឋបាលក្រុង/ស្រុក/ខណ្ឌ.......................................';
-      officeSchoolRow[30] = schoolName;
-      templateData.push(officeSchoolRow);
+      // Row 4: Office Info - left aligned
+      const officeRow = [...emptyRow];
+      officeRow[0] = 'ការិយាល័យអប់រំ យុវជន និងកីឡារដ្ឋបាលក្រុង/ស្រុក/ខណ្ឌ.......................................';
+      templateData.push(officeRow);
 
-      // Continue with remaining headers
-      templateData.push(
-        // Attendance Title - Row 5
-        ['បញ្ជីហៅឈ្មោះសិស្ស', ...Array(38).fill('')],
-        // Section Title - Row 6
-        [`ផ្នែកអវត្តមានប្រចាំខែ - ${className}`, ...Array(38).fill('')],
-        // Month/Year - Row 7
-        [`ខែ: ${monthName}`, ...Array(38).fill('')],
-        // Empty row - Row 8
-        [...emptyRow]
-      );
+      // Row 5: School Name - left aligned
+      const schoolRow = [...emptyRow];
+      schoolRow[0] = schoolName;
+      templateData.push(schoolRow);
 
-      // Info row above table - Row 10 (month/year on left, student counts on right)
+      // Row 6: Attendance Title - centered
+      templateData.push(['បញ្ជីហៅឈ្មោះសិស្ស', ...Array(38).fill('')]);
+
+      // Row 7: Section Title - centered
+      templateData.push([`ផ្នែកអវត្តមានប្រចាំខែ - ${className}`, ...Array(38).fill('')]);
+
+      // Row 8: Month/Year - centered
+      templateData.push([`ខែ: ${monthName}`, ...Array(38).fill('')]);
+
+      // Row 9: Empty row
+      templateData.push([...emptyRow]);
+
+      // Row 10: Info row (month/year on left, student counts on right)
       const infoRow = [...emptyRow];
       infoRow[0] = 'ប្រចាំខែ:.............................';
       infoRow[25] = `សិស្សសរុប: ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
@@ -326,7 +336,7 @@ export default function AttendanceExport({
       // Apply borders and styling to all cells
       const totalRows = templateData.length;
       const totalCols = 39; // 4 info + 31 days + 4 summary = 39 columns (A-AM)
-      const dataEndRow = 11 + dataRows.length; // Last row of actual student data (headers 0-9, info row 10, table header 11, data starts at 12)
+      const dataEndRow = 12 + dataRows.length; // Last row of actual student data (headers 0-10, info row 11, table header 12, data starts at 13)
 
       for (let R = 0; R < totalRows; R++) {
         for (let C = 0; C < totalCols; C++) {
@@ -350,8 +360,8 @@ export default function AttendanceExport({
               }
             };
           }
-          // Department and office rows (rows 2-3) - No borders, left-aligned, bold
-          else if (R >= 2 && R < 4) {
+          // Department, office and school rows (rows 2-4) - No borders, left-aligned, bold
+          else if (R >= 2 && R < 5) {
             ws[cellAddress].s = {
               alignment: {
                 vertical: 'center',
@@ -364,8 +374,8 @@ export default function AttendanceExport({
               }
             };
           }
-          // Remaining header section (rows 4-8) - No borders, centered, bold
-          else if (R >= 4 && R < 9) {
+          // Remaining header section (rows 5-9) - No borders, centered, bold
+          else if (R >= 5 && R < 10) {
             ws[cellAddress].s = {
               alignment: {
                 vertical: 'center',
@@ -378,24 +388,24 @@ export default function AttendanceExport({
               }
             };
           }
-          // Empty row (row 9) - No borders, centered
-          else if (R === 9) {
-            ws[cellAddress].s = {
-              alignment: {
-                vertical: 'center',
-                horizontal: 'center'
-              },
-              font: {
-                name: 'Khmer OS Battambang',
-                sz: 10
-              }
-            };
-          }
-          // Info row (row 10) - No borders, left-aligned
+          // Empty row (row 10) - No borders, centered
           else if (R === 10) {
             ws[cellAddress].s = {
               alignment: {
                 vertical: 'center',
+                horizontal: 'center'
+              },
+              font: {
+                name: 'Khmer OS Battambang',
+                sz: 10
+              }
+            };
+          }
+          // Info row (row 11) - No borders, left-aligned
+          else if (R === 11) {
+            ws[cellAddress].s = {
+              alignment: {
+                vertical: 'center',
                 horizontal: 'left'
               },
               font: {
@@ -404,8 +414,8 @@ export default function AttendanceExport({
               }
             };
           }
-          // Table header row (row 11) - Gray background, borders, bold
-          else if (R === 11) {
+          // Table header row (row 12) - Gray background, borders, bold
+          else if (R === 12) {
             ws[cellAddress].s = {
               fill: {
                 fgColor: { rgb: 'E0E0E0' }
@@ -427,8 +437,8 @@ export default function AttendanceExport({
               }
             };
           }
-          // Data rows (12 to dataEndRow) - Borders, centered except name column
-          else if (R >= 12 && R <= dataEndRow) {
+          // Data rows (13 to dataEndRow) - Borders, centered except name column
+          else if (R >= 13 && R <= dataEndRow) {
             ws[cellAddress].s = {
               border: {
                 top: { style: 'thin', color: { rgb: '000000' } },
@@ -464,17 +474,25 @@ export default function AttendanceExport({
 
       // Merge header cells
       ws['!merges'] = [
-        // Main headers (rows 0-8)
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 38 } }, // Row 1: ព្រះរាជាណាចក្រកម្ពុជា - full width
-        { s: { r: 1, c: 0 }, e: { r: 1, c: 38 } }, // Row 2: ជាតិ សាសនា ព្រះមហាក្សត្រ - full width
-        { s: { r: 2, c: 0 }, e: { r: 2, c: 38 } }, // Row 3: មន្ទីរអប់រំ យុវជន និងកីឡា - full width
-        // Row 4: ការិយាល័យអប់រំ on left, school name on right (column 30) - no merge to allow both
-        { s: { r: 4, c: 0 }, e: { r: 4, c: 38 } }, // Row 5: បញ្ជីហៅឈ្មោះសិស្ស - full width
-        { s: { r: 5, c: 0 }, e: { r: 5, c: 38 } }, // Row 6: ផ្នែកអវត្តមានប្រចាំខែ - full width
-        { s: { r: 6, c: 0 }, e: { r: 6, c: 38 } }, // Row 7: ខែ - full width
-        { s: { r: 7, c: 0 }, e: { r: 7, c: 38 } }, // Row 8: Empty row - full width
-        // Row 9: Info row (month/year and student counts) - no merge, spans naturally
-        // Row 10: Single table header row - no merges needed, all columns have their own headers
+        // Row 1: Kingdom header - full width
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 38 } },
+        // Row 2: Nation Religion King - three sections, no merge (displayed in columns 0, 15, 30)
+        // Row 3: Department - full width
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 38 } },
+        // Row 4: Office - full width
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 38 } },
+        // Row 5: School - full width
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 38 } },
+        // Row 6: Attendance Title - full width
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 38 } },
+        // Row 7: Section Title - full width
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 38 } },
+        // Row 8: Month - full width
+        { s: { r: 7, c: 0 }, e: { r: 7, c: 38 } },
+        // Row 9: Empty row - full width
+        { s: { r: 8, c: 0 }, e: { r: 8, c: 38 } },
+        // Row 10: Info row - no merge (spans naturally)
+        // Row 11: Table header - no merge (each column has its own header)
       ];
 
       // Create workbook
