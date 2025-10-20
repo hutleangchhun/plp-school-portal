@@ -134,7 +134,7 @@ export default function AttendanceExport({
             row[day.toString()] = statusMark;
           } else {
             row[day.toString()] = '';
-          }
+          }c
         } else {
           row[day.toString()] = '';
         }
@@ -174,11 +174,15 @@ export default function AttendanceExport({
         // Official Header - Row 1
         ['ព្រះរាជាណាចក្រកម្ពុជា', ...Array(38).fill('')],
         // Nation Religion King - Row 2
-        ['ជាតិ       សាសនា       ព្រះមហាក្សត្រ', ...Array(38).fill('')],
+        ['ជាតិ     សាសនា     ព្រះមហាក្សត្រ', ...Array(38).fill('')],
         // School Info - Row 3
-        [schoolName, ...Array(38).fill('')],
+        ['មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............', ...Array(0).fill('')],
+        ['ការិយាល័យអប់រំ យុវជន និងកីឡារដ្ឋបាលក្រុង/ស្រុក/ខណ្ឌ.......................................', ...Array(0).fill('')],
+        [schoolName, ...Array(0).fill('')],
         // Attendance Title - Row 4
-        [`បញ្ជីកត់ត្រាវត្តមាន - ${className}`, ...Array(38).fill('')],
+        ['បញ្ជីហៅឈ្មោះសិស្ស', ...Array(38).fill('')],
+        [`ផ្នែកអវត្តមានប្រចាំខែ - ${className}`,...Array(38).fill('')],
+
         // Month/Year - Row 5
         [`ខែ: ${monthName}`, ...Array(38).fill('')],
         // Empty row - Row 6
@@ -254,12 +258,12 @@ export default function AttendanceExport({
 
       // First date row - left side only
       const dateRow1 = [...emptyFooterRow];
-      dateRow1[35] = 'ថ្ងៃ........... ខែ .........  ឆ្នាំ.......  ព.ស.២៥...........';
+      dateRow1[33] = 'ថ្ងៃ........... ខែ .........  ឆ្នាំ.......  ព.ស.២៥...........';
       templateData.push(dateRow1);
 
       // Second date row - right side
       const dateRow2 = [...emptyFooterRow];
-      dateRow2[35] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
+      dateRow2[33] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
       templateData.push(dateRow2);
 
       // Empty row
