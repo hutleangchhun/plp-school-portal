@@ -252,11 +252,15 @@ export default function AttendanceExport({
       // Empty row
       templateData.push([...emptyFooterRow]);
 
-      // Date row with signature preparation areas
-      const dateRow = [...emptyFooterRow];
-      dateRow[0] = '.... ថ្ងៃ........... ខែ .........  ឆ្នាំ.២៥.......';
-      dateRow[20] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ១៩០.......';
-      templateData.push(dateRow);
+      // First date row - left side only
+      const dateRow1 = [...emptyFooterRow];
+      dateRow1[0] = '.... ថ្ងៃ........... ខែ .........  ឆ្នាំ.២៥.......';
+      templateData.push(dateRow1);
+
+      // Second date row - right side
+      const dateRow2 = [...emptyFooterRow];
+      dateRow2[20] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
+      templateData.push(dateRow2);
 
       // Empty row
       templateData.push([...emptyFooterRow]);
