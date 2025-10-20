@@ -134,7 +134,7 @@ export default function AttendanceExport({
             row[day.toString()] = statusMark;
           } else {
             row[day.toString()] = '';
-          }c
+          }f
         } else {
           row[day.toString()] = '';
         }
