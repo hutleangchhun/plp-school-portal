@@ -254,12 +254,12 @@ export default function AttendanceExport({
 
       // First date row - left side only
       const dateRow1 = [...emptyFooterRow];
-      dateRow1[20] = '.... ថ្ងៃ........... ខែ .........  ឆ្នាំ.......  ព.ស.២៥...........';
+      dateRow1[35] = 'ថ្ងៃ........... ខែ .........  ឆ្នាំ.......  ព.ស.២៥...........';
       templateData.push(dateRow1);
 
       // Second date row - right side
       const dateRow2 = [...emptyFooterRow];
-      dateRow2[20] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
+      dateRow2[35] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
       templateData.push(dateRow2);
 
       // Empty row
@@ -267,13 +267,13 @@ export default function AttendanceExport({
 
       // Signature labels row
       const signatureRow = [...emptyFooterRow];
-      signatureRow[0] = 'បានឃើញ';
-      signatureRow[20] = 'គ្រូប្រចាំថ្នាក់';
+      signatureRow[3] = 'បានឃើញ';
+      signatureRow[37] = 'គ្រូប្រចាំថ្នាក់';
       templateData.push(signatureRow);
 
       // Position labels row
       const positionRow = [...emptyFooterRow];
-      positionRow[0] = 'នាយកសាលា';
+      positionRow[3] = 'នាយកសាលា';
       templateData.push(positionRow);
 
       // Empty rows for actual signatures
