@@ -241,7 +241,7 @@ export default function AttendanceExport({
 
       // First summary row with calculations
       const summaryRow1 = [...emptyFooterRow];
-      summaryRow1[0] = `- ចំនួនសិស្សក្នុងបញ្ជី.........${totalStudents} ប្រុស.......${maleStudents} ស្រី........${femaleStudents} ចំនួនពេលដែលសិស្សត្រូវមករៀន... ចំនួនពេលអវត្តមាន...... ចំនួនពេលដែលសិស្សមករៀនពិតប្រាកដ........... គណនាភាគរយៈ  x100  = .............. %`;
+      summaryRow1[0] = `- ចំនួនសិស្សក្នុងបញ្ជី..${totalStudents}..នាក់ ប្រុស..${maleStudents}..នាក់ ស្រី..${femaleStudents}..នាក់ ចំនួនពេលដែលសិស្សត្រូវមករៀន..... ចំនួនពេលអវត្តមាន...... ចំនួនពេលដែលសិស្សមករៀនពិតប្រាកដ........... គណនាភាគរយៈ  x100  = .............. %`;
       templateData.push(summaryRow1);
 
       // Second row - times list stopped
@@ -254,7 +254,7 @@ export default function AttendanceExport({
 
       // First date row - left side only
       const dateRow1 = [...emptyFooterRow];
-      dateRow1[0] = '.... ថ្ងៃ........... ខែ .........  ឆ្នាំ.២៥.......';
+      dateRow1[20] = '.... ថ្ងៃ........... ខែ .........  ឆ្នាំ.......  ព.ស.២៥...........';
       templateData.push(dateRow1);
 
       // Second date row - right side
