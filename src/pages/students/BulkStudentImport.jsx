@@ -101,11 +101,10 @@ const CustomDateInput = ({ value, onChange, className = "" }) => {
         onChange={handleChange}
         onBlur={handleBlur}
         placeholder="dd/mm/yyyy"
-        className={`w-full px-2 py-1.5 text-xs border rounded focus:ring-2 focus:border-blue-500 bg-white ${className} ${
-          isInvalid
+        className={`w-full px-2 py-1.5 text-xs border rounded focus:ring-2 focus:border-blue-500 bg-white ${className} ${isInvalid
             ? 'border-red-500 text-red-600 focus:ring-red-500'
             : 'border-gray-300 focus:ring-blue-500'
-        }`}
+          }`}
         style={{
           minHeight: '32px',
           position: 'relative',
@@ -271,33 +270,114 @@ export default function BulkStudentImport() {
 
   const ethnicGroupOptions = [
     { value: '', label: 'ជ្រើសរើសជនជាតិភាគតិច' },
-    { value: 'ជនជាតិភ្នង', label: 'ជនជាតិភ្នង' },
-    { value: 'ជនជាតិរអួង', label: 'ជនជាតិរអួង' },
-    { value: 'ជនជាតិគួយ', label: 'ជនជាតិគួយ' },
+    { value: 'ជនជាតិព្នង', label: 'ជនជាតិព្នង' },
+    { value: 'ជនជាតិកួយ', label: 'ជនជាតិកួយ' },
     { value: 'ជនជាតិគ្រឹង', label: 'ជនជាតិគ្រឹង' },
     { value: 'ជនជាតិរដែរ', label: 'ជនជាតិរដែរ' },
     { value: 'ជនជាតិស្ទៀង', label: 'ជនជាតិស្ទៀង' },
     { value: 'ជនជាតិទំពួន', label: 'ជនជាតិទំពួន' },
-    { value: 'ជនជាតិអានោង', label: 'ជនជាតិអានោង' },
+    { value: 'ជនជាតិព្រៅ', label: 'ជនជាតិព្រៅ' },
+    { value: 'ជនជាតិកាវែត', label: 'ជនជាតិកាវែត' },
+    { value: 'ជនជាតិកាចក់', label: 'ជនជាតិកាចក់' },
+    { value: 'ជនជាតិព័រ', label: 'ជនជាតិព័រ' },
+    { value: 'ជនជាតិខោញ', label: 'ជនជាតិខោញ' },
+    { value: 'ជនជាតិជង', label: 'ជនជាតិជង' },
+    { value: 'ជនជាតិស្អូច', label: 'ជនជាតិស្អូច' },
+    { value: 'ជនជាតិរដែ', label: 'ជនជាតិរដែ' },
+    { value: 'ជនជាតិខិ', label: 'ជនជាតិខិ' },
+    { value: 'ជនជាតិរអង', label: 'ជនជាតិរអង' },
+    { value: 'ជនជាតិស្ពុង', label: 'ជនជាតិស្ពុង' },
+    { value: 'ជនជាតិល្អឺន', label: 'ជនជាតិល្អឺន' },
+    { value: 'ជនជាតិសំរែ', label: 'ជនជាតិសំរែ' },
+    { value: 'ជនជាតិសួយ', label: 'ជនជាតិសួយ' },
     { value: 'ជនជាតិថ្មូន', label: 'ជនជាតិថ្មូន' },
-    { value: 'ជនជាតិខា', label: 'ជនជាតិខា' },
+    { value: 'ជនជាតិលុន', label: 'ជនជាតិលុន' },
     { value: 'ជនជាតិក្រោល', label: 'ជនជាតិក្រោល' },
-    { value: 'ជនជាតិស្មិល', label: 'ជនជាតិស្មិល' },
+    { value: 'ជនជាតិមិល', label: 'ជនជាតិមិល' },
     { value: 'ជនជាតិចារាយ', label: 'ជនជាតិចារាយ' },
-    { value: 'ជនជាតិប្រ៊ូវ', label: 'ជនជាតិប្រ៊ូវ' },
     { value: 'ជនជាតិសួយ', label: 'ជនជាតិសួយ' }
   ];
 
   const accessibilityOptions = [
-    { value: 'MOBILITY_DIFFICULTY', label: 'ពិបាកក្នុងការធ្វើចលនា' },
-    { value: 'HEARING_DIFFICULTY', label: 'ពិបាកក្នុងការស្ដាប់' },
-    { value: 'SPEECH_DIFFICULTY', label: 'ពិបាកក្នុងការនីយាយ' },
-    { value: 'VISION_DIFFICULTY', label: 'ពិបាកក្នុងការមើល' },
-    { value: 'INTERNAL_DISABILITY', label: 'ពិការសរីរាង្គខាងក្នុង' },
-    { value: 'INTELLECTUAL_DISABILITY', label: 'ពិការសតិបញ្ញា' },
-    { value: 'MENTAL_DISABILITY', label: 'ពិការផ្លូវចិត្ត' },
-    { value: 'OTHER_DISABILITIES', label: 'ពិការផ្សេងៗ' }
+    { value: 'ពិបាកក្នុងការធ្វើចលនា', label: 'ពិបាកក្នុងការធ្វើចលនា' },
+    { value: 'ពិបាកក្នុងការស្ដាប់', label: 'ពិបាកក្នុងការស្ដាប់' },
+    { value: 'ពិបាកក្នុងការនីយាយ', label: 'ពិបាកក្នុងការនីយាយ' },
+    { value: 'ពិបាកក្នុងការមើល', label: 'ពិបាកក្នុងការមើល' },
+    { value: 'ពិការសរីរាង្គខាងក្នុង', label: 'ពិការសរីរាង្គខាងក្នុង' },
+    { value: 'ពិការសតិបញ្ញា', label: 'ពិការសតិបញ្ញា' },
+    { value: 'ពិការផ្លូវចិត្ត', label: 'ពិការផ្លូវចិត្ត' },
+    { value: 'ពិការផ្សេងៗ', label: 'ពិការផ្សេងៗ' }
   ];
+
+  const gradeLevelOptions = [
+    { value: '1', label: 'ថ្នាក់ទី១' },
+    { value: '2', label: 'ថ្នាក់ទី២' },
+    { value: '3', label: 'ថ្នាក់ទី៣' },
+    { value: '4', label: 'ថ្នាក់ទី៤' },
+    { value: '5', label: 'ថ្នាក់ទី៥' },
+    { value: '6', label: 'ថ្នាក់ទី៦' }
+  ];
+
+  // Generate academic year options (current year and next 2 years)
+  const currentYear = new Date().getFullYear();
+  const academicYearOptions = [
+    { value: `${currentYear}-${currentYear + 1}`, label: `${currentYear}-${currentYear + 1}` },
+    { value: `${currentYear + 1}-${currentYear + 2}`, label: `${currentYear + 1}-${currentYear + 2}` },
+    { value: `${currentYear + 2}-${currentYear + 3}`, label: `${currentYear + 2}-${currentYear + 3}` }
+  ];
+
+  // Validation function to check if a cell value is invalid
+  const isCellInvalid = (student, columnKey) => {
+    const value = student[columnKey];
+
+    // Don't show red border for empty cells
+    if (!value || value === '' || (Array.isArray(value) && value.length === 0)) {
+      return false;
+    }
+
+    // Email validation - only accept Gmail addresses (@gmail.com)
+    if (columnKey === 'email' || columnKey === 'fatherEmail' || columnKey === 'motherEmail') {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+      return !emailRegex.test(value);
+    }
+
+    // Phone number validation (must start with 0 and be at least 8 digits total)
+    if (columnKey === 'phone' || columnKey === 'fatherPhone' || columnKey === 'motherPhone') {
+      const phoneRegex = /^0\d{8,}$/;
+      return !phoneRegex.test(value.replace(/\s/g, ''));
+    }
+
+    // Date validation (dd/mm/yyyy format)
+    if (columnKey === 'dateOfBirth' || columnKey === 'fatherDateOfBirth' || columnKey === 'motherDateOfBirth') {
+      const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+      const match = value.match(dateRegex);
+      if (!match) return true;
+      const [, day, month, year] = match;
+      const d = parseInt(day);
+      const m = parseInt(month);
+      const y = parseInt(year);
+      return !(d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100);
+    }
+
+    // Grade level validation (should be a number between 1-6)
+    if (columnKey === 'gradeLevel') {
+      const grade = parseInt(value);
+      return isNaN(grade) || grade < 1 || grade > 6;
+    }
+
+    // Username validation (only English letters and numbers, 3-50 chars)
+    if (columnKey === 'username') {
+      const usernameRegex = /^[a-zA-Z0-9]{3,50}$/;
+      return !usernameRegex.test(value);
+    }
+
+    // Gender validation
+    if (columnKey === 'gender' || columnKey === 'fatherGender' || columnKey === 'motherGender') {
+      return !['MALE', 'FEMALE', 'ប្រុស', 'ស្រី'].includes(value.toUpperCase());
+    }
+
+    return false; // Default: field is valid
+  };
 
   const columns = [
     // Student Basic Info
@@ -312,8 +392,8 @@ export default function BulkStudentImport() {
     { key: 'phone', header: 'លេខទូរស័ព្ទ', width: 'min-w-[150px]' },
     { key: 'nationality', header: 'សញ្ជាតិ', width: 'min-w-[80px]', type: 'select', options: nationalityOptions },
     { key: 'schoolId', header: 'លេខសាលា', width: 'min-w-[200px]' },
-    { key: 'academicYear', header: 'ឆ្នាំសិក្សា', width: 'min-w-[150px]' },
-    { key: 'gradeLevel', header: 'កម្រិតថ្នាក់', width: 'min-w-[80px]' },
+    { key: 'academicYear', header: 'ឆ្នាំសិក្សា', width: 'min-w-[150px]', type: 'select', options: academicYearOptions },
+    { key: 'gradeLevel', header: 'កម្រិតថ្នាក់', width: 'min-w-[120px]', type: 'select', options: gradeLevelOptions },
 
     // Student Address
     { key: 'residenceFullAddress', header: 'អាសយដ្ឋានពេញ', width: 'min-w-[320px]' },
@@ -1034,8 +1114,8 @@ export default function BulkStudentImport() {
         if (!hasHeaders) {
           const firstCellValue = String(row[0] || '').trim();
           const isSequential = /^\d+$/.test(firstCellValue) ||
-                               firstCellValue.toLowerCase().includes('ល.រ') ||
-                               firstCellValue.toLowerCase().includes('no');
+            firstCellValue.toLowerCase().includes('ល.រ') ||
+            firstCellValue.toLowerCase().includes('no');
 
           if (isSequential) {
             // Shift all indices to skip the sequential number column
@@ -1191,6 +1271,12 @@ export default function BulkStudentImport() {
           accessibility: actualAccessIndex >= 0 ? mapAccessibility(getValue(actualAccessIndex)) : []
         };
       }).filter(student => student !== null); // Remove null entries (rows without student data)
+
+      // Check if imported students exceed the limit of 70
+      if (mappedStudents.length > 70) {
+        showError(`ឯកសារ Excel មានសិស្ស ${mappedStudents.length} នាក់ ប៉ុន្តែអ្នកអាចនាំចូលបានច្រើនបំផុត ៧០នាក់ប៉ុណ្ណោះ។ សូមកាត់បន្ថយចំនួនសិស្សនៅក្នុងឯកសារ Excel ។`, { duration: 7000 });
+        return;
+      }
 
       setStudents(mappedStudents);
       const headerInfo = hasHeaders ? 'រួមបញ្ចូលក្បាល' : 'គ្មានក្បាល';
@@ -1636,6 +1722,12 @@ export default function BulkStudentImport() {
   }, [handleKeyDown]);
 
   const addRow = () => {
+    // Check if we've reached the maximum limit of 70 students
+    if (students.length >= 70) {
+      showError('អ្នកអាចបន្ថែមសិស្សបានច្រើនបំផុត ៧០នាក់។ សូមលុបជួរដើម្បីបន្ថែមជួរថ្មី។', { duration: 5000 });
+      return;
+    }
+
     setStudents(prev => [...prev, {
       // Student basic info
       id: '',
@@ -1694,6 +1786,14 @@ export default function BulkStudentImport() {
       // Validate that a school is selected
       if (!selectedSchool || !selectedSchool.id) {
         showError('សូមជ្រើសរើសសាលាមុនពេលនាំចូលសិស្ស។', { duration: 5000 });
+        stopLoading(loadingKey);
+        setLoading(false);
+        return;
+      }
+
+      // Validate student count limit (maximum 70 students)
+      if (students.length > 70) {
+        showError('អ្នកអាចបញ្ជូនសិស្សបានច្រើនបំផុត ៧០នាក់ក្នុងមួយពេល។ សូមកាត់បន្ថយចំនួនសិស្សហើយព្យាយាមម្តងទៀត។', { duration: 5000 });
         stopLoading(loadingKey);
         setLoading(false);
         return;
@@ -1804,9 +1904,9 @@ export default function BulkStudentImport() {
         // }
 
         // Map student ID to student_number for API
-         if (student.id && student.id.trim()) {
-           studentData.student_number = student.id.trim();
-         }
+        if (student.id && student.id.trim()) {
+          studentData.student_number = student.id.trim();
+        }
 
         // Remove academic_year - API may not expect this field or it might cause validation issues
         // if (student.academicYear && student.academicYear.trim()) {
@@ -1960,7 +2060,7 @@ export default function BulkStudentImport() {
           fatherGender: '',
           fatherOccupation: '',
           fatherResidenceFullAddress: '',
-    
+
           motherFirstName: '',
           motherLastName: '',
           motherEmail: '',
@@ -2221,11 +2321,10 @@ export default function BulkStudentImport() {
                       return (
                         <td
                           key={column.key}
-                          className={`border-r border-gray-200 relative cursor-pointer ${
-                            isSelected ? '' :
-                            isInRange ? 'bg-blue-50' :
-                            'bg-white hover:bg-gray-50'
-                          }`}
+                          className={`border-r border-gray-200 relative cursor-pointer ${isSelected ? '' :
+                              isInRange ? 'bg-blue-50' :
+                                'bg-white hover:bg-gray-50'
+                            }`}
                           onClick={(e) => handleCellClick(rowIndex, column.key, e)}
                           onMouseDown={() => handleCellMouseDown(rowIndex, column.key)}
                           onMouseEnter={() => handleCellMouseEnter(rowIndex, column.key)}
@@ -2254,7 +2353,11 @@ export default function BulkStudentImport() {
                                 updateCell(rowIndex, column.key, e.target.value);
                               }}
                               onClick={(e) => e.stopPropagation()}
-                              className="w-full px-3 py-2 text-xs border-0 bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              className={`w-full px-3 py-2 text-xs border-0 bg-white focus:border focus:ring-1 ${
+                                isCellInvalid(student, column.key)
+                                  ? 'border-2 border-red-200 focus:border-red-200 focus:ring-red-200'
+                                  : 'focus:border-blue-500 focus:ring-blue-500'
+                              }`}
                             >
                               <option value=""></option>
                               {column.options.map((option) => (
@@ -2282,7 +2385,11 @@ export default function BulkStudentImport() {
                                 updateCell(rowIndex, column.key, e.target.value);
                               }}
                               onClick={(e) => e.stopPropagation()}
-                              className="w-full px-3 py-2 text-xs border-0 bg-white focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              className={`w-full px-3 py-2 text-xs border-0 bg-white focus:border focus:ring-1 ${
+                                isCellInvalid(student, column.key)
+                                  ? 'border-2 border-red-500 focus:border-red-500 focus:ring-red-500'
+                                  : 'focus:border-blue-500 focus:ring-blue-500'
+                              }`}
                             />
                           ) : column.type === 'custom-date' ? (
                             <CustomDateInput
@@ -2301,8 +2408,12 @@ export default function BulkStudentImport() {
                                 updateCell(rowIndex, column.key, e.target.value);
                               }}
                               onClick={(e) => e.stopPropagation()}
-                              className={`w-full px-3 py-2 text-xs border-0 focus:border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
-                                column.key === 'schoolId' ? 'bg-blue-50 cursor-not-allowed text-blue-700 font-medium' : 'bg-white'
+                              className={`w-full px-3 py-2 text-xs border-0 focus:border focus:ring-1 ${
+                                column.key === 'schoolId'
+                                  ? 'bg-blue-50 cursor-not-allowed text-blue-700 font-medium focus:border-blue-500 focus:ring-blue-500'
+                                  : isCellInvalid(student, column.key)
+                                    ? 'bg-white border-2 border-red-500 focus:border-red-500 focus:ring-red-500'
+                                    : 'bg-white focus:border-blue-500 focus:ring-blue-500'
                               }`}
                               placeholder={column.key === 'schoolId' ? 'ជ្រើសរើសសាលាខាងលើ' : ''}
                               readOnly={column.key === 'schoolId'}
