@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronDown, LogOut, User } from 'lucide-react';
+import { ChevronDown, LogOut, User, Upload } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useLanguage } from '../../contexts/LanguageContext';
 import LanguageSwitcher from '../common/LanguageSwitcher';
@@ -86,7 +86,17 @@ const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1
                       {t('profile') || 'Profile'}
                     </Link>
                   </DropdownMenu.Item>
-                  
+
+                  <DropdownMenu.Item asChild>
+                    <Link
+                      to="/students/bulk-import"
+                      className="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-700 rounded-sm cursor-pointer transition-colors hover:bg-blue-100 hover:text-gray-900 focus:outline-none"
+                    >
+                      <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500 flex-shrink-0" />
+                      {t('bulkStudentImport') || 'នាំចូលសិស្សច្រើន'}
+                    </Link>
+                  </DropdownMenu.Item>
+
                   <DropdownMenu.Separator className="h-px bg-gray-200 my-1" />
                   
                   <DropdownMenu.Item

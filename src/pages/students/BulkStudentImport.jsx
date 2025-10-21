@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Upload, Download, Save, X, Copy, Scissors, Clipboard, FileSpreadsheet, Calendar, OctagonAlert } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -6,12 +7,10 @@ import { useLoading } from '../../contexts/LoadingContext';
 import { Button } from '../../components/ui/Button';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { studentService } from '../../utils/api/services/studentService';
-import { schoolService } from '../../utils/api/services/schoolService';
+import { userService } from '../../utils/api/services/userService';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { PageLoader } from '../../components/ui/DynamicLoader';
-import Dropdown from '../../components/ui/Dropdown';
-import { useLocationData } from '../../hooks/useLocationData';
 import BulkImportProgressTracker from '../../components/students/BulkImportProgressTracker';
 import * as XLSX from 'xlsx';
 
@@ -184,10 +183,25 @@ const MultiSelectDropdown = ({ options, value = [], onChange, placeholder = "Sel
 };
 
 export default function BulkStudentImport() {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const { error, handleError, clearError } = useErrorHandler();
   const { startLoading, stopLoading } = useLoading();
+
+  // Get authenticated user and school data from localStorage
+  const [user, setUser] = useState(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      return userData ? JSON.parse(userData) : null;
+    } catch (err) {
+      console.error('Error parsing user data from localStorage:', err);
+      return null;
+    }
+  });
+
+  const [schoolId, setSchoolId] = useState(null);
+  const [schoolName, setSchoolName] = useState('');
 
   const [students, setStudents] = useState([
     {
@@ -242,12 +256,6 @@ export default function BulkStudentImport() {
   const [importResults, setImportResults] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
-
-  // Location cascade for school selection
-  const locationData = useLocationData();
-  const [schools, setSchools] = useState([]);
-  const [selectedSchool, setSelectedSchool] = useState(null);
-  const [loadingSchools, setLoadingSchools] = useState(false);
 
   // Excel-like functionality
   const [selectedCell, setSelectedCell] = useState({ row: 0, col: 0 });
@@ -419,45 +427,48 @@ export default function BulkStudentImport() {
     { key: 'actions', header: 'សកម្មភាព', width: 'min-w-[120px]' }
   ];
 
-  // Fetch schools by district
+  // Fetch school ID from authenticated user
   useEffect(() => {
-    const fetchSchools = async () => {
-      if (!locationData.selectedDistrict) {
-        setSchools([]);
-        setSelectedSchool(null);
-        return;
-      }
-
-      setLoadingSchools(true);
+    const fetchSchoolId = async () => {
       try {
-        const response = await schoolService.getSchoolsByDistrict(locationData.selectedDistrict);
-        if (response.data && Array.isArray(response.data)) {
-          setSchools(response.data);
-          console.log('Fetched schools for district:', locationData.selectedDistrict, response.data);
+        if (!user) {
+          console.error('No user found in localStorage');
+          showError('សូមចូលប្រើប្រាស់ជាមុនសិន។');
+          navigate('/login');
+          return;
+        }
+
+        setInitialLoading(true);
+        const accountData = await userService.getMyAccount();
+
+        if (accountData && accountData.school_id) {
+          console.log('✅ School ID fetched from account:', accountData.school_id);
+          setSchoolId(accountData.school_id);
+          setSchoolName(accountData.school?.name || '');
+
+          // Auto-update all student rows with school ID
+          setStudents(prevStudents =>
+            prevStudents.map(student => ({
+              ...student,
+              schoolId: accountData.school_id.toString()
+            }))
+          );
+        } else {
+          console.error('No school_id found in account data:', accountData);
+          showError('គ្មានព័ត៌មានសាលារបស់អ្នក។ សូមទាក់ទងអ្នកគ្រប់គ្រង។');
         }
       } catch (error) {
-        console.error('Error fetching schools by district:', error);
-        showError('មិនអាចទាញយកបញ្ជីសាលា។ សូមព្យាយាមម្តងទៀត។');
+        console.error('Error fetching school ID:', error);
+        handleError(error, {
+          toastMessage: 'មិនអាចទាញយកព័ត៌មានសាលា។ សូមព្យាយាមម្តងទៀត។'
+        });
       } finally {
-        setLoadingSchools(false);
+        setInitialLoading(false);
       }
     };
 
-    fetchSchools();
-  }, [locationData.selectedDistrict, showError]);
-
-  // Auto-update all rows when school selected
-  useEffect(() => {
-    if (selectedSchool && selectedSchool.id) {
-      setStudents(prevStudents =>
-        prevStudents.map(student => ({
-          ...student,
-          schoolId: selectedSchool.id.toString()
-        }))
-      );
-      console.log('Updated all students with school_id:', selectedSchool.id);
-    }
-  }, [selectedSchool]);
+    fetchSchoolId();
+  }, [user, navigate, showError, handleError]);
 
   // Cell update function - must be defined before callbacks that use it
   const updateCell = useCallback((rowIndex, columnKey, value) => {
@@ -1739,7 +1750,7 @@ export default function BulkStudentImport() {
       gender: '',
       phone: '',
       nationality: '',
-      schoolId: selectedSchool?.id?.toString() || '', // Auto-populate with selected school
+      schoolId: schoolId?.toString() || '', // Auto-populate with user's school
       academicYear: '',
       gradeLevel: '',
 
@@ -1782,9 +1793,9 @@ export default function BulkStudentImport() {
       const loadingKey = 'bulkImport';
       startLoading(loadingKey, 'កំពុងនាំចូលសិស្ស...');
 
-      // Validate that a school is selected
-      if (!selectedSchool || !selectedSchool.id) {
-        showError('សូមជ្រើសរើសសាលាមុនពេលនាំចូលសិស្ស។', { duration: 5000 });
+      // Validate that a school ID exists
+      if (!schoolId) {
+        showError('គ្មានព័ត៌មានសាលារបស់អ្នក។ សូមទាក់ទងអ្នកគ្រប់គ្រង។', { duration: 5000 });
         stopLoading(loadingKey);
         setLoading(false);
         return;
@@ -1889,7 +1900,7 @@ export default function BulkStudentImport() {
           password: student.password.trim() || 'Student@123', // Default password for required field
           date_of_birth: convertDateFormat(student.dateOfBirth),
           gender: student.gender ? student.gender.toUpperCase() : undefined,
-          school_id: selectedSchool.id, // Use selected school from dropdown
+          school_id: schoolId, // Use school from authenticated user
         };
 
         // Add optional fields only if they have values
@@ -2189,7 +2200,7 @@ export default function BulkStudentImport() {
                   onClick={handleSubmit}
                   variant="primary"
                   size="default"
-                  disabled={loading || !selectedSchool || !selectedSchool.id}
+                  disabled={loading || !schoolId}
                 >
                   <Save className="h-5 w-5 mr-2" />
                   {loading ? 'កំពុងនាំចូល...' : 'នាំចូល'}
@@ -2197,56 +2208,15 @@ export default function BulkStudentImport() {
               </div>
             </div>
             <div className="mt-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">ជ្រើសរើសសាលា</h2>
-              <div className="flex justify-start items-center gap-4">
-                {/* Province Dropdown */}
-                <div className=''>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ខេត្ត/រាជធានី
-                  </label>
-                  <Dropdown
-                    value={locationData.selectedProvince}
-                    onValueChange={locationData.handleProvinceChange}
-                    options={locationData.getProvinceOptions()}
-                    placeholder="ជ្រើសរើសខេត្ត/រាជធានី"
-                    maxHeight="max-h-[300px]"
-                  />
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">ព័ត៌មានសាលា</h2>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">សាលា:</span>
+                  <span className="text-sm font-semibold text-blue-700">{schoolName || 'កំពុងទាញយក...'}</span>
                 </div>
-
-                {/* District Dropdown */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ស្រុក/ខណ្ឌ
-                  </label>
-                  <Dropdown
-                    value={locationData.selectedDistrict}
-                    onValueChange={locationData.handleDistrictChange}
-                    options={locationData.getDistrictOptions()}
-                    placeholder="ជ្រើសរើសស្រុក/ខណ្ឌ"
-                    disabled={!locationData.selectedProvince}
-                    maxHeight="max-h-[300px]"
-                  />
-                </div>
-
-                {/* School Dropdown */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    សាលា *
-                  </label>
-                  <Dropdown
-                    value={selectedSchool?.id?.toString() || ''}
-                    onValueChange={(value) => {
-                      const school = schools.find(s => s.id.toString() === value);
-                      setSelectedSchool(school || null);
-                    }}
-                    options={schools.map(school => ({
-                      value: school.id.toString(),
-                      label: school.name
-                    }))}
-                    placeholder="ជ្រើសរើសសាលា"
-                    disabled={!locationData.selectedDistrict || loadingSchools}
-                    maxHeight="max-h-[300px]"
-                  />
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-sm font-medium text-gray-700">លេខសាលា:</span>
+                  <span className="text-sm text-gray-600">{schoolId || '-'}</span>
                 </div>
               </div>
             </div>
@@ -2403,7 +2373,7 @@ export default function BulkStudentImport() {
                           ) : (
                             <input
                               type="text"
-                              value={column.key === 'schoolId' ? (selectedSchool?.name || '') : (student[column.key] || '')}
+                              value={column.key === 'schoolId' ? (schoolName || '') : (student[column.key] || '')}
                               onChange={(e) => {
                                 e.stopPropagation();
                                 updateCell(rowIndex, column.key, e.target.value);
@@ -2415,7 +2385,7 @@ export default function BulkStudentImport() {
                                   ? 'bg-white border-2 border-red-500 focus:border-red-500 focus:ring-red-500'
                                   : 'bg-white focus:border-blue-500 focus:ring-blue-500'
                                 }`}
-                              placeholder={column.key === 'schoolId' ? 'ជ្រើសរើសសាលាខាងលើ' : ''}
+                              placeholder={column.key === 'schoolId' ? 'សាលារបស់អ្នក' : ''}
                               readOnly={column.key === 'schoolId'}
                               disabled={column.key === 'schoolId'}
                             />
