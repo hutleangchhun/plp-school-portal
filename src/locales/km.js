@@ -23,6 +23,7 @@ export const km = {
   schoolPortal: 'ប្រព័ន្ធរដ្ឋបាលសម្រាប់សាលារៀន',
   backToDashboard: 'ត្រឡប់ទៅកាន់ផ្ទាំងគ្រប់គ្រង',
   profile: 'ព័ត៌មានផ្ទាល់ខ្លួន',
+  bulkStudentImport: 'នាំចូលសិស្សច្រើន',
   logout: 'ចាកចេញ',
   
   // Profile
@@ -223,6 +224,25 @@ export const km = {
   unnamed: 'គ្មានឈ្មោះ',
   account: 'គណនី',
   viewSelectedParents: 'មើលអាណាព្យាបាលដែលបានជ្រើសរើស',
+  selectStudent: 'ជ្រើសរើសសិស្ស',
+  currentStudent: 'សិស្សបច្ចុប្បន្ន',
+  manageParents: 'គ្រប់គ្រងអាណាព្យាបាលដែលបានជ្រើសរើស',
+  manageSelectedParents: 'គ្រប់គ្រងអាណាព្យាបាលដែលបានជ្រើសរើស',
+  selectedParents: 'អាណាព្យាបាលដែលបានជ្រើសរើស',
+  noParentsSelected: 'មិនមានអាណាព្យាបាលដែលបានជ្រើសរើសទេ',
+  deleteParentsWarning: 'លុបអាណាព្យាបាល',
+  deleteParentsDescription: 'សកម្មភាពនេះនឹងលុបអាណាព្យាបាល {{count}} នាក់ជាអចិន្ត្រៃយ៍។ សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+  confirmDeleteParents: 'បញ្ជាក់ការលុបអាណាព្យាបាល',
+  confirmDeleteParentsMessage: 'តើអ្នកប្រាកដថាចង់លុបអាណាព្យាបាល {{count}} នាក់ទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+  addStudentToParents: 'បន្ថែមសិស្សទៅអាណាព្យាបាល',
+  deleteParents: 'លុបអាណាព្យាបាល',
+  readyToAddStudent: 'រួចរាល់ក្នុងការបន្ថែមសិស្ស',
+  studentWillBeAddedToParents: 'សិស្សដែលបានជ្រើសរើសនឹងត្រូវបានបន្ថែមទៅអាណាព្យាបាល',
+  addingStudentToParents: 'កំពុងបន្ថែមសិស្សទៅអាណាព្យាបាល...',
+  studentAddedToParentsSuccess: 'បានបន្ថែមសិស្សទៅអាណាព្យាបាលដោយជោគជ័យ',
+  failedToAddStudentToSomeParents: 'បរាជ័យក្នុងការបន្ថែមសិស្សទៅអាណាព្យាបាលមួយចំនួន',
+  failedToAddStudentToParents: 'បរាជ័យក្នុងការបន្ថែមសិស្សទៅអាណាព្យាបាល',
+  pleaseSelectStudent: 'សូមជ្រើសរើសសិស្ស',
 
   // Transfer student
   transferStudent: 'ផ្ទេរសិស្ស',
@@ -270,6 +290,11 @@ export const km = {
   subject: 'មុខវិជ្ជា',
   updateClass: 'កែប្រែថ្នាក់រៀន',
   description: 'ការពិពណ៌នា',
+  noClassesFound: 'រកមិនឃើញថ្នាក់',
+  noClassesYet: 'មិនមានថ្នាក់ទេ',
+  noClassesMatchFilter: 'មិនមានថ្នាក់ដែលត្រូវការការស្វែងរករបស់អ្នក',
+  noClassesDescription: 'បង្កើតថ្នាក់រៀនតាមប្រើប្រាស់របស់អ្នក',
+  searchClasses: 'ស្វែងរកថ្នាក់',
 
   // Attendance
   attendanceFor: 'វត្តមានសម្រាប់',
@@ -483,7 +508,7 @@ export const km = {
   operationSuccessful: 'ប្រតិបត្តិការបានសម្រេច',
   operationFailed: 'ប្រតិបត្តិការបរាជ័យ',
   pleaseSelectClass: 'សូមជ្រើសរើសថ្នាក់ជាមុនសិន',
-  pleaseSelectStudents: 'សូមជ្រើសរើសសិស្សជាមុនសិន',
+  pleaseSelectStudents: 'សូមជ្រើសរើសសិស្ស',
   
   // Additional UI elements
   showingResults: 'បង្ហាញលទ្ធផល',
@@ -697,7 +722,7 @@ export const km = {
   enrolled: 'បានចុះឈ្មោះ',
   totalEnrolled: 'សិស្សចុះឈ្មោះសរុប',
   avgPerClass: 'ជាមធ្យមក្នុងមួយថ្នាក់',
-  yourClasses: 'ថ្នាក់របស់អ្នក',
+  yourClassesInSchool: 'ថ្នាក់របស់អ្នកនៅក្នុងសាលារៀន',
   noClassesAssigned: 'មិនមានថ្នាក់រៀនដែលបានកំណត់',
   welcomeToDashboard: 'សូមស្វាគមន៍មកកាន់ផ្ទាំងគ្រប់គ្រងប្រព័ន្ធគ្រូបង្រៀនរបស់អ្នក',
   yourAccountDetails: 'ព័ត៌មានគណនីរបស់អ្នក',
@@ -839,6 +864,7 @@ export const km = {
   errorDeletingClass: 'កំហុសក្នុងការលុបថ្នាក់រៀន',
   enterClassName: 'បញ្ចូលឈ្មោះថ្នាក់រៀន',
   selectAcademicYear: 'ជ្រើសរើសឆ្នាំសិក្សា',
+  maxStudents: 'ចំនួនសិស្សអតិបរមាក្នុងថ្នាក់',
   
   // ProfileUpdate specific translations
   selectDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',

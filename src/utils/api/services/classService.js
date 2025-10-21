@@ -36,14 +36,23 @@ export const classService = {
       throw error;
     }
   },
-  async getBySchool(schoolId) {
+  async getBySchool(schoolId, options = {}) {
     try {
       if (!schoolId) {
         throw new Error('School ID is required for getBySchool');
       }
 
+      // Build query parameters for pagination and filtering
+      const params = {};
+      if (options.page) params.page = options.page;
+      if (options.limit) params.limit = options.limit;
+      if (options.gradeLevel) params.gradeLevel = options.gradeLevel;
+      if (options.search && options.search.trim()) params.search = options.search.trim();
+
+      console.log('Fetching classes by school with params:', params);
+
       const response = await handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.CLASSES.CLASS_BY_SCHOOL(schoolId))
+        apiClient_.get(ENDPOINTS.CLASSES.CLASS_BY_SCHOOL(schoolId), { params })
       );
 
       console.log('Raw classes by school API response:', response);
@@ -66,6 +75,12 @@ export const classService = {
           classes: formattedData,
           data: formattedData,
           total: responseData.total || formattedData.length,
+          pagination: responseData.pagination || {
+            total: responseData.total || formattedData.length,
+            page: options.page || 1,
+            limit: options.limit || formattedData.length,
+            totalPages: Math.ceil((responseData.total || formattedData.length) / (options.limit || formattedData.length || 1))
+          },
           schoolInfo: responseData.schoolInfo
         };
       }

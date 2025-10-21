@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Users, BookOpen, Clock, Calendar, Building, User } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, BookOpen, Clock, Calendar, Building, User, ChevronLeft, ChevronRight, Search, Filter } from 'lucide-react';
 import ClassCard from '@/components/ui/ClassCard';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import StatsCard from '../../components/ui/StatsCard';
+import Pagination from '../../components/ui/Pagination';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import classService from '../../utils/api/services/classService'; // Import the classService
 import { userService } from '../../utils/api/services/userService'; // Import userService for my-account
@@ -15,10 +15,12 @@ import { teacherService } from '../../utils/api/services/teacherService'; // Imp
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
 import Dropdown from '@/components/ui/Dropdown';
+import { Button } from '../../components/ui/Button';
 import React from 'react'; // Added for useMemo
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
+import EmptyState from '../../components/ui/EmptyState';
 
 export default function ClassesManagement() {
   const { t } = useLanguage();
@@ -96,6 +98,17 @@ export default function ClassesManagement() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [schoolInfo, setSchoolInfo] = useState({ id: null, name: 'Loading...' });
   const [availableTeachers, setAvailableTeachers] = useState([]);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalClasses, setTotalClasses] = useState(0);
+  const classesPerPage = 6;
+
+  // Filter state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
+  const [isFiltering, setIsFiltering] = useState(false);
 
 
   const [formData, setFormData] = useState(() => {
@@ -284,23 +297,40 @@ export default function ClassesManagement() {
   // Note: fetchClasses now uses my-account API directly, so we don't need to depend on user.classIds
   
 
-  const fetchClasses = useStableCallback(async () => {
+  const fetchClasses = useStableCallback(async (page = currentPage, gradeLevel = selectedGradeLevel, search = searchTerm) => {
     try {
       startLoading('fetchClasses', t('loadingClasses', 'Loading classes...'));
 
       if (!user?.id) {
         setClasses([]);
+        setTotalPages(1);
+        setTotalClasses(0);
         return;
       }
 
       if (!schoolInfo?.id) {
         setClasses([]);
+        setTotalPages(1);
+        setTotalClasses(0);
         return;
       }
 
+      // Build query parameters
+      const queryParams = {
+        page: page,
+        limit: classesPerPage
+      };
 
-      // Get class data from /classes/school/{schoolId} endpoint
-      const classResponse = await classService.getBySchool(schoolInfo.id);
+      // Add filters if they exist
+      if (gradeLevel) {
+        queryParams.gradeLevel = gradeLevel;
+      }
+      if (search && search.trim()) {
+        queryParams.search = search.trim();
+      }
+
+      // Get class data from /classes/school/{schoolId} endpoint with pagination and filters
+      const classResponse = await classService.getBySchool(schoolInfo.id, queryParams);
 
       if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
         setClasses([]);
@@ -370,6 +400,13 @@ export default function ClassesManagement() {
       });
       setClasses(formattedClasses);
 
+      // Update pagination state
+      const total = classResponse.pagination?.total || classResponse.total || formattedClasses.length;
+      const pages = classResponse.pagination?.totalPages || Math.ceil(total / classesPerPage);
+
+      setTotalClasses(total);
+      setTotalPages(pages);
+      setCurrentPage(page);
 
     } catch (error) {
       console.error('Failed to fetch classes:', error);
@@ -377,16 +414,32 @@ export default function ClassesManagement() {
         toastMessage: t('error.fetchingClasses') || 'Failed to fetch classes'
       });
       setClasses([]); // Set empty array on error
+      setTotalPages(1);
+      setTotalClasses(0);
       setInitialLoading(false); // Stop loading on error
     } finally {
       stopLoading('fetchClasses');
     }
-  }, [showError, t, user?.id, user?.username, handleError, schoolInfo?.id]);
+  }, [startLoading, stopLoading, t, user?.id, handleError, schoolInfo?.id, classesPerPage]);
+  // Main effect to fetch classes when user and school are available
   useEffect(() => {
-    if (user?.id && schoolInfo?.id) {
-      fetchClasses();
+    if (user?.id && schoolInfo?.id && !initialLoading) {
+      fetchClasses(currentPage, selectedGradeLevel, searchTerm);
     }
-  }, [user?.id, schoolInfo?.id, fetchClasses]); // Depend on both user ID and school ID
+  }, [user?.id, schoolInfo?.id, currentPage]); // Removed fetchClasses from dependencies
+
+  // Auto-apply filters when search term or grade level changes (with debounce for search)
+  useEffect(() => {
+    if (!user?.id || !schoolInfo?.id || initialLoading) return;
+    
+    const timeoutId = setTimeout(() => {
+      setCurrentPage(1); // Reset to first page
+      fetchClasses(1, selectedGradeLevel, searchTerm);
+      setIsFiltering(searchTerm || selectedGradeLevel ? true : false);
+    }, searchTerm ? 500 : 0); // 500ms debounce for search, immediate for grade level
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, selectedGradeLevel]); // Removed user and schoolInfo dependencies
 
   const handleAddClass = () => {
     setFormData({
@@ -605,6 +658,33 @@ export default function ClassesManagement() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Filter handlers
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleGradeLevelChange = (value) => {
+    setSelectedGradeLevel(value);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setSelectedGradeLevel('');
+    setCurrentPage(1);
+    setIsFiltering(false);
+  };
+
+  // Pagination handlers - memoized to prevent unnecessary re-renders
+  const handlePageChange = React.useCallback((newPage) => {
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentPage, totalPages]);
+
   // Use the shared enrollment status utility from exportUtils
 
   // Compute the class with the highest number of students
@@ -643,7 +723,7 @@ export default function ClassesManagement() {
       <div className="p-6">
         {/* Header */}
         <FadeInSection className='bg-white shadow rounded-lg p-4 sm:p-6 transition-all duration-300 mb-4'>
-          <div className="mb-8">
+          <div className="mb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -653,109 +733,152 @@ export default function ClassesManagement() {
                   {t('manageClassSchedules') || 'Manage class schedules, assignments, and enrollment'}
                 </p>
               </div>
-              <button
+              <Button
                 onClick={handleAddClass}
                 disabled={schoolInfo.name === 'Loading...' || schoolInfo.name.includes('Error') || !schoolInfo.id}
-                className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+                variant="primary"
+                size="sm"
+                className="mt-4 sm:mt-0"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 {t('addClass') || 'Add Class'}
-              </button>
+              </Button>
             </div>
           </div>
-        </FadeInSection>
+          <div className="">
+            <div className="flex flex-col sm:flex-row gap-4 items-end">
+              {/* Search Input */}
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('search', 'Search')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    placeholder={t('searchClasses', 'Search classes...')}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  />
+                </div>
+              </div>
 
-        {/* Stats Cards */}
-        <FadeInSection delay={0.1}>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
-            <StatsCard
-              title={t('totalClasses') || 'ថ្នាក់រៀនសរុប'}
-              value={classes.length}
-              icon={BookOpen}
-              enhanced={true}
-              responsive={true}
-              hoverColor="hover:border-blue-200"
-              gradientFrom="from-blue-500"
-              gradientTo="to-blue-600"
-            />
-            
-            <StatsCard
-              title={t('totalStudents') || 'សិស្សសរុប'}
-              value={classes.reduce((sum, cls) => sum + cls.enrolled, 0)}
-              icon={Users}
-              enhanced={true}
-              responsive={true}
-              hoverColor="hover:border-green-200"
-              gradientFrom="from-green-500"
-              gradientTo="to-green-600"
-            />
-            
-            <StatsCard
-              title={t('activeToday') || 'សកម្មថ្ងៃនេះ'}
-              value={classes.filter(cls => cls.schedule && cls.schedule.includes('Mon')).length}
-              icon={Calendar}
-              enhanced={true}
-              responsive={true}
-              hoverColor="hover:border-purple-200"
-              gradientFrom="from-purple-500"
-              gradientTo="to-purple-600"
-            />
-            <StatsCard
-              title={t('mostEnrolledClass') || 'ថ្នាក់ដែលមានសិស្សច្រើនបំផុត'}
-              value={mostEnrolledClass ? `${mostEnrolledClass.name}` : '—'}
-              icon={Users}
-              enhanced={true}
-              responsive={true}
-              hoverColor="hover:border-amber-200"
-              gradientFrom="from-amber-500"
-              gradientTo="to-amber-400"
-            />
-            
-            
+              {/* Grade Level Filter */}
+              <div className="w-full sm:w-48">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('gradeLevel', 'Grade Level')}
+                </label>
+                <Dropdown
+                  value={selectedGradeLevel}
+                  onValueChange={handleGradeLevelChange}
+                  options={[
+                    { value: '', label: t('allGrades', 'All Grades') },
+                    ...grades
+                  ]}
+                  placeholder={t('selectGrade', 'Select Grade')}
+                  className="w-full"
+                  icon={Filter}
+                />
+              </div>
+
+              {/* Filter Actions */}
+              <div className="flex gap-2">
+                {(searchTerm || selectedGradeLevel) && (
+                  <Button
+                    onClick={handleClearFilters}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {t('clearFilters', 'Reset Filters')}
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </FadeInSection>
 
         {/* Classes Grid */}
         <FadeInSection delay={0.2} className='p-6 bg-white rounded-lg shadow'>
-          <div className='mb-3'>
-            <h3 className="text-lg font-medium text-gray-900">{t('yourClasses') || 'Your Classes'}</h3>
+          <div className='mb-3 flex items-center justify-between'>
+            <h3 className="text-lg font-semibold text-gray-900">{t('yourClassesInSchool') || 'Your Classes In School'}</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {classes.map((classItem) => {
-              const badges = [];
-
-              if (classItem.teacher) {
-                badges.push({
-                  label: classItem.teacher,
-                  color: 'blue',
-                  variant: 'outline'
-                });
+          {isLoading('fetchClasses') ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+            </div>
+          ) : classes.length === 0 ? (
+            <EmptyState
+              icon={BookOpen}
+              title={searchTerm || selectedGradeLevel ? 
+                t('noClassesFound', 'No classes found') : 
+                t('noClassesYet', 'No classes yet')
               }
-              if (classItem.academicYear) {
-                badges.push({
-                  label: classItem.academicYear,
-                  color: 'orange',
-                  variant: 'outline'
-                });
+              description={searchTerm || selectedGradeLevel ? 
+                t('noClassesMatchFilter', 'No classes match your current filters. Try adjusting your search or grade level filter.') :
+                t('noClassesDescription', 'Get started by creating your first class.')
               }
+              variant="neutral"
+              actionLabel={!(searchTerm || selectedGradeLevel) ? t('addClass', 'Add Class') : undefined}
+              onAction={!(searchTerm || selectedGradeLevel) ? handleAddClass : undefined}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {classes.map((classItem) => {
+                const badges = [];
 
-           return (
-             <ClassCard
-               key={classItem.id}
-               title={classItem.name}
-               subtitleParts={[
-                 `${t('grade') || 'Grade'} ${classItem.grade.replace('Grade ', '')}`,
-                 classItem.section ? `${t('section') || 'Section'} ${classItem.section}` : ''
-               ]}
-               enrolled={classItem.enrolled}
-               capacity={classItem.capacity}
-               badges={badges}
-               onEdit={() => handleEditClass(classItem)}
-               onDelete={() => { setSelectedClass(classItem); setShowDeleteDialog(true); }}
-             />
-           );
-             })}
-          </div>
+                if (classItem.teacher) {
+                  badges.push({
+                    label: classItem.teacher,
+                    color: 'blue',
+                    variant: 'outline'
+                  });
+                }
+                if (classItem.academicYear) {
+                  badges.push({
+                    label: classItem.academicYear,
+                    color: 'orange',
+                    variant: 'outline'
+                  });
+                }
+
+             return (
+               <ClassCard
+                 key={classItem.id}
+                 title={classItem.name}
+                 subtitleParts={[
+                   `${t('grade') || 'Grade'} ${classItem.grade.replace('Grade ', '')}`,
+                   classItem.section ? `${t('section') || 'Section'} ${classItem.section}` : ''
+                 ]}
+                 enrolled={classItem.enrolled}
+                 capacity={classItem.capacity}
+                 badges={badges}
+                 onEdit={() => handleEditClass(classItem)}
+                 onDelete={() => { setSelectedClass(classItem); setShowDeleteDialog(true); }}
+               />
+             );
+               })}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="mt-8">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                total={totalClasses}
+                limit={classesPerPage}
+                onPageChange={handlePageChange}
+                t={t}
+                showFirstLast={true}
+                showInfo={true}
+                maxVisiblePages={5}
+              />
+            </div>
+          )}
         </FadeInSection>
 
       {/* Add/Edit Modal */}
@@ -772,25 +895,27 @@ export default function ClassesManagement() {
         stickyFooter={true}
         footer={
           <div className="flex justify-end space-x-3">
-            <button
+            <Button
               type="button"
               onClick={() => {
                 clearError(); // Clear any errors when clicking cancel
                 setShowAddModal(false);
                 setShowEditModal(false);
               }}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              variant="outline"
+              size="sm"
             >
               {t('cancel') || 'Cancel'}
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               form="class-form"
               disabled={loading || schoolInfo.name === 'Loading...' || schoolInfo.name.includes('Error') || !schoolInfo.id}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors"
+              variant="primary"
+              size="sm"
             >
               {loading ? (t('saving') || 'Saving...') : (showAddModal ? (t('addClass') || 'Add Class') : (t('updateClass') || 'Update Class'))}
-            </button>
+            </Button>
           </div>
         }
       >
@@ -828,7 +953,6 @@ export default function ClassesManagement() {
               />
             </div>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -888,14 +1012,16 @@ export default function ClassesManagement() {
                   title={`School ID: ${schoolInfo.id || 'Not available'}`}
                 />
                 {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
-                  <button
+                  <Button
                     type="button"
                     onClick={fetchSchoolInfo}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                    variant="primary"
+                    size="xs"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
                     title="Retry loading school information"
                   >
                     Retry
-                  </button>
+                  </Button>
                 )}
               </div>
               <input
