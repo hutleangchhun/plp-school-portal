@@ -864,7 +864,7 @@ export const km = {
   errorDeletingClass: 'កំហុសក្នុងការលុបថ្នាក់រៀន',
   enterClassName: 'បញ្ចូលឈ្មោះថ្នាក់រៀន',
   selectAcademicYear: 'ជ្រើសរើសឆ្នាំសិក្សា',
-  maxStudents: 'ចំនួនសិស្សអតិបរមាក្នុងថ្នាក់',
+  maxStudents: 'ចំនួនសិស្សអតិបរមាក្នុងថ្នាក់ក',
   
   // ProfileUpdate specific translations
   selectDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
