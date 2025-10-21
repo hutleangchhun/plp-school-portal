@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Plus, Trash2, Upload, Download, Save, X, Copy, Scissors, Clipboard, FileSpreadsheet, Calendar } from 'lucide-react';
+import { Plus, Trash2, Upload, Download, Save, X, Copy, Scissors, Clipboard, FileSpreadsheet, Calendar, OctagonAlert } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { Button } from '../../components/ui/Button';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
-import { Badge } from '../../components/ui/Badge';
 import { studentService } from '../../utils/api/services/studentService';
 import { schoolService } from '../../utils/api/services/schoolService';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -102,8 +101,8 @@ const CustomDateInput = ({ value, onChange, className = "" }) => {
         onBlur={handleBlur}
         placeholder="dd/mm/yyyy"
         className={`w-full px-2 py-1.5 text-xs border rounded focus:ring-2 focus:border-blue-500 bg-white ${className} ${isInvalid
-            ? 'border-red-500 text-red-600 focus:ring-red-500'
-            : 'border-gray-300 focus:ring-blue-500'
+          ? 'border-red-500 text-red-600 focus:ring-red-500'
+          : 'border-gray-300 focus:ring-blue-500'
           }`}
         style={{
           minHeight: '32px',
@@ -2135,7 +2134,7 @@ export default function BulkStudentImport() {
     <PageTransition variant="fade" className="min-h-screen bg-gray-50">
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
-        <FadeInSection className="mb-6">
+        <FadeInSection className="mb-4">
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -2197,74 +2196,78 @@ export default function BulkStudentImport() {
                 </Button>
               </div>
             </div>
-          </div>
-        </FadeInSection>
+            <div className="mt-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">ជ្រើសរើសសាលា</h2>
+              <div className="flex justify-start items-center gap-4">
+                {/* Province Dropdown */}
+                <div className=''>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ខេត្ត/រាជធានី
+                  </label>
+                  <Dropdown
+                    value={locationData.selectedProvince}
+                    onValueChange={locationData.handleProvinceChange}
+                    options={locationData.getProvinceOptions()}
+                    placeholder="ជ្រើសរើសខេត្ត/រាជធានី"
+                    maxHeight="max-h-[300px]"
+                  />
+                </div>
 
-        {/* Location & School Selection */}
-        <FadeInSection delay={50} className="mb-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">ជ្រើសរើសសាលា</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Province Dropdown */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ខេត្ត/រាជធានី
-                </label>
-                <Dropdown
-                  value={locationData.selectedProvince}
-                  onValueChange={locationData.handleProvinceChange}
-                  options={locationData.getProvinceOptions()}
-                  placeholder="ជ្រើសរើសខេត្ត/រាជធានី"
-                  maxHeight="max-h-[300px]"
-                />
-              </div>
+                {/* District Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ស្រុក/ខណ្ឌ
+                  </label>
+                  <Dropdown
+                    value={locationData.selectedDistrict}
+                    onValueChange={locationData.handleDistrictChange}
+                    options={locationData.getDistrictOptions()}
+                    placeholder="ជ្រើសរើសស្រុក/ខណ្ឌ"
+                    disabled={!locationData.selectedProvince}
+                    maxHeight="max-h-[300px]"
+                  />
+                </div>
 
-              {/* District Dropdown */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ស្រុក/ខណ្ឌ
-                </label>
-                <Dropdown
-                  value={locationData.selectedDistrict}
-                  onValueChange={locationData.handleDistrictChange}
-                  options={locationData.getDistrictOptions()}
-                  placeholder="ជ្រើសរើសស្រុក/ខណ្ឌ"
-                  disabled={!locationData.selectedProvince}
-                  maxHeight="max-h-[300px]"
-                />
-              </div>
-
-              {/* School Dropdown */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  សាលា *
-                </label>
-                <Dropdown
-                  value={selectedSchool?.id?.toString() || ''}
-                  onValueChange={(value) => {
-                    const school = schools.find(s => s.id.toString() === value);
-                    setSelectedSchool(school || null);
-                  }}
-                  options={schools.map(school => ({
-                    value: school.id.toString(),
-                    label: school.name
-                  }))}
-                  placeholder="ជ្រើសរើសសាលា"
-                  disabled={!locationData.selectedDistrict || loadingSchools}
-                  maxHeight="max-h-[300px]"
-                />
-                {selectedSchool && (
-                  <p className="mt-2 text-sm text-green-600">
-                    ✓ បានជ្រើសរើស: {selectedSchool.name}
-                  </p>
-                )}
+                {/* School Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    សាលា *
+                  </label>
+                  <Dropdown
+                    value={selectedSchool?.id?.toString() || ''}
+                    onValueChange={(value) => {
+                      const school = schools.find(s => s.id.toString() === value);
+                      setSelectedSchool(school || null);
+                    }}
+                    options={schools.map(school => ({
+                      value: school.id.toString(),
+                      label: school.name
+                    }))}
+                    placeholder="ជ្រើសរើសសាលា"
+                    disabled={!locationData.selectedDistrict || loadingSchools}
+                    maxHeight="max-h-[300px]"
+                  />
+                </div>
               </div>
             </div>
           </div>
+
         </FadeInSection>
 
         {/* Excel-like Table */}
-        <FadeInSection delay={100} className="shadow-lg rounded-lg overflow-hidden border border-gray-200 bg-transparent">
+        <FadeInSection delay={50} className="shadow-lg rounded-lg overflow-hidden border border-gray-200 bg-transparent">
+          <div className="bg-white p-6">
+            <h2 className="text-lg font-semibold text-gray-900">តារាងបញ្ចូលសិស្ស</h2>
+            <div className='text-sm flex justify-between items-center gap-4 flex-col sm:flex-row'>
+              <div>
+                <p>សូមបំពេញព័ត៌មានសិស្សនៅក្នុងតារាងខាងក្រោម ឬនាំចូលពីឯកសារ Excel។</p>
+              </div>
+              <div className='text-red-600 flex justify-between items-center'>
+                <OctagonAlert className="h-5 w-5 mr-1" />
+                <div className='pt-1'><p>ចំណាំ៖ អ្នកអាចបន្ថែមបានច្រើនបំផុត 70 នាក់ក្នុងមួយពេល</p></div>
+              </div>
+            </div>
+          </div>
           <div className="relative overflow-auto" ref={tableRef} style={{ position: 'relative', zIndex: 10, height: '680px' }}>
             <table className="min-w-full border-collapse bg-white">
               <thead className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
@@ -2322,8 +2325,8 @@ export default function BulkStudentImport() {
                         <td
                           key={column.key}
                           className={`border-r border-gray-200 relative cursor-pointer ${isSelected ? '' :
-                              isInRange ? 'bg-blue-50' :
-                                'bg-white hover:bg-gray-50'
+                            isInRange ? 'bg-blue-50' :
+                              'bg-white hover:bg-gray-50'
                             }`}
                           onClick={(e) => handleCellClick(rowIndex, column.key, e)}
                           onMouseDown={() => handleCellMouseDown(rowIndex, column.key)}
@@ -2353,11 +2356,10 @@ export default function BulkStudentImport() {
                                 updateCell(rowIndex, column.key, e.target.value);
                               }}
                               onClick={(e) => e.stopPropagation()}
-                              className={`w-full px-3 py-2 text-xs border-0 bg-white focus:border focus:ring-1 ${
-                                isCellInvalid(student, column.key)
-                                  ? 'border-2 border-red-200 focus:border-red-200 focus:ring-red-200'
-                                  : 'focus:border-blue-500 focus:ring-blue-500'
-                              }`}
+                              className={`w-full px-3 py-2 text-xs border-0 bg-white focus:border focus:ring-1 ${isCellInvalid(student, column.key)
+                                ? 'border-2 border-red-200 focus:border-red-200 focus:ring-red-200'
+                                : 'focus:border-blue-500 focus:ring-blue-500'
+                                }`}
                             >
                               <option value=""></option>
                               {column.options.map((option) => (
@@ -2385,11 +2387,10 @@ export default function BulkStudentImport() {
                                 updateCell(rowIndex, column.key, e.target.value);
                               }}
                               onClick={(e) => e.stopPropagation()}
-                              className={`w-full px-3 py-2 text-xs border-0 bg-white focus:border focus:ring-1 ${
-                                isCellInvalid(student, column.key)
-                                  ? 'border-2 border-red-500 focus:border-red-500 focus:ring-red-500'
-                                  : 'focus:border-blue-500 focus:ring-blue-500'
-                              }`}
+                              className={`w-full px-3 py-2 text-xs border-0 bg-white focus:border focus:ring-1 ${isCellInvalid(student, column.key)
+                                ? 'border-2 border-red-500 focus:border-red-500 focus:ring-red-500'
+                                : 'focus:border-blue-500 focus:ring-blue-500'
+                                }`}
                             />
                           ) : column.type === 'custom-date' ? (
                             <CustomDateInput
@@ -2408,13 +2409,12 @@ export default function BulkStudentImport() {
                                 updateCell(rowIndex, column.key, e.target.value);
                               }}
                               onClick={(e) => e.stopPropagation()}
-                              className={`w-full px-3 py-2 text-xs border-0 focus:border focus:ring-1 ${
-                                column.key === 'schoolId'
-                                  ? 'bg-blue-50 cursor-not-allowed text-blue-700 font-medium focus:border-blue-500 focus:ring-blue-500'
-                                  : isCellInvalid(student, column.key)
-                                    ? 'bg-white border-2 border-red-500 focus:border-red-500 focus:ring-red-500'
-                                    : 'bg-white focus:border-blue-500 focus:ring-blue-500'
-                              }`}
+                              className={`w-full px-3 py-2 text-xs border-0 focus:border focus:ring-1 ${column.key === 'schoolId'
+                                ? 'bg-blue-50 cursor-not-allowed text-blue-700 font-medium focus:border-blue-500 focus:ring-blue-500'
+                                : isCellInvalid(student, column.key)
+                                  ? 'bg-white border-2 border-red-500 focus:border-red-500 focus:ring-red-500'
+                                  : 'bg-white focus:border-blue-500 focus:ring-blue-500'
+                                }`}
                               placeholder={column.key === 'schoolId' ? 'ជ្រើសរើសសាលាខាងលើ' : ''}
                               readOnly={column.key === 'schoolId'}
                               disabled={column.key === 'schoolId'}
