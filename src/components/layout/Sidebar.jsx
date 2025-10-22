@@ -24,6 +24,10 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
   const { t } = useLanguage();
   const location = useLocation();
 
+  // Debug: Log user object to check isDirector value
+  console.log('Sidebar - User object:', user);
+  console.log('Sidebar - isDirector:', user?.isDirector);
+  console.log('Sidebar - roleId:', user?.roleId);
 
   // Icon mapping for routes
   const iconMap = {

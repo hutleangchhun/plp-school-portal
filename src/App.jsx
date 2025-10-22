@@ -84,12 +84,6 @@ function AppContent() {
           element={<StudentRegistration />}
         />
 
-        {/* Public bulk student import route */}
-        <Route
-          path="/students/bulk-import"
-          element={<BulkStudentImport />}
-        />
-
         {/* Protected routes with Layout */}
         <Route 
           path="/" 
@@ -122,6 +116,11 @@ function AppContent() {
           }>
             <Route index element={<StudentsManagement />} />
             <Route path="select" element={<StudentSelection />} />
+            <Route path="bulk-import" element={
+              <ProtectedRoute path="/students/bulk-import" user={user}>
+                <BulkStudentImport />
+              </ProtectedRoute>
+            } />
           </Route>
           
           <Route path="classes" element={

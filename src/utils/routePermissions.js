@@ -47,6 +47,10 @@ export const routePermissions = {
   '/my-students': {
     allowedRoles: [ROLES.TEACHER],
     component: 'TeacherStudentsManagement'
+  },
+  '/students/bulk-import': {
+    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    component: 'BulkStudentImport'
   }
 };
 
@@ -65,6 +69,7 @@ export const hasRouteAccess = (path, user) => {
   }
 
   // Teacher: roleId = 8 && (isDirector = false OR undefined) can only access /attendance, /my-classes, /my-students, and /profile
+  // Teachers CANNOT access /students/bulk-import
   if (user.roleId === ROLES.TEACHER && (user.isDirector === false || user.isDirector === undefined)) {
     return path === '/attendance' || path === '/my-classes' || path === '/my-students' || path === '/profile';
   }
@@ -93,6 +98,13 @@ export const getAccessibleRoutes = (user) => {
  */
 export const getNavigationItems = (user, t) => {
   if (!user) return [];
+
+  // Debug logging
+  console.log('getNavigationItems - User:', user);
+  console.log('getNavigationItems - roleId:', user.roleId);
+  console.log('getNavigationItems - isDirector:', user.isDirector);
+  console.log('getNavigationItems - Is Director check:', user.roleId === ROLES.DIRECTOR && user.isDirector === true);
+  console.log('getNavigationItems - Is Teacher check:', user.roleId === ROLES.TEACHER && (user.isDirector === false || user.isDirector === undefined));
 
   // Director gets all navigation items
   const directorItems = [
@@ -141,13 +153,17 @@ export const getNavigationItems = (user, t) => {
   ];
 
   // Return appropriate items based on user role
-  if (user.roleId === ROLES.DIRECTOR && user.isDirector === true) {
+  // Check isDirector FIRST since both roles have roleId = 8
+  if (user.roleId === 8 && user.isDirector === true) {
+    console.log('getNavigationItems - Returning DIRECTOR items');
     return directorItems;
   }
 
-  if (user.roleId === ROLES.TEACHER && (user.isDirector === false || user.isDirector === undefined)) {
+  if (user.roleId === 8 && (user.isDirector === false || user.isDirector === undefined)) {
+    console.log('getNavigationItems - Returning TEACHER items');
     return teacherItems;
   }
 
+  console.log('getNavigationItems - No match, returning empty array');
   return [];
 };

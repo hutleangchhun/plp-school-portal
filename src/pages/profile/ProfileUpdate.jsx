@@ -303,8 +303,15 @@ export default function ProfileUpdate({ user, setUser }) {
         setSchoolInitialized(false);
         
         // Also update the user context if needed
+        // IMPORTANT: Preserve isDirector from original user object if not in API response
         if (setUser) {
-          setUser(userData);
+          const updatedUser = {
+            ...userData,
+            // Preserve isDirector from original user if it's not in the API response
+            isDirector: userData.isDirector !== undefined ? userData.isDirector : user?.isDirector
+          };
+          console.log('ProfileUpdate - Preserving isDirector:', user?.isDirector, '→', updatedUser.isDirector);
+          setUser(updatedUser);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -520,7 +527,12 @@ export default function ProfileUpdate({ user, setUser }) {
       const response = await api.user.updateUserProfile(updateData);
       clearTimeout(timeoutId);
 
-      const updatedUser = { ...user, ...response };
+      const updatedUser = { 
+        ...user, 
+        ...response,
+        // Explicitly preserve isDirector to ensure it's not lost
+        isDirector: response.isDirector !== undefined ? response.isDirector : user?.isDirector
+      };
       utils.user.saveUserData(updatedUser);
       setUser(updatedUser);
       setProfilePictureFile(null); // Clear the selected file
