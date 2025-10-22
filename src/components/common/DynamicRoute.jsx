@@ -66,10 +66,10 @@ export function ProtectedRoute({ children, path, user, fallbackPath }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Determine fallback: teachers (roleId=8, !isDirector) go to /attendance, others to /dashboard
+  // Determine fallback: teachers (roleId=8, isDirector=false or undefined) go to /my-classes, directors to /dashboard
   let computedFallback = "/dashboard";
-  if (user && user.roleId === 8 && !user.isDirector) {
-    computedFallback = "/attendance";
+  if (user && user.roleId === 8 && (user.isDirector === false || user.isDirector === undefined)) {
+    computedFallback = "/my-classes";
   }
   if (typeof fallbackPath === 'string') {
     computedFallback = fallbackPath;

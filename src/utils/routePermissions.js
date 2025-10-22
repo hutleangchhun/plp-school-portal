@@ -64,9 +64,9 @@ export const hasRouteAccess = (path, user) => {
     return !!routePermissions[path];
   }
 
-  // Teacher: roleId = 8 && isDirector = false can only access /attendance, /my-classes, and /my-students
-  if (user.roleId === ROLES.TEACHER && user.isDirector === false) {
-    return path === '/attendance' || path === '/my-classes' || path === '/my-students';
+  // Teacher: roleId = 8 && (isDirector = false OR undefined) can only access /attendance, /my-classes, /my-students, and /profile
+  if (user.roleId === ROLES.TEACHER && (user.isDirector === false || user.isDirector === undefined)) {
+    return path === '/attendance' || path === '/my-classes' || path === '/my-students' || path === '/profile';
   }
 
   return false;
@@ -145,7 +145,7 @@ export const getNavigationItems = (user, t) => {
     return directorItems;
   }
 
-  if (user.roleId === ROLES.TEACHER && user.isDirector === false) {
+  if (user.roleId === ROLES.TEACHER && (user.isDirector === false || user.isDirector === undefined)) {
     return teacherItems;
   }
 
