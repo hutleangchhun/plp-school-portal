@@ -99,6 +99,7 @@ export default function ClassesManagement() {
   const [dataFetched, setDataFetched] = useState(false);
   const [schoolInfo, setSchoolInfo] = useState({ id: null, name: 'Loading...' });
   const [availableTeachers, setAvailableTeachers] = useState([]);
+  const [filteredTeachers, setFilteredTeachers] = useState([]);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -141,34 +142,59 @@ export default function ClassesManagement() {
   // Generate academic years dynamically (2 past, current, 3 future for better coverage)
   const academicYears = generateAcademicYears(2, 3);
 
-  // Fetch teachers for the school
-  const fetchTeachers = async (schoolId) => {
+  // Fetch teachers for the school with optional grade level filter
+  const fetchTeachers = async (schoolId, gradeLevel = null) => {
     try {
       if (!schoolId) {
         setAvailableTeachers([]);
+        setFilteredTeachers([]);
         return;
       }
 
-      const response = await teacherService.getTeachersBySchool(schoolId);
+      // Build request parameters
+      const params = {};
+      if (gradeLevel) {
+        params.grade_level = gradeLevel;
+      }
+
+      const response = await teacherService.getTeachersBySchool(schoolId, params);
 
       if (response && response.success && response.data && Array.isArray(response.data)) {
         // Format teachers for dropdown
         const formattedTeachers = response.data.map(teacher => ({
           value: teacher.teacherId?.toString() || '',
           label: `${teacher.user?.first_name || ''} ${teacher.user?.last_name || ''}`.trim() || teacher.user?.username || `Teacher ${teacher.teacherId}`,
+          gradeLevel: teacher.gradeLevel,
           teacherData: teacher
         }));
 
-        setAvailableTeachers(formattedTeachers);
+        if (gradeLevel) {
+          // If filtering by grade level, update filtered teachers
+          setFilteredTeachers(formattedTeachers);
+        } else {
+          // If no filter, update both available and filtered teachers
+          setAvailableTeachers(formattedTeachers);
+          setFilteredTeachers(formattedTeachers);
+        }
       } else {
-        setAvailableTeachers([]);
+        if (gradeLevel) {
+          setFilteredTeachers([]);
+        } else {
+          setAvailableTeachers([]);
+          setFilteredTeachers([]);
+        }
       }
     } catch (error) {
       console.error('Error fetching teachers:', error);
       handleError(error, {
         toastMessage: t('failedToFetchTeachers', 'Failed to fetch teachers')
       });
-      setAvailableTeachers([]);
+      if (gradeLevel) {
+        setFilteredTeachers([]);
+      } else {
+        setAvailableTeachers([]);
+        setFilteredTeachers([]);
+      }
     }
   };
 
@@ -920,6 +946,54 @@ export default function ClassesManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('school') || 'School'} *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Building className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  name="schoolName"
+                  required
+                  readOnly
+                  value={schoolInfo.name}
+                  className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm cursor-not-allowed ${
+                    schoolInfo.name === 'Loading...' 
+                      ? 'bg-blue-50 border-blue-300 text-blue-700'
+                      : schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')
+                      ? 'bg-red-50 border-red-300 text-red-700'
+                      : 'bg-gray-50 border-0 focus:ring-0 focus:border-0 focus:outline-none'
+                  }`}
+                  title={`School ID: ${schoolInfo.id || 'Not available'}`}
+                />
+                {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
+                  <Button
+                    type="button"
+                    onClick={fetchSchoolInfo}
+                    variant="primary"
+                    size="xs"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                    title="Retry loading school information"
+                  >
+                    Retry
+                  </Button>
+                )}
+              </div>
+              <input
+                type="hidden"
+                name="schoolId"
+                value={formData.schoolId}
+              />
+              {schoolInfo.name === 'Loading...' && (
+                <p className="text-xs text-blue-600 mt-1">Loading school information...</p>
+              )}
+              {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
+                <p className="text-xs text-red-600 mt-1">Failed to load school information. Click "Retry" to try again.</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('className') || 'Class Name'} *
               </label>
               <div className="relative">
@@ -943,7 +1017,26 @@ export default function ClassesManagement() {
               </label>
               <Dropdown
                 value={formData.gradeLevel}
-                onValueChange={(value) => handleInputChange({ target: { name: 'gradeLevel', value } })}
+                onValueChange={(value) => {
+                  // Update grade level
+                  handleInputChange({ target: { name: 'gradeLevel', value } });
+                  
+                  // Fetch teachers filtered by the selected grade level
+                  if (value && schoolInfo.id) {
+                    fetchTeachers(schoolInfo.id, value);
+                  } else if (schoolInfo.id) {
+                    // If grade level is cleared, fetch all teachers
+                    fetchTeachers(schoolInfo.id);
+                  }
+                  
+                  // Reset teacher selection when grade changes
+                  setFormData(prev => ({
+                    ...prev,
+                    gradeLevel: value,
+                    teacherId: '',
+                    teacherName: ''
+                  }));
+                }}
                 options={grades}
                 placeholder={t('selectGrade') || 'Select Grade'}
                 className="w-full"
@@ -1036,13 +1129,18 @@ export default function ClassesManagement() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('teacher') || 'Teacher'} *
+                {formData.gradeLevel && filteredTeachers.length > 0 && (
+                  <span className="ml-2 text-xs text-blue-600">
+                    ({filteredTeachers.length} {t('teachersForGrade', 'teachers for grade')} {formData.gradeLevel})
+                  </span>
+                )}
               </label>
-              {availableTeachers.length > 0 ? (
+              {filteredTeachers.length > 0 ? (
                 <Dropdown
                   value={formData.teacherId}
                   onValueChange={(value) => {
                     // Find the selected teacher to get the name
-                    const selectedTeacher = availableTeachers.find(t => t.value === value);
+                    const selectedTeacher = filteredTeachers.find(t => t.value === value);
                     const teacherName = selectedTeacher?.label || '';
                     setFormData(prev => ({
                       ...prev,
@@ -1050,8 +1148,8 @@ export default function ClassesManagement() {
                       teacherName: teacherName
                     }));
                   }}
-                  options={availableTeachers}
-                  placeholder={t('selectTeacher') || 'Select Teacher'}
+                  options={filteredTeachers}
+                  placeholder={formData.gradeLevel ? t('selectTeacherForGrade', 'Select teacher for this grade') : t('selectTeacher', 'Select Teacher')}
                   className="w-full"
                   icon={User}
                 />
@@ -1065,7 +1163,12 @@ export default function ClassesManagement() {
                     name="teacherName"
                     required
                     readOnly
-                    value={availableTeachers.length === 0 && schoolInfo?.id ? t('loadingTeachers', 'Loading teachers...') : formData.teacherName}
+                    value={
+                      !schoolInfo?.id ? t('loadingSchool', 'Loading school...') :
+                      !formData.gradeLevel ? t('selectGradeFirst', 'Please select a grade level first') :
+                      filteredTeachers.length === 0 && formData.gradeLevel ? t('noTeachersForGrade', 'No teachers available for this grade') :
+                      t('loadingTeachers', 'Loading teachers...')
+                    }
                     className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
                   />
                 </div>
@@ -1075,6 +1178,11 @@ export default function ClassesManagement() {
                 name="teacherId"
                 value={formData.teacherId}
               />
+              {formData.gradeLevel && filteredTeachers.length === 0 && schoolInfo?.id && (
+                <p className="text-xs text-amber-600 mt-1">
+                  {t('noTeachersForGradeMessage', 'No teachers are assigned to grade')} {formData.gradeLevel}. {t('selectDifferentGrade', 'Try selecting a different grade level.')}
+                </p>
+              )}
             </div>
           </div>
 

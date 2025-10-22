@@ -94,7 +94,7 @@ export default function SchoolOverviewChart({ schoolStats, className = "" }) {
       >
         <PieChart>
           <ChartTooltip
-            cursor={false}
+            cursor="default"
             content={<ChartTooltipContent hideLabel />}
           />
           <Pie

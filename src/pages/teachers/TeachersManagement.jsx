@@ -18,6 +18,7 @@ import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import Modal from '../../components/ui/Modal';
 import SelectedCard from '../../components/ui/SelectedCard';
 import { formatDateKhmer } from '../../utils/formatters';
+import Dropdown from '../../components/ui/Dropdown';
 
 export default function TeachersManagement() {
   const { t } = useLanguage();
@@ -72,7 +73,7 @@ export default function TeachersManagement() {
   const [teachers, setTeachers] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 5,
     total: 0,
     pages: 1
   });
@@ -80,6 +81,7 @@ export default function TeachersManagement() {
   // Other state variables
   const [searchTerm, setSearchTerm] = useState('');
   const [localSearchTerm, setLocalSearchTerm] = useState('');
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
@@ -168,14 +170,15 @@ export default function TeachersManagement() {
   }, [schoolId, showError, t, handleError]);
 
   // Fetch teachers from the school
-  const fetchTeachers = useStableCallback(async (search = searchTerm, force = false) => {
+  const fetchTeachers = useStableCallback(async (force = false) => {
     if (!schoolId) {
       console.log('No school ID available, skipping teacher fetch...');
       return;
     }
 
     const currentParams = JSON.stringify({
-      search,
+      search: searchTerm,
+      gradeLevel: selectedGradeLevel,
       schoolId,
       page: pagination.page,
       limit: pagination.limit
@@ -194,12 +197,20 @@ export default function TeachersManagement() {
 
       console.log(`=== FETCH TEACHERS ===`);
       console.log(`School ID: ${schoolId}`);
-      console.log(`Search term: ${search}`);
+      console.log(`Search term: ${searchTerm}`);
+      console.log(`Grade Level: ${selectedGradeLevel}`);
+      console.log(`Page: ${pagination.page}, Limit: ${pagination.limit}`);
 
-      // Build request parameters with search
-      const requestParams = {};
-      if (search && search.trim()) {
-        requestParams.search = search.trim();
+      // Build request parameters with search, grade level, and pagination
+      const requestParams = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      if (searchTerm && searchTerm.trim()) {
+        requestParams.search = searchTerm.trim();
+      }
+      if (selectedGradeLevel && selectedGradeLevel !== '') {
+        requestParams.grade_level = selectedGradeLevel;
       }
 
       const response = await teacherService.getTeachersBySchool(schoolId, requestParams);
@@ -233,6 +244,7 @@ export default function TeachersManagement() {
         schoolId: teacher.schoolId,
         schoolName: teacher.school?.name || 'N/A',
         hireDate: teacher.hire_date,
+        gradeLevel: teacher.gradeLevel || 'N/A',
         isDirector: teacher.isDirector,
         status: teacher.status,
         isActive: teacher.status === 'ACTIVE',
@@ -241,21 +253,28 @@ export default function TeachersManagement() {
 
       console.log('Mapped teacher data:', data);
 
-      // Use server-side filtered data directly (no client-side filtering needed)
+      // Use server-side filtered and paginated data directly
       setAllTeachers(data);
       setFilteredTeachers(data);
-
-      // Client-side pagination
-      const startIndex = (pagination.page - 1) * pagination.limit;
-      const endIndex = startIndex + pagination.limit;
-      const paginatedData = data.slice(startIndex, endIndex);
-
-      setTeachers(paginatedData);
-      setPagination(prev => ({
-        ...prev,
-        total: data.length,
-        pages: Math.ceil(data.length / prev.limit)
-      }));
+      setTeachers(data);
+      
+      // Update pagination info from API response
+      console.log('API Pagination metadata:', response.pagination);
+      if (response.pagination) {
+        setPagination(prev => ({
+          ...prev,
+          total: response.pagination.total,
+          pages: response.pagination.pages
+        }));
+      } else {
+        // Fallback if API doesn't return pagination metadata
+        console.warn('No pagination metadata in API response, using data.length');
+        setPagination(prev => ({
+          ...prev,
+          total: data.length,
+          pages: Math.ceil(data.length / prev.limit)
+        }));
+      }
       
       setDataFetched(true); // Mark data as fetched after successful API call
       setInitialLoading(false); // End initial loading after successful data fetch
@@ -274,7 +293,7 @@ export default function TeachersManagement() {
       stopLoading('fetchTeachers');
       fetchingRef.current = false;
     }
-  }, [schoolId, searchTerm, pagination.page, pagination.limit, performClientSideSearch, showError, t, handleError]);
+  }, [schoolId, searchTerm, selectedGradeLevel, pagination.page, pagination.limit, showError, t, handleError, stopLoading]);
 
   // Initialize school ID and fetch teachers
   useEffect(() => {
@@ -284,35 +303,36 @@ export default function TeachersManagement() {
 
   // Fetch teachers when school ID becomes available
   useEffect(() => {
-    if (schoolId) {
+    if (schoolId && !dataFetched) {
       console.log('School ID available, fetching teachers...');
-      fetchTeachers('', true); // Let fetchTeachers handle loading states
+      fetchTeachers(true); // Let fetchTeachers handle loading states
     }
-  }, [schoolId, fetchTeachers]);
+  }, [schoolId, fetchTeachers, dataFetched]);
 
   // Memoized fetch parameters
   const fetchParams = useMemo(() => ({
     searchTerm,
+    selectedGradeLevel,
     schoolId,
     page: pagination.page,
     limit: pagination.limit
-  }), [searchTerm, schoolId, pagination.page, pagination.limit]);
+  }), [searchTerm, selectedGradeLevel, schoolId, pagination.page, pagination.limit]);
 
   // Handle fetch on parameter changes
   useEffect(() => {
-    if (!schoolId) return;
+    if (!schoolId || !dataFetched) return;
 
     const isSearchChange = fetchParams.searchTerm.trim() !== '';
     const delay = isSearchChange ? 500 : 100;
 
     const timer = setTimeout(() => {
       if (!fetchingRef.current) {
-        fetchTeachers(fetchParams.searchTerm, false);
+        fetchTeachers(false);
       }
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [fetchParams, fetchTeachers, schoolId]);
+  }, [fetchParams, fetchTeachers, schoolId, dataFetched]);
 
   // Close export dropdown when clicking outside
   useEffect(() => {
@@ -478,7 +498,7 @@ export default function TeachersManagement() {
     setEditingTeacher(null);
     // Refresh the teacher list
     setTimeout(async () => {
-      await fetchTeachers(searchTerm, true);
+      await fetchTeachers(true);
     }, 500);
   };
 
@@ -529,13 +549,18 @@ export default function TeachersManagement() {
       )
     },
     {
-      key: 'hireDate',
-      header: t('hireDate', 'Hire Date'),
-      accessor: 'hireDate',
+      key: 'gradeLevel',
+      header: t('gradeLevel', 'Grade Level'),
+      accessor: 'gradeLevel',
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden xl:table-cell',
       render: (teacher) => (
-        <p>{teacher.hireDate ? formatDateKhmer(teacher.hireDate, 'short') : 'N/A'}</p>
+        <Badge
+          color="indigo"
+          variant="outline"
+        >
+          {teacher.gradeLevel || 'N/A'}
+        </Badge>
       )
     },
     {
@@ -673,7 +698,7 @@ export default function TeachersManagement() {
       <div className="flex justify-between items-start text-xs text-gray-500">
         <div className="flex flex-col space-y-1">
           <span>{t('username', 'Username')}: {teacher.username || 'N/A'}</span>
-          <span>{t('hireDate', 'Hire Date')}: {teacher.hireDate ? formatDateKhmer(teacher.hireDate, 'short') : 'N/A'}</span>
+          <span>{t('gradeLevel', 'Grade Level')}: {teacher.gradeLevel || 'N/A'}</span>
           <div className="flex items-center space-x-2 mt-1">
             <Badge
               color={teacher.isDirector ? 'blue' : 'purple'}
@@ -720,7 +745,7 @@ export default function TeachersManagement() {
         onRetry={() => retry(() => {
           clearError();
           fetchSchoolId();
-          fetchTeachers();
+          fetchTeachers(true);
         })}
         size="lg"
         className="min-h-screen bg-gray-50"
@@ -886,6 +911,42 @@ export default function TeachersManagement() {
                 >
                   <X className="h-4 w-4" />
                 </button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Dropdown
+                value={selectedGradeLevel}
+                onValueChange={(value) => {
+                  setSelectedGradeLevel(value);
+                  setPagination(prev => ({ ...prev, page: 1 }));
+                }}
+                options={[
+                  { value: '', label: t('allGrades', 'All Grades') },
+                  { value: '1', label: t('grade1', 'Grade 1') },
+                  { value: '2', label: t('grade2', 'Grade 2') },
+                  { value: '3', label: t('grade3', 'Grade 3') },
+                  { value: '4', label: t('grade4', 'Grade 4') },
+                  { value: '5', label: t('grade5', 'Grade 5') },
+                  { value: '6', label: t('grade6', 'Grade 6') }
+                ]}
+                placeholder={t('selectGrade', 'Select Grade')}
+                minWidth="min-w-[150px]"
+                triggerClassName="text-sm"
+              />
+              {(localSearchTerm || selectedGradeLevel) && (
+                <Button
+                  onClick={() => {
+                    handleSearchChange('');
+                    setSelectedGradeLevel('');
+                    setPagination(prev => ({ ...prev, page: 1 }));
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="whitespace-nowrap"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  {t('clearFilters', 'Clear Filters')}
+                </Button>
               )}
             </div>
           </div>

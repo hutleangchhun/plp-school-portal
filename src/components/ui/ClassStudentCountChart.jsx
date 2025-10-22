@@ -137,7 +137,7 @@ export default function ClassStudentCountChart({ schoolId, className = "" }) {
               dataKey="students"
               fill="var(--color-students)"
               radius={[4, 4, 0, 0]}
-              cursor={false}
+              cursor="default"
               style={{ cursor: 'default' }}
               onMouseEnter={() => {}}
               onMouseLeave={() => {}}

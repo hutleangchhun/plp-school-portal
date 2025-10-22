@@ -289,7 +289,7 @@ export default function TeacherDashboard({ user }) {
                       <Bar
                         dataKey="students"
                         radius={[4, 4, 0, 0]}
-                        cursor={false}
+                        cursor="default"
                         style={{ cursor: 'default' }}
                         onMouseEnter={() => {}}
                         onMouseLeave={() => {}}
