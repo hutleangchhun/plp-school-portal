@@ -11,7 +11,6 @@ import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
 import classService from '../../utils/api/services/classService';
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
-import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import useSelectedStudents from '../../hooks/useSelectedStudents';
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
@@ -41,7 +40,7 @@ export default function StudentsManagement() {
 
   // Track renders to detect infinite loops (development only)
   useRenderTracker('StudentsManagement');
-  
+
   // Get authenticated user data
   const [user, setUser] = useState(() => {
     try {
@@ -99,10 +98,10 @@ export default function StudentsManagement() {
       }
     }
   }, [user, handleError, t]);
-  
+
   // State for current user's school ID (fetched from my-account endpoint)
   const [schoolId, setSchoolId] = useState(null);
-  
+
   // State for students list and pagination
   const [students, setStudents] = useState([]);
   const [pagination, setPagination] = useState({
@@ -111,7 +110,7 @@ export default function StudentsManagement() {
     total: 0,
     pages: 1
   });
-  
+
   // State for classes information (derived from authenticated user)
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('all');
@@ -147,12 +146,13 @@ export default function StudentsManagement() {
   } = useSelectedStudents();
   const [selectingAll, setSelectingAll] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [dataFetched, setDataFetched] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
   const searchTimeoutRef = useRef(null);
   const classesInitialized = useRef(false);
-  
+
   // State for all students (unfiltered) and filtered students
   const [allStudents, setAllStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
@@ -169,7 +169,7 @@ export default function StudentsManagement() {
     return options;
   }, [classes, t]);
 
-  
+
   // Enhanced client-side search function for class-filtered results
   const performClientSideSearch = useCallback((studentsData, searchQuery) => {
     if (!searchQuery || searchQuery.trim() === '') {
@@ -223,7 +223,7 @@ export default function StudentsManagement() {
     const id = setTimeout(() => setDebouncedAcademicYear(academicYearFilter), 300);
     return () => clearTimeout(id);
   }, [academicYearFilter]);
-  
+
   // Fetch current user's school ID from my-account endpoint
   const fetchSchoolId = useStableCallback(async () => {
     try {
@@ -250,11 +250,10 @@ export default function StudentsManagement() {
       handleError(err, {
         toastMessage: t('failedToFetchSchoolId', 'Failed to fetch school information')
       });
-      setInitialLoading(false); // Stop loading on error
       return null;
     }
   }, [schoolId, showError, t, handleError]);
-  
+
   // Initialize classes using new classes/user API
   const initializeClasses = useStableCallback(async () => {
     console.log('🚀 initializeClasses called');
@@ -263,17 +262,16 @@ export default function StudentsManagement() {
       console.log('Classes already initialized, skipping');
       return;
     }
-    
+
     console.log('=== INITIALIZING CLASSES FROM NEW API ===');
     console.log('Current user object:', user);
-    
+
     if (!user?.id) {
       console.log('🚨 No user ID available for fetching classes');
       console.log('User object:', user);
       setClasses([]);
       setSelectedClassId('all');
-      setInitialLoading(false); // Stop loading when no user
-      
+
       // If there's no user, that's likely an authentication issue
       handleError(new Error('No authenticated user found'), {
         toastMessage: t('authenticationRequired', 'Authentication required')
@@ -292,7 +290,6 @@ export default function StudentsManagement() {
         if (!currentSchoolId) {
           setClasses([]);
           setSelectedClassId('all');
-          setInitialLoading(false);
           return;
         }
       }
@@ -301,13 +298,12 @@ export default function StudentsManagement() {
       console.log('🌐 Calling classService.getBySchool with school ID:', currentSchoolId);
       const classResponse = await classService.getBySchool(currentSchoolId);
       console.log('📨 Got class response:', classResponse);
-      
+
       if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
         console.log('🚨 No classes found in API response:', classResponse);
         setClasses([]);
         setSelectedClassId('all');
-        setInitialLoading(false); // Stop loading when no classes found
-        
+
         // This might indicate a backend issue or authorization problem
         if (!classResponse || !classResponse.success) {
           handleError(new Error('Failed to fetch classes from server'), {
@@ -347,21 +343,12 @@ export default function StudentsManagement() {
         setSelectedClassId(teacherClasses[0].classId.toString());
       }
 
-      console.log(`User ${user.username} has access to ${teacherClasses.length} classes:`, 
+      console.log(`User ${user.username} has access to ${teacherClasses.length} classes:`,
         teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
-      
+
       // Mark classes as initialized successfully
       classesInitialized.current = true;
-      
-      // If we get here successfully, data loading should finish soon
-      // Set a fallback timer in case fetchStudents doesn't get called
-      setTimeout(() => {
-        if (initialLoading) {
-          console.log('⏰ Fallback: Setting initialLoading to false after successful class initialization');
-          setInitialLoading(false);
-        }
-      }, 2000);
-        
+
     } catch (err) {
       console.error('🚨 CAUGHT ERROR in initializeClasses:', err);
       console.log('🚨 Error details:', {
@@ -374,8 +361,6 @@ export default function StudentsManagement() {
       });
       setClasses([]);
       setSelectedClassId('all');
-      setInitialLoading(false); // Stop loading on error
-      console.log('🚨 Set initialLoading to false after error');
     }
   }, [user?.id, user?.username, handleError, t, schoolId, fetchSchoolId]);
 
@@ -471,6 +456,9 @@ export default function StudentsManagement() {
         });
       }
 
+      setDataFetched(true); // Mark data as fetched after successful API call
+      setInitialLoading(false); // End initial loading after successful data fetch
+
     } catch (err) {
       console.error('Error fetching students from school:', err);
       handleError(err, {
@@ -479,6 +467,8 @@ export default function StudentsManagement() {
       setStudents([]);
       setAllStudents([]);
       setFilteredStudents([]);
+      setDataFetched(true); // Mark data as fetched even on error
+      setInitialLoading(false); // End initial loading even on error
     } finally {
       if (!skipLoading) {
         stopLoading('fetchStudents');
@@ -507,7 +497,6 @@ export default function StudentsManagement() {
     console.log('🔄 Component mounted, initializing classes...');
     initializeClasses().catch((err) => {
       console.error('🚨 Unhandled error in initializeClasses:', err);
-      setInitialLoading(false); // Ensure loading stops
     });
   }, [initializeClasses]);
 
@@ -515,9 +504,7 @@ export default function StudentsManagement() {
   useEffect(() => {
     if (schoolId) {
       console.log('School ID available, initial fetch...');
-      fetchStudents('', true).finally(() => {
-        setInitialLoading(false);
-      }); // Force initial fetch
+      fetchStudents('', true); // Force initial fetch - let fetchStudents handle loading states
     }
   }, [schoolId, fetchStudents]);
 
@@ -583,7 +570,7 @@ export default function StudentsManagement() {
       clearTimeout(timer);
     };
   }, [fetchParams, fetchStudents, schoolId]);
-  
+
   // Close export dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -591,11 +578,11 @@ export default function StudentsManagement() {
         setShowExportDropdown(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showExportDropdown]);
-  
+
   // Cleanup search timeout on unmount
   useEffect(() => {
     return () => {
@@ -604,14 +591,14 @@ export default function StudentsManagement() {
       }
     };
   }, []);
-  
+
   // Handle page change
   const handlePageChange = (newPage) => {
     console.log(`=== PAGINATION CHANGE DEBUG ===`);
     console.log(`Changing from page ${pagination.page} to page ${newPage}`);
     console.log(`Total pages available: ${pagination.pages}`);
     console.log(`Current limit: ${pagination.limit}`);
-    
+
     if (newPage >= 1 && newPage <= pagination.pages) {
       console.log(`Valid page change - updating pagination state`);
       setPagination(prev => {
@@ -629,7 +616,7 @@ export default function StudentsManagement() {
   const prevFiltersRef = useRef({ selectedClassId, academicYearFilter: debouncedAcademicYear });
   useEffect(() => {
     const filtersChanged = prevFiltersRef.current.selectedClassId !== selectedClassId ||
-                          prevFiltersRef.current.academicYearFilter !== debouncedAcademicYear;
+      prevFiltersRef.current.academicYearFilter !== debouncedAcademicYear;
 
     if (filtersChanged) {
       // Clear last fetch params to allow new fetch with new filters
@@ -641,9 +628,9 @@ export default function StudentsManagement() {
       prevFiltersRef.current = { selectedClassId, academicYearFilter: debouncedAcademicYear };
     }
   }, [selectedClassId, debouncedAcademicYear, pagination.page, schoolId, searchTerm, fetchStudents]); // Reset page when filters change
-  
+
   // Get class information for the selected class
-  const classInfo = selectedClassId !== 'all' 
+  const classInfo = selectedClassId !== 'all'
     ? classes.find(c => c.classId.toString() === selectedClassId)
     : null;
 
@@ -723,14 +710,14 @@ export default function StudentsManagement() {
     />
   );
 
-  
+
   // Handle delete student (remove from class)
   const handleDeleteStudent = async () => {
     if (!selectedStudent) {
       showError(t('noStudentSelected', 'No student selected'));
       return;
     }
-    
+
     // Get class info from selected student when viewing "all classes"
     const studentClassInfo = classInfo || (() => {
       const studentClassId = selectedStudent.classId || selectedStudent.class_id ||
@@ -744,10 +731,10 @@ export default function StudentsManagement() {
       const foundClass = classes.find(c => {
         // Compare classId as both string and number
         return c.classId === studentClassId ||
-               c.classId === Number(studentClassId) ||
-               c.classId === String(studentClassId) ||
-               c.id === studentClassId ||
-               c.id === Number(studentClassId);
+          c.classId === Number(studentClassId) ||
+          c.classId === String(studentClassId) ||
+          c.id === studentClassId ||
+          c.id === Number(studentClassId);
       });
 
       return foundClass;
@@ -758,13 +745,13 @@ export default function StudentsManagement() {
 
     // SECURITY: The server will validate permissions when we make the API call
     // This client-side check was causing issues after updates due to stale state
-    
+
     try {
       startLoading('bulkTransfer', t('transferring', 'Transferring students...'));
-      
+
       // Get the student ID - try multiple fields to ensure we get the right ID
       const studentId = selectedStudent.id || selectedStudent.student_id || selectedStudent.user_id || selectedStudent.userId;
-      
+
       console.log('Student ID candidates:', {
         id: selectedStudent.id,
         student_id: selectedStudent.student_id,
@@ -772,23 +759,23 @@ export default function StudentsManagement() {
         userId: selectedStudent.userId,
         selected: studentId
       });
-      
+
       if (!studentId) {
         throw new Error('No valid student ID found in student data');
       }
-      
+
       // Convert to number for the API
       const numericStudentId = Number(studentId);
-      
+
       if (isNaN(numericStudentId)) {
         throw new Error(`Student ID must be a number, got: ${studentId} (${typeof studentId})`);
       }
-      
+
       // Validate schoolId
       if (!schoolId) {
         throw new Error('School ID is required but not available');
       }
-      
+
       console.log('Final API call parameters:', {
         masterClassId: schoolId,
         studentId: numericStudentId,
@@ -798,7 +785,7 @@ export default function StudentsManagement() {
 
       const response = await studentService.removeStudentToMasterClass(schoolId, numericStudentId);
       console.log('Remove student API response:', response);
-      
+
       // Check if the API response indicates success
       // handleApiResponse wraps responses as: { success: boolean, data: actualApiResponse }
       if (response && response.success && response.data) {
@@ -806,19 +793,19 @@ export default function StudentsManagement() {
         // Use the translated message instead of API message
         const successMessage = t('studentRemovedFromClass', 'Student removed from class successfully');
         showSuccess(successMessage);
-        
+
         // Check if student was actually moved to master class or just removed
         if (apiData.results && apiData.results.length > 0) {
           const result = apiData.results[0];
           console.log('Student removal result:', result);
-          
+
           // If the student's status shows they were removed but not reassigned,
           // it might mean the master class is full
           if (result.status === 'removed' && !result.newClass) {
             console.log('Student was removed from class but may not have been assigned to master class (possibly due to capacity)');
           }
         }
-        
+
         setShowDeleteDialog(false);
         // Clear the selected student
         setSelectedStudent(null);
@@ -835,9 +822,9 @@ export default function StudentsManagement() {
       }
     } catch (error) {
       console.error('Error removing student:', error);
-      
+
       let errorMessage = error.message || 'Unknown error occurred';
-      
+
       // Provide more specific error messages based on the error type
       if (error.message?.includes('Network Error')) {
         errorMessage = 'Network connection failed. Please check your internet connection.';
@@ -848,7 +835,7 @@ export default function StudentsManagement() {
       } else if (error.message?.includes('500')) {
         errorMessage = 'Server error occurred. Please try again later.';
       }
-      
+
       showError(t('failedRemoveStudent', 'Failed to remove student: ') + errorMessage);
     } finally {
       stopLoading('bulkDelete');
@@ -858,20 +845,20 @@ export default function StudentsManagement() {
   // Handle bulk delete students (remove from class)
   const handleBulkDeleteStudents = async () => {
     if (selectedStudents.length === 0) return;
-    
+
     console.log('Selected Students:', selectedStudents);
     console.log('Selected Students Data:', selectedStudentsData);
     console.log('Selected Class ID:', selectedClassId);
     console.log('Class Info:', classInfo);
-    
+
     try {
       startLoading('bulkDelete', t('moving', 'Moving students...'));
-      
+
       // Validate schoolId
       if (!schoolId) {
         throw new Error('School ID is required but not available');
       }
-      
+
       // Get students to remove from the stored data
       const studentsToRemove = selectedStudents.map(studentId => {
         const studentData = selectedStudentsData[studentId];
@@ -886,15 +873,15 @@ export default function StudentsManagement() {
         }
         return studentData;
       }).filter(Boolean);
-      
+
       console.log('Students to remove with full data:', studentsToRemove);
       console.log('Selected students count:', selectedStudents.length);
       console.log('Students to remove count:', studentsToRemove.length);
-      
+
       if (studentsToRemove.length === 0) {
         throw new Error(`No matching students found for the selected IDs. Selected: ${selectedStudents.length}, Found: ${studentsToRemove.length}`);
       }
-      
+
       if (studentsToRemove.length !== selectedStudents.length) {
         console.warn(`Mismatch: Selected ${selectedStudents.length} students but only found data for ${studentsToRemove.length}`);
       }
@@ -902,17 +889,17 @@ export default function StudentsManagement() {
       if (selectedClassId === 'all') {
         // When viewing "all" classes, group students by their class and remove them individually
         const studentsByClass = new Map();
-        
+
         studentsToRemove.forEach(student => {
           // Get the student's class ID from their data
-          const studentClassId = student.classId || student.class_id || 
+          const studentClassId = student.classId || student.class_id ||
             (student.class && student.class.classId) || (student.class && student.class.id);
-          
+
           if (!studentClassId) {
             console.warn('Student has no class ID, skipping:', student);
             return;
           }
-          
+
           if (!studentsByClass.has(studentClassId)) {
             studentsByClass.set(studentClassId, []);
           }
@@ -924,13 +911,13 @@ export default function StudentsManagement() {
         // Remove students from each class
         let totalRemoved = 0;
         const results = [];
-        
+
         for (const [classId, studentIds] of studentsByClass) {
           try {
             console.log(`Removing ${studentIds.length} students from class ${classId} to master class`);
             const response = await studentService.removeStudentsToMasterClass(schoolId, studentIds);
             console.log(`Remove response for class ${classId}:`, response);
-            
+
             // Check if the API response indicates success
             // handleApiResponse wraps responses as: { success: boolean, data: actualApiResponse }
             if (response && response.success && response.data) {
@@ -954,7 +941,7 @@ export default function StudentsManagement() {
         if (totalRemoved > 0) {
           showSuccess(t('studentsMovedToMasterSuccess').replace('{count}', totalRemoved));
         }
-        
+
         const failedResults = results.filter(r => !r.success);
         if (failedResults.length > 0) {
           console.error('Some removals failed:', failedResults);
@@ -966,7 +953,7 @@ export default function StudentsManagement() {
         if (!classInfo) {
           throw new Error('No class information available');
         }
-        
+
         // Extract the student IDs to remove
         const studentIdsToRemove = studentsToRemove.map(student => {
           const id = student.id; // Use the id field which contains the numeric studentId
@@ -978,21 +965,21 @@ export default function StudentsManagement() {
           console.log(`=== END DELETION DEBUG ===`);
           return id;
         }).filter(Boolean);
-        
+
         console.log('Final Student IDs to remove:', studentIdsToRemove);
-        
+
         if (studentIdsToRemove.length === 0) {
           throw new Error('No valid student IDs found for removal');
         }
-        
+
         // Call the service to remove students to master class using student IDs
         const response = await studentService.removeStudentsToMasterClass(
           schoolId,
           studentIdsToRemove
         );
-        
+
         console.log('Remove students response:', response);
-        
+
         // Check if the API response indicates success
         // handleApiResponse wraps responses as: { success: boolean, data: actualApiResponse }
         if (response && response.success && response.data) {
@@ -1002,7 +989,7 @@ export default function StudentsManagement() {
           throw new Error(response?.error || 'Failed to remove students from class');
         }
       }
-      
+
       // Clean up and refresh
       setShowStudentActionsModal(false);
       setShowBulkDeleteDialog(false);
@@ -1011,7 +998,7 @@ export default function StudentsManagement() {
       setTimeout(async () => {
         await fetchStudents(undefined, true, true); // Skip loading since we're already managing it, use current search state
       }, 500);
-      
+
     } catch (error) {
       console.error('Error removing students:', error);
       showError(t('failedRemoveStudents', 'Failed to remove students: ') + (error.message || 'Unknown error'));
@@ -1085,85 +1072,85 @@ export default function StudentsManagement() {
       stopLoading('transferStudent');
     }
   };
-// Handle bulk transfer students
-const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClassId) => {
-  if (selectedStudents.length === 0) {
-    showError(t('noStudentsSelected', 'No students selected'));
-    return;
-  }
+  // Handle bulk transfer students
+  const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClassId) => {
+    if (selectedStudents.length === 0) {
+      showError(t('noStudentsSelected', 'No students selected'));
+      return;
+    }
 
-  if (!targetClassId) {
-    showError(t('noTargetClassSelected', 'No target class selected'));
-    return;
-  }
+    if (!targetClassId) {
+      showError(t('noTargetClassSelected', 'No target class selected'));
+      return;
+    }
 
-  try {
-    startLoading('transferStudent', t('transferring', 'Transferring student...'));
+    try {
+      startLoading('transferStudent', t('transferring', 'Transferring student...'));
 
-    // Get students to transfer from the stored data
-    const studentsToTransfer = selectedStudents.map(studentId => {
-      const studentData = selectedStudentsData[studentId];
-      if (!studentData) {
-        console.warn(`No data found for selected student ID: ${studentId}`);
-        // Try to find the student in the current students list as fallback
-        const fallbackStudent = students.find(s => s.id === studentId);
-        if (fallbackStudent) {
-          console.log(`Found fallback student data for ID ${studentId}:`, fallbackStudent);
-          return fallbackStudent;
+      // Get students to transfer from the stored data
+      const studentsToTransfer = selectedStudents.map(studentId => {
+        const studentData = selectedStudentsData[studentId];
+        if (!studentData) {
+          console.warn(`No data found for selected student ID: ${studentId}`);
+          // Try to find the student in the current students list as fallback
+          const fallbackStudent = students.find(s => s.id === studentId);
+          if (fallbackStudent) {
+            console.log(`Found fallback student data for ID ${studentId}:`, fallbackStudent);
+            return fallbackStudent;
+          }
         }
+        return studentData;
+      }).filter(Boolean);
+
+      console.log('Students to transfer with full data:', studentsToTransfer);
+
+      if (studentsToTransfer.length === 0) {
+        throw new Error(`No matching students found for the selected IDs. Selected: ${selectedStudents.length}, Found: ${studentsToTransfer.length}`);
       }
-      return studentData;
-    }).filter(Boolean);
 
-    console.log('Students to transfer with full data:', studentsToTransfer);
+      // Extract student IDs for the API call
+      const studentIdsToTransfer = studentsToTransfer.map(student => {
+        const studentId = student.id || student.student_id || student.user_id || student.userId;
+        if (!studentId) {
+          console.warn('No valid student ID found for student:', student);
+        }
+        return studentId;
+      }).filter(Boolean);
 
-    if (studentsToTransfer.length === 0) {
-      throw new Error(`No matching students found for the selected IDs. Selected: ${selectedStudents.length}, Found: ${studentsToTransfer.length}`);
-    }
-
-    // Extract student IDs for the API call
-    const studentIdsToTransfer = studentsToTransfer.map(student => {
-      const studentId = student.id || student.student_id || student.user_id || student.userId;
-      if (!studentId) {
-        console.warn('No valid student ID found for student:', student);
+      if (studentIdsToTransfer.length === 0) {
+        throw new Error('No valid student IDs found for transfer');
       }
-      return studentId;
-    }).filter(Boolean);
 
-    if (studentIdsToTransfer.length === 0) {
-      throw new Error('No valid student IDs found for transfer');
+      console.log(`Transferring ${studentIdsToTransfer.length} students to class ${targetClassId}`);
+
+      // Use the same addStudentsToClass method that works in StudentSelection
+      const response = await studentService.addStudentsToClass(targetClassId, studentIdsToTransfer);
+
+      if (response && response.success) {
+        const targetClass = classes.find(c => c.classId.toString() === targetClassId);
+        const successMessage = t('studentsTransferredSuccess', `Successfully transferred ${studentIdsToTransfer.length} student(s) to ${targetClass?.name || 'the selected class'}`);
+        showSuccess(successMessage);
+
+        // Clean up and refresh
+        setShowStudentActionsModal(false);
+        setBulkTransferTargetClassId('');
+        clearAll(); // Clear selection
+
+        // Refresh the student list after a brief delay
+        setTimeout(async () => {
+          await fetchStudents(undefined, true, true); // Skip loading since we're already managing it
+        }, 500);
+      } else {
+        throw new Error(response?.error || 'Failed to transfer students');
+      }
+
+    } catch (error) {
+      console.error('Error transferring students:', error);
+      showError(t('failedTransferStudents', 'Failed to transfer students: ') + (error.message || 'Unknown error'));
+    } finally {
+      stopLoading('bulkTransfer');
     }
-
-    console.log(`Transferring ${studentIdsToTransfer.length} students to class ${targetClassId}`);
-
-    // Use the same addStudentsToClass method that works in StudentSelection
-    const response = await studentService.addStudentsToClass(targetClassId, studentIdsToTransfer);
-
-    if (response && response.success) {
-      const targetClass = classes.find(c => c.classId.toString() === targetClassId);
-      const successMessage = t('studentsTransferredSuccess', `Successfully transferred ${studentIdsToTransfer.length} student(s) to ${targetClass?.name || 'the selected class'}`);
-      showSuccess(successMessage);
-
-      // Clean up and refresh
-      setShowStudentActionsModal(false);
-      setBulkTransferTargetClassId('');
-      clearAll(); // Clear selection
-
-      // Refresh the student list after a brief delay
-      setTimeout(async () => {
-        await fetchStudents(undefined, true, true); // Skip loading since we're already managing it
-      }, 500);
-    } else {
-      throw new Error(response?.error || 'Failed to transfer students');
-    }
-
-  } catch (error) {
-    console.error('Error transferring students:', error);
-    showError(t('failedTransferStudents', 'Failed to transfer students: ') + (error.message || 'Unknown error'));
-  } finally {
-    stopLoading('bulkTransfer');
-  }
-};
+  };
 
   // Handle edit student
   const handleEditStudent = (student) => {
@@ -1246,7 +1233,7 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
 
         // Format gender
         const gender = student.gender === 'MALE' || student.gender === 'male' ? 'ប្រុស' :
-                      student.gender === 'FEMALE' || student.gender === 'female' ? 'ស្រី' : '';
+          student.gender === 'FEMALE' || student.gender === 'female' ? 'ស្រី' : '';
 
         // Format full address for student
         const studentAddress = [
@@ -1441,11 +1428,11 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
 
   const handleExportCSV = async () => {
     try {
-      const selectedClass = selectedClassId !== 'all' 
-        ? classes.find(c => c.classId.toString() === selectedClassId) 
+      const selectedClass = selectedClassId !== 'all'
+        ? classes.find(c => c.classId.toString() === selectedClassId)
         : null;
       const filename = getTimestampedFilename(
-        selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data', 
+        selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data',
         'csv'
       );
       await prepareAndExportCSV(
@@ -1468,11 +1455,11 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
   const handleExportPDF = async () => {
     try {
       startLoading('exportPDF', t('exporting', 'Exporting PDF...'));
-      const selectedClass = selectedClassId !== 'all' 
-        ? classes.find(c => c.classId.toString() === selectedClassId) 
+      const selectedClass = selectedClassId !== 'all'
+        ? classes.find(c => c.classId.toString() === selectedClassId)
         : null;
       const filename = getTimestampedFilename(
-        selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data', 
+        selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data',
         'pdf'
       );
       await prepareAndExportPDF(
@@ -1579,20 +1566,10 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
       key: 'name',
       header: t('name', 'Name'),
       render: (student) => (
-        <div className="flex items-center">
-          <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 hover:scale-110 transition-all duration-300">
-            <User className="h-4 w-4 sm:h-5 sm:w-5" />
-          </div>
-          <div className="ml-2 sm:ml-4 min-w-0 flex-1">
-            <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-              {student.name || (student.firstName || student.lastName 
-                ? `${student.firstName || ''} ${student.lastName || ''}`.trim() 
-                : student.username || t('noName', 'No Name'))}
-            </div>
-            <div className="text-xs text-gray-500 truncate lg:hidden">
-              {student.email || 'N/A'}
-            </div>
-          </div>
+        <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
+          {student.name || (student.firstName || student.lastName
+            ? `${student.firstName || ''} ${student.lastName || ''}`.trim()
+            : student.username || t('noName', 'No Name'))}
         </div>
       )
     },
@@ -1712,8 +1689,8 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
           </div>
           <div className="ml-2 sm:ml-4 min-w-0 flex-1">
             <div className="text-sm font-medium text-gray-900 truncate">
-              {student.name || (student.firstName || student.lastName 
-                ? `${student.firstName || ''} ${student.lastName || ''}`.trim() 
+              {student.name || (student.firstName || student.lastName
+                ? `${student.firstName || ''} ${student.lastName || ''}`.trim()
                 : student.username || t('noName', 'No Name'))}
             </div>
             <div className="text-xs text-gray-500 truncate">{student.email || 'N/A'}</div>
@@ -1830,12 +1807,12 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
   };
 
   // Show error state if error exists (prioritize over loading)
-  
+
   if (error) {
     console.log('✅ StudentsManagement: Showing error display for:', error);
     return (
-      <ErrorDisplay 
-        error={error} 
+      <ErrorDisplay
+        error={error}
         onRetry={() => retry(() => {
           clearError();
           initializeClasses();
@@ -1858,146 +1835,146 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
   }
 
   return (
-    <PageTransition variant="fade" className="p-6">      
+    <div className="p-6">
       {/* Search and filter */}
-      <FadeInSection className="bg-white shadow rounded-lg p-4 sm:p-6">
+      <div className="bg-white shadow rounded-lg p-4 sm:p-6">
         {/* Header and search bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
-        <div>
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">{t('studentsManagement')}</h1>
-          </div>
-          <div className="mt-1 space-y-1">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+          <div>
             <div className="flex items-center space-x-4">
-              <p className="text-sm text-gray-600">
-                {t('manageStudentRecords')}
-              </p>
-              <div className="flex items-center space-x-2">
-                <Users className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-600">
-                  {students.length} {students.length === 1 ? t('student', 'student') : t('students', 'students')}
-                  {localSearchTerm && allStudents.length !== students.length && (
-                    <span className="text-xs text-gray-500 ml-1">
-                      ({t('filteredFrom', 'filtered from')} {allStudents.length})
-                    </span>
-                  )}
-                  {selectedClassId !== 'all' && (() => {
-                    const selectedClass = classes.find(c => c.classId.toString() === selectedClassId);
-                    return selectedClass ? ` នៅ ${selectedClass.name}` : '';
-                  })()}
-                </span>
+              <h1 className="text-2xl font-bold text-gray-900">{t('studentsManagement')}</h1>
+            </div>
+            <div className="mt-1 space-y-1">
+              <div className="flex items-center space-x-4">
+                <p className="text-sm text-gray-600">
+                  {t('manageStudentRecords')}
+                </p>
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-600">
+                    {students.length} {students.length === 1 ? t('student', 'student') : t('students', 'students')}
+                    {localSearchTerm && allStudents.length !== students.length && (
+                      <span className="text-xs text-gray-500 ml-1">
+                        ({t('filteredFrom', 'filtered from')} {allStudents.length})
+                      </span>
+                    )}
+                    {selectedClassId !== 'all' && (() => {
+                      const selectedClass = classes.find(c => c.classId.toString() === selectedClassId);
+                      return selectedClass ? ` នៅ ${selectedClass.name}` : '';
+                    })()}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          {/* Select All / Deselect All Button */}
-          {students.length > 0 && (
-            <Button
-              onClick={handleSelectAll}
-              variant="outline"
-              size="default"
-              className="shadow-lg"
-              disabled={selectingAll}
-            >
-              {selectingAll ? (
-                <DynamicLoader
-                  type="spinner"
-                  size="sm"
-                  variant="primary"
-                  message={t('selectingAll', 'Selecting...')}
-                />
-              ) : selectedStudents.length === students.length && students.length > 0 ? (
-                <>
-                  <X className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                  <span className="text-xs sm:text-sm">{t('deselectAll', 'Deselect All')}</span>
-                </>
-              ) : (
-                <>
-                  <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                  <span className="text-xs sm:text-sm">
-                    {t('selectAll', 'Select All')}
-                    {selectedStudents.length > 0 && ` (${selectedStudents.length}/${students.length})`}
-                  </span>
-                </>
-              )}
-            </Button>
-          )}
-
-          {/* Student Actions Floating Button - Show when students are selected */}
-          {selectedStudents.length > 0 && (
-            <div className="flex justify-center">
-              <button
-                onClick={() => setShowStudentActionsModal(true)}
-                className="group relative inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300"
-                title={t('manageStudents', 'Manage Selected Students')}
+          <div className="flex items-center space-x-2">
+            {/* Select All / Deselect All Button */}
+            {students.length > 0 && (
+              <Button
+                onClick={handleSelectAll}
+                variant="outline"
+                size="default"
+                className="shadow-lg"
+                disabled={selectingAll}
               >
-                <Users className="h-5 w-5" />
-                {/* Notification count badge */}
-                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md border-2 border-white">
-                  {selectedStudents.length > 99 ? '99+' : selectedStudents.length}
-                </div>
-                {/* Tooltip */}
-                <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
-                  {t('manageStudents', 'Manage Selected Students')}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                </div>
-              </button>
-            </div>
-          )}
+                {selectingAll ? (
+                  <DynamicLoader
+                    type="spinner"
+                    size="sm"
+                    variant="primary"
+                    message={t('selectingAll', 'Selecting...')}
+                  />
+                ) : selectedStudents.length === students.length && students.length > 0 ? (
+                  <>
+                    <X className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                    <span className="text-xs sm:text-sm">{t('deselectAll', 'Deselect All')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                    <span className="text-xs sm:text-sm">
+                      {t('selectAll', 'Select All')}
+                      {selectedStudents.length > 0 && ` (${selectedStudents.length}/${students.length})`}
+                    </span>
+                  </>
+                )}
+              </Button>
+            )}
 
-          {/* Export Dropdown */}
-          <div className="relative export-dropdown">
-            <Button
-              onClick={() => setShowExportDropdown(!showExportDropdown)}
-              variant="outline"
-              size="default"
-              className="shadow-lg"
-              disabled={students.length === 0}
-            >
-              <Download className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-              <span className="text-xs sm:text-sm">{t('export', 'Export')}</span>
-              <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
-            </Button>
-
-            {showExportDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
-                <div className="py-1">
-                  <button
-                    onClick={handleExportExcel}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                  >
-                    {t('exportToExcel')}
-                  </button>
-                  <button
-                    onClick={handleExportCSV}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                  >
-                    {t('exportToCSV')}
-                  </button>
-                  <button
-                    onClick={handleExportPDF}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                  >
-                    {t('exportToPDF')}
-                  </button>
-                </div>
+            {/* Student Actions Floating Button - Show when students are selected */}
+            {selectedStudents.length > 0 && (
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setShowStudentActionsModal(true)}
+                  className="group relative inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                  title={t('manageStudents', 'Manage Selected Students')}
+                >
+                  <Users className="h-5 w-5" />
+                  {/* Notification count badge */}
+                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md border-2 border-white">
+                    {selectedStudents.length > 99 ? '99+' : selectedStudents.length}
+                  </div>
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
+                    {t('manageStudents', 'Manage Selected Students')}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                  </div>
+                </button>
               </div>
             )}
-          </div>
 
-          {/* Add Student Button */}
-          <Button
-            onClick={handleAddStudentClick}
-            variant="primary"
-            size="default"
-            className="shadow-lg"
-          >
-            <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-            <span className="text-xs sm:text-sm">{t('addStudent')}</span>
-          </Button>
+            {/* Export Dropdown */}
+            <div className="relative export-dropdown">
+              <Button
+                onClick={() => setShowExportDropdown(!showExportDropdown)}
+                variant="outline"
+                size="default"
+                className="shadow-lg"
+                disabled={students.length === 0}
+              >
+                <Download className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                <span className="text-xs sm:text-sm">{t('export', 'Export')}</span>
+                <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+              </Button>
+
+              {showExportDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={handleExportExcel}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                    >
+                      {t('exportToExcel')}
+                    </button>
+                    <button
+                      onClick={handleExportCSV}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                    >
+                      {t('exportToCSV')}
+                    </button>
+                    <button
+                      onClick={handleExportPDF}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                    >
+                      {t('exportToPDF')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Add Student Button */}
+            <Button
+              onClick={handleAddStudentClick}
+              variant="primary"
+              size="default"
+              className="shadow-lg"
+            >
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm">{t('addStudent')}</span>
+            </Button>
+          </div>
         </div>
-      </div>
         <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 flex-1 justify-between">
             <div className="relative flex-1 max-w-md">
@@ -2021,7 +1998,7 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
                 </button>
               )}
             </div>
-            
+
             {classes.length > 0 && (
               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm">
                 {selectedClassId !== 'all' && (
@@ -2055,41 +2032,38 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
                 </div>
               </div>
             )}
-            
+
           </div>
         </div>
 
-        
+
         {/* Students table */}
-        <FadeInSection delay={100}>
-          {/* Mobile Cards View */}
-          <MobileCards
+        {/* Mobile Cards View */}
+        <MobileCards
+          data={students}
+          renderCard={renderMobileCard}
+        />
+
+        {/* Desktop Table View */}
+        <div className="hidden sm:block">
+          <Table
+            columns={tableColumns}
             data={students}
-            renderCard={renderMobileCard}
+            emptyMessage={t('noStudentsFound', 'No students found')}
+            emptyIcon={Users}
+            emptyVariant='info'
+            emptyDescription={t('noStudentsFoundMatchingCriteria', 'No students found matching your criteria.')}
+            emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
+            onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
+            showPagination={true}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            rowClassName="hover:bg-blue-50"
+            t={t}
           />
-          
-          {/* Desktop Table View */}
-          <div className="hidden sm:block">
-            <Table
-              columns={tableColumns}
-              data={students}
-              loading={isLoading('fetchStudents')}
-              emptyMessage={t('noStudentsFound', 'No students found')}
-              emptyIcon={Users}
-              emptyVariant='info'
-              emptyDescription={t('noStudentsFoundMatchingCriteria', 'No students found matching your criteria.')}
-              emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
-              onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
-              showPagination={true}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              rowClassName="hover:bg-blue-50"
-              t={t}
-            />
-          </div>
-        </FadeInSection>
-      </FadeInSection>
-      
+        </div>
+      </div>
+
       {/* Delete Confirmation */}
       <DeleteDialog />
 
@@ -2123,6 +2097,6 @@ const handleBulkTransferStudents = async (targetClassId = bulkTransferTargetClas
         student={editingStudent}
         onStudentUpdated={handleStudentUpdated}
       />
-    </PageTransition>
+    </div>
   );
 }

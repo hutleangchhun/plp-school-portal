@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Plus, Edit2, Eye, Trash2, Users, Download, X, Phone, Mail, Filter, User} from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Users, Download, X, Phone, Mail, Filter, User } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -8,11 +8,10 @@ import { Button } from '../../components/ui/Button';
 import parentService from '../../utils/api/services/parentService';
 import { classService } from '../../utils/api/services/classService';
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
-import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
-import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards, Pagination } from '../../components/ui/Table';
 import Dropdown from '../../components/ui/Dropdown';
 import ParentEditModal from '../../components/parents/ParentEditModal';
+import ParentActionsModal from '../../components/parents/ParentActionsModal';
 import Modal from '../../components/ui/Modal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
@@ -88,7 +87,6 @@ export default function ParentsManagement() {
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedParent, setSelectedParent] = useState(null);
   const [editingParent, setEditingParent] = useState(null);
   const [selectedParents, setSelectedParents] = useState([]);
@@ -96,8 +94,8 @@ export default function ParentsManagement() {
   const [bulkDeletingParents, setBulkDeletingParents] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [dataFetched, setDataFetched] = useState(false);
   const [selectingAll, setSelectingAll] = useState(false);
-  const [classInfoMap, setClassInfoMap] = useState({});
 
   // Filter states
   const [classes, setClasses] = useState([]);
@@ -106,6 +104,9 @@ export default function ParentsManagement() {
   const [selectedStudentId, setSelectedStudentId] = useState('all');
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [loadingStudents, setLoadingStudents] = useState(false);
+
+  // Parent Actions Modal state
+  const [showParentActionsModal, setShowParentActionsModal] = useState(false);
 
   const fetchingRef = useRef(false);
   const searchTimeoutRef = useRef(null);
@@ -265,7 +266,6 @@ export default function ParentsManagement() {
     // Ensure we have schoolId before fetching
     if (!schoolId) {
       console.log('No school ID available, cannot fetch parents');
-      setInitialLoading(false);
       return;
     }
 
@@ -331,13 +331,16 @@ export default function ParentsManagement() {
       }
 
       stopLoading(loadingKey);
+      setDataFetched(true); // Mark data as fetched after successful API call
+      setInitialLoading(false); // End initial loading after successful data fetch
     } catch (err) {
       console.error('Error fetching parents:', err);
       handleError(err, {
         toastMessage: t('failedToLoadParents', 'Failed to load parents')
       });
+      setDataFetched(true); // Mark data as fetched even on error
+      setInitialLoading(false); // End initial loading even on error
     } finally {
-      setInitialLoading(false);
       setLoading(false);
       fetchingRef.current = false;
     }
@@ -375,29 +378,11 @@ export default function ParentsManagement() {
     }
   }, [parents, selectedParents]);
 
-  // Handle view parent
-  const handleViewParent = useCallback((parent) => {
-    setSelectedParent(parent);
-    setShowViewModal(true);
-    try {
-      const classIds = Array.isArray(parent?.students)
-        ? Array.from(new Set(parent.students.map(s => s.classId).filter(id => !!id)))
-        : [];
-      if (classIds.length === 0) return;
-      (async () => {
-        const results = await Promise.allSettled(classIds.map(id => classService.getClassById(id)));
-        const map = {};
-        results.forEach((res, idx) => {
-          const id = classIds[idx];
-          if (res.status === 'fulfilled' && res.value) {
-            const cls = res.value.data || res.value; // getClassById returns formatted object
-            map[id] = cls;
-          }
-        });
-        setClassInfoMap(prev => ({ ...prev, ...map }));
-      })();
-    } catch {}
-  }, []);
+  // Check if parent is selected
+  const isParentSelected = useCallback((parent) => {
+    const parentId = parent.id || parent.parentId;
+    return selectedParents.includes(parentId);
+  }, [selectedParents]);
 
   // Handle edit parent
   const handleEditParent = useCallback((parent) => {
@@ -436,6 +421,26 @@ export default function ParentsManagement() {
       setBulkDeletingParents(false);
     }
   }, [selectedParents, fetchParents, showSuccess, showError, t]);
+
+  // Create a map of selected parents data for the modal
+  const selectedParentsData = parents.reduce((acc, parent) => {
+    const parentId = parent.id || parent.parentId;
+    if (selectedParents.includes(parentId)) {
+      acc[parentId] = parent;
+    }
+    return acc;
+  }, {});
+
+  // Remove individual parent from selection
+  const removeParentFromSelection = useCallback((parentId) => {
+    setSelectedParents(prev => prev.filter(id => id !== parentId));
+  }, []);
+
+  // Clear all selections
+  const clearAllSelections = useCallback(() => {
+    setSelectedParents([]);
+    setShowParentActionsModal(false);
+  }, []);
 
   // Confirm delete
   const confirmDelete = useStableCallback(async () => {
@@ -513,6 +518,62 @@ export default function ParentsManagement() {
     }
   }, [editingParent, t, fetchParents, handleError]);
 
+  // Handle bulk add student to selected parents
+  const handleBulkAddStudentToParents = useStableCallback(async (data) => {
+    if (selectedParents.length === 0 || !data.studentId) {
+      showError(t('pleaseSelectStudent', 'Please select a student'));
+      return;
+    }
+
+    try {
+      const loadingKey = 'bulkAddStudentToParents';
+      startLoading(loadingKey, t('addingStudentToParents', 'Adding student to parents...'));
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const parentId of selectedParents) {
+        try {
+          const relationshipData = {
+            studentId: parseInt(data.studentId, 10),
+            parentId: parentId,
+            relationship: data.relationship,
+            isPrimaryContact: data.isPrimaryContact
+          };
+
+          const response = await parentService.addStudentToParent(relationshipData);
+
+          if (response.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (e) {
+          console.error('Failed to add student to parent', parentId, e);
+          failCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        showSuccess(t('studentAddedToParentsSuccess', `Student added to ${successCount} parent(s) successfully`));
+        setShowParentActionsModal(false);
+        setSelectedParents([]);
+        fetchParents(true);
+      }
+
+      if (failCount > 0) {
+        showError(t('failedToAddStudentToSomeParents', `Failed to add student to ${failCount} parent(s)`));
+      }
+
+      stopLoading(loadingKey);
+    } catch (err) {
+      console.error('Error adding student to parents:', err);
+      handleError(err, {
+        toastMessage: t('failedToAddStudentToParents', 'Failed to add student to parents')
+      });
+    }
+  }, [selectedParents, t, fetchParents, handleError, showError, showSuccess, startLoading, stopLoading]);
+
   // Handle pagination
   const handlePageChange = useCallback((newPage) => {
     setPagination(prev => ({ ...prev, page: newPage }));
@@ -551,18 +612,9 @@ export default function ParentsManagement() {
       header: t('name', 'Name'),
       render: (parent) => (
         <div className="flex items-center space-x-3 text-sm">
-          <div className="flex-shrink-0">
-            <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 hover:scale-110 transition-all duration-300">
-              <User className="h-4 w-4 sm:h-5 sm:w-5" />            </div>
-          </div>
-          <div>
             <div className="font-medium text-gray-900">
               {parent.fullname || `${parent.firstName || ''} ${parent.lastName || ''}`.trim() || '-'}
             </div>
-            {parent.relationship && (
-              <div className="text-xs text-gray-500">{parent.relationship}</div>
-            )}
-          </div>
         </div>
       )
     },
@@ -631,18 +683,11 @@ export default function ParentsManagement() {
       render: (parent) => (
         <div className="flex items-center">
           <Button
-            onClick={() => handleViewParent(parent)}
-            variant="ghost"
-            size="sm"
-            className="text-blue-600 hover:text-blue-700"
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button
             onClick={() => handleEditParent(parent)}
             variant="ghost"
             size="sm"
             className="text-yellow-600 hover:text-yellow-700"
+            title={t('edit', 'Edit')}
           >
             <Edit2 className="h-4 w-4" />
           </Button>
@@ -651,12 +696,13 @@ export default function ParentsManagement() {
             variant="ghost"
             size="sm"
             className="text-red-600 hover:text-red-700"
+            title={t('delete', 'Delete')}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       ),
-      width: 'w-32'
+      width: 'w-24'
     }
   ];
 
@@ -683,10 +729,9 @@ export default function ParentsManagement() {
   }
 
   return (
-    <PageTransition variant="fade" className="flex-1 bg-gray-50">
+    <div>
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
-        <FadeInSection className="mb-6">
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -701,16 +746,28 @@ export default function ParentsManagement() {
               </div>
 
               <div className="flex items-center gap-3">
-                <Button
-                  onClick={() => setIsParentsManagerOpen(true)}
-                  variant="outline"
-                  size="default"
-                  disabled={selectedParents.length === 0}
-                  title={t('viewSelectedParents', 'View Selected Parents')}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  <span className='text-xs sm:text-sm'>{t('viewSelectedParents', 'View Selected')}</span>
-                </Button>
+                {/* Parent Actions Floating Button - Show when parents are selected */}
+                {selectedParents.length > 0 && (
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => setShowParentActionsModal(true)}
+                      className="group relative inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                      title={t('manageParents', 'Manage Selected Parents')}
+                    >
+                      <Users className="h-5 w-5" />
+                      {/* Notification count badge */}
+                      <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md border-2 border-white">
+                        {selectedParents.length > 99 ? '99+' : selectedParents.length}
+                      </div>
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
+                        {t('manageParents', 'Manage Selected Parents')}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                      </div>
+                    </button>
+                  </div>
+                )}
+
                 <Button
                   onClick={handleAddParent}
                   variant="primary"
@@ -896,15 +953,6 @@ export default function ParentsManagement() {
 
                         <div className="flex items-center space-x-2 pt-2 border-t">
                           <Button
-                            onClick={() => handleViewParent(parent)}
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            {t('view', 'View')}
-                          </Button>
-                          <Button
                             onClick={() => handleEditParent(parent)}
                             variant="outline"
                             size="sm"
@@ -917,8 +965,10 @@ export default function ParentsManagement() {
                             onClick={() => handleDeleteParent(parent)}
                             variant="danger"
                             size="sm"
+                            className="flex-1"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            {t('delete', 'Delete')}
                           </Button>
                         </div>
                       </div>
@@ -934,7 +984,6 @@ export default function ParentsManagement() {
               )}
             </div>
           </div>
-        </FadeInSection>
       </div>
 
       {/* Edit Modal */}
@@ -949,120 +998,6 @@ export default function ParentsManagement() {
           parent={editingParent}
         />
       )}
-
-      {/* View Modal */}
-      <Modal
-        isOpen={showViewModal && !!selectedParent}
-        onClose={() => { setShowViewModal(false); setSelectedParent(null); }}
-        title={t('parentDetails', 'Parent Details')}
-        size="2xl"
-        height="xl"
-      >
-        {selectedParent && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center text-white font-semibold">
-                {(selectedParent.firstName?.[0] || selectedParent.fullname?.[0] || 'P').toUpperCase()}
-              </div>
-              <div>
-                <div className="font-semibold text-gray-900">
-                  {selectedParent.fullname || `${selectedParent.firstName || ''} ${selectedParent.lastName || ''}`.trim()}
-                </div>
-                {selectedParent.relationship && (
-                  <div className="text-xs text-gray-500">{selectedParent.relationship}</div>
-                )}
-              </div>
-            </div>
-
-            {/* Account & Contact */}
-            <div className="grid grid-cols-1 gap-3 text-sm">
-              <div className="bg-gray-50 border border-gray-100 rounded-md p-3">
-                <div className="text-xs font-medium text-gray-500 mb-2">{t('account', 'Account')}</div>
-                <div className="space-y-1">
-                  {selectedParent.username && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500">{t('username', 'Username')}</span>
-                      <span className="text-gray-900">{selectedParent.username}</span>
-                    </div>
-                  )}
-                  {(selectedParent.firstName || selectedParent.lastName) && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500">{t('name', 'Name')}</span>
-                      <span className="text-gray-900">{`${selectedParent.firstName || ''} ${selectedParent.lastName || ''}`.trim()}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="bg-gray-50 border border-gray-100 rounded-md p-3">
-                <div className="text-xs font-medium text-gray-500 mb-2">{t('contact', 'Contact')}</div>
-                <div className="space-y-1">
-                  {selectedParent.email && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500">{t('email', 'Email')}</span>
-                      <span className="text-gray-900">{selectedParent.email}</span>
-                    </div>
-                  )}
-                  {selectedParent.phone && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500">{t('phone', 'Phone')}</span>
-                      <span className="text-gray-900">{selectedParent.phone}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {(selectedParent.occupation || selectedParent.address) && (
-                <div className="bg-gray-50 border border-gray-100 rounded-md p-3">
-                  <div className="text-xs font-medium text-gray-500 mb-2">{t('additionalInfo', 'Additional info')}</div>
-                  <div className="space-y-1">
-                    {selectedParent.occupation && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-500">{t('occupation', 'Occupation')}</span>
-                        <span className="text-gray-900">{selectedParent.occupation}</span>
-                      </div>
-                    )}
-                    {selectedParent.address && (
-                      <div className="flex items-start justify-between">
-                        <span className="text-gray-500 mr-3">{t('address', 'Address')}</span>
-                        <span className="text-gray-900 text-right">{selectedParent.address}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Students */}
-            {Array.isArray(selectedParent.students) && selectedParent.students.length > 0 && (
-              <div className="bg-gray-50 border border-gray-100 rounded-md p-3">
-                <div className="text-xs font-medium text-gray-500 mb-2">{t('students', 'Students')}</div>
-                <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
-                  {selectedParent.students.map((s, idx) => (
-                    <li key={idx} className="flex items-center justify-between">
-                      <span>
-                        {s.user?.first_name && s.user?.last_name
-                          ? `${s.user.first_name} ${s.user.last_name}`
-                          : s.user?.username || 'Unknown Student'}
-                      </span>
-                      <span className="text-xs text-gray-500 ml-3">
-                        {(() => {
-                          const info = classInfoMap?.[s.classId];
-                          if (info) {
-                            const bits = [info.name, info.section ? `${t('section', 'Section')} ${info.section}` : '', info.gradeLevel ? `${t('grade', 'Grade')} ${info.gradeLevel}` : ''].filter(Boolean);
-                            return bits.join(' • ');
-                          }
-                          return s.class?.name || `${t('class', 'Class')} ${s.classId}`;
-                        })()}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
@@ -1126,6 +1061,20 @@ export default function ParentsManagement() {
         </div>
         )}
       </Modal>
-    </PageTransition>
+
+      {/* Parent Actions Modal */}
+      <ParentActionsModal
+        isOpen={showParentActionsModal}
+        onClose={() => setShowParentActionsModal(false)}
+        selectedParents={selectedParents}
+        selectedParentsData={selectedParentsData}
+        onRemove={handleBulkDeleteSelectedParents}
+        loading={bulkDeletingParents}
+        onRemoveParent={removeParentFromSelection}
+        onClearAll={clearAllSelections}
+        students={students}
+        onAddStudent={handleBulkAddStudentToParents}
+      />
+    </div>
   );
 }

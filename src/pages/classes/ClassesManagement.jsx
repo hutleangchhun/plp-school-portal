@@ -96,6 +96,7 @@ export default function ClassesManagement() {
   const [selectedClass, setSelectedClass] = useState(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [dataFetched, setDataFetched] = useState(false);
   const [schoolInfo, setSchoolInfo] = useState({ id: null, name: 'Loading...' });
   const [availableTeachers, setAvailableTeachers] = useState([]);
 
@@ -266,14 +267,11 @@ export default function ClassesManagement() {
 
   useEffect(() => {
     const initializePage = async () => {
-      try {
-        await Promise.all([
-          fetchSchoolInfo(),
-          fetchClasses()
-        ]);
-      } finally {
-        setInitialLoading(false);
-      }
+      await Promise.all([
+        fetchSchoolInfo(),
+        fetchClasses()
+      ]);
+      // Don't set initialLoading to false here - let fetchClasses handle it when real data is fetched
     };
 
     initializePage();
@@ -407,6 +405,8 @@ export default function ClassesManagement() {
       setTotalClasses(total);
       setTotalPages(pages);
       setCurrentPage(page);
+      setDataFetched(true); // Mark data as fetched after successful API call
+      setInitialLoading(false); // End initial loading after successful data fetch
 
     } catch (error) {
       console.error('Failed to fetch classes:', error);
@@ -416,21 +416,22 @@ export default function ClassesManagement() {
       setClasses([]); // Set empty array on error
       setTotalPages(1);
       setTotalClasses(0);
-      setInitialLoading(false); // Stop loading on error
+      setDataFetched(true); // Mark data as fetched even on error
+      setInitialLoading(false); // End initial loading even on error
     } finally {
       stopLoading('fetchClasses');
     }
   }, [startLoading, stopLoading, t, user?.id, handleError, schoolInfo?.id, classesPerPage]);
   // Main effect to fetch classes when user and school are available
   useEffect(() => {
-    if (user?.id && schoolInfo?.id && !initialLoading) {
+    if (user?.id && schoolInfo?.id) {
       fetchClasses(currentPage, selectedGradeLevel, searchTerm);
     }
   }, [user?.id, schoolInfo?.id, currentPage]); // Removed fetchClasses from dependencies
 
   // Auto-apply filters when search term or grade level changes (with debounce for search)
   useEffect(() => {
-    if (!user?.id || !schoolInfo?.id || initialLoading) return;
+    if (!user?.id || !schoolInfo?.id) return;
     
     const timeoutId = setTimeout(() => {
       setCurrentPage(1); // Reset to first page
@@ -719,7 +720,7 @@ export default function ClassesManagement() {
   }
 
   return (
-    <PageTransition>
+    <PageTransition duration='200' variant='zoom'>
       <div className="p-6">
         {/* Header */}
         <FadeInSection className='bg-white shadow rounded-lg p-4 sm:p-6 transition-all duration-300 mb-4'>
@@ -805,11 +806,7 @@ export default function ClassesManagement() {
           <div className='mb-3 flex items-center justify-between'>
             <h3 className="text-lg font-semibold text-gray-900">{t('yourClassesInSchool') || 'Your Classes In School'}</h3>
           </div>
-          {isLoading('fetchClasses') ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
-            </div>
-          ) : classes.length === 0 ? (
+          {classes.length === 0 && dataFetched ? (
             <EmptyState
               icon={BookOpen}
               title={searchTerm || selectedGradeLevel ? 

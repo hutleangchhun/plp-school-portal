@@ -8,7 +8,6 @@ import { Button } from '../../components/ui/Button';
 import { teacherService } from '../../utils/api/services/teacherService';
 import { userService } from '../../utils/api/services/userService';
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
-import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
 import { exportTeachersToExcel, exportTeachersToCSV, exportTeachersToPDF, getTimestampedFilename } from '../../utils/exportUtils';
@@ -89,6 +88,7 @@ export default function TeachersManagement() {
   const [showTeachersManagerOpen, setShowTeachersManagerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [dataFetched, setDataFetched] = useState(false);
   const [selectingAll, setSelectingAll] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const fetchingRef = useRef(false);
@@ -158,14 +158,12 @@ export default function TeachersManagement() {
       } else {
         console.error('No school_id found in account data:', accountData);
         showError(t('noSchoolIdFound', 'No school ID found for your account'));
-        setInitialLoading(false);
       }
     } catch (err) {
       console.error('Error fetching school ID:', err);
       handleError(err, {
         toastMessage: t('failedToFetchSchoolId', 'Failed to fetch school information')
       });
-      setInitialLoading(false);
     }
   }, [schoolId, showError, t, handleError]);
 
@@ -258,6 +256,9 @@ export default function TeachersManagement() {
         total: data.length,
         pages: Math.ceil(data.length / prev.limit)
       }));
+      
+      setDataFetched(true); // Mark data as fetched after successful API call
+      setInitialLoading(false); // End initial loading after successful data fetch
 
     } catch (err) {
       console.error('Error fetching teachers from school:', err);
@@ -267,6 +268,8 @@ export default function TeachersManagement() {
       setTeachers([]);
       setAllTeachers([]);
       setFilteredTeachers([]);
+      setDataFetched(true); // Mark data as fetched even on error
+      setInitialLoading(false); // End initial loading even on error
     } finally {
       stopLoading('fetchTeachers');
       fetchingRef.current = false;
@@ -283,9 +286,7 @@ export default function TeachersManagement() {
   useEffect(() => {
     if (schoolId) {
       console.log('School ID available, fetching teachers...');
-      fetchTeachers('', true).finally(() => {
-        setInitialLoading(false);
-      });
+      fetchTeachers('', true); // Let fetchTeachers handle loading states
     }
   }, [schoolId, fetchTeachers]);
 
@@ -509,19 +510,11 @@ export default function TeachersManagement() {
       header: t('name', 'Name'),
       render: (teacher) => (
         <div className="flex items-center">
-          <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 hover:scale-110 transition-all duration-300">
-            <User className="h-4 w-4 sm:h-5 sm:w-5" />
-          </div>
-          <div className="ml-2 sm:ml-4 min-w-0 flex-1">
             <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
               {teacher.name || (teacher.firstName || teacher.lastName
                 ? `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim()
                 : teacher.username || t('noName', 'No Name'))}
             </div>
-            <div className="text-xs text-gray-500 truncate lg:hidden">
-              {teacher.email || 'N/A'}
-            </div>
-          </div>
         </div>
       )
     },
@@ -746,8 +739,8 @@ export default function TeachersManagement() {
   }
 
   return (
-    <PageTransition variant="fade" className="p-6">
-      <FadeInSection className="bg-white shadow rounded-lg p-4 sm:p-6">
+    <div variant='fade' className="p-6">
+      <div className="bg-white shadow rounded-lg p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
           <div>
             <div className="flex items-center space-x-4">
@@ -898,7 +891,7 @@ export default function TeachersManagement() {
           </div>
         </div>
 
-        <FadeInSection delay={100}>
+        <div>
           <MobileCards
             data={teachers}
             renderCard={renderMobileCard}
@@ -922,8 +915,8 @@ export default function TeachersManagement() {
               t={t}
             />
           </div>
-        </FadeInSection>
-      </FadeInSection>
+        </div>
+      </div>
 
       <ConfirmDialog
         isOpen={showDeleteDialog}
@@ -993,6 +986,6 @@ export default function TeachersManagement() {
           </div>
         )}
       </Modal>
-    </PageTransition>
+    </div>
   );
 }

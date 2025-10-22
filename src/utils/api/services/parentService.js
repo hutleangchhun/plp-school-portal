@@ -153,6 +153,19 @@ export const parentService = {
             error: response.error
         };
     },
+
+    // Add student to parent (create student-parent relationship)
+    addStudentToParent: async (relationshipData) => {
+        const response = await handleApiResponse(() =>
+            apiClient_.post(ENDPOINTS.PARENTS.STUDENT_PARENT, relationshipData)
+        );
+
+        return {
+            success: response.success,
+            data: response?.data,
+            error: response.error
+        };
+    },
 };
 
 export default parentService;

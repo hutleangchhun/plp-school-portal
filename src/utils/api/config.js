@@ -89,7 +89,8 @@ const ENDPOINTS = {
     CREATE: '/parents',
     UPDATE: (parentId) => `/parents/${parentId}`,
     DELETE: (parentId) => `/parents/${parentId}`,
-    BY_SCHOOL: (schoolId) => `/parents/school/${schoolId}`
+    BY_SCHOOL: (schoolId) => `/parents/school/${schoolId}`,
+    STUDENT_PARENT: '/parents/student-parent'
   },
   TEACHERS:{
     BASE: '/teachers',
