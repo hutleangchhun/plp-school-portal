@@ -1,6 +1,6 @@
 import TeacherClasses from './pages/teachers/TeacherClasses';
 import TeacherStudentsManagement from './pages/teachers/TeacherStudentsManagement';
-import TeacherAttendance from './pages/teachers/TeacherAttendance';
+import StudentAttendance from './pages/teachers/StudentAttendance';
 import TeacherDashboard from './pages/teachers/TeacherDashboard';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -21,7 +21,7 @@ import ParentsManagement from './pages/parents/ParentsManagement';
 // Temporarily removed imports (will be re-enabled later):
 // import Reports from './pages/reports/Reports';
 import Attendance from './pages/attendance/Attendance';
-import DirectorTeacherAttendance from './pages/attendance/TeacherAttendance';
+import DirectorTeacherAttendance from './pages/attendance/DirectorTeacherAttendance';
 import TeacherSelfAttendance from './pages/attendance/TeacherSelfAttendance';
 import AttendanceApprovalPage from './pages/attendance/AttendanceApprovalPage';
 // import Achievements from './pages/achievements/Achievements';
@@ -166,7 +166,7 @@ function AppContent() {
           }>
             <Route index element={
               user && user.roleId === 8 && !user.isDirector
-                ? <TeacherAttendance user={user} />
+                ? <StudentAttendance user={user} />
                 : <Attendance />
             } />
           </Route>
