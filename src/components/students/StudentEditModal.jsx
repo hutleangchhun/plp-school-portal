@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X } from 'lucide-react';
+import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X, Weight, Ruler, CircleUserRound } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
@@ -18,14 +18,14 @@ const StudentEditModal = ({
 }) => {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
-  
+
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
-  
+
   const [editForm, setEditForm] = useState({
     firstName: '',
     lastName: '',
@@ -37,6 +37,10 @@ const StudentEditModal = ({
     nationality: '',
     profilePicture: '',
     newPassword: '',
+    weight: '',
+    height: '',
+    ethnicGroup: '',
+    accessibility: [],
     residence: {
       provinceId: '',
       districtId: '',
@@ -108,13 +112,13 @@ const StudentEditModal = ({
 
   const initializeFormData = async () => {
     if (!student) return;
-    
+
     try {
       setLoading(true);
-      
+
       const userId = student.userId || student.user_id || student.id;
       let fullData = student;
-      
+
       if (userId) {
         try {
           const resp = await userService.getUserByID(userId);
@@ -123,7 +127,7 @@ const StudentEditModal = ({
           console.warn('Failed to fetch full user data:', error);
         }
       }
-      
+
       setEditForm({
         firstName: fullData.firstName || fullData.first_name || '',
         lastName: fullData.lastName || fullData.last_name || '',
@@ -135,6 +139,10 @@ const StudentEditModal = ({
         nationality: fullData.nationality || '',
         profilePicture: fullData.profile_picture || fullData.profilePicture || '',
         newPassword: '', // Always empty for security
+        weight: fullData.weight_kg || fullData.weight || '',
+        height: fullData.height_cm || fullData.height || '',
+        ethnicGroup: fullData.ethnic_group || fullData.ethnicGroup || '',
+        accessibility: Array.isArray(fullData.accessibility) ? fullData.accessibility : [],
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
           districtId: fullData.residence?.districtId || fullData.district_id || '',
@@ -148,7 +156,7 @@ const StudentEditModal = ({
           villageId: fullData.placeOfBirth?.villageId || fullData.residence?.villageId || fullData.village_id || ''
         }
       });
-      
+
       // Initialize dropdown selections
       const res = fullData.residence || {};
       setResidenceInitialValues({
@@ -157,7 +165,7 @@ const StudentEditModal = ({
         communeId: res.communeId || fullData.commune_id || '',
         villageId: res.villageId || fullData.village_id || ''
       });
-      
+
       const birth = fullData.placeOfBirth || {};
       setBirthInitialValues({
         provinceId: birth.provinceId || res.provinceId || fullData.province_id || '',
@@ -185,6 +193,10 @@ const StudentEditModal = ({
       nationality: '',
       profilePicture: '',
       newPassword: '',
+      weight: '',
+      height: '',
+      ethnicGroup: '',
+      accessibility: [],
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
       placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
     });
@@ -231,9 +243,9 @@ const StudentEditModal = ({
 
     try {
       setLoading(true);
-      
+
       const userId = student.userId || student.user_id || student.id;
-      
+
       // Normalize date to YYYY-MM-DD
       const formatDate = (val) => {
         if (!val) return undefined;
@@ -255,6 +267,10 @@ const StudentEditModal = ({
         gender: editForm.gender || undefined,
         nationality: editForm.nationality?.trim() || undefined,
         profile_picture: editForm.profilePicture || undefined,
+        weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
+        height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
+        ethnic_group: editForm.ethnicGroup?.trim() || undefined,
+        accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
         residence: {
           provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
           districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
@@ -335,17 +351,17 @@ const StudentEditModal = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('profilePicture', 'Profile Picture')}
             </label>
-            
+
             {/* Profile Picture with Dropdown */}
             <div className="relative mb-4" ref={dropdownRef}>
-              <div 
+              <div
                 className="relative inline-block cursor-pointer"
                 onClick={() => setShowDropdown(!showDropdown)}
               >
                 {profilePictureFile ? (
-                  <img 
+                  <img
                     src={URL.createObjectURL(profilePictureFile)}
-                    alt="Profile Preview" 
+                    alt="Profile Preview"
                     className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-gray-300 hover:border-blue-500 transition-colors"
                   />
                 ) : (
@@ -393,7 +409,7 @@ const StudentEditModal = ({
                 </div>
               )}
             </div>
-            
+
             {/* Hidden File Input */}
             <input
               ref={fileInputRef}
@@ -402,7 +418,7 @@ const StudentEditModal = ({
               onChange={handleProfilePictureChange}
               className="hidden"
             />
-            
+
             {profilePictureFile && (
               <p className="mt-2 text-sm text-green-600 mb-4">
                 {t('newPictureSelected') || 'New picture selected'}: {profilePictureFile.name}
@@ -436,7 +452,7 @@ const StudentEditModal = ({
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
                   {t('lastName', 'Last Name')}
@@ -472,6 +488,7 @@ const StudentEditModal = ({
                   placeholder={t('selectGender', 'Select gender')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={false}
+                  className='w-full'
                 />
               </div>
 
@@ -486,89 +503,218 @@ const StudentEditModal = ({
                 />
               </div>
             </div>
+
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4'>
+              <div className="grid grid-rows-3 gap-4">
+                <div>
+                  <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('weight', 'Weight')} ({t('kg', 'kg')}) 
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Weight className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="number"
+                      id="weight"
+                      step="0.1"
+                      min="0"
+                      value={editForm.weight}
+                      onChange={(e) => handleFormChange('weight', e.target.value)}
+                      className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                      placeholder={t('enterWeight', 'Enter weight')}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="height" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('height', 'Height')} ({t('cm', 'cm')}) 
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Ruler className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="number"
+                      id="height"
+                      step="0.1"
+                      min="0"
+                      value={editForm.height}
+                      onChange={(e) => handleFormChange('height', e.target.value)}
+                      className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                      placeholder={t('enterHeight', 'Enter height')}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('ethnicGroup', 'Ethnic Group')}
+                  </label>
+                  <Dropdown
+                    options={[
+                      { value: '', label: t('selectEthnicGroup', 'ជ្រើសរើសជនជាតិភាគតិច') },
+                      { value: 'ជនជាតិព្នង', label: 'ជនជាតិព្នង' },
+                      { value: 'ជនជាតិកួយ', label: 'ជនជាតិកួយ' },
+                      { value: 'ជនជាតិគ្រឹង', label: 'ជនជាតិគ្រឹង' },
+                      { value: 'ជនជាតិរដែរ', label: 'ជនជាតិរដែរ' },
+                      { value: 'ជនជាតិស្ទៀង', label: 'ជនជាតិស្ទៀង' },
+                      { value: 'ជនជាតិទំពួន', label: 'ជនជាតិទំពួន' },
+                      { value: 'ជនជាតិព្រៅ', label: 'ជនជាតិព្រៅ' },
+                      { value: 'ជនជាតិកាវែត', label: 'ជនជាតិកាវែត' },
+                      { value: 'ជនជាតិកាចក់', label: 'ជនជាតិកាចក់' },
+                      { value: 'ជនជាតិព័រ', label: 'ជនជាតិព័រ' },
+                      { value: 'ជនជាតិខោញ', label: 'ជនជាតិខោញ' },
+                      { value: 'ជនជាតិជង', label: 'ជនជាតិជង' },
+                      { value: 'ជនជាតិស្អូច', label: 'ជនជាតិស្អូច' },
+                      { value: 'ជនជាតិរដែ', label: 'ជនជាតិរដែ' },
+                      { value: 'ជនជាតិខិ', label: 'ជនជាតិខិ' },
+                      { value: 'ជនជាតិរអង', label: 'ជនជាតិរអង' },
+                      { value: 'ជនជាតិស្ពុង', label: 'ជនជាតិស្ពុង' },
+                      { value: 'ជនជាតិល្អឺន', label: 'ជនជាតិល្អឺន' },
+                      { value: 'ជនជាតិសំរែ', label: 'ជនជាតិសំរែ' },
+                      { value: 'ជនជាតិសួយ', label: 'ជនជាតិសួយ' },
+                      { value: 'ជនជាតិថ្មូន', label: 'ជនជាតិថ្មូន' },
+                      { value: 'ជនជាតិលុន', label: 'ជនជាតិលុន' },
+                      { value: 'ជនជាតិក្រោល', label: 'ជនជាតិក្រោល' },
+                      { value: 'ជនជាតិមិល', label: 'ជនជាតិមិល' },
+                      { value: 'ជនជាតិចារាយ', label: 'ជនជាតិចារាយ' }
+                    ]}
+                    value={editForm.ethnicGroup}
+                    onValueChange={(value) => handleFormChange('ethnicGroup', value)}
+                    placeholder={t('selectEthnicGroup', 'ជ្រើសរើសជនជាតិភាគតិច')}
+                    contentClassName="max-h-[200px] overflow-y-auto"
+                    disabled={false}
+                    className='w-full'
+                  />
+                </div>
+              </div>
+
+              {/* Ethnic Group and Accessibility */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('accessibility', 'Accessibility')}
+                  </label>
+                  <div className="mt-1 space-y-2 p-3 border border-gray-300 rounded-md bg-white max-h-48 overflow-y-auto">
+                    {[
+                      { value: 'ពិបាកក្នុងការធ្វើចលនា', label: 'ពិបាកក្នុងការធ្វើចលនា' },
+                      { value: 'ពិបាកក្នុងការស្ដាប់', label: 'ពិបាកក្នុងការស្ដាប់' },
+                      { value: 'ពិបាកក្នុងការនីយាយ', label: 'ពិបាកក្នុងការនីយាយ' },
+                      { value: 'ពិបាកក្នុងការមើល', label: 'ពិបាកក្នុងការមើល' },
+                      { value: 'ពិការសរីរាង្គខាងក្នុង', label: 'ពិការសរីរាង្គខាងក្នុង' },
+                      { value: 'ពិការសតិបញ្ញា', label: 'ពិការសតិបញ្ញា' },
+                      { value: 'ពិការផ្លូវចិត្ត', label: 'ពិការផ្លូវចិត្ត' },
+                      { value: 'ពិការផ្សេងៗ', label: 'ពិការផ្សេងៗ' }
+                    ].map((option) => (
+                      <label key={option.value} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={editForm.accessibility.includes(option.value)}
+                          onChange={(e) => {
+                            const newAccessibility = e.target.checked
+                              ? [...editForm.accessibility, option.value]
+                              : editForm.accessibility.filter(item => item !== option.value);
+                            handleFormChange('accessibility', newAccessibility);
+                          }}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          
-          {/* Contact Information */}
-          <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('username', 'Username')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  id="username"
-                  value={editForm.username}
-                  onChange={(e) => handleFormChange('username', e.target.value)}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  placeholder={t('enterUsername', 'Enter username')}
-                  required
-                />
-              </div>
-            </div>
 
-            <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('newPassword', 'New Password')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-4 w-4 text-gray-400" />
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <CircleUserRound className="inline w-5 h-5 mr-2" />
+              {t('account', 'Account')}
+            </h3>
+            {/* Contact Information */}
+            <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('username', 'Username')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    id="username"
+                    value={editForm.username}
+                    onChange={(e) => handleFormChange('username', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterUsername', 'Enter username')}
+                    required
+                  />
                 </div>
-                <input
-                  type="password"
-                  id="newPassword"
-                  value={editForm.newPassword}
-                  onChange={(e) => handleFormChange('newPassword', e.target.value)}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  placeholder={t('enterNewPassword')}
-                  autoComplete="new-password"
-                />
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('email', 'Email')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-4 w-4 text-gray-400" />
+              <div>
+                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('newPassword', 'New Password')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="password"
+                    id="newPassword"
+                    value={editForm.newPassword}
+                    onChange={(e) => handleFormChange('newPassword', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterNewPassword')}
+                    autoComplete="new-password"
+                  />
                 </div>
-                <input
-                  type="email"
-                  id="email"
-                  value={editForm.email}
-                  onChange={(e) => handleFormChange('email', e.target.value)}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  placeholder={t('enterEmail', 'Enter email address')}
-                />
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('phone', 'Phone')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Phone className="h-4 w-4 text-gray-400" />
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('email', 'Email')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="email"
+                    id="email"
+                    value={editForm.email}
+                    onChange={(e) => handleFormChange('email', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterEmail', 'Enter email address')}
+                  />
                 </div>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={editForm.phone}
-                  onChange={(e) => handleFormChange('phone', e.target.value)}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  placeholder={t('enterPhone', 'Enter phone number')}
-                />
+              </div>
+
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('phone', 'Phone')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="tel"
+                    id="phone"
+                    value={editForm.phone}
+                    onChange={(e) => handleFormChange('phone', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterPhone', 'Enter phone number')}
+                  />
+                </div>
               </div>
             </div>
           </div>
-          
+
           {/* Current Residence */}
           <div className="border-t pt-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -587,6 +733,7 @@ const StudentEditModal = ({
                   placeholder={t('selectProvince', 'Select Province')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={false}
+                  className='w-full'
                 />
               </div>
               <div>
@@ -600,6 +747,7 @@ const StudentEditModal = ({
                   placeholder={t('selectDistrict', 'Select District')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={!selectedResidenceProvince}
+                  className='w-full'
                 />
               </div>
               <div>
@@ -613,6 +761,7 @@ const StudentEditModal = ({
                   placeholder={t('selectCommune', 'Select Commune')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={!selectedResidenceDistrict}
+                  className='w-full'
                 />
               </div>
               <div>
@@ -626,11 +775,12 @@ const StudentEditModal = ({
                   placeholder={t('selectVillage', 'Select Village')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={!selectedResidenceCommune}
+                  className='w-full'
                 />
               </div>
             </div>
           </div>
-          
+
           {/* Place of Birth */}
           <div className="border-t pt-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -649,6 +799,7 @@ const StudentEditModal = ({
                   placeholder={t('selectProvince', 'Select Province')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={false}
+                  className='w-full'
                 />
               </div>
               <div>
@@ -662,6 +813,7 @@ const StudentEditModal = ({
                   placeholder={t('selectDistrict', 'Select District')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={!selectedBirthProvince}
+                  className='w-full'
                 />
               </div>
               <div>
@@ -675,6 +827,7 @@ const StudentEditModal = ({
                   placeholder={t('selectCommune', 'Select Commune')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={!selectedBirthDistrict}
+                  className='w-full'
                 />
               </div>
               <div>
@@ -688,6 +841,7 @@ const StudentEditModal = ({
                   placeholder={t('selectVillage', 'Select Village')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={!selectedBirthCommune}
+                  className='w-full'
                 />
               </div>
             </div>
@@ -707,9 +861,9 @@ const StudentEditModal = ({
             >
               <X className="w-6 h-6" />
             </Button>
-            <img 
+            <img
               src={editForm.profilePicture}
-              alt="Profile" 
+              alt="Profile"
               className="max-w-full max-h-full object-contain"
               onClick={(e) => e.stopPropagation()}
             />

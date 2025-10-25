@@ -62,10 +62,13 @@ apiClient.interceptors.response.use(
       
       // Handle specific status codes
       if (status === 401) {
-        // Unauthorized - clear auth data and redirect to login
+        // Unauthorized - clear auth data
+        // Only redirect if not already on login page to prevent refresh loop
         localStorage.removeItem('authToken');
         localStorage.removeItem('userData');
-        window.location.href = '/login';
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
       } else if (status === 403) {
         // Forbidden - user doesn't have permission
         console.error('Forbidden: You do not have permission to perform this action');

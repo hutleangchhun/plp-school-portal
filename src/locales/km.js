@@ -1,3 +1,5 @@
+import { Accessibility } from "lucide-react";
+
 // Khmer translations
 export const km = {
   // Common
@@ -13,6 +15,20 @@ export const km = {
   people: 'នាក់',
   schoolPopulationDistribution: 'ការបែងចែកប្រភេទបុគ្គលិកក្នុងសាលារៀន',
   schoolPopulationDistributionDesc: 'ការបែងចែកប្រភេទបុគ្គលិក',
+  requiresApproval: 'ត្រូវការអនុម័ត',
+  requiresApprovalTooltip: 'បើកប្រសិនបើវត្តមានគ្រូត្រូវការការអនុម័តពីនាយក',
+  approvalRequiredEnabled: 'បានបើកការទាមទារការអនុម័តសម្រាប់គ្រូរូបនេះ',
+  approvalRequiredDisabled: 'បានបិទការទាមទារការអនុម័តសម្រាប់គ្រូរូបនេះ',
+  errorUpdatingSettings: 'បរាជ័យក្នុងការកែប្រែការកំណត់របស់គ្រូ',
+  selectAll: 'ជ្រើសរើសទាំងអស់',
+  selectedCount: 'បានជ្រើសរើស',
+  noTeachersSelected: 'សូមជ្រើសរើសគ្រូបង្រៀនយ៉ាងហោចណាស់មួយរូប',
+  enableApprovalForSelected: 'បើកការអនុម័តសម្រាប់អ្នកដែលបានជ្រើសរើស',
+  disableApprovalForSelected: 'បិទការអនុម័តសម្រាប់អ្នកដែលបានជ្រើសរើស',
+  clearSelection: 'លុបការជ្រើសរើស',
+  bulkUpdateSuccess: 'បានធ្វើបច្ចុប្បន្នភាពគ្រូបង្រៀនដោយជោគជ័យ',
+  errorBulkUpdating: 'បរាជ័យក្នុងការធ្វើបច្ចុប្បន្នភាពជាក្រុម',
+  updating: 'កំពុងកែប្រែ...',
 
 
   //chart
@@ -69,6 +85,12 @@ export const km = {
   teacherNumber: 'អត្តលេខគ្រូ',
   teacherId: 'លេខសម្គាល់គ្រូ',
   enterNewPassword: 'បញ្ចូលពាក្យសម្ងាត់ថ្មី',
+  weight: 'ទម្ងន់',
+  enterWeight: 'ទម្ងន់ (គីឡូក្រាម)',
+  enterHeight: 'បញ្ចូលកម្ពស់ (សង់ទីម៉ែត្រ)',
+  height: 'កម្ពស់',
+  ethnicGroup: 'ក្រុមជនជាតិភាគតិច',
+  accessibility: 'លក្ខណ:ពិសេស',
   
   // Location fields
   provinceId: 'លេខកំណត់ខេត្ត',
@@ -287,6 +309,11 @@ export const km = {
   schedule: 'កាលវិភាគ',
   selectSubject: 'ជ្រើសរើសមុខវិជ្ជា',
   selectTeacher: 'ជ្រើសរើសគ្រូ',
+  showAllTeachers: 'បង្ហាញគ្រូបង្រៀនទាំងអស់',
+  teacherAssignedToDifferentGrade: 'ចំណាំ៖ គ្រូបង្រៀនរូបនេះកំពុងបង្រៀននៅថ្នាក់ទី',
+  tryShowAllTeachers: 'សាកល្បងបើកជម្រើស "បង្ហាញគ្រូបង្រៀនទាំងអស់" ខាងលើ។',
+  noTeachersForGrade: 'គ្មានគ្រូបង្រៀនសម្រាប់ថ្នាក់នេះទេ',
+  noTeachersForGradeMessage: 'គ្មានគ្រូបង្រៀនត្រូវបានកំណត់ទៅថ្នាក់ទី',
   subject: 'មុខវិជ្ជា',
   updateClass: 'កែប្រែថ្នាក់រៀន',
   description: 'ការពិពណ៌នា',
@@ -327,7 +354,9 @@ export const km = {
   markedAllPresent: 'សិស្សទាំងអស់ត្រូវបានកំណត់ថាមាន៖ វត្តមាន',
   contactAdminToAssignClasses: 'សូមទាក់ទងអ្នកគ្រប់គ្រងរបស់អ្នកដើម្បីកំណត់ថ្នាក់',
   noClassesAssignedMessage: 'អ្នកមិនត្រូវបានកំណត់ថ្នាក់ណាមួយទេ។ សូមទាក់ទងអ្នកគ្រប់គ្រង។',
-
+  trackYourAttendance: 'តាមដានវត្តមានរបស់អ្នក',
+  teacherAttendanceTracking: 'ការតាមដានវត្តមានគ្រូបង្រៀន',
+  trackTeacherAttendance: 'តាមដានអត្រាវត្តមានរបស់គ្រូបង្រៀននៅក្នុងសាលារៀនរបស់អ្នក',
   // Teacher Information
   teacherInfo: 'ព័ត៌មានគ្រូបង្រៀន',
   attendanceRate: 'អត្រាវត្តមាន',
@@ -355,6 +384,7 @@ export const km = {
   searchStudents: 'ស្វែងរកសិស្ស...',
   selectAll: 'ជ្រើសរើសទាំងអស់',
   selectGrade: 'ជ្រើសរើសថ្នាក់',
+  teacherAttendance: 'វត្តមានគ្រូបង្រៀន',
   
   // Advanced filtering
   advancedFilters: 'ការរើសចេញកម្រិតខ្ពស់',
@@ -827,6 +857,22 @@ export const km = {
   errorSavingAttendance: 'កំហុសក្នុងការរក្សាទុកវត្តមាន',
   cannotEditPastAttendance: 'មិនអាចកែវត្តមានសម្រាប់កាលបរិច្ឆេទកន្លងមកបានទេ',
   viewingPastAttendance: 'អ្នកកំពុងមើលវត្តមានសម្រាប់កាលបរិច្ឆេទកន្លងមក។ មិនអាចកែប្រែបានទេ។',
+  canOnlyMarkTodayAttendance: 'អ្នកអាចបញ្ជូនវត្តមានតែថ្ងៃនេះប៉ុណ្ណោះ',
+  cannotMarkPastOrFuture: 'មិនអាចបញ្ជូនវត្តមាន',
+  canOnlyMarkCurrentMonth: 'អ្នកអាចបញ្ជូនវត្តមានតែសម្រាប់ខែបច្ចុប្បន្នប៉ុណ្ណោះ។ សូមចុចប៊ូតុង "ថ្ងៃនេះ" ដើម្បីត្រឡប់ទៅខែបច្ចុប្បន្ន។',
+  attendanceMarkedSuccess: 'វត្តមានត្រូវបានបញ្ជូនដោយជោគជ័យ',
+  failedToMarkAttendance: 'បរាជ័យក្នុងការបញ្ជូនវត្តមាន',
+  submittingAttendance: 'កំពុងបញ្ជូនវត្តមាន...',
+  attendanceMarked: 'វត្តមានត្រូវបានបញ្ជូនរួចរាល់',
+  markTodayAttendance: 'បញ្ជូនវត្តមានថ្ងៃនេះ',
+  today: 'ថ្ងៃនេះ',
+  at: 'នៅ',
+  leave: 'ច្បាប់',
+  studentAttendance: 'វត្តមានសិស្ស',
+  noClassSelected: 'មិនមានថ្នាក់ត្រូវបានជ្រើសរើស។ សូមទាក់ទងអ្នកគ្រប់គ្រង។',
+  errorFetchingAttendance: 'កំហុសក្នុងការទាញយកទិន្នន័យវត្តមាន',
+  accessDeniedTeacherOnly: 'ការចូលប្រើត្រូវបានបដិសេធ។ ទំព័រនេះអាចចូលប្រើបានតែដោយគ្រូបង្រៀនប៉ុណ្ណោះ។',
+  goBack: 'ត្រឡប់ក្រោយ',
 
   // Form field labels and placeholders
   enterFirstName: 'បញ្ចូលនាមខ្លួន',
@@ -864,7 +910,7 @@ export const km = {
   errorDeletingClass: 'កំហុសក្នុងការលុបថ្នាក់រៀន',
   enterClassName: 'បញ្ចូលឈ្មោះថ្នាក់រៀន',
   selectAcademicYear: 'ជ្រើសរើសឆ្នាំសិក្សា',
-  maxStudents: 'ចំនួនសិស្សអតិបរមាក្នុងថ្នាក់ក',
+  maxStudents: 'ចំនួនសិស្សអតិបរមាក្នុងថ្នាក់',
   
   // ProfileUpdate specific translations
   selectDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',

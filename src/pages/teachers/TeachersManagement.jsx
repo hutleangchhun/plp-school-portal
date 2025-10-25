@@ -17,7 +17,6 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import Modal from '../../components/ui/Modal';
 import SelectedCard from '../../components/ui/SelectedCard';
-import { formatDateKhmer } from '../../utils/formatters';
 import Dropdown from '../../components/ui/Dropdown';
 
 export default function TeachersManagement() {
@@ -73,7 +72,7 @@ export default function TeachersManagement() {
   const [teachers, setTeachers] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 5,
+    limit: 10,
     total: 0,
     pages: 1
   });
@@ -244,7 +243,7 @@ export default function TeachersManagement() {
         schoolId: teacher.schoolId,
         schoolName: teacher.school?.name || 'N/A',
         hireDate: teacher.hire_date,
-        gradeLevel: teacher.gradeLevel || 'N/A',
+        gradeLevel: teacher.gradeLevel || null,
         isDirector: teacher.isDirector,
         status: teacher.status,
         isActive: teacher.status === 'ACTIVE',
@@ -555,12 +554,11 @@ export default function TeachersManagement() {
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden xl:table-cell',
       render: (teacher) => (
-        <Badge
-          color="indigo"
-          variant="outline"
-        >
-          {teacher.gradeLevel || 'N/A'}
-        </Badge>
+        <p>
+          {teacher.gradeLevel 
+            ? `${t('grade', 'Grade')} ${teacher.gradeLevel}` 
+            : t('notAssigned', 'Not Assigned')}
+        </p>
       )
     },
     {

@@ -57,12 +57,22 @@ export const authService = {
             // Ensure we keep the original user properties that might not be in account response
             id: accountResponse.data.id || user.id,
             schoolId: accountResponse.data.school_id || user.schoolId,
-            school_id: accountResponse.data.school_id || user.school_id
+            school_id: accountResponse.data.school_id || user.school_id,
+            // Ensure isDirector is properly set (handle both snake_case and camelCase)
+            isDirector: accountResponse.data.isDirector !== undefined
+              ? accountResponse.data.isDirector
+              : (accountResponse.data.is_director !== undefined ? accountResponse.data.is_director : user.isDirector),
+            // Also keep snake_case for backwards compatibility
+            is_director: accountResponse.data.is_director !== undefined
+              ? accountResponse.data.is_director
+              : (accountResponse.data.isDirector !== undefined ? accountResponse.data.isDirector : user.is_director)
           };
 
           console.log('✅ Merged user data being saved to localStorage:');
           console.log('   - school_id:', freshUserData.school_id);
           console.log('   - schoolId:', freshUserData.schoolId);
+          console.log('   - isDirector:', freshUserData.isDirector, 'Type:', typeof freshUserData.isDirector);
+          console.log('   - is_director:', freshUserData.is_director, 'Type:', typeof freshUserData.is_director);
           userUtils.saveUserData(freshUserData);
 
           console.log('💾 Data saved. Verifying localStorage...');
@@ -84,6 +94,9 @@ export const authService = {
 
       // Fallback: save login user data
       console.log('⚠️ Using fallback login data');
+      console.log('🔍 Login user data being saved:');
+      console.log('   - isDirector:', user.isDirector, 'Type:', typeof user.isDirector);
+      console.log('   - is_director:', user.is_director, 'Type:', typeof user.is_director);
       userUtils.saveUserData(user);
 
       return {

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Save, User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building } from 'lucide-react';
+import { Save, User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler } from 'lucide-react';
 import * as RadioGroup from '@radix-ui/react-radio-group';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -36,6 +36,8 @@ export default function ProfileUpdate({ user, setUser }) {
     roleNameKh: '',
     school_id: '',
     school: null,
+    weight_kg: '',
+    height_cm: '',
     // Current residence location
     residence: {
       provinceId: '',
@@ -237,6 +239,8 @@ export default function ProfileUpdate({ user, setUser }) {
           roleNameKh: userData.roleNameKh || '',
           school_id: userData.school_id || userData.teacher?.schoolId || '',
           school: userData.teacher?.school || userData.school || null,
+          weight_kg: userData.weight_kg || '',
+          height_cm: userData.height_cm || '',
           // Handle nested residence object
           residence: {
             provinceId: userData.residence?.provinceId || userData.province_id || '',
@@ -1122,6 +1126,55 @@ export default function ProfileUpdate({ user, setUser }) {
                           {formData.gender === 'MALE' ? (t('male') || 'Male') : (t('female') || 'Female')}
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Weight and Height */}
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="weight_kg" className="block text-sm font-medium text-gray-700">
+                      {t('weight', 'Weight')} ({t('kg', 'kg')}) <span className="text-gray-400 text-xs">{t('optional', '(Optional)')}</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Weight className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="number"
+                        name="weight_kg"
+                        id="weight_kg"
+                        step="0.1"
+                        min="0"
+                        readOnly={!isEditMode}
+                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
+                        value={formData.weight_kg}
+                        onChange={handleInputChange}
+                        placeholder={t('enterWeight', 'Enter weight')}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="height_cm" className="block text-sm font-medium text-gray-700">
+                      {t('height', 'Height')} ({t('cm', 'cm')}) <span className="text-gray-400 text-xs">{t('optional', '(Optional)')}</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Ruler className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="number"
+                        name="height_cm"
+                        id="height_cm"
+                        step="0.1"
+                        min="0"
+                        readOnly={!isEditMode}
+                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
+                        value={formData.height_cm}
+                        onChange={handleInputChange}
+                        placeholder={t('enterHeight', 'Enter height')}
+                      />
                     </div>
                   </div>
                 </div>

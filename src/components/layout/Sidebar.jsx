@@ -1,9 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import {
   Home,
   Users,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   BookOpen,
   FileText,
   Calendar,
@@ -23,6 +25,14 @@ import MinistryLogo from '../../assets/moeys-logo.png';
 export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
   const { t } = useLanguage();
   const location = useLocation();
+  const [openDropdowns, setOpenDropdowns] = useState({});
+
+  const toggleDropdown = (key) => {
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
 
   // Debug: Log user object to check isDirector value
   console.log('Sidebar - User object:', user);
@@ -37,14 +47,15 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/teachers': UserStar,
     '/parents': UserCircle,
     '/attendance': Calendar,
+    '/teacher-attendance': UserCheck,
     '/my-classes': GraduationCap,
     '/my-students': Users,
+    '/my-attendance': Calendar,
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/reports': FileText,
     // '/achievements': Trophy,
     // '/settings': SettingsIcon,
     // '/my-grades': GraduationCap,
-    // '/my-attendance': Calendar,
     // '/my-assignments': FileText
   };
 
@@ -56,14 +67,15 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/teachers': 'orange',
     '/parents': 'pink',
     '/attendance': 'teal',
+    '/teacher-attendance': 'teal',
     '/my-classes': 'orange',
     '/my-students': 'purple',
+    '/my-attendance': 'teal',
     // Temporarily removed color mappings (will be re-enabled later):
     // '/reports': 'yellow',
     // '/achievements': 'red',
     // '/settings': 'gray',
     // '/my-grades': 'orange',
-    // '/my-attendance': 'teal',
     // '/my-assignments': 'yellow'
   };
 
@@ -72,7 +84,9 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     ...item,
     icon: iconMap[item.href] || Home,
     current: location.pathname === item.href,
-    color: colorMap[item.href] || 'blue'
+    color: colorMap[item.href] || 'blue',
+    // Check if any child is active
+    hasActiveChild: item.children?.some(child => location.pathname === child.href)
   }));
 
   const getColorClasses = (color, isActive) => {
@@ -138,68 +152,112 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
   };
 
   return (
-    <div className={`flex flex-col bg-gradient-to-b from-slate-50 to-white shadow-lg border-r border-slate-200 transition-all duration-300 ${
-      isCollapsed ? 'w-20' : 'w-64'
+    <div className={`flex flex-col bg-white shadow-lg border-r border-slate-200 transition-all duration-200 ease-in-out overflow-hidden ${
+      isCollapsed ? 'w-0 border-0' : 'w-64'
     }`}>
       {/* Logo Header */}
-      <div 
-        className="flex items-center p-3 border-b border-slate-200 bg-white cursor-pointer hover:bg-gray-50 transition-colors duration-200"
-        onClick={() => setIsCollapsed(!isCollapsed)}
-      >
-        <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'space-x-3'}`}>
+      <div className="flex items-center justify-between p-3 border-b border-slate-200 bg-white">
+        <div className="flex items-center space-x-3">
           <img 
             src={plpLogo} 
             alt="PLP Logo" 
-            className="h-10 w-10 flex-shrink-0 transition-all duration-300"
+            className="h-10 w-10 flex-shrink-0"
           />
-          {!isCollapsed && (
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-gray-800">{t('schoolPortal')}</span>
-            </div>
-          )}
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-gray-800">{t('schoolPortal')}</span>
+          </div>
         </div>
       </div>
       {/* Navigation */}
-      <nav className={`flex-1 py-4 ${isCollapsed ? 'px-2' : 'px-4'} space-y-1`}>
+      <nav className="flex-1 py-4 px-4 space-y-1">
         {navigationItems.map((item) => {
           const Icon = item.icon;
-          const colorClasses = getColorClasses(item.color, item.current);
+          const isActive = item.current || item.hasActiveChild;
+          const colorClasses = getColorClasses(item.color, isActive);
+          const isOpen = openDropdowns[item.name];
           
-          return (
-            <div key={item.name} className={isCollapsed ? 'flex justify-center' : ''}>
-              <Link
-                to={item.href}
-                className={`flex items-center text-sm font-medium rounded-xl transition-all duration-200 group relative ${
-                  isCollapsed 
-                    ? 'w-12 h-12 justify-center hover:scale-105' 
-                    : 'px-4 py-3 w-full'
-                } ${
-                  item.current
-                    ? `${colorClasses} border shadow-sm`
-                    : `${colorClasses} border border-transparent`
-                }`}
-                title={isCollapsed ? item.name : undefined}
-              >
-                <div className={`${isCollapsed ? 'flex items-center justify-center' : ''}`}>
+          // If item has children (dropdown)
+          if (item.children && item.children.length > 0) {
+            return (
+              <div key={item.name}>
+                {/* Parent Item */}
+                <div
+                  onClick={() => toggleDropdown(item.name)}
+                  className={`flex items-center text-sm font-medium rounded-xl transition-all duration-200 group relative cursor-pointer px-4 py-3 w-full ${
+                    isActive
+                      ? `${colorClasses} border shadow-sm`
+                      : `${colorClasses} border border-transparent`
+                  }`}
+                >
                   <Icon 
                     className={`flex-shrink-0 h-5 w-5 ${
-                      item.current 
+                      isActive 
                         ? `text-${item.color}-600`
                         : 'text-slate-500 group-hover:text-slate-700'
                     }`} 
                   />
+                  <span className="ml-3 truncate font-medium flex-1">{item.name}</span>
+                  <ChevronDown 
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isOpen ? 'transform rotate-180' : ''
+                    }`}
+                  />
                 </div>
-                {!isCollapsed && (
-                  <span className="ml-3 truncate font-medium">{item.name}</span>
-                )}
                 
-                {/* Tooltip for collapsed state */}
-                {isCollapsed && (
-                  <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-                    {item.name}
-                    <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                {/* Dropdown Children */}
+                {isOpen && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    {item.children.map((child) => {
+                      const ChildIcon = iconMap[child.href] || Calendar;
+                      const childActive = location.pathname === child.href;
+                      const childColorClasses = getColorClasses(item.color, childActive);
+                      
+                      return (
+                        <Link
+                          key={child.name}
+                          to={child.href}
+                          className={`flex items-center text-sm font-medium rounded-xl transition-all duration-200 group px-4 py-2.5 w-full ${
+                            childActive
+                              ? `${childColorClasses} border shadow-sm`
+                              : `${childColorClasses} border border-transparent`
+                          }`}
+                        >
+                          <ChildIcon 
+                            className={`flex-shrink-0 h-4 w-4 ${
+                              childActive 
+                                ? `text-${item.color}-600`
+                                : 'text-slate-500 group-hover:text-slate-700'
+                            }`} 
+                          />
+                          <span className="ml-3 truncate font-medium text-xs">{child.name}</span>
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
+              </div>
+            );
+          }
+          
+          // Regular item without children
+          return (
+            <div key={item.name}>
+              <Link
+                to={item.href}
+                className={`flex items-center text-sm font-medium rounded-xl transition-all duration-200 group relative px-4 py-3 w-full ${
+                  item.current
+                    ? `${colorClasses} border shadow-sm`
+                    : `${colorClasses} border border-transparent`
+                }`}
+              >
+                <Icon 
+                  className={`flex-shrink-0 h-5 w-5 ${
+                    item.current 
+                      ? `text-${item.color}-600`
+                      : 'text-slate-500 group-hover:text-slate-700'
+                  }`} 
+                />
+                <span className="ml-3 truncate font-medium">{item.name}</span>
               </Link>
             </div>
           );
@@ -209,34 +267,17 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
 
       {/* Bottom Logo Section */}
       <div className="p-4 border-t border-slate-200">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
+        <div className="flex items-center space-x-3">
           <img 
             src={MinistryLogo} 
             alt="Moeys Logo" 
-            className="h-8 w-8 flex-shrink-0 transition-all duration-300"
+            className="h-8 w-8 flex-shrink-0"
           />
-          {!isCollapsed && (
-            <div className="flex flex-col">
-              <span className="text-xs font-medium text-gray-700">{t('primaryEducationDepartment')}</span>
-              <span className="text-xs text-gray-500">{t('moeysOfCambodia')}</span>
-            </div>
-          )}
+          <div className="flex flex-col">
+            <span className="text-xs font-medium text-gray-700">{t('primaryEducationDepartment')}</span>
+            <span className="text-xs text-gray-500">{t('moeysOfCambodia')}</span>
+          </div>
         </div>
-        
-        {/* Collapse Button 
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`w-full p-2.5 rounded-xl hover:bg-slate-100 transition-all duration-200 flex items-center justify-center ${
-            isCollapsed ? 'hover:bg-indigo-50' : ''
-          }`}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-5 w-5 text-slate-600 hover:text-indigo-600" />
-          ) : (
-            <ChevronLeft className="h-5 w-5 text-slate-600 hover:text-indigo-600" />
-          )}
-        </button>
-        */}
       </div>
     </div>
   );

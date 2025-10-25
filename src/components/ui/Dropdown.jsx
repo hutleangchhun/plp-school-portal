@@ -14,6 +14,7 @@ export default function Dropdown({
   align = 'start',
   sideOffset = 4,
   minWidth = 'min-w-[200px]',
+  width = '',
   maxHeight = '',
   itemsToShow = null
 }) {
@@ -21,11 +22,15 @@ export default function Dropdown({
   const displayValue = selectedOption?.label || placeholder;
   const {t} = useLanguage();
 
+  // Determine width classes - prioritize width prop, then className, then minWidth
+  const widthClass = width || (className.includes('w-') ? '' : minWidth);
+  const triggerWidthClass = width || (triggerClassName.includes('w-') ? '' : minWidth);
+
   return (
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger asChild>
         <button 
-          className={`inline-flex items-center justify-between rounded px-4 py-2 text-sm bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 ${minWidth} w-auto ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${triggerClassName}`}
+          className={`inline-flex items-center justify-between rounded px-4 py-2 text-sm bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 ${triggerWidthClass} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${triggerClassName} ${className}`}
           disabled={disabled}
         >
           <span className="truncate">{displayValue}</span>
@@ -35,7 +40,7 @@ export default function Dropdown({
       
       <DropdownMenu.Portal>
         <DropdownMenu.Content 
-          className={`${minWidth} bg-white rounded-md shadow-lg border border-gray-200 p-1 z-[9999] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 ${maxHeight ? maxHeight + ' overflow-y-auto' : ''} ${contentClassName}`}
+          className={`${widthClass} bg-white rounded-md shadow-lg border border-gray-200 p-1 z-[9999] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 ${maxHeight ? maxHeight + ' overflow-y-auto' : ''} ${contentClassName}`}
           align={align}
           sideOffset={sideOffset}
         >

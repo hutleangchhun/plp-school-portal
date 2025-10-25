@@ -7,7 +7,9 @@ import {
   Mail,
   Phone,
   User,
-  TrendingUp
+  TrendingUp,
+  Shield,
+  Briefcase
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { classService } from '../../utils/api/services/classService';
@@ -21,6 +23,7 @@ import Badge from '../../components/ui/Badge';
 import { Bar, BarChart, XAxis, YAxis, LabelList } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import EmptyState from '@/components/ui/EmptyState';
+import AttendanceStatusCard from '../../components/attendance/AttendanceStatusCard';
 
 export default function TeacherDashboard({ user }) {
   const { t } = useLanguage();
@@ -169,6 +172,30 @@ export default function TeacherDashboard({ user }) {
     };
   }, [user]);
 
+  // Get user role display
+  const getUserRole = () => {
+    if (!user) return null;
+
+    // isDirector is nested inside user.teacher object
+    const isDirector = user.teacher?.isDirector === true || user.isDirector === true;
+
+    if (user.roleId === 8 && isDirector) {
+      return {
+        label: t('director') || 'Director',
+        color: 'purple',
+        Icon: Shield
+      };
+    }
+    if (user.roleId === 8 && !isDirector) {
+      return {
+        label: t('teacher') || 'Teacher',
+        color: 'blue',
+        Icon: Briefcase
+      };
+    }
+    return null;
+  };
+
   // Chart data for attendance
   const attendanceChartData = [
     {
@@ -202,6 +229,28 @@ export default function TeacherDashboard({ user }) {
   return (
     <PageTransition className='p-6'>
       <div className="">
+        {/* User Role Badge and Attendance Status */}
+        <div className="mb-6">
+          <div className="flex items-center gap-4 mb-4">
+            {getUserRole() && (() => {
+              const role = getUserRole();
+              const IconComponent = role.Icon;
+              return (
+                <Badge
+                  variant="filled"
+                  color={role.color}
+                  size="lg"
+                  className="flex items-center gap-2"
+                >
+                  <IconComponent className="w-4 h-4" />
+                  {role.label}
+                </Badge>
+              );
+            })()}
+          </div>
+          <AttendanceStatusCard user={user} />
+        </div>
+
         <FadeInSection>
           {/* Welcome Header */}
           <div className="p-6 bg-white rounded-xl border border-gray-200 mb-4">

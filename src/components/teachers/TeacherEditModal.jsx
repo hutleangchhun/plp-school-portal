@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X } from 'lucide-react';
+import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X, Weight, Ruler, CircleUserRound } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
@@ -37,6 +37,10 @@ const TeacherEditModal = ({
     nationality: '',
     profilePicture: '',
     newPassword: '',
+    weight: '',
+    height: '',
+    ethnicGroup: '',
+    accessibility: [],
     residence: {
       provinceId: '',
       districtId: '',
@@ -135,6 +139,10 @@ const TeacherEditModal = ({
         nationality: fullData.nationality || '',
         profilePicture: fullData.profile_picture || fullData.profilePicture || '',
         newPassword: '', // Always empty for security
+        weight: fullData.weight_kg || fullData.weight || '',
+        height: fullData.height_cm || fullData.height || '',
+        ethnicGroup: fullData.ethnic_group || fullData.ethnicGroup || '',
+        accessibility: Array.isArray(fullData.accessibility) ? fullData.accessibility : [],
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
           districtId: fullData.residence?.districtId || fullData.district_id || '',
@@ -185,6 +193,10 @@ const TeacherEditModal = ({
       nationality: '',
       profilePicture: '',
       newPassword: '',
+      weight: '',
+      height: '',
+      ethnicGroup: '',
+      accessibility: [],
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
       placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
     });
@@ -255,6 +267,10 @@ const TeacherEditModal = ({
         gender: editForm.gender || undefined,
         nationality: editForm.nationality?.trim() || undefined,
         profile_picture: editForm.profilePicture || undefined,
+        weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
+        height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
+        ethnic_group: editForm.ethnicGroup?.trim() || undefined,
+        accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
         residence: {
           provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
           districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
@@ -472,6 +488,7 @@ const TeacherEditModal = ({
                   placeholder={t('selectGender', 'Select gender')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={false}
+                  className='w-full'
                 />
               </div>
 
@@ -486,85 +503,204 @@ const TeacherEditModal = ({
                 />
               </div>
             </div>
+
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4'>
+              <div className="grid grid-rows-3 gap-4">
+                <div>
+                  <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('weight', 'Weight')} ({t('kg', 'kg')})
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Weight className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="number"
+                      id="weight"
+                      step="0.1"
+                      min="0"
+                      value={editForm.weight}
+                      onChange={(e) => handleFormChange('weight', e.target.value)}
+                      className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                      placeholder={t('enterWeight', 'Enter weight')}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="height" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('height', 'Height')} ({t('cm', 'cm')})
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Ruler className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="number"
+                      id="height"
+                      step="0.1"
+                      min="0"
+                      value={editForm.height}
+                      onChange={(e) => handleFormChange('height', e.target.value)}
+                      className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                      placeholder={t('enterHeight', 'Enter height')}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('ethnicGroup', 'Ethnic Group')}
+                  </label>
+                  <Dropdown
+                    options={[
+                      { value: '', label: t('selectEthnicGroup', 'ជ្រើសរើសជនជាតិភាគតិច') },
+                      { value: 'ជនជាតិព្នង', label: 'ជនជាតិព្នង' },
+                      { value: 'ជនជាតិកួយ', label: 'ជនជាតិកួយ' },
+                      { value: 'ជនជាតិគ្រឹង', label: 'ជនជាតិគ្រឹង' },
+                      { value: 'ជនជាតិរដែរ', label: 'ជនជាតិរដែរ' },
+                      { value: 'ជនជាតិស្ទៀង', label: 'ជនជាតិស្ទៀង' },
+                      { value: 'ជនជាតិទំពួន', label: 'ជនជាតិទំពួន' },
+                      { value: 'ជនជាតិព្រៅ', label: 'ជនជាតិព្រៅ' },
+                      { value: 'ជនជាតិកាវែត', label: 'ជនជាតិកាវែត' },
+                      { value: 'ជនជាតិកាចក់', label: 'ជនជាតិកាចក់' },
+                      { value: 'ជនជាតិព័រ', label: 'ជនជាតិព័រ' },
+                      { value: 'ជនជាតិខោញ', label: 'ជនជាតិខោញ' },
+                      { value: 'ជនជាតិលាវ', label: 'ជនជាតិលាវ' },
+                      { value: 'ជនជាតិផ្សេងទៀត', label: 'ជនជាតិផ្សេងទៀត' },
+                      { value: 'ជនជាតិមិល', label: 'ជនជាតិមិល' },
+                      { value: 'ជនជាតិចារាយ', label: 'ជនជាតិចារាយ' }
+                    ]}
+                    value={editForm.ethnicGroup}
+                    onValueChange={(value) => handleFormChange('ethnicGroup', value)}
+                    placeholder={t('selectEthnicGroup', 'ជ្រើសរើសជនជាតិភាគតិច')}
+                    contentClassName="max-h-[200px] overflow-y-auto"
+                    disabled={false}
+                    className='w-full'
+                  />
+                </div>
+              </div>
+
+              {/* Accessibility */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('accessibility', 'Accessibility')}
+                  </label>
+                  <div className="mt-1 space-y-2 p-3 border border-gray-300 rounded-md bg-white max-h-48 overflow-y-auto">
+                    {[
+                      { value: 'ពិបាកក្នុងការធ្វើចលនា', label: 'ពិបាកក្នុងការធ្វើចលនា' },
+                      { value: 'ពិបាកក្នុងការស្ដាប់', label: 'ពិបាកក្នុងការស្ដាប់' },
+                      { value: 'ពិបាកក្នុងការនីយាយ', label: 'ពិបាកក្នុងការនីយាយ' },
+                      { value: 'ពិបាកក្នុងការមើល', label: 'ពិបាកក្នុងការមើល' },
+                      { value: 'ពិការសរីរាង្គខាងក្នុង', label: 'ពិការសរីរាង្គខាងក្នុង' },
+                      { value: 'ពិការសតិបញ្ញា', label: 'ពិការសតិបញ្ញា' },
+                      { value: 'ពិការផ្លូវចិត្ត', label: 'ពិការផ្លូវចិត្ត' },
+                      { value: 'ពិការផ្សេងៗ', label: 'ពិការផ្សេងៗ' }
+                    ].map((option) => (
+                      <label key={option.value} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={editForm.accessibility.includes(option.value)}
+                          onChange={(e) => {
+                            const newAccessibility = e.target.checked
+                              ? [...editForm.accessibility, option.value]
+                              : editForm.accessibility.filter(item => item !== option.value);
+                            handleFormChange('accessibility', newAccessibility);
+                          }}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Contact Information */}
-          <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('username', 'Username')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-4 w-4 text-gray-400" />
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <CircleUserRound className="inline w-5 h-5 mr-2" />
+              {t('account', 'Account')}
+            </h3>
+            {/* Contact Information */}
+            <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('username', 'Username')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    id="username"
+                    value={editForm.username}
+                    onChange={(e) => handleFormChange('username', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterUsername', 'Enter username')}
+                    required
+                  />
                 </div>
-                <input
-                  type="text"
-                  id="username"
-                  value={editForm.username}
-                  onChange={(e) => handleFormChange('username', e.target.value)}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  placeholder={t('enterUsername', 'Enter username')}
-                  required
-                />
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('newPassword', 'New Password')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-4 w-4 text-gray-400" />
+              <div>
+                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('newPassword', 'New Password')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="password"
+                    id="newPassword"
+                    value={editForm.newPassword}
+                    onChange={(e) => handleFormChange('newPassword', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterNewPassword')}
+                    autoComplete="new-password"
+                  />
                 </div>
-                <input
-                  type="password"
-                  id="newPassword"
-                  value={editForm.newPassword}
-                  onChange={(e) => handleFormChange('newPassword', e.target.value)}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  placeholder={t('enterNewPassword')}
-                  autoComplete="new-password"
-                />
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('email', 'Email')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-4 w-4 text-gray-400" />
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('email', 'Email')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="email"
+                    id="email"
+                    value={editForm.email}
+                    onChange={(e) => handleFormChange('email', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterEmail', 'Enter email address')}
+                  />
                 </div>
-                <input
-                  type="email"
-                  id="email"
-                  value={editForm.email}
-                  onChange={(e) => handleFormChange('email', e.target.value)}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  placeholder={t('enterEmail', 'Enter email address')}
-                />
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('phone', 'Phone')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Phone className="h-4 w-4 text-gray-400" />
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('phone', 'Phone')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="tel"
+                    id="phone"
+                    value={editForm.phone}
+                    onChange={(e) => handleFormChange('phone', e.target.value)}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={t('enterPhone', 'Enter phone number')}
+                  />
                 </div>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={editForm.phone}
-                  onChange={(e) => handleFormChange('phone', e.target.value)}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  placeholder={t('enterPhone', 'Enter phone number')}
-                />
               </div>
             </div>
           </div>
@@ -587,6 +723,7 @@ const TeacherEditModal = ({
                   placeholder={t('selectProvince', 'Select Province')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={false}
+                  className='w-full'
                 />
               </div>
               <div>
@@ -600,6 +737,7 @@ const TeacherEditModal = ({
                   placeholder={t('selectDistrict', 'Select District')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={!selectedResidenceProvince}
+                  className='w-full'
                 />
               </div>
               <div>
@@ -613,6 +751,7 @@ const TeacherEditModal = ({
                   placeholder={t('selectCommune', 'Select Commune')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={!selectedResidenceDistrict}
+                  className='w-full'
                 />
               </div>
               <div>
@@ -626,6 +765,7 @@ const TeacherEditModal = ({
                   placeholder={t('selectVillage', 'Select Village')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={!selectedResidenceCommune}
+                  className='w-full'
                 />
               </div>
             </div>
@@ -649,6 +789,7 @@ const TeacherEditModal = ({
                   placeholder={t('selectProvince', 'Select Province')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={false}
+                  className='w-full'
                 />
               </div>
               <div>
@@ -662,6 +803,7 @@ const TeacherEditModal = ({
                   placeholder={t('selectDistrict', 'Select District')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={!selectedBirthProvince}
+                  className='w-full'
                 />
               </div>
               <div>
@@ -675,6 +817,7 @@ const TeacherEditModal = ({
                   placeholder={t('selectCommune', 'Select Commune')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={!selectedBirthDistrict}
+                  className='w-full'
                 />
               </div>
               <div>
@@ -688,6 +831,7 @@ const TeacherEditModal = ({
                   placeholder={t('selectVillage', 'Select Village')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={!selectedBirthCommune}
+                  className='w-full'
                 />
               </div>
             </div>

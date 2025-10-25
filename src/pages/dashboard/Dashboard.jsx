@@ -1,4 +1,4 @@
-import { User, Edit,Edit2, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, IdCard} from 'lucide-react';
+import { User, Edit,Edit2, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, IdCard, Shield, Briefcase} from 'lucide-react';
 import ClassStudentCountChart from '../../components/ui/ClassStudentCountChart';
 import SchoolOverviewChart from '../../components/ui/SchoolOverviewChart';
 import { Link } from 'react-router-dom';
@@ -18,6 +18,7 @@ import { useStableCallback } from '../../utils/reactOptimization';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
+import AttendanceStatusCard from '../../components/attendance/AttendanceStatusCard';
 
 export default function Dashboard({ user: initialUser }) {
   const { t } = useLanguage();
@@ -148,7 +149,7 @@ export default function Dashboard({ user: initialUser }) {
           // Get teachers count from the teachers endpoint
           const teachersResponse = await teacherService.getTeachersBySchool(accountData.school_id, {
             page: 1,
-            limit: 1000 // Get all teachers to count properly
+            limit: 100 // Get all teachers to count properly
           });
 
           // Count based on isDirector field
@@ -222,9 +223,55 @@ export default function Dashboard({ user: initialUser }) {
   }
 
 
+  // Get user role display
+  const getUserRole = () => {
+    if (!user) return null;
+
+    // isDirector is nested inside user.teacher object
+    const isDirector = user.teacher?.isDirector === true || user.isDirector === true;
+
+    if (user.roleId === 8 && isDirector) {
+      return {
+        label: t('director') || 'Director',
+        color: 'purple',
+        Icon: Shield
+      };
+    }
+    if (user.roleId === 8 && !isDirector) {
+      return {
+        label: t('teacher') || 'Teacher',
+        color: 'blue',
+        Icon: Briefcase
+      };
+    }
+    return null;
+  };
+
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-6">
+
+        {/* User Role Badge and Attendance Status */}
+        <FadeInSection delay={0} className="mb-6">
+          <div className="flex items-center gap-4 mb-4">
+            {getUserRole() && (() => {
+              const role = getUserRole();
+              const IconComponent = role.Icon;
+              return (
+                <Badge
+                  variant="filled"
+                  color={role.color}
+                  size="lg"
+                  className="flex items-center gap-2"
+                >
+                  <IconComponent className="w-4 h-4" />
+                  {role.label}
+                </Badge>
+              );
+            })()}
+          </div>
+          <AttendanceStatusCard user={user} />
+        </FadeInSection>
 
         {/* School Information Card */}
         {schoolInfo && (

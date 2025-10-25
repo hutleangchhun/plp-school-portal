@@ -137,6 +137,134 @@ export const attendanceService = {
   },
 
   /**
+   * Get attendance summary for a user for a specific date range
+   * GET /attendance/summary/:userId
+   * @param {number} userId - User ID
+   * @param {string} startDate - Start date (YYYY-MM-DD)
+   * @param {string} endDate - End date (YYYY-MM-DD)
+   * @returns {Promise<Object>} Attendance summary with statistics
+   */
+  async getAttendanceSummary(userId, startDate, endDate) {
+    return handleApiResponse(() =>
+      apiClient_.get(`${ENDPOINTS.ATTENDANCE.BASE}/summary/${userId}`, {
+        params: { startDate, endDate }
+      })
+    );
+  },
+
+  /**
+   * Get pending approval attendance records
+   * GET /attendance/pending/approval
+   * @param {Object} params - Query parameters for filtering and pagination
+   * @param {number} [params.page=1] - Page number
+   * @param {number} [params.limit=10] - Items per page
+   * @param {number} [params.userId] - Filter by user ID
+   * @param {string} [params.startDate] - Filter by start date
+   * @param {string} [params.endDate] - Filter by end date
+   * @returns {Promise<Object>} Pending approval attendance records
+   */
+  async getPendingApprovals(params = {}) {
+    const {
+      page = 1,
+      limit = 10,
+      userId,
+      startDate,
+      endDate
+    } = params;
+
+    const queryParams = { page, limit };
+    if (userId !== undefined) queryParams.userId = userId;
+    if (startDate !== undefined) queryParams.startDate = startDate;
+    if (endDate !== undefined) queryParams.endDate = endDate;
+
+    const response = await handleApiResponse(() =>
+      apiClient_.get(`${ENDPOINTS.ATTENDANCE.BASE}/pending/approval`, { params: queryParams })
+    );
+
+    const d = response?.data;
+    const list = Array.isArray(d?.data)
+      ? d.data
+      : (Array.isArray(d) ? d : []);
+
+    const pagination = d?.pagination || {
+      page: d?.page ?? page,
+      limit: d?.limit ?? limit,
+      total: d?.total ?? list.length,
+      pages: d?.pages ?? Math.max(1, Math.ceil((d?.total ?? list.length) / (d?.limit ?? limit)))
+    };
+
+    const formattedData = list.map(attendance => attendanceService.utils.formatAttendanceData(attendance));
+
+    return {
+      success: true,
+      data: formattedData,
+      pagination
+    };
+  },
+
+  /**
+   * Approve attendance record
+   * PATCH /attendance/:id/approve
+   * @param {string|number} attendanceId - Attendance record ID
+   * @param {Object} approvalData - Approval details
+   * @param {string} approvalData.approvalStatus - APPROVED or REJECTED
+   * @param {string} [approvalData.approvalComments] - Comments from director
+   * @returns {Promise<Object>} Updated attendance data
+   */
+  async approveAttendance(attendanceId, approvalData) {
+    return handleApiResponse(() =>
+      apiClient_.patch(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}/approve`, approvalData)
+    ).then(response => attendanceService.utils.formatAttendanceData(response.data));
+  },
+
+  /**
+   * Reject attendance record
+   * PATCH /attendance/:id/reject
+   * @param {string|number} attendanceId - Attendance record ID
+   * @param {Object} rejectionData - Rejection details
+   * @param {string} rejectionData.rejectionReason - Reason for rejection
+   * @param {string} [rejectionData.rejectionComments] - Comments from director
+   * @returns {Promise<Object>} Updated attendance data
+   */
+  async rejectAttendance(attendanceId, rejectionData) {
+    return handleApiResponse(() =>
+      apiClient_.patch(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}/reject`, rejectionData)
+    ).then(response => attendanceService.utils.formatAttendanceData(response.data));
+  },
+
+  /**
+   * Bulk approve attendance records
+   * POST /attendance/bulk-approve
+   * @param {Array<number>} attendanceIds - Array of attendance IDs to approve
+   * @param {string} [comments] - Optional comments for bulk approval
+   * @returns {Promise<Object>} Bulk approval result
+   */
+  async bulkApproveAttendance(attendanceIds, comments = '') {
+    return handleApiResponse(() =>
+      apiClient_.post(`${ENDPOINTS.ATTENDANCE.BASE}/bulk-approve`, {
+        attendanceIds,
+        comments
+      })
+    );
+  },
+
+  /**
+   * Bulk reject attendance records
+   * POST /attendance/bulk-reject
+   * @param {Array<number>} attendanceIds - Array of attendance IDs to reject
+   * @param {string} rejectionReason - Reason for bulk rejection
+   * @returns {Promise<Object>} Bulk rejection result
+   */
+  async bulkRejectAttendance(attendanceIds, rejectionReason) {
+    return handleApiResponse(() =>
+      apiClient_.post(`${ENDPOINTS.ATTENDANCE.BASE}/bulk-reject`, {
+        attendanceIds,
+        rejectionReason
+      })
+    );
+  },
+
+  /**
    * Utility functions for attendance data transformation
    */
   utils: {
@@ -162,6 +290,14 @@ export const attendanceService = {
         reason: attendance.reason || '',
         createdAt: attendance.created_at || attendance.createdAt,
         updatedAt: attendance.updated_at || attendance.updatedAt,
+        // Approval-related fields
+        approvalStatus: attendance.approval_status || attendance.approvalStatus || null, // PENDING, APPROVED, REJECTED
+        approvedBy: attendance.approved_by || attendance.approvedBy || null,
+        approvedAt: attendance.approved_at || attendance.approvedAt || null,
+        approvalComments: attendance.approval_comments || attendance.approvalComments || '',
+        submittedAt: attendance.submitted_at || attendance.submittedAt || null,
+        rejectionReason: attendance.rejection_reason || attendance.rejectionReason || '',
+        rejectionComments: attendance.rejection_comments || attendance.rejectionComments || '',
         // Include student info if available
         student: attendance.student ? {
           id: attendance.student.id,
@@ -171,6 +307,14 @@ export const attendanceService = {
           lastName: attendance.student.last_name || attendance.student.lastName || '',
           email: attendance.student.email || '',
           profilePicture: attendance.student.profile_picture || attendance.student.profilePicture || ''
+        } : null,
+        // Include user details if available (for teacher attendance approvals)
+        userDetails: attendance.user_details || attendance.userDetails ? {
+          id: attendance.user_details?.id || attendance.userDetails?.id,
+          firstName: attendance.user_details?.first_name || attendance.userDetails?.firstName || '',
+          lastName: attendance.user_details?.last_name || attendance.userDetails?.lastName || '',
+          email: attendance.user_details?.email || attendance.userDetails?.email || '',
+          name: `${attendance.user_details?.first_name || attendance.userDetails?.firstName || ''} ${attendance.user_details?.last_name || attendance.userDetails?.lastName || ''}`.trim() || attendance.user_details?.username || attendance.userDetails?.username || 'Unknown'
         } : null,
         // Include class info if available
         class: attendance.class ? {

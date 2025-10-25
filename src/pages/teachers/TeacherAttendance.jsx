@@ -55,6 +55,7 @@ export default function TeacherAttendance({ user }) {
     { value: 'PRESENT', label: t('present', 'Present'), icon: Check, color: 'green', bgColor: 'bg-green-100', textColor: 'text-green-600', borderColor: 'green' },
     { value: 'ABSENT', label: t('absent', 'Absent'), icon: X, color: 'red', bgColor: 'bg-red-100', textColor: 'text-red-600', borderColor: 'red'  },
     { value: 'LATE', label: t('late', 'Late'), icon: Clock, color: 'yellow', bgColor: 'bg-yellow-100', textColor: 'text-yellow-600', borderColor: 'yellow' },
+    { value: 'LEAVE', label: t('leave', 'Leave'), icon: Calendar, color: 'purple', bgColor: 'bg-purple-100', textColor: 'text-purple-600', borderColor: 'purple' },
   ];
 
   // Helper function to convert Date to YYYY-MM-DD string (avoiding timezone issues)
@@ -379,6 +380,7 @@ export default function TeacherAttendance({ user }) {
       PRESENT: 0,
       ABSENT: 0,
       LATE: 0,
+      LEAVE: 0,
     };
 
     Object.values(attendance).forEach(record => {

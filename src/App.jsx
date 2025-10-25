@@ -21,11 +21,15 @@ import ParentsManagement from './pages/parents/ParentsManagement';
 // Temporarily removed imports (will be re-enabled later):
 // import Reports from './pages/reports/Reports';
 import Attendance from './pages/attendance/Attendance';
+import DirectorTeacherAttendance from './pages/attendance/TeacherAttendance';
+import TeacherSelfAttendance from './pages/attendance/TeacherSelfAttendance';
+import AttendanceApprovalPage from './pages/attendance/AttendanceApprovalPage';
 // import Achievements from './pages/achievements/Achievements';
 // import Settings from './pages/settings/Settings';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LoadingProvider } from './contexts/LoadingContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { api, utils } from './utils/api';
 import { ProtectedRoute } from './components/common/DynamicRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -74,7 +78,7 @@ function AppContent() {
           path="/login"
           element={
             !user ? <Login setUser={setUser} /> :
-            (user && user.roleId === 8 && !user.isDirector ? <Navigate to="/my-classes" /> : <Navigate to="/dashboard" />)
+            (user && user.roleId === 8 && user.isDirector !== true ? <Navigate to="/my-classes" replace /> : <Navigate to="/dashboard" replace />)
           }
         />
 
@@ -98,7 +102,7 @@ function AppContent() {
             )
           }
         >
-          <Route index element={user && user.roleId === 8 && !user.isDirector ? <Navigate to="/my-classes" /> : <Navigate to="/dashboard" />} />
+          <Route index element={user && user.roleId === 8 && user.isDirector !== true ? <Navigate to="/my-classes" replace /> : <Navigate to="/dashboard" replace />} />
           
           {/* Dashboard routes with sidebar */}
           <Route path="dashboard/*" element={
@@ -167,6 +171,14 @@ function AppContent() {
             } />
           </Route>
 
+          <Route path="teacher-attendance" element={
+            <ProtectedRoute path="/teacher-attendance" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<DirectorTeacherAttendance />} />
+          </Route>
+
           <Route path="my-classes" element={
             <ProtectedRoute path="/my-classes" user={user}>
               <DashboardLayout user={user} onLogout={handleLogout} />
@@ -183,9 +195,25 @@ function AppContent() {
             <Route index element={<TeacherStudentsManagement user={user} />} />
           </Route>
 
+          <Route path="my-attendance" element={
+            <ProtectedRoute path="/my-attendance" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<TeacherSelfAttendance />} />
+          </Route>
+
+          <Route path="attendance/approval" element={
+            <ProtectedRoute path="/attendance/approval" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout}>
+                <AttendanceApprovalPage user={user} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+
           {/* Temporarily removed routes (will be re-enabled later):
               - reports, attendance, achievements, settings
-              - my-grades, my-attendance, my-assignments */}
+              - my-grades, my-assignments */}
         </Route>
         
         {/* Catch-all route for 404 pages */}
@@ -200,9 +228,11 @@ function App() {
     <LanguageProvider>
       <ToastProvider>
         <LoadingProvider>
-          <ErrorBoundary>
-            <AppContent />
-          </ErrorBoundary>
+          <NotificationProvider>
+            <ErrorBoundary>
+              <AppContent />
+            </ErrorBoundary>
+          </NotificationProvider>
         </LoadingProvider>
       </ToastProvider>
     </LanguageProvider>

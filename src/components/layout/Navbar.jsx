@@ -1,9 +1,10 @@
-import { Link, useLocation } from 'react-router-dom';
-import { ChevronDown, LogOut, User, Upload } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ChevronDown, LogOut, User, Upload, Menu } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useLanguage } from '../../contexts/LanguageContext';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import ProfileImage from '../ui/ProfileImage';
+import NotificationDropdown from '../notifications/NotificationDropdown';
 
 const getPageTitle = (pathname) => {
   const path = pathname.split('/')[1];
@@ -20,10 +21,12 @@ const getPageTitle = (pathname) => {
   return titleMap[path] || 'dashboard';
 };
 
-export default function Navbar({ 
-  user, 
+export default function Navbar({
+  user,
   onLogout,
-  className = ''
+  className = '',
+  sidebarCollapsed,
+  setSidebarCollapsed
 }) {
   const { t } = useLanguage();
 const location = useLocation();
@@ -40,18 +43,28 @@ const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1
     <nav className={`bg-white shadow-sm ${className}`}>
       <div className="px-2 sm:px-4 lg:px-6 xl:px-8">
         <div className="flex justify-between items-center h-14 sm:h-16">
-          {/* Page Title */}
-          <div className="flex-shrink-0 min-w-0 flex-1 mr-2">
-          <h1 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 truncate">
-            {translatedTitle}
-          </h1>
+          {/* Menu Toggle Button and Page Title */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0 flex-1 mr-2">
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow-md hover:shadow-lg hover:scale-105 hover:from-blue-600 hover:to-blue-700 transition-all duration-200 group"
+              aria-label="Toggle sidebar"
+            >
+              <Menu className="h-5 w-5 group-hover:rotate-90 transition-transform duration-200" />
+            </button>
+            <h1 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 truncate">
+              {translatedTitle}
+            </h1>
           </div>
           
           <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
             <div className="hidden sm:block">
               <LanguageSwitcher />
             </div>
-            
+
+            {/* Notification Dropdown */}
+            <NotificationDropdown />
+
             {/* Profile Dropdown */}
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>

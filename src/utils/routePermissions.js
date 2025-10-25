@@ -40,6 +40,10 @@ export const routePermissions = {
     allowedRoles: [ROLES.TEACHER],
     component: 'Attendance'
   },
+  '/teacher-attendance': {
+    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    component: 'DirectorTeacherAttendance'
+  },
   '/my-classes': {
     allowedRoles: [ROLES.TEACHER],
     component: 'TeacherClasses'
@@ -48,9 +52,17 @@ export const routePermissions = {
     allowedRoles: [ROLES.TEACHER],
     component: 'TeacherStudentsManagement'
   },
+  '/my-attendance': {
+    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR],
+    component: 'TeacherSelfAttendance'
+  },
   '/students/bulk-import': {
     allowedRoles: [ROLES.DIRECTOR], // Directors only
     component: 'BulkStudentImport'
+  },
+  '/attendance/approval': {
+    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    component: 'AttendanceApprovalPage'
   }
 };
 
@@ -63,16 +75,23 @@ export const routePermissions = {
 export const hasRouteAccess = (path, user) => {
   if (!user || !path) return false;
 
+  // Get isDirector value - it can be at top level or nested in teacher object
+  const isDirector = user.teacher?.isDirector === true || user.isDirector === true;
+  const isNotDirector = !isDirector;
+
   // Director: roleId = 8 && isDirector = true can access all routes
-  if (user.roleId === ROLES.DIRECTOR && user.isDirector === true) {
+  if (user.roleId === ROLES.DIRECTOR && isDirector) {
     return !!routePermissions[path];
   }
 
-  // Teacher: roleId = 8 && (isDirector = false OR undefined) can only access /attendance, /my-classes, /my-students, and /profile
+  // Teacher: roleId = 8 && (isDirector = false OR undefined) can only access /attendance, /my-classes, /my-students, /my-attendance, and /profile
   // Teachers CANNOT access /students/bulk-import
-  if (user.roleId === ROLES.TEACHER && (user.isDirector === false || user.isDirector === undefined)) {
-    return path === '/attendance' || path === '/my-classes' || path === '/my-students' || path === '/profile';
+  if (user.roleId === ROLES.TEACHER && isNotDirector) {
+    return path === '/attendance' || path === '/my-classes' || path === '/my-students' || path === '/my-attendance' || path === '/profile';
   }
+
+  // Director: roleId = 8 && isDirector = true (already handled above in the first check)
+  // This is a fallback for any director routes not explicitly checked above
 
   return false;
 };
@@ -99,12 +118,8 @@ export const getAccessibleRoutes = (user) => {
 export const getNavigationItems = (user, t) => {
   if (!user) return [];
 
-  // Debug logging
-  console.log('getNavigationItems - User:', user);
-  console.log('getNavigationItems - roleId:', user.roleId);
-  console.log('getNavigationItems - isDirector:', user.isDirector);
-  console.log('getNavigationItems - Is Director check:', user.roleId === ROLES.DIRECTOR && user.isDirector === true);
-  console.log('getNavigationItems - Is Teacher check:', user.roleId === ROLES.TEACHER && (user.isDirector === false || user.isDirector === undefined));
+  // Get isDirector value - it can be at top level or nested in teacher object
+  const isDirector = user.teacher?.isDirector === true || user.isDirector === true;
 
   // Director gets all navigation items
   const directorItems = [
@@ -130,13 +145,27 @@ export const getNavigationItems = (user, t) => {
     },
     {
       name: t('attendance') || 'វត្តមាន',
-      href: '/attendance',
+      href: '#', // Parent item doesn't need a direct link
+      children: [
+        {
+          name: t('studentAttendance') || 'វត្តមានសិស្ស',
+          href: '/attendance',
+        },
+        {
+          name: t('teacherAttendance') || 'វត្តមានគ្រូបង្រៀន',
+          href: '/teacher-attendance',
+        },
+        {
+          name: t('myAttendance') || 'វត្តមានរបស់ខ្ញុំ',
+          href: '/my-attendance',
+        },
+      ],
     },
     // Temporarily removed navigation items:
     // reports, achievements, settings
   ];
 
-  // Teacher gets my-classes, my-students, and attendance
+  // Teacher gets my-classes, my-students, attendance, and my-attendance
   const teacherItems = [
     {
       name: t('myClasses', 'My Classes'),
@@ -148,22 +177,29 @@ export const getNavigationItems = (user, t) => {
     },
     {
       name: t('attendance') || 'វត្តមាន',
-      href: '/attendance',
+      href: '#', // Parent item doesn't need a direct link
+      children: [
+        {
+          name: t('studentAttendance') || 'វត្តមានសិស្ស',
+          href: '/attendance',
+        },
+        {
+          name: t('myAttendance') || 'វត្តមានរបស់ខ្ញុំ',
+          href: '/my-attendance',
+        },
+      ],
     },
   ];
 
   // Return appropriate items based on user role
   // Check isDirector FIRST since both roles have roleId = 8
-  if (user.roleId === 8 && user.isDirector === true) {
-    console.log('getNavigationItems - Returning DIRECTOR items');
+  if (user.roleId === 8 && isDirector) {
     return directorItems;
   }
 
-  if (user.roleId === 8 && (user.isDirector === false || user.isDirector === undefined)) {
-    console.log('getNavigationItems - Returning TEACHER items');
+  if (user.roleId === 8 && !isDirector) {
     return teacherItems;
   }
 
-  console.log('getNavigationItems - No match, returning empty array');
   return [];
 };

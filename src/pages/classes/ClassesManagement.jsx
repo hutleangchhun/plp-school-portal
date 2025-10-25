@@ -30,7 +30,7 @@ export default function ClassesManagement() {
 
   // Track renders to detect infinite loops (development only)
   useRenderTracker('ClassesManagement');
-  
+
   // Get authenticated user data
   const [user, setUser] = useState(() => {
     try {
@@ -111,6 +111,7 @@ export default function ClassesManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
   const [isFiltering, setIsFiltering] = useState(false);
+  const [showAllTeachers, setShowAllTeachers] = useState(false);
 
 
   const [formData, setFormData] = useState(() => {
@@ -205,10 +206,10 @@ export default function ClassesManagement() {
       const accountData = await userService.getMyAccount();
 
       if (accountData && accountData.school_id) {
-        
+
         try {
           const schoolResponse = await schoolService.getSchoolInfo(accountData.school_id);
-          
+
           if (schoolResponse && schoolResponse.data) {
             setSchoolInfo({
               id: schoolResponse.data.id,
@@ -244,7 +245,7 @@ export default function ClassesManagement() {
   const refreshUserData = async () => {
     try {
       const accountData = await userService.getMyAccount();
-      
+
       if (accountData) {
         // Extract class information from the new API response structure
         let classIds = [];
@@ -260,7 +261,7 @@ export default function ClassesManagement() {
           classNames = user?.classNames || [];
           gradeLevels = user?.gradeLevels || [];
         }
-        
+
         // Update the user state with fresh data from server
         const updatedUser = {
           ...user,
@@ -272,7 +273,7 @@ export default function ClassesManagement() {
           school_id: accountData.school_id || user.school_id,
           schoolId: accountData.school_id || user.schoolId, // For backward compatibility
         };
-        
+
         // Update localStorage and state with fresh data
         localStorage.setItem('user', JSON.stringify(updatedUser));
         window.dispatchEvent(new Event('userDataUpdated')); // Notify other components
@@ -319,7 +320,7 @@ export default function ClassesManagement() {
 
   // Re-fetch classes when user ID changes (after authentication)
   // Note: fetchClasses now uses my-account API directly, so we don't need to depend on user.classIds
-  
+
 
   const fetchClasses = useStableCallback(async (page = currentPage, gradeLevel = selectedGradeLevel, search = searchTerm) => {
     try {
@@ -458,7 +459,7 @@ export default function ClassesManagement() {
   // Auto-apply filters when search term or grade level changes (with debounce for search)
   useEffect(() => {
     if (!user?.id || !schoolInfo?.id) return;
-    
+
     const timeoutId = setTimeout(() => {
       setCurrentPage(1); // Reset to first page
       fetchClasses(1, selectedGradeLevel, searchTerm);
@@ -474,8 +475,8 @@ export default function ClassesManagement() {
       gradeLevel: '',
       section: '',
       schoolId: schoolInfo.id?.toString() || '',
-      teacherId: user?.teacherId || user?.id || '', // Prefer teacherId, fallback to id if not available
-      teacherName: `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Teacher',
+      teacherId: '', // Empty by default to show placeholder
+      teacherName: '',
       academicYear: getCurrentAcademicYear(),
       maxStudents: '',
       subject: '',
@@ -483,6 +484,12 @@ export default function ClassesManagement() {
       room: '',
       description: ''
     });
+
+    // Fetch all teachers when opening add modal (no grade filter)
+    if (schoolInfo.id) {
+      fetchTeachers(schoolInfo.id);
+    }
+
     setShowAddModal(true);
   };
 
@@ -551,6 +558,13 @@ export default function ClassesManagement() {
         description: classData.description || ''
       };
 
+      // Fetch teachers for the grade level when editing
+      // If showAllTeachers is enabled, fetch all, otherwise filter by grade
+      if (gradeLevel && schoolInfo.id && !showAllTeachers) {
+        await fetchTeachers(schoolInfo.id, gradeLevel);
+      } else if (schoolInfo.id) {
+        await fetchTeachers(schoolInfo.id);
+      }
 
       setSelectedClass(classData);
       setFormData(formDataToSet);
@@ -723,8 +737,8 @@ export default function ClassesManagement() {
   // Show error state if error exists (prioritize over loading)
   if (error) {
     return (
-      <ErrorDisplay 
-        error={error} 
+      <ErrorDisplay
+        error={error}
         onRetry={() => retry(() => {
           clearError();
           window.location.reload(); // Reload the page to reinitialize everything
@@ -835,11 +849,11 @@ export default function ClassesManagement() {
           {classes.length === 0 && dataFetched ? (
             <EmptyState
               icon={BookOpen}
-              title={searchTerm || selectedGradeLevel ? 
-                t('noClassesFound', 'No classes found') : 
+              title={searchTerm || selectedGradeLevel ?
+                t('noClassesFound', 'No classes found') :
                 t('noClassesYet', 'No classes yet')
               }
-              description={searchTerm || selectedGradeLevel ? 
+              description={searchTerm || selectedGradeLevel ?
                 t('noClassesMatchFilter', 'No classes match your current filters. Try adjusting your search or grade level filter.') :
                 t('noClassesDescription', 'Get started by creating your first class.')
               }
@@ -867,22 +881,22 @@ export default function ClassesManagement() {
                   });
                 }
 
-             return (
-               <ClassCard
-                 key={classItem.id}
-                 title={classItem.name}
-                 subtitleParts={[
-                   `${t('grade') || 'Grade'} ${classItem.grade.replace('Grade ', '')}`,
-                   classItem.section ? `${t('section') || 'Section'} ${classItem.section}` : ''
-                 ]}
-                 enrolled={classItem.enrolled}
-                 capacity={classItem.capacity}
-                 badges={badges}
-                 onEdit={() => handleEditClass(classItem)}
-                 onDelete={() => { setSelectedClass(classItem); setShowDeleteDialog(true); }}
-               />
-             );
-               })}
+                return (
+                  <ClassCard
+                    key={classItem.id}
+                    title={classItem.name}
+                    subtitleParts={[
+                      `${t('grade') || 'Grade'} ${classItem.grade.replace('Grade ', '')}`,
+                      classItem.section ? `${t('section') || 'Section'} ${classItem.section}` : ''
+                    ]}
+                    enrolled={classItem.enrolled}
+                    capacity={classItem.capacity}
+                    badges={badges}
+                    onEdit={() => handleEditClass(classItem)}
+                    onDelete={() => { setSelectedClass(classItem); setShowDeleteDialog(true); }}
+                  />
+                );
+              })}
             </div>
           )}
 
@@ -904,328 +918,318 @@ export default function ClassesManagement() {
           )}
         </FadeInSection>
 
-      {/* Add/Edit Modal */}
-      <Modal
-        isOpen={showAddModal || showEditModal}
-        onClose={() => {
-          clearError(); // Clear any errors when closing modal
-          setLoading(false); // Reset loading state when closing modal
-          setShowAddModal(false);
-          setShowEditModal(false);
-        }}
-        title={showAddModal ? (t('addClass') || 'Add Class') : (t('editClass') || 'Edit Class')}
-        size="lg"
-        stickyFooter={true}
-        footer={
-          <div className="flex justify-end space-x-3">
-            <Button
-              type="button"
-              onClick={() => {
-                clearError(); // Clear any errors when clicking cancel
-                setShowAddModal(false);
-                setShowEditModal(false);
-              }}
-              variant="outline"
-              size="sm"
-            >
-              {t('cancel') || 'Cancel'}
-            </Button>
-            <Button
-              type="submit"
-              form="class-form"
-              disabled={loading || schoolInfo.name === 'Loading...' || schoolInfo.name.includes('Error') || !schoolInfo.id}
-              variant="primary"
-              size="sm"
-            >
-              {loading ? (t('saving') || 'Saving...') : (showAddModal ? (t('addClass') || 'Add Class') : (t('updateClass') || 'Update Class'))}
-            </Button>
-          </div>
-        }
-      >
-        <form id="class-form" onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('school') || 'School'} *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Building className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  name="schoolName"
-                  required
-                  readOnly
-                  value={schoolInfo.name}
-                  className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm cursor-not-allowed ${
-                    schoolInfo.name === 'Loading...' 
-                      ? 'bg-blue-50 border-blue-300 text-blue-700'
-                      : schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')
-                      ? 'bg-red-50 border-red-300 text-red-700'
-                      : 'bg-gray-50 border-0 focus:ring-0 focus:border-0 focus:outline-none'
-                  }`}
-                  title={`School ID: ${schoolInfo.id || 'Not available'}`}
-                />
-                {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
-                  <Button
-                    type="button"
-                    onClick={fetchSchoolInfo}
-                    variant="primary"
-                    size="xs"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                    title="Retry loading school information"
-                  >
-                    Retry
-                  </Button>
-                )}
-              </div>
-              <input
-                type="hidden"
-                name="schoolId"
-                value={formData.schoolId}
-              />
-              {schoolInfo.name === 'Loading...' && (
-                <p className="text-xs text-blue-600 mt-1">Loading school information...</p>
-              )}
-              {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
-                <p className="text-xs text-red-600 mt-1">Failed to load school information. Click "Retry" to try again.</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('className') || 'Class Name'} *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <BookOpen className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  name="name"
-                  required
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder={t('enterClassName') || 'Enter class name'}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('grade') || 'Grade Level'} *
-              </label>
-              <Dropdown
-                value={formData.gradeLevel}
-                onValueChange={(value) => {
-                  // Update grade level
-                  handleInputChange({ target: { name: 'gradeLevel', value } });
-                  
-                  // Fetch teachers filtered by the selected grade level
-                  if (value && schoolInfo.id) {
-                    fetchTeachers(schoolInfo.id, value);
-                  } else if (schoolInfo.id) {
-                    // If grade level is cleared, fetch all teachers
-                    fetchTeachers(schoolInfo.id);
-                  }
-                  
-                  // Reset teacher selection when grade changes
-                  setFormData(prev => ({
-                    ...prev,
-                    gradeLevel: value,
-                    teacherId: '',
-                    teacherName: ''
-                  }));
-                }}
-                options={grades}
-                placeholder={t('selectGrade') || 'Select Grade'}
-                className="w-full"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('section') || 'Section'} *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Users className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  name="section"
-                  required
-                  placeholder={t('sectionPlaceholder') || 'Enter section'}
-                  className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                  value={formData.section}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('academicYear') || 'Academic Year'} *
-              </label>
-              <Dropdown
-                value={formData.academicYear}
-                onValueChange={(value) => handleInputChange({ target: { name: 'academicYear', value } })}
-                options={academicYears.map(year => ({ value: year, label: year }))}
-                placeholder={t('selectAcademicYear') || 'Select Academic Year'}
-                className="w-full"
-              />
-            </div>
-          </div>
+        {/* Add/Edit Modal */}
+        <Modal
+          isOpen={showAddModal || showEditModal}
+          onClose={() => {
+            clearError(); // Clear any errors when closing modal
+            setLoading(false); // Reset loading state when closing modal
+            setShowAddModal(false);
+            setShowEditModal(false);
+          }}
+          title={showAddModal ? (t('addClass') || 'Add Class') : (t('editClass') || 'Edit Class')}
+          size="lg"
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('school') || 'School'} *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Building className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  name="schoolName"
-                  required
-                  readOnly
-                  value={schoolInfo.name}
-                  className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm cursor-not-allowed ${
-                    schoolInfo.name === 'Loading...' 
-                      ? 'bg-blue-50 border-blue-300 text-blue-700'
-                      : schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')
-                      ? 'bg-red-50 border-red-300 text-red-700'
-                      : 'bg-gray-50 border-0 focus:ring-0 focus:border-0 focus:outline-none'
-                  }`}
-                  title={`School ID: ${schoolInfo.id || 'Not available'}`}
-                />
-                {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
-                  <Button
-                    type="button"
-                    onClick={fetchSchoolInfo}
-                    variant="primary"
-                    size="xs"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                    title="Retry loading school information"
-                  >
-                    Retry
-                  </Button>
-                )}
-              </div>
-              <input
-                type="hidden"
-                name="schoolId"
-                value={formData.schoolId}
-              />
-              {schoolInfo.name === 'Loading...' && (
-                <p className="text-xs text-blue-600 mt-1">Loading school information...</p>
-              )}
-              {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
-                <p className="text-xs text-red-600 mt-1">Failed to load school information. Click "Retry" to try again.</p>
-              )}
+          stickyFooter={true}
+          footer={
+            <div className="flex justify-end space-x-3">
+              <Button
+                type="button"
+                onClick={() => {
+                  clearError(); // Clear any errors when clicking cancel
+                  setShowAddModal(false);
+                  setShowEditModal(false);
+                }}
+                variant="outline"
+                size="sm"
+              >
+                {t('cancel') || 'Cancel'}
+              </Button>
+              <Button
+                type="submit"
+                form="class-form"
+                disabled={loading || schoolInfo.name === 'Loading...' || schoolInfo.name.includes('Error') || !schoolInfo.id}
+                variant="primary"
+                size="sm"
+              >
+                {loading ? (t('saving') || 'Saving...') : (showAddModal ? (t('addClass') || 'Add Class') : (t('updateClass') || 'Update Class'))}
+              </Button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('teacher') || 'Teacher'} *
-                {formData.gradeLevel && filteredTeachers.length > 0 && (
-                  <span className="ml-2 text-xs text-blue-600">
-                    ({filteredTeachers.length} {t('teachersForGrade', 'teachers for grade')} {formData.gradeLevel})
-                  </span>
-                )}
-              </label>
-              {filteredTeachers.length > 0 ? (
-                <Dropdown
-                  value={formData.teacherId}
-                  onValueChange={(value) => {
-                    // Find the selected teacher to get the name
-                    const selectedTeacher = filteredTeachers.find(t => t.value === value);
-                    const teacherName = selectedTeacher?.label || '';
-                    setFormData(prev => ({
-                      ...prev,
-                      teacherId: value,
-                      teacherName: teacherName
-                    }));
-                  }}
-                  options={filteredTeachers}
-                  placeholder={formData.gradeLevel ? t('selectTeacherForGrade', 'Select teacher for this grade') : t('selectTeacher', 'Select Teacher')}
-                  className="w-full"
-                  icon={User}
-                />
-              ) : (
+          }
+        >
+          <form id="class-form" onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('school') || 'School'} *
+                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-4 w-4 text-gray-400" />
+                    <Building className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
                     type="text"
-                    name="teacherName"
+                    name="schoolName"
                     required
                     readOnly
-                    value={
-                      !schoolInfo?.id ? t('loadingSchool', 'Loading school...') :
-                      !formData.gradeLevel ? t('selectGradeFirst', 'Please select a grade level first') :
-                      filteredTeachers.length === 0 && formData.gradeLevel ? t('noTeachersForGrade', 'No teachers available for this grade') :
-                      t('loadingTeachers', 'Loading teachers...')
-                    }
-                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                    value={schoolInfo.name}
+                    className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm cursor-not-allowed ${schoolInfo.name === 'Loading...'
+                      ? 'bg-blue-50 border-blue-300 text-blue-700'
+                      : schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')
+                        ? 'bg-red-50 border-red-300 text-red-700'
+                        : 'bg-gray-50 border-0 focus:ring-0 focus:border-0 focus:outline-none'
+                      }`}
+                    title={`School ID: ${schoolInfo.id || 'Not available'}`}
+                  />
+                  {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
+                    <Button
+                      type="button"
+                      onClick={fetchSchoolInfo}
+                      variant="primary"
+                      size="xs"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                      title="Retry loading school information"
+                    >
+                      Retry
+                    </Button>
+                  )}
+                </div>
+                <input
+                  type="hidden"
+                  name="schoolId"
+                  value={formData.schoolId}
+                />
+                {schoolInfo.name === 'Loading...' && (
+                  <p className="text-xs text-blue-600 mt-1">Loading school information...</p>
+                )}
+                {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
+                  <p className="text-xs text-red-600 mt-1">Failed to load school information. Click "Retry" to try again.</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('className') || 'Class Name'} *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <BookOpen className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    name="name"
+                    required
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder={t('enterClassName') || 'Enter class name'}
                   />
                 </div>
-              )}
-              <input
-                type="hidden"
-                name="teacherId"
-                value={formData.teacherId}
-              />
-              {formData.gradeLevel && filteredTeachers.length === 0 && schoolInfo?.id && (
-                <p className="text-xs text-amber-600 mt-1">
-                  {t('noTeachersForGradeMessage', 'No teachers are assigned to grade')} {formData.gradeLevel}. {t('selectDifferentGrade', 'Try selecting a different grade level.')}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('maxStudents') || 'Maximum Students'} *
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Users className="h-4 w-4 text-gray-400" />
               </div>
-              <input
-                type="number"
-                name="maxStudents"
-                required
-                min="1"
-                max="200"
-                placeholder={t('capacityPlaceholder') || 'Enter maximum students'}
-                className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                value={formData.maxStudents}
-                onChange={handleInputChange}
-              />
             </div>
-          </div>
-        </form>
-      </Modal>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('grade') || 'Grade Level'} *
+                </label>
+                <Dropdown
+                  value={formData.gradeLevel}
+                  onValueChange={(value) => {
+                    // Update grade level and filter teachers by grade
+                    setFormData(prev => ({
+                      ...prev,
+                      gradeLevel: value,
+                      // Reset teacher selection when grade changes unless showing all teachers
+                      teacherId: showAllTeachers ? prev.teacherId : '',
+                      teacherName: showAllTeachers ? prev.teacherName : ''
+                    }));
 
-      {/* Delete Confirmation */}
-      <ConfirmDialog
-        isOpen={showDeleteDialog}
-        onClose={() => {
-          clearError(); // Clear any errors when closing delete dialog
-          setLoading(false); // Reset loading state when closing delete dialog
-          setShowDeleteDialog(false);
-        }}
-        onConfirm={handleConfirmDelete}
-        title={t('confirmDelete') || 'Confirm Delete'}
-        message={`${t('confirmDeleteClass') || 'Are you sure you want to delete'} ${selectedClass?.name}?`}
-        type="danger"
-        confirmText={t('delete') || 'Delete'}
-        cancelText={t('cancel') || 'Cancel'}
-        loading={isLoading('fetchClasses')}
-      />
+                    // Fetch teachers filtered by the selected grade level
+                    if (value && schoolInfo.id && !showAllTeachers) {
+                      fetchTeachers(schoolInfo.id, value);
+                    } else if (schoolInfo.id && !showAllTeachers) {
+                      // If grade level is cleared, fetch all teachers
+                      fetchTeachers(schoolInfo.id);
+                    }
+                  }}
+                  options={[
+                    { value: '', label: t('allGrades', 'All Grades') },
+                    ...grades
+                  ]}
+                  placeholder={t('selectGrade') || 'Select Grade'}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    {t('teacher') || 'Teacher'} *
+                  </label>
+                  <label className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showAllTeachers}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setShowAllTeachers(checked);
+
+                        // When toggling to show all teachers, fetch all teachers
+                        if (checked && schoolInfo.id) {
+                          fetchTeachers(schoolInfo.id);
+                        }
+                        // When toggling back to filtered, re-apply grade filter
+                        else if (!checked && formData.gradeLevel && schoolInfo.id) {
+                          fetchTeachers(schoolInfo.id, formData.gradeLevel);
+                        } else if (!checked && schoolInfo.id) {
+                          fetchTeachers(schoolInfo.id);
+                        }
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>{t('showAllTeachers', 'Show all teachers')}</span>
+                  </label>
+                </div>
+                {(showAllTeachers ? availableTeachers : filteredTeachers).length > 0 ? (
+                  <>
+                    <Dropdown
+                      value={formData.teacherId}
+                      onValueChange={(value) => {
+                        const teacherList = showAllTeachers ? availableTeachers : filteredTeachers;
+                        const selectedTeacher = teacherList.find(t => t.value === value);
+                        const teacherName = selectedTeacher?.label || '';
+                        setFormData(prev => ({
+                          ...prev,
+                          teacherId: value,
+                          teacherName: teacherName
+                        }));
+                      }}
+                      options={showAllTeachers ? availableTeachers : filteredTeachers}
+                      placeholder={t('selectTeacher', 'Select Teacher')}
+                      width="w-full"
+                      icon={User}
+                    />
+                    {formData.gradeLevel && formData.teacherId && (
+                      (() => {
+                        const teacherList = showAllTeachers ? availableTeachers : filteredTeachers;
+                        const selectedTeacher = teacherList.find(t => t.value === formData.teacherId);
+                        const teacherGrade = selectedTeacher?.gradeLevel;
+                        if (teacherGrade && teacherGrade.toString() !== formData.gradeLevel) {
+                          return (
+                            <p className="text-xs text-blue-600 mt-1">
+                              {t('teacherAssignedToDifferentGrade', 'Note: This teacher is currently assigned to grade')} {teacherGrade}
+                            </p>
+                          );
+                        }
+                        return null;
+                      })()
+                    )}
+                  </>
+                ) : (
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      name="teacherName"
+                      required
+                      readOnly
+                      value={
+                        !schoolInfo?.id ? t('loadingSchool', 'Loading school...') :
+                          (showAllTeachers ? availableTeachers : filteredTeachers).length === 0 && formData.gradeLevel && !showAllTeachers ?
+                            t('noTeachersForGrade', 'No teachers available for this grade') :
+                            t('loadingTeachers', 'Loading teachers...')
+                      }
+                      className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                    />
+                  </div>
+                )}
+                <input
+                  type="hidden"
+                  name="teacherId"
+                  value={formData.teacherId}
+                />
+                {formData.gradeLevel && (showAllTeachers ? availableTeachers : filteredTeachers).length === 0 && schoolInfo?.id && !showAllTeachers && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    {t('noTeachersForGradeMessage', 'No teachers are assigned to grade')} {formData.gradeLevel}. {t('tryShowAllTeachers', 'Try enabling "Show all teachers" above.')}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('section') || 'Section'} *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Users className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    name="section"
+                    required
+                    placeholder={t('sectionPlaceholder') || 'Enter section'}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    value={formData.section}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('academicYear') || 'Academic Year'} *
+                </label>
+                <Dropdown
+                  value={formData.academicYear}
+                  onValueChange={(value) => handleInputChange({ target: { name: 'academicYear', value } })}
+                  options={academicYears.map(year => ({ value: year, label: year }))}
+                  placeholder={t('selectAcademicYear') || 'Select Academic Year'}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('maxStudents') || 'Maximum Students'} *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Users className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="number"
+                    name="maxStudents"
+                    required
+                    min="1"
+                    max="200"
+                    placeholder={t('capacityPlaceholder') || 'Enter maximum students'}
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    value={formData.maxStudents}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+            </div>
+          </form>
+        </Modal>
+        {/* Delete Confirmation */}
+        <ConfirmDialog
+          isOpen={showDeleteDialog}
+          onClose={() => {
+            clearError(); // Clear any errors when closing delete dialog
+            setLoading(false); // Reset loading state when closing delete dialog
+            setShowDeleteDialog(false);
+          }}
+          onConfirm={handleConfirmDelete}
+          title={t('confirmDelete') || 'Confirm Delete'}
+          message={`${t('confirmDeleteClass') || 'Are you sure you want to delete'} ${selectedClass?.name}?`}
+          type="danger"
+          confirmText={t('delete') || 'Delete'}
+          cancelText={t('cancel') || 'Cancel'}
+          loading={isLoading('fetchClasses')}
+        />
       </div>
     </PageTransition>
   );
