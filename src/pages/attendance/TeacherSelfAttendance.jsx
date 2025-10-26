@@ -52,8 +52,6 @@ export default function TeacherSelfAttendance() {
   const userId = user?.id;
   const isTeacher = user?.roleId === 8;
 
-  // Get classId from user object (first class in classIds array)
-  const userClassId = user?.classIds?.[0] || null;
 
   // Get days in current month
   const getDaysInMonth = useCallback((date) => {
@@ -169,22 +167,6 @@ export default function TeacherSelfAttendance() {
       setSubmitting(true);
       startLoading('markAttendance', t('submittingAttendance', 'Submitting attendance...'));
 
-      // Get classId from user object first, then fallback to localStorage
-      let classId = userClassId;
-
-      if (!classId) {
-        const storedClassId = localStorage.getItem('selectedClassId');
-        classId = storedClassId ? parseInt(storedClassId, 10) : null;
-      }
-
-      if (!classId || isNaN(classId)) {
-        showError(t('noClassSelected', 'No class assigned. Please contact your administrator.'));
-        setSubmitting(false);
-        stopLoading('markAttendance');
-        return;
-      }
-
-      console.log('Marking teacher self-attendance with classId:', classId, 'userId:', userId, 'source:', userClassId ? 'user.classIds' : 'localStorage');
 
       // Double-check the date before sending to API
       const requestDate = new Date().toISOString().split('T')[0];
@@ -212,7 +194,6 @@ export default function TeacherSelfAttendance() {
       // For LEAVE status, keep it as is
 
       const attendanceResponse = await attendanceService.createAttendance({
-        classId: classId,
         userId: userId,
         date: requestDate,
         status: finalStatus,
