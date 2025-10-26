@@ -1,4 +1,4 @@
-import { User, Edit,Edit2, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, IdCard, Shield, Briefcase} from 'lucide-react';
+import { User, Edit, Edit2, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, IdCard, Shield, Briefcase } from 'lucide-react';
 import ClassStudentCountChart from '../../components/ui/ClassStudentCountChart';
 import SchoolOverviewChart from '../../components/ui/SchoolOverviewChart';
 import { Link } from 'react-router-dom';
@@ -250,29 +250,6 @@ export default function Dashboard({ user: initialUser }) {
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-6">
-
-        {/* User Role Badge and Attendance Status */}
-        <FadeInSection delay={0} className="mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            {getUserRole() && (() => {
-              const role = getUserRole();
-              const IconComponent = role.Icon;
-              return (
-                <Badge
-                  variant="filled"
-                  color={role.color}
-                  size="lg"
-                  className="flex items-center gap-2"
-                >
-                  <IconComponent className="w-4 h-4" />
-                  {role.label}
-                </Badge>
-              );
-            })()}
-          </div>
-          <AttendanceStatusCard user={user} />
-        </FadeInSection>
-
         {/* School Information Card */}
         {schoolInfo && (
           <FadeInSection delay={100} className="mb-6">
@@ -301,6 +278,24 @@ export default function Dashboard({ user: initialUser }) {
                 {schoolInfo.place && (
                   <Badge variant="outline" size='md' color='green' className="ml-2">{t('place', 'Place')}: {schoolInfo.place}</Badge>
                 )}
+                {/* User Role Badge and Attendance Status */}
+
+                {getUserRole() && (() => {
+                  const role = getUserRole();
+                  const IconComponent = role.Icon;
+                  return (
+                    <Badge
+                      variant="filled"
+                      color={role.color}
+                      size="lg"
+                      className="flex items-center gap-2 mx-2"
+                    >
+                      <IconComponent className="w-4 h-4" />
+                      {role.label}
+                    </Badge>
+                  );
+                })()}
+
               </div>
             </div>
           </FadeInSection>

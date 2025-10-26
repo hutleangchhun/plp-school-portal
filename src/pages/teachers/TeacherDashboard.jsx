@@ -23,7 +23,6 @@ import Badge from '../../components/ui/Badge';
 import { Bar, BarChart, XAxis, YAxis, LabelList } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import EmptyState from '@/components/ui/EmptyState';
-import AttendanceStatusCard from '../../components/attendance/AttendanceStatusCard';
 
 export default function TeacherDashboard({ user }) {
   const { t } = useLanguage();
@@ -215,12 +214,12 @@ export default function TeacherDashboard({ user }) {
     }
   ];
   if (loading) {
-    return(
+    return (
       <div className="flex items-center justify-center h-screen">
-        <DynamicLoader 
+        <DynamicLoader
           type="spinner"
           size="xl"
-          variant="primary" 
+          variant="primary"
           message={t('loadingDashboard', 'Loading dashboard...')} />
       </div>
     );
@@ -229,66 +228,63 @@ export default function TeacherDashboard({ user }) {
   return (
     <PageTransition className='p-6'>
       <div className="">
-        {/* User Role Badge and Attendance Status */}
-        <div className="mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            {getUserRole() && (() => {
-              const role = getUserRole();
-              const IconComponent = role.Icon;
-              return (
-                <Badge
-                  variant="filled"
-                  color={role.color}
-                  size="lg"
-                  className="flex items-center gap-2"
-                >
-                  <IconComponent className="w-4 h-4" />
-                  {role.label}
-                </Badge>
-              );
-            })()}
-          </div>
-          <AttendanceStatusCard user={user} />
-        </div>
-
         <FadeInSection>
           {/* Welcome Header */}
           <div className="p-6 bg-white rounded-xl border border-gray-200 mb-4">
-            <div className='mb-8'>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {t('welcome', 'Welcome')}, {user?.name || user?.username || t('teacher', 'Teacher')}!
-              </h1>
-              <p className="text-gray-600 mt-2">
-                {t('dashboardGreeting', "Here's an overview of your classes and students")}
-              </p>
+            <div className='flex justify-between'>
+              <div className='mb-8'>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {t('welcome', 'Welcome')}, {user?.name || user?.username || t('teacher', 'Teacher')}!
+                </h1>
+                <p className="text-gray-600 mt-2">
+                  {t('dashboardGreeting', "Here's an overview of your classes and students")}
+                </p>
+              </div>
+              <div>
+                {getUserRole() && (() => {
+                  const role = getUserRole();
+                  const IconComponent = role.Icon;
+                  return (
+                    <Badge
+                      variant="filled"
+                      color={role.color}
+                      size="lg"
+                      className="flex items-center gap-2"
+                    >
+                      <IconComponent className="w-4 h-4" />
+                      {role.label}
+                    </Badge>
+                  );
+                })()}
+              </div>
             </div>
             {/* Stats Grid - Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatsCard
-              title={t('school', 'School')}
-              value={schoolName || t('loading', 'Loading...')}
-              icon={Building2}
-              iconBgColor="bg-indigo-100"
-              iconColor="text-indigo-600"
-              className='shadow-none border-2 border-indigo-100'
-            />
-            <StatsCard
-              title={t('totalClasses', 'Total Classes')}
-              value={stats.totalClasses}
-              icon={BookOpen}
-              iconBgColor="bg-blue-100"
-              iconColor="text-blue-600"
-              className='shadow-none border-2 border-blue-100'
-            />
-            <StatsCard
-              title={t('totalStudents', 'Total Students')}
-              value={stats.totalStudents}
-              icon={Users}
-              iconBgColor="bg-purple-100"
-              iconColor="text-purple-600"
-              className='shadow-none border-2 border-purple-100'
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatsCard
+                title={t('school', 'School')}
+                value={schoolName || t('loading', 'Loading...')}
+                icon={Building2}
+                iconBgColor="bg-indigo-100"
+                iconColor="text-indigo-600"
+                className='shadow-none border-2 border-indigo-100'
+              />
+              <StatsCard
+                title={t('totalClasses', 'Total Classes')}
+                value={stats.totalClasses}
+                icon={BookOpen}
+                iconBgColor="bg-blue-100"
+                iconColor="text-blue-600"
+                className='shadow-none border-2 border-blue-100'
+              />
+              <StatsCard
+                title={t('totalStudents', 'Total Students')}
+                value={stats.totalStudents}
+                icon={Users}
+                iconBgColor="bg-purple-100"
+                iconColor="text-purple-600"
+                className='shadow-none border-2 border-purple-100'
+              />
+            </div>
           </div>
           {/* Chart and User Info Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
@@ -340,8 +336,8 @@ export default function TeacherDashboard({ user }) {
                         radius={[4, 4, 0, 0]}
                         cursor="default"
                         style={{ cursor: 'default' }}
-                        onMouseEnter={() => {}}
-                        onMouseLeave={() => {}}
+                        onMouseEnter={() => { }}
+                        onMouseLeave={() => { }}
                       >
                         <LabelList
                           dataKey="students"
