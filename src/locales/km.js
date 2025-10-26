@@ -954,4 +954,27 @@ export const km = {
 
   // Export utilities
   notAvailable: 'មិនមាន',
+
+  // AttendanceApprovalPage translations
+  attendanceApproved: 'វត្តមានត្រូវបានអនុម័តដោយជោគជ័យ',
+  errorApprovingAttendance: 'កំហុសក្នុងការអនុម័តវត្តមាន',
+  attendanceRejected: 'វត្តមានត្រូវបានច្រាസប់ដោយជោគជ័យ',
+  errorRejectingAttendance: 'កំហុសក្នុងការច្រាសប់វត្តមាន',
+  selectAttendanceFirst: 'សូមជ្រើសរើសកំណត់ត្រាវត្តមានមុនដំបូង',
+  searchByName: 'ស្វែងរកតាមឈ្មោះគ្រូ...',
+  bulkApproveSuccess: 'អនុម័តកំណត់ត្រាវត្តមាន {{count}} ត្រូវបានអនុម័ត',
+  errorBulkApproving: 'កំហុសក្នុងការអនុម័តក្រុម',
+  noPendingApprovals: 'មិនមានការអនុម័តដែលកំពុងរង់ចាំ',
+  allAttendanceApproved: 'កំណត់ត្រាវត្តមានទាំងអស់បានអនុម័ត',
+  teacherDetails: 'ព័ត៌មានលម្អិតគ្រូបង្រៀន',
+  enterComments: 'បញ្ចូលលម្អិតឬមូលហេតុ...',
+  hideDetails: 'លាក់ព័ត៌មានលម្អិត',
+  showDetails: 'បង្ហាញព័ត៌មានលម្អិត',
+  submitted: 'បានដាក់ស្នើ',
+  pending: 'កំពុងរង់ចាំ',
+  approve: 'អនុម័ត',
+  reject: 'ច្រាសប់',
+  approveSelected: 'អនុម័តដែលបានជ្រើសរើស',
+  reasonRequired: 'ត្រូវការមូលហេតុ',
+  fetchingUsers: 'កំពុងទាញយកអ្នកប្រើប្រាស់...',
 };

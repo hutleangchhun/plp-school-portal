@@ -63,6 +63,10 @@ export const routePermissions = {
   '/attendance/approval': {
     allowedRoles: [ROLES.DIRECTOR], // Directors only
     component: 'AttendanceApprovalPage'
+  },
+  '/qr-code-admin': {
+    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    component: 'QRCodeAdminManagement'
   }
 };
 
@@ -85,7 +89,7 @@ export const hasRouteAccess = (path, user) => {
   }
 
   // Teacher: roleId = 8 && (isDirector = false OR undefined) can only access /attendance, /my-classes, /my-students, /my-attendance, and /profile
-  // Teachers CANNOT access /students/bulk-import
+  // Teachers CANNOT access /students/bulk-import or /qr-code-admin
   if (user.roleId === ROLES.TEACHER && isNotDirector) {
     return path === '/attendance' || path === '/my-classes' || path === '/my-students' || path === '/my-attendance' || path === '/profile';
   }
@@ -160,6 +164,10 @@ export const getNavigationItems = (user, t) => {
           href: '/my-attendance',
         },
       ],
+    },
+    {
+      name: t('qrCodeManagementAdmin', 'QR Code Management - Admin'),
+      href: '/qr-code-admin',
     },
     // Temporarily removed navigation items:
     // reports, achievements, settings

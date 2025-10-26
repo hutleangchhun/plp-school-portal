@@ -15,7 +15,8 @@ import {
   UserCheck,
   UserStar,
   User,
-  UserCircle
+  UserCircle,
+  QrCode
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -51,6 +52,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/my-classes': GraduationCap,
     '/my-students': Users,
     '/my-attendance': Calendar,
+    '/qr-code-admin': QrCode,
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/reports': FileText,
     // '/achievements': Trophy,
@@ -71,6 +73,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/my-classes': 'orange',
     '/my-students': 'purple',
     '/my-attendance': 'teal',
+    '/qr-code-admin': 'violet',
     // Temporarily removed color mappings (will be re-enabled later):
     // '/reports': 'yellow',
     // '/achievements': 'red',

@@ -24,6 +24,7 @@ import Attendance from './pages/attendance/Attendance';
 import DirectorTeacherAttendance from './pages/attendance/DirectorTeacherAttendance';
 import TeacherSelfAttendance from './pages/attendance/TeacherSelfAttendance';
 import AttendanceApprovalPage from './pages/attendance/AttendanceApprovalPage';
+import QRCodeAdminManagement from './pages/admin/QRCodeAdminManagement';
 // import Achievements from './pages/achievements/Achievements';
 // import Settings from './pages/settings/Settings';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
@@ -217,6 +218,15 @@ function AppContent() {
               </DashboardLayout>
             </ProtectedRoute>
           } />
+
+          {/* QR Code Admin Management route (Directors only) */}
+          <Route path="qr-code-admin" element={
+            <ProtectedRoute path="/qr-code-admin" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<QRCodeAdminManagement />} />
+          </Route>
 
           {/* Temporarily removed routes (will be re-enabled later):
               - reports, attendance, achievements, settings

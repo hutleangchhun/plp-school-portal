@@ -124,7 +124,7 @@ export default function AttendanceApprovalPage({ user }) {
       });
 
       if (response) {
-        showSuccess(t('attendanceApproved', 'Attendance approved successfully'));
+        showSuccess(t('attendanceApproved'));
 
         // Remove from pending list
         setPendingApprovals(prev => prev.filter(a => a.id !== attendanceId));
@@ -140,7 +140,7 @@ export default function AttendanceApprovalPage({ user }) {
         });
       }
     } catch (err) {
-      showError(t('errorApprovingAttendance', 'Error approving attendance'));
+      showError(t('errorApprovingAttendance'));
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -156,7 +156,7 @@ export default function AttendanceApprovalPage({ user }) {
       const reason = comments[attendanceId] || '';
 
       if (!reason.trim()) {
-        showError(t('reasonRequired', 'Reason is required'));
+        showError(t('reasonRequired'));
         setSubmitting(false);
         return;
       }
@@ -167,7 +167,7 @@ export default function AttendanceApprovalPage({ user }) {
       });
 
       if (response) {
-        showSuccess(t('attendanceRejected', 'Attendance rejected successfully'));
+        showSuccess(t('attendanceRejected'));
 
         // Remove from pending list
         setPendingApprovals(prev => prev.filter(a => a.id !== attendanceId));
@@ -183,7 +183,7 @@ export default function AttendanceApprovalPage({ user }) {
         });
       }
     } catch (err) {
-      showError(t('errorRejectingAttendance', 'Error rejecting attendance'));
+      showError(t('errorRejectingAttendance'));
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -195,7 +195,7 @@ export default function AttendanceApprovalPage({ user }) {
    */
   const handleBulkApprove = useCallback(async () => {
     if (selectedApprovals.size === 0) {
-      showError(t('selectAttendanceFirst', 'Select attendance records first'));
+      showError(t('selectAttendanceFirst'));
       return;
     }
 
@@ -207,7 +207,7 @@ export default function AttendanceApprovalPage({ user }) {
 
       if (response) {
         showSuccess(
-          t('bulkApproveSuccess', `${selectedApprovals.size} attendance records approved`)
+          t('bulkApproveSuccess').replace('{{count}}', selectedApprovals.size)
         );
 
         // Refresh list
@@ -215,7 +215,7 @@ export default function AttendanceApprovalPage({ user }) {
         setSelectedApprovals(new Set());
       }
     } catch (err) {
-      showError(t('errorBulkApproving', 'Error bulk approving attendance'));
+      showError(t('errorBulkApproving'));
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -234,10 +234,10 @@ export default function AttendanceApprovalPage({ user }) {
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                {t('attendanceApprovals', 'Attendance Approvals')}
+                {t('attendanceApprovals')}
               </h1>
               <p className="text-gray-600">
-                {t('reviewPendingApprovals', 'Review and approve/reject pending attendance records')}
+                {t('reviewPendingApprovals')}
               </p>
             </div>
             {filteredApprovals.length > 0 && (
@@ -249,7 +249,7 @@ export default function AttendanceApprovalPage({ user }) {
                   className="w-5 h-5 rounded border-gray-300"
                 />
                 <span className="text-sm text-gray-600 whitespace-nowrap">
-                  {t('selectAll', 'Select All')}
+                  {t('selectAll')}
                 </span>
               </div>
             )}
@@ -259,7 +259,7 @@ export default function AttendanceApprovalPage({ user }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('date', 'Date')}
+                  {t('date')}
                 </label>
                 <input
                   type="date"
@@ -274,13 +274,13 @@ export default function AttendanceApprovalPage({ user }) {
 
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('search', 'Search')}
+                  {t('search')}
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder={t('searchByName', 'Search by teacher name...')}
+                    placeholder={t('searchByName')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -293,7 +293,7 @@ export default function AttendanceApprovalPage({ user }) {
             {selectedApprovals.size > 0 && (
               <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <span className="text-sm font-medium text-blue-900">
-                  {t('selected', 'Selected')}: {selectedApprovals.size}
+                  {t('selected')}: {selectedApprovals.size}
                 </span>
                 <Button
                   onClick={handleBulkApprove}
@@ -301,7 +301,7 @@ export default function AttendanceApprovalPage({ user }) {
                   className="flex items-center gap-2"
                 >
                   <CheckCircle className="w-4 h-4" />
-                  {t('approveSelected', 'Approve Selected')}
+                  {t('approveSelected')}
                 </Button>
               </div>
             )}
@@ -323,8 +323,8 @@ export default function AttendanceApprovalPage({ user }) {
         {filteredApprovals.length === 0 ? (
           <FadeInSection delay={300}>
             <EmptyState
-              title={t('noPendingApprovals', 'No Pending Approvals')}
-              message={t('allAttendanceApproved', 'All attendance records have been approved')}
+              title={t('noPendingApprovals')}
+              message={t('allAttendanceApproved')}
               icon={CheckCircle}
             />
           </FadeInSection>
@@ -353,11 +353,11 @@ export default function AttendanceApprovalPage({ user }) {
                             {approval.userDetails?.name || approval.student?.name || 'Unknown'}
                           </h3>
                           <p className="text-sm text-gray-500 mt-1">
-                            {t('date', 'Date')}: {approval.date} • {t('status', 'Status')}: {approval.status}
+                            {t('date')}: {approval.date} • {t('status')}: {approval.status}
                           </p>
                           {approval.submittedAt && (
                             <p className="text-xs text-gray-400 mt-1">
-                              {t('submitted', 'Submitted')}: {new Date(approval.submittedAt).toLocaleString()}
+                              {t('submitted')}: {new Date(approval.submittedAt).toLocaleString()}
                             </p>
                           )}
                         </div>
@@ -366,7 +366,7 @@ export default function AttendanceApprovalPage({ user }) {
                         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-50 border border-yellow-200">
                           <Clock className="w-4 h-4 text-yellow-600" />
                           <span className="text-xs font-medium text-yellow-700">
-                            {t('pending', 'Pending')}
+                            {t('pending')}
                           </span>
                         </div>
                       </div>
@@ -375,7 +375,7 @@ export default function AttendanceApprovalPage({ user }) {
                       {approval.reason && (
                         <div className="mt-3 p-2 bg-gray-50 rounded border border-gray-200">
                           <p className="text-sm text-gray-700">
-                            <span className="font-medium">{t('reason', 'Reason')}: </span>
+                            <span className="font-medium">{t('reason')}: </span>
                             {approval.reason}
                           </p>
                         </div>
@@ -392,7 +392,7 @@ export default function AttendanceApprovalPage({ user }) {
                       size="sm"
                     >
                       <CheckCircle className="w-4 h-4" />
-                      {t('approve', 'Approve')}
+                      {t('approve')}
                     </Button>
                     <Button
                       onClick={() => handleRejectAttendance(approval.id)}
@@ -402,7 +402,7 @@ export default function AttendanceApprovalPage({ user }) {
                       size="sm"
                     >
                       <XCircle className="w-4 h-4" />
-                      {t('reject', 'Reject')}
+                      {t('reject')}
                     </Button>
                   </div>
                 </div>
@@ -414,11 +414,11 @@ export default function AttendanceApprovalPage({ user }) {
                     {approval.userDetails && (
                       <div className="p-3 bg-white rounded border border-gray-200">
                         <h4 className="text-sm font-semibold text-gray-900 mb-2">
-                          {t('teacherDetails', 'Teacher Details')}
+                          {t('teacherDetails')}
                         </h4>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
-                            <p className="text-gray-600">{t('email', 'Email')}</p>
+                            <p className="text-gray-600">{t('email')}</p>
                             <p className="font-medium text-gray-900">{approval.userDetails.email}</p>
                           </div>
                         </div>
@@ -428,7 +428,7 @@ export default function AttendanceApprovalPage({ user }) {
                     {/* Comments (for both approval and rejection) */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('comments', 'Comments')}
+                        {t('comments')}
                       </label>
                       <textarea
                         value={comments[approval.id] || ''}
@@ -436,7 +436,7 @@ export default function AttendanceApprovalPage({ user }) {
                           ...prev,
                           [approval.id]: e.target.value
                         }))}
-                        placeholder={t('enterComments', 'Enter your comments or reason...')}
+                        placeholder={t('enterComments')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                         rows="3"
                       />
@@ -453,12 +453,12 @@ export default function AttendanceApprovalPage({ user }) {
                     {expandedId === approval.id ? (
                       <>
                         <ChevronLeft className="w-4 h-4" />
-                        {t('hideDetails', 'Hide Details')}
+                        {t('hideDetails')}
                       </>
                     ) : (
                       <>
                         <ChevronRight className="w-4 h-4" />
-                        {t('showDetails', 'Show Details')}
+                        {t('showDetails')}
                       </>
                     )}
                   </button>
@@ -472,7 +472,7 @@ export default function AttendanceApprovalPage({ user }) {
         {totalPages > 1 && (
           <FadeInSection delay={400} className="mt-6 flex items-center justify-between">
             <p className="text-sm text-gray-600">
-              {t('showing', 'Showing')} {(currentPage - 1) * 10 + 1} {t('to', 'to')} {Math.min(currentPage * 10, totalRecords)} {t('of', 'of')} {totalRecords}
+              {t('showing')} {(currentPage - 1) * 10 + 1} {t('to')} {Math.min(currentPage * 10, totalRecords)} {t('of')} {totalRecords}
             </p>
             <div className="flex gap-2">
               <Button
