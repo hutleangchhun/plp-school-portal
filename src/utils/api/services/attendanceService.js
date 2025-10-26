@@ -212,9 +212,17 @@ export const attendanceService = {
    * @returns {Promise<Object>} Updated attendance data
    */
   async approveAttendance(attendanceId, approvalData) {
-    return handleApiResponse(() =>
+    const result = await handleApiResponse(() =>
       apiClient_.patch(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}/approve`, approvalData)
-    ).then(response => attendanceService.utils.formatAttendanceData(response.data));
+    );
+
+    if (result.success) {
+      return {
+        success: true,
+        data: attendanceService.utils.formatAttendanceData(result.data.data)
+      };
+    }
+    return result;
   },
 
   /**
