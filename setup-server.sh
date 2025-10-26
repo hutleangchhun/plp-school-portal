@@ -23,7 +23,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-DEPLOYMENT_DIR="/opt/frontend"
+DEPLOYMENT_DIR="/opt/plp-school-portal"
 DOMAIN="plp-sms.moeys.gov.kh"
 WWW_DOMAIN="www.plp-sms.moeys.gov.kh"
 EMAIL="hutleangchhun@gmail.com"  # Change this to your email
