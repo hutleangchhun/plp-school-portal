@@ -72,7 +72,8 @@ export default function AttendanceSummary({ userId, selectedDate: propSelectedDa
     if (userId && startDate && endDate) {
       fetchSummary();
     }
-  }, [userId, startDate, endDate, fetchSummary]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, startDate, endDate]); // Fetch when userId or date range changes
 
   // Error state
   if (error) {

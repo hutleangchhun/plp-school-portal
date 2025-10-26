@@ -106,7 +106,9 @@ export const useApiCall = (apiFunction, options = {}) => {
         }
       }
     }
-  }, [apiFunction, showToast, t, onSuccess, onError, showSuccessToast, showErrorToast, successMessage, retries, cache, cacheData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiFunction, showToast, t, onSuccess, onError, showSuccessToast, showErrorToast, successMessage, retries, cache]);
+  // Note: cacheData is intentionally excluded from dependencies to avoid recreating execute on cache updates
   
   const reset = useCallback(() => {
     setData(initialData);

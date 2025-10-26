@@ -26,7 +26,8 @@ export default function TeacherAttendance() {
   // Force Khmer as the base language for this page
   useEffect(() => {
     setLanguage && setLanguage('km');
-  }, [setLanguage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only set language once on mount
 
   const { showSuccess: _showSuccess, showError: _showError } = useToast();
   const { startLoading, stopLoading } = useLoading();
@@ -41,6 +42,13 @@ export default function TeacherAttendance() {
   const [updatingSettings, setUpdatingSettings] = useState({}); // Track which teachers are being updated
   const [selectedTeachers, setSelectedTeachers] = useState(new Set()); // Track selected teachers for bulk actions
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [attendanceModal, setAttendanceModal] = useState({
+    isOpen: false,
+    teacher: null,
+    date: null,
+    existingAttendance: null
+  });
+  const [submittingAttendance, setSubmittingAttendance] = useState(false);
 
   const fetchingRef = useRef(false);
 
@@ -68,7 +76,7 @@ export default function TeacherAttendance() {
   const weekDates = useMemo(() => getWeekDates(currentWeekStart), [currentWeekStart, getWeekDates]);
 
   // Get authenticated user data
-  const [user, setUser] = useState(() => {
+  const [user] = useState(() => {
     try {
       const userData = localStorage.getItem('user');
       return userData ? JSON.parse(userData) : null;
@@ -78,7 +86,7 @@ export default function TeacherAttendance() {
     }
   });
 
-  const [schoolId, setSchoolId] = useState(user?.school_id || user?.schoolId || null);
+  const [schoolId] = useState(user?.school_id || user?.schoolId || null);
   const isDirector = user?.isDirector === true;
 
   // Function to toggle teacher selection
@@ -259,7 +267,10 @@ export default function TeacherAttendance() {
           allAttendanceRecords.forEach(record => {
             const userId = Number(record.userId || record.user_id);
             const recordDate = record.date ? record.date.split('T')[0] : null;
-            if (!userId || isNaN(userId) || !recordDate) return;
+
+            if (!userId || isNaN(userId) || !recordDate) {
+              return;
+            }
 
             if (!weeklyAttendanceData[userId]) {
               weeklyAttendanceData[userId] = {};
@@ -393,6 +404,97 @@ export default function TeacherAttendance() {
       setBulkUpdating(false);
     }
   }, [selectedTeachers, teacherSettings, displayedTeachers, t, _showSuccess, _showError]);
+
+  // Function to open attendance modal
+  const openAttendanceModal = useCallback((teacher, date, existingAttendance) => {
+    // Only allow marking attendance for today
+    if (!isToday(date)) {
+      _showError(t('canOnlyMarkTodayAttendance', 'អ្នកអាចបញ្ជូនវត្តមានតែថ្ងៃនេះប៉ុណ្ណោះ'));
+      return;
+    }
+
+    setAttendanceModal({
+      isOpen: true,
+      teacher,
+      date,
+      existingAttendance
+    });
+  }, [t, _showError]);
+
+  // Function to close attendance modal
+  const closeAttendanceModal = useCallback(() => {
+    setAttendanceModal({
+      isOpen: false,
+      teacher: null,
+      date: null,
+      existingAttendance: null
+    });
+  }, []);
+
+  // Function to mark attendance
+  const markAttendance = useCallback(async (status, reason = '') => {
+    const { teacher, date } = attendanceModal;
+    if (!teacher || !date) return;
+
+    // Double-check it's today
+    if (!isToday(date)) {
+      _showError(t('canOnlyMarkTodayAttendance', 'អ្នកអាចបញ្ជូនវត្តមានតែថ្ងៃនេះប៉ុណ្ណោះ'));
+      return;
+    }
+
+    try {
+      setSubmittingAttendance(true);
+      startLoading('markAttendance', t('submittingAttendance', 'កំពុងបញ្ជូនវត្តមាន...'));
+
+      const dateStr = date.toISOString().split('T')[0];
+
+      // For teacher attendance: NO classId required (unlike student attendance)
+      const payload = {
+        userId: teacher.id, // Use userId not teacherId
+        date: dateStr,
+        status: status,
+        reason: reason || null
+      };
+
+      // Check if attendance already exists for this date
+      const existingAttendanceId = attendanceModal.existingAttendance?.id;
+
+      if (existingAttendanceId) {
+        // Update existing record using PATCH
+        await attendanceService.updateAttendance(existingAttendanceId, payload);
+      } else {
+        // Create new record using POST
+        await attendanceService.createAttendance(payload);
+      }
+
+      _showSuccess(t('attendanceMarkedSuccess', 'វត្តមានត្រូវបានបញ្ជូនដោយជោគជ័យ'));
+
+      // Refresh attendance data
+      await fetchTeachersAndAttendance();
+
+      // Close modal
+      closeAttendanceModal();
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+
+      const errorMessage = error.response?.data?.message || error.message || '';
+      _showError(t('failedToMarkAttendance', 'បរាជ័យក្នុងការបញ្ជូនវត្តមាន') + (errorMessage ? ': ' + errorMessage : ''));
+    } finally {
+      setSubmittingAttendance(false);
+      stopLoading('markAttendance');
+    }
+  }, [attendanceModal, t, _showSuccess, _showError, startLoading, stopLoading, fetchTeachersAndAttendance, closeAttendanceModal]);
+
+  // Helper function to translate attendance status to Khmer
+  const getStatusInKhmer = useCallback((status) => {
+    const statusMap = {
+      'PRESENT': t('present', 'វត្តមាន'),
+      'ABSENT': t('absent', 'អវត្តមាន'),
+      'LATE': t('late', 'យឺត'),
+      'LEAVE': t('leave', 'ច្បាប់')
+    };
+    return statusMap[status?.toUpperCase()] || status;
+  }, [t]);
 
   // Debounce search
   const debouncedFetchRef = useRef(null);
@@ -800,8 +902,11 @@ export default function TeacherAttendance() {
                             return (
                               <td
                                 key={idx}
-                                className={`px-3 py-3 text-center ${isCurrentDay ? 'bg-blue-50' : isWeekendDay ? 'bg-gray-50' : ''
-                                  }`}
+                                className={`px-3 py-3 text-center cursor-pointer hover:bg-blue-100 transition-colors ${
+                                  isCurrentDay ? 'bg-blue-50' : isWeekendDay ? 'bg-gray-50' : ''
+                                }`}
+                                onClick={() => openAttendanceModal(teacher, date, attendance)}
+                                title={isToday(date) ? t('clickToMarkAttendance', 'ចុចដើម្បីបញ្ជូនវត្តមាន') : ''}
                               >
                                 {badge || <span className="text-gray-400">-</span>}
                               </td>
@@ -817,6 +922,105 @@ export default function TeacherAttendance() {
           </div>
         </FadeInSection>
       </div>
+
+      {/* Attendance Modal */}
+      {attendanceModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {t('markAttendance', 'បញ្ជូនវត្តមាន')}
+                </h3>
+                <button
+                  onClick={closeAttendanceModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  disabled={submittingAttendance}
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-4">
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-1">{t('teacher', 'គ្រូបង្រៀន')}:</p>
+                <p className="text-base font-medium text-gray-900">{attendanceModal.teacher?.name}</p>
+              </div>
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-1">{t('date', 'កាលបរិច្ឆេទ')}:</p>
+                <p className="text-base font-medium text-gray-900">
+                  {attendanceModal.date ? formatDateKhmer(attendanceModal.date, 'full') : ''}
+                </p>
+              </div>
+
+              {/* Existing Attendance Warning */}
+              {attendanceModal.existingAttendance && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    {t('attendanceAlreadyMarked', 'វត្តមានត្រូវបានបញ្ជូនរួចរាល់')}: <strong>{getStatusInKhmer(attendanceModal.existingAttendance.status)}</strong>
+                  </p>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    {t('markingAgainWillUpdate', 'ការបញ្ជូនម្តងទៀតនឹងធ្វើបច្ចុប្បន្នភាពកំណត់ត្រា')}
+                  </p>
+                </div>
+              )}
+
+              {/* Status Buttons */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700 mb-3">{t('selectStatus', 'ជ្រើសរើសស្ថានភាព')}:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => markAttendance('PRESENT')}
+                    disabled={submittingAttendance}
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Check className="h-5 w-5" />
+                    <span>{t('present', 'វត្តមាន')}</span>
+                  </button>
+                  <button
+                    onClick={() => markAttendance('LATE')}
+                    disabled={submittingAttendance}
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Clock className="h-5 w-5" />
+                    <span>{t('late', 'យឺត')}</span>
+                  </button>
+                  <button
+                    onClick={() => markAttendance('ABSENT')}
+                    disabled={submittingAttendance}
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                    <span>{t('absent', 'អវត្តមាន')}</span>
+                  </button>
+                  <button
+                    onClick={() => markAttendance('LEAVE')}
+                    disabled={submittingAttendance}
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Calendar className="h-5 w-5" />
+                    <span>{t('leave', 'ច្បាប់')}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={closeAttendanceModal}
+                disabled={submittingAttendance}
+                className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {t('cancel', 'បោះបង់')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageTransition>
   );
 }

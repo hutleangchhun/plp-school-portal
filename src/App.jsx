@@ -27,17 +27,24 @@ import AttendanceApprovalPage from './pages/attendance/AttendanceApprovalPage';
 // import Achievements from './pages/achievements/Achievements';
 // import Settings from './pages/settings/Settings';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import { ToastProvider } from './contexts/ToastContext';
+import { ToastProvider, useToast } from './contexts/ToastContext';
 import { LoadingProvider } from './contexts/LoadingContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { api, utils } from './utils/api';
 import { ProtectedRoute } from './components/common/DynamicRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import { setToastContext } from './utils/notificationHelper';
 
 function AppContent() {
   const { t } = useLanguage();
+  const toastContext = useToast();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Initialize notification helper with toast context
+  useEffect(() => {
+    setToastContext(toastContext);
+  }, [toastContext]);
 
   useEffect(() => {
     const isAuth = api.auth.isAuthenticated();

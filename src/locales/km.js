@@ -357,6 +357,8 @@ export const km = {
   trackYourAttendance: 'តាមដានវត្តមានរបស់អ្នក',
   teacherAttendanceTracking: 'ការតាមដានវត្តមានគ្រូបង្រៀន',
   trackTeacherAttendance: 'តាមដានអត្រាវត្តមានរបស់គ្រូបង្រៀននៅក្នុងសាលារៀនរបស់អ្នក',
+  attendanceApprovals: 'ការអនុម័តវត្តមាន',
+  reviewPendingApprovals: 'ពិនិត្យការអនុម័តវត្តមានដែលកំពុងរង់ចាំ',
   // Teacher Information
   teacherInfo: 'ព័ត៌មានគ្រូបង្រៀន',
   attendanceRate: 'អត្រាវត្តមាន',
@@ -871,6 +873,13 @@ export const km = {
   studentAttendance: 'វត្តមានសិស្ស',
   noClassSelected: 'មិនមានថ្នាក់ត្រូវបានជ្រើសរើស។ សូមទាក់ទងអ្នកគ្រប់គ្រង។',
   errorFetchingAttendance: 'កំហុសក្នុងការទាញយកទិន្នន័យវត្តមាន',
+  markAttendance: 'បញ្ជូនវត្តមាន',
+  teacher: 'គ្រូបង្រៀន',
+  date: 'កាលបរិច្ឆេទ',
+  attendanceAlreadyMarked: 'វត្តមានត្រូវបានបញ្ជូនរួចរាល់',
+  markingAgainWillUpdate: 'ការបញ្ជូនម្តងទៀតនឹងធ្វើបច្ចុប្បន្នភាពកំណត់ត្រា',
+  selectStatus: 'ជ្រើសរើសស្ថានភាព',
+  clickToMarkAttendance: 'ចុចដើម្បីបញ្ជូនវត្តមាន',
   accessDeniedTeacherOnly: 'ការចូលប្រើត្រូវបានបដិសេធ។ ទំព័រនេះអាចចូលប្រើបានតែដោយគ្រូបង្រៀនប៉ុណ្ណោះ។',
   goBack: 'ត្រឡប់ក្រោយ',
 

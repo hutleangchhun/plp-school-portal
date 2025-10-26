@@ -111,14 +111,17 @@ export default function Attendance() {
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('userDataUpdated', handleStorageChange);
 
-    if (user?.school_id || user?.schoolId) {
-      setSchoolId(user.school_id || user.schoolId);
-    }
-
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('userDataUpdated', handleStorageChange);
     };
+  }, []); // Empty dependencies - only set up listeners once
+
+  // Sync schoolId when user changes
+  useEffect(() => {
+    if (user?.school_id || user?.schoolId) {
+      setSchoolId(user.school_id || user.schoolId);
+    }
   }, [user]);
 
   // Fetch classes for the school
@@ -275,7 +278,8 @@ export default function Attendance() {
     if (schoolId) {
       fetchClasses();
     }
-  }, [schoolId, fetchClasses]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolId]); // Only re-fetch when schoolId changes
 
   // Filter students based on search term
   // Server-side filtering may not work, so we apply client-side filtering as well

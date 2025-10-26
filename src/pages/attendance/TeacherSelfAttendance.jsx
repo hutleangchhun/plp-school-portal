@@ -23,7 +23,8 @@ export default function TeacherSelfAttendance() {
   // Force Khmer as the base language for this page
   useEffect(() => {
     setLanguage && setLanguage('km');
-  }, [setLanguage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only set language once on mount
 
   const { showSuccess, showError } = useToast();
   const { startLoading, stopLoading } = useLoading();
@@ -136,12 +137,13 @@ export default function TeacherSelfAttendance() {
     }
   }, [userId, currentMonth, t, handleError, clearError, startLoading, stopLoading]);
 
-  // Fetch attendance on mount and when month changes
+  // Fetch attendance on mount and when month/userId changes
   useEffect(() => {
     if (userId) {
       fetchMonthlyAttendance();
     }
-  }, [userId, fetchMonthlyAttendance]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, currentMonth]); // Re-fetch when userId or currentMonth changes
 
   // Check if date is today
   const isDateToday = (dateStr) => {
@@ -288,6 +290,17 @@ export default function TeacherSelfAttendance() {
   // Check if user is teacher or director
   const isDirector = user?.isDirector === true;
   const isTeacherOrDirector = isTeacher || isDirector;
+
+  // Helper function to translate attendance status to Khmer
+  const getStatusInKhmer = (status) => {
+    const statusMap = {
+      'PRESENT': t('present', 'វត្តមាន'),
+      'ABSENT': t('absent', 'អវត្តមាន'),
+      'LATE': t('late', 'យឺត'),
+      'LEAVE': t('leave', 'ច្បាប់')
+    };
+    return statusMap[status?.toUpperCase()] || status;
+  };
 
   if (!isTeacherOrDirector) {
     return (
@@ -444,7 +457,7 @@ export default function TeacherSelfAttendance() {
                         </p>
                         <div className="mt-2 flex flex-col gap-2 text-sm text-green-700">
                           <span>
-                            {t('status', 'ស្ថានភាព')}: <strong>{todayAttendance.status}</strong>
+                            {t('status', 'ស្ថានភាព')}: <strong>{getStatusInKhmer(todayAttendance.status)}</strong>
                           </span>
                           {todayAttendance.time && (
                             <span>
@@ -569,7 +582,7 @@ export default function TeacherSelfAttendance() {
                             <Tooltip
                               content={
                                 <div className="text-xs">
-                                  <div className="font-medium">{attendance.status}</div>
+                                  <div className="font-medium">{getStatusInKhmer(attendance.status)}</div>
                                   {attendance.time && (
                                     <div className="text-gray-400 mt-1">{attendance.time}</div>
                                   )}

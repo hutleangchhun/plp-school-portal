@@ -193,7 +193,8 @@ export const useLocationData = (initialValues = {}) => {
       setSelectedCommune('');
       setSelectedVillage('');
     }
-  }, [selectedProvince, loadDistricts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProvince, language]); // Re-fetch when province or language changes
 
   const loadCommunes = useCallback(async () => {
     if (!selectedProvinceData || !selectedDistrictData) return;
@@ -232,7 +233,8 @@ export const useLocationData = (initialValues = {}) => {
       setSelectedCommune('');
       setSelectedVillage('');
     }
-  }, [selectedDistrictData, loadCommunes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDistrictData, selectedProvinceData, language]); // Re-fetch when district, province, or language changes
 
   const loadVillages = useCallback(async () => {
     if (!selectedProvinceData || !selectedDistrictData || !selectedCommuneData) return;
@@ -271,7 +273,8 @@ export const useLocationData = (initialValues = {}) => {
       setVillages([]);
       setSelectedVillage('');
     }
-  }, [selectedCommuneData, loadVillages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCommuneData, selectedDistrictData, selectedProvinceData, language]); // Re-fetch when commune, district, province, or language changes
 
   const handleProvinceChange = useCallback((value) => {
     setSelectedProvince(value);
