@@ -958,7 +958,7 @@ export const km = {
   // AttendanceApprovalPage translations
   attendanceApproved: 'វត្តមានត្រូវបានអនុម័តដោយជោគជ័យ',
   errorApprovingAttendance: 'កំហុសក្នុងការអនុម័តវត្តមាន',
-  attendanceRejected: 'វត្តមានត្រូវបានច្រាസប់ដោយជោគជ័យ',
+  attendanceRejected: 'វត្តមានត្រូវបានបដិសេធដោយជោគជ័យ',
   errorRejectingAttendance: 'កំហុសក្នុងការច្រាសប់វត្តមាន',
   selectAttendanceFirst: 'សូមជ្រើសរើសកំណត់ត្រាវត្តមានមុនដំបូង',
   searchByName: 'ស្វែងរកតាមឈ្មោះគ្រូ...',
@@ -973,7 +973,7 @@ export const km = {
   submitted: 'បានដាក់ស្នើ',
   pending: 'កំពុងរង់ចាំ',
   approve: 'អនុម័ត',
-  reject: 'ច្រាសប់',
+  reject: 'បដិសេធ',
   approveSelected: 'អនុម័តដែលបានជ្រើសរើស',
   reasonRequired: 'ត្រូវការមូលហេតុ',
   fetchingUsers: 'កំពុងទាញយកអ្នកប្រើប្រាស់...',

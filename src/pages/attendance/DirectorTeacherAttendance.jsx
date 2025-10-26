@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { debounce } from 'lodash';
-import { Calendar, Check, X, Clock, Users, Search, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { Calendar, Check, X, Clock, Users, Search, ChevronLeft, ChevronRight, Settings, FileCheck } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
+import { Button } from '../../components/ui/Button';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import Badge from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -22,6 +24,7 @@ import { isToday } from '../attendance/utils';
  * For directors to track teacher attendance in their school
  */
 export default function TeacherAttendance() {
+  const navigate = useNavigate();
   const { t, setLanguage } = useLanguage();
   // Force Khmer as the base language for this page
   useEffect(() => {
@@ -618,8 +621,8 @@ export default function TeacherAttendance() {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
-              <div>
+            <div className="flex flex-col lg:flex-row gap-4 my-4">
+              <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('search') || 'ស្វែងរក'}
                 </label>
@@ -633,6 +636,18 @@ export default function TeacherAttendance() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
+              </div>
+              <div className="flex items-end">
+                <Button
+                  onClick={() => navigate('/attendance/approval')}
+                  variant="primary"
+                  className="flex items-center gap-2 whitespace-nowrap"
+                  title={t('attendanceApprovals') || 'ការអនុម័តវត្តមាន'}
+                  size="sm"
+                >
+                  <FileCheck className="w-4 h-4" />
+                  {t('attendanceApprovals') || 'ការអនុម័តវត្តមាន'}
+                </Button>
               </div>
             </div>
 
