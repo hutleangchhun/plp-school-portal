@@ -68,23 +68,36 @@ export default function AttendanceApprovalPage({ user }) {
   const handleApproveAttendance = useCallback(async (attendanceId) => {
     try {
       setSubmitting(true);
+      console.log('🟢 Starting approve for ID:', attendanceId);
 
       const response = await attendanceService.approveAttendance(attendanceId, {
         approvalStatus: 'APPROVED',
         approvalComments: ''
       });
 
-      console.log('Approve response:', response);
+      console.log('🟢 Approve response:', response);
+      console.log('🟢 Response type:', typeof response);
+      console.log('🟢 Response truthy?', !!response);
 
-      if (response?.success) {
+      // Check if response is truthy (API returned data successfully)
+      // The service either returns the formatted data directly or {success: true, data: ...}
+      if (response) {
+        console.log('✅ Showing success message');
         showSuccess(t('attendanceApproved'));
 
+        console.log('✅ Removing from pending list');
         // Remove from pending list
-        setPendingApprovals(prev => prev.filter(a => a.id !== attendanceId));
+        setPendingApprovals(prev => {
+          const updated = prev.filter(a => a.id !== attendanceId);
+          console.log('✅ Updated pending approvals count:', updated.length);
+          return updated;
+        });
       } else {
-        showError(response?.error || t('errorApprovingAttendance'));
+        console.log('❌ Response is falsy, showing error');
+        showError(t('errorApprovingAttendance'));
       }
     } catch (err) {
+      console.log('❌ Approve caught error:', err.message);
       showError(t('errorApprovingAttendance'));
       console.error('Approve error:', err);
     } finally {
@@ -98,23 +111,36 @@ export default function AttendanceApprovalPage({ user }) {
   const handleRejectAttendance = useCallback(async (attendanceId) => {
     try {
       setSubmitting(true);
+      console.log('🔴 Starting reject for ID:', attendanceId);
 
       const response = await attendanceService.approveAttendance(attendanceId, {
         approvalStatus: 'REJECTED',
         approvalComments: ''
       });
 
-      console.log('Reject response:', response);
+      console.log('🔴 Reject response:', response);
+      console.log('🔴 Response type:', typeof response);
+      console.log('🔴 Response truthy?', !!response);
 
-      if (response?.success) {
+      // Check if response is truthy (API returned data successfully)
+      // The service either returns the formatted data directly or {success: true, data: ...}
+      if (response) {
+        console.log('✅ Showing success message');
         showSuccess(t('attendanceRejected'));
 
+        console.log('✅ Removing from pending list');
         // Remove from pending list
-        setPendingApprovals(prev => prev.filter(a => a.id !== attendanceId));
+        setPendingApprovals(prev => {
+          const updated = prev.filter(a => a.id !== attendanceId);
+          console.log('✅ Updated pending approvals count:', updated.length);
+          return updated;
+        });
       } else {
-        showError(response?.error || t('errorRejectingAttendance'));
+        console.log('❌ Response is falsy, showing error');
+        showError(t('errorRejectingAttendance'));
       }
     } catch (err) {
+      console.log('❌ Reject caught error:', err.message);
       showError(t('errorRejectingAttendance'));
       console.error('Reject error:', err);
     } finally {
