@@ -18,7 +18,6 @@ import Badge from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
 import EmptyState from '@/components/ui/EmptyState';
 import AttendanceExport from '../../components/attendance/AttendanceExport';
-import Modal from '../../components/ui/Modal';
 import { formatDateKhmer } from '../../utils/formatters';
 
 export default function Attendance() {
@@ -40,11 +39,6 @@ export default function Attendance() {
   const [classes, setClasses] = useState([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
 
-  // Attendance marking modal state
-  const [markingModalOpen, setMarkingModalOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [markingSubmitting, setMarkingSubmitting] = useState(false);
 
   const fetchingRef = useRef(false);
 
@@ -415,58 +409,6 @@ export default function Attendance() {
 
   const stats = getWeeklyStats();
 
-  // Handle marking attendance for a student on a specific date
-  const handleMarkAttendance = useCallback(async (status, reason = '') => {
-    if (!selectedStudent || !selectedDate || !selectedClass) {
-      showError(t('missingData', 'Missing required data'));
-      return;
-    }
-
-    setMarkingSubmitting(true);
-    try {
-      startLoading('markStudentAttendance', t('submittingAttendance', 'Submitting attendance...'));
-
-      const dateStr = selectedDate.toISOString().split('T')[0];
-
-      const response = await attendanceService.createAttendance({
-        classId: selectedClass,
-        userId: selectedStudent.id,
-        date: dateStr,
-        status: status,
-        reason: reason
-      });
-
-      if (response.success) {
-        showSuccess(t('attendanceMarkedSuccess', 'Attendance marked successfully'));
-
-        // Update the local state with the new attendance record
-        setWeeklyAttendance(prev => ({
-          ...prev,
-          [selectedStudent.id]: {
-            ...(prev[selectedStudent.id] || {}),
-            [dateStr]: {
-              status: status,
-              time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-              id: response.data?.id,
-              createdAt: new Date().toISOString(),
-              reason: reason
-            }
-          }
-        }));
-
-        // Close the modal
-        setMarkingModalOpen(false);
-        setSelectedStudent(null);
-        setSelectedDate(null);
-      }
-    } catch (error) {
-      console.error('Error marking attendance:', error);
-      showError(error?.response?.data?.message || t('failedToMarkAttendance', 'Failed to mark attendance'));
-    } finally {
-      setMarkingSubmitting(false);
-      stopLoading('markStudentAttendance');
-    }
-  }, [selectedStudent, selectedDate, selectedClass, t, showSuccess, showError, startLoading, stopLoading]);
 
   // Helper to check if date is weekend
   const isWeekend = (date) => {
@@ -513,65 +455,6 @@ export default function Attendance() {
 
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
-      {/* Attendance Marking Modal */}
-      <Modal
-        isOpen={markingModalOpen}
-        onClose={() => {
-          setMarkingModalOpen(false);
-          setSelectedStudent(null);
-          setSelectedDate(null);
-        }}
-        title={selectedStudent ? `${t('markAttendance', 'Mark Attendance')} - ${selectedStudent.name}` : t('markAttendance', 'Mark Attendance')}
-        size="sm"
-      >
-        <div className="space-y-4">
-          {selectedDate && (
-            <div className="text-sm text-gray-600">
-              {t('date', 'Date')}: <strong>{formatDateKhmer(selectedDate, 'full')}</strong>
-            </div>
-          )}
-          <div className="flex flex-col gap-3">
-            <Button
-              onClick={() => handleMarkAttendance('PRESENT')}
-              disabled={markingSubmitting}
-              className="bg-green-600 hover:bg-green-700 w-full flex items-center justify-center gap-2"
-            >
-              <Check className="h-4 w-4" />
-              {t('present', 'Present')} - វត្តមាន
-            </Button>
-            <Button
-              onClick={() => handleMarkAttendance('ABSENT')}
-              disabled={markingSubmitting}
-              className="bg-red-600 hover:bg-red-700 w-full flex items-center justify-center gap-2"
-            >
-              <X className="h-4 w-4" />
-              {t('absent', 'Absent')} - មិនមាន
-            </Button>
-            <Button
-              onClick={() => handleMarkAttendance('LATE')}
-              disabled={markingSubmitting}
-              className="bg-yellow-600 hover:bg-yellow-700 w-full flex items-center justify-center gap-2"
-            >
-              <Clock className="h-4 w-4" />
-              {t('late', 'Late')} - យឺត
-            </Button>
-            <Button
-              onClick={() => handleMarkAttendance('LEAVE')}
-              disabled={markingSubmitting}
-              className="bg-purple-600 hover:bg-purple-700 w-full flex items-center justify-center gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              {t('leave', 'Leave')} - ច្បាប់
-            </Button>
-          </div>
-          {markingSubmitting && (
-            <div className="flex justify-center items-center py-2">
-              <DynamicLoader type="spinner" size="sm" variant="primary" />
-            </div>
-          )}
-        </div>
-      </Modal>
-
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <FadeInSection className="mb-4">
@@ -825,13 +708,8 @@ export default function Attendance() {
                               return (
                                 <td
                                   key={idx}
-                                  className={`px-2 py-3 text-center min-h-10 align-middle cursor-pointer hover:bg-blue-50 transition-colors ${isWeekendDay ? 'bg-transparent' : ''
+                                  className={`px-2 py-3 text-center min-h-10 align-middle ${isWeekendDay ? 'bg-transparent' : ''
                                     }`}
-                                  onClick={() => {
-                                    setSelectedStudent(student);
-                                    setSelectedDate(date);
-                                    setMarkingModalOpen(true);
-                                  }}
                                 >
                                   <div className="flex flex-col items-center gap-1">
                                     {badge ? badge : <span className="text-xs text-gray-300">-</span>}

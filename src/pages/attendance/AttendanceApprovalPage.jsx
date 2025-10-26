@@ -155,12 +155,6 @@ export default function AttendanceApprovalPage({ user }) {
       setSubmitting(true);
       const reason = comments[attendanceId] || '';
 
-      if (!reason.trim()) {
-        showError(t('reasonRequired'));
-        setSubmitting(false);
-        return;
-      }
-
       const response = await attendanceService.approveAttendance(attendanceId, {
         approvalStatus: 'REJECTED',
         approvalComments: reason
@@ -396,7 +390,7 @@ export default function AttendanceApprovalPage({ user }) {
                     </Button>
                     <Button
                       onClick={() => handleRejectAttendance(approval.id)}
-                      disabled={submitting || !comments[approval.id]?.trim()}
+                      disabled={submitting}
                       variant="outline"
                       className="flex-1 flex items-center justify-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
                       size="sm"
