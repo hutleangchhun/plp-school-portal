@@ -7,15 +7,11 @@ services:
       dockerfile: Dockerfile
     container_name: teacher-portal-frontend
     ports:
-      - "80:80"
-      - "443:443"
+      - "3000:80"
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-    volumes:
-      # Mount SSL certificates from host (Let's Encrypt)
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/lib/letsencrypt:/var/lib/letsencrypt:ro
+    volumes: []
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
