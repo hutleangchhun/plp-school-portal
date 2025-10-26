@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: teacher-portal-frontend
     ports:
-      - "3000:80"
+      - "3001:80"
     restart: unless-stopped
     environment:
       - NODE_ENV=production
