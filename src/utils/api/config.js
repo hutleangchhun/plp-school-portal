@@ -143,6 +143,12 @@ const ENDPOINTS = {
     NOTIFICATIONS: '/settings/notifications',
     PREFERENCES: '/settings/preferences',
   },
+  EXAM_HISTORY: {
+    BASE: '/exam-history',
+    BY_USER: (userId) => `/exam-history/user/${userId}`,
+    BY_CLASS: (classId) => `/exam-history/class/${classId}`,
+    DETAILS: (examHistoryId) => `/exam-history/${examHistoryId}`,
+  },
 };
 
 // HTTP Status codes for consistent error handling

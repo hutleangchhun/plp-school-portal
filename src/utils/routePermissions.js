@@ -67,6 +67,14 @@ export const routePermissions = {
   '/qr-code-admin': {
     allowedRoles: [ROLES.DIRECTOR], // Directors only
     component: 'QRCodeAdminManagement'
+  },
+  '/exam-records': {
+    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    component: 'DirectorExamRecords'
+  },
+  '/my-students-exams': {
+    allowedRoles: [ROLES.TEACHER],
+    component: 'TeacherExamRecords'
   }
 };
 
@@ -165,11 +173,16 @@ export const getNavigationItems = (user, t) => {
         },
       ],
     },
-    {
-      name: t('qrCodeManagementAdmin', 'QR Code Management - Admin'),
-      href: '/qr-code-admin',
-    },
-    // Temporarily removed navigation items:
+    // Temporarily disabled - will implement later:
+    // {
+    //   name: t('qrCodeManagementAdmin', 'QR Code Management - Admin'),
+    //   href: '/qr-code-admin',
+    // },
+    // {
+    //   name: t('examRecords', 'Exam Records'),
+    //   href: '/exam-records',
+    // },
+    // Other temporarily removed navigation items:
     // reports, achievements, settings
   ];
 
@@ -197,6 +210,11 @@ export const getNavigationItems = (user, t) => {
         },
       ],
     },
+    // Temporarily disabled - will implement later:
+    // {
+    //   name: t('myStudentsExams', 'My Students Exams'),
+    //   href: '/my-students-exams',
+    // },
   ];
 
   // Return appropriate items based on user role

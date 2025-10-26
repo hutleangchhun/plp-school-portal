@@ -25,6 +25,8 @@ import DirectorTeacherAttendance from './pages/attendance/DirectorTeacherAttenda
 import TeacherSelfAttendance from './pages/attendance/TeacherSelfAttendance';
 import AttendanceApprovalPage from './pages/attendance/AttendanceApprovalPage';
 import QRCodeAdminManagement from './pages/admin/QRCodeAdminManagement';
+import DirectorExamRecords from './pages/exam/DirectorExamRecords';
+import TeacherExamRecords from './pages/exam/TeacherExamRecords';
 // import Achievements from './pages/achievements/Achievements';
 // import Settings from './pages/settings/Settings';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
@@ -227,6 +229,24 @@ function AppContent() {
           }>
             <Route index element={<QRCodeAdminManagement />} />
           </Route>
+
+          {/* Director Exam Records route */}
+          <Route path="exam-records" element={
+            <ProtectedRoute path="/exam-records" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout}>
+                <DirectorExamRecords user={user} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* Teacher Exam Records route */}
+          <Route path="my-students-exams" element={
+            <ProtectedRoute path="/my-students-exams" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout}>
+                <TeacherExamRecords user={user} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
 
           {/* Temporarily removed routes (will be re-enabled later):
               - reports, attendance, achievements, settings
