@@ -1224,8 +1224,8 @@ export default function StudentsManagement() {
         // Sub headers (row 10)
         [
           '#',
-          'អត្តលេខ', 'គោត្តនាម', 'នាម', 'អ៊ីមែល', 'ឈ្មោះអ្នកប្រើ', 'ពាក្យសម្ងាត់',
-          'ថ្ងៃខែឆ្នាំកំណើត', 'ភេទ', 'លេខទូរស័ព្ទ', 'សញ្ជាតិ', 'លេខសិស្ស', 'លេខសាលា', 'ឆ្នាំសិក្សា', 'កម្រិតថ្នាក់',
+          'អត្តលេខ', 'គោត្តនាម', 'នាម',
+          'ថ្ងៃខែឆ្នាំកំណើត', 'ភេទ', 'លេខទូរស័ព្ទ', 'សញ្ជាតិ', 'លេខសិស្ស', 'ឆ្នាំសិក្សា', 'កម្រិតថ្នាក់',
           'អាសយដ្ឋានពេញ',
           'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញឪពុក',
           'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញម្តាយ',
@@ -1279,15 +1279,12 @@ export default function StudentsManagement() {
           student.studentId || student.id || '', // អត្តលេខ
           student.lastName || student.last_name || '', // គោត្តនាម
           student.firstName || student.first_name || '', // នាម
-          student.email || '', // អ៊ីមែល
-          student.username || '', // ឈ្មោះអ្នកប្រើ
-          '', // ពាក្យសម្ងាត់ (leave empty for security)
           formattedDob, // ថ្ងៃខែឆ្នាំកំណើត
           gender, // ភេទ
           student.phone || '', // លេខទូរស័ព្ទ
           student.nationality || 'ខ្មែរ', // សញ្ជាតិ
           student.studentId || '', // លេខសិស្ស
-          '', // លេខសាលា (can be filled manually)
+          
           selectedClass?.academicYear || academicYear, // ឆ្នាំសិក្សា
           selectedClass?.gradeLevel || '', // កម្រិតថ្នាក់
           studentAddress, // អាសយដ្ឋានពេញ
@@ -1321,15 +1318,11 @@ export default function StudentsManagement() {
         { wch: 12 }, // អត្តលេខ
         { wch: 12 }, // គោត្តនាម
         { wch: 12 }, // នាម
-        { wch: 25 }, // អ៊ីមែល
-        { wch: 15 }, // ឈ្មោះអ្នកប្រើ
-        { wch: 12 }, // ពាក្យសម្ងាត់
         { wch: 12 }, // ថ្ងៃខែឆ្នាំកំណើត
         { wch: 8 },  // ភេទ
         { wch: 12 }, // លេខទូរស័ព្ទ
         { wch: 10 }, // សញ្ជាតិ
         { wch: 12 }, // លេខសិស្ស
-        { wch: 10 }, // លេខសាលា
         { wch: 12 }, // ឆ្នាំសិក្សា
         { wch: 10 }, // កម្រិតថ្នាក់
         { wch: 40 }, // អាសយដ្ឋានពេញ
