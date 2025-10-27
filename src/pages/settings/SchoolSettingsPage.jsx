@@ -114,13 +114,6 @@ export default function SchoolSettingsPage({ user }) {
           // Fetch communes for the current district
           const commResponse = await locationService.getCommunesByDistrict(provinceId, districtCode);
           setCommunes(commResponse?.data || commResponse || []);
-
-          const communeCode = schoolData?.place?.commune_code;
-          if (communeCode) {
-            // Fetch villages for the current commune
-            const villResponse = await locationService.getVillagesByCommune(provinceId, districtCode, communeCode);
-            setVillages(villResponse?.data || villResponse || []);
-          }
         }
       } catch (err) {
         console.error('Error loading location cascade:', err);
@@ -157,7 +150,6 @@ export default function SchoolSettingsPage({ user }) {
       if (!formData.province_id) {
         setDistricts([]);
         setCommunes([]);
-        setVillages([]);
         return;
       }
       try {
@@ -166,10 +158,9 @@ export default function SchoolSettingsPage({ user }) {
         setDistricts(response?.data || response || []);
         console.log('📍 Districts loaded:', response?.data || response);
 
-        // Only clear communes and villages if district was not already set from API
+        // Only clear communes if district was not already set from API
         if (!formData.district_code) {
           setCommunes([]);
-          setVillages([]);
         }
       } catch (err) {
         console.error('Error fetching districts:', err);
@@ -178,7 +169,7 @@ export default function SchoolSettingsPage({ user }) {
       }
     };
     fetchDistricts();
-  }, [formData.province_id]);
+  }, [formData.province_id, formData.district_code]);
 
   // Fetch communes when district changes
   useEffect(() => {
@@ -352,10 +343,10 @@ export default function SchoolSettingsPage({ user }) {
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900">
                 {t('schoolSettings') || 'School Settings'}
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="mt-1 text-sm text-gray-500">
                 {t('updateSchoolInformation') || 'Update your school information'}
               </p>
             </div>
@@ -382,99 +373,103 @@ export default function SchoolSettingsPage({ user }) {
                 {t('schoolProfile') || 'School Profile Image'}
               </label>
               <div className="flex items-start gap-6">
-                {/* Preview */}
+                {/* Preview - Clickable */}
                 <div className="flex-shrink-0">
-                  {previewUrl ? (
-                    <img
-                      src={previewUrl}
-                      alt="School profile"
-                      className="w-32 h-32 rounded-lg object-cover border border-gray-200"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
-                      <span className="text-xs text-gray-500 text-center px-2">
-                        {t('noImage') || 'No image'}
-                      </span>
-                    </div>
-                  )}
+                  <div
+                    className="cursor-pointer group relative"
+                    onClick={() => document.getElementById('profileImageInput')?.click()}
+                  >
+                    {previewUrl ? (
+                      <div className="relative">
+                        <img
+                          src={previewUrl}
+                          alt="School profile"
+                          className="w-32 h-32 rounded-lg object-cover border border-gray-200 group-hover:opacity-75 transition-opacity"
+                        />
+                        <div className="absolute inset-0 rounded-lg bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <span className="text-white text-xs font-medium">Click to change</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center group-hover:bg-gray-50 transition-colors">
+                        <span className="text-xs text-gray-500 text-center px-2">
+                          {t('clickToUpload') || 'Click to upload image'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    {t('imageSizeLimit') || 'Max 5MB'}
+                  </p>
                 </div>
 
-                {/* Upload Input */}
+                {/* Hidden File Input */}
+                <input
+                  id="profileImageInput"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  disabled={submitting}
+                />
+
+                {/* File Info */}
                 <div className="flex-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="block w-full text-sm text-gray-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-md file:border-0
-                      file:text-sm file:font-medium
-                      file:bg-blue-50 file:text-blue-600
-                      hover:file:bg-blue-100
-                      cursor-pointer"
-                    disabled={submitting}
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    {t('imageSizeLimit') || 'Maximum file size: 5MB. Supported: JPG, PNG, GIF'}
-                  </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-xs font-medium text-blue-900 mb-2">
+                      {t('supportedFormats') || 'Supported Formats'}
+                    </p>
+                    <ul className="text-xs text-blue-800 space-y-1">
+                      <li>• JPG</li>
+                      <li>• PNG</li>
+                      <li>• GIF</li>
+                    </ul>
+                    <p className="text-xs text-blue-800 mt-2 pt-2 border-t border-blue-200">
+                      <span className="font-medium">{t('maxSize') || 'Maximum size'}: </span>
+                      5MB
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
             <hr className="border-gray-200" />
 
-            {/* School Name */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-900 mb-2">
-                {t('schoolName') || 'School Name'} <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                disabled={submitting}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                placeholder={t('enterSchoolName') || 'Enter school name'}
-              />
-            </div>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+              {/* School Name */}
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-900 mb-2">
+                  {t('schoolName') || 'School Name'} <span className="text-red-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  disabled={submitting}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  placeholder={t('enterSchoolName') || 'Enter school name'}
+                />
+              </div>
 
-            {/* School Code */}
-            <div>
-              <label htmlFor="code" className="block text-sm font-medium text-gray-900 mb-2">
-                {t('schoolCode') || 'School Code'} <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="text"
-                id="code"
-                name="code"
-                value={formData.code}
-                onChange={handleInputChange}
-                disabled={submitting}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                placeholder={t('enterSchoolCode') || 'Enter school code'}
-              />
+              {/* School Code */}
+              <div>
+                <label htmlFor="code" className="block text-sm font-medium text-gray-900 mb-2">
+                  {t('schoolCode') || 'School Code'} <span className="text-red-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="code"
+                  name="code"
+                  value={formData.code}
+                  onChange={handleInputChange}
+                  disabled={submitting}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  placeholder={t('enterSchoolCode') || 'Enter school code'}
+                />
+              </div>
             </div>
-
-            {/* Status */}
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-900 mb-2">
-                {t('status') || 'Status'}
-              </label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                disabled={submitting}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-              >
-                <option value="ACTIVE">{t('active') || 'Active'}</option>
-                <option value="INACTIVE">{t('inactive') || 'Inactive'}</option>
-              </select>
-            </div>
-
             {/* Location Information */}
             <hr className="border-gray-200" />
             <div>
@@ -543,11 +538,18 @@ export default function SchoolSettingsPage({ user }) {
             </div>
 
             {/* Submit Button */}
-            <div className="flex gap-3 pt-6 border-t border-gray-200">
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate(-1)}
+                disabled={submitting}
+              >
+                {t('cancel') || 'Cancel'}
+              </Button>
               <Button
                 type="submit"
                 disabled={submitting}
-                className="flex items-center gap-2 flex-1"
               >
                 {submitting ? (
                   <>
@@ -560,14 +562,6 @@ export default function SchoolSettingsPage({ user }) {
                     {t('save') || 'Save Changes'}
                   </>
                 )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate(-1)}
-                disabled={submitting}
-              >
-                {t('cancel') || 'Cancel'}
               </Button>
             </div>
           </form>

@@ -885,6 +885,12 @@ export const km = {
   accessDeniedTeacherOnly: 'ការចូលប្រើត្រូវបានបដិសេធ។ ទំព័រនេះអាចចូលប្រើបានតែដោយគ្រូបង្រៀនប៉ុណ្ណោះ។',
   goBack: 'ត្រឡប់ក្រោយ',
 
+  schoolProfile: 'រូបភាពសាលារៀន',
+  maxSize: 'ទំហំអតិបរមា',
+  supportedFormats: 'ប្រភេទ File ដែលអនុញ្ញាត្តិ',
+  imageSizeLimit: 'ទំហំរូបភាពត្រូវបានកំណត់',
+  clickToUpload: 'ចុចដើម្បីជ្រើសរើសឬទាញរូបភាព',
+
   // Form field labels and placeholders
   enterFirstName: 'បញ្ចូលនាមខ្លួន',
   enterLastName: 'បញ្ចូលនាមត្រកូល',
