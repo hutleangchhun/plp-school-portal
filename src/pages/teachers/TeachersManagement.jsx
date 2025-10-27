@@ -382,6 +382,20 @@ export default function TeachersManagement() {
       const XLSXStyleModule = await import('xlsx-js-style');
       const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
 
+      // Get filter title based on applied filters
+      const getFilterTitle = () => {
+        const filterParts = [];
+        if (selectedGradeLevel) {
+          filterParts.push(`${t('gradeLevel')}: ${selectedGradeLevel}`);
+        }
+        if (searchTerm) {
+          filterParts.push(`${t('search')}: ${searchTerm}`);
+        }
+        
+        const filterText = filterParts.length > 0 ? ` (${filterParts.join(', ')})` : '';
+        return `បញ្ជីរាយនាមគ្រូបង្រៀន${filterText}`;
+      };
+
       // Create comprehensive template with Cambodian school headers
       const templateData = [
         // Official Cambodian School Header - Row 1
@@ -391,7 +405,7 @@ export default function TeachersManagement() {
         // School Name - Row 3
         [schoolName || 'សាលាបឋមសិក្សា ហ៊ុន សែន ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Teacher List Title - Row 4
-        ['បញ្ជីរាយនាមគ្រូបង្រៀន', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        [getFilterTitle(), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Academic Year - Row 5
         [`ឆ្នាំសិក្សា ${new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Empty row for spacing - Row 6
@@ -403,7 +417,7 @@ export default function TeachersManagement() {
         // Main headers (row 9)
         [
           '#',
-          'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន',
+          'សេចក្ដីផ្សេងៗ', 'សេចក្ដីផ្សេងៗ', 'សេចក្ដីផ្សេងៗ', 'សេចក្ដីផ្សេងៗ', 'សេចក្ដីផ្សេងៗ', 'សេចក្ដីផ្សេងៗ', 'សេចក្ដីផ្សេងៗ', 'សេចក្ដីផ្សេងៗ', 'សេចក្ដីផ្សេងៗ', 'សេចក្ដីផ្សេងៗ',
           'ថ្នាក់ដែលបង្រៀន'
         ],
         // Sub headers (row 10)
@@ -549,8 +563,22 @@ export default function TeachersManagement() {
       const wb = XLSXStyle.utils.book_new();
       XLSXStyle.utils.book_append_sheet(wb, ws, 'បញ្ជីគ្រូបង្រៀន');
 
-      // Generate filename
-      const filename = getTimestampedFilename('teachers_data', 'xlsx');
+      // Generate filename with filter information
+      let filenameBase = 'teachers_data';
+      if (selectedGradeLevel || searchTerm) {
+        const filterParts = [];
+        if (selectedGradeLevel) {
+          filterParts.push(`grade_${selectedGradeLevel}`);
+        }
+        if (searchTerm) {
+          // Sanitize search term for filename
+          const sanitizedSearch = searchTerm.replace(/[^a-zA-Z0-9_\u1780-\u17ff\-]/g, '_').substring(0, 20);
+          filterParts.push(`search_${sanitizedSearch}`);
+        }
+        filenameBase += '_' + filterParts.join('_');
+      }
+      
+      const filename = getTimestampedFilename(filenameBase, 'xlsx');
 
       // Export file
       XLSXStyle.writeFile(wb, filename);
@@ -565,7 +593,22 @@ export default function TeachersManagement() {
 
   const handleExportCSV = async () => {
     try {
-      const filename = getTimestampedFilename('teachers_data', 'csv');
+      // Generate filename with filter information
+      let filenameBase = 'teachers_data';
+      if (selectedGradeLevel || searchTerm) {
+        const filterParts = [];
+        if (selectedGradeLevel) {
+          filterParts.push(`grade_${selectedGradeLevel}`);
+        }
+        if (searchTerm) {
+          // Sanitize search term for filename
+          const sanitizedSearch = searchTerm.replace(/[^a-zA-Z0-9_\u1780-\u17ff\-]/g, '_').substring(0, 20);
+          filterParts.push(`search_${sanitizedSearch}`);
+        }
+        filenameBase += '_' + filterParts.join('_');
+      }
+      
+      const filename = getTimestampedFilename(filenameBase, 'csv');
       
       // Transform teacher data for CSV export
       const csvHeaders = [
@@ -628,7 +671,22 @@ export default function TeachersManagement() {
 
   const handleExportPDF = async () => {
     try {
-      const filename = getTimestampedFilename('teachers_data', 'pdf');
+      // Generate filename with filter information
+      let filenameBase = 'teachers_data';
+      if (selectedGradeLevel || searchTerm) {
+        const filterParts = [];
+        if (selectedGradeLevel) {
+          filterParts.push(`grade_${selectedGradeLevel}`);
+        }
+        if (searchTerm) {
+          // Sanitize search term for filename
+          const sanitizedSearch = searchTerm.replace(/[^a-zA-Z0-9_\u1780-\u17ff\-]/g, '_').substring(0, 20);
+          filterParts.push(`search_${sanitizedSearch}`);
+        }
+        filenameBase += '_' + filterParts.join('_');
+      }
+      
+      const filename = getTimestampedFilename(filenameBase, 'pdf');
       
       // Create PDF content
       const tempDiv = document.createElement('div');
@@ -641,9 +699,21 @@ export default function TeachersManagement() {
       tempDiv.style.fontFamily = 'Hanuman, Khmer UI, Noto Sans Khmer, Arial Unicode MS, Arial, sans-serif';
 
       // Create HTML content
+      // Get filter info for PDF title
+      const getPDFFilterText = () => {
+        const filterParts = [];
+        if (selectedGradeLevel) {
+          filterParts.push(`${t('gradeLevel')}: ${selectedGradeLevel}`);
+        }
+        if (searchTerm) {
+          filterParts.push(`${t('search')}: ${searchTerm}`);
+        }
+        return filterParts.length > 0 ? ` (${filterParts.join(', ')})` : '';
+      };
+
       const htmlContent = `
         <div style="font-family: 'Hanuman', 'Khmer UI', 'Noto Sans Khmer', 'Arial Unicode MS', 'Arial', sans-serif; padding: 20px; background: white;">
-          <h1 style="font-size: 16px; margin-bottom: 15px; color: #1f2937; text-align: center;">បញ្ជីរាយនាមគ្រូបង្រៀន</h1>
+          <h1 style="font-size: 16px; margin-bottom: 15px; color: #1f2937; text-align: center;">បញ្ជីរាយនាមគ្រូបង្រៀន${getPDFFilterText()}</h1>
           
           <div style="margin-bottom: 15px; font-size: 10px;">
             <p style="margin: 5px 0;"><strong>ឆ្នាំសិក្សា:</strong> ${new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)}</p>

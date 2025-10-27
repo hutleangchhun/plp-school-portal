@@ -1188,6 +1188,9 @@ export default function StudentsManagement() {
       const className = selectedClass?.name || 'បញ្ជីរាយនាមសិស្ស';
       const academicYear = selectedClass?.academicYear || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
       const gradeLevel = selectedClass?.gradeLevel || '';
+      
+      // Add filter information to headers if class is selected
+      const filterInfo = selectedClass ? ` (ថ្នាក់: ${selectedClass.name})` : '';
 
       // Create comprehensive template with Cambodian school headers
       const templateData = [
@@ -1198,7 +1201,7 @@ export default function StudentsManagement() {
         // School Name - Row 3
         [schoolName || 'សាលាបឋមសិក្សា ហ៊ុន សែន ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Student List Title - Row 4
-        [`បញ្ជីរាយនាមសិស្ស ${className}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        [`បញ្ជីរាយនាមសិស្ស ${className}${filterInfo}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Class and Academic Year - Row 5
         [`${gradeLevel ? `ថ្នាក់ទី ${gradeLevel}` : 'ថ្នាក់'} ឆ្នាំសិក្សា ${academicYear}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Empty row for spacing - Row 6
@@ -1432,10 +1435,11 @@ export default function StudentsManagement() {
       const selectedClass = selectedClassId !== 'all'
         ? classes.find(c => c.classId.toString() === selectedClassId)
         : null;
-      const filename = getTimestampedFilename(
-        selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data',
-        'csv'
-      );
+      
+      // Generate filename with class information if class is selected
+      const filenameBase = selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data';
+      const filename = getTimestampedFilename(filenameBase, 'csv');
+      
       await prepareAndExportCSV(
         students,
         filename,
@@ -1459,10 +1463,11 @@ export default function StudentsManagement() {
       const selectedClass = selectedClassId !== 'all'
         ? classes.find(c => c.classId.toString() === selectedClassId)
         : null;
-      const filename = getTimestampedFilename(
-        selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data',
-        'pdf'
-      );
+      
+      // Generate filename with class information if class is selected
+      const filenameBase = selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data';
+      const filename = getTimestampedFilename(filenameBase, 'pdf');
+      
       await prepareAndExportPDF(
         students,
         selectedClass,
@@ -1931,7 +1936,7 @@ export default function StudentsManagement() {
                 variant="outline"
                 size="default"
                 className="shadow-lg"
-                disabled={students.length === 0}
+                disabled={students.length === 0 || selectedClassId === 'all'}
               >
                 <Download className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
                 <span className="text-xs sm:text-sm">{t('export', 'Export')}</span>
