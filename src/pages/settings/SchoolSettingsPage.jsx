@@ -357,7 +357,7 @@ export default function SchoolSettingsPage({ user }) {
         {error && (
           <FadeInSection className="mb-6">
             <ErrorDisplay
-              error={error}
+              error={error} 
               onRetry={retry}
               onDismiss={clearError}
             />

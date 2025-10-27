@@ -65,9 +65,8 @@ export default function AttendanceExport({
       };
 
       // Add columns for each day of the month (1-31)
-      let presentCount = 0;
       let absentCount = 0;
-      let lateCount = 0;
+      let leaveCount = 0; // LEAVE only
 
       for (let day = 1; day <= 31; day++) {
         if (day <= daysInMonth) {
@@ -77,15 +76,15 @@ export default function AttendanceExport({
           const studentAttendance = attendance[studentUserId]?.[dateStr];
 
           if (studentAttendance?.status) {
-            const statusMark = studentAttendance.status === 'PRESENT' ? 'ម' :
+            const statusMark = studentAttendance.status === 'PRESENT' ? 'វ' :
                              studentAttendance.status === 'ABSENT' ? 'អ' :
+                             studentAttendance.status === 'LEAVE' ? 'ច' :
                              studentAttendance.status === 'LATE' ? 'យ' : '';
             row[day.toString()] = statusMark;
 
-            // Count totals
-            if (studentAttendance.status === 'PRESENT') presentCount++;
-            else if (studentAttendance.status === 'ABSENT') absentCount++;
-            else if (studentAttendance.status === 'LATE') lateCount++;
+            // Count totals - only ABSENT and LEAVE
+            if (studentAttendance.status === 'ABSENT') absentCount++;
+            else if (studentAttendance.status === 'LEAVE') leaveCount++; // Count LEAVE only
           } else {
             row[day.toString()] = '';
           }
@@ -94,10 +93,10 @@ export default function AttendanceExport({
         }
       }
 
-      // Add summary columns
-      row['ម'] = presentCount;
-      row['អ'] = absentCount;
-      row['យឺត'] = lateCount;
+      // Add summary columns with 3 fields only (ABSENT, LEAVE, Total)
+      row['អច្ប'] = absentCount;       // ABSENT
+      row['ច្ប'] = leaveCount;          // LEAVE only
+      row['សរុប'] = absentCount + leaveCount; // Total (ABSENT + LEAVE)
 
       return row;
     });
@@ -128,8 +127,9 @@ export default function AttendanceExport({
         if (day <= daysInMonth) {
           // Check if this is the selected date
           if (day === currentDate.getDate() && studentAttendance.status) {
-            const statusMark = studentAttendance.status === 'PRESENT' ? 'ម' :
+            const statusMark = studentAttendance.status === 'PRESENT' ? 'វ' :
                              studentAttendance.status === 'ABSENT' ? 'អ' :
+                             studentAttendance.status === 'LEAVE' ? 'ច' :
                              studentAttendance.status === 'LATE' ? 'យ' : '';
             row[day.toString()] = statusMark;
           } else {
@@ -140,10 +140,15 @@ export default function AttendanceExport({
         }
       }
 
-      // Add summary columns
-      row['ម'] = studentAttendance.status === 'PRESENT' ? 1 : 0;
-      row['អ'] = studentAttendance.status === 'ABSENT' ? 1 : 0;
-      row['យឺត'] = studentAttendance.status === 'LATE' ? 1 : 0;
+      // Add summary columns with 3 fields only (ABSENT, LEAVE, Total)
+      // For daily report, count 1 if status matches, 0 otherwise
+      const isAbsent = studentAttendance.status === 'ABSENT' ? 1 : 0;
+      const isLeave = studentAttendance.status === 'LEAVE' ? 1 : 0;
+      const totalAbsentAndLeave = isAbsent + isLeave;
+
+      row['អច្ប'] = isAbsent;                // ABSENT
+      row['ច្ប'] = isLeave;                  // LEAVE only
+      row['សរុប'] = totalAbsentAndLeave;    // Total (ABSENT + LEAVE)
 
       return row;
     });
@@ -218,7 +223,7 @@ export default function AttendanceExport({
       // Row 9: Info row with student counts
       const infoRow = [...emptyRow];
       infoRow[0] = 'ប្រចាំខែ:............................. ឆ្នាំសិក្សា............................';
-      infoRow[25] = `សិស្សសរុប: ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
+      infoRow[24] = `សិស្សសរុប: ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
       templateData.push(infoRow);
 
       // Two-row header structure
@@ -245,10 +250,10 @@ export default function AttendanceExport({
       for (let i = 1; i <= 31; i++) {
         headerRow2[3 + i] = i.toString(); // Columns 4-34
       }
-      // Summary columns
-      headerRow2[35] = 'ម';
-      headerRow2[36] = 'អ';
-      headerRow2[37] = 'យឺត';
+      // Summary columns with Khmer labels (3 fields only: ABSENT, LEAVE, TOTAL)
+      headerRow2[35] = 'អច្ប';    // ABSENT
+      headerRow2[36] = 'ច្ប';     // LEAVE
+      headerRow2[37] = 'សរុប';    // TOTAL
       headerRow2[38] = ''; // Merged with row above
       templateData.push(headerRow2);
 
@@ -266,8 +271,8 @@ export default function AttendanceExport({
           arr.push(row[i.toString()] || '');
         }
 
-        // Add summary columns (including blank ផ្សេងៗ)
-        arr.push(row['ម'], row['អ'], row['យឺត'], ''); // Last column is blank ផ្សេងៗ
+        // Add summary columns with Khmer labels (3 fields: ABSENT, LEAVE, TOTAL)
+        arr.push(row['អច្ប'], row['ច្ប'], row['សរុប'], ''); // Last column is blank ផ្សេងៗ
 
         while (arr.length < 39) arr.push('');
         return arr;
@@ -337,10 +342,10 @@ export default function AttendanceExport({
         colWidths.push({ wch: 3 }); // Day columns - narrow
       }
 
-      // Add widths for summary columns
-      colWidths.push({ wch: 5 });  // ម (Present)
-      colWidths.push({ wch: 5 });  // អ (Absent)
-      colWidths.push({ wch: 5 });  // យឺត (Late)
+      // Add widths for summary columns (3 fields: ABSENT, LEAVE, TOTAL)
+      colWidths.push({ wch: 5 });  // អច្ប (Absent)
+      colWidths.push({ wch: 5 });  // ច្ប (Leave)
+      colWidths.push({ wch: 5 });  // សរុប (Total)
       colWidths.push({ wch: 20 }); // ផ្សេងៗ (Remarks)
 
       ws['!cols'] = colWidths;
