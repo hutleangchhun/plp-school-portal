@@ -193,10 +193,10 @@ export default function AttendanceExport({
         if (day <= daysInMonth) {
           // Check if this is the selected date
           if (day === currentDate.getDate() && studentAttendance.status) {
-            const statusMark = studentAttendance.status === 'PRESENT' ? 'វ' :
-                             studentAttendance.status === 'ABSENT' ? 'អ' :
-                             studentAttendance.status === 'LEAVE' ? 'ច' :
-                             studentAttendance.status === 'LATE' ? 'យ' : '';
+            const statusMark = studentAttendance.status === 'PRESENT' ? 'វត្ត' :
+                             studentAttendance.status === 'ABSENT' ? 'អច្ប' :
+                             studentAttendance.status === 'LEAVE' ? 'ច្ប' :
+                             studentAttendance.status === 'LATE' ? 'អ' : '';
             row[day.toString()] = statusMark;
           } else {
             row[day.toString()] = '';
