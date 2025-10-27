@@ -22,7 +22,7 @@ export const attendanceService = {
   async getAttendance(params = {}) {
     const {
       page = 1,
-      limit = 10,
+      limit = 400,
       classId,
       userId,
       date,
