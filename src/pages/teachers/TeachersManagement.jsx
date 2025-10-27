@@ -11,6 +11,9 @@ import { useStableCallback, useRenderTracker } from '../../utils/reactOptimizati
 import { Badge } from '../../components/ui/Badge';
 import { Table, MobileCards } from '../../components/ui/Table';
 import { exportTeachersToExcel, exportTeachersToCSV, exportTeachersToPDF, getTimestampedFilename } from '../../utils/exportUtils';
+import { saveAs } from 'file-saver';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import TeacherEditModal from '../../components/teachers/TeacherEditModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
@@ -67,6 +70,7 @@ export default function TeachersManagement() {
 
   // State for current user's school ID
   const [schoolId, setSchoolId] = useState(null);
+  const [schoolName, setSchoolName] = useState('');
 
   // State for teachers list and pagination
   const [teachers, setTeachers] = useState([]);
@@ -156,6 +160,7 @@ export default function TeachersManagement() {
       if (accountData && accountData.school_id) {
         console.log('✅ School ID fetched from account:', accountData.school_id);
         setSchoolId(accountData.school_id);
+        setSchoolName(accountData.school?.name || '');
       } else {
         console.error('No school_id found in account data:', accountData);
         showError(t('noSchoolIdFound', 'No school ID found for your account'));
@@ -370,49 +375,413 @@ export default function TeachersManagement() {
     setSelectedTeacher(null);
   };
 
-  // Export handlers
+  // Export handlers - Export in Cambodian school format
   const handleExportExcel = async () => {
     try {
-      startLoading('exportExcel', t('exporting', 'Exporting Excel...'));
+      // Dynamically import xlsx-js-style for styling support
+      const XLSXStyleModule = await import('xlsx-js-style');
+      const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
+
+      // Create comprehensive template with Cambodian school headers
+      const templateData = [
+        // Official Cambodian School Header - Row 1
+        ['ព្រះរាជាណាចក្រកម្ពុជា', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // Nation, Religion, King - Row 2
+        ['ជាតិ       សាសនា       ព្រះមហាក្សត្រ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // School Administrative Info - Row 3
+        [schoolName || 'កម្រងហស ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // School Name - Row 4
+        [schoolName || 'សាលាបឋមសិក្សា ហ៊ុន សែន ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // Teacher List Title - Row 5
+        ['បញ្ជីរាយនាមគ្រូបង្រៀន', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // Academic Year - Row 6
+        [`ឆ្នាំសិក្សា ${new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // Empty row for spacing - Row 7
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // Instructions row (row 8)
+        ['សូមបញ្ចូលព័ត៌មានគ្រូបង្រៀនដូចឧទាហរណ៍ខាងក្រោម។ សូមលុបជួរឧទាហរណ៍និងបញ្ចូលព័ត៌មានគ្រូបង្រៀនពិតប្រាកដ។', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // Main headers (row 9)
+        [
+          '#',
+          'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន',
+          'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក',
+          'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ',
+          'ថ្នាក់ដែលបង្រៀន'
+        ],
+        // Sub headers (row 10)
+        [
+          '#',
+          'អត្តលេខ', 'គោត្តនាម', 'នាម', 'អ៊ីមែល', 'ឈ្មោះអ្នកប្រើ', 'ពាក្យសម្ងាត់',
+          'ថ្ងៃខែឆ្នាំកំណើត', 'ភេទ', 'លេខទូរស័ព្ទ', 'សញ្ជាតិ', 'លេខសិស្រ', 'លេខសាលា', 'ឆ្នាំសិក្សា', 'កម្រិតថ្នាក់',
+          'អាសយដ្ឋានពេញ',
+          'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញឪពុក',
+          'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញម្តាយ',
+          'ថ្នាក់'
+        ]
+      ];
+
+      // Add teacher data rows
+      teachers.forEach((teacher, index) => {
+        // Format date of birth
+        const dob = teacher.dateOfBirth || teacher.date_of_birth;
+        const formattedDob = dob ? formatDateKhmer(dob, 'dateOnly') : '';
+
+        // Format gender
+        const gender = teacher.gender === 'MALE' || teacher.gender === 'male' ? 'ប្រុស' :
+          teacher.gender === 'FEMALE' || teacher.gender === 'female' ? 'ស្រី' : '';
+
+        // Format full address for teacher
+        const teacherAddress = [
+          teacher.residence?.village || teacher.village,
+          teacher.residence?.commune || teacher.commune,
+          teacher.residence?.district || teacher.district,
+          teacher.residence?.province || teacher.province
+        ].filter(Boolean).join(' ');
+
+        // Get parent data
+        const fatherData = teacher.parents?.find(p => p.relationship === 'FATHER') || {};
+        const motherData = teacher.parents?.find(p => p.relationship === 'MOTHER') || {};
+
+        // Format parent addresses
+        const fatherAddress = [
+          fatherData.village,
+          fatherData.commune,
+          fatherData.district,
+          fatherData.province
+        ].filter(Boolean).join(' ') || teacherAddress;
+
+        const motherAddress = [
+          motherData.village,
+          motherData.commune,
+          motherData.district,
+          motherData.province
+        ].filter(Boolean).join(' ') || teacherAddress;
+
+        // Format parent genders
+        const fatherGender = fatherData.gender === 'MALE' || fatherData.gender === 'male' ? 'ប្រុស' : '';
+        const motherGender = motherData.gender === 'FEMALE' || motherData.gender === 'female' ? 'ស្រី' : '';
+
+        // Format classes taught by teacher
+        const classesTaught = teacher.classes && teacher.classes.length > 0
+          ? teacher.classes.map(cls => cls.name || `${cls.gradeLevel}${cls.section}`).join(', ')
+          : '';
+
+        const row = [
+          index + 1, // Row number
+          teacher.teacherId || teacher.id || '', // អត្តលេខ
+          teacher.lastName || teacher.last_name || '', // គោត្តនាម
+          teacher.firstName || teacher.first_name || '', // នាម
+          teacher.email || '', // អ៊ីមែល
+          '', // ឈ្មោះអ្នកប្រើ (omitted for teachers)
+          '', // ពាក្យសម្ងាត់ (omitted for security)
+          formattedDob, // ថ្ងៃខែឆ្នាំកំណើត
+          gender, // ភេទ
+          teacher.phone || '', // លេខទូរស័ព្ទ
+          teacher.nationality || 'ខ្មែរ', // សញ្ជាតិ
+          '', // លេខសិស្រ (for teachers)
+          '', // លេខសាលា (can be filled manually)
+          new Date().getFullYear() + '-' + (new Date().getFullYear() + 1), // ឆ្នាំសិក្សា
+          '', // កម្រិតថ្នាក់ (for teachers)
+          teacherAddress, // អាសយដ្ឋានពេញ
+          // Father info
+          fatherData.firstName || fatherData.first_name || '', // នាមឪពុក
+          fatherData.lastName || fatherData.last_name || '', // គោត្តនាមឪពុក
+          fatherData.phone || '', // ទូរស័ព្ទឪពុក
+          fatherGender, // ភេទឪពុក
+          fatherData.occupation || '', // មុខរបរឪពុក
+          fatherAddress, // អាសយដ្ឋានពេញឪពុក
+          // Mother info
+          motherData.firstName || motherData.first_name || '', // នាមម្តាយ
+          motherData.lastName || motherData.last_name || '', // គោត្តនាមម្តាយ
+          motherData.phone || '', // ទូរស័ព្ទម្តាយ
+          motherGender, // ភេទម្តាយ
+          motherData.occupation || '', // មុខរបរម្តាយ
+          motherAddress, // អាសយដ្ឋានពេញម្តាយ
+          classesTaught // ថ្នាក់
+        ];
+
+        templateData.push(row);
+      });
+
+      // Create worksheet
+      const ws = XLSXStyle.utils.aoa_to_sheet(templateData);
+
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 5 },  // #
+        { wch: 12 }, // អត្តលេខ
+        { wch: 12 }, // គោត្តនាម
+        { wch: 12 }, // នាម
+        { wch: 25 }, // អ៊ីមែល
+        { wch: 15 }, // ឈ្មោះអ្នកប្រើ
+        { wch: 12 }, // ពាក្យសម្ងាត់
+        { wch: 12 }, // ថ្ងៃខែឆ្នាំកំណើត
+        { wch: 8 },  // ភេទ
+        { wch: 12 }, // លេខទូរស័ព្ទ
+        { wch: 10 }, // សញ្ជាតិ
+        { wch: 12 }, // លេខសិស្រ
+        { wch: 10 }, // លេខសាលា
+        { wch: 12 }, // ឆ្នាំសិក្សា
+        { wch: 10 }, // កម្រិតថ្នាក់
+        { wch: 40 }, // អាសយដ្ឋានពេញ
+        // Father columns
+        { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 40 },
+        // Mother columns
+        { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 40 },
+        // Classes column
+        { wch: 20 }
+      ];
+
+      // Apply styling
+      const range = XLSXStyle.utils.decode_range(ws['!ref']);
+      for (let R = range.s.r; R <= range.e.r; R++) {
+        for (let C = range.s.c; C <= range.e.c; C++) {
+          const cellAddress = XLSXStyle.utils.encode_cell({ r: R, c: C });
+
+          if (!ws[cellAddress]) {
+            ws[cellAddress] = { t: 's', v: '' };
+          }
+
+          // Header rows (0-6) - No borders, centered, bold
+          if (R < 7) {
+            ws[cellAddress].s = {
+              alignment: { vertical: 'center', horizontal: 'center' },
+              font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+            };
+          }
+          // Instructions row (7)
+          else if (R === 7) {
+            ws[cellAddress].s = {
+              alignment: { vertical: 'center', horizontal: 'left' },
+              font: { name: 'Khmer OS Battambang', sz: 9, italic: true },
+              fill: { fgColor: { rgb: 'FFF9E6' } }
+            };
+          }
+          // Main headers (8-9) - Gray background, borders, bold
+          else if (R === 8 || R === 9) {
+            ws[cellAddress].s = {
+              fill: { fgColor: { rgb: 'E0E0E0' } },
+              border: {
+                top: { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left: { style: 'thin', color: { rgb: '000000' } },
+                right: { style: 'thin', color: { rgb: '000000' } }
+              },
+              alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+              font: { name: 'Khmer OS Battambang', sz: 10, bold: true }
+            };
+          }
+          // Data rows (10+) - Borders
+          else {
+            ws[cellAddress].s = {
+              border: {
+                top: { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left: { style: 'thin', color: { rgb: '000000' } },
+                right: { style: 'thin', color: { rgb: '000000' } }
+              },
+              alignment: { vertical: 'center', horizontal: 'left' },
+              font: { name: 'Khmer OS Battambang', sz: 10 }
+            };
+          }
+        }
+      }
+
+      // Merge cells for headers
+      ws['!merges'] = [
+        // Row 1-8 (full width merges)
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 28 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 28 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 28 } },
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 28 } },
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 28 } },
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 28 } },
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 28 } },
+        { s: { r: 7, c: 0 }, e: { r: 7, c: 28 } },
+        // Row 9 (main headers)
+        { s: { r: 8, c: 1 }, e: { r: 8, c: 15 } },  // ព័ត៌មានគ្រូបង្រៀន
+        { s: { r: 8, c: 16 }, e: { r: 8, c: 21 } }, // ព័ត៌មានឪពុក
+        { s: { r: 8, c: 22 }, e: { r: 8, c: 27 } }, // ព័ត៌មានម្តាយ
+      ];
+
+      // Create workbook
+      const wb = XLSXStyle.utils.book_new();
+      XLSXStyle.utils.book_append_sheet(wb, ws, 'បញ្ជីគ្រូបង្រៀន');
+
+      // Generate filename
       const filename = getTimestampedFilename('teachers_data', 'xlsx');
-      await exportTeachersToExcel(teachers, filename, t);
+
+      // Export file
+      XLSXStyle.writeFile(wb, filename);
+
       showSuccess(t('exportSuccess', 'Data exported successfully'));
       setShowExportDropdown(false);
     } catch (error) {
       console.error('Export error:', error);
       showError(t('exportError', 'Failed to export data'));
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleExportCSV = async () => {
     try {
-      startLoading('exportCSV', t('exporting', 'Exporting CSV...'));
       const filename = getTimestampedFilename('teachers_data', 'csv');
-      await exportTeachersToCSV(teachers, filename, t);
+      
+      // Transform teacher data for CSV export
+      const csvHeaders = [
+        t('number'),
+        t('firstName'),
+        t('lastName'),
+        t('email'),
+        t('phone'),
+        t('gender'),
+        t('dateOfBirth'),
+        t('nationality'),
+        t('address'),
+        t('classes')
+      ];
+      
+      const csvData = [
+        csvHeaders,
+        ...teachers.map((teacher, index) => [
+          index + 1, // Number
+          teacher.firstName || teacher.first_name || '',
+          teacher.lastName || teacher.last_name || '',
+          teacher.email || '',
+          teacher.phone || '',
+          teacher.gender ? (teacher.gender === 'MALE' || teacher.gender === 'male' ? t('male') : t('female')) : '',
+          teacher.dateOfBirth || teacher.date_of_birth ? formatDateKhmer(teacher.dateOfBirth || teacher.date_of_birth, 'dateOnly') : '',
+          teacher.nationality || 'ខ្មែរ',
+          [teacher.residence?.village, teacher.residence?.commune, teacher.residence?.district, teacher.residence?.province].filter(Boolean).join(', ') || '',
+          teacher.classes && teacher.classes.length > 0
+            ? teacher.classes.map(cls => cls.name || `${cls.gradeLevel}${cls.section}`).join(', ')
+            : ''
+        ])
+      ];
+
+      // Convert to CSV string
+      const csvContent = csvData.map(row => 
+        row.map(field => {
+          // Properly escape fields that contain commas or quotes
+          const fieldStr = String(field);
+          if (fieldStr.includes(',') || fieldStr.includes('"') || fieldStr.includes('\n')) {
+            return `"${fieldStr.replace(/"/g, '""')}"`;
+          }
+          return fieldStr;
+        }).join(',')
+      ).join('\n');
+
+      // Create and download the file
+      const BOM = '\uFEFF'; // Add BOM for proper UTF-8 encoding in Excel
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+      saveAs(blob, filename);
+
       showSuccess(t('exportSuccess', 'Data exported successfully'));
       setShowExportDropdown(false);
     } catch (error) {
       console.error('Export error:', error);
       showError(t('exportError', 'Failed to export data'));
-    } finally {
-      stopLoading('exportCSV');
     }
   };
 
   const handleExportPDF = async () => {
     try {
-      startLoading('exportPDF', t('exporting', 'Exporting PDF...'));
       const filename = getTimestampedFilename('teachers_data', 'pdf');
-      await exportTeachersToPDF(teachers, filename, t);
-      showSuccess(t('exportSuccess', 'Data exported successfully'));
-      setShowExportDropdown(false);
+      
+      // Create PDF content
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '-9999px';
+      tempDiv.style.width = '800px';
+      tempDiv.style.backgroundColor = 'white';
+      tempDiv.style.padding = '20px';
+      tempDiv.style.fontFamily = 'Hanuman, Khmer UI, Noto Sans Khmer, Arial Unicode MS, Arial, sans-serif';
+
+      // Create HTML content
+      const htmlContent = `
+        <div style="font-family: 'Hanuman', 'Khmer UI', 'Noto Sans Khmer', 'Arial Unicode MS', 'Arial', sans-serif; padding: 20px; background: white;">
+          <h1 style="font-size: 16px; margin-bottom: 15px; color: #1f2937; text-align: center;">បញ្ជីរាយនាមគ្រូបង្រៀន</h1>
+          
+          <div style="margin-bottom: 15px; font-size: 10px;">
+            <p style="margin: 5px 0;"><strong>ឆ្នាំសិក្សា:</strong> ${new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)}</p>
+            <p style="margin: 5px 0;"><strong>បានបង្កើតនៅ:</strong> ${formatDateKhmer(new Date(), 'short')}</p>
+          </div>
+
+          <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 9px;">
+            <thead>
+              <tr style="background-color: #3b82f6; color: white;">
+                <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">ល.រ</th>
+                <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">នាម</th>
+                <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">គោត្តនាម</th>
+                <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">អ៊ីមែល</th>
+                <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">ទូរសព្ទ</th>
+                <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">ថ្នាក់ដែលបង្រៀន</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${teachers.map((teacher, index) => {
+                const fullName = teacher.name || `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || '';
+                const classesTaught = teacher.classes && teacher.classes.length > 0
+                  ? teacher.classes.map(cls => cls.name || `${cls.gradeLevel}${cls.section}`).join(', ')
+                  : '';
+                const bgColor = index % 2 === 0 ? '#f9fafb' : 'white';
+                
+                return `
+                  <tr style="background-color: ${bgColor};">
+                    <td style="border: 1px solid #ddd; padding: 5px;">${index + 1}</td>
+                    <td style="border: 1px solid #ddd; padding: 5px;">${teacher.firstName || ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 5px;">${teacher.lastName || ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 5px;">${teacher.email || ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 5px;">${teacher.phone || ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 5px;">${classesTaught}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+
+          <div style="margin-top: 15px; font-size: 9px; color: #6b7280;">
+            <p style="margin: 5px 0;"><strong>ចំនួនសរុប:</strong> ${teachers.length} នាក់</p>
+          </div>
+        </div>
+      `;
+      
+      tempDiv.innerHTML = htmlContent;
+      document.body.appendChild(tempDiv);
+
+      try {
+        // Convert HTML to canvas
+        const canvas = await html2canvas(tempDiv, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff'
+        });
+
+        // Create PDF from canvas
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+        const imgX = (pdfWidth - imgWidth * ratio) / 2;
+        const imgY = 0;
+
+        pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+        pdf.save(filename);
+
+        showSuccess(t('exportSuccess', 'Data exported successfully'));
+        setShowExportDropdown(false);
+      } finally {
+        // Clean up the temporary element
+        document.body.removeChild(tempDiv);
+      }
     } catch (error) {
       console.error('Export error:', error);
       showError(t('exportError', 'Failed to export data'));
-    } finally {
-      stopLoading('exportPDF');
     }
   };
 

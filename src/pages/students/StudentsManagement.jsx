@@ -101,6 +101,7 @@ export default function StudentsManagement() {
 
   // State for current user's school ID (fetched from my-account endpoint)
   const [schoolId, setSchoolId] = useState(null);
+  const [schoolName, setSchoolName] = useState('');
 
   // State for students list and pagination
   const [students, setStudents] = useState([]);
@@ -239,6 +240,7 @@ export default function StudentsManagement() {
       if (accountData && accountData.school_id) {
         console.log('✅ School ID fetched from account:', accountData.school_id);
         setSchoolId(accountData.school_id);
+        setSchoolName(accountData.school?.name || '');
         return accountData.school_id;
       } else {
         console.error('No school_id found in account data:', accountData);
@@ -1194,9 +1196,9 @@ export default function StudentsManagement() {
         // Nation, Religion, King - Row 2
         ['ជាតិ       សាសនា       ព្រះមហាក្សត្រ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // School Administrative Info - Row 3
-        ['កម្រងហស ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        [schoolName || 'កម្រងហស ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // School Name - Row 4
-        ['សាលាបឋមសិក្សា ហ៊ុន សែន ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        [schoolName || 'សាលាបឋមសិក្សា ហ៊ុន សែន ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Student List Title - Row 5
         [`បញ្ជីរាយនាមសិស្ស ${className}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Class and Academic Year - Row 6
