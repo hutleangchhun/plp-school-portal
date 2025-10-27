@@ -388,29 +388,27 @@ export default function TeachersManagement() {
         ['ព្រះរាជាណាចក្រកម្ពុជា', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Nation, Religion, King - Row 2
         ['ជាតិ       សាសនា       ព្រះមហាក្សត្រ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // School Administrative Info - Row 3
-        [schoolName || 'កម្រងហស ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // School Name - Row 4
+        // School Name - Row 3
         [schoolName || 'សាលាបឋមសិក្សា ហ៊ុន សែន ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // Teacher List Title - Row 5
+        // Teacher List Title - Row 4
         ['បញ្ជីរាយនាមគ្រូបង្រៀន', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // Academic Year - Row 6
+        // Academic Year - Row 5
         [`ឆ្នាំសិក្សា ${new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // Empty row for spacing - Row 7
+        // Empty row for spacing - Row 6
         ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // Instructions row (row 8)
+        // Instructions row (row 7)
         ['សូមបញ្ចូលព័ត៌មានគ្រូបង្រៀនដូចឧទាហរណ៍ខាងក្រោម។ សូមលុបជួរឧទាហរណ៍និងបញ្ចូលព័ត៌មានគ្រូបង្រៀនពិតប្រាកដ។', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Main headers (row 9)
         [
           '#',
-          'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន',
+          'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន',
           'ថ្នាក់ដែលបង្រៀន'
         ],
         // Sub headers (row 10)
         [
           '#',
-          'អត្តលេខ', 'គោត្តនាម', 'នាម', 'លេខទូរស័ព្ទ', 'ភេទ', 'ថ្ងៃកំណើត', 'សញ្ជាតិ',
-          'អាសយដ្ឋានពេញ', 'កម្រិតថ្នាក់', 'ឆ្នាំសិក្សា', 'ថ្នាក់',
+          'អត្តលេខ', 'គោត្តនាម', 'នាម', 'លេខទូរស័ព្ទ', 'ភេទ', 'ថ្ងៃកំណើត', 'សញ្ជាតិ', 'តំណែង',
+          'អាសយដ្ឋានពេញ',
           'ថ្នាក់ដែលបង្រៀន'
         ]
       ];
@@ -424,6 +422,9 @@ export default function TeachersManagement() {
         // Format gender
         const gender = teacher.gender === 'MALE' || teacher.gender === 'male' ? 'ប្រុស' :
           teacher.gender === 'FEMALE' || teacher.gender === 'female' ? 'ស្រី' : '';
+
+        // Format role (position)
+        const role = teacher.isDirector ? 'នាយក' : 'គ្រូបង្រៀន'; // Director or Teacher
 
         // Format full address for teacher
         const teacherAddress = [
@@ -447,10 +448,9 @@ export default function TeachersManagement() {
           gender, // ភេទ
           formattedDob, // ថ្ងៃកំណើត
           teacher.nationality || 'ខ្មែរ', // សញ្ជាតិ
+          role, // តំណែង
           teacherAddress, // អាសយដ្ឋានពេញ
-          teacher.gradeLevel || '', // កម្រិតថ្នាក់
-          new Date().getFullYear() + '-' + (new Date().getFullYear() + 1), // ឆ្នាំសិក្សា
-          classesTaught // ថ្នាក់
+          classesTaught // ថ្នាក់ដែលបង្រៀន
         ];
 
         templateData.push(row);
@@ -469,9 +469,8 @@ export default function TeachersManagement() {
         { wch: 8 },  // ភេទ
         { wch: 12 }, // ថ្ងៃកំណើត
         { wch: 10 }, // សញ្ជាតិ
+        { wch: 12 }, // តំណែង
         { wch: 40 }, // អាសយដ្ឋានពេញ
-        { wch: 10 }, // កម្រិតថ្នាក់
-        { wch: 12 }, // ឆ្នាំសិក្សា
         { wch: 20 }  // ថ្នាក់ដែលបង្រៀន
       ];
 
@@ -514,14 +513,14 @@ export default function TeachersManagement() {
               font: { name: 'Khmer OS Battambang', sz: 10, bold: true }
             };
           }
-          // Data rows (10+) - Borders
+          // Data rows (10+) - Reduced borders (only top and bottom)
           else {
             ws[cellAddress].s = {
               border: {
                 top: { style: 'thin', color: { rgb: '000000' } },
                 bottom: { style: 'thin', color: { rgb: '000000' } },
-                left: { style: 'thin', color: { rgb: '000000' } },
-                right: { style: 'thin', color: { rgb: '000000' } }
+                left: { style: 'none' },
+                right: { style: 'none' }
               },
               alignment: { vertical: 'center', horizontal: 'left' },
               font: { name: 'Khmer OS Battambang', sz: 10 }
@@ -532,17 +531,16 @@ export default function TeachersManagement() {
 
       // Merge cells for headers
       ws['!merges'] = [
-        // Row 1-8 (full width merges)
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } },
-        { s: { r: 1, c: 0 }, e: { r: 1, c: 12 } },
-        { s: { r: 2, c: 0 }, e: { r: 2, c: 12 } },
-        { s: { r: 3, c: 0 }, e: { r: 3, c: 12 } },
-        { s: { r: 4, c: 0 }, e: { r: 4, c: 12 } },
-        { s: { r: 5, c: 0 }, e: { r: 5, c: 12 } },
-        { s: { r: 6, c: 0 }, e: { r: 6, c: 12 } },
-        { s: { r: 7, c: 0 }, e: { r: 7, c: 12 } },
-        // Row 9 (main headers)
-        { s: { r: 8, c: 1 }, e: { r: 8, c: 11 } },  // ព័ត៌មានគ្រូបង្រៀន
+        // Row 1-7 (full width merges)
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 10 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } },
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 10 } },
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 10 } },
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 10 } },
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 10 } },
+        // Row 8 (main headers)
+        { s: { r: 7, c: 1 }, e: { r: 7, c: 9 } },  // ព័ត៌មានគ្រូបង្រៀន
       ];
 
       // Create workbook
@@ -570,12 +568,14 @@ export default function TeachersManagement() {
       // Transform teacher data for CSV export
       const csvHeaders = [
         t('number'),
-        t('firstName'),
+        t('teacherId'),
         t('lastName'),
+        t('firstName'),
         t('phone'),
         t('gender'),
         t('dateOfBirth'),
         t('nationality'),
+        t('role'),
         t('address'),
         t('classes')
       ];
@@ -584,16 +584,18 @@ export default function TeachersManagement() {
         csvHeaders,
         ...teachers.map((teacher, index) => [
           index + 1, // Number
-          teacher.firstName || teacher.first_name || '',
-          teacher.lastName || teacher.last_name || '',
-          teacher.phone || '',
-          teacher.gender ? (teacher.gender === 'MALE' || teacher.gender === 'male' ? t('male') : t('female')) : '',
-          teacher.dateOfBirth || teacher.date_of_birth ? formatDateKhmer(teacher.dateOfBirth || teacher.date_of_birth, 'dateOnly') : '',
-          teacher.nationality || 'ខ្មែរ',
-          [teacher.residence?.village, teacher.residence?.commune, teacher.residence?.district, teacher.residence?.province].filter(Boolean).join(', ') || '',
+          teacher.teacherId || teacher.id || '', // Teacher ID
+          teacher.lastName || teacher.last_name || '', // Last name
+          teacher.firstName || teacher.first_name || '', // First name
+          teacher.phone || '', // Phone
+          teacher.gender ? (teacher.gender === 'MALE' || teacher.gender === 'male' ? t('male') : t('female')) : '', // Gender
+          teacher.dateOfBirth || teacher.date_of_birth ? formatDateKhmer(teacher.dateOfBirth || teacher.date_of_birth, 'dateOnly') : '', // Date of birth
+          teacher.nationality || 'ខ្មែរ', // Nationality
+          teacher.isDirector ? t('director', 'នាយក') : t('teacher', 'គ្រូបង្រៀន'), // Role
+          [teacher.residence?.village, teacher.residence?.commune, teacher.residence?.district, teacher.residence?.province].filter(Boolean).join(', ') || '', // Address
           teacher.classes && teacher.classes.length > 0
             ? teacher.classes.map(cls => cls.name || `${cls.gradeLevel}${cls.section}`).join(', ')
-            : ''
+            : '' // Classes taught
         ])
       ];
 
@@ -651,14 +653,16 @@ export default function TeachersManagement() {
               <tr style="background-color: #3b82f6; color: white;">
                 <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">ល.រ</th>
                 <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">នាម</th>
-                <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">គោត្តនាម</th>
+                <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">គោត៌នាម</th>
                 <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">ទូរសព្ទ</th>
+                <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">តំណែង</th>
                 <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">ថ្នាក់ដែលបង្រៀន</th>
               </tr>
             </thead>
             <tbody>
               ${teachers.map((teacher, index) => {
                 const fullName = teacher.name || `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || '';
+                const role = teacher.isDirector ? t('director', 'នាយក') : t('teacher', 'គ្រូបង្រៀន');
                 const classesTaught = teacher.classes && teacher.classes.length > 0
                   ? teacher.classes.map(cls => cls.name || `${cls.gradeLevel}${cls.section}`).join(', ')
                   : '';
@@ -670,6 +674,7 @@ export default function TeachersManagement() {
                     <td style="border: 1px solid #ddd; padding: 5px;">${teacher.firstName || ''}</td>
                     <td style="border: 1px solid #ddd; padding: 5px;">${teacher.lastName || ''}</td>
                     <td style="border: 1px solid #ddd; padding: 5px;">${teacher.phone || ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 5px;">${role}</td>
                     <td style="border: 1px solid #ddd; padding: 5px;">${classesTaught}</td>
                   </tr>
                 `;
