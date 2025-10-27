@@ -1188,7 +1188,7 @@ export default function StudentsManagement() {
       const className = selectedClass?.name || 'បញ្ជីរាយនាមសិស្ស';
       const academicYear = selectedClass?.academicYear || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
       const gradeLevel = selectedClass?.gradeLevel || '';
-      
+
       // Add filter information to headers if class is selected
       const filterInfo = selectedClass ? ` (ថ្នាក់: ${selectedClass.name})` : '';
 
@@ -1284,7 +1284,7 @@ export default function StudentsManagement() {
           student.phone || '', // លេខទូរស័ព្ទ
           student.nationality || 'ខ្មែរ', // សញ្ជាតិ
           student.studentId || '', // លេខសិស្ស
-          
+
           selectedClass?.academicYear || academicYear, // ឆ្នាំសិក្សា
           selectedClass?.gradeLevel || '', // កម្រិតថ្នាក់
           studentAddress, // អាសយដ្ឋានពេញ
@@ -1391,7 +1391,7 @@ export default function StudentsManagement() {
 
       // Merge cells for headers
       ws['!merges'] = [
-        // Row 1-7 (full width merges)
+        // Khmer national header rows (Row 1–6)
         { s: { r: 0, c: 0 }, e: { r: 0, c: 28 } },
         { s: { r: 1, c: 0 }, e: { r: 1, c: 28 } },
         { s: { r: 2, c: 0 }, e: { r: 2, c: 28 } },
@@ -1399,12 +1399,19 @@ export default function StudentsManagement() {
         { s: { r: 4, c: 0 }, e: { r: 4, c: 28 } },
         { s: { r: 5, c: 0 }, e: { r: 5, c: 28 } },
         { s: { r: 6, c: 0 }, e: { r: 6, c: 28 } },
-        // Row 8 (school name)
-        { s: { r: 7, c: 0 }, e: { r: 7, c: 28 } },
-        // Row 9 (main headers)
-        { s: { r: 8, c: 1 }, e: { r: 8, c: 15 } },  // សេចក្ដីផ្សេងៗ
-        { s: { r: 8, c: 16 }, e: { r: 8, c: 21 } }, // ព័ត៌មានឪពុក
-        { s: { r: 8, c: 22 }, e: { r: 8, c: 27 } }, // ព័ត៌មានម្តាយ
+
+        // Main header (Row 8)
+        // Student information (columns 1–11)
+        { s: { r: 8, c: 1 }, e: { r: 8, c: 11 } },
+
+        // Father information (columns 12–17)
+        { s: { r: 8, c: 12 }, e: { r: 8, c: 17 } },
+
+        // Mother information (columns 18–23)
+        { s: { r: 8, c: 18 }, e: { r: 8, c: 23 } },
+
+        // Other information (columns 24–25)
+        { s: { r: 8, c: 24 }, e: { r: 8, c: 25 } },
       ];
 
       // Create workbook
@@ -1433,11 +1440,11 @@ export default function StudentsManagement() {
       const selectedClass = selectedClassId !== 'all'
         ? classes.find(c => c.classId.toString() === selectedClassId)
         : null;
-      
+
       // Generate filename with class information if class is selected
       const filenameBase = selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data';
       const filename = getTimestampedFilename(filenameBase, 'csv');
-      
+
       await prepareAndExportCSV(
         students,
         filename,
@@ -1461,11 +1468,11 @@ export default function StudentsManagement() {
       const selectedClass = selectedClassId !== 'all'
         ? classes.find(c => c.classId.toString() === selectedClassId)
         : null;
-      
+
       // Generate filename with class information if class is selected
       const filenameBase = selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data';
       const filename = getTimestampedFilename(filenameBase, 'pdf');
-      
+
       await prepareAndExportPDF(
         students,
         selectedClass,
