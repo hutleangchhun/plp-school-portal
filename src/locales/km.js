@@ -405,6 +405,8 @@ export const km = {
   returnToDashboard: 'ត្រឡប់ទៅកាន់ផ្ទាំងគ្រប់គ្រង',
   settings: 'ការកំណត់',
   stayTuned: 'រង់ចាំការអាប់ដេត!',
+  schoolSettings: 'ការកំណត់ព័ត៌មានសាលារៀន',
+  updateSchoolInformation: 'កែប្រែព័ត៌មានសាលារៀនរបស់អ្នក',
 
   // Error Messages
   errorFetchingGrades: 'កំហុសក្នុងការទាញយកព័ត៌មានថ្នាក់',

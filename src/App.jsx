@@ -27,6 +27,7 @@ import AttendanceApprovalPage from './pages/attendance/AttendanceApprovalPage';
 import QRCodeAdminManagement from './pages/admin/QRCodeAdminManagement';
 import DirectorExamRecords from './pages/exam/DirectorExamRecords';
 import TeacherExamRecords from './pages/exam/TeacherExamRecords';
+import SchoolSettingsPage from './pages/settings/SchoolSettingsPage';
 // import Achievements from './pages/achievements/Achievements';
 // import Settings from './pages/settings/Settings';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
@@ -168,6 +169,14 @@ function AppContent() {
           }>
             <Route index element={<ProfileUpdate user={user} setUser={setUser} />} />
           </Route>
+
+          <Route path="settings/school" element={
+            <ProtectedRoute path="/settings/school" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout}>
+                <SchoolSettingsPage user={user} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
 
           <Route path="attendance" element={
             <ProtectedRoute path="/attendance" user={user}>

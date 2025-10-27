@@ -75,6 +75,10 @@ export const routePermissions = {
   '/my-students-exams': {
     allowedRoles: [ROLES.TEACHER],
     component: 'TeacherExamRecords'
+  },
+  '/settings/school': {
+    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    component: 'SchoolSettingsPage'
   }
 };
 

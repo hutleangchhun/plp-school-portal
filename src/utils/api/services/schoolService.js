@@ -21,6 +21,60 @@ export const schoolService = {
             throw error;
         }
     },
+
+    async getSchoolById(schoolId) {
+        try {
+            const response = await handleApiResponse(() =>
+                apiClient_.get(`${ENDPOINTS.SCHOOLS.BASE}/${schoolId}`)
+            );
+
+            if (response?.success && response.data) {
+                return {
+                    success: true,
+                    data: response.data
+                };
+            }
+            return {
+                success: false,
+                error: 'Failed to fetch school data'
+            };
+        } catch (error) {
+            console.error('Error fetching school by ID:', error);
+            return {
+                success: false,
+                error: error.message || 'Failed to fetch school data'
+            };
+        }
+    },
+
+    async updateSchool(schoolId, formData) {
+        try {
+            const response = await handleApiResponse(() =>
+                apiClient_.put(`${ENDPOINTS.SCHOOLS.BASE}/${schoolId}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                })
+            );
+
+            if (response?.success && response.data) {
+                return {
+                    success: true,
+                    data: response.data
+                };
+            }
+            return {
+                success: false,
+                error: 'Failed to update school'
+            };
+        } catch (error) {
+            console.error('Error updating school:', error);
+            return {
+                success: false,
+                error: error.message || 'Failed to update school'
+            };
+        }
+    },
     async getAllSchools() {
         try {
             const response = await handleApiResponse(() =>
