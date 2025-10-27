@@ -244,14 +244,14 @@ export default function TeachersManagement() {
         lastName: teacher.user?.last_name || '',
         name: `${teacher.user?.first_name || ''} ${teacher.user?.last_name || ''}`.trim(),
         email: teacher.user?.email || 'N/A',
-        phone: teacher.user?.phone || 'N/A',
+        phone: teacher.user?.phone || '',
         schoolId: teacher.schoolId,
         schoolName: teacher.school?.name || 'N/A',
         hireDate: teacher.hire_date,
         gradeLevel: teacher.gradeLevel || null,
         isDirector: teacher.isDirector,
         status: teacher.status,
-        isActive: teacher.status === 'ACTIVE',
+        isActive: teacher.status === 'ACTIVE',  
         classes: teacher.classes || []
       }));
 
@@ -416,7 +416,7 @@ export default function TeachersManagement() {
         // Sub headers (row 9)
         [
           '#',
-          'អត្តលេខ', 'គោត្តនាម', 'នាម', 'លេខទូរស័ព្ទ', 'ភេទ', 'ថ្ងៃកំណើត', 'សញ្ជាតិ', 'តំណែង',
+          'អត្តលេខ', 'គោត្តនាម', 'នាម', 'លេខទូរស័ព្ទ', 'ភេទ', 'ថ្ងៃកំណើត', 'សញ្ជាតិ', 'តួរនាទី',
           'អាសយដ្ឋានពេញ',
           'ថ្នាក់ដែលបង្រៀន'
         ]
