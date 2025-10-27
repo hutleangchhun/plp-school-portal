@@ -403,20 +403,15 @@ export default function TeachersManagement() {
         // Main headers (row 9)
         [
           '#',
-          'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន',
-          'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក',
-          'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ',
+          'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន', 'ព័ត៌មានគ្រូបង្រៀន',
           'ថ្នាក់ដែលបង្រៀន'
         ],
         // Sub headers (row 10)
         [
           '#',
-          'អត្តលេខ', 'គោត្តនាម', 'នាម', 'អ៊ីមែល', 'ឈ្មោះអ្នកប្រើ', 'ពាក្យសម្ងាត់',
-          'ថ្ងៃខែឆ្នាំកំណើត', 'ភេទ', 'លេខទូរស័ព្ទ', 'សញ្ជាតិ', 'លេខសិស្រ', 'លេខសាលា', 'ឆ្នាំសិក្សា', 'កម្រិតថ្នាក់',
-          'អាសយដ្ឋានពេញ',
-          'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញឪពុក',
-          'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញម្តាយ',
-          'ថ្នាក់'
+          'អត្តលេខ', 'គោត្តនាម', 'នាម', 'លេខទូរស័ព្ទ', 'ភេទ', 'ថ្ងៃកំណើត', 'សញ្ជាតិ',
+          'អាសយដ្ឋានពេញ', 'កម្រិតថ្នាក់', 'ឆ្នាំសិក្សា', 'ថ្នាក់',
+          'ថ្នាក់ដែលបង្រៀន'
         ]
       ];
 
@@ -438,29 +433,6 @@ export default function TeachersManagement() {
           teacher.residence?.province || teacher.province
         ].filter(Boolean).join(' ');
 
-        // Get parent data
-        const fatherData = teacher.parents?.find(p => p.relationship === 'FATHER') || {};
-        const motherData = teacher.parents?.find(p => p.relationship === 'MOTHER') || {};
-
-        // Format parent addresses
-        const fatherAddress = [
-          fatherData.village,
-          fatherData.commune,
-          fatherData.district,
-          fatherData.province
-        ].filter(Boolean).join(' ') || teacherAddress;
-
-        const motherAddress = [
-          motherData.village,
-          motherData.commune,
-          motherData.district,
-          motherData.province
-        ].filter(Boolean).join(' ') || teacherAddress;
-
-        // Format parent genders
-        const fatherGender = fatherData.gender === 'MALE' || fatherData.gender === 'male' ? 'ប្រុស' : '';
-        const motherGender = motherData.gender === 'FEMALE' || motherData.gender === 'female' ? 'ស្រី' : '';
-
         // Format classes taught by teacher
         const classesTaught = teacher.classes && teacher.classes.length > 0
           ? teacher.classes.map(cls => cls.name || `${cls.gradeLevel}${cls.section}`).join(', ')
@@ -471,32 +443,13 @@ export default function TeachersManagement() {
           teacher.teacherId || teacher.id || '', // អត្តលេខ
           teacher.lastName || teacher.last_name || '', // គោត្តនាម
           teacher.firstName || teacher.first_name || '', // នាម
-          teacher.email || '', // អ៊ីមែល
-          '', // ឈ្មោះអ្នកប្រើ (omitted for teachers)
-          '', // ពាក្យសម្ងាត់ (omitted for security)
-          formattedDob, // ថ្ងៃខែឆ្នាំកំណើត
-          gender, // ភេទ
           teacher.phone || '', // លេខទូរស័ព្ទ
+          gender, // ភេទ
+          formattedDob, // ថ្ងៃកំណើត
           teacher.nationality || 'ខ្មែរ', // សញ្ជាតិ
-          '', // លេខសិស្រ (for teachers)
-          '', // លេខសាលា (can be filled manually)
-          new Date().getFullYear() + '-' + (new Date().getFullYear() + 1), // ឆ្នាំសិក្សា
-          '', // កម្រិតថ្នាក់ (for teachers)
           teacherAddress, // អាសយដ្ឋានពេញ
-          // Father info
-          fatherData.firstName || fatherData.first_name || '', // នាមឪពុក
-          fatherData.lastName || fatherData.last_name || '', // គោត្តនាមឪពុក
-          fatherData.phone || '', // ទូរស័ព្ទឪពុក
-          fatherGender, // ភេទឪពុក
-          fatherData.occupation || '', // មុខរបរឪពុក
-          fatherAddress, // អាសយដ្ឋានពេញឪពុក
-          // Mother info
-          motherData.firstName || motherData.first_name || '', // នាមម្តាយ
-          motherData.lastName || motherData.last_name || '', // គោត្តនាមម្តាយ
-          motherData.phone || '', // ទូរស័ព្ទម្តាយ
-          motherGender, // ភេទម្តាយ
-          motherData.occupation || '', // មុខរបរម្តាយ
-          motherAddress, // អាសយដ្ឋានពេញម្តាយ
+          teacher.gradeLevel || '', // កម្រិតថ្នាក់
+          new Date().getFullYear() + '-' + (new Date().getFullYear() + 1), // ឆ្នាំសិក្សា
           classesTaught // ថ្នាក់
         ];
 
@@ -512,24 +465,14 @@ export default function TeachersManagement() {
         { wch: 12 }, // អត្តលេខ
         { wch: 12 }, // គោត្តនាម
         { wch: 12 }, // នាម
-        { wch: 25 }, // អ៊ីមែល
-        { wch: 15 }, // ឈ្មោះអ្នកប្រើ
-        { wch: 12 }, // ពាក្យសម្ងាត់
-        { wch: 12 }, // ថ្ងៃខែឆ្នាំកំណើត
-        { wch: 8 },  // ភេទ
         { wch: 12 }, // លេខទូរស័ព្ទ
+        { wch: 8 },  // ភេទ
+        { wch: 12 }, // ថ្ងៃកំណើត
         { wch: 10 }, // សញ្ជាតិ
-        { wch: 12 }, // លេខសិស្រ
-        { wch: 10 }, // លេខសាលា
-        { wch: 12 }, // ឆ្នាំសិក្សា
-        { wch: 10 }, // កម្រិតថ្នាក់
         { wch: 40 }, // អាសយដ្ឋានពេញ
-        // Father columns
-        { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 40 },
-        // Mother columns
-        { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 40 },
-        // Classes column
-        { wch: 20 }
+        { wch: 10 }, // កម្រិតថ្នាក់
+        { wch: 12 }, // ឆ្នាំសិក្សា
+        { wch: 20 }  // ថ្នាក់ដែលបង្រៀន
       ];
 
       // Apply styling
@@ -590,18 +533,16 @@ export default function TeachersManagement() {
       // Merge cells for headers
       ws['!merges'] = [
         // Row 1-8 (full width merges)
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 28 } },
-        { s: { r: 1, c: 0 }, e: { r: 1, c: 28 } },
-        { s: { r: 2, c: 0 }, e: { r: 2, c: 28 } },
-        { s: { r: 3, c: 0 }, e: { r: 3, c: 28 } },
-        { s: { r: 4, c: 0 }, e: { r: 4, c: 28 } },
-        { s: { r: 5, c: 0 }, e: { r: 5, c: 28 } },
-        { s: { r: 6, c: 0 }, e: { r: 6, c: 28 } },
-        { s: { r: 7, c: 0 }, e: { r: 7, c: 28 } },
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 12 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 12 } },
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 12 } },
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 12 } },
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 12 } },
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 12 } },
+        { s: { r: 7, c: 0 }, e: { r: 7, c: 12 } },
         // Row 9 (main headers)
-        { s: { r: 8, c: 1 }, e: { r: 8, c: 15 } },  // ព័ត៌មានគ្រូបង្រៀន
-        { s: { r: 8, c: 16 }, e: { r: 8, c: 21 } }, // ព័ត៌មានឪពុក
-        { s: { r: 8, c: 22 }, e: { r: 8, c: 27 } }, // ព័ត៌មានម្តាយ
+        { s: { r: 8, c: 1 }, e: { r: 8, c: 11 } },  // ព័ត៌មានគ្រូបង្រៀន
       ];
 
       // Create workbook
@@ -631,7 +572,6 @@ export default function TeachersManagement() {
         t('number'),
         t('firstName'),
         t('lastName'),
-        t('email'),
         t('phone'),
         t('gender'),
         t('dateOfBirth'),
@@ -646,7 +586,6 @@ export default function TeachersManagement() {
           index + 1, // Number
           teacher.firstName || teacher.first_name || '',
           teacher.lastName || teacher.last_name || '',
-          teacher.email || '',
           teacher.phone || '',
           teacher.gender ? (teacher.gender === 'MALE' || teacher.gender === 'male' ? t('male') : t('female')) : '',
           teacher.dateOfBirth || teacher.date_of_birth ? formatDateKhmer(teacher.dateOfBirth || teacher.date_of_birth, 'dateOnly') : '',
@@ -713,7 +652,6 @@ export default function TeachersManagement() {
                 <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">ល.រ</th>
                 <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">នាម</th>
                 <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">គោត្តនាម</th>
-                <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">អ៊ីមែល</th>
                 <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">ទូរសព្ទ</th>
                 <th style="border: 1px solid #ddd; padding: 6px; text-align: left;">ថ្នាក់ដែលបង្រៀន</th>
               </tr>
@@ -731,7 +669,6 @@ export default function TeachersManagement() {
                     <td style="border: 1px solid #ddd; padding: 5px;">${index + 1}</td>
                     <td style="border: 1px solid #ddd; padding: 5px;">${teacher.firstName || ''}</td>
                     <td style="border: 1px solid #ddd; padding: 5px;">${teacher.lastName || ''}</td>
-                    <td style="border: 1px solid #ddd; padding: 5px;">${teacher.email || ''}</td>
                     <td style="border: 1px solid #ddd; padding: 5px;">${teacher.phone || ''}</td>
                     <td style="border: 1px solid #ddd; padding: 5px;">${classesTaught}</td>
                   </tr>
