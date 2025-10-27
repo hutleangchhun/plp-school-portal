@@ -509,7 +509,7 @@ export default function TeachersManagement() {
             };
           }
           // Headers (8-9) - Gray background, borders, bold
-          else if (R === 8 || R === 9) {
+          else if (R === 8) {
             ws[cellAddress].s = {
               fill: { fgColor: { rgb: 'E0E0E0' } },
               border: {
