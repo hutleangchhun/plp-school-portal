@@ -1398,19 +1398,20 @@ export default function StudentsManagement() {
         { s: { r: 5, c: 0 }, e: { r: 5, c: 28 } },
         { s: { r: 6, c: 0 }, e: { r: 6, c: 28 } },
 
-        // Main header (Row 8)
-        // Student information (columns 1–11)
-        { s: { r: 8, c: 1 }, e: { r: 8, c: 11 } },
+        // 👉 Main section header (Row 10, zero-based)
+        // ព័ត៌មានសិស្ស = Columns B–L (1–11)
+        { s: { r: 10, c: 1 }, e: { r: 10, c: 11 } },
 
-        // Father information (columns 12–17)
-        { s: { r: 8, c: 12 }, e: { r: 8, c: 17 } },
+        // ព័ត៌មានឪពុក = Columns M–R (12–17)
+        { s: { r: 10, c: 12 }, e: { r: 10, c: 17 } },
 
-        // Mother information (columns 18–23)
-        { s: { r: 8, c: 18 }, e: { r: 8, c: 23 } },
+        // ព័ត៌មានម្តាយ = Columns S–X (18–23)
+        { s: { r: 10, c: 18 }, e: { r: 10, c: 23 } },
 
-        // Other information (columns 24–25)
-        { s: { r: 8, c: 24 }, e: { r: 8, c: 25 } },
+        // សេចក្ដីផ្សេងៗ = Columns Y–Z (24–25)
+        { s: { r: 10, c: 24 }, e: { r: 10, c: 25 } },
       ];
+
 
       // Create workbook
       const wb = XLSXStyle.utils.book_new();
