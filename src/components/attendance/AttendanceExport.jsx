@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { formatDateKhmer } from '../../utils/formatters';
+import { attendanceService } from '../../utils/api/services/attendanceService';
 
 /**
  * AttendanceExport Component
@@ -27,6 +28,7 @@ export default function AttendanceExport({
   schoolName = 'សាលា',
   selectedDate,
   exportType = 'monthly', // 'daily' or 'monthly'
+  classId, // Required for API calls
   disabled = false
 }) {
   // Default to current date if no selectedDate is provided and exportType is monthly
@@ -46,13 +48,72 @@ export default function AttendanceExport({
 
   const effectiveDate = selectedDate || defaultSelectedDate;
 
+  // Get start and end date for the current month
+  const getCurrentMonthRange = () => {
+    const now = new Date(effectiveDate);
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    
+    // First day of the month
+    const startDate = new Date(year, month, 1);
+    // Last day of the month
+    const endDate = new Date(year, month + 1, 0);
+    
+    return {
+      startDate: formatDateToString(startDate),
+      endDate: formatDateToString(endDate)
+    };
+  };
+
   // Clean filename
   const cleanClassName = className
     .replace(/\s+/g, '_')
     .replace(/[^\w\u0080-\uFFFF-]/g, '_');
 
+  // Fetch monthly attendance data for all students
+  const fetchMonthlyAttendanceData = async () => {
+    const { startDate, endDate } = getCurrentMonthRange();
+    
+    try {
+      // Fetch attendance data for the month
+      const attendanceResponse = await attendanceService.getAttendance({
+        classId: classId,
+        startDate: startDate,
+        endDate: endDate
+      });
+      
+      if (!attendanceResponse.success) {
+        throw new Error('Failed to fetch attendance data');
+      }
+      
+      // Transform the fetched data into the expected format
+      // Expected format: { userId: { date: { status, reason, ... }, ... }, ... }
+      const transformedAttendance = {};
+      attendanceResponse.data.forEach(record => {
+        const userId = record.userId;
+        const date = record.date;
+        
+        if (!transformedAttendance[userId]) {
+          transformedAttendance[userId] = {};
+        }
+        
+        transformedAttendance[userId][date] = {
+          status: record.status,
+          reason: record.reason
+        };
+      });
+      
+      return transformedAttendance;
+    } catch (error) {
+      console.error('Error fetching monthly attendance data:', error);
+      showError(t('fetchAttendanceFailed', 'Failed to fetch attendance data'));
+      return {};
+    }
+  };
+
   // Prepare export data for monthly report
-  const prepareMonthlyExportData = () => {
+  const prepareMonthlyExportData = (monthlyAttendance = null) => {
+    const actualAttendance = monthlyAttendance || attendance;
     const currentDate = new Date(effectiveDate);
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -77,7 +138,7 @@ export default function AttendanceExport({
           // Check attendance for this specific day
           const dayDate = new Date(year, month, day);
           const dateStr = formatDateToString(dayDate);
-          const studentAttendance = attendance[studentUserId]?.[dateStr];
+          const studentAttendance = actualAttendance[studentUserId]?.[dateStr];
 
           if (studentAttendance?.status) {
             const statusMark = studentAttendance.status === 'PRESENT' ? 'វ' :
@@ -109,7 +170,8 @@ export default function AttendanceExport({
   };
 
   // Prepare export data for daily report
-  const prepareDailyExportData = () => {
+  const prepareDailyExportData = (dailyAttendance = null) => {
+    const actualAttendance = dailyAttendance || attendance;
     const currentDate = new Date(effectiveDate);
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -117,7 +179,7 @@ export default function AttendanceExport({
 
     const exportData = students.map((student, index) => {
       const studentUserId = Number(student.userId || student.id);
-      const studentAttendance = attendance[studentUserId] || { status: null, reason: '' };
+      const studentAttendance = actualAttendance[studentUserId] || { status: null, reason: '' };
 
       const row = {
         'ល.រ': index + 1,
@@ -163,9 +225,15 @@ export default function AttendanceExport({
   // Export to Excel with borders and styling
   const handleExportExcel = async () => {
     try {
-      const { exportData, daysInMonth } = exportType === 'monthly'
-        ? prepareMonthlyExportData()
-        : prepareDailyExportData();
+      let exportData, daysInMonth;
+      
+      if (exportType === 'monthly') {
+        // Fetch current month's attendance data
+        const monthlyAttendance = await fetchMonthlyAttendanceData();
+        ({ exportData, daysInMonth } = prepareMonthlyExportData(monthlyAttendance));
+      } else {
+        ({ exportData, daysInMonth } = prepareDailyExportData());
+      }
 
       const dateStr = formatDateToString(effectiveDate);
 
@@ -557,11 +625,17 @@ export default function AttendanceExport({
   };
 
   // Export to CSV (Google Sheets compatible)
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     try {
-      const { exportData } = exportType === 'monthly'
-        ? prepareMonthlyExportData()
-        : prepareDailyExportData();
+      let exportData;
+      
+      if (exportType === 'monthly') {
+        // Fetch current month's attendance data
+        const monthlyAttendance = await fetchMonthlyAttendanceData();
+        ({ exportData } = prepareMonthlyExportData(monthlyAttendance));
+      } else {
+        ({ exportData } = prepareDailyExportData());
+      }
 
       const dateStr = formatDateToString(effectiveDate);
       const currentDate = new Date(effectiveDate);
