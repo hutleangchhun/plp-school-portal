@@ -1202,6 +1202,8 @@ export default function StudentsManagement() {
         [schoolName || 'សាលាបឋមសិក្សា ហ៊ុន សែន ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Student List Title - Row 4
         [`បញ្ជីរាយនាមសិស្ស ${className}${filterInfo}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        // School Name - Row 5
+        [schoolName || 'សាលាបឋមសិក្សា ហ៊ុន សែន ព្រែកគយ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Class and Academic Year - Row 5
         [`${gradeLevel ? `ថ្នាក់ទី ${gradeLevel}` : 'ថ្នាក់'} ឆ្នាំសិក្សា ${academicYear}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
         // Empty row for spacing - Row 6
@@ -1348,23 +1350,23 @@ export default function StudentsManagement() {
             ws[cellAddress] = { t: 's', v: '' };
           }
 
-          // Header rows (0-6) - No borders, centered, bold
-          if (R < 7) {
+          // Header rows (0-7) - No borders, centered, bold
+          if (R < 8) {
             ws[cellAddress].s = {
               alignment: { vertical: 'center', horizontal: 'center' },
               font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
             };
           }
-          // Instructions row (7)
-          else if (R === 7) {
+          // Instructions row (8)
+          else if (R === 8) {
             ws[cellAddress].s = {
               alignment: { vertical: 'center', horizontal: 'left' },
               font: { name: 'Khmer OS Battambang', sz: 9, italic: true },
               fill: { fgColor: { rgb: 'FFF9E6' } }
             };
           }
-          // Main headers (8-9) - Gray background, borders, bold
-          else if (R === 8 || R === 9) {
+          // Main headers (9-10) - Gray background, borders, bold
+          else if (R === 9 || R === 10) {
             ws[cellAddress].s = {
               fill: { fgColor: { rgb: 'E0E0E0' } },
               border: {
@@ -1377,7 +1379,7 @@ export default function StudentsManagement() {
               font: { name: 'Khmer OS Battambang', sz: 10, bold: true }
             };
           }
-          // Data rows (10+) - Borders
+          // Data rows (11+) - Borders
           else {
             ws[cellAddress].s = {
               border: {
@@ -1403,10 +1405,12 @@ export default function StudentsManagement() {
         { s: { r: 4, c: 0 }, e: { r: 4, c: 28 } },
         { s: { r: 5, c: 0 }, e: { r: 5, c: 28 } },
         { s: { r: 6, c: 0 }, e: { r: 6, c: 28 } },
-        // Row 8 (main headers)
-        { s: { r: 7, c: 1 }, e: { r: 7, c: 15 } },  // សេចក្ដីផ្សេងៗ
-        { s: { r: 7, c: 16 }, e: { r: 7, c: 21 } }, // ព័ត៌មានឪពុក
-        { s: { r: 7, c: 22 }, e: { r: 7, c: 27 } }, // ព័ត៌មានម្តាយ
+        // Row 8 (school name)
+        { s: { r: 7, c: 0 }, e: { r: 7, c: 28 } },
+        // Row 9 (main headers)
+        { s: { r: 8, c: 1 }, e: { r: 8, c: 15 } },  // សេចក្ដីផ្សេងៗ
+        { s: { r: 8, c: 16 }, e: { r: 8, c: 21 } }, // ព័ត៌មានឪពុក
+        { s: { r: 8, c: 22 }, e: { r: 8, c: 27 } }, // ព័ត៌មានម្តាយ
       ];
 
       // Create workbook
@@ -1936,7 +1940,7 @@ export default function StudentsManagement() {
                 variant="outline"
                 size="default"
                 className="shadow-lg"
-                disabled={students.length === 0 || selectedClassId === 'all'}
+                disabled={students.length === 0}
               >
                 <Download className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
                 <span className="text-xs sm:text-sm">{t('export', 'Export')}</span>
