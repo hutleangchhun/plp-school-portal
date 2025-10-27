@@ -528,8 +528,8 @@ export default function TeachersManagement() {
               border: {
                 top: { style: 'thin', color: { rgb: '000000' } },
                 bottom: { style: 'thin', color: { rgb: '000000' } },
-                left: { style: 'none' },
-                right: { style: 'none' }
+                left: { style: 'thin', color: { rgb: '000000' } },
+                right: {style: 'thin', color: { rgb: '000000' }  }
               },
               alignment: { vertical: 'center', horizontal: 'left' },
               font: { name: 'Khmer OS Battambang', sz: 10 }
