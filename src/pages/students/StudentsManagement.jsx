@@ -1180,70 +1180,60 @@ export default function StudentsManagement() {
         ? classes.find(c => c.classId.toString() === selectedClassId)
         : null;
 
-      // Dynamically import xlsx-js-style for styling support
       const XLSXStyleModule = await import('xlsx-js-style');
       const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
 
-      // Get class info for headers
       const className = selectedClass?.name || 'បញ្ជីរាយនាមសិស្ស';
-      const academicYear = selectedClass?.academicYear || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
+      const academicYear = selectedClass?.academicYear || (new Date().getFullYear() + '-' + (new Date().getFullYear() + 1));
       const gradeLevel = selectedClass?.gradeLevel || '';
-
-      // Add filter information to headers if class is selected
       const filterInfo = selectedClass ? ` ថ្នាក់: ${selectedClass.name}` : '';
 
-      // Create comprehensive template with Cambodian school headers
+      // ---- IMPORTANT: main header row (row index 9) MUST align with merges below ----
       const templateData = [
-        // Official Cambodian School Header - Row 1
+        // 0-6 existing top header rows (keep as you had)
         ['ព្រះរាជាណាចក្រកម្ពុជា', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // Nation, Religion, King - Row 2
         ['ជាតិ       សាសនា       ព្រះមហាក្សត្រ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // School Name - Row 3
         [schoolName || 'សាលាបឋមសិក្សា ...........', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // Student List Title - Row 4
         [`បញ្ជីរាយនាមសិស្ស`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // School Name - Row 5
-        // Class and Academic Year - Row 5
         [`${gradeLevel ? `${filterInfo}` : 'ថ្នាក់ទី.....'} ឆ្នាំសិក្សា ${academicYear}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // Empty row for spacing - Row 6
         ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // Instructions row (row 7)
         ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // Main headers (row 8)
+        // Row 7 and 8 placeholders (if you used them)
         ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        // Sub headers (row 9)
-        ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
 
+        // MAIN HEADER ROW -> row index 9 (zero-based)
+        // Place main header labels at the first column of each merged region; use empty strings for the rest.
         [
-          '#',
-          'ព័ត៌មានឪពុក',
-          'ព័ត៌មានឪពុក',
-          'ព័ត៌មានម្តាយ',
-          'សេចក្ដីផ្សេងៗ'
+          '#',                              // col 0
+          'ព័ត៌មានសិស្ស', '', '', '', '', '', '', '', '', '', // cols 1..10 (student info)
+          'ព័ត៌មានឪពុក', '', '', '', '', '',          // cols 11..16 (father)
+          'ព័ត៌មានម្តាយ', '', '', '', '', '',          // cols 17..22 (mother)
+          'សេចក្ដីផ្សេងៗ', ''                        // cols 23..24 (other)
         ],
-        // Sub headers (row 10)
+
+        // SUBHEADER ROW -> row index 10 (zero-based)
         [
           '#',
           'អត្តលេខ', 'គោត្តនាម', 'នាម',
           'ថ្ងៃខែឆ្នាំកំណើត', 'ភេទ', 'លេខទូរស័ព្ទ', 'សញ្ជាតិ', 'លេខសិស្ស', 'ឆ្នាំសិក្សា',
           'អាសយដ្ឋានពេញ',
+          // Father subheaders (cols 11..16)
           'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញឪពុក',
+          // Mother subheaders (cols 17..22)
           'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញម្តាយ',
+          // Other (cols 23..24)
           'ជនជាតិភាគតិច', 'លក្ខណៈពិសេស'
         ]
       ];
 
-      // Add student data rows
+      // Append student rows (unchanged)
       students.forEach((student, index) => {
-        // Format date of birth
         const dob = student.dateOfBirth || student.date_of_birth;
         const formattedDob = dob ? formatDateKhmer(dob, 'dateOnly') : '';
-
-        // Format gender
         const gender = student.gender === 'MALE' || student.gender === 'male' ? 'ប្រុស' :
           student.gender === 'FEMALE' || student.gender === 'female' ? 'ស្រី' : '';
 
-        // Format full address for student
         const studentAddress = [
           student.residence?.village || student.village,
           student.residence?.commune || student.commune,
@@ -1251,11 +1241,9 @@ export default function StudentsManagement() {
           student.residence?.province || student.province
         ].filter(Boolean).join(' ');
 
-        // Get parent data
         const fatherData = student.parents?.find(p => p.relationship === 'FATHER') || {};
         const motherData = student.parents?.find(p => p.relationship === 'MOTHER') || {};
 
-        // Format parent addresses
         const fatherAddress = [
           fatherData.village,
           fatherData.commune,
@@ -1270,39 +1258,38 @@ export default function StudentsManagement() {
           motherData.province
         ].filter(Boolean).join(' ') || studentAddress;
 
-        // Format parent genders
         const fatherGender = fatherData.gender === 'MALE' || fatherData.gender === 'male' ? 'ប្រុស' : '';
         const motherGender = motherData.gender === 'FEMALE' || motherData.gender === 'female' ? 'ស្រី' : '';
 
         const row = [
-          index + 1, // Row number
-          student.studentId || student.id || '', // អត្តលេខ
-          student.lastName || student.last_name || '', // គោត្តនាម
-          student.firstName || student.first_name || '', // នាម
-          formattedDob, // ថ្ងៃខែឆ្នាំកំណើត
-          gender, // ភេទ
-          student.phone || '', // លេខទូរស័ព្ទ
-          student.nationality || 'ខ្មែរ', // សញ្ជាតិ
-          student.studentId || '', // លេខសិស្ស
-
-          selectedClass?.academicYear || academicYear, // ឆ្នាំសិក្សា
-          studentAddress, // អាសយដ្ឋានពេញ
-          // Father info
-          fatherData.firstName || fatherData.first_name || '', // នាមឪពុក
-          fatherData.lastName || fatherData.last_name || '', // គោត្តនាមឪពុក
-          fatherData.phone || '', // ទូរស័ព្ទឪពុក
-          fatherGender, // ភេទឪពុក
-          fatherData.occupation || '', // មុខរបរឪពុក
-          fatherAddress, // អាសយដ្ឋានពេញឪពុក
-          // Mother info
-          motherData.firstName || motherData.first_name || '', // នាមម្តាយ
-          motherData.lastName || motherData.last_name || '', // គោត្តនាមម្តាយ
-          motherData.phone || '', // ទូរស័ព្ទម្តាយ
-          motherGender, // ភេទម្តាយ
-          motherData.occupation || '', // មុខរបរម្តាយ
-          motherAddress, // អាសយដ្ឋានពេញម្តាយ
-          student.minority || '', // ជនជាតិភាគតិច
-          student.specialNeeds || '' // លក្ខណៈពិសេស
+          index + 1,
+          student.studentId || student.id || '',
+          student.lastName || student.last_name || '',
+          student.firstName || student.first_name || '',
+          formattedDob,
+          gender,
+          student.phone || '',
+          student.nationality || 'ខ្មែរ',
+          student.studentId || '',
+          selectedClass?.academicYear || academicYear,
+          studentAddress,
+          // Father (11..16)
+          fatherData.firstName || fatherData.first_name || '',
+          fatherData.lastName || fatherData.last_name || '',
+          fatherData.phone || '',
+          fatherGender,
+          fatherData.occupation || '',
+          fatherAddress,
+          // Mother (17..22)
+          motherData.firstName || motherData.first_name || '',
+          motherData.lastName || motherData.last_name || '',
+          motherData.phone || '',
+          motherGender,
+          motherData.occupation || '',
+          motherAddress,
+          // Other
+          student.minority || '',
+          student.specialNeeds || ''
         ];
 
         templateData.push(row);
@@ -1311,7 +1298,7 @@ export default function StudentsManagement() {
       // Create worksheet
       const ws = XLSXStyle.utils.aoa_to_sheet(templateData);
 
-      // Set column widths
+      // Column widths (keep your values)
       ws['!cols'] = [
         { wch: 5 },  // #
         { wch: 12 }, // អត្តលេខ
@@ -1324,12 +1311,37 @@ export default function StudentsManagement() {
         { wch: 12 }, // លេខសិស្ស
         { wch: 12 }, // ឆ្នាំសិក្សា
         { wch: 40 }, // អាសយដ្ឋានពេញ
-        // Father columns
+        // Father columns (11..16)
         { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 40 },
-        // Mother columns
+        // Mother columns (17..22)
         { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 40 },
-        // Additional
+        // Other
         { wch: 12 }, { wch: 20 }
+      ];
+
+      // Merge cells for top headers (your existing ones)
+      ws['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 24 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 24 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 24 } },
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 24 } },
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 24 } },
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 24 } },
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 24 } },
+
+        // === MAIN HEADER MERGES ===
+        // main header row is row index 9 (zero-based)
+        // Student info: columns 1..10 (B..K)
+        { s: { r: 9, c: 1 }, e: { r: 9, c: 10 } },
+
+        // Father info: columns 11..16 (L..Q)
+        { s: { r: 9, c: 11 }, e: { r: 9, c: 16 } },
+
+        // Mother info: columns 17..22 (R..W)
+        { s: { r: 9, c: 17 }, e: { r: 9, c: 22 } },
+
+        // Other: columns 23..24 (X..Y)
+        { s: { r: 9, c: 23 }, e: { r: 9, c: 24 } }
       ];
 
       // Apply styling
@@ -1337,28 +1349,31 @@ export default function StudentsManagement() {
       for (let R = range.s.r; R <= range.e.r; R++) {
         for (let C = range.s.c; C <= range.e.c; C++) {
           const cellAddress = XLSXStyle.utils.encode_cell({ r: R, c: C });
+          if (!ws[cellAddress]) ws[cellAddress] = { t: 's', v: '' };
 
-          if (!ws[cellAddress]) {
-            ws[cellAddress] = { t: 's', v: '' };
-          }
-
-          // Header rows (0-7) - No borders, centered, bold
-          if (R < 8) {
+          // Top header rows (0..8) - centered bold
+          if (R < 9) {
             ws[cellAddress].s = {
               alignment: { vertical: 'center', horizontal: 'center' },
               font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
             };
           }
-          // Instructions row (8)
-          else if (R === 8) {
+          // Main header row (9) - merged big labels
+          else if (R === 9) {
             ws[cellAddress].s = {
-              alignment: { vertical: 'center', horizontal: 'left' },
-              font: { name: 'Khmer OS Battambang', sz: 9, italic: true },
-              fill: { fgColor: { rgb: 'FFF9E6' } }
+              fill: { fgColor: { rgb: 'E0E0E0' } },
+              alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+              font: { name: 'Khmer OS Battambang', sz: 11, bold: true },
+              border: {
+                top: { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left: { style: 'thin', color: { rgb: '000000' } },
+                right: { style: 'thin', color: { rgb: '000000' } }
+              }
             };
           }
-          // Main headers (9-10) - Gray background, borders, bold
-          else if (R === 9 || R === 10) {
+          // Subheader row (10)
+          else if (R === 10) {
             ws[cellAddress].s = {
               fill: { fgColor: { rgb: 'E0E0E0' } },
               border: {
@@ -1371,7 +1386,7 @@ export default function StudentsManagement() {
               font: { name: 'Khmer OS Battambang', sz: 10, bold: true }
             };
           }
-          // Data rows (11+) - Borders
+          // Data rows
           else {
             ws[cellAddress].s = {
               border: {
@@ -1387,43 +1402,28 @@ export default function StudentsManagement() {
         }
       }
 
-      // Merge cells for headers
-      ws['!merges'] = [
-        // Khmer national header rows (Row 1–6)
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 28 } },
-        { s: { r: 1, c: 0 }, e: { r: 1, c: 28 } },
-        { s: { r: 2, c: 0 }, e: { r: 2, c: 28 } },
-        { s: { r: 3, c: 0 }, e: { r: 3, c: 28 } },
-        { s: { r: 4, c: 0 }, e: { r: 4, c: 28 } },
-        { s: { r: 5, c: 0 }, e: { r: 5, c: 28 } },
-        { s: { r: 6, c: 0 }, e: { r: 6, c: 28 } },
+      // After merges, ensure the first cell of each merged region has the desired text (it already does
+      // because we placed the main headers at those first-cell positions in templateData).
+      // But to be safe — we'll re-assign the merged cell text explicitly:
+      const setCell = (r, c, value) => {
+        const addr = XLSXStyle.utils.encode_cell({ r, c });
+        ws[addr] = ws[addr] || { t: 's', v: '' };
+        ws[addr].v = value;
+      };
+      setCell(9, 1, 'ព័ត៌មានសិស្ស');   // B10 (row-index 9)
+      setCell(9, 11, 'ព័ត៌មានឪពុក');  // L10
+      setCell(9, 17, 'ព័ត៌មានម្តាយ');  // R10
+      setCell(9, 23, 'សេចក្ដីផ្សេងៗ'); // X10
 
-        // 👉 Main section header (Row 10, zero-based)
-        // ព័ត៌មានសិស្ស = Columns B–L (1–11)
-        { s: { r: 10, c: 1 }, e: { r: 10, c: 11 } },
-
-        // ព័ត៌មានឪពុក = Columns M–R (12–17)
-        { s: { r: 10, c: 12 }, e: { r: 10, c: 17 } },
-
-        // ព័ត៌មានម្តាយ = Columns S–X (18–23)
-        { s: { r: 10, c: 18 }, e: { r: 10, c: 23 } },
-
-        // សេចក្ដីផ្សេងៗ = Columns Y–Z (24–25)
-        { s: { r: 10, c: 24 }, e: { r: 10, c: 25 } },
-      ];
-
-
-      // Create workbook
+      // Create workbook and save
       const wb = XLSXStyle.utils.book_new();
       XLSXStyle.utils.book_append_sheet(wb, ws, 'បញ្ជីសិស្ស');
 
-      // Generate filename
       const filename = getTimestampedFilename(
         selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data',
         'xlsx'
       );
 
-      // Export file
       XLSXStyle.writeFile(wb, filename);
 
       showSuccess(t('exportSuccess', 'Data exported successfully'));
@@ -1433,6 +1433,7 @@ export default function StudentsManagement() {
       showError(t('exportError', 'Failed to export data'));
     }
   };
+
 
   const handleExportCSV = async () => {
     try {
