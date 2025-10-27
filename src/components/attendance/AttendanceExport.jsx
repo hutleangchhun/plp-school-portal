@@ -25,10 +25,12 @@ export default function AttendanceExport({
   attendance = {},
   className = 'Unknown-Class',
   schoolName = 'សាលា',
-  selectedDate = new Date(),
+  selectedDate,
   exportType = 'monthly', // 'daily' or 'monthly'
   disabled = false
 }) {
+  // Default to current date if no selectedDate is provided and exportType is monthly
+  const defaultSelectedDate = selectedDate || (exportType === 'monthly' ? new Date() : new Date());
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const [showExportDropdown, setShowExportDropdown] = useState(false);
@@ -42,6 +44,8 @@ export default function AttendanceExport({
     return `${year}-${month}-${day}`;
   };
 
+  const effectiveDate = selectedDate || defaultSelectedDate;
+
   // Clean filename
   const cleanClassName = className
     .replace(/\s+/g, '_')
@@ -49,7 +53,7 @@ export default function AttendanceExport({
 
   // Prepare export data for monthly report
   const prepareMonthlyExportData = () => {
-    const currentDate = new Date(selectedDate);
+    const currentDate = new Date(effectiveDate);
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -106,7 +110,7 @@ export default function AttendanceExport({
 
   // Prepare export data for daily report
   const prepareDailyExportData = () => {
-    const currentDate = new Date(selectedDate);
+    const currentDate = new Date(effectiveDate);
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -163,13 +167,13 @@ export default function AttendanceExport({
         ? prepareMonthlyExportData()
         : prepareDailyExportData();
 
-      const dateStr = formatDateToString(selectedDate);
+      const dateStr = formatDateToString(effectiveDate);
 
       // Import xlsx-js-style for borders
       const XLSXStyleModule = await import('xlsx-js-style');
       const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
 
-      const currentDate = new Date(selectedDate);
+      const currentDate = new Date(effectiveDate);
       const monthName = formatDateKhmer(currentDate, 'monthYear');
 
       // Calculate student counts for header
@@ -559,8 +563,8 @@ export default function AttendanceExport({
         ? prepareMonthlyExportData()
         : prepareDailyExportData();
 
-      const dateStr = formatDateToString(selectedDate);
-      const currentDate = new Date(selectedDate);
+      const dateStr = formatDateToString(effectiveDate);
+      const currentDate = new Date(effectiveDate);
       const monthName = formatDateKhmer(currentDate, 'monthYear');
 
       // Convert data to CSV format manually for better control
