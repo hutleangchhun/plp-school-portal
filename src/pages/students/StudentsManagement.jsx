@@ -1190,7 +1190,7 @@ export default function StudentsManagement() {
       const gradeLevel = selectedClass?.gradeLevel || '';
 
       // Add filter information to headers if class is selected
-      const filterInfo = selectedClass ? ` (ថ្នាក់: ${selectedClass.name})` : '';
+      const filterInfo = selectedClass ? ` ថ្នាក់: ${selectedClass.name}` : '';
 
       // Create comprehensive template with Cambodian school headers
       const templateData = [
