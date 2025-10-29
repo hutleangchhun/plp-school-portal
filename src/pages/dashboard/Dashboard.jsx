@@ -244,7 +244,7 @@ export default function Dashboard({ user: initialUser }) {
         {schoolInfo && (
           <FadeInSection delay={100} className="mb-6">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex flex-col sm:flex-row items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md">
                     <Building2 className="h-6 w-6 text-white" />
@@ -262,7 +262,7 @@ export default function Dashboard({ user: initialUser }) {
                       variant="filled"
                       color={role.color}
                       size="sm"
-                      className="flex items-center gap-2 mx-2"
+                      className="flex items-center gap-2 mt-4 sm:mt-0"
                     >
                       <IconComponent className="w-4 h-4" />
                       {role.label}
@@ -271,7 +271,7 @@ export default function Dashboard({ user: initialUser }) {
                 })()}
               </div>
 
-              <div className="flex justify-start items-center">
+              <div className="flex flex-col sm:flex-row justify-start sm:items-start items-start space-y-2 sm:space-y-0">
                 {/* School Code */}
                 {schoolInfo.code && (
                   <Badge variant="outline" size='sm' color='purple'>
@@ -281,7 +281,7 @@ export default function Dashboard({ user: initialUser }) {
 
                 {/* Place */}
                 {schoolInfo.place && (
-                  <Badge variant="outline" size='sm' color='green' className="ml-2">{t('place', 'Place')}: {schoolInfo.place}</Badge>
+                  <Badge variant="outline" size='sm' color='green' className="sm:ml-2 ml-0">{t('place', 'Place')}: {schoolInfo.place}</Badge>
                 )}
               </div>
             </div>

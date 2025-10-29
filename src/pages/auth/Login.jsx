@@ -98,7 +98,7 @@ export default function Login({ setUser }) {
           </div>
           
           <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            <h2 className="mt-6 text-center  text-2xl sm:text-3xl font-extrabold text-gray-900">
               {t('schoolManagement', 'ប្រព័ន្ធគ្រប់គ្រងសាលារៀន')}
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
