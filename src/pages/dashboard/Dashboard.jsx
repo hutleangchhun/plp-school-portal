@@ -239,7 +239,7 @@ export default function Dashboard({ user: initialUser }) {
 
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         {/* School Information Card */}
         {schoolInfo && (
           <FadeInSection delay={100} className="mb-6">
@@ -254,22 +254,6 @@ export default function Dashboard({ user: initialUser }) {
                     <p className="text-sm text-gray-500">{t('schoolDetails', 'School Details')}</p>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex">
-                {/* School Code */}
-                {schoolInfo.code && (
-                  <Badge variant="outline" size='md' color='purple'>
-                    {t('schoolCode', 'School Code')}: {schoolInfo.code}
-                  </Badge>
-                )}
-
-                {/* Place */}
-                {schoolInfo.place && (
-                  <Badge variant="outline" size='md' color='green' className="ml-2">{t('place', 'Place')}: {schoolInfo.place}</Badge>
-                )}
-                {/* User Role Badge and Attendance Status */}
-
                 {getUserRole() && (() => {
                   const role = getUserRole();
                   const IconComponent = role.Icon;
@@ -277,7 +261,7 @@ export default function Dashboard({ user: initialUser }) {
                     <Badge
                       variant="filled"
                       color={role.color}
-                      size="lg"
+                      size="sm"
                       className="flex items-center gap-2 mx-2"
                     >
                       <IconComponent className="w-4 h-4" />
@@ -285,7 +269,20 @@ export default function Dashboard({ user: initialUser }) {
                     </Badge>
                   );
                 })()}
+              </div>
 
+              <div className="flex justify-start items-center">
+                {/* School Code */}
+                {schoolInfo.code && (
+                  <Badge variant="outline" size='sm' color='purple'>
+                    {t('schoolCode', 'School Code')}: {schoolInfo.code}
+                  </Badge>
+                )}
+
+                {/* Place */}
+                {schoolInfo.place && (
+                  <Badge variant="outline" size='sm' color='green' className="ml-2">{t('place', 'Place')}: {schoolInfo.place}</Badge>
+                )}
               </div>
             </div>
           </FadeInSection>

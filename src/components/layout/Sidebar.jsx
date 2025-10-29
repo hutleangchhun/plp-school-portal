@@ -161,7 +161,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
 
   return (
     <div className={`flex flex-col bg-white shadow-lg border-r border-slate-200 transition-all duration-200 ease-in-out overflow-hidden ${
-      isCollapsed ? 'w-0 border-0' : 'w-64'
+      isCollapsed ? 'w-0 border-0' : 'w-60'
     }`}>
       {/* Logo Header */}
       <div className="flex items-center justify-between p-3 border-b border-slate-200 bg-white">
