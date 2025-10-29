@@ -89,7 +89,7 @@ export default function ClassStudentCountChart({ schoolId, className = "" }) {
         <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
           <Users className="h-5 w-5 text-white" />
         </div>
-        <div className='grid gap-2'>
+        <div className='grid gap-1'>
           <h3 className="text-md font-bold text-gray-900">
             {t('classStudentCounts', 'Class Student Counts')}
           </h3>
@@ -101,7 +101,7 @@ export default function ClassStudentCountChart({ schoolId, className = "" }) {
 
       {loading ? (
         <div className="h-[300px] flex items-center justify-center text-gray-500">
-          {t('loadingChartData', 'Loading chart data...')}
+          {t('loading', 'Loading chart data...')}
         </div>
       ) : error ? (
         <div className="h-[300px] flex items-center justify-center text-red-500">
@@ -115,7 +115,7 @@ export default function ClassStudentCountChart({ schoolId, className = "" }) {
               color: "hsl(var(--chart-2))",
             },
           }}
-          className="h-[350px]"
+          className="h-[350px] w-full overflow-x-auto"
         >
           <BarChart data={classesData}>
             <XAxis

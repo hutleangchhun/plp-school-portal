@@ -22,7 +22,7 @@ import Dropdown from "@/components/ui/Dropdown"
 
 export default function SchoolOverviewChart({ schoolStats, className = "" }) {
   const categories = React.useMemo(() => ["students", "teachers", "directors"], [])
-  const {t} = useLanguage();
+  const { t } = useLanguage();
 
   const colors = React.useMemo(() =>
     categories.map((_, index) => generateColor(index, categories.length)),
@@ -65,26 +65,29 @@ export default function SchoolOverviewChart({ schoolStats, className = "" }) {
   return (
     <div className={`bg-white rounded-xl border border-gray-200 p-6 ${className}`}>
       <div className="flex items-center justify-between gap-3 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-rose-600 rounded-lg flex items-center justify-center">
-            <Building className="h-5 w-5 text-white" />
+        <div className="flex sm:flex-row flex-col items-start sm:items-center justify-start sm:justify-between w-full gap-3">
+          <div className="flex flex-row gap-2">
+            <div className="w-12 h-12 bg-rose-600 rounded-lg flex  items-center justify-center">
+              <Building className="h-5 w-5 text-white" />
+            </div>
+            <div className="grid gap-1">
+              <h3 className="text-md font-bold text-gray-900">
+                {t('schoolPopulationDistribution', 'School Population Distribution')}
+              </h3>
+              <p className="text-sm text-gray-500">
+                {t('schoolPopulationDistributionDesc', 'School population distribution')}
+              </p>
+            </div>
           </div>
-          <div className="grid gap-2">
-            <h3 className="text-md font-bold text-gray-900">
-              {t('schoolPopulationDistribution', 'School Population Distribution')}
-            </h3>
-            <p className="text-sm text-gray-500">
-              {t('schoolPopulationDistributionDesc', 'School population distribution')}
-            </p>
-          </div>
+          <Dropdown
+            value={activeCategory}
+            onValueChange={setActiveCategory}
+            options={dropdownOptions}
+            placeholder="Select category"
+            align="end"
+            minWidth = 'min-w-[120px]'
+          />
         </div>
-        <Dropdown
-          value={activeCategory}
-          onValueChange={setActiveCategory}
-          options={dropdownOptions}
-          placeholder="Select category"
-          align="end"
-        />
       </div>
 
       <ChartContainer
