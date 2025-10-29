@@ -201,7 +201,7 @@ export const km = {
   selectedAllTeachers: 'បានជ្រើសរើសគ្រូទាំងអស់',
   deselectedAllStudents: 'បានលុបការជ្រើសរើសសិស្សទាំងអស់',
   deselectedAllTeachers: 'បានលុបការជ្រើសរើសគ្រូទាំងអស់',
-    manageTeacherRecords: 'គ្រប់គ្រងទិន្នន័យគ្រូនៅក្នុងសាលារៀន',
+    manageTeacherRecords: 'គ្រប់គ្រងទិន្នន័យគ្រូ',
 
   // Parent Management
   parents: 'អាណាព្យាបាល',

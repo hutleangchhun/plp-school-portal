@@ -761,13 +761,13 @@ export default function ClassesManagement() {
 
   return (
     <PageTransition duration='200' variant='zoom'>
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         {/* Header */}
         <FadeInSection className='bg-white shadow rounded-lg p-4 sm:p-6 transition-all duration-300 mb-4'>
           <div className="mb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                   {t('classesManagement') || 'Classes Management'}
                 </h1>
                 <p className="mt-1 text-sm text-gray-500">
@@ -779,7 +779,7 @@ export default function ClassesManagement() {
                 disabled={schoolInfo.name === 'Loading...' || schoolInfo.name.includes('Error') || !schoolInfo.id}
                 variant="primary"
                 size="sm"
-                className="mt-4 sm:mt-0"
+                className="mt-4 sm:mt-0 max-w-32"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 {t('addClass') || 'Add Class'}
@@ -789,7 +789,7 @@ export default function ClassesManagement() {
           <div className="">
             <div className="flex flex-col sm:flex-row gap-4 items-end">
               {/* Search Input */}
-              <div className="flex-1">
+              <div className="flex-1 w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('search', 'Search')}
                 </label>
@@ -802,7 +802,7 @@ export default function ClassesManagement() {
                     value={searchTerm}
                     onChange={handleSearchChange}
                     placeholder={t('searchClasses', 'Search classes...')}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   />
                 </div>
               </div>
@@ -838,14 +838,8 @@ export default function ClassesManagement() {
                 )}
               </div>
             </div>
-          </div>
-        </FadeInSection>
-
-        {/* Classes Grid */}
-        <FadeInSection delay={0.2} className='p-6 bg-white rounded-lg shadow'>
-          <div className='mb-3 flex items-center justify-between'>
-            <h3 className="text-lg font-semibold text-gray-900">{t('yourClassesInSchool') || 'Your Classes In School'}</h3>
-          </div>
+            {/* Classes Grid */}
+        <FadeInSection delay={0.2} className='mt-3 sm:mt-6'>
           {classes.length === 0 && dataFetched ? (
             <EmptyState
               icon={BookOpen}
@@ -917,6 +911,9 @@ export default function ClassesManagement() {
             </div>
           )}
         </FadeInSection>
+          </div>
+        </FadeInSection>
+
 
         {/* Add/Edit Modal */}
         <Modal
