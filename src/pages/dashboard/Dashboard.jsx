@@ -1,7 +1,6 @@
-import { User, Edit, Edit2, Building2, Users, Phone, Mail, Calendar, Globe, MapPin, BookOpen, Award, IdCard, Shield, Briefcase } from 'lucide-react';
+import { User, Edit, Edit2, Building2, Users, BookOpen, Award, Shield, Briefcase } from 'lucide-react';
 import ClassStudentCountChart from '../../components/ui/ClassStudentCountChart';
 import SchoolOverviewChart from '../../components/ui/SchoolOverviewChart';
-import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -78,15 +77,6 @@ export default function Dashboard({ user: initialUser }) {
       window.removeEventListener('userDataUpdated', handleStorageChange);
     };
   }, []);
-
-  // Get time-based greeting
-  const getTimeBasedGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return t('goodMorning') || 'អរុណសួស្តី';
-    if (hour < 17) return t('goodAfternoon') || 'ទិវាសួស្តី';
-    return t('goodEvening') || 'សាយណ្ហសួស្តី';
-  };
-
   // Fetch user data and school statistics
   const fetchUserData = useStableCallback(async () => {
     console.log('🔄 Dashboard: fetchUserData called at', new Date().toISOString());

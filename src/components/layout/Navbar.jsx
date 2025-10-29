@@ -11,11 +11,15 @@ const getPageTitle = (pathname) => {
   const titleMap = {
     'dashboard': 'dashboard',
     'students': 'manageStudentRecords',
+    'teachers': 'manageTeacherRecords',
+    'parents': 'manageParentRecords',
     'classes': 'classesManagement',
     'reports': 'reports',
     'attendance': 'attendance',
-    'achievements': 'achievements',
-    'settings': 'settings',
+    'teacher-attendance': 'teacherAttendance',
+    'my-attendance': 'myAttendance',
+    'my-students': 'myStudents',
+    'bulk-import': 'bulkStudentImport',
     'profile': 'profile',
   };
   return titleMap[path] || 'dashboard';

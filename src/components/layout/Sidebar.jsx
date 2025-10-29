@@ -172,7 +172,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
             className="h-10 w-10 flex-shrink-0"
           />
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-gray-800">{t('schoolPortal')}</span>
+            <span className="text-base font-bold text-gray-700">{t('schoolManagement')}</span>
           </div>
         </div>
       </div>

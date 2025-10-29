@@ -143,7 +143,7 @@ const Table = ({
                 {columns.map((column, colIndex) => (
                   <td
                     key={column.key || colIndex}
-                    className={`px-3 sm:px-6 ${dense ? 'py-2.5' : 'py-3.5'} whitespace-nowrap align-middle ${
+                    className={`px-3 sm:px-6 ${dense ? 'py-1.5' : 'py-2.5'} whitespace-nowrap align-middle ${
                       column.cellClassName || ''
                     } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
                   >

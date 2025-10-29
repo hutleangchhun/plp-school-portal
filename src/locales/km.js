@@ -36,11 +36,12 @@ export const km = {
   
   // Navigation
   dashboard: 'ផ្ទាំងគ្រប់គ្រង',
-  schoolPortal: 'ប្រព័ន្ធរដ្ឋបាលសម្រាប់សាលារៀន',
+  schoolManagement: 'ប្រព័ន្ធគ្រប់គ្រងសាលារៀន',
   backToDashboard: 'ត្រឡប់ទៅកាន់ផ្ទាំងគ្រប់គ្រង',
   profile: 'ព័ត៌មានផ្ទាល់ខ្លួន',
   bulkStudentImport: 'នាំចូលសិស្សច្រើន',
   logout: 'ចាកចេញ',
+  manageParentRecords: 'គ្រប់គ្រងទិន្នន័យអាណាព្យាបាល',
   
   // Profile
   profileInformation: 'ព័ត៌មានផ្ទាល់ខ្លួន',
@@ -359,6 +360,7 @@ export const km = {
   trackTeacherAttendance: 'តាមដានអត្រាវត្តមានរបស់គ្រូបង្រៀននៅក្នុងសាលារៀនរបស់អ្នក',
   attendanceApprovals: 'ការអនុម័តវត្តមាន',
   reviewPendingApprovals: 'ពិនិត្យការអនុម័តវត្តមានដែលកំពុងរង់ចាំ',
+  attendanceStatus: 'ប្រភេទវត្តមាន',
   // Teacher Information
   teacherInfo: 'ព័ត៌មានគ្រូបង្រៀន',
   attendanceRate: 'អត្រាវត្តមាន',
@@ -486,7 +488,7 @@ export const km = {
   enterUsername: 'បញ្ចូលឈ្មោះអ្នកប្រើរបស់អ្នក',
   enterPassword: 'បញ្ចូលពាក្យសម្ងាត់របស់អ្នក',
   signingIn: 'កំពុងចូល...',
-  signIn: 'ចូល',
+  signIn: 'ចូលប្រព័ន្ធ',
   
   // Student Selection
   studentSelection: 'ការជ្រើសរើសសិស្ស',
@@ -810,8 +812,8 @@ export const km = {
   
   // Additional organization info
   organizationSchoolPortal: 'ប្រព័ន្ធរដ្ឋបាលសម្រាប់សាលារៀន',
-  primaryEducationDepartment: 'នាយកដ្ឋានអប់រំបឋម',
-  moeysOfCambodia: 'ក្រសួងអប់រំ យុវជន និងកីឡា កម្ពុជា',
+  primaryEducationDepartment: 'នាយកដ្ឋានបឋមសិក្សា',
+  moeysOfCambodia: 'ក្រសួងអប់រំ យុវជន និងកីឡា',
   schoolInformation: 'ព័ត៌មានសាលារៀន',
   
   // Form placeholders
