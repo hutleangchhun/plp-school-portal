@@ -74,7 +74,7 @@ export const templateDownloader = async () => {
     // Main headers (row 9) - Repeat text for each merged cell to ensure visibility
     [
       '#', // Row number
-      'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', // 14 columns for student info (without address)
+      'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', 'ព័ត៌មានសិស្ស', // 12 columns for student info (without id and address)
       'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', 'ព័ត៌មានឪពុក', // 6 columns for father
       'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានម្តាយ', // 6 columns for mother
       'ព័ត៌មានបន្ថែម', 'ព័ត៌មានបន្ថែម' // 2 columns for additional info
@@ -82,7 +82,7 @@ export const templateDownloader = async () => {
     // Sub headers (row 10)
     [
       '#',
-      'អត្តលេខ', 'គោត្តនាម', 'នាម', 'អ៊ីមែល', 'ឈ្មោះអ្នកប្រើ', 'ពាក្យសម្ងាត់',
+      'គោត្តនាម', 'នាម', 'ឈ្មោះអ្នកប្រើ', 'ពាក្យសម្ងាត់',
       'ថ្ងៃខែឆ្នាំកំណើត', 'ភេទ', 'លេខទូរស័ព្ទ', 'សញ្ជាតិ', 'លេខសាលា', 'ឆ្នាំសិក្សា', 'កម្រិតថ្នាក់',
       'អាសយដ្ឋានពេញ',
       'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញឪពុក',
@@ -92,13 +92,11 @@ export const templateDownloader = async () => {
     // Example row with sample data (row 11)
     [
       '1',
-      'STD001', // អត្តលេខ
       'សុខ', // គោត្តនាម
       'ចន្ថា', // នាម
-      'chanthasok@example.com', // អ៊ីមែល
       'chanthasok', // ឈ្មោះអ្នកប្រើ
       'Student@123', // ពាក្យសម្ងាត់
-      '15/05/15', // ថ្ងៃខែឆ្នាំកំណើត (dd/mm/yy)
+      '15/05/2005', // ថ្ងៃខែឆ្នាំកំណើត (dd/mm/yyyy)
       'ស្រី', // ភេទ (ប្រុស ឬ ស្រី)
       '012345678', // លេខទូរស័ព្ទ
       'ខ្មែរ', // សញ្ជាតិ
@@ -123,74 +121,74 @@ export const templateDownloader = async () => {
     ],
     // Empty rows for user input (rows 12-20)
     [
-      '2', '', '', '', '', '', '',
+      '2', '', '', '', '', '',
       '', '', '', '', '', '', '',
       '',
-      '', '', '', '', '',
+      '', '', '', '', '', '',
       '', '', '', '', '', '',
       '', ''
     ],
     [
-      '3', '', '', '', '', '', '',
+      '3', '', '', '', '', '',
       '', '', '', '', '', '', '',
       '',
-      '', '', '', '', '',
+      '', '', '', '', '', '',
       '', '', '', '', '', '',
       '', ''
     ],
     [
-      '4', '', '', '', '', '', '',
+      '4', '', '', '', '', '',
       '', '', '', '', '', '', '',
       '',
-      '', '', '', '', '',
+      '', '', '', '', '', '',
       '', '', '', '', '', '',
       '', ''
     ],
     [
-      '5', '', '', '', '', '', '',
+      '5', '', '', '', '', '',
       '', '', '', '', '', '', '',
       '',
-      '', '', '', '', '',
+      '', '', '', '', '', '',
       '', '', '', '', '', '',
       '', ''
     ],
     [
-      '6', '', '', '', '', '', '',
+      '6', '', '', '', '', '',
       '', '', '', '', '', '', '',
       '',
-      '', '', '', '', '',
+      '', '', '', '', '', '',
       '', '', '', '', '', '',
       '', ''
     ],
     [
-      '7', '', '', '', '', '', '',
+      '7', '', '', '', '', '',
       '', '', '', '', '', '', '',
       '',
-      '', '', '', '', '',
+      '', '', '', '', '', '',
       '', '', '', '', '', '',
       '', ''
     ],
     [
-      '8', '', '', '', '', '', '',
+      '8', '', '', '', '', '',
       '', '', '', '', '', '', '',
       '',
-      '', '', '', '', '',
+      '', '', '', '', '', '',
       '', '', '', '', '', '',
       '', ''
     ],
     [
-      '9', '', '', '', '', '', '',
+      '9', '', '', '', '', '',
       '', '', '', '', '', '', '',
       '',
-      '', '', '', '', '',
+      '', '', '', '', '', '',
       '', '', '', '', '', '',
       '', ''
     ],
     [
-      '10', '', '', '', '', '', '',
+      '10', '', '', '', '', '',
       '', '', '', '', '', '', '',
       '',
-      '', '', '', '', '',
+      '', '', '', '', '', '',
       '', '', '', '', '', '',
       '', ''
     ]
@@ -201,10 +199,8 @@ export const templateDownloader = async () => {
   // Set column widths for better readability
   const colWidths = [
     { wch: 5 }, // #
-    { wch: 12 }, // ID (អត្តលេខ)
     { wch: 15 }, // Last Name
     { wch: 15 }, // First Name
-    { wch: 35 }, // Email
     { wch: 20 }, // Username
     { wch: 15 }, // Password
     { wch: 18 }, // Date of Birth
@@ -237,31 +233,31 @@ export const templateDownloader = async () => {
 
   // Merge cells for headers (row 1-6 are headers)
   // Row 1: Kingdom header spans all columns
-  ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 28 } });
+  ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 27 } });
 
   // Row 2: Nation/Religion/King spans all columns
-  ws['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 28 } });
+  ws['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 27 } });
 
   // Row 3: Administrative district spans all columns
-  ws['!merges'].push({ s: { r: 2, c: 0 }, e: { r: 2, c: 28 } });
+  ws['!merges'].push({ s: { r: 2, c: 0 }, e: { r: 2, c: 27 } });
 
   // Row 4: School name spans all columns
-  ws['!merges'].push({ s: { r: 3, c: 0 }, e: { r: 3, c: 28 } });
+  ws['!merges'].push({ s: { r: 3, c: 0 }, e: { r: 3, c: 27 } });
 
   // Row 5: Student list title spans all columns
-  ws['!merges'].push({ s: { r: 4, c: 0 }, e: { r: 4, c: 28 } });
+  ws['!merges'].push({ s: { r: 4, c: 0 }, e: { r: 4, c: 27 } });
 
   // Row 6: Class and academic year spans all columns
-  ws['!merges'].push({ s: { r: 5, c: 0 }, e: { r: 5, c: 28 } });
+  ws['!merges'].push({ s: { r: 5, c: 0 }, e: { r: 5, c: 27 } });
 
   // Row 8: Instructions spans all columns
-  ws['!merges'].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 28 } });
+  ws['!merges'].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 27 } });
 
   // Row 9: Main headers - merge student info columns
-  ws['!merges'].push({ s: { r: 8, c: 1 }, e: { r: 8, c: 14 } }); // Student info (14 columns)
-  ws['!merges'].push({ s: { r: 8, c: 15 }, e: { r: 8, c: 20 } }); // Father info (6 columns)
-  ws['!merges'].push({ s: { r: 8, c: 21 }, e: { r: 8, c: 26 } }); // Mother info (6 columns)
-  ws['!merges'].push({ s: { r: 8, c: 27 }, e: { r: 8, c: 28 } }); // Additional info (2 columns)
+  ws['!merges'].push({ s: { r: 8, c: 1 }, e: { r: 8, c: 12 } }); // Student info (12 columns)
+  ws['!merges'].push({ s: { r: 8, c: 13 }, e: { r: 8, c: 18 } }); // Father info (6 columns)
+  ws['!merges'].push({ s: { r: 8, c: 19 }, e: { r: 8, c: 24 } }); // Mother info (6 columns)
+  ws['!merges'].push({ s: { r: 8, c: 25 }, e: { r: 8, c: 26 } }); // Additional info (2 columns)
 
   // Set row heights for better readability
   ws['!rows'] = [];
@@ -355,7 +351,7 @@ export const templateDownloader = async () => {
     [''],
     ['2. សញ្ជាតិ (Nationality):', 'ខ្មែរ'],
     [''],
-    ['3. ថ្ងៃខែឆ្នាំកំណើត (Date of Birth):', 'dd/mm/yy', 'ឧទាហរណ៍: 15/05/15'],
+    ['3. ថ្ងៃខែឆ្នាំកំណើត (Date of Birth):', 'dd/mm/yyyy', 'ឧទាហរណ៍: 15/05/2005'],
     [''],
     ['4. ជនជាតិភាគតិច (Ethnic Groups):'],
     ['', 'ជនជាតិភ្នង', 'ជនជាតិរអួង', 'ជនជាតិគួយ'],

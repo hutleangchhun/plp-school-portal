@@ -358,7 +358,7 @@ export const km = {
   trackYourAttendance: 'តាមដានវត្តមានរបស់អ្នក',
   teacherAttendanceTracking: 'ការតាមដានវត្តមានគ្រូបង្រៀន',
   trackTeacherAttendance: 'តាមដានអត្រាវត្តមានរបស់គ្រូបង្រៀននៅក្នុងសាលារៀនរបស់អ្នក',
-  attendanceApprovals: 'ការអនុម័តវត្តមាន',
+  attendanceApprovals: 'ការឯកភាពវត្តមាន',
   reviewPendingApprovals: 'ពិនិត្យការអនុម័តវត្តមានដែលកំពុងរង់ចាំ',
   attendanceStatus: 'ប្រភេទវត្តមាន',
   // Teacher Information
@@ -374,6 +374,9 @@ export const km = {
   reportType: 'ប្រភេទរបាយការណ៍',
   reports: 'របាយការណ៍',
   viewAnalytics: 'មើលរបាយការណ៍និងការវិភាគទូលំទូលាយ',
+
+  //examination
+  noExamRecordsForStudent: 'មិនមានទិន្នន័យការប្រលងរបស់សិស្ស',
 
   // UI Components & Actions
   actions: 'សកម្មភាព',

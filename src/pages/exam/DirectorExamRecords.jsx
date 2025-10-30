@@ -257,70 +257,54 @@ export default function DirectorExamRecords({ user }) {
                 </p>
               </div>
             </div>
+            <div className="mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Class Selection - Mandatory */}
+                {classes.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Users className="w-4 h-4 inline mr-1" />
+                      {t('selectClass', 'Select Class')}
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
+                    <Dropdown
+                      value={selectedClass ? selectedClass.toString() : ''}
+                      onValueChange={(value) => setSelectedClass(value ? parseInt(value) : null)}
+                      options={classes.map(cls => ({
+                        value: (cls.classId || cls.id).toString(),
+                        label: cls.name || `${t('class', 'Class')} ${cls.gradeLevel || ''} ${cls.section || ''}`.trim()
+                      }))}
+                    />
+                    {!selectedClass && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {t('pleaseSelectClass', 'Please select a class to view exam records')}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Search */}
+                <div className="md:col-span-2 lg:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Search className="w-4 h-4 inline mr-1" />
+                    {t('search', 'Search')}
+                  </label>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder={t('searchExams', 'Search by exam, subject, or student...')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </FadeInSection>
 
         {/* Filters */}
         <FadeInSection className="mb-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Class Selection - Mandatory */}
-              {classes.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Users className="w-4 h-4 inline mr-1" />
-                    {t('selectClass', 'Select Class')}
-                    <span className="text-red-500 ml-1">*</span>
-                  </label>
-                  <Dropdown
-                    value={selectedClass ? selectedClass.toString() : ''}
-                    onValueChange={(value) => setSelectedClass(value ? parseInt(value) : null)}
-                    options={classes.map(cls => ({
-                      value: (cls.classId || cls.id).toString(),
-                      label: cls.name || `${t('class', 'Class')} ${cls.gradeLevel || ''} ${cls.section || ''}`.trim()
-                    }))}
-                  />
-                  {!selectedClass && (
-                    <p className="text-sm text-red-500 mt-1">
-                      {t('pleaseSelectClass', 'Please select a class to view exam records')}
-                    </p>
-                  )}
-                </div>
-              )}
 
-              {/* Status Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Filter className="w-4 h-4 inline mr-1" />
-                  {t('status', 'Status')}
-                </label>
-                <Dropdown
-                  value={statusFilter}
-                  onValueChange={(value) => setStatusFilter(value)}
-                  options={[
-                    { value: 'ALL', label: t('allStatuses', 'All Statuses') },
-                    { value: 'COMPLETED', label: t('completed', 'Completed') },
-                    { value: 'IN_PROGRESS', label: t('inProgress', 'In Progress') }
-                  ]}
-                />
-              </div>
-
-              {/* Search */}
-              <div className="md:col-span-2 lg:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Search className="w-4 h-4 inline mr-1" />
-                  {t('search', 'Search')}
-                </label>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder={t('searchExams', 'Search by exam, subject, or student...')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          </div>
         </FadeInSection>
 
         {/* Records Table */}
@@ -407,7 +391,7 @@ export default function DirectorExamRecords({ user }) {
                               <td className="px-4 py-3 text-sm font-semibold text-gray-900">
                                 {studentName}
                               </td>
-                              <td colSpan="8" className="px-4 py-3 text-sm text-gray-500 italic">
+                              <td colSpan="8" className="px-4 py-3 text-xs text-gray-500">
                                 {t('noExamRecordsForStudent', 'No exam records available')}
                               </td>
                             </tr>

@@ -177,14 +177,14 @@ export const getNavigationItems = (user, t) => {
         },
       ],
     },
+    {
+      name: t('examRecords', 'Exam Records'),
+      href: '/exam-records',
+    },
     // Temporarily disabled - will implement later:
     // {
     //   name: t('qrCodeManagementAdmin', 'QR Code Management - Admin'),
     //   href: '/qr-code-admin',
-    // },
-    // {
-    //   name: t('examRecords', 'Exam Records'),
-    //   href: '/exam-records',
     // },
     // Other temporarily removed navigation items:
     // reports, achievements, settings

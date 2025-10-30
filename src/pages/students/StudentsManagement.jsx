@@ -1434,65 +1434,6 @@ export default function StudentsManagement() {
     }
   };
 
-
-  const handleExportCSV = async () => {
-    try {
-      const selectedClass = selectedClassId !== 'all'
-        ? classes.find(c => c.classId.toString() === selectedClassId)
-        : null;
-
-      // Generate filename with class information if class is selected
-      const filenameBase = selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data';
-      const filename = getTimestampedFilename(filenameBase, 'csv');
-
-      await prepareAndExportCSV(
-        students,
-        filename,
-        t,
-        {
-          classFilter: selectedClass ? { id: selectedClass.classId, name: selectedClass.name } : undefined,
-          passwordField: 'password_hash'
-        }
-      );
-      showSuccess(t('exportSuccess', 'Data exported successfully'));
-      setShowExportDropdown(false);
-    } catch (error) {
-      console.error('Export error:', error);
-      showError(t('exportError', 'Failed to export data'));
-    }
-  };
-
-  const handleExportPDF = async () => {
-    try {
-      startLoading('exportPDF', t('exporting', 'Exporting PDF...'));
-      const selectedClass = selectedClassId !== 'all'
-        ? classes.find(c => c.classId.toString() === selectedClassId)
-        : null;
-
-      // Generate filename with class information if class is selected
-      const filenameBase = selectedClass ? `students_${selectedClass.name.replace(/\s+/g, '_')}` : 'students_data';
-      const filename = getTimestampedFilename(filenameBase, 'pdf');
-
-      await prepareAndExportPDF(
-        students,
-        selectedClass,
-        filename,
-        t,
-        {
-          classFilter: selectedClass ? { id: selectedClass.classId, name: selectedClass.name } : undefined,
-          passwordField: 'password_hash'
-        }
-      );
-      showSuccess(t('exportSuccess', 'Data exported successfully'));
-      setShowExportDropdown(false);
-    } catch (error) {
-      console.error('Export error:', error);
-      showError(t('exportError', 'Failed to export data'));
-    } finally {
-      stopLoading('exportPDF');
-    }
-  };
-
   // Handle select all students on current page
   const handleSelectAll = async () => {
     if (selectingAll) return;
@@ -1846,7 +1787,7 @@ export default function StudentsManagement() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Search and filter */}
       <div className="bg-white shadow rounded-lg p-4 sm:p-6">
         {/* Header and search bar */}
@@ -1956,18 +1897,6 @@ export default function StudentsManagement() {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
                     >
                       {t('exportToExcel')}
-                    </button>
-                    <button
-                      onClick={handleExportCSV}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                    >
-                      {t('exportToCSV')}
-                    </button>
-                    <button
-                      onClick={handleExportPDF}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                    >
-                      {t('exportToPDF')}
                     </button>
                   </div>
                 </div>

@@ -607,7 +607,7 @@ export default function TeacherAttendance() {
 
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="p-3 sm:p-6">
         {/* Header */}
         <FadeInSection className="mb-4">
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
@@ -642,11 +642,11 @@ export default function TeacherAttendance() {
                   onClick={() => navigate('/attendance/approval')}
                   variant="primary"
                   className="flex items-center gap-2 whitespace-nowrap"
-                  title={t('attendanceApprovals') || 'ការអនុម័តវត្តមាន'}
+                  title={t('attendanceApprovals') || 'ការឯកភាពវត្តមាន'}
                   size="sm"
                 >
                   <FileCheck className="w-4 h-4" />
-                  {t('attendanceApprovals') || 'ការអនុម័តវត្តមាន'}
+                  {t('attendanceApprovals') || 'ការឯកភាពវត្តមាន'}
                 </Button>
               </div>
             </div>

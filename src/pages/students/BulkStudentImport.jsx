@@ -765,6 +765,7 @@ export default function BulkStudentImport() {
           date_of_birth: convertDateFormat(student.dateOfBirth),
           gender: student.gender ? student.gender.toUpperCase() : undefined,
           school_id: schoolId, // Use school from authenticated user
+          // Note: student_number is NOT included - backend will auto-generate it
         };
 
         // Add optional fields only if they have values
