@@ -8,7 +8,7 @@ import { Button } from '../../components/ui/Button';
 import parentService from '../../utils/api/services/parentService';
 import { classService } from '../../utils/api/services/classService';
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
-import { Table, MobileCards, Pagination } from '../../components/ui/Table';
+import { Table } from '../../components/ui/Table';
 import Dropdown from '../../components/ui/Dropdown';
 import ParentEditModal from '../../components/parents/ParentEditModal';
 import ParentActionsModal from '../../components/parents/ParentActionsModal';
@@ -872,116 +872,21 @@ export default function ParentsManagement() {
               </div>
             </div>
             <div className="bg-white overflow-hidden">
-              {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
-                <Table
-                  columns={tableColumns}
-                  data={parents}
-                  loading={loading}
-                  emptyMessage={t('noParentsFound', 'No parents found')}
-                  emptyIcon={Users}
-                  emptyVariant='info'
-                  emptyDescription={t('noDataFound', 'No data found')}
-                  emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
-                  onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
-                  showPagination={true}
-                  pagination={pagination}
-                  onPageChange={handlePageChange}
-                  t={t}
-                />
-              </div>
-
-              {/* Mobile Cards */}
-              {parents.length > 0 && (
-                <div className="md:hidden">
-                  <MobileCards
-                    data={parents}
-                    renderCard={(parent) => (
-                      <div className="p-4 space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-3">
-                            <input
-                              type="checkbox"
-                              checked={selectedParents.includes(parent.id || parent.parentId)}
-                              onChange={() => handleSelectParent(parent)}
-                              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                            />
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center text-white font-semibold">
-                              {(parent.firstName?.[0] || parent.fullname?.[0] || 'P').toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-900">
-                                {parent.fullname || `${parent.firstName || ''} ${parent.lastName || ''}`.trim()}
-                              </div>
-                              {parent.relationship && (
-                                <div className="text-xs text-gray-500">{parent.relationship}</div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 text-sm">
-                          {parent.email && (
-                            <div className="flex items-center text-gray-600">
-                              <Mail className="h-4 w-4 mr-2" />
-                              {parent.email}
-                            </div>
-                          )}
-                          {parent.phone && (
-                            <div className="flex items-center text-gray-600">
-                              <Phone className="h-4 w-4 mr-2" />
-                              {parent.phone}
-                            </div>
-                          )}
-                          <div className="space-y-1">
-                            <div className="flex items-center text-gray-600">
-                              <Users className="h-4 w-4 mr-2" />
-                              {parent.students?.length || 0} {t('students', 'students')}
-                            </div>
-                            {parent.students?.length > 0 && (
-                              <div className="text-xs text-gray-500 ml-6">
-                                {parent.students.slice(0, 2).map(student =>
-                                  student.user?.first_name && student.user?.last_name
-                                    ? `${student.user.first_name} ${student.user.last_name}`
-                                    : student.user?.username || 'Unknown Student'
-                                ).join(', ')}
-                                {parent.students.length > 2 && ` +${parent.students.length - 2} more`}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center space-x-2 pt-2 border-t">
-                          <Button
-                            onClick={() => handleEditParent(parent)}
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                          >
-                            <Edit2 className="h-4 w-4 mr-1" />
-                            {t('edit', 'Edit')}
-                          </Button>
-                          <Button
-                            onClick={() => handleDeleteParent(parent)}
-                            variant="danger"
-                            size="sm"
-                            className="flex-1"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            {t('delete', 'Delete')}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  />
-                  {/* Mobile Pagination */}
-                  <Pagination
-                    pagination={pagination}
-                    onPageChange={handlePageChange}
-                    t={t}
-                  />
-                </div>
-              )}
+              <Table
+                columns={tableColumns}
+                data={parents}
+                loading={loading}
+                emptyMessage={t('noParentsFound', 'No parents found')}
+                emptyIcon={Users}
+                emptyVariant='info'
+                emptyDescription={t('noDataFound', 'No data found')}
+                emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
+                onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
+                showPagination={true}
+                pagination={pagination}
+                onPageChange={handlePageChange}
+                t={t}
+              />
             </div>
           </div>
       </div>

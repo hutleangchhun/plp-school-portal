@@ -99,9 +99,9 @@ const Table = ({
 
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-      <div className="overflow-x-auto"> 
+      <div className="overflow-x-auto">
         <table className={`w-full text-sm ${className}`} {...props}>
-          <thead className={`${headerBase} border-b border-gray-200`}> 
+          <thead className={`${headerBase} border-b border-gray-200`}>
             <tr className="group/header">
               {columns.map((column, index) => {
                 const isSortable = enableSort && !(column.disableSort) && (column.accessor || column.key);
@@ -109,7 +109,7 @@ const Table = ({
                   <th
                     key={column.key || index}
                     scope="col"
-                    className={`px-3 sm:px-6 ${dense ? 'py-2' : 'py-3.5'} text-left font-medium text-white uppercase tracking-wide align-middle transition-colors duration-500 hover:bg-blue-700 hover:font-bold ${
+                    className={`px-2 sm:px-3 md:px-6 ${dense ? 'py-2' : 'py-3.5'} text-left text-xs sm:text-sm font-medium text-white uppercase tracking-wide align-middle transition-colors duration-500 hover:bg-blue-700 hover:font-bold ${
                       column.headerClassName || ''
                     } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
                   >
@@ -143,13 +143,13 @@ const Table = ({
                 {columns.map((column, colIndex) => (
                   <td
                     key={column.key || colIndex}
-                    className={`px-3 sm:px-6 ${dense ? 'py-1.5' : 'py-2.5'} whitespace-nowrap align-middle ${
+                    className={`px-2 sm:px-3 md:px-6 ${dense ? 'py-1.5' : 'py-2.5'} text-xs sm:text-sm whitespace-nowrap align-middle ${
                       column.cellClassName || ''
                     } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
                   >
-                    {column.render 
+                    {column.render
                       ? column.render(item, rowIndex)
-                      : column.accessor 
+                      : column.accessor
                       ? getNestedValue(item, column.accessor)
                       : item[column.key]
                     }
@@ -162,7 +162,7 @@ const Table = ({
       </div>
 
       {showPagination && pagination && onPageChange && (
-        <Pagination 
+        <Pagination
           pagination={pagination}
           onPageChange={onPageChange}
           t={t}

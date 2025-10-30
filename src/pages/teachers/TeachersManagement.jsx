@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Search, Plus, MinusCircle, Edit2, User, Users, ChevronDown, Download, X } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, Users, ChevronDown, Download, X } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -9,7 +9,7 @@ import { teacherService } from '../../utils/api/services/teacherService';
 import { userService } from '../../utils/api/services/userService';
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
 import { Badge } from '../../components/ui/Badge';
-import { Table, MobileCards } from '../../components/ui/Table';
+import { Table } from '../../components/ui/Table';
 import { exportTeachersToExcel, exportTeachersToCSV, exportTeachersToPDF, getTimestampedFilename } from '../../utils/exportUtils';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
@@ -811,96 +811,6 @@ export default function TeachersManagement() {
     }
   ];
 
-  // Mobile card render function
-  const renderMobileCard = (teacher) => (
-    <>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-3">
-          <input
-            type="checkbox"
-            checked={selectedTeachers.some(t => t.id === teacher.id)}
-            onChange={() => handleSelectTeacher(teacher)}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 hover:scale-110 transition-all duration-300">
-            <User className="h-5 w-5" />
-          </div>
-          <div className="ml-2 sm:ml-4 min-w-0 flex-1">
-            <div className="text-sm font-medium text-gray-900 truncate">
-              {teacher.name || (teacher.firstName || teacher.lastName
-                ? `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim()
-                : teacher.username || t('noName', 'No Name'))}
-            </div>
-            <div className="text-xs text-gray-500 truncate">{teacher.email || 'N/A'}</div>
-          </div>
-        </div>
-        <div className="flex items-center space-x-1">
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEditTeacher(teacher);
-            }}
-            variant="ghost"
-            size="sm"
-            className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 hover:scale-110 flex-shrink-0"
-            title={t('editTeacher', 'Edit teacher')}
-          >
-            <Edit2 className="h-4 w-4" />
-          </Button>
-          <Button
-            onClick={() => showSuccess(t('featureComingSoon', 'This feature is coming soon'))}
-            variant="ghost"
-            size="sm"
-            className="text-red-600 opacity-50 cursor-not-allowed flex-shrink-0"
-            disabled
-            title={t('deleteTeacher', 'Delete teacher (Coming Soon)')}
-          >
-            <MinusCircle className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-      <div className="flex justify-between items-start text-xs text-gray-500">
-        <div className="flex flex-col space-y-1">
-          <span>{t('username', 'Username')}: {teacher.username || 'N/A'}</span>
-          <span>{t('gradeLevel', 'Grade Level')}: {teacher.gradeLevel || 'N/A'}</span>
-          <div className="flex items-center space-x-2 mt-1">
-            <Badge
-              color={teacher.isDirector ? 'blue' : 'purple'}
-              variant="outline"
-              size="xs"
-            >
-              {teacher.isDirector ? t('director', 'Director') : t('teacher', 'Teacher')}
-            </Badge>
-          </div>
-          {teacher.classes && teacher.classes.length > 0 && (
-            <div className="mt-2">
-              <span className="text-xs font-medium text-gray-600">{t('classes', 'Classes')}:</span>
-              <div className="flex flex-wrap gap-1 mt-1">
-                {teacher.classes.map((classItem, index) => (
-                  <Badge
-                    key={classItem.classId || index}
-                    color="blue"
-                    variant="outline"
-                    size="xs"
-                  >
-                    {classItem.name || `${classItem.gradeLevel}${classItem.section}`}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <Badge
-          color={teacher.isActive ? 'green' : 'gray'}
-          variant="filled"
-          size="xs"
-        >
-          {teacher.isActive ? t('active', 'Active') : t('inactive', 'Inactive')}
-        </Badge>
-      </div>
-    </>
-  );
-
   // Show error state if error exists
   if (error) {
     return (
@@ -1104,31 +1014,22 @@ export default function TeachersManagement() {
           </div>
         </div>
 
-        <div>
-          <MobileCards
-            data={teachers}
-            renderCard={renderMobileCard}
-          />
-
-          <div className="hidden sm:block">
-            <Table
-              columns={tableColumns}
-              data={teachers}
-              loading={isLoading('fetchTeachers')}
-              emptyMessage={t('noTeachersFound', 'No teachers found')}
-              emptyIcon={Users}
-              emptyVariant='info'
-              emptyDescription={t('noDataFound', 'No data found')}
-              emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
-              onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
-              showPagination={true}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              rowClassName="hover:bg-blue-50"
-              t={t}
-            />
-          </div>
-        </div>
+        <Table
+          columns={tableColumns}
+          data={teachers}
+          loading={isLoading('fetchTeachers')}
+          emptyMessage={t('noTeachersFound', 'No teachers found')}
+          emptyIcon={Users}
+          emptyVariant='info'
+          emptyDescription={t('noDataFound', 'No data found')}
+          emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
+          onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
+          showPagination={true}
+          pagination={pagination}
+          onPageChange={handlePageChange}
+          rowClassName="hover:bg-blue-50"
+          t={t}
+        />
       </div>
 
       <ConfirmDialog

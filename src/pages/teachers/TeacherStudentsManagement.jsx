@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, ChevronDown, X, Users, User, Eye } from 'lucide-react';
+import { Search, Download, ChevronDown, X, Users, Eye } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../../components/ui/Button';
@@ -9,7 +9,7 @@ import { classService } from '../../utils/api/services/classService';
 import { userService } from '../../utils/api/services/userService';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Badge } from '../../components/ui/Badge';
-import { Table, MobileCards } from '../../components/ui/Table';
+import { Table } from '../../components/ui/Table';
 import { prepareAndExportExcel, prepareAndExportCSV, prepareAndExportPDF, getTimestampedFilename } from '../../utils/exportUtils';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import EmptyState from '@/components/ui/EmptyState';
@@ -311,56 +311,6 @@ export default function TeacherStudentsManagement({ user }) {
     }
   ];
 
-  // Mobile card
-  const renderMobileCard = (student) => (
-    <>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-3">
-          <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 hover:scale-110 transition-all duration-300">
-            <User className="h-5 w-5" />
-          </div>
-          <div className="ml-2 sm:ml-4 min-w-0 flex-1">
-            <div className="text-sm font-medium text-gray-900 truncate">
-              {student.name || (student.firstName || student.lastName
-                ? `${student.firstName || ''} ${student.lastName || ''}`.trim()
-                : student.username || t('noName', 'No Name'))}
-            </div>
-            <div className="text-xs text-gray-500 truncate">{student.email || 'N/A'}</div>
-          </div>
-        </div>
-        <button
-          onClick={() => handleViewStudent(student)}
-          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-          title={t('viewDetails', 'View Details')}
-        >
-          <Eye className="h-4 w-4" />
-        </button>
-      </div>
-      <div className="flex justify-between items-start text-xs text-gray-500 mt-2">
-        <div className="flex flex-col space-y-1 flex-1">
-          <span><span className="font-medium">{t('firstName', 'First Name')}:</span> {student.firstName || student.first_name || 'N/A'}</span>
-          <span><span className="font-medium">{t('lastName', 'Last Name')}:</span> {student.lastName || student.last_name || 'N/A'}</span>
-          <span><span className="font-medium">{t('username', 'Username')}:</span> {student.username || 'N/A'}</span>
-          <span><span className="font-medium">{t('email', 'Email')}:</span> {student.email || 'N/A'}</span>
-          <span><span className="font-medium">{t('phone', 'Phone')}:</span> {student.phone || 'N/A'}</span>
-          {student.gender && (
-            <span><span className="font-medium">{t('gender', 'Gender')}:</span> {student.gender === 'MALE' ? t('male', 'Male') : t('female', 'Female')}</span>
-          )}
-          {student.class?.name && (
-            <span><span className="font-medium">{t('class', 'Class')}:</span> {student.class.name}</span>
-          )}
-        </div>
-        <Badge
-          color={student.isActive ? 'green' : 'gray'}
-          variant="filled"
-          size="xs"
-        >
-          {student.isActive ? t('active', 'Active') : t('inactive', 'Inactive')}
-        </Badge>
-      </div>
-    </>
-  );
-
   if (initialLoading) {
     return <PageLoader message={t('loadingStudents', 'Loading students...')} />;
   }
@@ -462,27 +412,14 @@ export default function TeacherStudentsManagement({ user }) {
               variant='info'
             />
           ) : (
-            <>
-              <div className="hidden sm:block">
-                <Table
-                  data={students}
-                  columns={columns}
-                  showPagination={true}
-                  pagination={pagination}
-                  onPageChange={handlePageChange}
-                  t={t}
-                />
-              </div>
-
-              <div className="sm:hidden">
-                <MobileCards
-                  data={students}
-                  renderCard={renderMobileCard}
-                  pagination={pagination}
-                  onPageChange={handlePageChange}
-                />
-              </div>
-            </>
+            <Table
+              data={students}
+              columns={columns}
+              showPagination={true}
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              t={t}
+            />
           )}
 
           {/* View Student Modal */}
