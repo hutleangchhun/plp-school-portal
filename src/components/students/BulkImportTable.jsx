@@ -38,19 +38,19 @@ const BulkImportTable = ({
               <th rowSpan="2" className="w-12 px-3 py-3 text-center text-xs font-medium text-gray-700 border-r border-gray-200 bg-gray-50">
                 #
               </th>
-              {/* Student Basic Info */}
-              <th colSpan="14" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-blue-100 border-r border-gray-200">
+              {/* Student Basic Info - 12 columns (lastName, firstName, username, password, dateOfBirth, gender, phone, nationality, schoolId, academicYear, gradeLevel, residenceFullAddress) */}
+              <th colSpan="12" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-blue-100 border-r border-gray-200">
                 ព័ត៌មានសិស្ស
               </th>
-              {/* Father Info */}
+              {/* Father Info - 6 columns */}
               <th colSpan="6" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-green-100 border-r border-gray-200">
                 ព័ត៌មានឪពុក
               </th>
-              {/* Mother Info */}
+              {/* Mother Info - 6 columns */}
               <th colSpan="6" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-rose-100 border-r border-gray-200">
                 ព័ត៌មានម្តាយ
               </th>
-              {/* Additional Info */}
+              {/* Additional Info - 2 columns */}
               <th colSpan="2" className="px-3 py-3 text-center text-xs font-bold text-gray-800 bg-amber-100 border-r border-gray-200">
                 ព័ត៌មានបន្ថែម
               </th>

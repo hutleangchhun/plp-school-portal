@@ -40,10 +40,8 @@ export default function BulkStudentImport() {
   const [students, setStudents] = useState([
     {
       // Student basic info
-      id: '',
       lastName: '',
       firstName: '',
-      email: '',
       username: '',
       password: '',
       dateOfBirth: '',
@@ -60,7 +58,6 @@ export default function BulkStudentImport() {
       // Parent info
       fatherFirstName: '',
       fatherLastName: '',
-      fatherEmail: '',
       fatherPhone: '',
       fatherDateOfBirth: '',
       fatherGender: '',
@@ -69,7 +66,6 @@ export default function BulkStudentImport() {
 
       motherFirstName: '',
       motherLastName: '',
-      motherEmail: '',
       motherPhone: '',
       motherDateOfBirth: '',
       motherGender: '',
@@ -173,12 +169,6 @@ export default function BulkStudentImport() {
       return false;
     }
 
-    // Email validation - only accept Gmail addresses (@gmail.com)
-    if (columnKey === 'email' || columnKey === 'fatherEmail' || columnKey === 'motherEmail') {
-      const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-      return !emailRegex.test(value);
-    }
-
     // Phone number validation (must start with 0 and be at least 8 digits total)
     if (columnKey === 'phone' || columnKey === 'fatherPhone' || columnKey === 'motherPhone') {
       const phoneRegex = /^0\d{8,}$/;
@@ -219,13 +209,11 @@ export default function BulkStudentImport() {
 
   const columns = [
     // Student Basic Info
-    { key: 'id', header: 'អត្តលេខ', width: 'min-w-[150px]' },
     { key: 'lastName', header: 'គោត្តនាម', width: 'min-w-[100px]' },
     { key: 'firstName', header: 'នាម', width: 'min-w-[200px]' },
-    { key: 'email', header: 'អ៊ីមែល', width: 'min-w-[280px]' },
     { key: 'username', header: 'ឈ្មោះអ្នកប្រើ', width: 'min-w-[150px]' },
     { key: 'password', header: 'ពាក្យសម្ងាត់', width: 'min-w-[150px]' },
-    { key: 'dateOfBirth', header: 'ថ្ងៃខែឆ្នាំកំណើត', width: 'min-w-[280px]', type: 'custom-date' },
+    { key: 'dateOfBirth', header: 'ថ្ងៃខែឆ្នាំកំណើត (dd/mm/yyyy)', width: 'min-w-[300px]', type: 'custom-date' },
     { key: 'gender', header: 'ភេទ', width: 'min-w-[80px]', type: 'select', options: genderOptions },
     { key: 'phone', header: 'លេខទូរស័ព្ទ', width: 'min-w-[150px]' },
     { key: 'nationality', header: 'សញ្ជាតិ', width: 'min-w-[80px]', type: 'select', options: nationalityOptions },
@@ -575,10 +563,8 @@ export default function BulkStudentImport() {
 
     setStudents(prev => [...prev, {
       // Student basic info
-      id: '',
       lastName: '',
       firstName: '',
-      email: '',
       username: '',
       password: '',
       dateOfBirth: '',
@@ -595,7 +581,6 @@ export default function BulkStudentImport() {
       // Parent info
       fatherFirstName: '',
       fatherLastName: '',
-      fatherEmail: '',
       fatherPhone: '',
       fatherDateOfBirth: '',
       fatherGender: '',
@@ -604,7 +589,6 @@ export default function BulkStudentImport() {
 
       motherFirstName: '',
       motherLastName: '',
-      motherEmail: '',
       motherPhone: '',
       motherDateOfBirth: '',
       motherGender: '',
@@ -625,10 +609,8 @@ export default function BulkStudentImport() {
       if (newStudents.length === 0) {
         return [{
           // Student basic info
-          id: '',
           lastName: '',
           firstName: '',
-          email: '',
           username: '',
           password: '',
           dateOfBirth: '',
@@ -645,7 +627,6 @@ export default function BulkStudentImport() {
           // Parent info
           fatherFirstName: '',
           fatherLastName: '',
-          fatherEmail: '',
           fatherPhone: '',
           fatherDateOfBirth: '',
           fatherGender: '',
@@ -654,7 +635,6 @@ export default function BulkStudentImport() {
 
           motherFirstName: '',
           motherLastName: '',
-          motherEmail: '',
           motherPhone: '',
           motherDateOfBirth: '',
           motherGender: '',
@@ -780,7 +760,6 @@ export default function BulkStudentImport() {
         const studentData = {
           first_name: student.firstName.trim(),
           last_name: student.lastName.trim(),
-          email: student.email.trim() || undefined,
           username: student.username.trim() || `${student.firstName.trim().toLowerCase()}.${student.lastName.trim().toLowerCase()}`,
           password: student.password.trim() || 'Student@123', // Default password for required field
           date_of_birth: convertDateFormat(student.dateOfBirth),
@@ -899,8 +878,7 @@ export default function BulkStudentImport() {
       const updatedResults = initialResults.map((result, index) => {
         const studentData = transformedData[index];
         const hasError = errors && errors.find(e =>
-          e.username === studentData.username ||
-          e.email === studentData.email
+          e.username === studentData.username
         );
 
         return {
@@ -929,10 +907,8 @@ export default function BulkStudentImport() {
       if (failed_count === 0) {
         setStudents([{
           // Student basic info
-          id: '',
           lastName: '',
           firstName: '',
-          email: '',
           username: '',
           password: '',
           dateOfBirth: '',
@@ -949,16 +925,13 @@ export default function BulkStudentImport() {
           // Parent info
           fatherFirstName: '',
           fatherLastName: '',
-          fatherEmail: '',
           fatherPhone: '',
-          fatherDateOfBirth: '',
           fatherGender: '',
           fatherOccupation: '',
           fatherResidenceFullAddress: '',
 
           motherFirstName: '',
           motherLastName: '',
-          motherEmail: '',
           motherPhone: '',
           motherDateOfBirth: '',
           motherGender: '',

@@ -135,6 +135,7 @@ const StudentTableRow = ({
                   }
                 }}
                 onClick={(e) => e.stopPropagation()}
+                placeholder="dd/mm/yyyy"
                 className={`w-full px-3 py-2 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:border-blue-500 ${isCellInvalid(student, column.key)
                   ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                   : 'focus:ring-blue-500'
