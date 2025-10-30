@@ -178,7 +178,7 @@ export const getNavigationItems = (user, t) => {
       ],
     },
     {
-      name: t('examRecords', 'Exam Records'),
+      name: t('examRecord', 'Exam Records'),
       href: '/exam-records',
     },
     // Temporarily disabled - will implement later:

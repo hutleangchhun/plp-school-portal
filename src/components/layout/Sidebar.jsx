@@ -3,18 +3,13 @@ import { useState } from 'react';
 import {
   Home,
   Users,
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
   BookOpen,
-  FileText,
   Calendar,
-  Trophy,
   Settings as SettingsIcon,
   GraduationCap,
   UserCheck,
   UserStar,
-  User,
   UserCircle,
   QrCode,
   Award

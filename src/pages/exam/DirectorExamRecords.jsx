@@ -240,14 +240,11 @@ export default function DirectorExamRecords({ user }) {
 
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="p-3 sm:p-6">
         {/* Header */}
         <FadeInSection className="mb-6">
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <BookOpen className="w-6 h-6 text-blue-600" />
-              </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
                   {t('studentExamRecords', 'Student Exam Records')}
@@ -257,13 +254,12 @@ export default function DirectorExamRecords({ user }) {
                 </p>
               </div>
             </div>
-            <div className="mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Class Selection - Mandatory */}
                 {classes.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Users className="w-4 h-4 inline mr-1" />
                       {t('selectClass', 'Select Class')}
                       <span className="text-red-500 ml-1">*</span>
                     </label>
@@ -274,19 +270,15 @@ export default function DirectorExamRecords({ user }) {
                         value: (cls.classId || cls.id).toString(),
                         label: cls.name || `${t('class', 'Class')} ${cls.gradeLevel || ''} ${cls.section || ''}`.trim()
                       }))}
+                      placeholder={t('chooseOption', 'ជ្រើសរើសជម្រើស')}
+                      className='w-full'
                     />
-                    {!selectedClass && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {t('pleaseSelectClass', 'Please select a class to view exam records')}
-                      </p>
-                    )}
                   </div>
                 )}
 
                 {/* Search */}
-                <div className="md:col-span-2 lg:col-span-3">
+                <div className="">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Search className="w-4 h-4 inline mr-1" />
                     {t('search', 'Search')}
                   </label>
                   <input
@@ -294,196 +286,187 @@ export default function DirectorExamRecords({ user }) {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder={t('searchExams', 'Search by exam, subject, or student...')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
             </div>
-          </div>
-        </FadeInSection>
+            <div className="bg-white overflow-hidden mt-4">
+              {!selectedClass ? (
+                <EmptyState
+                  icon={BookOpen}
+                  title={t('selectClassFirst', 'Select a Class')}
+                  description={t('selectClassFirstDesc', 'Please select a class from the filters above to view exam records')}
+                />
+              ) : studentRecords.length === 0 ? (
+                <EmptyState
+                  icon={BookOpen}
+                  title={t('noStudents', 'No Students')}
+                  description={t('noStudentsDesc', 'No students found in the selected class')}
+                  action={
+                    <Button onClick={() => {
+                      setSearchTerm('');
+                      setStatusFilter('ALL');
+                    }}>
+                      {t('clearFilters', 'Clear Filters')}
+                    </Button>
+                  }
+                />
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          {t('student', 'Student')}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          {t('exam', 'Exam')}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          {t('subject', 'Subject')}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          {t('grade', 'Grade')}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          {t('status', 'Status')}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          {t('score', 'Score')}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          {t('date', 'Date')}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          {t('duration', 'Duration')}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          {t('actions', 'Actions')}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {studentRecords
+                        .filter(sr => {
+                          // Apply search filter
+                          if (searchTerm.trim()) {
+                            const search = searchTerm.toLowerCase();
+                            const studentName = `${sr.student.firstName || ''} ${sr.student.lastName || ''}`.toLowerCase();
+                            const hasMatchInStudent = studentName.includes(search);
+                            const hasMatchInExams = sr.exams.some(exam =>
+                              exam.examTitle?.toLowerCase().includes(search) ||
+                              exam.subjectName?.toLowerCase().includes(search) ||
+                              exam.subjectKhmerName?.toLowerCase().includes(search)
+                            );
+                            return hasMatchInStudent || hasMatchInExams;
+                          }
+                          return true;
+                        })
+                        .map((sr) => {
+                          const studentName = `${sr.student.firstName || ''} ${sr.student.lastName || ''}`.trim() || '-';
 
-        {/* Filters */}
-        <FadeInSection className="mb-6">
-
-        </FadeInSection>
-
-        {/* Records Table */}
-        <FadeInSection>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            {!selectedClass ? (
-              <EmptyState
-                icon={BookOpen}
-                title={t('selectClassFirst', 'Select a Class')}
-                description={t('selectClassFirstDesc', 'Please select a class from the filters above to view exam records')}
-              />
-            ) : studentRecords.length === 0 ? (
-              <EmptyState
-                icon={BookOpen}
-                title={t('noStudents', 'No Students')}
-                description={t('noStudentsDesc', 'No students found in the selected class')}
-                action={
-                  <Button onClick={() => {
-                    setSearchTerm('');
-                    setStatusFilter('ALL');
-                  }}>
-                    {t('clearFilters', 'Clear Filters')}
-                  </Button>
-                }
-              />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('student', 'Student')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('exam', 'Exam')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('subject', 'Subject')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('grade', 'Grade')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('status', 'Status')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('score', 'Score')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('date', 'Date')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('duration', 'Duration')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('actions', 'Actions')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {studentRecords
-                      .filter(sr => {
-                        // Apply search filter
-                        if (searchTerm.trim()) {
-                          const search = searchTerm.toLowerCase();
-                          const studentName = `${sr.student.firstName || ''} ${sr.student.lastName || ''}`.toLowerCase();
-                          const hasMatchInStudent = studentName.includes(search);
-                          const hasMatchInExams = sr.exams.some(exam =>
-                            exam.examTitle?.toLowerCase().includes(search) ||
-                            exam.subjectName?.toLowerCase().includes(search) ||
-                            exam.subjectKhmerName?.toLowerCase().includes(search)
-                          );
-                          return hasMatchInStudent || hasMatchInExams;
-                        }
-                        return true;
-                      })
-                      .map((sr) => {
-                        const studentName = `${sr.student.firstName || ''} ${sr.student.lastName || ''}`.trim() || '-';
-
-                        if (!sr.hasRecords) {
-                          // Student with no exam records
-                          return (
-                            <tr key={`student-${sr.student.id}`} className="bg-gray-50 hover:bg-gray-100 transition-colors">
-                              <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                                {studentName}
-                              </td>
-                              <td colSpan="8" className="px-4 py-3 text-xs text-gray-500">
-                                {t('noExamRecordsForStudent', 'No exam records available')}
-                              </td>
-                            </tr>
-                          );
-                        }
-
-                        // Student with exam records - show first exam in student row, then rest below
-                        return sr.exams
-                          .filter(exam => statusFilter === 'ALL' || exam.status === statusFilter)
-                          .map((exam, examIndex) => (
-                            <tr
-                              key={`exam-${sr.student.id}-${exam.id}-${examIndex}`}
-                              className={`${examIndex === 0 ? 'bg-blue-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}
-                            >
-                              {examIndex === 0 && (
-                                <td rowSpan={sr.exams.filter(e => statusFilter === 'ALL' || e.status === statusFilter).length} className="px-4 py-3 text-sm font-semibold text-gray-900 bg-blue-50">
+                          if (!sr.hasRecords) {
+                            // Student with no exam records
+                            return (
+                              <tr key={`student-${sr.student.id}`} className="bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <td className="px-4 py-3 text-sm font-semibold text-gray-900">
                                   {studentName}
                                 </td>
-                              )}
-                              {examIndex > 0 && <td className="px-4 py-3"></td>}
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{exam.examTitle || '-'}</span>
-                                  <span className="text-xs text-gray-500">{exam.examType || ''}</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                <div className="flex flex-col">
-                                  <span>{exam.subjectName || '-'}</span>
-                                  <span className="text-xs text-gray-500">{exam.subjectKhmerName || ''}</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                {exam.grade || '-'}
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                {getStatusBadge(exam.status, exam.passed)}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                {exam.status === 'COMPLETED' ? (
+                                <td colSpan="8" className="px-4 py-3 text-xs text-gray-500">
+                                  {t('noExamRecordsForStudent', 'No exam records available')}
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          // Student with exam records - show first exam in student row, then rest below
+                          return sr.exams
+                            .filter(exam => statusFilter === 'ALL' || exam.status === statusFilter)
+                            .map((exam, examIndex) => (
+                              <tr
+                                key={`exam-${sr.student.id}-${exam.id}-${examIndex}`}
+                                className={`${examIndex === 0 ? 'bg-blue-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}
+                              >
+                                {examIndex === 0 && (
+                                  <td rowSpan={sr.exams.filter(e => statusFilter === 'ALL' || e.status === statusFilter).length} className="px-4 py-3 text-sm font-semibold text-gray-900 bg-blue-50">
+                                    {studentName}
+                                  </td>
+                                )}
+                                {examIndex > 0 && <td className="px-4 py-3"></td>}
+                                <td className="px-4 py-3 text-sm text-gray-900">
                                   <div className="flex flex-col">
-                                    <span className="font-semibold">
-                                      {exam.score != null ? `${exam.score}%` : '-'}
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                      {exam.letterGrade || ''}
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                      {exam.correctAnswers}/{exam.totalQuestions}
-                                    </span>
+                                    <span className="font-medium">{exam.examTitle || '-'}</span>
+                                    <span className="text-xs text-gray-500">{exam.examType || ''}</span>
                                   </div>
-                                ) : (
-                                  '-'
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                <div className="flex flex-col">
-                                  <span>{formatDate(exam.completedAt || exam.startedAt)}</span>
-                                  {exam.completedAt && (
-                                    <span className="text-xs text-gray-500">
-                                      {new Date(exam.completedAt).toLocaleTimeString('en-US', {
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}
-                                    </span>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900">
+                                  <div className="flex flex-col">
+                                    <span>{exam.subjectName || '-'}</span>
+                                    <span className="text-xs text-gray-500">{exam.subjectKhmerName || ''}</span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900">
+                                  {exam.grade || '-'}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {getStatusBadge(exam.status, exam.passed)}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900">
+                                  {exam.status === 'COMPLETED' ? (
+                                    <div className="flex flex-col">
+                                      <span className="font-semibold">
+                                        {exam.score != null ? `${exam.score}%` : '-'}
+                                      </span>
+                                      <span className="text-xs text-gray-500">
+                                        {exam.letterGrade || ''}
+                                      </span>
+                                      <span className="text-xs text-gray-500">
+                                        {exam.correctAnswers}/{exam.totalQuestions}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    '-'
                                   )}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                {formatDuration(exam.timeTaken)}
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                {exam.certificateFile && (
-                                  <Tooltip content={t('downloadCertificate', 'Download Certificate')}>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleDownloadCertificate(exam)}
-                                      className="flex items-center gap-1"
-                                    >
-                                      <Download className="w-4 h-4" />
-                                    </Button>
-                                  </Tooltip>
-                                )}
-                              </td>
-                            </tr>
-                          ));
-                      })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900">
+                                  <div className="flex flex-col">
+                                    <span>{formatDate(exam.completedAt || exam.startedAt)}</span>
+                                    {exam.completedAt && (
+                                      <span className="text-xs text-gray-500">
+                                        {new Date(exam.completedAt).toLocaleTimeString('en-US', {
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        })}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-900">
+                                  {formatDuration(exam.timeTaken)}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {exam.certificateFile && (
+                                    <Tooltip content={t('downloadCertificate', 'Download Certificate')}>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDownloadCertificate(exam)}
+                                        className="flex items-center gap-1"
+                                      >
+                                        <Download className="w-4 h-4" />
+                                      </Button>
+                                    </Tooltip>
+                                  )}
+                                </td>
+                              </tr>
+                            ));
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         </FadeInSection>
       </div>

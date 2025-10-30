@@ -21,6 +21,7 @@ const getPageTitle = (pathname) => {
     'my-students': 'myStudents',
     'bulk-import': 'bulkStudentImport',
     'profile': 'profile',
+    'exam-records': 'examRecord'
   };
   return titleMap[path] || 'dashboard';
 };

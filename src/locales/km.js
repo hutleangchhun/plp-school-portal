@@ -377,6 +377,12 @@ export const km = {
 
   //examination
   noExamRecordsForStudent: 'មិនមានទិន្នន័យការប្រលងរបស់សិស្ស',
+  studentExamRecords: 'ទិន្នន័យការប្រលងរបស់សិស្ស',
+  viewAllStudentExams: 'ពិនិត្រមើលទិន្នន័យនៃការប្រលងរបស់សិស្ស',
+  selectClassFirstDesc: 'សូមជ្រើសរើសថ្នាក់ពីកម្រងខាងលើដើម្បីបង្ហាញទិន្នន័យការប្រលងរបស់សិស្ស',
+  noStudentsDesc: 'មិនមានសិស្សនៅក្នុងថ្នាក់ដែលអ្នកបានជ្រើសរើស',
+  searchExams: 'ស្វែងរកសិស្ស',
+  examRecord: 'កំណត់ត្រាការប្រលង',
 
   // UI Components & Actions
   actions: 'សកម្មភាព',
@@ -730,6 +736,7 @@ export const km = {
   notifications: 'ការជូនដំណឹង',
   language: 'ភាសា',
   interfaceLanguage: 'ភាសាចំណុចប្រទាក់',
+  noNotifications: 'មិនមានការជូនដំណឹងនោះទេ',
   
   // Achievement page specific
   'Bob Smith': 'សិស្សប្រុសគំរូ',
