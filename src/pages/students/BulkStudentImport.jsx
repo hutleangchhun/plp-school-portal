@@ -777,11 +777,6 @@ export default function BulkStudentImport() {
         //   studentData.nationality = student.nationality.trim();
         // }
 
-        // Map student ID to student_number for API
-        if (student.id && student.id.trim()) {
-          studentData.student_number = student.id.trim();
-        }
-
         // Remove academic_year - API may not expect this field or it might cause validation issues
         // if (student.academicYear && student.academicYear.trim()) {
         //   studentData.academic_year = student.academicYear.trim();
@@ -860,7 +855,6 @@ export default function BulkStudentImport() {
       // Initialize results array with all students
       const initialResults = validStudents.map((student) => ({
         studentName: `${student.firstName} ${student.lastName}`,
-        studentId: student.id,
         username: student.username,
         processing: false,
         success: false,
