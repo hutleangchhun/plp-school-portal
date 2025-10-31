@@ -18,8 +18,7 @@ import BulkStudentImport from './pages/students/BulkStudentImport';
 import ClassesManagement from './pages/classes/ClassesManagement';
 import TeachersManagement from './pages/teachers/TeachersManagement';
 import ParentsManagement from './pages/parents/ParentsManagement';
-// Temporarily removed imports (will be re-enabled later):
-// import Reports from './pages/reports/Reports';
+import Reports from './pages/reports/Reports';
 import Attendance from './pages/attendance/Attendance';
 import DirectorTeacherAttendance from './pages/attendance/DirectorTeacherAttendance';
 import TeacherSelfAttendance from './pages/attendance/TeacherSelfAttendance';
@@ -257,9 +256,14 @@ function AppContent() {
             </ProtectedRoute>
           } />
 
-          {/* Temporarily removed routes (will be re-enabled later):
-              - reports, attendance, achievements, settings
-              - my-grades, my-assignments */}
+          {/* Reports route (Directors only) */}
+          <Route path="reports" element={
+            <ProtectedRoute path="/reports" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout}>
+                <Reports />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
         </Route>
         
         {/* Catch-all route for 404 pages */}

@@ -491,21 +491,8 @@ const userUtils = {
       return profilePicture;
     }
     
-    // Determine base URL with environment-specific logic
-    let staticBaseUrl;
-    
-    // In development, use direct server URL
-    if (import.meta.env.DEV) {
-      staticBaseUrl = import.meta.env.VITE_STATIC_BASE_URL || 'http://157.10.73.52:8085';
-      
-      // Handle forceHttps for development
-      if (forceHttps && staticBaseUrl.startsWith('http://')) {
-        staticBaseUrl = staticBaseUrl.replace('http://', 'https://');
-      }
-    } else {
-      // In production (Vercel), use relative URLs that will be proxied
-      staticBaseUrl = '';
-    }
+    // Use production API for all environments
+    const staticBaseUrl = import.meta.env.VITE_STATIC_BASE_URL || 'https://plp-api.moeys.gov.kh';
     
     // Handle different path formats
     let profilePath = profilePicture;

@@ -943,6 +943,7 @@ export const km = {
   
   // ProfileUpdate specific translations
   selectDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
+  selectMonth: 'ជ្រើសរើសខែ',
   schoolName: 'ឈ្មោះសាលារៀន',
   schoolCode: 'លេខកូដសាលារៀន',
   schoolDetails: 'ព័ត៌មានសាលារៀន',
@@ -997,4 +998,10 @@ export const km = {
   approveSelected: 'អនុម័តដែលបានជ្រើសរើស',
   reasonRequired: 'ត្រូវការមូលហេតុ',
   fetchingUsers: 'កំពុងទាញយកអ្នកប្រើប្រាស់...',
+
+
+  //report
+  semester1: 'ឆមាសទី១',
+  semester2: 'ឆមាសទី២',
+  selectReportType: 'ជ្រើសរើសប្រភេទរបាយការណ៍',
 };

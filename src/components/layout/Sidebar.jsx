@@ -12,7 +12,8 @@ import {
   UserStar,
   UserCircle,
   QrCode,
-  Award
+  Award,
+  BarChart3
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -51,8 +52,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/qr-code-admin': QrCode,
     '/exam-records': Award,
     '/my-students-exams': Award,
+    '/reports': BarChart3,
     // Temporarily removed icon mappings (will be re-enabled later):
-    // '/reports': FileText,
     // '/achievements': Trophy,
     // '/settings': SettingsIcon,
     // '/my-grades': GraduationCap,
@@ -74,8 +75,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/qr-code-admin': 'violet',
     '/exam-records': 'indigo',
     '/my-students-exams': 'indigo',
+    '/reports': 'yellow',
     // Temporarily removed color mappings (will be re-enabled later):
-    // '/reports': 'yellow',
     // '/achievements': 'red',
     // '/settings': 'gray',
     // '/my-grades': 'orange',
@@ -147,6 +148,18 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
         icon: 'text-pink-600',
         hover: 'hover:bg-pink-50',
         iconHover: 'group-hover:text-pink-500'
+      },
+      violet: {
+        active: 'bg-violet-100 text-violet-700 border-violet-200',
+        icon: 'text-violet-600',
+        hover: 'hover:bg-violet-50',
+        iconHover: 'group-hover:text-violet-500'
+      },
+      indigo: {
+        active: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+        icon: 'text-indigo-600',
+        hover: 'hover:bg-indigo-50',
+        iconHover: 'group-hover:text-indigo-500'
       }
     };
 

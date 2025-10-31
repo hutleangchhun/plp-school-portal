@@ -1,90 +1,89 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, Download, Filter, TrendingUp, Users, BookOpen, Award, Calendar } from 'lucide-react';
+import { BarChart3, Download, Filter, Calendar } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import DynamicLoader from '../../components/ui/DynamicLoader';
+import Dropdown from '../../components/ui/Dropdown';
 
 export default function Reports() {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
-  const [selectedReport, setSelectedReport] = useState('overview');
+  const [selectedReport, setSelectedReport] = useState('report1');
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [loading, setLoading] = useState(false);
-  const [reportData, setReportData] = useState({});
 
+  // 16 Report Types - waiting for your specific report names
   const reportTypes = [
-    { id: 'overview', name: t('overviewReport') || 'Overview Report', icon: BarChart3 },
-    { id: 'academic', name: t('academicPerformance') || 'Academic Performance', icon: BookOpen },
-    { id: 'attendance', name: t('attendanceReport') || 'Attendance Report', icon: Calendar },
-    { id: 'achievements', name: t('achievementsReport') || 'Achievements Report', icon: Award }
+    { value: 'reportStudent', label: t('reportStudentNameInfo', 'បញ្ជីហៅឈ្មោះសិស្ស') },
+    { value: 'report2', label: t('report2', 'បញ្ជីហៅឈ្មោះសិស្សតាមថ្នាក់') },
+    { value: 'report3', label: t('report3', 'បញ្ជីមធ្យមភាគសិស្ស') },
+    { value: 'report4', label: t('report4', 'បញ្ជីអវត្តមានសិស្ស') },
+    { value: 'report5', label: t('report5', 'បញ្ជីឈ្មោះសិស្សអាហារូបករណ៍') },
+    { value: 'report6', label: t('report6', 'បញ្ជីឈ្មោះសិស្សមានពិការភាព') },
+    { value: 'report7', label: t('report7', 'បញ្ជីឈ្មោះសិស្សមានបញ្ហាសុខភាព') },
+    { value: 'report8', label: t('report8', 'បញ្ជីឈ្មោះសិស្សមានបញ្ហាផ្ទាល់ខ្លួន') },
+    { value: 'report9', label: t('report9', 'បញ្ជីឈ្មោះសិស្សជាជនជាតិដើមភាគតិច') },
+    { value: 'report10', label: t('report10', 'បញ្ជីឈ្មោះសិស្សផ្លាស់ប្ដូរថ្នាក់') },
+    { value: 'report11', label: t('report11', 'បញ្ជីឈ្មោះសិស្សបោះបង់ការសិក្សារ') },
+    { value: 'report12', label: t('report12', 'សៀវភៅតាមដាន') },
+    { value: 'report13', label: t('report13', 'សៀវភៅសិក្ខាគារិក') },
   ];
 
+  // Time Period Options
   const timePeriods = [
-    { id: 'week', name: t('thisWeek') || 'This Week' },
-    { id: 'month', name: t('thisMonth') || 'This Month' },
-    { id: 'quarter', name: t('thisQuarter') || 'This Quarter' },
-    { id: 'year', name: t('thisYear') || 'This Year' }
+    { value: 'month', label: t('month', 'By Month') },
+    { value: 'semester1', label: t('semester1', 'Semester 1') },
+    { value: 'semester2', label: t('semester2', 'Semester 2') },
+    { value: 'year', label: t('year', 'By Year') }
   ];
+
+  // Month Options (1-12)
+  const monthOptions = [
+    { value: '1', label: t('january', 'January') },
+    { value: '2', label: t('february', 'February') },
+    { value: '3', label: t('march', 'March') },
+    { value: '4', label: t('april', 'April') },
+    { value: '5', label: t('may', 'May') },
+    { value: '6', label: t('june', 'June') },
+    { value: '7', label: t('july', 'July') },
+    { value: '8', label: t('august', 'August') },
+    { value: '9', label: t('september', 'September') },
+    { value: '10', label: t('october', 'October') },
+    { value: '11', label: t('november', 'November') },
+    { value: '12', label: t('december', 'December') }
+  ];
+
+  // Year Options (current year and previous 5 years)
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 6 }, (_, i) => ({
+    value: (currentYear - i).toString(),
+    label: (currentYear - i).toString()
+  }));
 
   useEffect(() => {
     fetchReportData();
-  }, [selectedReport, selectedPeriod]);
+  }, [selectedReport, selectedPeriod, selectedMonth, selectedYear]);
 
   const fetchReportData = async () => {
     setLoading(true);
     try {
-      // Mock data based on report type
-      const mockData = {
-        overview: {
-          totalStudents: 145,
-          totalClasses: 12,
-          averageAttendance: 92,
-          averageGrade: 85,
-          trends: {
-            studentsGrowth: 5.2,
-            attendanceChange: 2.1,
-            gradeImprovement: 3.5
-          }
-        },
-        academic: {
-          subjectPerformance: [
-            { subject: 'Mathematics', average: 87, students: 45, improvement: 3.2 },
-            { subject: 'Science', average: 82, students: 42, improvement: 1.8 },
-            { subject: 'English', average: 89, students: 48, improvement: 4.1 },
-            { subject: 'Social Studies', average: 85, students: 38, improvement: 2.5 }
-          ],
-          gradeDistribution: {
-            A: 25,
-            B: 35,
-            C: 28,
-            D: 10,
-            F: 2
-          }
-        },
-        attendance: {
-          overallRate: 92.5,
-          dailyAverage: [88, 94, 91, 95, 90],
-          absenteeism: 7.5,
-          punctuality: 88.2
-        },
-        achievements: {
-          totalAwards: 48,
-          topPerformers: [
-            { name: 'Alice Johnson', awards: 5, grade: 'Grade 3' },
-            { name: 'Bob Smith', awards: 4, grade: 'Grade 2' },
-            { name: 'Carol Davis', awards: 4, grade: 'Grade 1' }
-          ],
-          categories: {
-            Academic: 20,
-            Sports: 15,
-            Arts: 8,
-            Leadership: 5
-          }
-        }
-      };
+      // Simulate API call to fetch report data
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      setReportData(mockData);
+      // TODO: Implement actual API call to fetch report data based on:
+      // - selectedReport (report type)
+      // - selectedPeriod (month/semester1/semester2/year)
+      // - selectedMonth (if period is 'month')
+      // - selectedYear
+
+      console.log('Fetching report:', {
+        report: selectedReport,
+        period: selectedPeriod,
+        month: selectedMonth,
+        year: selectedYear
+      });
     } catch (error) {
       console.error('Error fetching report data:', error);
       showError(t('errorFetchingReportData', 'Error fetching report data'));
@@ -97,246 +96,19 @@ export default function Reports() {
     setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate export
-      const reportName = reportTypes.find(r => r.id === selectedReport)?.name;
-      showSuccess(t('reportExportedSuccessfully').replace('{reportName}', reportName));
+      const reportName = reportTypes.find(r => r.value === selectedReport)?.label;
+      const periodName = timePeriods.find(p => p.value === selectedPeriod)?.label;
+      const monthName = selectedPeriod === 'month' && selectedMonth
+        ? monthOptions.find(m => m.value === selectedMonth)?.label
+        : '';
+
+      const exportDetails = `${reportName} - ${periodName}${monthName ? ` (${monthName})` : ''} - ${selectedYear}`;
+      showSuccess(t('reportExportedSuccessfully', `Report exported: ${exportDetails}`));
     } catch (error) {
       showError(t('errorExportingReport', 'Error exporting report'));
     } finally {
       setLoading(false);
     }
-  };
-
-  const renderOverviewReport = () => {
-    const data = reportData.overview || {};
-    return (
-      <div className="space-y-6">
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Students</p>
-                <p className="text-2xl font-bold text-gray-900">{data.totalStudents || 0}</p>
-                <p className="text-sm text-green-600">+{data.trends?.studentsGrowth || 0}% this {selectedPeriod}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <BookOpen className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Classes</p>
-                <p className="text-2xl font-bold text-gray-900">{data.totalClasses || 0}</p>
-                <p className="text-sm text-gray-500">Active classes</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Attendance Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{data.averageAttendance || 0}%</p>
-                <p className="text-sm text-green-600">+{data.trends?.attendanceChange || 0}% this {selectedPeriod}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-orange-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Average Grade</p>
-                <p className="text-2xl font-bold text-gray-900">{data.averageGrade || 0}%</p>
-                <p className="text-sm text-green-600">+{data.trends?.gradeImprovement || 0}% this {selectedPeriod}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Charts Placeholder */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Trends</h3>
-            <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">Chart visualization would appear here</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Grade Distribution</h3>
-            <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">Pie chart would appear here</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderAcademicReport = () => {
-    const data = reportData.academic || {};
-    return (
-      <div className="space-y-6">
-        {/* Subject Performance */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Subject Performance</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Average Grade</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Students</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Improvement</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {(data.subjectPerformance || []).map((subject, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {subject.subject}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {subject.average}%
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {subject.students}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                      +{subject.improvement}%
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Grade Distribution Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Grade Distribution</h3>
-          <div className="grid grid-cols-5 gap-4">
-            {Object.entries(data.gradeDistribution || {}).map(([grade, count]) => (
-              <div key={grade} className="text-center">
-                <div className="bg-indigo-100 rounded-lg p-4 mb-2">
-                  <div className="text-2xl font-bold text-indigo-600">{count}</div>
-                </div>
-                <div className="text-sm font-medium text-gray-700">Grade {grade}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderAttendanceReport = () => {
-    const data = reportData.attendance || {};
-    return (
-      <div className="space-y-6">
-        {/* Attendance Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">{data.overallRate || 0}%</div>
-              <p className="text-sm text-gray-600 mt-1">Overall Attendance Rate</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">{data.punctuality || 0}%</div>
-              <p className="text-sm text-gray-600 mt-1">Punctuality Rate</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-red-600">{data.absenteeism || 0}%</div>
-              <p className="text-sm text-gray-600 mt-1">Absenteeism Rate</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Daily Attendance Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Attendance Trend</h3>
-          <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500">Daily attendance chart would appear here</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderAchievementsReport = () => {
-    const data = reportData.achievements || {};
-    return (
-      <div className="space-y-6">
-        {/* Achievement Categories */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Achievement Categories</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(data.categories || {}).map(([category, count]) => (
-              <div key={category} className="text-center">
-                <div className="bg-purple-100 rounded-lg p-4 mb-2">
-                  <div className="text-2xl font-bold text-purple-600">{count}</div>
-                </div>
-                <div className="text-sm font-medium text-gray-700">{category}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Top Performers */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Top Performers</h3>
-          </div>
-          <div className="divide-y divide-gray-200">
-            {(data.topPerformers || []).map((performer, index) => (
-              <div key={index} className="px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="h-10 w-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <Award className="h-5 w-5 text-yellow-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-900">{performer.name}</p>
-                    <p className="text-sm text-gray-500">{performer.grade}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{performer.awards} Awards</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
   };
 
   const renderReportContent = () => {
@@ -353,18 +125,44 @@ export default function Reports() {
       );
     }
 
-    switch (selectedReport) {
-      case 'overview':
-        return renderOverviewReport();
-      case 'academic':
-        return renderAcademicReport();
-      case 'attendance':
-        return renderAttendanceReport();
-      case 'achievements':
-        return renderAchievementsReport();
-      default:
-        return renderOverviewReport();
-    }
+    // Generic report placeholder for all 16 report types
+    return (
+      <div className="bg-white rounded-lg shadow p-8">
+        <div className="text-center">
+          <BarChart3 className="h-16 w-16 text-indigo-600 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            {reportTypes.find(r => r.value === selectedReport)?.label || 'Report'}
+          </h3>
+          <p className="text-gray-600 mb-4">
+            {t('reportContentWillAppear', 'Report content will appear here')}
+          </p>
+          <div className="inline-flex items-center space-x-2 text-sm text-gray-500">
+            <span>Period: {timePeriods.find(p => p.value === selectedPeriod)?.label}</span>
+            {selectedPeriod === 'month' && selectedMonth && (
+              <span>• Month: {monthOptions.find(m => m.value === selectedMonth)?.label}</span>
+            )}
+            <span>• Year: {selectedYear}</span>
+          </div>
+        </div>
+
+        {/* Placeholder content grid */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="border border-gray-200 rounded-lg p-4">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+              <div className="h-8 bg-gray-100 rounded w-1/2 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-full"></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>{t('note', 'Note')}:</strong> {t('reportImplementationNote', 'This is a placeholder. Replace with actual report implementation for each of the 16 report types.')}
+          </p>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -392,50 +190,90 @@ export default function Reports() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Report Type Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              <BarChart3 className="h-4 w-4 inline mr-1" />
               {t('reportType') || 'Report Type'}
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              {reportTypes.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <button
-                    key={type.id}
-                    onClick={() => setSelectedReport(type.id)}
-                    className={`flex items-center p-3 rounded-lg text-sm font-medium transition-colors ${
-                      selectedReport === type.id
-                        ? 'bg-indigo-100 text-indigo-700 border border-indigo-200'
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {type.name}
-                  </button>
-                );
-              })}
-            </div>
+            <Dropdown
+              value={selectedReport}
+              onValueChange={setSelectedReport}
+              options={reportTypes}
+              placeholder={t('selectReportType', 'Select report type...')}
+              minWidth="w-full"
+            />
           </div>
 
+          {/* Time Period Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Filter className="h-4 w-4 inline mr-1" />
               {t('timePeriod') || 'Time Period'}
             </label>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <select
-                className="pl-10 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-              >
-                {timePeriods.map(period => (
-                  <option key={period.id} value={period.id}>
-                    {period.name}
-                  </option>
-                ))}
-              </select>
+            <Dropdown
+              value={selectedPeriod}
+              onValueChange={setSelectedPeriod}
+              options={timePeriods}
+              placeholder={t('selectTimePeriod', 'Select time period...')}
+              minWidth="w-full"
+            />
+          </div>
+
+          {/* Conditional: Month Dropdown (shown when period is 'month') */}
+          {selectedPeriod === 'month' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="h-4 w-4 inline mr-1" />
+                {t('selectMonth') || 'Select Month'}
+              </label>
+              <Dropdown
+                value={selectedMonth}
+                onValueChange={setSelectedMonth}
+                options={monthOptions}
+                placeholder={t('selectMonth', 'Choose month...')}
+                minWidth="w-full"
+              />
+            </div>
+          )}
+
+          {/* Year Dropdown (shown for all periods) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Calendar className="h-4 w-4 inline mr-1" />
+              {t('selectAcademicYear') || 'Select Year'}
+            </label>
+            <Dropdown
+              value={selectedYear}
+              onValueChange={setSelectedYear}
+              options={yearOptions}
+              placeholder={t('chooseYear', 'Choose year...')}
+              minWidth="w-full"
+            />
+          </div>
+        </div>
+
+        {/* Selected Filters Display */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-gray-600">{t('selectedFilters', 'Selected Filters')}:</span>
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                {reportTypes.find(r => r.value === selectedReport)?.label || selectedReport}
+              </span>
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {timePeriods.find(p => p.value === selectedPeriod)?.label || selectedPeriod}
+              </span>
+              {selectedPeriod === 'month' && selectedMonth && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  {monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth}
+                </span>
+              )}
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                {t('year', 'Year')}: {selectedYear}
+              </span>
             </div>
           </div>
         </div>

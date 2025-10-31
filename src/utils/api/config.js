@@ -1,33 +1,28 @@
-// API Configuration - Environment-specific URLs
+// API Configuration - Uses production API for all environments
 const getApiBaseUrl = () => {
-  // In development, use environment variable or direct server URL
-  if (import.meta.env.DEV) {
-    return import.meta.env.VITE_API_URL || 'http://157.10.73.52:8085/api/v1';
-  }
-  
-  // In production (Vercel), use relative URLs for proxy rewrites
-  return '/api/v1';
+  // Use production API URL for both development and production
+  return import.meta.env.VITE_API_URL || 'https://plp-api.moeys.gov.kh/api/v1';
 };
 
 const API_BASE_URL = getApiBaseUrl();
 
 // HTTPS Configuration
 export const HTTPS_CONFIG = {
-  // API URLs with protocol preferences
+  // API URLs
   apiUrls: {
-    https: 'https://157.10.73.52:8085/api/v1',
-    http: 'http://157.10.73.52:8085/api/v1'
+    production: 'https://plp-api.moeys.gov.kh/api/v1',
+    development: 'https://plp-api.moeys.gov.kh/api/v1'
   },
-  
+
   // Static asset URLs
   staticUrls: {
-    https: 'https://157.10.73.52:8085',
-    http: 'http://157.10.73.52:8085'
+    production: 'https://plp-api.moeys.gov.kh',
+    development: 'https://plp-api.moeys.gov.kh'
   },
-  
+
   // Fallback behavior
-  enableHttpFallback: true,
-  
+  enableHttpFallback: false,
+
   // Timeout settings
   connectionTimeout: 10000,
   responseTimeout: 30000
@@ -165,15 +160,10 @@ export const HTTP_STATUS = {
   SERVICE_UNAVAILABLE: 503
 };
 
-// Function to get static asset base URL - Environment-specific URLs
+// Function to get static asset base URL
 export const getStaticAssetBaseUrl = () => {
-  // In development, use environment variable or direct server URL
-  if (import.meta.env.DEV) {
-    return import.meta.env.VITE_STATIC_BASE_URL || 'http://157.10.73.52:8085';
-  }
-  
-  // In production (Vercel), use relative URLs for proxy rewrites
-  return '';
+  // Use production static URL for all environments
+  return import.meta.env.VITE_STATIC_BASE_URL || 'https://plp-api.moeys.gov.kh';
 };
 
 // Function to test API availability
@@ -215,15 +205,10 @@ export const testApiConnection = async (baseUrl) => {
   }
 };
 
-// Function to get the API URL (environment-specific)
+// Function to get the API URL
 export const getBestApiUrl = async () => {
-  // In development, use environment variable or direct server URL
-  if (import.meta.env.DEV) {
-    return import.meta.env.VITE_API_URL || 'http://157.10.73.52:8085/api/v1';
-  }
-  
-  // In production (Vercel), use relative URLs for proxy rewrites
-  return '/api/v1';
+  // Use production API URL for all environments
+  return import.meta.env.VITE_API_URL || 'https://plp-api.moeys.gov.kh/api/v1';
 };
 
 // Main API configuration object

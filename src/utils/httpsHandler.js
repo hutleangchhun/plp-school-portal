@@ -7,13 +7,13 @@
  * Configuration for HTTPS handling
  */
 export const HttpsConfig = {
-  // Base URLs with protocol preferences
+  // Base URLs - Production API
   apiUrls: {
-    primary: 'https://157.10.73.52:8085',
-    fallback: 'http://157.10.73.52:8085',
+    primary: 'https://plp-api.moeys.gov.kh',
+    fallback: 'https://plp-api.moeys.gov.kh',
     static: {
-      primary: 'https://157.10.73.52:8085',
-      fallback: 'http://157.10.73.52:8085'
+      primary: 'https://plp-api.moeys.gov.kh',
+      fallback: 'https://plp-api.moeys.gov.kh'
     }
   },
   

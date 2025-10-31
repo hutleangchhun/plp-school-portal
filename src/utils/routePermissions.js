@@ -76,6 +76,10 @@ export const routePermissions = {
     allowedRoles: [ROLES.TEACHER],
     component: 'TeacherExamRecords'
   },
+  '/reports': {
+    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    component: 'Reports'
+  },
   '/settings/school': {
     allowedRoles: [ROLES.DIRECTOR], // Directors only
     component: 'SchoolSettingsPage'
@@ -181,13 +185,17 @@ export const getNavigationItems = (user, t) => {
       name: t('examRecord', 'Exam Records'),
       href: '/exam-records',
     },
+    {
+      name: t('reports', 'Reports'),
+      href: '/reports',
+    },
     // Temporarily disabled - will implement later:
     // {
     //   name: t('qrCodeManagementAdmin', 'QR Code Management - Admin'),
     //   href: '/qr-code-admin',
     // },
     // Other temporarily removed navigation items:
-    // reports, achievements, settings
+    // achievements, settings
   ];
 
   // Teacher gets my-classes, my-students, attendance, and my-attendance

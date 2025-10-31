@@ -453,7 +453,7 @@ export default function ProfileUpdate({ user, setUser }) {
       setSchoolsLoading(true);
       console.log('Fetching schools for commune:', communeId);
       
-      const response = await fetch(`http://157.10.73.52:8085/api/v1/schools/commune/${communeId}`, {
+      const response = await fetch(`https://plp-api.moeys.gov.kh/api/v1/schools/commune/${communeId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
