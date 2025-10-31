@@ -52,6 +52,13 @@ export default function TeacherSelfAttendance() {
   const userId = user?.id;
   const isTeacher = user?.roleId === 8;
 
+  // Helper function to get date string in YYYY-MM-DD format without timezone conversion
+  const getLocalDateString = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   // Get days in current month
   const getDaysInMonth = useCallback((date) => {
@@ -90,8 +97,19 @@ export default function TeacherSelfAttendance() {
 
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
-      const startDate = new Date(year, month, 1).toISOString().split('T')[0];
-      const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+
+      // Use date string formatting to avoid timezone conversion issues
+      const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+      console.log('DEBUG: Fetching attendance for:', {
+        currentMonthDisplay: getLocalDateString(currentMonth),
+        year,
+        month: month + 1, // Display as 1-indexed
+        startDate,
+        endDate
+      });
 
       const response = await attendanceService.getAttendance({
         userId,
@@ -104,8 +122,17 @@ export default function TeacherSelfAttendance() {
       if (response.success && response.data) {
         const records = Array.isArray(response.data) ? response.data : response.data.records || [];
 
+        console.log('DEBUG: Raw backend response:', response.data);
+        console.log('DEBUG: Processing records count:', records.length);
+
         records.forEach(record => {
           const recordDate = record.date ? record.date.split('T')[0] : null;
+          console.log('DEBUG: Processing record:', {
+            rawDate: record.date,
+            extractedDate: recordDate,
+            status: record.status,
+            id: record.id
+          });
           if (recordDate) {
             attendanceData[recordDate] = {
               status: record.status?.toUpperCase() || 'PRESENT',
@@ -121,6 +148,9 @@ export default function TeacherSelfAttendance() {
           }
         });
       }
+
+      console.log('DEBUG: Final attendanceData object:', attendanceData);
+      console.log('DEBUG: Keys in attendanceData:', Object.keys(attendanceData));
 
       setMonthlyAttendance(attendanceData);
       stopLoading(loadingKey);
@@ -157,7 +187,7 @@ export default function TeacherSelfAttendance() {
     if (!userId) return;
 
     // Validate that we're only marking attendance for today
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     if (!isDateToday(today)) {
       showError(t('canOnlyMarkTodayAttendance', 'អ្នកអាចបញ្ជូនវត្តមានតែថ្ងៃនេះប៉ុណ្ណោះ'));
       return;
@@ -169,7 +199,7 @@ export default function TeacherSelfAttendance() {
 
 
       // Double-check the date before sending to API
-      const requestDate = new Date().toISOString().split('T')[0];
+      const requestDate = getLocalDateString();
       if (!isDateToday(requestDate)) {
         showError(t('canOnlyMarkTodayAttendance', 'អ្នកអាចបញ្ជូនវត្តមានតែថ្ងៃនេះប៉ុណ្ណោះ'));
         setSubmitting(false);
@@ -245,12 +275,21 @@ export default function TeacherSelfAttendance() {
   // Get attendance for a specific date
   const getAttendanceForDate = (date) => {
     if (!date) return null;
-    // Use local date to avoid timezone issues
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-    return monthlyAttendance[dateStr] || null;
+    // Use helper function to avoid timezone issues
+    const dateStr = getLocalDateString(date);
+    const attendance = monthlyAttendance[dateStr] || null;
+
+    // Only log for dates with attendance or specific dates we're debugging
+    const day = date.getDate();
+    if (attendance || day === 30 || day === 31) {
+      console.log('DEBUG getAttendanceForDate:', {
+        inputDate: dateStr,
+        foundAttendance: !!attendance,
+        status: attendance?.status
+      });
+    }
+
+    return attendance;
   };
 
   // Check if date is weekend
@@ -317,8 +356,15 @@ export default function TeacherSelfAttendance() {
     );
   }
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
   const todayAttendance = monthlyAttendance[todayStr];
+
+  console.log('DEBUG: Pre-render state:', {
+    todayStr,
+    hasTodayAttendance: !!todayAttendance,
+    monthlyAttendanceKeys: Object.keys(monthlyAttendance),
+    monthlyAttendanceCount: Object.keys(monthlyAttendance).length
+  });
 
   // Check if current viewing month is the current month
   const isCurrentMonth = currentMonth.getMonth() === new Date().getMonth() &&
