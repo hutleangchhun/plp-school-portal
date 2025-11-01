@@ -4,6 +4,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import DynamicLoader from '../../components/ui/DynamicLoader';
 import Dropdown from '../../components/ui/Dropdown';
+import Badge from '../../components/ui/Badge';
+import { processAndExportReport } from '../../utils/reportExportUtils';
 
 export default function Reports() {
   const { t } = useLanguage();
@@ -16,7 +18,7 @@ export default function Reports() {
 
   // 16 Report Types - waiting for your specific report names
   const reportTypes = [
-    { value: 'reportStudent', label: t('reportStudentNameInfo', 'បញ្ជីហៅឈ្មោះសិស្ស') },
+    { value: 'report1', label: t('reportStudentNameInfo', 'បញ្ជីហៅឈ្មោះសិស្ស') },
     { value: 'report2', label: t('report2', 'បញ្ជីហៅឈ្មោះសិស្សតាមថ្នាក់') },
     { value: 'report3', label: t('report3', 'បញ្ជីមធ្យមភាគសិស្ស') },
     { value: 'report4', label: t('report4', 'បញ្ជីអវត្តមានសិស្ស') },
@@ -33,26 +35,26 @@ export default function Reports() {
 
   // Time Period Options
   const timePeriods = [
-    { value: 'month', label: t('month', 'By Month') },
-    { value: 'semester1', label: t('semester1', 'Semester 1') },
-    { value: 'semester2', label: t('semester2', 'Semester 2') },
-    { value: 'year', label: t('year', 'By Year') }
+    { value: 'month', label: t('byMonth', 'By Month') },
+    { value: 'semester1', label: t('bySemester1', 'Semester 1') },
+    { value: 'semester2', label: t('bySemester2', 'Semester 2') },
+    { value: 'year', label: t('byYear', 'By Year') }
   ];
 
-  // Month Options (1-12)
+  // Month Options (1-12) - Khmer Names
   const monthOptions = [
-    { value: '1', label: t('january', 'January') },
-    { value: '2', label: t('february', 'February') },
-    { value: '3', label: t('march', 'March') },
-    { value: '4', label: t('april', 'April') },
-    { value: '5', label: t('may', 'May') },
-    { value: '6', label: t('june', 'June') },
-    { value: '7', label: t('july', 'July') },
-    { value: '8', label: t('august', 'August') },
-    { value: '9', label: t('september', 'September') },
-    { value: '10', label: t('october', 'October') },
-    { value: '11', label: t('november', 'November') },
-    { value: '12', label: t('december', 'December') }
+    { value: '1', label: t('january', 'មករា') },
+    { value: '2', label: t('february', 'កុម្ភៈ') },
+    { value: '3', label: t('march', 'មីនា') },
+    { value: '4', label: t('april', 'មេសា') },
+    { value: '5', label: t('may', 'ឧសភា') },
+    { value: '6', label: t('june', 'មិថុនា') },
+    { value: '7', label: t('july', 'កក្កដា') },
+    { value: '8', label: t('august', 'សីហា') },
+    { value: '9', label: t('september', 'កញ្ញា') },
+    { value: '10', label: t('october', 'តុលា') },
+    { value: '11', label: t('november', 'វិច្ឆិកា') },
+    { value: '12', label: t('december', 'ធ្នូ') }
   ];
 
   // Year Options (current year and previous 5 years)
@@ -95,16 +97,67 @@ export default function Reports() {
   const handleExportReport = async () => {
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate export
-      const reportName = reportTypes.find(r => r.value === selectedReport)?.label;
-      const periodName = timePeriods.find(p => p.value === selectedPeriod)?.label;
+      const reportName = reportTypes.find(r => r.value === selectedReport)?.label || 'Report';
+      const periodName = timePeriods.find(p => p.value === selectedPeriod)?.label || '';
       const monthName = selectedPeriod === 'month' && selectedMonth
         ? monthOptions.find(m => m.value === selectedMonth)?.label
         : '';
 
-      const exportDetails = `${reportName} - ${periodName}${monthName ? ` (${monthName})` : ''} - ${selectedYear}`;
-      showSuccess(t('reportExportedSuccessfully', `Report exported: ${exportDetails}`));
+      const periodInfo = `${periodName}${monthName ? ` (${monthName})` : ''} ${selectedYear}`;
+
+      // TODO: Replace with actual API call to get report data
+      // Example: const response = await reportService.getReportData({
+      //   reportType: selectedReport,
+      //   period: selectedPeriod,
+      //   month: selectedMonth,
+      //   year: selectedYear
+      // });
+      // const rawData = response.data;
+
+      // Sample data for demonstration
+      const sampleData = [
+        {
+          id: '001',
+          khmerName: 'សុខា',
+          englishName: 'Sukha',
+          gender: 'M',
+          dateOfBirth: '2010-01-15',
+          class: { name: 'Grade 1' },
+          contact: '098765432',
+          attendances: Array(20).fill({ status: 'PRESENT' }).concat(Array(5).fill({ status: 'ABSENT' })),
+          grades: Array(5).fill({ score: 75 }),
+          status: 'Active'
+        },
+        {
+          id: '002',
+          khmerName: 'មនុស្ស',
+          englishName: 'Monosom',
+          gender: 'F',
+          dateOfBirth: '2010-05-20',
+          class: { name: 'Grade 1' },
+          contact: '098765433',
+          attendances: Array(18).fill({ status: 'PRESENT' }).concat(Array(7).fill({ status: 'ABSENT' })),
+          grades: Array(5).fill({ score: 85 }),
+          status: 'Active'
+        }
+      ];
+
+      // Process and export the report
+      const result = await processAndExportReport(
+        selectedReport,
+        sampleData,
+        reportName,
+        periodInfo,
+        'PLP School'
+      );
+
+      if (result.success) {
+        showSuccess(t('reportExportedSuccessfully', `Report exported: ${reportName} - ${result.recordCount} records`));
+      } else {
+        showError(result.error || t('errorExportingReport', 'Error exporting report'));
+      }
     } catch (error) {
+      console.error('Error exporting report:', error);
       showError(t('errorExportingReport', 'Error exporting report'));
     } finally {
       setLoading(false);
@@ -114,12 +167,12 @@ export default function Reports() {
   const renderReportContent = () => {
     if (loading) {
       return (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
+        <div className="bg-white rounded-lg shadow p-12 flex justify-center items-center">
           <DynamicLoader
             type="spinner"
             size="xl"
             variant="primary"
-            message="Loading report data..."
+            message={t('loadingReportData', 'Loading report data...')}
           />
         </div>
       );
@@ -191,89 +244,99 @@ export default function Reports() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Report Type Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <BarChart3 className="h-4 w-4 inline mr-1" />
-              {t('reportType') || 'Report Type'}
-            </label>
-            <Dropdown
-              value={selectedReport}
-              onValueChange={setSelectedReport}
-              options={reportTypes}
-              placeholder={t('selectReportType', 'Select report type...')}
-              minWidth="w-full"
-            />
-          </div>
-
-          {/* Time Period Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Filter className="h-4 w-4 inline mr-1" />
-              {t('timePeriod') || 'Time Period'}
-            </label>
-            <Dropdown
-              value={selectedPeriod}
-              onValueChange={setSelectedPeriod}
-              options={timePeriods}
-              placeholder={t('selectTimePeriod', 'Select time period...')}
-              minWidth="w-full"
-            />
-          </div>
-
-          {/* Conditional: Month Dropdown (shown when period is 'month') */}
-          {selectedPeriod === 'month' && (
-            <div>
+        <div className="overflow-x-auto">
+          <div className="flex gap-4 min-w-max md:grid md:grid-cols-2 lg:grid-cols-4 md:min-w-full">
+            {/* Report Type Dropdown */}
+            <div className="flex-shrink-0 w-full md:w-auto">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="h-4 w-4 inline mr-1" />
-                {t('selectMonth') || 'Select Month'}
+                <BarChart3 className="h-4 w-4 inline mr-1" />
+                {t('reportType') || 'Report Type'}
               </label>
               <Dropdown
-                value={selectedMonth}
-                onValueChange={setSelectedMonth}
-                options={monthOptions}
-                placeholder={t('selectMonth', 'Choose month...')}
+                value={selectedReport}
+                onValueChange={setSelectedReport}
+                options={reportTypes}
+                placeholder={t('selectReportType', 'Select report type...')}
                 minWidth="w-full"
+                maxHeight="max-h-56"
+                itemsToShow={10}
               />
             </div>
-          )}
 
-          {/* Year Dropdown (shown for all periods) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Calendar className="h-4 w-4 inline mr-1" />
-              {t('selectAcademicYear') || 'Select Year'}
-            </label>
-            <Dropdown
-              value={selectedYear}
-              onValueChange={setSelectedYear}
-              options={yearOptions}
-              placeholder={t('chooseYear', 'Choose year...')}
-              minWidth="w-full"
-            />
+            {/* Time Period Dropdown */}
+            <div className="flex-shrink-0 w-full md:w-auto">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Filter className="h-4 w-4 inline mr-1" />
+                {t('timePeriod') || 'Time Period'}
+              </label>
+              <Dropdown
+                value={selectedPeriod}
+                onValueChange={setSelectedPeriod}
+                options={timePeriods}
+                placeholder={t('selectTimePeriod', 'Select time period...')}
+                minWidth="w-full"
+                maxHeight="max-h-40"
+                itemsToShow={5}
+              />
+            </div>
+
+            {/* Conditional: Month Dropdown (shown when period is 'month') */}
+            {selectedPeriod === 'month' && (
+              <div className="flex-shrink-0 w-full md:w-auto">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar className="h-4 w-4 inline mr-1" />
+                  {t('selectMonth') || 'Select Month'}
+                </label>
+                <Dropdown
+                  value={selectedMonth}
+                  onValueChange={setSelectedMonth}
+                  options={monthOptions}
+                  placeholder={t('selectMonth', 'Choose month...')}
+                  minWidth="w-full"
+                  maxHeight="max-h-40"
+                itemsToShow={5}
+                />
+              </div>
+            )}
+
+            {/* Year Dropdown (shown for all periods) */}
+            <div className="flex-shrink-0 w-full md:w-auto">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="h-4 w-4 inline mr-1" />
+                {t('selectAcademicYear') || 'Select Year'}
+              </label>
+              <Dropdown
+                value={selectedYear}
+                onValueChange={setSelectedYear}
+                options={yearOptions}
+                placeholder={t('chooseYear', 'Choose year...')}
+                minWidth="w-full"
+                maxHeight="max-h-40"
+                itemsToShow={5}
+              />
+            </div>
           </div>
         </div>
 
         {/* Selected Filters Display */}
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm text-gray-600">{t('selectedFilters', 'Selected Filters')}:</span>
+            <span className="text-sm font-medium text-gray-700">{t('selectedFilters', 'Selected Filters')}:</span>
             <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+              <Badge color="blue" variant="filled" size="sm">
                 {reportTypes.find(r => r.value === selectedReport)?.label || selectedReport}
-              </span>
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              </Badge>
+              <Badge color="green" variant="filled" size="sm">
                 {timePeriods.find(p => p.value === selectedPeriod)?.label || selectedPeriod}
-              </span>
+              </Badge>
               {selectedPeriod === 'month' && selectedMonth && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <Badge color="orange" variant="filled" size="sm">
                   {monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth}
-                </span>
+                </Badge>
               )}
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+              <Badge color="purple" variant="filled" size="sm">
                 {t('year', 'Year')}: {selectedYear}
-              </span>
+              </Badge>
             </div>
           </div>
         </div>

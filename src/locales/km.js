@@ -1001,7 +1001,11 @@ export const km = {
 
 
   //report
-  semester1: 'ឆមាសទី១',
-  semester2: 'ឆមាសទី២',
+  byMonth: 'ប្រចាំខែ',
+  byYear: 'ប្រចាំឆ្នាំ',
+  bySemester1: 'ប្រចាំឆមាសទី១',
+  bySemester2: 'ប្រចាំឆមាសទី២',
   selectReportType: 'ជ្រើសរើសប្រភេទរបាយការណ៍',
+  loadingReportData: 'កំពុងទាញយកទិន្នន័យរបាយការណ៍',
+  selectedFilters: 'កម្រងបានជ្រើសរើស'
 };

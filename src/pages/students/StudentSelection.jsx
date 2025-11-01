@@ -125,6 +125,7 @@ const StudentSelection = () => {
   const [schoolId, setSchoolId] = useState(null);
   const [listLoading, setListLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [classesLoaded, setClassesLoaded] = useState(false); // Track when classes fetch completes
   const [fetchError, setFetchError] = useState(null);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pagination, setPagination] = useState({
@@ -183,17 +184,26 @@ const StudentSelection = () => {
 
         // Get class data from /classes/school/{schoolId} endpoint
         const classResponse = await classService.getBySchool(schoolId);
-        
-        if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
+
+        if (!classResponse || !classResponse.success) {
           console.log('No classes found in API response:', classResponse);
           setClasses([]);
           return;
         }
 
-        console.log('Found classes in API response:', classResponse.classes);
+        // Extract classes array from response - could be in classResponse.classes or classResponse.data
+        const classesArray = classResponse.classes || classResponse.data || [];
+
+        if (!Array.isArray(classesArray)) {
+          console.log('Classes data is not an array:', classesArray);
+          setClasses([]);
+          return;
+        }
+
+        console.log('Found classes in API response:', classesArray);
 
         // Process classes from the new API response
-        const teacherClasses = classResponse.classes.map((classData) => ({
+        const teacherClasses = classesArray.map((classData) => ({
           id: classData.classId,
           classId: classData.classId,
           name: classData.name,
@@ -229,12 +239,18 @@ const StudentSelection = () => {
     fetchClassDetails();
   }, [user?.id, user?.username, showError, t]);
 
-  // Set initial loading to false once classes are loaded
+  // Set initial loading to false once classes fetch completes (regardless of whether there are classes)
   useEffect(() => {
-    if (classes.length > 0) {
+    // Mark as loaded once we've attempted to fetch classes
+    setClassesLoaded(true);
+  }, [classes]); // Runs after classes state is updated
+
+  // Set initial loading to false once classes have been loaded
+  useEffect(() => {
+    if (classesLoaded) {
       setInitialLoading(false);
     }
-  }, [classes.length]);
+  }, [classesLoaded]);
 
   // Fetch current user's school ID from my-account endpoint
   const fetchSchoolId = useStableCallback(async () => {

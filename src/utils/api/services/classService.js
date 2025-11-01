@@ -253,36 +253,42 @@ export const classService = {
       );
 
       console.log('Raw master classes API response for school', schoolId, 'with params', queryParams, ':', response);
-      
+
       // Handle the nested response structure from the master-class endpoint
-      // Response structure: { success: true, data: { data: [...students], total: 61, page: 1, limit: 10 } }
-      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      // handleApiResponse wraps as { success: true, data: apiResponse }
+      // API returns: { success: true, data: { data: [...students], total: 61, page: 1, limit: 10 } }
+      const apiData = response.data;
+
+      if (apiData && apiData.data && Array.isArray(apiData.data)) {
         return {
           success: true,
-          data: response.data.data, // Extract the actual students array
-          total: response.data.total || response.data.data.length,
+          data: apiData.data, // Extract the actual students array
+          total: apiData.total || apiData.data.length,
           pagination: {
-            page: response.data.page || 1,
-            limit: response.data.limit || 10,
-            total: response.data.total || response.data.data.length,
-            pages: response.data.totalPages || Math.ceil((response.data.total || response.data.data.length) / (response.data.limit || 10))
+            page: apiData.page || 1,
+            limit: apiData.limit || 10,
+            total: apiData.total || apiData.data.length,
+            pages: apiData.totalPages || Math.ceil((apiData.total || apiData.data.length) / (apiData.limit || 10))
           }
         };
       }
-      
-      // Fallback for direct array response
-      if (response.data && Array.isArray(response.data)) {
+
+      // Fallback for direct array response (in case API returns array directly)
+      if (apiData && Array.isArray(apiData)) {
         return {
           success: true,
-          data: response.data,
-          total: response.data.length
+          data: apiData,
+          total: apiData.length
         };
       }
-      
-      return { 
+
+      // Fallback if data is not in expected format
+      console.warn('Unexpected response structure from master-class endpoint:', apiData);
+      return {
         success: true,
-        data: [], 
-        total: 0 
+        data: [],
+        total: 0,
+        pagination: { page: 1, limit: 10, total: 0, pages: 1 }
       };
     } catch (error) {
       console.error('Error fetching master classes for school', schoolId, 'with params', params, ':', error);
