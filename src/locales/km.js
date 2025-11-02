@@ -356,7 +356,7 @@ export const km = {
   contactAdminToAssignClasses: 'សូមទាក់ទងអ្នកគ្រប់គ្រងរបស់អ្នកដើម្បីកំណត់ថ្នាក់',
   noClassesAssignedMessage: 'អ្នកមិនត្រូវបានកំណត់ថ្នាក់ណាមួយទេ។ សូមទាក់ទងអ្នកគ្រប់គ្រង។',
   trackYourAttendance: 'តាមដានវត្តមានរបស់អ្នក',
-  teacherAttendanceTracking: 'ការតាមដានវត្តមានគ្រូបង្រៀន',
+  teacherAttendanceTracking: 'វត្តមានគ្រូបង្រៀន',
   trackTeacherAttendance: 'តាមដានអត្រាវត្តមានរបស់គ្រូបង្រៀននៅក្នុងសាលារៀនរបស់អ្នក',
   attendanceApprovals: 'ការឯកភាពវត្តមាន',
   reviewPendingApprovals: 'ពិនិត្យការអនុម័តវត្តមានដែលកំពុងរង់ចាំ',

@@ -43,7 +43,6 @@ export default function SchoolSettingsPage({ user }) {
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [communes, setCommunes] = useState([]);
-  const [loadingLocations, setLoadingLocations] = useState(false);
 
   const schoolId = user?.school_id || user?.schoolId;
 
@@ -97,11 +96,12 @@ export default function SchoolSettingsPage({ user }) {
 
       if (!provinceId) {
         console.log('⚠️ No provinceId found in school data');
+        setDistricts([]);
+        setCommunes([]);
         return;
       }
 
       try {
-        setLoadingLocations(true);
         console.log('📍 Loading location cascade for province:', provinceId);
 
         // Fetch districts for the current province
@@ -114,11 +114,13 @@ export default function SchoolSettingsPage({ user }) {
           // Fetch communes for the current district
           const commResponse = await locationService.getCommunesByDistrict(provinceId, districtCode);
           setCommunes(commResponse?.data || commResponse || []);
+        } else {
+          setCommunes([]);
         }
       } catch (err) {
         console.error('Error loading location cascade:', err);
-      } finally {
-        setLoadingLocations(false);
+        setDistricts([]);
+        setCommunes([]);
       }
     };
 
@@ -131,20 +133,18 @@ export default function SchoolSettingsPage({ user }) {
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
-        setLoadingLocations(true);
         const response = await locationService.getProvinces();
         console.log('📍 Provinces fetched:', response?.data || response);
         setProvinces(response?.data || response || []);
       } catch (err) {
         console.error('Error fetching provinces:', err);
-      } finally {
-        setLoadingLocations(false);
+        setProvinces([]);
       }
     };
     fetchProvinces();
   }, []);
 
-  // Fetch districts when province changes
+  // Fetch districts when province changes (only when user manually changes it, not on initial load)
   useEffect(() => {
     const fetchDistricts = async () => {
       if (!formData.province_id) {
@@ -152,45 +152,50 @@ export default function SchoolSettingsPage({ user }) {
         setCommunes([]);
         return;
       }
+
+      // Skip if this is the initial load from schoolData
+      if (schoolData?.place?.provinceId && formData.province_id === String(schoolData.place.provinceId)) {
+        return;
+      }
+
       try {
-        setLoadingLocations(true);
         const response = await locationService.getDistrictsByProvince(formData.province_id);
         setDistricts(response?.data || response || []);
         console.log('📍 Districts loaded:', response?.data || response);
-
-        // Only clear communes if district was not already set from API
-        if (!formData.district_code) {
-          setCommunes([]);
-        }
+        setCommunes([]);
       } catch (err) {
         console.error('Error fetching districts:', err);
-      } finally {
-        setLoadingLocations(false);
+        setDistricts([]);
+        setCommunes([]);
       }
     };
     fetchDistricts();
-  }, [formData.province_id, formData.district_code]);
+  }, [formData.province_id, schoolData?.place?.provinceId]);
 
-  // Fetch communes when district changes
+  // Fetch communes when district changes (only when user manually changes it, not on initial load)
   useEffect(() => {
     const fetchCommunes = async () => {
       if (!formData.province_id || !formData.district_code) {
         setCommunes([]);
         return;
       }
+
+      // Skip if this is the initial load from schoolData
+      if (schoolData?.place?.district_code && formData.district_code === String(schoolData.place.district_code)) {
+        return;
+      }
+
       try {
-        setLoadingLocations(true);
         const response = await locationService.getCommunesByDistrict(formData.province_id, formData.district_code);
         console.log('📍 Communes loaded:', response?.data || response);
         setCommunes(response?.data || response || []);
       } catch (err) {
         console.error('Error fetching communes:', err);
-      } finally {
-        setLoadingLocations(false);
+        setCommunes([]);
       }
     };
     fetchCommunes();
-  }, [formData.province_id, formData.district_code]);
+  }, [formData.province_id, formData.district_code, schoolData?.place?.district_code]);
 
   // Handle profile image selection
   const handleImageChange = useCallback((e) => {
@@ -490,7 +495,7 @@ export default function SchoolSettingsPage({ user }) {
                       label: prov.province_name_kh || prov.province_name_en || prov.name_kh || prov.name_en || prov.name
                     }))}
                     placeholder={t('selectProvince') || 'Select Province'}
-                    disabled={submitting || loadingLocations}
+                    disabled={submitting}
                     className="w-full"
                     maxHeight="max-h-60"
                   />
@@ -509,7 +514,7 @@ export default function SchoolSettingsPage({ user }) {
                       label: dist.district_name_kh || dist.district_name_en || dist.name_kh || dist.name_en || dist.name
                     }))}
                     placeholder={t('selectDistrict') || 'Select District'}
-                    disabled={submitting || loadingLocations || !formData.province_id}
+                    disabled={submitting || !formData.province_id}
                     className="w-full"
                     maxHeight="max-h-60"
                   />
@@ -528,7 +533,7 @@ export default function SchoolSettingsPage({ user }) {
                       label: comm.commune_name_kh || comm.commune_name_en || comm.name_kh || comm.name_en || comm.name
                     }))}
                     placeholder={t('selectCommune') || 'Select Commune'}
-                    disabled={submitting || loadingLocations || !formData.district_code}
+                    disabled={submitting || !formData.district_code}
                     className="w-full"
                     maxHeight="max-h-60"
                   />
