@@ -94,7 +94,7 @@ http://plp-sms.moeys.gov.kh
 ```bash
 ssh admin_moeys@192.168.155.122
 cd /opt/plp-school-portal
-docker compose logs -f
+docker-compose logs -f
 ```
 
 ### View Nginx logs
@@ -110,7 +110,7 @@ sudo systemctl status nginx
 
 ### Check Docker container status
 ```bash
-docker compose ps
+docker-compose ps
 ```
 
 ### Restart Nginx
@@ -120,7 +120,7 @@ sudo systemctl restart nginx
 
 ### Restart Docker container
 ```bash
-docker compose restart
+docker-compose restart
 ```
 
 ---
@@ -170,7 +170,7 @@ docker compose restart
 
 1. Check Docker logs:
 ```bash
-docker compose logs -f
+docker-compose logs -f
 ```
 
 2. Open browser console (F12) for frontend errors
@@ -250,7 +250,7 @@ df -h
 ### Monitor logs in real-time
 ```bash
 # Application logs
-docker compose -f /opt/plp-school-portal/docker-compose.yml logs -f
+docker-compose -f /opt/plp-school-portal/docker-compose.yml logs -f
 
 # Nginx access logs
 sudo tail -f /var/log/nginx/plp-sms-access.log
@@ -279,12 +279,12 @@ sudo tail -f /var/log/nginx/plp-sms-error.log
 | Task | Command |
 |------|---------|
 | Deploy | `bash deploy-to-server.sh` |
-| View logs | `docker compose logs -f` |
-| Restart app | `docker compose restart` |
+| View logs | `docker-compose logs -f` |
+| Restart app | `docker-compose restart` |
 | Restart nginx | `sudo systemctl restart nginx` |
 | Test health | `curl http://localhost:3001/health` |
 | Test domain | `curl http://plp-sms.moeys.gov.kh` |
-| Check status | `docker compose ps` |
+| Check status | `docker-compose ps` |
 | Nginx test | `sudo nginx -t` |
 
 ---

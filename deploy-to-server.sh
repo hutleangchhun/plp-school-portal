@@ -65,19 +65,19 @@ ssh ${SERVER_USER}@${SERVER_IP} bash -c "
     git reset --hard origin/main
 
     log_step 'Building Docker image (this may take a few minutes)'
-    docker compose build
+    docker-compose build
 
     log_step 'Stopping old container'
-    docker compose down || true
+    docker-compose down || true
 
     log_step 'Starting new container on port 3001'
-    docker compose up -d
+    docker-compose up -d
 
     log_step 'Verifying container status'
-    docker compose ps
+    docker-compose ps
 
     log_step 'Container logs'
-    docker compose logs --tail=20
+    docker-compose logs --tail=20
 
     log_step 'Checking application health'
     sleep 5
