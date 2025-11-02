@@ -83,6 +83,12 @@ export const en = {
   teacherNumber: 'Teacher Number',
   teacherId: 'Teacher ID',
   enterNewPassword: 'Enter new password',
+  selectEmploymentType: 'Select Employment Type',
+  employmentType: 'Employment Type',
+  framework: 'Framework/Permanent',
+  contract: 'Contract',
+  agreement: 'Agreement',
+  selectGradeLevel: 'Select Grade Level',
   
   // Location fields
   provinceId: 'Province ID',
@@ -677,6 +683,8 @@ export const en = {
   studentUpdatedSuccess: 'Student updated successfully',
   failedUpdateStudent: 'Failed to update student',
   unauthorizedClassAccess: 'You do not have permission to view students from this class',
+  teacherUpdatedSuccess: 'Teacher updated successfully',
+  failedUpdateTeacher: 'Failed to update teacher',
 
   // Additional toast messages  
   achievementAddedSuccessfully: 'Achievement added successfully',

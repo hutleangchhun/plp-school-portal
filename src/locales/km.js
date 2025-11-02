@@ -92,6 +92,12 @@ export const km = {
   height: 'កម្ពស់',
   ethnicGroup: 'ក្រុមជនជាតិភាគតិច',
   accessibility: 'លក្ខណ:ពិសេស',
+  selectEmploymentType: 'ជ្រើសរើសប្រភេទការងារ',
+  employmentType: 'ប្រភេទការងារ',
+  framework: 'ក្របខ័ណ្ឌ',
+  contract: 'កិច្ចសន្យា',
+  agreement: 'កិច្ចព្រមព្រៀង',
+  selectGradeLevel: 'ជ្រើសរើសកម្រិតថ្នាក់',
   
   // Location fields
   provinceId: 'លេខកំណត់ខេត្ត',
@@ -857,6 +863,8 @@ export const km = {
   studentUpdatedSuccess: 'បានកែប្រែព័ត៌មានសិស្សដោយជោគជ័យ',
   failedUpdateStudent: 'បរាជ័យក្នុងការកែប្រែព័ត៌មានសិស្ស',
   unauthorizedClassAccess: 'អ្នកមិនមានសិទ្ធិមើលសិស្សពីថ្នាក់នេះទេ',
+  teacherUpdatedSuccess: 'បានកែប្រែព័ត៌មានគ្រូដោយជោគជ័យ',
+  failedUpdateTeacher: 'បរាជ័យក្នុងការកែប្រែព័ត៌មានគ្រូ',
 
   // Additional toast messages
   achievementAddedSuccessfully: 'បានបន្ថែមសមិទ្ធិផលដោយជោគជ័យ',

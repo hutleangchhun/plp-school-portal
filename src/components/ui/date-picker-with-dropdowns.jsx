@@ -23,6 +23,7 @@ import { formatDateKhmer } from "@/utils/formatters"
 
 export function DatePickerWithDropdowns({
   value,
+  date,
   onChange,
   placeholder = "ជ្រើសរើសកាលបរិច្ឆេទ",
   className,
@@ -33,9 +34,11 @@ export function DatePickerWithDropdowns({
   toDate,
   ...props
 }) {
+  // Accept both 'value' and 'date' props for flexibility
+  const dateValue = value || date
   const [open, setOpen] = React.useState(false)
   const [currentMonth, setCurrentMonth] = React.useState(
-    value ? new Date(value.getFullYear(), value.getMonth()) : new Date()
+    dateValue ? new Date(dateValue.getFullYear(), dateValue.getMonth()) : new Date()
   )
 
   const months = [
@@ -70,46 +73,46 @@ export function DatePickerWithDropdowns({
         <Button
           variant="outline"
           className={cn(
-            "w-full justify-start text-left font-normal",
-            !value && "text-muted-foreground",
+            "w-full justify-start text-left font-normal text-xs py-1 h-auto min-h-[28px]",
+            !dateValue && "text-muted-foreground",
             disabled && "cursor-not-allowed opacity-50",
             className
           )}
           disabled={disabled}
           {...props}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? formatDateKhmer(value, "short") : <span>{placeholder}</span>}
+          <CalendarIcon className="mr-2 h-3 w-3" />
+          {dateValue ? <span className="text-xs">{formatDateKhmer(dateValue, "short")}</span> : <span className="text-xs">{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
-        <div className="flex items-center justify-center gap-2 p-3 border-b">
+        <div className="flex items-center justify-center gap-2 p-2 border-b">
           <Select
             value={currentMonth.getMonth().toString()}
             onValueChange={handleMonthChange}
           >
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-28 h-8 text-xs py-1">
               <SelectValue placeholder="ខែ" />
             </SelectTrigger>
-            <SelectContent className="max-h-[200px]">
+            <SelectContent className="max-h-[200px] text-xs">
               {months.map((month, index) => (
-                <SelectItem key={index} value={index.toString()}>
+                <SelectItem key={index} value={index.toString()} className="text-xs">
                   {month}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          
+
           <Select
             value={currentMonth.getFullYear().toString()}
             onValueChange={handleYearChange}
           >
-            <SelectTrigger className="w-20">
+            <SelectTrigger className="w-20 h-8 text-xs py-1">
               <SelectValue placeholder="ឆ្នាំ" />
             </SelectTrigger>
-            <SelectContent className="max-h-[200px]">
+            <SelectContent className="max-h-[200px] text-xs">
               {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
+                <SelectItem key={year} value={year.toString()} className="text-xs">
                   {year}
                 </SelectItem>
               ))}
@@ -119,7 +122,7 @@ export function DatePickerWithDropdowns({
         
         <Calendar
           mode="single"
-          selected={value}
+          selected={dateValue}
           onSelect={handleDateSelect}
           month={currentMonth}
           onMonthChange={setCurrentMonth}

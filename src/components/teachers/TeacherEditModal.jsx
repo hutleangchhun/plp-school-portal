@@ -47,8 +47,6 @@ const TeacherEditModal = ({
     employment_type: '',
     teacher_number: '',
     hire_date: null,
-    isDirector: false,
-    status: 'ACTIVE',
     residence: {
       provinceId: '',
       districtId: '',
@@ -150,6 +148,9 @@ const TeacherEditModal = ({
       const height = fullData.height_cm || fullData.height || '';
       const bmi = fullData.bmi || calcBMI(weight, height);
 
+      // Extract teacher-specific fields from nested teacher object if available
+      const teacherData = fullData.teacher || fullData;
+
       setEditForm({
         firstName: fullData.firstName || fullData.first_name || '',
         lastName: fullData.lastName || fullData.last_name || '',
@@ -165,13 +166,11 @@ const TeacherEditModal = ({
         height: height,
         bmi: bmi,
         ethnicGroup: fullData.ethnic_group || fullData.ethnicGroup || '',
-        gradeLevel: fullData.gradeLevel || fullData.grade_level || '',
+        gradeLevel: teacherData.gradeLevel || teacherData.grade_level || '',
         accessibility: Array.isArray(fullData.accessibility) ? fullData.accessibility : [],
-        employment_type: fullData.employment_type || '',
-        teacher_number: fullData.teacher_number || fullData.teacherNumber || '',
-        hire_date: fullData.hire_date ? new Date(fullData.hire_date) : null,
-        isDirector: fullData.isDirector || fullData.is_director || false,
-        status: fullData.status || 'ACTIVE',
+        employment_type: teacherData.employment_type || '',
+        teacher_number: teacherData.teacher_number || teacherData.teacherNumber || '',
+        hire_date: teacherData.hire_date ? new Date(teacherData.hire_date) : null,
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
           districtId: fullData.residence?.districtId || fullData.district_id || '',
@@ -231,8 +230,6 @@ const TeacherEditModal = ({
       employment_type: '',
       teacher_number: '',
       hire_date: null,
-      isDirector: false,
-      status: 'ACTIVE',
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
       placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
     });
@@ -318,8 +315,6 @@ const TeacherEditModal = ({
         employment_type: editForm.employment_type || undefined,
         teacher_number: editForm.teacher_number || undefined,
         hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
-        isDirector: editForm.isDirector || undefined,
-        status: editForm.status || undefined,
         residence: {
           provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
           districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
@@ -561,6 +556,80 @@ const TeacherEditModal = ({
                 />
               </div>
             </div>
+            {/* Teacher Employment & Status Information */}
+            <div className='grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4'>
+              {/* Grade Level */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <BookOpen className="inline w-4 h-4 mr-2" />
+                  {t('gradeLevel', 'Grade Level')}
+                </label>
+                <Dropdown
+                  options={[
+                    { value: '', label: t('selectGradeLevel', 'Select Grade Level') },
+                    { value: '1', label: t('grade1', 'Grade 1') },
+                    { value: '2', label: t('grade2', 'Grade 2') },
+                    { value: '3', label: t('grade3', 'Grade 3') },
+                    { value: '4', label: t('grade4', 'Grade 4') },
+                    { value: '5', label: t('grade5', 'Grade 5') },
+                    { value: '6', label: t('grade6', 'Grade 6') }
+                  ]}
+                  value={editForm.gradeLevel}
+                  onValueChange={(value) => handleFormChange('gradeLevel', value)}
+                  placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={false}
+                  className='w-full'
+                />
+              </div>
+
+              {/* Employment Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('employmentType', 'Employment Type')}
+                </label>
+                <Dropdown
+                  options={[
+                    { value: '', label: t('selectEmploymentType', 'Select Type') },
+                    { value: 'ក្របខ័ណ្ឌ', label: t('framework', 'Framework/Permanent') },
+                    { value: 'កិច្ចសន្យា', label: t('contract', 'Contract') },
+                    { value: 'កិច្ចព្រមព្រៀង', label: t('agreement', 'Agreement') }
+                  ]}
+                  value={editForm.employment_type}
+                  onValueChange={(value) => handleFormChange('employment_type', value)}
+                  placeholder={t('selectEmploymentType', 'Select Type')}
+                  minWidth="w-full"
+                />
+              </div>
+
+              {/* Teacher Number */}
+              <div>
+                <label htmlFor="teacher_number" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('teacherNumber', 'Teacher Number')}
+                </label>
+                <input
+                  type="text"
+                  id="teacher_number"
+                  value={editForm.teacher_number}
+                  onChange={(e) => handleFormChange('teacher_number', e.target.value)}
+                  className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={t('enterTeacherNumber', 'e.g., T00000001')}
+                />
+              </div>
+
+              {/* Hire Date */}
+              <div>
+                <label htmlFor="hire_date" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('hireDate', 'Hire Date')}
+                </label>
+                <DatePickerWithDropdowns
+                  date={editForm.hire_date}
+                  onChange={(date) => handleFormChange('hire_date', date)}
+                    placeholder={t('pickDate', 'Pick a date')}
+                />
+              </div>
+            </div>
+
 
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4'>
               <div className="grid grid-rows-3 gap-4">
@@ -681,115 +750,6 @@ const TeacherEditModal = ({
               <CircleUserRound className="inline w-5 h-5 mr-2" />
               {t('account', 'Account')}
             </h3>
-
-            {/* Grade Level */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                <BookOpen className="inline w-4 h-4 mr-2" />
-                {t('gradeLevel', 'Grade Level')}
-              </label>
-              <Dropdown
-                options={[
-                  { value: '', label: t('selectGradeLevel', 'Select Grade Level') },
-                  { value: '1', label: t('grade1', 'Grade 1') },
-                  { value: '2', label: t('grade2', 'Grade 2') },
-                  { value: '3', label: t('grade3', 'Grade 3') },
-                  { value: '4', label: t('grade4', 'Grade 4') },
-                  { value: '5', label: t('grade5', 'Grade 5') },
-                  { value: '6', label: t('grade6', 'Grade 6') }
-                ]}
-                value={editForm.gradeLevel}
-                onValueChange={(value) => handleFormChange('gradeLevel', value)}
-                placeholder={t('selectGradeLevel', 'Select Grade Level')}
-                contentClassName="max-h-[200px] overflow-y-auto"
-                disabled={false}
-                className='w-full'
-              />
-            </div>
-
-            {/* Teacher Employment & Status Information */}
-            <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4'>
-              {/* Employment Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('employmentType', 'Employment Type')}
-                </label>
-                <Dropdown
-                  options={[
-                    { value: '', label: t('selectEmploymentType', 'Select Type') },
-                    { value: 'ក្របខ័ណ្ឌ', label: t('framework', 'Framework/Permanent') },
-                    { value: 'កិច្ចសន្យា', label: t('contract', 'Contract') },
-                    { value: 'កិច្ចព្រមព្រៀង', label: t('agreement', 'Agreement') }
-                  ]}
-                  value={editForm.employment_type}
-                  onValueChange={(value) => handleFormChange('employment_type', value)}
-                  placeholder={t('selectEmploymentType', 'Select Type')}
-                  minWidth="w-full"
-                />
-              </div>
-
-              {/* Teacher Number */}
-              <div>
-                <label htmlFor="teacher_number" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('teacherNumber', 'Teacher Number')}
-                </label>
-                <input
-                  type="text"
-                  id="teacher_number"
-                  value={editForm.teacher_number}
-                  onChange={(e) => handleFormChange('teacher_number', e.target.value)}
-                  className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder={t('enterTeacherNumber', 'e.g., T00000001')}
-                  disabled
-                />
-              </div>
-
-              {/* Hire Date */}
-              <div>
-                <label htmlFor="hire_date" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('hireDate', 'Hire Date')}
-                </label>
-                <DatePickerWithDropdowns
-                  date={editForm.hire_date}
-                  onChange={(date) => handleFormChange('hire_date', date)}
-                  className="mt-1 block w-full"
-                />
-              </div>
-            </div>
-
-            {/* Director & Status */}
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4'>
-              {/* Is Director */}
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="isDirector"
-                  checked={editForm.isDirector}
-                  onChange={(e) => handleFormChange('isDirector', e.target.checked)}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="isDirector" className="ml-2 block text-sm font-medium text-gray-700">
-                  {t('isDirector', 'Is Director')}
-                </label>
-              </div>
-
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('status', 'Status')}
-                </label>
-                <Dropdown
-                  options={[
-                    { value: 'ACTIVE', label: t('active', 'Active') },
-                    { value: 'INACTIVE', label: t('inactive', 'Inactive') }
-                  ]}
-                  value={editForm.status}
-                  onValueChange={(value) => handleFormChange('status', value)}
-                  placeholder={t('selectStatus', 'Select Status')}
-                  minWidth="w-full"
-                />
-              </div>
-            </div>
 
             {/* Contact Information */}
             <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
