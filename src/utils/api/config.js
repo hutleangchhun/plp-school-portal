@@ -98,7 +98,9 @@ const ENDPOINTS = {
   },
   TEACHERS:{
     BASE: '/teachers',
+    GET_BY_ID: (teacherId) => `/teachers/${teacherId}`,
     TEACHER_ID: (teacherId) => `/teachers/${teacherId}`,
+    UPDATE: (teacherId) => `/teachers/${teacherId}`,
     TEACHER_BY_SCHOOL: (schoolId) => `/teachers?school_id=${schoolId}`,
   },
   CLASSES: {

@@ -8,7 +8,7 @@ import { DatePickerWithDropdowns } from '../ui/date-picker-with-dropdowns';
 import ProfileImage from '../ui/ProfileImage';
 import Dropdown from '../ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
-import { userService } from '../../utils/api/services/userService';
+import { teacherService } from '../../utils/api/services/teacherService';
 
 const TeacherEditModal = ({
   isOpen,
@@ -247,7 +247,12 @@ const TeacherEditModal = ({
     try {
       setLoading(true);
 
-      const userId = teacher.userId || teacher.user_id || teacher.id;
+      // Get teacher ID (primary identifier for teacher endpoint)
+      const teacherId = teacher.id || teacher.teacherId || teacher.teacher_id;
+
+      if (!teacherId) {
+        throw new Error('Teacher ID is required to update teacher information');
+      }
 
       // Normalize date to YYYY-MM-DD
       const formatDate = (val) => {
@@ -259,7 +264,7 @@ const TeacherEditModal = ({
         return `${y}-${m}-${day}`;
       };
 
-      // Backend expects snake_case keys on updateUser
+      // Backend expects snake_case keys for PATCH /teachers/:id endpoint
       const payload = {
         username: editForm.username?.trim(),
         first_name: editForm.firstName?.trim(),
@@ -299,16 +304,17 @@ const TeacherEditModal = ({
         if (payload[k] === undefined || payload[k] === null || payload[k] === '') delete payload[k];
       });
 
-      const response = await userService.updateUser(userId, payload);
+      // Use teacher service with PATCH /teachers/:id endpoint
+      const response = await teacherService.updateTeacher(teacherId, payload);
 
-      if (response) {
+      if (response && response.success) {
         showSuccess(t('teacherUpdatedSuccess', 'Teacher updated successfully'));
         handleClose();
         if (onTeacherUpdated) {
-          onTeacherUpdated(response);
+          onTeacherUpdated(response.data);
         }
       } else {
-        throw new Error('Failed to update teacher');
+        throw new Error(response?.error || 'Failed to update teacher');
       }
     } catch (error) {
       console.error('Error updating teacher:', error);
