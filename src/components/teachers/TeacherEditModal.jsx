@@ -9,6 +9,7 @@ import ProfileImage from '../ui/ProfileImage';
 import Dropdown from '../ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { teacherService } from '../../utils/api/services/teacherService';
+import { userService } from '../../utils/api/services/userService';
 
 const TeacherEditModal = ({
   isOpen,
