@@ -61,8 +61,11 @@ export const teacherService = {
     },
 
     // Update teacher by ID using PATCH /teachers/:id route
+    // Backend UpdateTeacherDto accepts: username, first_name, last_name, email, password, date_of_birth,
+    // gender, phone, nationality, ethnic_group, accessibility, weight_kg, height_cm, hire_date, isDirector, gradeLevel, status
     updateTeacher: async (teacherId, updateData) => {
         // Format data to match backend expectations (snake_case)
+        // NOTE: residence and placeOfBirth are NOT supported by the PATCH /teachers/:id endpoint
         const formattedData = {
             username: updateData.username?.trim() || undefined,
             first_name: updateData.first_name || updateData.firstName || undefined,
@@ -76,13 +79,11 @@ export const teacherService = {
             weight_kg: updateData.weight_kg || updateData.weight ? parseFloat(updateData.weight_kg || updateData.weight) : undefined,
             height_cm: updateData.height_cm || updateData.height ? parseFloat(updateData.height_cm || updateData.height) : undefined,
             ethnic_group: updateData.ethnic_group || updateData.ethnicGroup?.trim() || undefined,
-            grade_level: updateData.grade_level || updateData.gradeLevel || undefined,
-            accessibility: updateData.accessibility || undefined,
+            gradeLevel: updateData.grade_level || updateData.gradeLevel || undefined,
+            accessibility: updateData.accessibility && updateData.accessibility.length > 0 ? updateData.accessibility : undefined,
             hire_date: updateData.hire_date || updateData.hireDate || undefined,
             isDirector: updateData.isDirector || updateData.is_director || undefined,
             status: updateData.status || undefined,
-            residence: updateData.residence || undefined,
-            placeOfBirth: updateData.placeOfBirth || updateData.place_of_birth || undefined,
         };
 
         // Handle password if provided
