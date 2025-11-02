@@ -265,7 +265,6 @@ const TeacherEditModal = ({
       };
 
       // Backend expects snake_case keys for PATCH /teachers/:id endpoint
-      // NOTE: The endpoint does NOT support residence and placeOfBirth updates
       const payload = {
         username: editForm.username?.trim(),
         first_name: editForm.firstName?.trim(),
@@ -281,7 +280,18 @@ const TeacherEditModal = ({
         ethnic_group: editForm.ethnicGroup?.trim() || undefined,
         gradeLevel: editForm.gradeLevel || undefined,
         accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
-        // residence and placeOfBirth are not supported by PATCH /teachers/:id endpoint
+        residence: {
+          provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
+          districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
+          communeId: selectedResidenceCommune || editForm.residence.communeId || undefined,
+          villageId: selectedResidenceVillage || editForm.residence.villageId || undefined,
+        },
+        placeOfBirth: {
+          provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId || undefined,
+          districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId || undefined,
+          communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
+          villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
+        }
       };
 
       // Add password if provided
