@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X, Weight, Ruler, CircleUserRound } from 'lucide-react';
+import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X, Weight, Ruler, CircleUserRound, BookOpen } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
@@ -40,6 +40,7 @@ const TeacherEditModal = ({
     weight: '',
     height: '',
     ethnicGroup: '',
+    gradeLevel: '',
     accessibility: [],
     residence: {
       provinceId: '',
@@ -142,6 +143,7 @@ const TeacherEditModal = ({
         weight: fullData.weight_kg || fullData.weight || '',
         height: fullData.height_cm || fullData.height || '',
         ethnicGroup: fullData.ethnic_group || fullData.ethnicGroup || '',
+        gradeLevel: fullData.gradeLevel || fullData.grade_level || '',
         accessibility: Array.isArray(fullData.accessibility) ? fullData.accessibility : [],
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
@@ -196,6 +198,7 @@ const TeacherEditModal = ({
       weight: '',
       height: '',
       ethnicGroup: '',
+      gradeLevel: '',
       accessibility: [],
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
       placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
@@ -270,6 +273,7 @@ const TeacherEditModal = ({
         weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
         height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
         ethnic_group: editForm.ethnicGroup?.trim() || undefined,
+        grade_level: editForm.gradeLevel || undefined,
         accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
         residence: {
           provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
@@ -623,6 +627,32 @@ const TeacherEditModal = ({
               <CircleUserRound className="inline w-5 h-5 mr-2" />
               {t('account', 'Account')}
             </h3>
+
+            {/* Grade Level */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <BookOpen className="inline w-4 h-4 mr-2" />
+                {t('gradeLevel', 'Grade Level')}
+              </label>
+              <Dropdown
+                options={[
+                  { value: '', label: t('selectGradeLevel', 'Select Grade Level') },
+                  { value: '1', label: t('grade1', 'Grade 1') },
+                  { value: '2', label: t('grade2', 'Grade 2') },
+                  { value: '3', label: t('grade3', 'Grade 3') },
+                  { value: '4', label: t('grade4', 'Grade 4') },
+                  { value: '5', label: t('grade5', 'Grade 5') },
+                  { value: '6', label: t('grade6', 'Grade 6') }
+                ]}
+                value={editForm.gradeLevel}
+                onValueChange={(value) => handleFormChange('gradeLevel', value)}
+                placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                contentClassName="max-h-[200px] overflow-y-auto"
+                disabled={false}
+                className='w-full'
+              />
+            </div>
+
             {/* Contact Information */}
             <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
               <div>

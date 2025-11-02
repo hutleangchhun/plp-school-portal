@@ -88,26 +88,27 @@ export default function DirectorExamRecords({ user }) {
    */
   const fetchExamRecords = useCallback(async () => {
     try {
+      // Only proceed if a class is selected
+      if (!selectedClass) {
+        setStudentRecords([]);
+        setLoading(false);
+        stopLoading('fetchExamRecords');
+        return;
+      }
+
       setLoading(true);
       setError(null);
       startLoading('fetchExamRecords', t('loadingExamRecords', 'Loading exam records...'));
 
       let allRecords = [];
 
-      if (selectedClass) {
-        const response = await examHistoryService.getClassExamHistory(selectedClass);
-        if (response.success) {
-          allRecords = response.data || [];
-        }
-      } else {
-        // Fetch all records
-        const response = await examHistoryService.getAllStudentsExamHistory();
-        if (response.success) {
-          allRecords = response.data || [];
-        }
+      // Fetch exam records for the selected class
+      const response = await examHistoryService.getClassExamHistory(selectedClass);
+      if (response.success) {
+        allRecords = response.data || [];
       }
 
-      // Fetch all students
+      // Fetch all students in the class
       const studentsList = await fetchAllStudents();
 
       // Merge students with their exam records
@@ -124,6 +125,7 @@ export default function DirectorExamRecords({ user }) {
     } catch (error) {
       console.error('Error fetching exam records:', error);
       setError(error?.response?.data?.message || t('errorFetchingExamRecords', 'Failed to fetch exam records'));
+      setStudentRecords([]);
     } finally {
       setLoading(false);
       stopLoading('fetchExamRecords');
