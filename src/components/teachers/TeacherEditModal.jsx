@@ -40,9 +40,15 @@ const TeacherEditModal = ({
     newPassword: '',
     weight: '',
     height: '',
+    bmi: '',
     ethnicGroup: '',
     gradeLevel: '',
     accessibility: [],
+    employment_type: '',
+    teacher_number: '',
+    hire_date: null,
+    isDirector: false,
+    status: 'ACTIVE',
     residence: {
       provinceId: '',
       districtId: '',
@@ -130,6 +136,20 @@ const TeacherEditModal = ({
         }
       }
 
+      // Calculate BMI from weight and height if available
+      const calcBMI = (weight, height) => {
+        if (weight && height) {
+          const w = parseFloat(weight);
+          const h = parseFloat(height) / 100; // Convert cm to meters
+          return (w / (h * h)).toFixed(1);
+        }
+        return '';
+      };
+
+      const weight = fullData.weight_kg || fullData.weight || '';
+      const height = fullData.height_cm || fullData.height || '';
+      const bmi = fullData.bmi || calcBMI(weight, height);
+
       setEditForm({
         firstName: fullData.firstName || fullData.first_name || '',
         lastName: fullData.lastName || fullData.last_name || '',
@@ -141,11 +161,17 @@ const TeacherEditModal = ({
         nationality: fullData.nationality || '',
         profilePicture: fullData.profile_picture || fullData.profilePicture || '',
         newPassword: '', // Always empty for security
-        weight: fullData.weight_kg || fullData.weight || '',
-        height: fullData.height_cm || fullData.height || '',
+        weight: weight,
+        height: height,
+        bmi: bmi,
         ethnicGroup: fullData.ethnic_group || fullData.ethnicGroup || '',
         gradeLevel: fullData.gradeLevel || fullData.grade_level || '',
         accessibility: Array.isArray(fullData.accessibility) ? fullData.accessibility : [],
+        employment_type: fullData.employment_type || '',
+        teacher_number: fullData.teacher_number || fullData.teacherNumber || '',
+        hire_date: fullData.hire_date ? new Date(fullData.hire_date) : null,
+        isDirector: fullData.isDirector || fullData.is_director || false,
+        status: fullData.status || 'ACTIVE',
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
           districtId: fullData.residence?.districtId || fullData.district_id || '',
@@ -198,9 +224,15 @@ const TeacherEditModal = ({
       newPassword: '',
       weight: '',
       height: '',
+      bmi: '',
       ethnicGroup: '',
       gradeLevel: '',
       accessibility: [],
+      employment_type: '',
+      teacher_number: '',
+      hire_date: null,
+      isDirector: false,
+      status: 'ACTIVE',
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
       placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
     });
@@ -265,7 +297,8 @@ const TeacherEditModal = ({
         return `${y}-${m}-${day}`;
       };
 
-      // Backend expects snake_case keys for PATCH /teachers/:id endpoint
+      // Backend expects snake_case keys for PUT /users/{userId} endpoint
+      // This matches the actual working endpoint from the network logs
       const payload = {
         username: editForm.username?.trim(),
         first_name: editForm.firstName?.trim(),
@@ -278,9 +311,15 @@ const TeacherEditModal = ({
         profile_picture: editForm.profilePicture || undefined,
         weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
         height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
+        bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
         ethnic_group: editForm.ethnicGroup?.trim() || undefined,
         gradeLevel: editForm.gradeLevel || undefined,
         accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
+        employment_type: editForm.employment_type || undefined,
+        teacher_number: editForm.teacher_number || undefined,
+        hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
+        isDirector: editForm.isDirector || undefined,
+        status: editForm.status || undefined,
         residence: {
           provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
           districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
@@ -305,17 +344,25 @@ const TeacherEditModal = ({
         if (payload[k] === undefined || payload[k] === null || payload[k] === '') delete payload[k];
       });
 
-      // Use teacher service with PATCH /teachers/:id endpoint
-      const response = await teacherService.updateTeacher(teacherId, payload);
+      // Get user ID (from teacher.userId or teacher.user_id)
+      const userId = teacher.userId || teacher.user_id || teacher.id;
+      if (!userId) {
+        throw new Error('User ID is required to update teacher information');
+      }
 
-      if (response && response.success) {
+      // Use user service with PUT /users/{userId} endpoint (the actual working endpoint)
+      const response = await userService.updateUser(userId, payload);
+
+      // userService.updateUser returns the updated data directly (wrapped by handleApiResponse)
+      if (response) {
         showSuccess(t('teacherUpdatedSuccess', 'Teacher updated successfully'));
         handleClose();
         if (onTeacherUpdated) {
-          onTeacherUpdated(response.data);
+          // Pass the response data which contains the updated user information
+          onTeacherUpdated(response);
         }
       } else {
-        throw new Error(response?.error || 'Failed to update teacher');
+        throw new Error('Failed to update teacher');
       }
     } catch (error) {
       console.error('Error updating teacher:', error);
@@ -658,6 +705,90 @@ const TeacherEditModal = ({
                 disabled={false}
                 className='w-full'
               />
+            </div>
+
+            {/* Teacher Employment & Status Information */}
+            <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4'>
+              {/* Employment Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('employmentType', 'Employment Type')}
+                </label>
+                <Dropdown
+                  options={[
+                    { value: '', label: t('selectEmploymentType', 'Select Type') },
+                    { value: 'ក្របខ័ណ្ឌ', label: t('framework', 'Framework/Permanent') },
+                    { value: 'កិច្ចសន្យា', label: t('contract', 'Contract') },
+                    { value: 'កិច្ចព្រមព្រៀង', label: t('agreement', 'Agreement') }
+                  ]}
+                  value={editForm.employment_type}
+                  onValueChange={(value) => handleFormChange('employment_type', value)}
+                  placeholder={t('selectEmploymentType', 'Select Type')}
+                  minWidth="w-full"
+                />
+              </div>
+
+              {/* Teacher Number */}
+              <div>
+                <label htmlFor="teacher_number" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('teacherNumber', 'Teacher Number')}
+                </label>
+                <input
+                  type="text"
+                  id="teacher_number"
+                  value={editForm.teacher_number}
+                  onChange={(e) => handleFormChange('teacher_number', e.target.value)}
+                  className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={t('enterTeacherNumber', 'e.g., T00000001')}
+                  disabled
+                />
+              </div>
+
+              {/* Hire Date */}
+              <div>
+                <label htmlFor="hire_date" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('hireDate', 'Hire Date')}
+                </label>
+                <DatePickerWithDropdowns
+                  date={editForm.hire_date}
+                  onChange={(date) => handleFormChange('hire_date', date)}
+                  className="mt-1 block w-full"
+                />
+              </div>
+            </div>
+
+            {/* Director & Status */}
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4'>
+              {/* Is Director */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isDirector"
+                  checked={editForm.isDirector}
+                  onChange={(e) => handleFormChange('isDirector', e.target.checked)}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="isDirector" className="ml-2 block text-sm font-medium text-gray-700">
+                  {t('isDirector', 'Is Director')}
+                </label>
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('status', 'Status')}
+                </label>
+                <Dropdown
+                  options={[
+                    { value: 'ACTIVE', label: t('active', 'Active') },
+                    { value: 'INACTIVE', label: t('inactive', 'Inactive') }
+                  ]}
+                  value={editForm.status}
+                  onValueChange={(value) => handleFormChange('status', value)}
+                  placeholder={t('selectStatus', 'Select Status')}
+                  minWidth="w-full"
+                />
+              </div>
             </div>
 
             {/* Contact Information */}
