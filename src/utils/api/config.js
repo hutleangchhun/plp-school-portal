@@ -1,27 +1,36 @@
-// API Configuration - Uses production API for all environments
+// API Configuration - Environment-aware URL selection
 const getApiBaseUrl = () => {
-  // Use production API URL for both development and production
-  return import.meta.env.VITE_API_URL || 'https://plp-api.moeys.gov.kh/api/v1';
+  // Use environment variable if set, otherwise default based on environment
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // Default based on environment
+  if (import.meta.env.MODE === 'development') {
+    return 'http://localhost:8080/api/v1';
+  }
+
+  return 'https://plp-api.moeys.gov.kh/api/v1';
 };
 
 const API_BASE_URL = getApiBaseUrl();
 
-// HTTPS Configuration
+// HTTPS Configuration - Environment-aware
 export const HTTPS_CONFIG = {
   // API URLs
   apiUrls: {
     production: 'https://plp-api.moeys.gov.kh/api/v1',
-    development: 'https://plp-api.moeys.gov.kh/api/v1'
+    development: 'http://localhost:8080/api/v1'
   },
 
   // Static asset URLs
   staticUrls: {
     production: 'https://plp-api.moeys.gov.kh',
-    development: 'https://plp-api.moeys.gov.kh'
+    development: 'http://localhost:8080'
   },
 
-  // Fallback behavior
-  enableHttpFallback: false,
+  // Fallback behavior - disabled for development, enabled for production
+  enableHttpFallback: import.meta.env.MODE === 'production',
 
   // Timeout settings
   connectionTimeout: 10000,
@@ -162,8 +171,17 @@ export const HTTP_STATUS = {
 
 // Function to get static asset base URL
 export const getStaticAssetBaseUrl = () => {
-  // Use production static URL for all environments
-  return import.meta.env.VITE_STATIC_BASE_URL || 'https://plp-api.moeys.gov.kh';
+  // Use environment variable if set
+  if (import.meta.env.VITE_STATIC_BASE_URL) {
+    return import.meta.env.VITE_STATIC_BASE_URL;
+  }
+
+  // Default based on environment
+  if (import.meta.env.MODE === 'development') {
+    return 'http://localhost:8080';
+  }
+
+  return 'https://plp-api.moeys.gov.kh';
 };
 
 // Function to test API availability
@@ -207,8 +225,8 @@ export const testApiConnection = async (baseUrl) => {
 
 // Function to get the API URL
 export const getBestApiUrl = async () => {
-  // Use production API URL for all environments
-  return import.meta.env.VITE_API_URL || 'https://plp-api.moeys.gov.kh/api/v1';
+  // Return the environment-aware API URL
+  return getApiBaseUrl();
 };
 
 // Main API configuration object

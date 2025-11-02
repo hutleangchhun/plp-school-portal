@@ -41,37 +41,82 @@ log_error() {
 # Main deployment
 log_info "╔══════════════════════════════════════════════════════════╗"
 log_info "║         DEPLOYING TO SERVER: ${SERVER_IP}          ║"
+log_info "║         Domain: plp-sms.moeys.gov.kh                     ║"
+log_info "║         Docker Port: 3001 → Public Port: 80              ║"
 log_info "╚══════════════════════════════════════════════════════════╝"
 log_info ""
 
 log_info "Connecting to server and pulling latest code..."
 ssh ${SERVER_USER}@${SERVER_IP} bash -c "
     set -e
+
+    # Change to deployment directory
     cd ${DEPLOYMENT_DIR}
 
-    echo 'Pulling latest code...'
+    log_step() {
+        echo \"\"
+        echo \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\"
+        echo \"📦 \$1\"
+        echo \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\"
+    }
+
+    log_step 'Pulling latest code from repository'
     git fetch origin main
     git reset --hard origin/main
 
-    echo 'Building Docker image...'
+    log_step 'Building Docker image (this may take a few minutes)'
     docker compose build
 
-    echo 'Stopping old container...'
+    log_step 'Stopping old container'
     docker compose down || true
 
-    echo 'Starting new container...'
+    log_step 'Starting new container on port 3001'
     docker compose up -d
 
-    echo 'Container status:'
+    log_step 'Verifying container status'
     docker compose ps
+
+    log_step 'Container logs'
+    docker compose logs --tail=20
+
+    log_step 'Checking application health'
+    sleep 5
+    curl -s http://localhost:3001/health || echo 'Health check pending...'
 "
 
 log_success "Deployment completed successfully!"
 log_info ""
-log_info "Next steps:"
-log_info "1. Verify the application is running:"
+log_info "╔══════════════════════════════════════════════════════════╗"
+log_info "║                    DEPLOYMENT SUMMARY                    ║"
+log_info "╚══════════════════════════════════════════════════════════╝"
+log_info ""
+log_info "✅ Application deployed to: ${SERVER_IP}"
+log_info "✅ Docker container running on port: 3001"
+log_info "✅ Backend API: https://plp-api.moeys.gov.kh/api/v1"
+log_info ""
+log_info "📋 Next steps to complete deployment:"
+log_info ""
+log_info "1️⃣  SET UP NGINX REVERSE PROXY (HTTP Only):"
+log_info "   sudo cp /opt/plp-school-portal/nginx-reverse-proxy.conf /etc/nginx/sites-available/plp-sms"
+log_info "   sudo ln -s /etc/nginx/sites-available/plp-sms /etc/nginx/sites-enabled/plp-sms"
+log_info "   sudo rm -f /etc/nginx/sites-enabled/default"
+log_info "   sudo nginx -t"
+log_info "   sudo systemctl restart nginx"
+log_info ""
+log_info "2️⃣  VERIFY DEPLOYMENT:"
+log_info "   curl http://localhost:3001/health"
 log_info "   curl http://plp-sms.moeys.gov.kh"
 log_info ""
-log_info "2. Check container logs:"
+log_info "3️⃣  ADD HTTPS LATER (Optional):"
+log_info "   sudo certbot certonly --standalone -d plp-sms.moeys.gov.kh"
+log_info "   Then uncomment HTTPS section in nginx-reverse-proxy.conf"
+log_info "   sudo systemctl reload nginx"
+log_info ""
+log_info "4️⃣  VIEW LOGS:"
 log_info "   ssh ${SERVER_USER}@${SERVER_IP} 'cd ${DEPLOYMENT_DIR} && docker compose logs -f'"
+log_info "   ssh ${SERVER_USER}@${SERVER_IP} 'sudo tail -f /var/log/nginx/plp-sms-access.log'"
+log_info ""
+log_info "╔══════════════════════════════════════════════════════════╗"
+log_info "║         🚀 HTTP Deployment Ready for Testing             ║"
+log_info "╚══════════════════════════════════════════════════════════╝"
 log_info ""

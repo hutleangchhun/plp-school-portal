@@ -7,10 +7,14 @@ services:
       dockerfile: Dockerfile
     container_name: teacher-portal-frontend
     ports:
+      # Docker runs on port 3001 internally
+      # Port 80 on host is forwarded by nginx reverse proxy
       - "3001:80"
     restart: unless-stopped
     environment:
       - NODE_ENV=production
+      - VITE_API_URL=https://plp-api.moeys.gov.kh/api/v1
+      - VITE_STATIC_BASE_URL=https://plp-api.moeys.gov.kh
     volumes: []
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
