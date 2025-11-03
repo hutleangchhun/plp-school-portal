@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, ChevronDown, X, Users, Eye } from 'lucide-react';
+import { Search, Download, ChevronDown, X, Users, Eye, Edit2, User } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../../components/ui/Button';
@@ -14,6 +14,7 @@ import { prepareAndExportExcel, prepareAndExportCSV, prepareAndExportPDF, getTim
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import EmptyState from '@/components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
+import StudentEditModal from '../../components/students/StudentEditModal';
 
 export default function TeacherStudentsManagement({ user }) {
   const { t } = useLanguage();
@@ -26,9 +27,8 @@ export default function TeacherStudentsManagement({ user }) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [loadingStudentDetails, setLoadingStudentDetails] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -171,66 +171,24 @@ export default function TeacherStudentsManagement({ user }) {
     setShowExportDropdown(false);
   };
 
-  const handleViewStudent = async (student) => {
-    try {
-      setShowViewModal(true);
-      setLoadingStudentDetails(true);
-      setSelectedStudent(student); // Show basic info first
-
-      console.log('===== VIEW STUDENT DEBUG =====');
-      console.log('1. Original student data:', student);
-      console.log('2. Student userId:', student.userId);
-
-      // Fetch detailed student information using userId
-      const userId = student.userId || student.user?.id;
-      if (userId) {
-        console.log('3. Fetching user details for user ID:', userId);
-        const detailedUser = await userService.getUserByID(userId);
-        console.log('4. Detailed user API response:', detailedUser);
-        console.log('5. Has residence?', !!detailedUser.residence);
-        console.log('6. Has placeOfBirth?', !!detailedUser.placeOfBirth);
-
-        // Merge detailed user data with student data
-        const mergedData = {
-          ...student,
-          ...detailedUser,
-          // Preserve student-specific fields that shouldn't be overwritten
-          studentId: student.studentId,
-          academicYear: student.academicYear,
-          gradeLevel: student.gradeLevel,
-          class: student.class,
-          user: student.user,
-          // Handle both isActive and is_active field names
-          isActive: detailedUser.is_active !== undefined ? detailedUser.is_active :
-                    detailedUser.isActive !== undefined ? detailedUser.isActive :
-                    student.isActive
-        };
-        console.log('7. Final merged data:', mergedData);
-        console.log('8. Final data has residence?', !!mergedData.residence);
-        console.log('9. Final data has placeOfBirth?', !!mergedData.placeOfBirth);
-        console.log('===== END DEBUG =====');
-        setSelectedStudent(mergedData);
-      } else {
-        console.warn('No userId found in student data!');
-        console.log('Student object keys:', Object.keys(student));
-      }
-    } catch (error) {
-      console.error('Error fetching student details:', error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.status,
-        response: error.response
-      });
-      showError(t('failedToLoadDetails', 'Failed to load student details'));
-    } finally {
-      setLoadingStudentDetails(false);
-    }
+  const handleViewStudent = (student) => {
+    // Open StudentEditModal directly for viewing and editing
+    setEditingStudent(student);
+    setShowEditModal(true);
   };
 
-  const handleCloseViewModal = () => {
-    setShowViewModal(false);
-    setSelectedStudent(null);
-    setLoadingStudentDetails(false);
+  const handleEditStudent = (student) => {
+    setEditingStudent(student);
+    setShowEditModal(true);
+  };
+
+  const handleStudentUpdated = (updatedStudent) => {
+    setShowEditModal(false);
+    setEditingStudent(null);
+    // Refresh the student list
+    setTimeout(async () => {
+      await loadStudents();
+    }, 500);
   };
 
   // Dropdown options
@@ -273,13 +231,13 @@ export default function TeacherStudentsManagement({ user }) {
       )
     },
     {
-      key: 'class',
-      header: t('class', 'Class'),
-      accessor: 'className',
+      key: 'gradeLevel',
+      header: t('gradeLevel', 'Grade Level'),
+      accessor: 'gradeLevel',
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (student) => (
-        <p>{student?.class?.name || 'N/A'}</p>
+        <p>{student?.gradeLevel || 'N/A'}</p>
       )
     },
     {
@@ -305,6 +263,13 @@ export default function TeacherStudentsManagement({ user }) {
             title={t('viewDetails', 'View Details')}
           >
             <Eye className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => handleEditStudent(student)}
+            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
+            title={t('editStudent', 'Edit Student')}
+          >
+            <Edit2 className="h-4 w-4" />
           </button>
         </div>
       )
@@ -422,338 +387,17 @@ export default function TeacherStudentsManagement({ user }) {
             />
           )}
 
-          {/* View Student Modal */}
-          {selectedStudent && (
-            <Modal
-              isOpen={showViewModal}
-              onClose={handleCloseViewModal}
-              title={t('studentDetails', 'Student Details')}
-              size="2xl"
-              height='lg'
-            >
-              {loadingStudentDetails && (
-                <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
-                  <DynamicLoader message={t('loadingDetails', 'Loading details...')} />
-                </div>
-              )}
-              <div className="space-y-6">
-                {/* Student Avatar and Basic Info */}
-                <div className="flex items-center space-x-4 pb-4 border-b border-gray-200">
-                  <div className="flex-shrink-0 h-16 w-16 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                    <User className="h-8 w-8" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      {selectedStudent.name ||
-                       (selectedStudent.firstName || selectedStudent.lastName
-                        ? `${selectedStudent.firstName || ''} ${selectedStudent.lastName || ''}`.trim()
-                        : selectedStudent.user?.first_name || selectedStudent.user?.last_name
-                        ? `${selectedStudent.user?.first_name || ''} ${selectedStudent.user?.last_name || ''}`.trim()
-                        : selectedStudent.username || selectedStudent.user?.username || t('noName', 'No Name'))}
-                    </h3>
-                    <div className="mt-1">
-                      <Badge
-                        color={(selectedStudent.isActive || selectedStudent.is_active) ? 'green' : 'gray'}
-                        variant="filled"
-                      >
-                        {(selectedStudent.isActive || selectedStudent.is_active) ? t('active', 'Active') : t('inactive', 'Inactive')}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Personal Information */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                    {t('personalInformation', 'Personal Information')}
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('firstName', 'First Name')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.firstName || selectedStudent.first_name || selectedStudent.user?.first_name || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('lastName', 'Last Name')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.lastName || selectedStudent.last_name || selectedStudent.user?.last_name || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('username', 'Username')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.username || selectedStudent.user?.username || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('gender', 'Gender')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.gender
-                          ? (selectedStudent.gender === 'MALE' ? t('male', 'Male') : t('female', 'Female'))
-                          : 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contact Information */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                    {t('contactInformation', 'Contact Information')}
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('email', 'Email')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.email || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('phone', 'Phone')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.phone || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('address', 'Address')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.address || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Academic Information */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                    {t('academicInformation', 'Academic Information')}
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('class', 'Class')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.class?.name || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('studentId', 'Student ID')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.studentId || selectedStudent.id || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('gradeLevel', 'Grade Level')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.gradeLevel || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('academicYear', 'Academic Year')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.academicYear || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('enrollmentDate', 'Enrollment Date')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.enrollmentDate
-                          ? new Date(selectedStudent.enrollmentDate).toLocaleDateString()
-                          : 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Additional Information */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                    {t('additionalInformation', 'Additional Information')}
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('dateOfBirth', 'Date of Birth')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {(selectedStudent.dateOfBirth || selectedStudent.date_of_birth)
-                          ? new Date(selectedStudent.dateOfBirth || selectedStudent.date_of_birth).toLocaleDateString()
-                          : 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('nationality', 'Nationality')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.nationality || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('role', 'Role')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.roleNameKh || selectedStudent.roleNameEn || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('accountCreated', 'Account Created')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.created_at
-                          ? new Date(selectedStudent.created_at).toLocaleDateString()
-                          : 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('lastLogin', 'Last Login')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.last_login
-                          ? new Date(selectedStudent.last_login).toLocaleString()
-                          : t('neverLoggedIn', 'Never logged in')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Residence Information */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                    {t('residenceInformation', 'Residence Information')}
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('province', 'Province')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.residence?.province?.province_name_kh ||
-                         selectedStudent.residence?.province?.province_name_en ||
-                         selectedStudent.residence?.province?.name || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('district', 'District')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.residence?.district?.district_name_kh ||
-                         selectedStudent.residence?.district?.district_name_en ||
-                         selectedStudent.residence?.district?.name || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('commune', 'Commune')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.residence?.commune?.commune_name_kh ||
-                         selectedStudent.residence?.commune?.commune_name_en ||
-                         selectedStudent.residence?.commune?.name || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('village', 'Village')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.residence?.village?.village_name_kh ||
-                         selectedStudent.residence?.village?.village_name_en ||
-                         selectedStudent.residence?.village?.name || 'N/A'}
-                      </p>
-                    </div>
-                    {selectedStudent.residence?.fullAddress && (
-                      <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-gray-500">
-                          {t('fullAddress', 'Full Address')}
-                        </label>
-                        <p className="mt-1 text-sm text-gray-900">
-                          {selectedStudent.residence.fullAddress}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Place of Birth Information */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                    {t('placeOfBirth', 'Place of Birth')}
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('province', 'Province')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.placeOfBirth?.province?.province_name_kh ||
-                         selectedStudent.placeOfBirth?.province?.province_name_en ||
-                         selectedStudent.placeOfBirth?.province?.name || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('district', 'District')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.placeOfBirth?.district?.district_name_kh ||
-                         selectedStudent.placeOfBirth?.district?.district_name_en ||
-                         selectedStudent.placeOfBirth?.district?.name || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('commune', 'Commune')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.placeOfBirth?.commune?.commune_name_kh ||
-                         selectedStudent.placeOfBirth?.commune?.commune_name_en ||
-                         selectedStudent.placeOfBirth?.commune?.name || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">
-                        {t('village', 'Village')}
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {selectedStudent.placeOfBirth?.village?.village_name_kh ||
-                         selectedStudent.placeOfBirth?.village?.village_name_en ||
-                         selectedStudent.placeOfBirth?.village?.name || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Modal>
-          )}
+          {/* Edit Student Modal */}
+          <StudentEditModal
+            isOpen={showEditModal}
+            onClose={() => {
+              setShowEditModal(false);
+              setEditingStudent(null);
+            }}
+            student={editingStudent}
+            onStudentUpdated={handleStudentUpdated}
+          />
         </FadeInSection>
       </div>
     </PageTransition>

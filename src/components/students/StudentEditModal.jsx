@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X, Weight, Ruler, CircleUserRound } from 'lucide-react';
+import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X, Weight, Ruler, CircleUserRound, BookOpen } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
@@ -39,8 +39,13 @@ const StudentEditModal = ({
     newPassword: '',
     weight: '',
     height: '',
+    bmi: '',
     ethnicGroup: '',
     accessibility: [],
+    academicYear: '',
+    gradeLevel: '',
+    isKindergarten: false,
+    studentNumber: '',
     residence: {
       provinceId: '',
       districtId: '',
@@ -117,16 +122,36 @@ const StudentEditModal = ({
       setLoading(true);
 
       const userId = student.userId || student.user_id || student.id;
+
+      // Start with student data from the list
       let fullData = student;
 
+      // Fetch full user details including nested student object
       if (userId) {
         try {
           const resp = await userService.getUserByID(userId);
-          fullData = resp?.data || resp || student;
+          const fetchedUserData = resp?.data || resp;
+
+          if (fetchedUserData) {
+            fullData = fetchedUserData;
+          }
         } catch (error) {
           console.warn('Failed to fetch full user data:', error);
+          // Continue with list data
         }
       }
+
+      // Extract student object - API returns nested student object with camelCase fields
+      const studentObj = fullData.student || fullData;
+
+      console.log('StudentEditModal: Extracted student data:', {
+        gradeLevel: studentObj.gradeLevel,
+        academicYear: studentObj.academicYear,
+        studentNumber: studentObj.studentNumber,
+        isKidgardener: studentObj.isKidgardener,
+        is_kidgardener: studentObj.is_kidgardener,
+        fullStudentObj: studentObj
+      });
 
       setEditForm({
         firstName: fullData.firstName || fullData.first_name || '',
@@ -141,8 +166,14 @@ const StudentEditModal = ({
         newPassword: '', // Always empty for security
         weight: fullData.weight_kg || fullData.weight || '',
         height: fullData.height_cm || fullData.height || '',
+        bmi: fullData.bmi || '',
         ethnicGroup: fullData.ethnic_group || fullData.ethnicGroup || '',
         accessibility: Array.isArray(fullData.accessibility) ? fullData.accessibility : [],
+        // Extract academic fields from nested student object (camelCase)
+        academicYear: (studentObj.academicYear || '').toString(),
+        gradeLevel: (studentObj.gradeLevel || '').toString(),
+        isKindergarten: studentObj.isKidgardener !== undefined ? studentObj.isKidgardener : (studentObj.is_kidgardener || false),
+        studentNumber: (studentObj.studentNumber || '').toString(),
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
           districtId: fullData.residence?.districtId || fullData.district_id || '',
@@ -195,8 +226,13 @@ const StudentEditModal = ({
       newPassword: '',
       weight: '',
       height: '',
+      bmi: '',
       ethnicGroup: '',
       accessibility: [],
+      academicYear: '',
+      gradeLevel: '',
+      isKindergarten: false,
+      studentNumber: '',
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
       placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
     });
@@ -256,7 +292,7 @@ const StudentEditModal = ({
         return `${y}-${m}-${day}`;
       };
 
-      // Backend expects snake_case keys on updateUser
+      // Backend expects snake_case keys on updateUser, but student fields in nested camelCase object
       const payload = {
         username: editForm.username?.trim(),
         first_name: editForm.firstName?.trim(),
@@ -269,19 +305,27 @@ const StudentEditModal = ({
         profile_picture: editForm.profilePicture || undefined,
         weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
         height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
+        bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
         ethnic_group: editForm.ethnicGroup?.trim() || undefined,
         accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
+        // Student fields sent in nested object with camelCase names
+        student: {
+          academicYear: editForm.academicYear && editForm.academicYear.trim() ? editForm.academicYear.trim() : undefined,
+          gradeLevel: editForm.gradeLevel && editForm.gradeLevel.trim() ? editForm.gradeLevel.trim() : undefined,
+          isKidgardener: Boolean(editForm.isKindergarten),  // Always send boolean, even if false
+          studentNumber: editForm.studentNumber && editForm.studentNumber.trim() ? editForm.studentNumber.trim() : undefined,
+        },
         residence: {
-          provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
-          districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
-          communeId: selectedResidenceCommune || editForm.residence.communeId || undefined,
-          villageId: selectedResidenceVillage || editForm.residence.villageId || undefined,
+          provinceId: selectedResidenceProvince ? Number(selectedResidenceProvince) : (editForm.residence.provinceId ? Number(editForm.residence.provinceId) : undefined),
+          districtId: selectedResidenceDistrict ? Number(selectedResidenceDistrict) : (editForm.residence.districtId ? Number(editForm.residence.districtId) : undefined),
+          communeId: selectedResidenceCommune ? Number(selectedResidenceCommune) : (editForm.residence.communeId ? Number(editForm.residence.communeId) : undefined),
+          villageId: selectedResidenceVillage ? Number(selectedResidenceVillage) : (editForm.residence.villageId ? Number(editForm.residence.villageId) : undefined),
         },
         placeOfBirth: {
-          provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId || undefined,
-          districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId || undefined,
-          communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
-          villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
+          provinceId: selectedBirthProvince ? Number(selectedBirthProvince) : (editForm.placeOfBirth.provinceId ? Number(editForm.placeOfBirth.provinceId) : undefined),
+          districtId: selectedBirthDistrict ? Number(selectedBirthDistrict) : (editForm.placeOfBirth.districtId ? Number(editForm.placeOfBirth.districtId) : undefined),
+          communeId: selectedBirthCommune ? Number(selectedBirthCommune) : (editForm.placeOfBirth.communeId ? Number(editForm.placeOfBirth.communeId) : undefined),
+          villageId: selectedBirthVillage ? Number(selectedBirthVillage) : (editForm.placeOfBirth.villageId ? Number(editForm.placeOfBirth.villageId) : undefined),
         }
       };
 
@@ -290,12 +334,44 @@ const StudentEditModal = ({
         payload.newPassword = editForm.newPassword.trim();
       }
 
-      // Remove undefined/empty values
-      Object.keys(payload).forEach(k => {
-        if (payload[k] === undefined || payload[k] === null || payload[k] === '') delete payload[k];
+      console.log('StudentEditModal: Payload before cleanup:', payload);
+      console.log('StudentEditModal: Form data:', {
+        academicYear: editForm.academicYear,
+        gradeLevel: editForm.gradeLevel,
+        studentNumber: editForm.studentNumber,
+        isKindergarten: editForm.isKindergarten
       });
 
-      const response = await userService.updateUser(userId, payload);
+      // Remove undefined/empty values - but keep empty strings and false booleans
+      const cleanPayload = {};
+      Object.keys(payload).forEach(k => {
+        const value = payload[k];
+
+        // Handle nested objects (residence, placeOfBirth, student)
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          const cleanedObj = {};
+          Object.keys(value).forEach(nestedKey => {
+            const nestedValue = value[nestedKey];
+            // Keep value if it's not undefined or null (includes false, 0, empty string, etc.)
+            if (nestedValue !== undefined && nestedValue !== null) {
+              cleanedObj[nestedKey] = nestedValue;
+            }
+          });
+          // Only add the object if it has properties
+          if (Object.keys(cleanedObj).length > 0) {
+            cleanPayload[k] = cleanedObj;
+          }
+        } else if (value !== undefined && value !== null) {
+          // Add non-null/undefined values (includes false, 0, empty string, etc.)
+          cleanPayload[k] = value;
+        }
+      });
+
+      console.log('StudentEditModal: Payload after cleanup:', cleanPayload);
+      console.log('StudentEditModal: Student object in payload:', cleanPayload.student);
+      console.log('StudentEditModal: isKidgardener value:', cleanPayload.student?.isKidgardener, 'type:', typeof cleanPayload.student?.isKidgardener);
+
+      const response = await userService.updateUser(userId, cleanPayload);
 
       if (response) {
         showSuccess(t('studentUpdatedSuccess', 'Student updated successfully'));
@@ -623,6 +699,77 @@ const StudentEditModal = ({
                       </label>
                     ))}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Academic Information */}
+            <div className='border-t pt-4 mt-4'>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                {t('academicInformation', 'Academic Information')}
+              </h3>
+              <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
+                <div>
+                  <label htmlFor="studentNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('studentNumber', 'Student Number')}
+                  </label>
+                  <input
+                    type="text"
+                    id="studentNumber"
+                    value={editForm.studentNumber}
+                    onChange={(e) => handleFormChange('studentNumber', e.target.value)}
+                    className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder={t('enterStudentNumber', 'Enter student number')}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="academicYear" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('academicYear', 'Academic Year')}
+                  </label>
+                  <input
+                    type="text"
+                    id="academicYear"
+                    value={editForm.academicYear}
+                    onChange={(e) => handleFormChange('academicYear', e.target.value)}
+                    className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder={t('enterAcademicYear', 'e.g., 2024')}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <BookOpen className="inline w-4 h-4 mr-2" />
+                    {t('gradeLevel', 'Grade Level')}
+                  </label>
+                  <Dropdown
+                    options={[
+                      { value: '', label: t('selectGradeLevel', 'Select Grade Level') },
+                      { value: '1', label: t('grade1', 'Grade 1') },
+                      { value: '2', label: t('grade2', 'Grade 2') },
+                      { value: '3', label: t('grade3', 'Grade 3') },
+                      { value: '4', label: t('grade4', 'Grade 4') },
+                      { value: '5', label: t('grade5', 'Grade 5') },
+                      { value: '6', label: t('grade6', 'Grade 6') }
+                    ]}
+                    value={editForm.gradeLevel}
+                    onValueChange={(value) => handleFormChange('gradeLevel', value)}
+                    placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                    contentClassName="max-h-[200px] overflow-y-auto"
+                    disabled={false}
+                    className='w-full'
+                  />
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editForm.isKindergarten}
+                      onChange={(e) => handleFormChange('isKindergarten', e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 h-4 w-4"
+                    />
+                    <span className="ml-2 text-sm font-medium text-gray-700">
+                      {t('isKindergarten', 'Is Kindergarten')}
+                    </span>
+                  </label>
                 </div>
               </div>
             </div>

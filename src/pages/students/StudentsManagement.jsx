@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, MinusCircle, Edit2, Users, ChevronDown, Download, X, ArrowRightLeft } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, Users, ChevronDown, Download, X, ArrowRightLeft, Eye, User } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -17,6 +17,7 @@ import { Table } from '../../components/ui/Table';
 import { exportStudentsToExcel } from '../../utils/studentExportUtils';
 import StudentEditModal from '../../components/students/StudentEditModal';
 import StudentActionsModal from '../../components/students/StudentActionsModal';
+import Modal from '../../components/ui/Modal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
@@ -1153,6 +1154,12 @@ export default function StudentsManagement() {
     }
   };
 
+  // Handle view student - open StudentEditModal directly
+  const handleViewStudent = (student) => {
+    setEditingStudent(student);
+    setShowEditModal(true);
+  };
+
   // Handle edit student
   const handleEditStudent = (student) => {
     console.log('Edit button clicked for student:', student);
@@ -1293,13 +1300,13 @@ export default function StudentsManagement() {
       )
     },
     {
-      key: 'className',
-      header: t('class', 'Class'),
-      accessor: 'className',
+      key: 'gradeLevel',
+      header: t('gradeLevel', 'Grade Level'),
+      accessor: 'gradeLevel',
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (student) => (
-        <p>{student?.class?.name || 'N/A'}</p>
+        <p>{student?.gradeLevel || 'N/A'}</p>
       )
     },
     {
@@ -1321,6 +1328,16 @@ export default function StudentsManagement() {
       cellClassName: 'text-left text-sm font-medium',
       render: (student) => (
         <div className="flex items-center space-x-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewStudent(student);
+            }}
+            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+            title={t('viewDetails', 'View Details')}
+          >
+            <Eye className="h-4 w-4" />
+          </button>
           <Button
             onClick={(e) => {
               e.stopPropagation();
@@ -1328,7 +1345,7 @@ export default function StudentsManagement() {
             }}
             variant="ghost"
             size="sm"
-            className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 hover:scale-110"
+            className="text-green-600 hover:text-green-900 hover:bg-green-50 hover:scale-110"
             title={t('editStudent', 'Edit student')}
           >
             <Edit2 className="h-4 w-4" />

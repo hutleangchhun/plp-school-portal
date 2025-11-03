@@ -92,6 +92,12 @@ export const km = {
   height: 'កម្ពស់',
   ethnicGroup: 'ក្រុមជនជាតិភាគតិច',
   accessibility: 'លក្ខណ:ពិសេស',
+  selectEmploymentType: 'ជ្រើសរើសប្រភេទការងារ',
+  employmentType: 'ប្រភេទការងារ',
+  framework: 'ក្របខ័ណ្ឌ',
+  contract: 'កិច្ចសន្យា',
+  agreement: 'កិច្ចព្រមព្រៀង',
+  selectGradeLevel: 'ជ្រើសរើសកម្រិតថ្នាក់',
   
   // Location fields
   provinceId: 'លេខកំណត់ខេត្ត',
@@ -825,7 +831,21 @@ export const km = {
   primaryEducationDepartment: 'នាយកដ្ឋានបឋមសិក្សា',
   moeysOfCambodia: 'ក្រសួងអប់រំ យុវជន និងកីឡា',
   schoolInformation: 'ព័ត៌មានសាលារៀន',
-  
+  schoolId: 'លេខសាលារៀន',
+  enterSchoolId: 'បញ្ចូលលេខសាលារៀន',
+  schoolProvince: 'ខេត្តសាលារៀន',
+  schoolDistrict: 'ស្រុកសាលារៀន',
+  academicInformation: 'ព័ត៌មានឆ្នាំសិក្សា',
+  academicYear: 'ឆ្នាំសិក្សា',
+  enterAcademicYear: 'ឧ. ២០២៤',
+  studentNumber: 'លេខសិស្ស',
+  enterStudentNumber: 'បញ្ចូលលេខសិស្ស',
+  gradeLevel: 'ថ្នាក់រៀន',
+  enterGradeLevel: 'ឧ. ១, ២, ៣...',
+  isKindergarten: 'ថ្នាក់ព្រឹត្តិបត្របាលកុមារ',
+  yes: 'បាទ/ចាស',
+  no: 'ទេ',
+
   // Form placeholders
   sectionPlaceholder: 'ឧ. ក, ខ, គ',
   capacityPlaceholder: 'អតិបរមា ២០០ សិស្ស',
@@ -857,6 +877,8 @@ export const km = {
   studentUpdatedSuccess: 'បានកែប្រែព័ត៌មានសិស្សដោយជោគជ័យ',
   failedUpdateStudent: 'បរាជ័យក្នុងការកែប្រែព័ត៌មានសិស្ស',
   unauthorizedClassAccess: 'អ្នកមិនមានសិទ្ធិមើលសិស្សពីថ្នាក់នេះទេ',
+  teacherUpdatedSuccess: 'បានកែប្រែព័ត៌មានគ្រូដោយជោគជ័យ',
+  failedUpdateTeacher: 'បរាជ័យក្នុងការកែប្រែព័ត៌មានគ្រូ',
 
   // Additional toast messages
   achievementAddedSuccessfully: 'បានបន្ថែមសមិទ្ធិផលដោយជោគជ័យ',

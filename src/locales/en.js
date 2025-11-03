@@ -83,6 +83,12 @@ export const en = {
   teacherNumber: 'Teacher Number',
   teacherId: 'Teacher ID',
   enterNewPassword: 'Enter new password',
+  selectEmploymentType: 'Select Employment Type',
+  employmentType: 'Employment Type',
+  framework: 'Framework/Permanent',
+  contract: 'Contract',
+  agreement: 'Agreement',
+  selectGradeLevel: 'Select Grade Level',
   
   // Location fields
   provinceId: 'Province ID',
@@ -650,6 +656,20 @@ export const en = {
   primaryEducationDepartment: 'Primary Education Department',
   moeysOfCambodia: 'Moeys of Cambodia',
   schoolInformation: 'School Information',
+  schoolId: 'School ID',
+  enterSchoolId: 'Enter school ID',
+  schoolProvince: 'School Province',
+  schoolDistrict: 'School District',
+  academicInformation: 'Academic Information',
+  academicYear: 'Academic Year',
+  enterAcademicYear: 'e.g., 2024',
+  studentNumber: 'Student Number',
+  enterStudentNumber: 'Enter student number',
+  gradeLevel: 'Grade Level',
+  enterGradeLevel: 'e.g., 1, 2, 3...',
+  isKindergarten: 'Is Kindergarten',
+  yes: 'Yes',
+  no: 'No',
   
   // Form placeholders
   sectionPlaceholder: 'e.g., A, B, C',
@@ -677,6 +697,8 @@ export const en = {
   studentUpdatedSuccess: 'Student updated successfully',
   failedUpdateStudent: 'Failed to update student',
   unauthorizedClassAccess: 'You do not have permission to view students from this class',
+  teacherUpdatedSuccess: 'Teacher updated successfully',
+  failedUpdateTeacher: 'Failed to update teacher',
 
   // Additional toast messages  
   achievementAddedSuccessfully: 'Achievement added successfully',
