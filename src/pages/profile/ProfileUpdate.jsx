@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Save, User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler } from 'lucide-react';
+import { Save, User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler, Download, QrCode as QrCodeIcon } from 'lucide-react';
 import * as RadioGroup from '@radix-ui/react-radio-group';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -16,7 +16,7 @@ import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 export default function ProfileUpdate({ user, setUser }) {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
-  
+
   const [formData, setFormData] = useState({
     id: '',
     username: '',
@@ -24,6 +24,7 @@ export default function ProfileUpdate({ user, setUser }) {
     last_name: '',
     fullname: '',
     email: '',
+    roleId: '',
     newPassword: '',
     date_of_birth: '',
     gender: 'MALE',
@@ -34,10 +35,11 @@ export default function ProfileUpdate({ user, setUser }) {
     nationality: 'Cambodian',
     roleNameEn: '',
     roleNameKh: '',
-    school_id: '',
-    school: null,
     weight_kg: '',
     height_cm: '',
+    qr_code: '',
+    qr_token: '',
+    qr_generated_at: '',
     // Current residence location
     residence: {
       provinceId: '',
@@ -65,17 +67,16 @@ export default function ProfileUpdate({ user, setUser }) {
   const [pictureUploading, setPictureUploading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
-  
+
   // Store pending location data for setting initial values
   const [pendingResidenceData, setPendingResidenceData] = useState(null);
   const [pendingBirthData, setPendingBirthData] = useState(null);
-  const [pendingSchoolData, setPendingSchoolData] = useState(null);
   const [residenceInitialized, setResidenceInitialized] = useState(false);
   const [birthInitialized, setBirthInitialized] = useState(false);
-  const [schoolInitialized, setSchoolInitialized] = useState(false);
   const [locationDataLoading, setLocationDataLoading] = useState(false);
 
   // Initialize location data hooks for residence
@@ -112,24 +113,6 @@ export default function ProfileUpdate({ user, setUser }) {
     setInitialValues: setBirthInitialValues
   } = useLocationData();
 
-  // Initialize location data hooks for school location
-  const {
-    selectedProvince: selectedSchoolProvince,
-    selectedDistrict: selectedSchoolDistrict,
-    selectedCommune: selectedSchoolCommune,
-    handleProvinceChange: handleSchoolProvinceChange,
-    handleDistrictChange: handleSchoolDistrictChange,
-    handleCommuneChange: handleSchoolCommuneChange,
-    getProvinceOptions: getSchoolProvinceOptions,
-    getDistrictOptions: getSchoolDistrictOptions,
-    getCommuneOptions: getSchoolCommuneOptions,
-    setInitialValues: setSchoolInitialValues
-  } = useLocationData();
-
-  // School-related state
-  const [schools, setSchools] = useState([]);
-  const [schoolsLoading, setSchoolsLoading] = useState(false);
-  const [selectedSchoolId, setSelectedSchoolId] = useState('');
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -150,7 +133,7 @@ export default function ProfileUpdate({ user, setUser }) {
     const fetchUserData = async () => {
       const startTime = performance.now();
       console.log('🚀 ProfileUpdate: fetchUserData called at', new Date().toISOString());
-      
+
       setInitialLoading(true);
       try {
         // First try to get detailed user data with school information
@@ -164,7 +147,7 @@ export default function ProfileUpdate({ user, setUser }) {
             return null;
           }
         })();
-        
+
         // Try to get detailed user data first
         if (authUser?.id) {
           try {
@@ -175,105 +158,100 @@ export default function ProfileUpdate({ user, setUser }) {
             console.warn('Failed to fetch detailed user data, falling back to getMyAccount:', error);
           }
         }
-        
+
         // Fallback to getMyAccount if detailed fetch failed
         if (!userData) {
           userData = await api.user.getMyAccount();
         }
+
         // Debug user data structure (can be removed in production)
         if (import.meta.env.DEV) {
           console.log('=== USER DATA DEBUG ===');
           console.log('Full userData object:', userData);
-          console.log('Available keys:', Object.keys(userData));
-          console.log('Checking ALL potential ID fields:');
-          console.log('userData.id:', userData.id);
-          console.log('userData.userId:', userData.userId);
-          console.log('userData.user_id:', userData.user_id);
-          console.log('userData.teacherId:', userData.teacherId);
-          console.log('userData.teacher_id:', userData.teacher_id);
-          console.log('userData.roleId:', userData.roleId);
-          console.log('userData.school_id:', userData.school_id);
-          console.log('userData.account_id:', userData.account_id);
-          console.log('userData.profileId:', userData.profileId);
-          console.log('userData.userAccountId:', userData.userAccountId);
-          
-          // Check if the roleId can be used (though it's not ideal)
-          console.log('=== CONSIDERING ALTERNATIVE IDs ===');
-          console.log('Could use roleId as fallback?', userData.roleId);
+          console.log('Available keys:', Object.keys(userData || {}));
           console.log('=== END USER DATA DEBUG ===');
         }
-        
+
+        // Normalize userData to handle incomplete payloads gracefully
+        const normalizedData = userData || {};
+
         // Try to extract a valid user ID from various possible fields
         const possibleUserIds = [
-          userData.id,
-          userData.userId, 
-          userData.user_id,
-          userData.teacherId,
-          userData.teacher_id,
-          userData.userAccountId,
-          userData.accountId,
-          userData.profileId,
-          userData.account_id,
-          userData.roleId // Last resort - roleId might work as user identifier
+          normalizedData.id,
+          normalizedData.userId,
+          normalizedData.user_id,
+          normalizedData.teacherId,
+          normalizedData.teacher_id,
+          normalizedData.userAccountId,
+          normalizedData.accountId,
+          normalizedData.profileId,
+          normalizedData.account_id,
+          authUser?.id, // Fallback to auth user ID
+          normalizedData.roleId // Last resort - roleId might work as user identifier
         ];
-        
+
         const extractedUserId = possibleUserIds.find(id => id !== null && id !== undefined && id !== '');
         console.log('Extracted user ID:', extractedUserId, 'from possible IDs:', possibleUserIds);
-        
-        setFormData({
-          id: extractedUserId,
-          username: userData.username || '',
-          first_name: userData.first_name || '',
-          last_name: userData.last_name || '',
-          fullname: userData.fullname || '',
-          email: userData.email || '',
+
+        // Create form data with all fields, using empty strings as defaults for missing optional fields
+        const newFormData = {
+          id: extractedUserId || '',
+          username: normalizedData.username || '',
+          first_name: normalizedData.first_name || '',
+          last_name: normalizedData.last_name || '',
+          fullname: normalizedData.fullname || '',
+          email: normalizedData.email || '',
+          roleId: normalizedData.roleId || '',
           newPassword: '',
-          date_of_birth: userData.date_of_birth || '',
-          gender: userData.gender || 'MALE',
-          profile_picture: userData.profile_picture || '',
-          phone: userData.phone || '',
-          teacher_number: userData.teacher_number || '',
-          teacherId: userData.teacherId || '',
-          nationality: userData.nationality || 'Cambodian',
-          roleNameEn: userData.roleNameEn || '',
-          roleNameKh: userData.roleNameKh || '',
-          school_id: userData.school_id || userData.teacher?.schoolId || '',
-          school: userData.teacher?.school || userData.school || null,
-          weight_kg: userData.weight_kg || '',
-          height_cm: userData.height_cm || '',
+          date_of_birth: normalizedData.date_of_birth || '',
+          gender: normalizedData.gender || 'MALE',
+          profile_picture: normalizedData.profile_picture || '',
+          phone: normalizedData.phone || '',
+          teacher_number: normalizedData.teacher_number || '',
+          teacherId: normalizedData.teacherId || '',
+          nationality: normalizedData.nationality || 'Cambodian',
+          roleNameEn: normalizedData.roleNameEn || '',
+          roleNameKh: normalizedData.roleNameKh || '',
+          weight_kg: normalizedData.weight_kg || '',
+          height_cm: normalizedData.height_cm || '',
+          qr_code: normalizedData.qr_code || '',
+          qr_token: normalizedData.qr_token || '',
+          qr_generated_at: normalizedData.qr_generated_at || '',
           // Handle nested residence object
           residence: {
-            provinceId: userData.residence?.provinceId || userData.province_id || '',
-            districtId: userData.residence?.districtId || userData.district_id || '',
-            communeId: userData.residence?.communeId || userData.commune_id || '',
-            villageId: userData.residence?.villageId || userData.village_id || ''
+            provinceId: normalizedData.residence?.provinceId || normalizedData.province_id || '',
+            districtId: normalizedData.residence?.districtId || normalizedData.district_id || '',
+            communeId: normalizedData.residence?.communeId || normalizedData.commune_id || '',
+            villageId: normalizedData.residence?.villageId || normalizedData.village_id || ''
           },
           // Handle nested placeOfBirth object
           placeOfBirth: {
-            provinceId: userData.placeOfBirth?.provinceId || userData.residence?.provinceId || userData.province_id || '',
-            districtId: userData.placeOfBirth?.districtId || userData.residence?.districtId || userData.district_id || '',
-            communeId: userData.placeOfBirth?.communeId || userData.residence?.communeId || userData.commune_id || '',
-            villageId: userData.placeOfBirth?.villageId || userData.residence?.villageId || userData.village_id || ''
+            provinceId: normalizedData.placeOfBirth?.provinceId || normalizedData.residence?.provinceId || normalizedData.province_id || '',
+            districtId: normalizedData.placeOfBirth?.districtId || normalizedData.residence?.districtId || normalizedData.district_id || '',
+            communeId: normalizedData.placeOfBirth?.communeId || normalizedData.residence?.communeId || normalizedData.commune_id || '',
+            villageId: normalizedData.placeOfBirth?.villageId || normalizedData.residence?.villageId || normalizedData.village_id || ''
           },
           // Legacy fields for backward compatibility
-          provinceId: userData.residence?.provinceId || userData.province_id || '',
-          districtId: userData.residence?.districtId || userData.district_id || '',
-          communeId: userData.residence?.communeId || userData.commune_id || '',
-          villageId: userData.residence?.villageId || userData.village_id || ''
-        });
-        console.log('User data loaded into form:', formData);
+          provinceId: normalizedData.residence?.provinceId || normalizedData.province_id || '',
+          districtId: normalizedData.residence?.districtId || normalizedData.district_id || '',
+          communeId: normalizedData.residence?.communeId || normalizedData.commune_id || '',
+          villageId: normalizedData.residence?.villageId || normalizedData.village_id || ''
+        };
+
+        setFormData(newFormData);
+        console.log('User data loaded into form, keys present:', Object.keys(newFormData).filter(k => newFormData[k]));
 
         // Store initial location data to set once provinces are loaded
-        const residenceData = userData.residence || {};
-        const birthData = userData.placeOfBirth || {};
-        
+        const residenceData = normalizedData.residence || {};
+        const birthData = normalizedData.placeOfBirth || {};
+
         // Store the initial values to be set later using React state
-        const residenceInitialData = residenceData.provinceId || residenceData.districtId || residenceData.communeId || residenceData.villageId || 
-            userData.province_id || userData.district_id || userData.commune_id || userData.village_id ? {
-          provinceId: residenceData.provinceId || userData.province_id,
-          districtId: residenceData.districtId || userData.district_id,
-          communeId: residenceData.communeId || userData.commune_id,
-          villageId: residenceData.villageId || userData.village_id
+        const residenceInitialData = residenceData.provinceId || residenceData.districtId || residenceData.communeId || residenceData.villageId ||
+          normalizedData.province_id || normalizedData.district_id || normalizedData.commune_id || normalizedData.village_id ? {
+          provinceId: residenceData.provinceId || normalizedData.province_id,
+          districtId: residenceData.districtId || normalizedData.district_id,
+          communeId: residenceData.communeId || normalizedData.commune_id,
+          villageId: residenceData.villageId || normalizedData.village_id
         } : null;
 
         const birthInitialData = birthData.provinceId || birthData.districtId || birthData.communeId || birthData.villageId ? {
@@ -283,29 +261,14 @@ export default function ProfileUpdate({ user, setUser }) {
           villageId: birthData.villageId
         } : residenceInitialData;
 
-        // Get school location data from the school object
-        const schoolData = userData.teacher?.school || userData.school || {};
-        const schoolPlace = schoolData.place || {};
-        const schoolInitialData = schoolPlace.provinceId || schoolPlace.districtId || schoolPlace.communeId ? {
-          provinceId: schoolPlace.provinceId,
-          districtId: schoolPlace.districtId,
-          communeId: schoolPlace.communeId
-        } : null;
-        
+        // Set pending location data for initialization
         setPendingResidenceData(residenceInitialData);
         setPendingBirthData(birthInitialData);
-        setPendingSchoolData(schoolInitialData);
-        
-        // Set selected school ID if available
-        if (schoolData.schoolId) {
-          setSelectedSchoolId(schoolData.schoolId.toString());
-        }
-        
+
         // Reset initialization flags when new user data is loaded
         setResidenceInitialized(false);
         setBirthInitialized(false);
-        setSchoolInitialized(false);
-        
+
         // Also update the user context if needed
         // IMPORTANT: Preserve isDirector from original user object if not in API response
         if (setUser) {
@@ -337,7 +300,7 @@ export default function ProfileUpdate({ user, setUser }) {
       const timer = setTimeout(() => {
         console.log('🏠 Setting residence data:', pendingResidenceData);
         setLocationDataLoading(true);
-        
+
         setResidenceInitialValues(pendingResidenceData)
           .then(() => {
             console.log('✅ Residence data set successfully');
@@ -361,7 +324,7 @@ export default function ProfileUpdate({ user, setUser }) {
       const timer = setTimeout(() => {
         console.log('🏥 Setting birth data:', pendingBirthData);
         setLocationDataLoading(true);
-        
+
         setBirthInitialValues(pendingBirthData)
           .then(() => {
             console.log('✅ Birth data set successfully');
@@ -380,31 +343,6 @@ export default function ProfileUpdate({ user, setUser }) {
     }
   }, [pendingBirthData, birthInitialized, setBirthInitialValues]);
 
-  // School location initialization
-  useEffect(() => {
-    if (!schoolInitialized && pendingSchoolData) {
-      const timer = setTimeout(() => {
-        console.log('🏫 Setting school data:', pendingSchoolData);
-        setLocationDataLoading(true);
-        
-        setSchoolInitialValues(pendingSchoolData)
-          .then(() => {
-            console.log('✅ School data set successfully');
-          })
-          .catch(error => {
-            console.error('❌ Error setting school initial values:', error);
-          })
-          .finally(() => {
-            setLocationDataLoading(false);
-            setSchoolInitialized(true);
-            setPendingSchoolData(null);
-          });
-      }, 1000); // Wait 1s for provinces to load
-
-      return () => clearTimeout(timer);
-    }
-  }, [pendingSchoolData, schoolInitialized, setSchoolInitialValues]);
-
   // Fallback timeout to ensure initialization happens even if there are issues
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -418,15 +356,55 @@ export default function ProfileUpdate({ user, setUser }) {
         setBirthInitialized(true);
         setPendingBirthData(null);
       }
-      if (!schoolInitialized && pendingSchoolData) {
-        console.log('Fallback: Forcing school initialization');
-        setSchoolInitialized(true);
-        setPendingSchoolData(null);
-      }
     }, 5000); // Reduced to 5 second fallback
 
     return () => clearTimeout(timeout);
-  }, [residenceInitialized, birthInitialized, schoolInitialized, pendingResidenceData, pendingBirthData, pendingSchoolData]);
+  }, [residenceInitialized, birthInitialized, pendingResidenceData, pendingBirthData]);
+
+  // Calculate BMI
+  const calculateBMI = () => {
+    const weight = parseFloat(formData.weight_kg);
+    const height = parseFloat(formData.height_cm);
+
+    if (!weight || !height || weight <= 0 || height <= 0) {
+      return null;
+    }
+
+    const heightInMeters = height / 100;
+    const bmi = weight / (heightInMeters * heightInMeters);
+    return bmi.toFixed(1);
+  };
+
+  // Get BMI category
+  const getBMICategory = (bmi) => {
+    if (!bmi) return null;
+    const bmiValue = parseFloat(bmi);
+
+    if (bmiValue < 18.5) return {
+      label: 'ទាបពេក (Underweight)',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      bmi: bmiValue
+    };
+    if (bmiValue < 25) return {
+      label: 'ធម្មតា (Normal)',
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      bmi: bmiValue
+    };
+    if (bmiValue < 30) return {
+      label: 'ច្រើន (Overweight)',
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-50',
+      bmi: bmiValue
+    };
+    return {
+      label: 'ធ្ងន់ពេក (Obese)',
+      color: 'text-red-600',
+      bgColor: 'bg-red-50',
+      bmi: bmiValue
+    };
+  };
 
   const handleViewPicture = () => {
     setShowImageModal(true);
@@ -442,58 +420,34 @@ export default function ProfileUpdate({ user, setUser }) {
     setIsEditMode(!isEditMode);
   };
 
-  // Fetch schools by commune ID
-  const fetchSchoolsByCommune = useStableCallback(async (communeId) => {
-    if (!communeId) {
-      setSchools([]);
-      return;
-    }
-
-    try {
-      setSchoolsLoading(true);
-      console.log('Fetching schools for commune:', communeId);
-      
-      const response = await fetch(`https://plp-api.moeys.gov.kh/api/v1/schools/commune/${communeId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch schools: ${response.status}`);
-      }
-
-      const schoolsData = await response.json();
-      console.log('Schools fetched:', schoolsData);
-      
-      setSchools(schoolsData || []);
-    } catch (error) {
-      console.error('Error fetching schools:', error);
-      showError(t('failedToLoadSchools', 'Failed to load schools'));
-      setSchools([]);
-    } finally {
-      setSchoolsLoading(false);
-    }
-  });
-
-  // Fetch schools when school commune changes
-  useEffect(() => {
-    if (selectedSchoolCommune) {
-      fetchSchoolsByCommune(selectedSchoolCommune);
+  // View QR code
+  const handleViewQRCode = () => {
+    if (formData.qr_code) {
+      setShowQRModal(true);
     } else {
-      setSchools([]);
+      showError(t('noQRCode') || 'QR code not available');
     }
-  }, [selectedSchoolCommune, fetchSchoolsByCommune]);
+  };
+
+  // Download QR code as image
+  const downloadQRCode = () => {
+    if (!formData.qr_code) return;
+
+    const link = document.createElement('a');
+    link.href = formData.qr_code;
+    link.download = `qr-code-${formData.username || 'user'}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setShowConfirmDialog(true);
   };
 
@@ -518,27 +472,129 @@ export default function ProfileUpdate({ user, setUser }) {
         }
       }
 
-      const updateData = { ...formData };
-      if (!updateData.newPassword) {
-        delete updateData.newPassword;
+      // Transform formData to match API payload structure
+      // Build update data similar to TeachersManagement pattern
+      const updateData = {};
+
+      // Always include core user fields (required fields)
+      if (formData.first_name) {
+        updateData.first_name = formData.first_name;
       }
-      
-      // Update profile picture path if uploaded
-      if (profilePictureUrl) {
-        updateData.profile_picture = profilePictureUrl;
+      if (formData.last_name) {
+        updateData.last_name = formData.last_name;
       }
-      
+      if (formData.email) {
+        updateData.email = formData.email;
+      }
+      if (formData.date_of_birth) {
+        updateData.date_of_birth = formData.date_of_birth;
+      }
+      if (formData.gender) {
+        updateData.gender = formData.gender;
+      }
+
+      // Include optional fields only if they have values
+      if (formData.username) {
+        updateData.username = formData.username;
+      }
+
+      if (formData.phone) {
+        updateData.phone = formData.phone;
+      }
+
+      if (profilePictureUrl || formData.profile_picture) {
+        updateData.profile_picture = profilePictureUrl || formData.profile_picture;
+      }
+
+      if (formData.nationality) {
+        updateData.nationality = formData.nationality;
+      }
+
+      if (formData.weight_kg) {
+        updateData.weight_kg = formData.weight_kg;
+      }
+
+      if (formData.height_cm) {
+        updateData.height_cm = formData.height_cm;
+      }
+
+      // Include ID field if available - crucial for update
+      if (formData.id) {
+        updateData.id = formData.id;
+      }
+
+      // Include roleId if available
+      if (formData.roleId) {
+        updateData.roleId = formData.roleId;
+      }
+
+      // Include location fields if available
+      if (formData.residence && (formData.residence.provinceId || formData.residence.districtId || formData.residence.communeId || formData.residence.villageId)) {
+        updateData.residence = formData.residence;
+        // Also include legacy flat fields for compatibility
+        if (formData.residence.provinceId) updateData.province_id = formData.residence.provinceId;
+        if (formData.residence.districtId) updateData.district_id = formData.residence.districtId;
+        if (formData.residence.communeId) updateData.commune_id = formData.residence.communeId;
+        if (formData.residence.villageId) updateData.village_id = formData.residence.villageId;
+      }
+
+      if (formData.placeOfBirth && (formData.placeOfBirth.provinceId || formData.placeOfBirth.districtId || formData.placeOfBirth.communeId || formData.placeOfBirth.villageId)) {
+        updateData.placeOfBirth = formData.placeOfBirth;
+      }
+
+      // Include QR code fields if available (read-only)
+      if (formData.qr_code) {
+        updateData.qr_code = formData.qr_code;
+      }
+      if (formData.qr_token) {
+        updateData.qr_token = formData.qr_token;
+      }
+      if (formData.qr_generated_at) {
+        updateData.qr_generated_at = formData.qr_generated_at;
+      }
+
+      // Include newPassword if provided
+      if (formData.newPassword && formData.newPassword.trim()) {
+        updateData.newPassword = formData.newPassword;
+      }
+
+      console.log('Update payload being sent:', updateData);
+
       const response = await api.user.updateUserProfile(updateData);
       clearTimeout(timeoutId);
 
-      const updatedUser = { 
-        ...user, 
+      const updatedUser = {
+        ...user,
         ...response,
         // Explicitly preserve isDirector to ensure it's not lost
         isDirector: response.isDirector !== undefined ? response.isDirector : user?.isDirector
       };
       utils.user.saveUserData(updatedUser);
       setUser(updatedUser);
+
+      // Update formData with the response data to refresh all displayed values including BMI
+      setFormData(prev => ({
+        ...prev,
+        id: response.id || prev.id,
+        username: response.username || prev.username,
+        first_name: response.first_name || prev.first_name,
+        last_name: response.last_name || prev.last_name,
+        email: response.email || prev.email,
+        roleId: response.roleId || prev.roleId,
+        date_of_birth: response.date_of_birth || prev.date_of_birth,
+        gender: response.gender || prev.gender,
+        phone: response.phone || prev.phone,
+        profile_picture: response.profile_picture || prev.profile_picture,
+        nationality: response.nationality || prev.nationality,
+        weight_kg: response.weight_kg || prev.weight_kg,
+        height_cm: response.height_cm || prev.height_cm,
+        qr_code: response.qr_code || prev.qr_code,
+        qr_token: response.qr_token || prev.qr_token,
+        qr_generated_at: response.qr_generated_at || prev.qr_generated_at,
+        residence: response.residence || prev.residence,
+        placeOfBirth: response.placeOfBirth || prev.placeOfBirth
+      }));
+
       setProfilePictureFile(null); // Clear the selected file
       showSuccess(t('profileUpdatedSuccess'));
     } catch (err) {
@@ -582,11 +638,11 @@ export default function ProfileUpdate({ user, setUser }) {
       if (!authToken) {
         throw new Error('Authentication token missing. Please log in again.');
       }
-      
+
       // Get user ID from form data or user prop - try multiple field names
-      let userId = formData.id || formData.teacherId || 
-                   user?.id || user?.userId || user?.user_id || user?.teacherId;
-      
+      let userId = formData.id || formData.teacherId ||
+        user?.id || user?.userId || user?.user_id || user?.teacherId;
+
       // Try to extract user ID from localStorage as fallback
       if (!userId) {
         try {
@@ -600,7 +656,7 @@ export default function ProfileUpdate({ user, setUser }) {
           console.warn('Could not parse user from localStorage:', error);
         }
       }
-      
+
       // Try to extract from JWT token as last resort
       if (!userId) {
         try {
@@ -612,7 +668,7 @@ export default function ProfileUpdate({ user, setUser }) {
               const payload = JSON.parse(atob(tokenParts[1]));
               userId = payload.userId || payload.user_id || payload.sub || payload.id;
               console.log('Extracted user ID from JWT token:', userId);
-              
+
               // Check if token is expired
               if (payload.exp && payload.exp * 1000 < Date.now()) {
                 throw new Error('Authentication token has expired. Please log in again.');
@@ -626,7 +682,7 @@ export default function ProfileUpdate({ user, setUser }) {
           }
         }
       }
-      
+
       console.log('=== UPLOAD DEBUG ===');
       console.log('Auth token present:', !!authToken);
       console.log('File details:', {
@@ -646,16 +702,16 @@ export default function ProfileUpdate({ user, setUser }) {
       });
       console.log('Final userId for upload:', userId);
       console.log('=== END UPLOAD DEBUG ===');
-      
+
       // Validate file before upload
       if (!profilePictureFile.type.startsWith('image/')) {
         throw new Error('Please select a valid image file.');
       }
-      
+
       if (profilePictureFile.size > 5 * 1024 * 1024) { // 5MB limit
         throw new Error('Image file is too large. Please select a file smaller than 5MB.');
       }
-      
+
       // Try upload with detailed error handling
       try {
         const response = await api.user.uploadProfilePicture(profilePictureFile, userId);
@@ -663,7 +719,7 @@ export default function ProfileUpdate({ user, setUser }) {
         return response.profile_picture || response.url || response.path;
       } catch (uploadError) {
         console.error('Upload error details:', uploadError);
-        
+
         // Handle specific error cases
         if (uploadError.status === 403) {
           if (uploadError.message?.includes('token')) {
@@ -738,65 +794,107 @@ export default function ProfileUpdate({ user, setUser }) {
   }
 
   return (
-    <div className="p-2 sm:p-4 lg:p-6">
-        <div>
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-3 py-4 sm:px-4 sm:py-5 lg:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
-                <div className="flex items-center min-w-0 flex-1">
-                  <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-2 sm:p-3 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
-                    <User className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-                  </div>
-                  <div className="ml-3 sm:ml-4 min-w-0">
-                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent truncate">
-                      {t('personalInformation')}
-                    </h3>
-                    <p className="text-slate-500 text-xs sm:text-sm mt-1 hidden sm:block">Update your personal details and preferences</p>
-                  </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8">
+      <div className="">
+        <div className="bg-white shadow-2xl rounded-2xl overflow-hidden">
+          <div className="px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
+              <div className="flex items-center min-w-0 flex-1">
+                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-2 sm:p-3 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
+                  <User className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
-                <Button
-                  type="button"
-                  onClick={handleEditToggle}
-                  variant="primary"
-                  size="sm"
-                  className="rounded-lg w-full sm:w-auto"
-                >
-                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <span className="text-xs sm:text-sm">{isEditMode ? t('cancel') || 'Cancel' : t('edit') || 'Edit'}</span>
-                </Button>
+                <div className="ml-3 sm:ml-4 min-w-0">
+                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent truncate">
+                    {t('personalInformation')}
+                  </h3>
+                  <p className="text-slate-500 text-xs sm:text-sm mt-1 hidden sm:block">Update your personal details and preferences</p>
+                </div>
               </div>
+              <Button
+                type="button"
+                onClick={handleEditToggle}
+                variant="primary"
+                size="sm"
+                className="rounded-lg w-full sm:w-auto"
+              >
+                <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="text-xs sm:text-sm">{isEditMode ? t('cancel') || 'Cancel' : t('edit') || 'Edit'}</span>
+              </Button>
+            </div>
 
+            <div className='grid sm:grid-cols-3 grid-cols-1 gap-4'>
               {/* Profile Picture Section */}
-              <div className="mb-6 sm:mb-8">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                  {t('profilePicture')}
-                </label>
-                
+              <div className="col-span-1 mb-8 p-6 rounded-xl border border-gray-100 shadow-sm">
                 {/* Profile Picture with Dropdown */}
-                <div className="relative" ref={dropdownRef}>
-                  <div 
+                <div className="grid grid-cols-1 gap-3 justify-center items-center" ref={dropdownRef}>
+
+                  <div
                     className={`relative inline-block ${isEditMode ? 'cursor-pointer' : 'cursor-not-allowed'}`}
                     onClick={isEditMode ? () => setShowDropdown(!showDropdown) : undefined}
                   >
+                    <label className="block text-sm font-semibold text-gray-900 mb-4">
+                      {t('profilePicture')}
+                    </label>
                     {profilePictureFile ? (
-                      <img 
+                      <img
                         src={URL.createObjectURL(profilePictureFile)}
-                        alt="Profile Preview" 
-                        className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-gray-300 hover:border-blue-500 transition-colors"
+                        alt="Profile Preview"
+                        className="h-40 w-40 sm:h-40 sm:w-40 lg:h-40 lg:w-40 rounded-full object-cover border-4 border-white shadow-lg hover:shadow-xl transition-all"
                       />
                     ) : (
                       <ProfileImage
                         user={formData}
-                        size="lg"
+                        size="custom"
+                        customSize="h-40 w-40 sm:h-40 sm:w-40 lg:h-40 lg:w-40"
                         alt="Profile"
-                        className="hover:border-blue-500 transition-colors"
-                        borderColor="border-gray-300"
+                        className="shadow-lg"
+                        borderColor="border-white"
                         fallbackType="image"
                         clickable={isEditMode}
                       />
                     )}
-                    
+
                   </div>
+                  {/* QR Code Section */}
+                  {formData.qr_code && (
+                    <div className="">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <QrCodeIcon className="h-4 w-4" />
+                        QR Code
+                      </h4>
+                      <div className=" gap-4 bg-white rounded-lg border border-gray-200">
+                        <div className="flex flex-row justify-between items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            onClick={handleViewQRCode}
+                            className="flex items-center gap-2 text-xs sm:text-sm"
+                          >
+                            <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            onClick={downloadQRCode}
+                            className="flex items-center gap-2 text-xs sm:text-sm"
+                          >
+                            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+
+                          </Button>
+                        </div>
+                        <div className="p-2">
+                          <img
+                            src={formData.qr_code}
+                            alt="QR Code"
+                            className="h-32 w-32 object-contain"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Dropdown Menu */}
                   {showDropdown && (
@@ -830,7 +928,7 @@ export default function ProfileUpdate({ user, setUser }) {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Hidden File Input */}
                 <input
                   ref={fileInputRef}
@@ -839,20 +937,20 @@ export default function ProfileUpdate({ user, setUser }) {
                   onChange={handleProfilePictureChange}
                   className="hidden"
                 />
-                
+
                 {profilePictureFile && (
                   <p className="mt-2 text-sm text-green-600">
                     {t('newPictureSelected') || 'New picture selected'}: {profilePictureFile.name}
                   </p>
                 )}
-                
+
                 {pictureUploading && (
                   <p className="mt-2 text-sm text-blue-600">{t('uploadingImage')}</p>
                 )}
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-                <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 p-4 border border-gray-100 rounded-lg col-span-2">
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-3">
                   <div>
                     <label htmlFor="username" className="block text-xs sm:text-sm font-medium text-gray-700">
                       {t('username')}
@@ -893,9 +991,6 @@ export default function ProfileUpdate({ user, setUser }) {
                       />
                     </div>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2">
                   <div>
                     <label htmlFor="teacherId" className="block text-xs sm:text-sm font-medium text-gray-700">
                       {t('teacherId') || 'Teacher ID'}
@@ -914,7 +1009,8 @@ export default function ProfileUpdate({ user, setUser }) {
                       />
                     </div>
                   </div>
-
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-3">
                   <div>
                     <label htmlFor="roleNameKh" className="block text-xs sm:text-sm font-medium text-gray-700">
                       {t('role') || 'Role'}
@@ -933,9 +1029,6 @@ export default function ProfileUpdate({ user, setUser }) {
                       />
                     </div>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2">
                   <div>
                     <label htmlFor="first_name" className="block text-xs sm:text-sm font-medium text-gray-700">
                       {t('firstNameRequired')}
@@ -979,48 +1072,46 @@ export default function ProfileUpdate({ user, setUser }) {
                   </div>
                 </div>
 
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    {t('emailRequired')}
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-4 w-4 text-gray-400" />
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                      {t('emailRequired')}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="email"
+                        name="email"
+                        id="email"
+                        required
+                        readOnly={!isEditMode}
+                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
+                        value={formData.email}
+                        onChange={handleInputChange}
+                      />
                     </div>
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      required
-                      readOnly={!isEditMode}
-                      className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                      value={formData.email}
-                      onChange={handleInputChange}
-                    />
                   </div>
-                </div>
-
-                <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                    {t('newPassword')}
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-4 w-4 text-gray-400" />
+                  <div>
+                    <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
+                      {t('newPassword')}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="password"
+                        name="newPassword"
+                        id="newPassword"
+                        readOnly={!isEditMode}
+                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
+                        value={formData.newPassword}
+                        onChange={handleInputChange}
+                      />
                     </div>
-                    <input
-                      type="password"
-                      name="newPassword"
-                      id="newPassword"
-                      readOnly={!isEditMode}
-                      className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                      value={formData.newPassword}
-                      onChange={handleInputChange}
-                    />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div>
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                       {t('phone')}
@@ -1041,30 +1132,39 @@ export default function ProfileUpdate({ user, setUser }) {
                       />
                     </div>
                   </div>
+                </div>
 
+                {/* Date of Birth and Gender */}
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
                   <div>
                     <label htmlFor="nationality" className="block text-sm font-medium text-gray-700">
                       {t('nationality')}
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Globe className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="nationality"
-                        id="nationality"
-                        readOnly={!isEditMode}
-                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                        value={formData.nationality}
-                        onChange={handleInputChange}
-                      />
+                    <div className="mt-1">
+                      {isEditMode ? (
+                        <Dropdown
+                          value={formData.nationality}
+                          onValueChange={(value) => {
+                            setFormData(prev => ({ ...prev, nationality: value }));
+                          }}
+                          options={[
+                            { value: 'Cambodian', label: 'ខ្មែរ' },
+                            { value: 'Thai', label: 'ថៃ' },
+                            { value: 'Vietnamese', label: 'វៀតណាម' },
+                            { value: 'Laotian', label: 'ឡាវ' },
+                            { value: 'Chinese', label: 'ចិន' },
+                            { value: 'Other', label: 'ផ្សេងទៀត' }
+                          ]}
+                          placeholder={t('selectNationality') || 'Select nationality'}
+                          className="w-full"
+                        />
+                      ) : (
+                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                          {formData.nationality === 'Cambodian' ? 'ខ្មែរ' : formData.nationality === 'Thai' ? 'ថៃ' : formData.nationality === 'Vietnamese' ? 'វៀតណាម' : formData.nationality === 'Laotian' ? 'ឡាវ' : formData.nationality === 'Chinese' ? 'ចិន' : formData.nationality === 'Other' ? 'ផ្សេងទៀត' : formData.nationality}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-
-                {/* Date of Birth and Gender */}
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div>
                     <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700">
                       {t('dateOfBirth') || 'Date of Birth'}
@@ -1179,6 +1279,53 @@ export default function ProfileUpdate({ user, setUser }) {
                   </div>
                 </div>
 
+                {/* BMI Display as Input Fields */}
+                {(formData.weight_kg || formData.height_cm) && (
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="bmi" className="block text-sm font-medium text-gray-700">
+                        {t('bmi') || 'BMI'} <span className="text-gray-400 text-xs">{t('readonly', '(Read-only)')}</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          id="bmi"
+                          readOnly
+                          value={calculateBMI() || '-'}
+                          className={`mt-1 block w-full px-3 py-2 rounded-md shadow-sm sm:text-sm font-bold transition-all duration-300 cursor-not-allowed border-2 ${
+                            !calculateBMI()
+                              ? 'bg-gray-50 border-gray-300 text-gray-900'
+                              : getBMICategory(calculateBMI()).bmi < 18.5
+                              ? 'bg-blue-50 border-blue-400 text-blue-900'
+                              : getBMICategory(calculateBMI()).bmi < 25
+                              ? 'bg-green-50 border-green-400 text-green-900'
+                              : getBMICategory(calculateBMI()).bmi < 30
+                              ? 'bg-yellow-50 border-yellow-400 text-yellow-900'
+                              : 'bg-red-50 border-red-400 text-red-900'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    {calculateBMI() && (
+                      <div>
+                        <label htmlFor="bmiStatus" className="block text-sm font-medium text-gray-700">
+                          {t('bmiCategory') || 'Status'} <span className="text-gray-400 text-xs">{t('readonly', '(Read-only)')}</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            id="bmiStatus"
+                            readOnly
+                            value={getBMICategory(calculateBMI()).label}
+                            className={`mt-1 block w-full px-3 py-2 rounded-md shadow-sm sm:text-sm font-semibold transition-all duration-300 cursor-not-allowed border-2 ${getBMICategory(calculateBMI()).bgColor} ${getBMICategory(calculateBMI()).color} border-opacity-50`}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Current Residence Information */}
                 <div className="border-t pt-4 sm:pt-6">
                   <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -1192,9 +1339,9 @@ export default function ProfileUpdate({ user, setUser }) {
                       />
                     )}
                   </div>
-                  
+
                   {/* Province and District */}
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-6">
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-4 mb-6">
                     <div>
                       <label htmlFor="residence-province" className="block text-sm font-medium text-gray-700">
                         {t('province')}
@@ -1205,10 +1352,10 @@ export default function ProfileUpdate({ user, setUser }) {
                             value={selectedResidenceProvince}
                             onValueChange={(value) => {
                               handleResidenceProvinceChange(value);
-                              setFormData(prev => ({ 
-                                ...prev, 
+                              setFormData(prev => ({
+                                ...prev,
                                 residence: { ...prev.residence, provinceId: value },
-                                provinceId: value 
+                                provinceId: value
                               }));
                             }}
                             options={getResidenceProvinceOptions()}
@@ -1235,10 +1382,10 @@ export default function ProfileUpdate({ user, setUser }) {
                             value={selectedResidenceDistrict}
                             onValueChange={(value) => {
                               handleResidenceDistrictChange(value);
-                              setFormData(prev => ({ 
-                                ...prev, 
+                              setFormData(prev => ({
+                                ...prev,
                                 residence: { ...prev.residence, districtId: value },
-                                districtId: value 
+                                districtId: value
                               }));
                             }}
                             options={getResidenceDistrictOptions()}
@@ -1255,10 +1402,8 @@ export default function ProfileUpdate({ user, setUser }) {
                         )}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Commune and Village */}
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    {/* Commune and Village */}
                     <div>
                       <label htmlFor="residence-commune" className="block text-sm font-medium text-gray-700">
                         {t('commune')}
@@ -1269,10 +1414,10 @@ export default function ProfileUpdate({ user, setUser }) {
                             value={selectedResidenceCommune}
                             onValueChange={(value) => {
                               handleResidenceCommuneChange(value);
-                              setFormData(prev => ({ 
-                                ...prev, 
+                              setFormData(prev => ({
+                                ...prev,
                                 residence: { ...prev.residence, communeId: value },
-                                communeId: value 
+                                communeId: value
                               }));
                             }}
                             options={getResidenceCommuneOptions()}
@@ -1300,10 +1445,10 @@ export default function ProfileUpdate({ user, setUser }) {
                             value={selectedResidenceVillage}
                             onValueChange={(value) => {
                               handleResidenceVillageChange(value);
-                              setFormData(prev => ({ 
-                                ...prev, 
+                              setFormData(prev => ({
+                                ...prev,
                                 residence: { ...prev.residence, villageId: value },
-                                villageId: value 
+                                villageId: value
                               }));
                             }}
                             options={getResidenceVillageOptions()}
@@ -1326,9 +1471,9 @@ export default function ProfileUpdate({ user, setUser }) {
                 {/* Place of Birth Information */}
                 <div className="border-t pt-4 sm:pt-6">
                   <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('placeOfBirth') || 'Place of Birth'}</h4>
-                  
+
                   {/* Province and District */}
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-6">
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-4 mb-6">
                     <div>
                       <label htmlFor="birth-province" className="block text-sm font-medium text-gray-700">
                         {t('province')}
@@ -1339,8 +1484,8 @@ export default function ProfileUpdate({ user, setUser }) {
                             value={selectedBirthProvince}
                             onValueChange={(value) => {
                               handleBirthProvinceChange(value);
-                              setFormData(prev => ({ 
-                                ...prev, 
+                              setFormData(prev => ({
+                                ...prev,
                                 placeOfBirth: { ...prev.placeOfBirth, provinceId: value }
                               }));
                             }}
@@ -1368,8 +1513,8 @@ export default function ProfileUpdate({ user, setUser }) {
                             value={selectedBirthDistrict}
                             onValueChange={(value) => {
                               handleBirthDistrictChange(value);
-                              setFormData(prev => ({ 
-                                ...prev, 
+                              setFormData(prev => ({
+                                ...prev,
                                 placeOfBirth: { ...prev.placeOfBirth, districtId: value }
                               }));
                             }}
@@ -1387,10 +1532,8 @@ export default function ProfileUpdate({ user, setUser }) {
                         )}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Commune and Village */}
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    {/* Commune and Village */}
                     <div>
                       <label htmlFor="birth-commune" className="block text-sm font-medium text-gray-700">
                         {t('commune')}
@@ -1401,8 +1544,8 @@ export default function ProfileUpdate({ user, setUser }) {
                             value={selectedBirthCommune}
                             onValueChange={(value) => {
                               handleBirthCommuneChange(value);
-                              setFormData(prev => ({ 
-                                ...prev, 
+                              setFormData(prev => ({
+                                ...prev,
                                 placeOfBirth: { ...prev.placeOfBirth, communeId: value }
                               }));
                             }}
@@ -1431,8 +1574,8 @@ export default function ProfileUpdate({ user, setUser }) {
                             value={selectedBirthVillage}
                             onValueChange={(value) => {
                               handleBirthVillageChange(value);
-                              setFormData(prev => ({ 
-                                ...prev, 
+                              setFormData(prev => ({
+                                ...prev,
                                 placeOfBirth: { ...prev.placeOfBirth, villageId: value }
                               }));
                             }}
@@ -1450,175 +1593,6 @@ export default function ProfileUpdate({ user, setUser }) {
                         )}
                       </div>
                     </div>
-                  </div>
-                </div>
-
-
-                {/* School Information Section */}
-                <div className="border-t pt-4 sm:pt-6">
-                  <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('schoolInformation') || 'School Information'}</h4>
-                  
-                  {/* School Location Selection */}
-                  <div className="space-y-4 mb-6">
-                    <h5 className="text-sm font-medium text-gray-700">{t('schoolLocation') || 'School Location'}</h5>
-                    
-                    {/* Province and District */}
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                      <div>
-                        <label htmlFor="school-province" className="block text-sm font-medium text-gray-700">
-                          {t('province') || 'Province'}
-                        </label>
-                        <div className="mt-1">
-                          {isEditMode ? (
-                            <Dropdown
-                              value={selectedSchoolProvince}
-                              onValueChange={(value) => {
-                                handleSchoolProvinceChange(value);
-                                setFormData(prev => ({ 
-                                  ...prev, 
-                                  school: null,
-                                  school_id: ''
-                                }));
-                                setSelectedSchoolId('');
-                              }}
-                              options={getSchoolProvinceOptions()}
-                              placeholder={t('selectProvince')}
-                              className="w-full"
-                              maxHeight="max-h-40"
-                              itemsToShow={5}
-                            />
-                          ) : (
-                            <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                              {getSchoolProvinceOptions().find(p => p.value === selectedSchoolProvince)?.label || '-'}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label htmlFor="school-district" className="block text-sm font-medium text-gray-700">
-                          {t('district') || 'District'}
-                        </label>
-                        <div className="mt-1">
-                          {isEditMode ? (
-                            <Dropdown
-                              value={selectedSchoolDistrict}
-                              onValueChange={(value) => {
-                                handleSchoolDistrictChange(value);
-                                setFormData(prev => ({ 
-                                  ...prev, 
-                                  school: null,
-                                  school_id: ''
-                                }));
-                                setSelectedSchoolId('');
-                              }}
-                              options={getSchoolDistrictOptions()}
-                              placeholder={t('selectDistrict')}
-                              className="w-full"
-                              disabled={!selectedSchoolProvince}
-                              maxHeight="max-h-40"
-                              itemsToShow={5}
-                            />
-                          ) : (
-                            <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                              {getSchoolDistrictOptions().find(d => d.value === selectedSchoolDistrict)?.label || '-'}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Commune */}
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                      <div>
-                        <label htmlFor="school-commune" className="block text-sm font-medium text-gray-700">
-                          {t('commune') || 'Commune'}
-                        </label>
-                        <div className="mt-1">
-                          {isEditMode ? (
-                            <Dropdown
-                              value={selectedSchoolCommune}
-                              onValueChange={(value) => {
-                                handleSchoolCommuneChange(value);
-                                setFormData(prev => ({ 
-                                  ...prev, 
-                                  school: null,
-                                  school_id: ''
-                                }));
-                                setSelectedSchoolId('');
-                              }}
-                              options={getSchoolCommuneOptions()}
-                              placeholder={t('selectCommune')}
-                              className="w-full"
-                              disabled={!selectedSchoolDistrict}
-                              maxHeight="max-h-40"
-                              itemsToShow={5}
-                            />
-                          ) : (
-                            <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                              {getSchoolCommuneOptions().find(c => c.value === selectedSchoolCommune)?.label || '-'}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* School Selection */}
-                  <div>
-                    <label htmlFor="school_name" className="block text-sm font-medium text-gray-700">
-                      {t('schoolName') || 'School Name'}
-                    </label>
-                    <div className="mt-1">
-                      {isEditMode ? (
-                        schoolsLoading ? (
-                          <div className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
-                            <DynamicLoader
-                              type="dots"
-                              size="sm"
-                              message="Loading schools..."
-                              className="text-sm text-gray-600"
-                            />
-                          </div>
-                        ) : (
-                          <Dropdown
-                            value={selectedSchoolId}
-                            onValueChange={(value) => {
-                              setSelectedSchoolId(value);
-                              const selectedSchool = schools.find(school => school.schoolId.toString() === value);
-                              if (selectedSchool) {
-                                setFormData(prev => ({ 
-                                  ...prev, 
-                                  school: selectedSchool,
-                                  school_id: selectedSchool.schoolId
-                                }));
-                              }
-                            }}
-                            options={[
-                              { value: '', label: t('selectSchool') || 'Select School' },
-                              ...schools.map(school => ({
-                                value: school.schoolId.toString(),
-                                label: school.name
-                              }))
-                            ]}
-                            placeholder={schools.length > 0 ? (t('selectSchool') || 'Select School') : (t('noSchoolsAvailable') || 'No schools available')}
-                            className="w-full"
-                            disabled={!selectedSchoolCommune || schools.length === 0}
-                            maxHeight="max-h-40"
-                            itemsToShow={5}
-                          />
-                        )
-                      ) : (
-                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                          {formData.school?.name || t('notAssigned') || 'មិនបានកំណត់'}
-                        </div>
-                      )}
-                    </div>
-                    {!selectedSchoolCommune && isEditMode && (
-                      <p className="mt-1 text-xs text-gray-500">
-                        {t('selectCommuneFirst') || 'Please select a commune first to see available schools'}
-                      </p>
-                    )}
                   </div>
                 </div>
 
@@ -1641,29 +1615,66 @@ export default function ProfileUpdate({ user, setUser }) {
             </div>
           </div>
         </div>
-        
-        {/* Image Modal */}
-        {showImageModal && formData.profile_picture && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowImageModal(false)}>
-            <div className="relative max-w-4xl max-h-full p-4">
-              <Button
-                onClick={() => setShowImageModal(false)}
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 text-white hover:text-gray-300 hover:bg-white/10 z-10"
-              >
-                <X className="w-6 h-6" />
-              </Button>
-              <img 
-                src={utils.user.getProfilePictureUrl({profile_picture: formData.profile_picture})}
-                alt="Profile" 
-                className="max-w-full max-h-full object-contain"
+      </div>
+
+      {/* Image Modal */}
+      {showImageModal && formData.profile_picture && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowImageModal(false)}>
+          <div className="relative max-w-4xl max-h-full p-4">
+            <Button
+              onClick={() => setShowImageModal(false)}
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 text-white hover:text-gray-300 hover:bg-white/10 z-10"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+            <img
+              src={utils.user.getProfilePictureUrl({ profile_picture: formData.profile_picture })}
+              alt="Profile"
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {showQRModal && formData.qr_code && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowQRModal(false)}>
+          <div className="relative max-w-2xl max-h-full p-4 bg-white rounded-lg">
+            <Button
+              onClick={() => setShowQRModal(false)}
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 z-10"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+            <div className="flex flex-col items-center justify-center p-8">
+              <img
+                src={formData.qr_code}
+                alt="QR Code"
+                className="max-w-full max-h-96 object-contain"
                 onClick={(e) => e.stopPropagation()}
               />
+              <p className="mt-4 text-sm text-gray-600">
+                {formData.username}
+              </p>
+              <Button
+                onClick={downloadQRCode}
+                variant="secondary"
+                size="default"
+                className="mt-4 flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {t('download') || 'Download'}
+              </Button>
             </div>
           </div>
-        )}
-        
+        </div>
+      )}
+
       {/* Confirmation Dialog */}
       <ConfirmDialog
         isOpen={showConfirmDialog}
