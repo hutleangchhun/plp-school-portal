@@ -735,4 +735,10 @@ export const en = {
 
   // Export utilities
   notAvailable: 'N/A',
+
+
+  //school setting
+  //school setting
+  projectType: 'Project Type',
+  selectProjectType: 'Select Project Type',
 };  

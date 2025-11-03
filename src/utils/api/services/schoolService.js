@@ -122,6 +122,39 @@ export const schoolService = {
         }
     },
 
+    async getSchoolProjectTypes() {
+        try {
+            const response = await handleApiResponse(() =>
+                apiClient_.get(ENDPOINTS.SCHOOLS.PROJECT_TYPES)
+            );
+
+            if (response?.success && Array.isArray(response.data)) {
+                return {
+                    success: true,
+                    data: response.data
+                };
+            } else if (Array.isArray(response?.data)) {
+                // Handle case where data is directly returned without success flag
+                return {
+                    success: true,
+                    data: response.data
+                };
+            }
+            return {
+                success: false,
+                data: [],
+                error: 'Failed to fetch school project types'
+            };
+        } catch (error) {
+            console.error('Error fetching school project types:', error);
+            return {
+                success: false,
+                data: [],
+                error: error.message || 'Failed to fetch school project types'
+            };
+        }
+    },
+
     utils: {
         formatSchoolData(school) {
             // Format school data with correct field mapping

@@ -1029,5 +1029,10 @@ export const km = {
   bySemester2: 'ប្រចាំឆមាសទី២',
   selectReportType: 'ជ្រើសរើសប្រភេទរបាយការណ៍',
   loadingReportData: 'កំពុងទាញយកទិន្នន័យរបាយការណ៍',
-  selectedFilters: 'កម្រងបានជ្រើសរើស'
+  selectedFilters: 'កម្រងបានជ្រើសរើស',
+
+  //school setting
+  projectType: 'ប្រភេទគម្រោង',
+  selectProjectType: 'ជ្រើសរើសប្រភេទគម្រោង',
+
 };

@@ -62,6 +62,7 @@ const ENDPOINTS = {
     SCHOOL_BY_ID: (schoolId) => `/schools${schoolId}`,
     SCHOOL_BY_PROVINCE: (provinceId) => `/schools/province/${provinceId}`,
     SCHOOL_BY_DISTRICT: (districtId) => `/schools/district/${districtId}`,
+    PROJECT_TYPES: '/school-project-types',
   },
   LOCATION: {
     BASE: '/locations/provinces',

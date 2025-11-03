@@ -30,6 +30,7 @@ export default function SchoolSettingsPage({ user }) {
     code: '',
     profile: '',
     status: 'ACTIVE',
+    projectTypeId: '',
     province_id: '',
     district_code: '',
     district_id: '', // Store numeric ID for API submission
@@ -43,6 +44,7 @@ export default function SchoolSettingsPage({ user }) {
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [communes, setCommunes] = useState([]);
+  const [projectTypes, setProjectTypes] = useState([]);
 
   const schoolId = user?.school_id || user?.schoolId;
 
@@ -57,19 +59,23 @@ export default function SchoolSettingsPage({ user }) {
 
         if (response?.success && response.data) {
           setSchoolData(response.data);
+          const placeData = response.data.place || {};
           const newFormData = {
             name: response.data.name || '',
             code: response.data.code || '',
             profile: response.data.profile || '',
             status: response.data.status || 'ACTIVE',
-            province_id: response.data.place?.provinceId ? String(response.data.place.provinceId) : '',
-            district_code: response.data.place?.district_code ? String(response.data.place.district_code) : '',
-            district_id: response.data.place?.districtId ? String(response.data.place.districtId) : '',
-            commune_code: response.data.place?.commune_code ? String(response.data.place.commune_code) : '',
-            commune_id: response.data.place?.communeId ? String(response.data.place.communeId) : ''
+            projectTypeId: response.data.projectTypeId || response.data.project_type_id || '',
+            // Extract location data from nested place object
+            province_id: placeData.provinceId ? String(placeData.provinceId) : '',
+            district_code: (placeData.district_code || placeData.districtCode) ? String(placeData.district_code || placeData.districtCode) : '',
+            district_id: placeData.districtId ? String(placeData.districtId) : '',
+            commune_code: (placeData.commune_code || placeData.communeCode) ? String(placeData.commune_code || placeData.communeCode) : '',
+            commune_id: placeData.communeId ? String(placeData.communeId) : ''
           };
-          console.log('📍 School location data:', response.data.place);
+          console.log('📍 School location data from place object:', placeData);
           console.log('📍 Form data set:', newFormData);
+          console.log('📍 Project type ID:', newFormData.projectTypeId);
           setFormData(newFormData);
           if (response.data.profile) {
             setPreviewUrl(response.data.profile);
@@ -142,6 +148,27 @@ export default function SchoolSettingsPage({ user }) {
       }
     };
     fetchProvinces();
+  }, []);
+
+  // Fetch school project types on mount
+  useEffect(() => {
+    const fetchProjectTypes = async () => {
+      try {
+        const response = await schoolService.getSchoolProjectTypes();
+        console.log('🏫 Project types fetched:', response?.data || response);
+        if (response?.success && Array.isArray(response.data)) {
+          setProjectTypes(response.data);
+        } else if (Array.isArray(response?.data)) {
+          setProjectTypes(response.data);
+        } else {
+          setProjectTypes([]);
+        }
+      } catch (err) {
+        console.error('Error fetching project types:', err);
+        setProjectTypes([]);
+      }
+    };
+    fetchProjectTypes();
   }, []);
 
   // Fetch districts when province changes (only when user manually changes it, not on initial load)
@@ -260,6 +287,15 @@ export default function SchoolSettingsPage({ user }) {
     }));
   }, [communes]);
 
+  // Handle project type selection
+  const handleProjectTypeChange = useCallback((value) => {
+    console.log('🏫 Project type selected:', value);
+    setFormData(prev => ({
+      ...prev,
+      projectTypeId: value
+    }));
+  }, []);
+
   // Handle form submission
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
@@ -283,6 +319,11 @@ export default function SchoolSettingsPage({ user }) {
       submitData.append('code', formData.code);
       submitData.append('status', formData.status);
 
+      // Add project type if selected
+      if (formData.projectTypeId) {
+        submitData.append('projectTypeId', formData.projectTypeId);
+      }
+
       // Add location data in nested place object format (as expected by API)
       const placeData = {};
       if (formData.province_id) {
@@ -304,6 +345,7 @@ export default function SchoolSettingsPage({ user }) {
       }
 
       console.log('📤 Submitting school update with place data:', placeData);
+      console.log('📤 Submitting school update with projectTypeId:', formData.projectTypeId);
       const response = await schoolService.updateSchool(schoolId, submitData);
 
       if (response?.success) {
@@ -440,7 +482,7 @@ export default function SchoolSettingsPage({ user }) {
 
             <hr className="border-gray-200" />
 
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
               {/* School Name */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-900 mb-2">
@@ -453,7 +495,7 @@ export default function SchoolSettingsPage({ user }) {
                   value={formData.name}
                   onChange={handleInputChange}
                   disabled={submitting}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full px-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   placeholder={t('enterSchoolName') || 'Enter school name'}
                 />
               </div>
@@ -470,8 +512,27 @@ export default function SchoolSettingsPage({ user }) {
                   value={formData.code}
                   onChange={handleInputChange}
                   disabled={submitting}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full px-4 py-2 border text-sm border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   placeholder={t('enterSchoolCode') || 'Enter school code'}
+                />
+              </div>
+
+              {/* Project Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  {t('projectType') || 'Project Type'}
+                </label>
+                <Dropdown
+                  value={formData.projectTypeId}
+                  onValueChange={handleProjectTypeChange}
+                  options={projectTypes.map(type => ({
+                    value: String(type.id),
+                    label: type.name || type.description
+                  }))}
+                  placeholder={t('selectProjectType') || 'Select Project Type'}
+                  disabled={submitting}
+                  className="w-full"
+                  maxHeight="max-h-60"
                 />
               </div>
             </div>
