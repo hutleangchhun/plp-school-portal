@@ -37,9 +37,16 @@ export default function ProfileUpdate({ user, setUser }) {
     roleNameKh: '',
     weight_kg: '',
     height_cm: '',
+    bmi: '',
     qr_code: '',
     qr_token: '',
     qr_generated_at: '',
+    // Additional fields from API payload
+    accessibility: [],
+    employment_type: '',
+    ethnic_group: '',
+    gradeLevel: '',
+    hire_date: '',
     // Current residence location
     residence: {
       provinceId: '',
@@ -214,9 +221,16 @@ export default function ProfileUpdate({ user, setUser }) {
           roleNameKh: normalizedData.roleNameKh || '',
           weight_kg: normalizedData.weight_kg || '',
           height_cm: normalizedData.height_cm || '',
+          bmi: normalizedData.bmi || '',
           qr_code: normalizedData.qr_code || '',
           qr_token: normalizedData.qr_token || '',
           qr_generated_at: normalizedData.qr_generated_at || '',
+          // Additional fields from API payload
+          accessibility: normalizedData.accessibility || [],
+          employment_type: normalizedData.employment_type || '',
+          ethnic_group: normalizedData.ethnic_group || '',
+          gradeLevel: normalizedData.gradeLevel || '',
+          hire_date: normalizedData.hire_date || '',
           // Handle nested residence object
           residence: {
             provinceId: normalizedData.residence?.provinceId || normalizedData.province_id || '',
@@ -558,6 +572,27 @@ export default function ProfileUpdate({ user, setUser }) {
         updateData.newPassword = formData.newPassword;
       }
 
+      // Include additional fields if available
+      if (formData.employment_type) {
+        updateData.employment_type = formData.employment_type;
+      }
+
+      if (formData.ethnic_group) {
+        updateData.ethnic_group = formData.ethnic_group;
+      }
+
+      if (formData.gradeLevel) {
+        updateData.gradeLevel = formData.gradeLevel;
+      }
+
+      if (formData.hire_date) {
+        updateData.hire_date = formData.hire_date;
+      }
+
+      if (formData.accessibility && formData.accessibility.length > 0) {
+        updateData.accessibility = formData.accessibility;
+      }
+
       console.log('Update payload being sent:', updateData);
 
       const response = await api.user.updateUserProfile(updateData);
@@ -588,9 +623,15 @@ export default function ProfileUpdate({ user, setUser }) {
         nationality: response.nationality || prev.nationality,
         weight_kg: response.weight_kg || prev.weight_kg,
         height_cm: response.height_cm || prev.height_cm,
+        bmi: response.bmi || prev.bmi,
         qr_code: response.qr_code || prev.qr_code,
         qr_token: response.qr_token || prev.qr_token,
         qr_generated_at: response.qr_generated_at || prev.qr_generated_at,
+        accessibility: response.accessibility || prev.accessibility,
+        employment_type: response.employment_type || prev.employment_type,
+        ethnic_group: response.ethnic_group || prev.ethnic_group,
+        gradeLevel: response.gradeLevel || prev.gradeLevel,
+        hire_date: response.hire_date || prev.hire_date,
         residence: response.residence || prev.residence,
         placeOfBirth: response.placeOfBirth || prev.placeOfBirth
       }));
