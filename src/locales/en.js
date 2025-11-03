@@ -89,6 +89,8 @@ export const en = {
   contract: 'Contract',
   agreement: 'Agreement',
   selectGradeLevel: 'Select Grade Level',
+  teacherInformation: 'Teacher Information',
+    updateYourPersionalDetails: 'Update your personal details and preferences',
   
   // Location fields
   provinceId: 'Province ID',
@@ -140,6 +142,8 @@ export const en = {
   viewPicture: 'View Picture',
   uploadNewPicture: 'Upload New Picture',
   newPictureSelected: 'New picture selected',
+  generatedAt: 'Generated At',
+  view: 'View',
 
   // Dashboard & Welcome
   assigned: 'Assigned',

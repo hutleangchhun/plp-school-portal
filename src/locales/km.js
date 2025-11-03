@@ -82,6 +82,7 @@ export const km = {
   male: 'ប្រុស',
   female: 'ស្រី',
   nationality: 'សញ្ជាតិ',
+  selectNationality: 'ជ្រើសរើសសញ្ជាតិ',
   profilePicture: 'រូបភាពរបស់អ្នក (ឈ្មោះឯកសារ)',
   teacherNumber: 'អត្តលេខគ្រូ',
   teacherId: 'លេខសម្គាល់គ្រូ',
@@ -98,6 +99,8 @@ export const km = {
   contract: 'កិច្ចសន្យា',
   agreement: 'កិច្ចព្រមព្រៀង',
   selectGradeLevel: 'ជ្រើសរើសកម្រិតថ្នាក់',
+  teacherInformation: 'ព័ត៌មានគ្រូបង្រៀន',
+  updateYourPersionalDetails: 'ធ្វើបច្ចុប្បន្នភាពនៃព័ត៌មានរបស់លោកអ្នក',
   
   // Location fields
   provinceId: 'លេខកំណត់ខេត្ត',
@@ -157,6 +160,8 @@ export const km = {
   viewPicture: 'មើលរូបភាព',
   uploadNewPicture: 'ប្ដូររូបភាពថ្មី',
   newPictureSelected: 'រូបភាពថ្មីត្រូវបានជ្រើសរើស',
+  generatedAt: 'បង្កើតថ្ងៃ',
+    view: 'មើល',
 
   // Dashboard & Welcome
   assigned: 'បានកំណត់',

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { Save, User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler, Download, QrCode as QrCodeIcon } from 'lucide-react';
-import * as RadioGroup from '@radix-ui/react-radio-group';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -31,8 +30,7 @@ export default function ProfileUpdate({ user, setUser }) {
     profile_picture: '',
     phone: '',
     teacher_number: '',
-    teacherId: '',
-    nationality: 'Cambodian',
+    nationality: 'ខ្មែរ',
     roleNameEn: '',
     roleNameKh: '',
     weight_kg: '',
@@ -143,8 +141,7 @@ export default function ProfileUpdate({ user, setUser }) {
 
       setInitialLoading(true);
       try {
-        // First try to get detailed user data with school information
-        let userData = null;
+        // Get user data from localStorage
         const authUser = (() => {
           try {
             const storedUser = localStorage.getItem('user');
@@ -155,39 +152,30 @@ export default function ProfileUpdate({ user, setUser }) {
           }
         })();
 
-        // Try to get detailed user data first
-        if (authUser?.id) {
-          try {
-            const detailedResponse = await api.user.getUserByID(authUser.id);
-            userData = detailedResponse?.data || detailedResponse;
-            console.log('Detailed user data with school:', userData);
-          } catch (error) {
-            console.warn('Failed to fetch detailed user data, falling back to getMyAccount:', error);
-          }
+        // Get detailed user data by ID
+        if (!authUser?.id) {
+          throw new Error('User ID not found. Please log in again.');
         }
 
-        // Fallback to getMyAccount if detailed fetch failed
-        if (!userData) {
-          userData = await api.user.getMyAccount();
-        }
+        const userData = await api.user.getUserByID(authUser.id);
+        console.log('User data loaded:', userData);
 
         // Debug user data structure (can be removed in production)
         if (import.meta.env.DEV) {
           console.log('=== USER DATA DEBUG ===');
           console.log('Full userData object:', userData);
-          console.log('Available keys:', Object.keys(userData || {}));
+          console.log('Available keys:', Object.keys(userData));
           console.log('=== END USER DATA DEBUG ===');
         }
 
         // Normalize userData to handle incomplete payloads gracefully
-        const normalizedData = userData || {};
+        const normalizedData = userData;
 
         // Try to extract a valid user ID from various possible fields
         const possibleUserIds = [
           normalizedData.id,
           normalizedData.userId,
           normalizedData.user_id,
-          normalizedData.teacherId,
           normalizedData.teacher_id,
           normalizedData.userAccountId,
           normalizedData.accountId,
@@ -199,6 +187,9 @@ export default function ProfileUpdate({ user, setUser }) {
 
         const extractedUserId = possibleUserIds.find(id => id !== null && id !== undefined && id !== '');
         console.log('Extracted user ID:', extractedUserId, 'from possible IDs:', possibleUserIds);
+
+        // Extract teacher object if it exists (some fields are nested here)
+        const teacher = normalizedData.teacher || {};
 
         // Create form data with all fields, using empty strings as defaults for missing optional fields
         const newFormData = {
@@ -215,8 +206,7 @@ export default function ProfileUpdate({ user, setUser }) {
           profile_picture: normalizedData.profile_picture || '',
           phone: normalizedData.phone || '',
           teacher_number: normalizedData.teacher_number || '',
-          teacherId: normalizedData.teacherId || '',
-          nationality: normalizedData.nationality || 'Cambodian',
+          nationality: normalizedData.nationality || 'ខ្មែរ',
           roleNameEn: normalizedData.roleNameEn || '',
           roleNameKh: normalizedData.roleNameKh || '',
           weight_kg: normalizedData.weight_kg || '',
@@ -225,12 +215,12 @@ export default function ProfileUpdate({ user, setUser }) {
           qr_code: normalizedData.qr_code || '',
           qr_token: normalizedData.qr_token || '',
           qr_generated_at: normalizedData.qr_generated_at || '',
-          // Additional fields from API payload
+          // Additional fields from API payload - check both top level and nested teacher object
           accessibility: normalizedData.accessibility || [],
-          employment_type: normalizedData.employment_type || '',
+          employment_type: normalizedData.employment_type || teacher.employment_type || '',
           ethnic_group: normalizedData.ethnic_group || '',
-          gradeLevel: normalizedData.gradeLevel || '',
-          hire_date: normalizedData.hire_date || '',
+          gradeLevel: normalizedData.gradeLevel || teacher.gradeLevel || '',
+          hire_date: normalizedData.hire_date || teacher.hire_date || '',
           // Handle nested residence object
           residence: {
             provinceId: normalizedData.residence?.provinceId || normalizedData.province_id || '',
@@ -537,9 +527,12 @@ export default function ProfileUpdate({ user, setUser }) {
         updateData.id = formData.id;
       }
 
-      // Include roleId if available
+      // Always include roleId if available (important for maintaining user role)
       if (formData.roleId) {
         updateData.roleId = formData.roleId;
+        console.log('Including roleId in update:', formData.roleId);
+      } else {
+        console.warn('Warning: roleId is empty, user role may not be preserved');
       }
 
       // Include location fields if available
@@ -593,8 +586,6 @@ export default function ProfileUpdate({ user, setUser }) {
         updateData.accessibility = formData.accessibility;
       }
 
-      console.log('Update payload being sent:', updateData);
-
       const response = await api.user.updateUserProfile(updateData);
       clearTimeout(timeoutId);
 
@@ -608,6 +599,8 @@ export default function ProfileUpdate({ user, setUser }) {
       setUser(updatedUser);
 
       // Update formData with the response data to refresh all displayed values including BMI
+      // Also handle nested teacher object which may contain some fields
+      const teacher = response.teacher || {};
       setFormData(prev => ({
         ...prev,
         id: response.id || prev.id,
@@ -627,16 +620,40 @@ export default function ProfileUpdate({ user, setUser }) {
         qr_code: response.qr_code || prev.qr_code,
         qr_token: response.qr_token || prev.qr_token,
         qr_generated_at: response.qr_generated_at || prev.qr_generated_at,
-        accessibility: response.accessibility || prev.accessibility,
-        employment_type: response.employment_type || prev.employment_type,
+        // Additional fields - check both top level and nested teacher object
+        accessibility: response.accessibility || teacher.accessibility || prev.accessibility,
+        employment_type: response.employment_type || teacher.employment_type || prev.employment_type,
         ethnic_group: response.ethnic_group || prev.ethnic_group,
-        gradeLevel: response.gradeLevel || prev.gradeLevel,
-        hire_date: response.hire_date || prev.hire_date,
+        gradeLevel: response.gradeLevel || teacher.gradeLevel || prev.gradeLevel,
+        hire_date: response.hire_date || teacher.hire_date || prev.hire_date,
         residence: response.residence || prev.residence,
         placeOfBirth: response.placeOfBirth || prev.placeOfBirth
       }));
 
       setProfilePictureFile(null); // Clear the selected file
+
+      // Re-fetch user data to ensure all fields are properly displayed
+      // This ensures the form shows the latest data from the server
+      try {
+        const authUser = JSON.parse(localStorage.getItem('user') || '{}');
+        if (authUser?.id) {
+          const freshUserData = await api.user.getUserByID(authUser.id);
+          // Update formData with fresh data from server
+          const teacher = freshUserData.teacher || {};
+          setFormData(prev => ({
+            ...prev,
+            employment_type: freshUserData.employment_type || teacher.employment_type || prev.employment_type,
+            ethnic_group: freshUserData.ethnic_group || prev.ethnic_group,
+            gradeLevel: freshUserData.gradeLevel || teacher.gradeLevel || prev.gradeLevel,
+            hire_date: freshUserData.hire_date || teacher.hire_date || prev.hire_date,
+            accessibility: freshUserData.accessibility || teacher.accessibility || prev.accessibility
+          }));
+        }
+      } catch (refreshError) {
+        console.warn('Could not refresh user data:', refreshError);
+        // Continue anyway, as the initial update succeeded
+      }
+
       showSuccess(t('profileUpdatedSuccess'));
     } catch (err) {
       clearTimeout(timeoutId);
@@ -681,8 +698,7 @@ export default function ProfileUpdate({ user, setUser }) {
       }
 
       // Get user ID from form data or user prop - try multiple field names
-      let userId = formData.id || formData.teacherId ||
-        user?.id || user?.userId || user?.user_id || user?.teacherId;
+      let userId = formData.id || user?.id || user?.userId || user?.user_id;
 
       // Try to extract user ID from localStorage as fallback
       if (!userId) {
@@ -690,7 +706,7 @@ export default function ProfileUpdate({ user, setUser }) {
           const storedUser = localStorage.getItem('user');
           if (storedUser) {
             const parsedUser = JSON.parse(storedUser);
-            userId = parsedUser.id || parsedUser.userId || parsedUser.user_id || parsedUser.teacherId;
+            userId = parsedUser.id || parsedUser.userId || parsedUser.user_id;
             console.log('Extracted user ID from localStorage:', userId);
           }
         } catch (error) {
@@ -732,14 +748,12 @@ export default function ProfileUpdate({ user, setUser }) {
         type: profilePictureFile.type
       });
       console.log('Form data ID fields:', {
-        id: formData.id,
-        teacherId: formData.teacherId
+        id: formData.id
       });
       console.log('User prop ID fields:', {
         id: user?.id,
         userId: user?.userId,
-        user_id: user?.user_id,
-        teacherId: user?.teacherId
+        user_id: user?.user_id
       });
       console.log('Final userId for upload:', userId);
       console.log('=== END UPLOAD DEBUG ===');
@@ -835,9 +849,9 @@ export default function ProfileUpdate({ user, setUser }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8">
+    <div className="bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen p-3 sm:p-6">
       <div className="">
-        <div className="bg-white shadow-2xl rounded-2xl overflow-hidden">
+        <div className="bg-white rounded-2xl overflow-hidden">
           <div className="px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
               <div className="flex items-center min-w-0 flex-1">
@@ -848,7 +862,7 @@ export default function ProfileUpdate({ user, setUser }) {
                   <h3 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent truncate">
                     {t('personalInformation')}
                   </h3>
-                  <p className="text-slate-500 text-xs sm:text-sm mt-1 hidden sm:block">Update your personal details and preferences</p>
+                  <p className="text-slate-500 text-xs sm:text-sm mt-1 hidden sm:block">{t('updateYourPersionalDetails','Update your personal details and preferences')}</p>
                 </div>
               </div>
               <Button
@@ -868,43 +882,39 @@ export default function ProfileUpdate({ user, setUser }) {
               <div className="col-span-1 mb-8 p-6 rounded-xl border border-gray-100 shadow-sm">
                 {/* Profile Picture with Dropdown */}
                 <div className="grid grid-cols-1 gap-3 justify-center items-center" ref={dropdownRef}>
-
                   <div
-                    className={`relative inline-block ${isEditMode ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                    className={`relative my-3 inline-block ${isEditMode ? 'cursor-pointer' : 'cursor-not-allowed'}`}
                     onClick={isEditMode ? () => setShowDropdown(!showDropdown) : undefined}
                   >
-                    <label className="block text-sm font-semibold text-gray-900 mb-4">
-                      {t('profilePicture')}
-                    </label>
                     {profilePictureFile ? (
-                      <img
-                        src={URL.createObjectURL(profilePictureFile)}
-                        alt="Profile Preview"
-                        className="h-40 w-40 sm:h-40 sm:w-40 lg:h-40 lg:w-40 rounded-full object-cover border-4 border-white shadow-lg hover:shadow-xl transition-all"
-                      />
+                      <div className='flex justify-center items-center'>
+                        <img
+                          src={URL.createObjectURL(profilePictureFile)}
+                          alt="Profile Preview"
+                          className="h-40 w-40 sm:h-40 sm:w-40 lg:h-40 lg:w-40 rounded-full object-cover border-4 border-white shadow-lg hover:shadow-xl transition-all"
+                        />
+                      </div>
                     ) : (
-                      <ProfileImage
-                        user={formData}
-                        size="custom"
-                        customSize="h-40 w-40 sm:h-40 sm:w-40 lg:h-40 lg:w-40"
-                        alt="Profile"
-                        className="shadow-lg"
-                        borderColor="border-white"
-                        fallbackType="image"
-                        clickable={isEditMode}
-                      />
+                      <div className='flex justify-center items-center'>
+                        <ProfileImage
+                          user={formData}
+                          size="custom"
+                          customSize="h-40 w-40 sm:h-40 sm:w-40 lg:h-40 lg:w-40"
+                          alt="Profile"
+                          className="shadow-lg"
+                          borderColor="border-white"
+                          fallbackType="image"
+                          clickable={isEditMode}
+                        />
+                      </div>
                     )}
 
                   </div>
                   {/* QR Code Section */}
                   {formData.qr_code && (
-                    <div className="">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <QrCodeIcon className="h-4 w-4" />
-                        QR Code
-                      </h4>
-                      <div className=" gap-4 bg-white rounded-lg border border-gray-200">
-                        <div className="flex flex-row justify-between items-center gap-2">
+                    <div>
+                      <div className="p-3 gap-4 bg-white border-2 border-gray-200 rounded-2xl">
+                        <div className="flex flex-row justify-between items-center">
                           <Button
                             type="button"
                             variant="link"
@@ -926,11 +936,11 @@ export default function ProfileUpdate({ user, setUser }) {
 
                           </Button>
                         </div>
-                        <div className="p-2">
+                        <div className="py-6 flex justify-center items-center">
                           <img
                             src={formData.qr_code}
                             alt="QR Code"
-                            className="h-32 w-32 object-contain"
+                            className="h-72 w-72 object-contain"
                           />
                         </div>
                       </div>
@@ -980,9 +990,11 @@ export default function ProfileUpdate({ user, setUser }) {
                 />
 
                 {profilePictureFile && (
-                  <p className="mt-2 text-sm text-green-600">
-                    {t('newPictureSelected') || 'New picture selected'}: {profilePictureFile.name}
-                  </p>
+                  <div className='p-6 bg-green-100 rounded-lg border-1 border-green-300 mt-3'>
+                    <p className="text-sm text-green-600">
+                      {t('newPictureSelected') || 'New picture selected'}: {profilePictureFile.name}
+                    </p>
+                  </div>
                 )}
 
                 {pictureUploading && (
@@ -990,7 +1002,8 @@ export default function ProfileUpdate({ user, setUser }) {
                 )}
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 p-4 border border-gray-100 rounded-lg col-span-2">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 p-4 border border-gray-100 rounded-lg col-span-2 min-h-96 overflow-y-auto">
+                <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-4">{t('personalInformation') || 'Additional Information'}</h4>
                 <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-3">
                   <div>
                     <label htmlFor="username" className="block text-xs sm:text-sm font-medium text-gray-700">
@@ -1009,64 +1022,6 @@ export default function ProfileUpdate({ user, setUser }) {
                         className={`mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
                         value={formData.username}
                         onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="teacher_number" className="block text-xs sm:text-sm font-medium text-gray-700">
-                      {t('teacherNumber')}
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                        <Building className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="teacher_number"
-                        id="teacher_number"
-                        readOnly={!isEditMode}
-                        className={`mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                        value={formData.teacher_number}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="teacherId" className="block text-xs sm:text-sm font-medium text-gray-700">
-                      {t('teacherId') || 'Teacher ID'}
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                        <Building className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="teacherId"
-                        id="teacherId"
-                        readOnly
-                        className="mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
-                        value={formData.teacherId}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-3">
-                  <div>
-                    <label htmlFor="roleNameKh" className="block text-xs sm:text-sm font-medium text-gray-700">
-                      {t('role') || 'Role'}
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                        <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="roleNameKh"
-                        id="roleNameKh"
-                        readOnly
-                        className="mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
-                        value={formData.roleNameKh}
                       />
                     </div>
                   </div>
@@ -1090,7 +1045,6 @@ export default function ProfileUpdate({ user, setUser }) {
                       />
                     </div>
                   </div>
-
                   <div>
                     <label htmlFor="last_name" className="block text-xs sm:text-sm font-medium text-gray-700">
                       {t('lastNameRequired')}
@@ -1111,6 +1065,95 @@ export default function ProfileUpdate({ user, setUser }) {
                       />
                     </div>
                   </div>
+
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-4">
+                  <div>
+                    <label htmlFor="roleNameKh" className="block text-xs sm:text-sm font-medium text-gray-700">
+                      {t('role') || 'Role'}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+                        <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        name="roleNameKh"
+                        id="roleNameKh"
+                        readOnly
+                        className="mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                        value={formData.roleNameKh}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+                      {t('gender') || 'Gender'}
+                    </label>
+                    <div className="mt-1">
+                      {isEditMode ? (
+                        <Dropdown
+                          value={formData.gender}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
+                          options={[
+                            { value: 'MALE', label: t('male') || 'Male' },
+                            { value: 'FEMALE', label: t('female') || 'Female' }
+                          ]}
+                          placeholder={t('selectGender') || 'Select gender'}
+                          className="w-full"
+                        />
+                      ) : (
+                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                          {formData.gender === 'MALE' ? (t('male') || 'Male') : (t('female') || 'Female')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="nationality" className="block text-sm font-medium text-gray-700">
+                      {t('nationality')}
+                    </label>
+                    <div className="mt-1">
+                      {isEditMode ? (
+                        <Dropdown
+                          value={formData.nationality}
+                          onValueChange={(value) => {
+                            setFormData(prev => ({ ...prev, nationality: value }));
+                          }}
+                          options={[
+                            { value: 'ខ្មែរ', label: 'ខ្មែរ' },
+                          ]}
+                          placeholder={t('selectNationality') || 'Select nationality'}
+                          className="w-full"
+                        />
+                      ) : (
+                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                          {formData.nationality}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700">
+                      {t('dateOfBirth') || 'Date of Birth'}
+                    </label>
+                    <div className="mt-1">
+                      {isEditMode ? (
+                        <DatePickerWithDropdowns
+                          value={formData.date_of_birth ? new Date(formData.date_of_birth) : null}
+                          onChange={handleDateChange}
+                          placeholder={t('selectDate') || 'Select date'}
+                          className="w-full"
+                        />
+                      ) : (
+                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                          {formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : '-'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
@@ -1174,201 +1217,301 @@ export default function ProfileUpdate({ user, setUser }) {
                     </div>
                   </div>
                 </div>
-
-                {/* Date of Birth and Gender */}
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                  <div>
-                    <label htmlFor="nationality" className="block text-sm font-medium text-gray-700">
-                      {t('nationality')}
-                    </label>
-                    <div className="mt-1">
-                      {isEditMode ? (
-                        <Dropdown
-                          value={formData.nationality}
-                          onValueChange={(value) => {
-                            setFormData(prev => ({ ...prev, nationality: value }));
-                          }}
-                          options={[
-                            { value: 'Cambodian', label: 'ខ្មែរ' },
-                            { value: 'Thai', label: 'ថៃ' },
-                            { value: 'Vietnamese', label: 'វៀតណាម' },
-                            { value: 'Laotian', label: 'ឡាវ' },
-                            { value: 'Chinese', label: 'ចិន' },
-                            { value: 'Other', label: 'ផ្សេងទៀត' }
-                          ]}
-                          placeholder={t('selectNationality') || 'Select nationality'}
-                          className="w-full"
-                        />
-                      ) : (
-                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                          {formData.nationality === 'Cambodian' ? 'ខ្មែរ' : formData.nationality === 'Thai' ? 'ថៃ' : formData.nationality === 'Vietnamese' ? 'វៀតណាម' : formData.nationality === 'Laotian' ? 'ឡាវ' : formData.nationality === 'Chinese' ? 'ចិន' : formData.nationality === 'Other' ? 'ផ្សេងទៀត' : formData.nationality}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700">
-                      {t('dateOfBirth') || 'Date of Birth'}
-                    </label>
-                    <div className="mt-1">
-                      {isEditMode ? (
-                        <DatePickerWithDropdowns
-                          value={formData.date_of_birth ? new Date(formData.date_of_birth) : null}
-                          onChange={handleDateChange}
-                          placeholder={t('selectDate') || 'Select date'}
-                          className="w-full"
-                        />
-                      ) : (
-                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                          {formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : '-'}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className=''>
-                    <label className="block text-sm font-medium text-gray-700">
-                      {t('gender') || 'Gender'}
-                    </label>
-                    <div className="mt-1">
-                      {isEditMode ? (
-                        <RadioGroup.Root
-                          value={formData.gender}
-                          onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
-                          className="flex items-center gap-3"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroup.Item
-                              value="MALE"
-                              id="male"
-                              className="w-4 h-4 rounded-full border border-gray-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                            >
-                              <RadioGroup.Indicator className="flex items-center justify-center w-full h-full relative after:content-[''] after:w-2 after:h-2 after:rounded-full after:bg-white" />
-                            </RadioGroup.Item>
-                            <label htmlFor="male" className="text-sm text-gray-700 cursor-pointer">
-                              {t('male') || 'Male'}
-                            </label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroup.Item
-                              value="FEMALE"
-                              id="female"
-                              className="w-4 h-4 rounded-full border border-gray-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                            >
-                              <RadioGroup.Indicator className="flex items-center justify-center w-full h-full relative after:content-[''] after:w-2 after:h-2 after:rounded-full after:bg-white" />
-                            </RadioGroup.Item>
-                            <label htmlFor="female" className="text-sm text-gray-700 cursor-pointer">
-                              {t('female') || 'Female'}
-                            </label>
-                          </div>
-                        </RadioGroup.Root>
-                      ) : (
-                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                          {formData.gender === 'MALE' ? (t('male') || 'Male') : (t('female') || 'Female')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Weight and Height */}
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="weight_kg" className="block text-sm font-medium text-gray-700">
-                      {t('weight', 'Weight')} ({t('kg', 'kg')}) <span className="text-gray-400 text-xs">{t('optional', '(Optional)')}</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Weight className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="number"
-                        name="weight_kg"
-                        id="weight_kg"
-                        step="0.1"
-                        min="0"
-                        readOnly={!isEditMode}
-                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                        value={formData.weight_kg}
-                        onChange={handleInputChange}
-                        placeholder={t('enterWeight', 'Enter weight')}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="height_cm" className="block text-sm font-medium text-gray-700">
-                      {t('height', 'Height')} ({t('cm', 'cm')}) <span className="text-gray-400 text-xs">{t('optional', '(Optional)')}</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Ruler className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="number"
-                        name="height_cm"
-                        id="height_cm"
-                        step="0.1"
-                        min="0"
-                        readOnly={!isEditMode}
-                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                        value={formData.height_cm}
-                        onChange={handleInputChange}
-                        placeholder={t('enterHeight', 'Enter height')}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* BMI Display as Input Fields */}
-                {(formData.weight_kg || formData.height_cm) && (
+                {/* Additional Information Fields */}
+                <div className="">
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="bmi" className="block text-sm font-medium text-gray-700">
-                        {t('bmi') || 'BMI'} <span className="text-gray-400 text-xs">{t('readonly', '(Read-only)')}</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          id="bmi"
-                          readOnly
-                          value={calculateBMI() || '-'}
-                          className={`mt-1 block w-full px-3 py-2 rounded-md shadow-sm sm:text-sm font-bold transition-all duration-300 cursor-not-allowed border-2 ${
-                            !calculateBMI()
-                              ? 'bg-gray-50 border-gray-300 text-gray-900'
-                              : getBMICategory(calculateBMI()).bmi < 18.5
-                              ? 'bg-blue-50 border-blue-400 text-blue-900'
-                              : getBMICategory(calculateBMI()).bmi < 25
-                              ? 'bg-green-50 border-green-400 text-green-900'
-                              : getBMICategory(calculateBMI()).bmi < 30
-                              ? 'bg-yellow-50 border-yellow-400 text-yellow-900'
-                              : 'bg-red-50 border-red-400 text-red-900'
-                          }`}
-                        />
-                      </div>
-                    </div>
-
-                    {calculateBMI() && (
+                    <div className='grid grid-rows-4'>
                       <div>
-                        <label htmlFor="bmiStatus" className="block text-sm font-medium text-gray-700">
-                          {t('bmiCategory') || 'Status'} <span className="text-gray-400 text-xs">{t('readonly', '(Read-only)')}</span>
+                        <label htmlFor="ethnic_group" className="block text-sm font-medium text-gray-700">
+                          {t('ethnicGroup') || 'Ethnic Group'}
+                        </label>
+                        {isEditMode ? (
+                          <Dropdown
+                            options={[
+                              { value: '', label: t('selectEthnicGroup', 'ជ្រើសរើសជនជាតិភាគតិច') },
+                              { value: 'ជនជាតិព្នង', label: 'ជនជាតិព្នង' },
+                              { value: 'ជនជាតិកួយ', label: 'ជនជាតិកួយ' },
+                              { value: 'ជនជាតិគ្រឹង', label: 'ជនជាតិគ្រឹង' },
+                              { value: 'ជនជាតិរដែរ', label: 'ជនជាតិរដែរ' },
+                              { value: 'ជនជាតិស្ទៀង', label: 'ជនជាតិស្ទៀង' },
+                              { value: 'ជនជាតិទំពួន', label: 'ជនជាតិទំពួន' },
+                              { value: 'ជនជាតិព្រៅ', label: 'ជនជាតិព្រៅ' },
+                              { value: 'ជនជាតិកាវែត', label: 'ជនជាតិកាវែត' },
+                              { value: 'ជនជាតិកាចក់', label: 'ជនជាតិកាចក់' },
+                              { value: 'ជនជាតិព័រ', label: 'ជនជាតិព័រ' },
+                              { value: 'ជនជាតិខោញ', label: 'ជនជាតិខោញ' },
+                              { value: 'ជនជាតិលាវ', label: 'ជនជាតិលាវ' },
+                              { value: 'ជនជាតិផ្សេងទៀត', label: 'ជនជាតិផ្សេងទៀត' },
+                              { value: 'ជនជាតិមិល', label: 'ជនជាតិមិល' },
+                              { value: 'ជនជាតិចារាយ', label: 'ជនជាតិចារាយ' }
+                            ]}
+                            value={formData.ethnic_group}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, ethnic_group: value }))}
+                            placeholder={t('selectEthnicGroup', 'ជ្រើសរើសជនជាតិភាគតិច')}
+                            contentClassName="max-h-[200px] overflow-y-auto"
+                            className='w-full'
+                          />
+                        ) : (
+                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                            {formData.ethnic_group || '-'}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label htmlFor="weight_kg" className="block text-sm font-medium text-gray-700">
+                          {t('weight', 'Weight')} ({t('kg', 'kg')}) <span className="text-gray-400 text-xs">{t('optional', '(Optional)')}</span>
                         </label>
                         <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Weight className="h-4 w-4 text-gray-400" />
+                          </div>
                           <input
-                            type="text"
-                            id="bmiStatus"
-                            readOnly
-                            value={getBMICategory(calculateBMI()).label}
-                            className={`mt-1 block w-full px-3 py-2 rounded-md shadow-sm sm:text-sm font-semibold transition-all duration-300 cursor-not-allowed border-2 ${getBMICategory(calculateBMI()).bgColor} ${getBMICategory(calculateBMI()).color} border-opacity-50`}
+                            type="number"
+                            name="weight_kg"
+                            id="weight_kg"
+                            step="0.1"
+                            min="0"
+                            readOnly={!isEditMode}
+                            className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
+                            value={formData.weight_kg}
+                            onChange={handleInputChange}
+                            placeholder={t('enterWeight', 'Enter weight')}
                           />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="height_cm" className="block text-sm font-medium text-gray-700">
+                          {t('height', 'Height')} ({t('cm', 'cm')}) <span className="text-gray-400 text-xs">{t('optional', '(Optional)')}</span>
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Ruler className="h-4 w-4 text-gray-400" />
+                          </div>
+                          <input
+                            type="number"
+                            name="height_cm"
+                            id="height_cm"
+                            step="0.1"
+                            min="0"
+                            readOnly={!isEditMode}
+                            className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
+                            value={formData.height_cm}
+                            onChange={handleInputChange}
+                            placeholder={t('enterHeight', 'Enter height')}
+                          />
+                        </div>
+                      </div>
+                      {/* BMI Display as Read-only Input */}
+                      {(formData.weight_kg || formData.height_cm) && calculateBMI() && (
+                        <div>
+                          <label htmlFor="bmi" className="block text-sm font-medium text-gray-700">
+                            BMI
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              id="bmi"
+                              readOnly
+                              value={calculateBMI() || '-'}
+                              className={`mt-1 block w-full px-3 py-2 rounded-md shadow-sm sm:text-sm font-bold transition-all duration-300 cursor-not-allowed border-2 ${!calculateBMI()
+                                ? 'bg-gray-50 border-gray-300 text-gray-900'
+                                : getBMICategory(calculateBMI()).bmi < 18.5
+                                  ? 'bg-blue-50 border-blue-400 text-blue-900'
+                                  : getBMICategory(calculateBMI()).bmi < 25
+                                    ? 'bg-green-50 border-green-400 text-green-900'
+                                    : getBMICategory(calculateBMI()).bmi < 30
+                                      ? 'bg-yellow-50 border-yellow-400 text-yellow-900'
+                                      : 'bg-red-50 border-red-400 text-red-900'
+                                }`}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {/* Accessibility Checkboxes */}
+                    {isEditMode && (
+                      <div className="">
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          {t('accessibility', 'Accessibility')}
+                        </label>
+                        <div className="space-y-2 p-3 border border-gray-300 rounded-md bg-white max-h-64 overflow-y-auto">
+                          {[
+                            { value: 'ពិបាកក្នុងការធ្វើចលនា', label: 'ពិបាកក្នុងការធ្វើចលនា' },
+                            { value: 'ពិបាកក្នុងការស្ដាប់', label: 'ពិបាកក្នុងការស្ដាប់' },
+                            { value: 'ពិបាកក្នុងការនីយាយ', label: 'ពិបាកក្នុងការនីយាយ' },
+                            { value: 'ពិបាកក្នុងការមើល', label: 'ពិបាកក្នុងការមើល' },
+                            { value: 'ពិការសរីរាង្គខាងក្នុង', label: 'ពិការសរីរាង្គខាងក្នុង' },
+                            { value: 'ពិការសតិបញ្ញា', label: 'ពិការសតិបញ្ញា' },
+                            { value: 'ពិការផ្លូវចិត្ត', label: 'ពិការផ្លូវចិត្ត' },
+                            { value: 'ពិការផ្សេងៗ', label: 'ពិការផ្សេងៗ' }
+                          ].map((option) => (
+                            <label key={option.value} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                              <input
+                                type="checkbox"
+                                checked={formData.accessibility.includes(option.value)}
+                                onChange={(e) => {
+                                  const newAccessibility = e.target.checked
+                                    ? [...formData.accessibility, option.value]
+                                    : formData.accessibility.filter(item => item !== option.value);
+                                  setFormData(prev => ({ ...prev, accessibility: newAccessibility }));
+                                }}
+                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">{option.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {!isEditMode && formData.accessibility?.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          {t('accessibility', 'Accessibility')}
+                        </label>
+                        <div className="space-y-2 p-3 border border-gray-300 rounded-md hover:bg-gray-50 max-h-64 overflow-y-auto">
+                          {[
+                            { value: 'ពិបាកក្នុងការធ្វើចលនា', label: 'ពិបាកក្នុងការធ្វើចលនា' },
+                            { value: 'ពិបាកក្នុងការស្ដាប់', label: 'ពិបាកក្នុងការស្ដាប់' },
+                            { value: 'ពិបាកក្នុងការនីយាយ', label: 'ពិបាកក្នុងការនីយាយ' },
+                            { value: 'ពិបាកក្នុងការមើល', label: 'ពិបាកក្នុងការមើល' },
+                            { value: 'ពិការសរីរាង្គខាងក្នុង', label: 'ពិការសរីរាង្គខាងក្នុង' },
+                            { value: 'ពិការសតិបញ្ញា', label: 'ពិការសតិបញ្ញា' },
+                            { value: 'ពិការផ្លូវចិត្ត', label: 'ពិការផ្លូវចិត្ត' },
+                            { value: 'ពិការផ្សេងៗ', label: 'ពិការផ្សេងៗ' },
+                          ].map((option) => (
+                            <label
+                              key={option.value}
+                              className="flex items-center space-x-2 p-1 rounded"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.accessibility.includes(option.value)}
+                                disabled
+                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-not-allowed bg-gray-100"
+                              />
+                              <span className="text-sm text-gray-700">{option.label}</span>
+                            </label>
+                          ))}
                         </div>
                       </div>
                     )}
                   </div>
-                )}
+                </div>
+                {/* Weight and Height */}
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+
+                </div>
+                <div className='border-t-2 pt-3 sm:pt-6'>
+                  <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-4">{t('teacherInformation') || 'Teacher Information'}</h4>
+                  <div className='grid grid-cols-1 sm:grid-cols-4 gap-6 items-center'>
+                    <div>
+                      <label htmlFor="teacher_number" className="block text-xs sm:text-sm font-medium text-gray-700">
+                        {t('teacherNumber')}
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+                          <Building className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+                        </div>
+                        <input
+                          type="text"
+                          name="teacher_number"
+                          id="teacher_number"
+                          readOnly={!isEditMode}
+                          className={`mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
+                          value={formData.teacher_number}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="employment_type" className="block text-sm font-medium text-gray-700">
+                        {t('employmentType') || 'Employment Type'}
+                      </label>
+                      {isEditMode ? (
+                        <Dropdown
+                          options={[
+                            { value: '', label: t('selectEmploymentType', 'Select Type') },
+                            { value: 'ក្របខ័ណ្ឌ', label: t('framework', 'Framework/Permanent') },
+                            { value: 'កិច្ចសន្យា', label: t('contract', 'Contract') },
+                            { value: 'កិច្ចព្រមព្រៀង', label: t('agreement', 'Agreement') }
+                          ]}
+                          value={formData.employment_type}
+                          onValueChange={(value) => {
+                            setFormData(prev => ({ ...prev, employment_type: value }));
+                          }}
+                          placeholder={t('selectEmploymentType', 'Select Type')}
+                          minWidth="w-full"
+                          className='w-full'
+                        />
+                      ) : (
+                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                          {formData.employment_type || '-'}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label htmlFor="hire_date" className="block text-sm font-medium text-gray-700">
+                        {t('hireDate') || 'Hire Date'}
+                      </label>
+                      {isEditMode ? (
+                        <DatePickerWithDropdowns
+                          value={formData.hire_date ? new Date(formData.hire_date) : null}
+                          onChange={(date) => {
+                            if (date) {
+                              const year = date.getFullYear();
+                              const month = String(date.getMonth() + 1).padStart(2, '0');
+                              const day = String(date.getDate()).padStart(2, '0');
+                              const formattedDate = `${year}-${month}-${day}`;
+                              setFormData(prev => ({ ...prev, hire_date: formattedDate }));
+                            } else {
+                              setFormData(prev => ({ ...prev, hire_date: '' }));
+                            }
+                          }}
+                          placeholder={t('pickDate', 'Pick a date')}
+                          className="w-full"
+                        />
+                      ) : (
+                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                          {formData.hire_date ? new Date(formData.hire_date).toLocaleDateString() : '-'}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label htmlFor="gradeLevel" className="block text-sm font-medium text-gray-700">
+                        {t('gradeLevel') || 'Grade Level'}
+                      </label>
+                      {isEditMode ? (
+                        <Dropdown
+                          options={[
+                            { value: '', label: t('selectGradeLevel', 'Select Grade Level') },
+                            { value: '1', label: t('grade1', 'Grade 1') },
+                            { value: '2', label: t('grade2', 'Grade 2') },
+                            { value: '3', label: t('grade3', 'Grade 3') },
+                            { value: '4', label: t('grade4', 'Grade 4') },
+                            { value: '5', label: t('grade5', 'Grade 5') },
+                            { value: '6', label: t('grade6', 'Grade 6') }
+                          ]}
+                          value={formData.gradeLevel}
+                          onValueChange={(value) => {
+                            setFormData(prev => ({ ...prev, gradeLevel: value }));
+                          }}
+                          placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                          contentClassName="max-h-[200px] overflow-y-auto"
+                          className='w-full'
+                        />
+                      ) : (
+                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
+                          {formData.gradeLevel || '-'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
                 {/* Current Residence Information */}
-                <div className="border-t pt-4 sm:pt-6">
+                <div className="border-t-2 pt-4 sm:pt-6">
                   <div className="flex items-center justify-between mb-3 sm:mb-4">
                     <h4 className="text-base sm:text-lg font-medium text-gray-900">{t('currentResidence') || 'Current Residence'}</h4>
                     {locationDataLoading && (
@@ -1510,7 +1653,7 @@ export default function ProfileUpdate({ user, setUser }) {
                 </div>
 
                 {/* Place of Birth Information */}
-                <div className="border-t pt-4 sm:pt-6">
+                <div className="border-t-2 pt-4 sm:pt-6">
                   <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('placeOfBirth') || 'Place of Birth'}</h4>
 
                   {/* Province and District */}

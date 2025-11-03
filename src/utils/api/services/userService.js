@@ -63,6 +63,43 @@ const userService = {
       formattedData.newPassword = userData.newPassword;
     }
 
+    // Add roleId if provided (important for maintaining user role)
+    if (userData.roleId) {
+      formattedData.roleId = userData.roleId;
+    }
+
+    // Add weight and height for BMI calculation
+    if (userData.weight_kg) {
+      formattedData.weight_kg = userData.weight_kg;
+    }
+    if (userData.height_cm) {
+      formattedData.height_cm = userData.height_cm;
+    }
+
+    // Add additional fields
+    if (userData.employment_type) {
+      formattedData.employment_type = userData.employment_type;
+    }
+    if (userData.ethnic_group) {
+      formattedData.ethnic_group = userData.ethnic_group;
+    }
+    if (userData.gradeLevel) {
+      formattedData.gradeLevel = userData.gradeLevel;
+    }
+    if (userData.hire_date) {
+      formattedData.hire_date = userData.hire_date;
+    }
+
+    // Add accessibility array if provided
+    if (userData.accessibility && Array.isArray(userData.accessibility) && userData.accessibility.length > 0) {
+      formattedData.accessibility = userData.accessibility;
+    }
+
+    // Add profile picture if provided
+    if (userData.profile_picture) {
+      formattedData.profile_picture = userData.profile_picture;
+    }
+
     // Handle residence data (nested object)
     const residenceData = userData.residence || {};
     const residenceProvinceId = residenceData.provinceId || userData.provinceId;
