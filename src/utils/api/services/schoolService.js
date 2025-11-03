@@ -47,20 +47,30 @@ export const schoolService = {
         }
     },
 
-    async updateSchool(schoolId, formData) {
+    async updateSchool(schoolId, data) {
         try {
+            const isFormData = data instanceof FormData;
+            const config = {};
+
+            // Only set Content-Type header if using FormData, otherwise let axios handle it
+            if (isFormData) {
+                config.headers = {
+                    'Content-Type': 'multipart/form-data'
+                };
+            }
+
+            console.log('🔄 Updating school with:', { schoolId, isFormData });
             const response = await handleApiResponse(() =>
-                apiClient_.put(`${ENDPOINTS.SCHOOLS.BASE}/${schoolId}`, formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                })
+                apiClient_.put(`${ENDPOINTS.SCHOOLS.BASE}/${schoolId}`, data, config)
             );
 
-            if (response?.success && response.data) {
+            console.log('📡 Update school response:', response);
+
+            // Success if response has success flag OR if we got a response object back
+            if (response?.success || response?.message || Object.keys(response || {}).length > 0) {
                 return {
                     success: true,
-                    data: response.data
+                    data: response?.data || response
                 };
             }
             return {
@@ -151,6 +161,41 @@ export const schoolService = {
                 success: false,
                 data: [],
                 error: error.message || 'Failed to fetch school project types'
+            };
+        }
+    },
+
+    async uploadSchoolProfileImage(schoolId, imageFile) {
+        try {
+            const formData = new FormData();
+            formData.append('file', imageFile);
+
+            console.log('📸 Uploading school profile image for school:', schoolId);
+            const response = await handleApiResponse(() =>
+                apiClient_.post(`${ENDPOINTS.SCHOOLS.BASE}/${schoolId}/upload-profile`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                })
+            );
+
+            console.log('📸 Image upload response:', response);
+
+            if (response?.success || response?.message || Object.keys(response || {}).length > 0) {
+                return {
+                    success: true,
+                    data: response?.data || response
+                };
+            }
+            return {
+                success: false,
+                error: 'Failed to upload school profile image'
+            };
+        } catch (error) {
+            console.error('Error uploading school profile image:', error);
+            return {
+                success: false,
+                error: error.message || 'Failed to upload school profile image'
             };
         }
     },

@@ -11,6 +11,7 @@ import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import Dropdown from '../../components/ui/Dropdown';
 import { schoolService } from '../../utils/api/services/schoolService';
 import locationService from '../../utils/api/services/locationService';
+import { getStaticAssetBaseUrl } from '../../utils/api/config';
 
 /**
  * SchoolSettingsPage Component
@@ -30,23 +31,48 @@ export default function SchoolSettingsPage({ user }) {
     code: '',
     profile: '',
     status: 'ACTIVE',
+    schoolType: '',
     projectTypeId: '',
     province_id: '',
     district_code: '',
     district_id: '', // Store numeric ID for API submission
     commune_code: '',
-    commune_id: '' // Store numeric ID for API submission
+    commune_id: '', // Store numeric ID for API submission
+    village_code: '',
+    village_id: '' // Store numeric ID for API submission
   });
   const [profileImage, setProfileImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [imageError, setImageError] = useState(false);
 
   // Location cascade state
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [communes, setCommunes] = useState([]);
+  const [villages, setVillages] = useState([]);
   const [projectTypes, setProjectTypes] = useState([]);
 
   const schoolId = user?.school_id || user?.schoolId;
+
+  // Construct full image URL from relative path
+  const getFullImageUrl = useCallback((relativePath) => {
+    if (!relativePath) return null;
+
+    // If it's already a full URL, return as is
+    if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+      return relativePath;
+    }
+
+    // If it's a data URL (from file selection preview), return as is
+    if (relativePath.startsWith('data:')) {
+      return relativePath;
+    }
+
+    // Construct full URL from relative path
+    // Backend serves static files from /uploads/ directory at the server root
+    const baseUrl = getStaticAssetBaseUrl();
+    return `${baseUrl}/uploads/${relativePath}`;
+  }, []);
 
   // Fetch school data
   useEffect(() => {
@@ -65,20 +91,26 @@ export default function SchoolSettingsPage({ user }) {
             code: response.data.code || '',
             profile: response.data.profile || '',
             status: response.data.status || 'ACTIVE',
-            projectTypeId: response.data.projectTypeId || response.data.project_type_id || '',
+            schoolType: response.data.schoolType || response.data.school_type || '',
+            projectTypeId: response.data.projectTypeId ? String(response.data.projectTypeId) : '',
             // Extract location data from nested place object
             province_id: placeData.provinceId ? String(placeData.provinceId) : '',
             district_code: (placeData.district_code || placeData.districtCode) ? String(placeData.district_code || placeData.districtCode) : '',
             district_id: placeData.districtId ? String(placeData.districtId) : '',
             commune_code: (placeData.commune_code || placeData.communeCode) ? String(placeData.commune_code || placeData.communeCode) : '',
-            commune_id: placeData.communeId ? String(placeData.communeId) : ''
+            commune_id: placeData.communeId ? String(placeData.communeId) : '',
+            village_code: (placeData.village_code || placeData.villageCode) ? String(placeData.village_code || placeData.villageCode) : '',
+            village_id: placeData.villageId ? String(placeData.villageId) : ''
           };
           console.log('📍 School location data from place object:', placeData);
           console.log('📍 Form data set:', newFormData);
           console.log('📍 Project type ID:', newFormData.projectTypeId);
           setFormData(newFormData);
           if (response.data.profile) {
-            setPreviewUrl(response.data.profile);
+            // Store the full image URL
+            const fullImageUrl = getFullImageUrl(response.data.profile);
+            setPreviewUrl(fullImageUrl);
+            console.log('🖼️ School profile image URL:', fullImageUrl);
           }
         } else {
           handleError(new Error(t('errorFetchingSchoolData') || 'Failed to fetch school data'));
@@ -93,7 +125,7 @@ export default function SchoolSettingsPage({ user }) {
     if (schoolId) {
       fetchSchoolData();
     }
-  }, [schoolId, clearError, handleError, t]);
+  }, [schoolId, clearError, handleError, t, getFullImageUrl]);
 
   // Load districts, communes, and villages when school data is loaded with location data
   useEffect(() => {
@@ -224,17 +256,58 @@ export default function SchoolSettingsPage({ user }) {
     fetchCommunes();
   }, [formData.province_id, formData.district_code, schoolData?.place?.district_code]);
 
+  // Fetch villages when commune changes (only when user manually changes it, not on initial load)
+  useEffect(() => {
+    const fetchVillages = async () => {
+      if (!formData.province_id || !formData.district_code || !formData.commune_code) {
+        setVillages([]);
+        return;
+      }
+
+      // Skip if this is the initial load from schoolData
+      if (schoolData?.place?.commune_code && formData.commune_code === String(schoolData.place.commune_code)) {
+        return;
+      }
+
+      try {
+        const response = await locationService.getVillagesByCommune(
+          formData.province_id,
+          formData.district_code,
+          formData.commune_code
+        );
+        console.log('📍 Villages loaded:', response?.data || response);
+        setVillages(response?.data || response || []);
+      } catch (err) {
+        console.error('Error fetching villages:', err);
+        setVillages([]);
+      }
+    };
+    fetchVillages();
+  }, [formData.province_id, formData.district_code, formData.commune_code, schoolData?.place?.commune_code]);
+
   // Handle profile image selection
   const handleImageChange = useCallback((e) => {
     const file = e.target.files?.[0];
     if (file) {
       setProfileImage(file);
+      setImageError(false);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrl(reader.result);
       };
+      reader.onerror = () => {
+        console.error('Error reading file');
+        setImageError(true);
+        showError(t('errorReadingImage') || 'Error reading image file');
+      };
       reader.readAsDataURL(file);
     }
+  }, [showError, t]);
+
+  // Handle image load error
+  const handleImageLoadError = useCallback(() => {
+    console.error('Error loading school profile image');
+    setImageError(true);
   }, []);
 
   // Handle form input changes
@@ -283,9 +356,33 @@ export default function SchoolSettingsPage({ user }) {
       ...prev,
       commune_code: value,
       // Use communeId from API response, fallback to id
-      commune_id: selectedCommune ? String(selectedCommune.communeId || selectedCommune.id) : ''
+      commune_id: selectedCommune ? String(selectedCommune.communeId || selectedCommune.id) : '',
+      // Clear village when commune changes
+      village_code: '',
+      village_id: ''
     }));
   }, [communes]);
+
+  // Handle village selection - capture both code and ID
+  const handleVillageChange = useCallback((value) => {
+    const selectedVillage = villages.find(v => String(v.village_code || v.code) === value);
+    console.log('📍 Village selected:', value, selectedVillage);
+    setFormData(prev => ({
+      ...prev,
+      village_code: value,
+      // Use villageId from API response, fallback to id
+      village_id: selectedVillage ? String(selectedVillage.villageId || selectedVillage.id) : ''
+    }));
+  }, [villages]);
+
+  // Handle school type selection
+  const handleSchoolTypeChange = useCallback((value) => {
+    console.log('🏢 School type selected:', value);
+    setFormData(prev => ({
+      ...prev,
+      schoolType: value
+    }));
+  }, []);
 
   // Handle project type selection
   const handleProjectTypeChange = useCallback((value) => {
@@ -313,15 +410,21 @@ export default function SchoolSettingsPage({ user }) {
     try {
       setSubmitting(true);
 
-      // Prepare form data
-      const submitData = new FormData();
-      submitData.append('name', formData.name);
-      submitData.append('code', formData.code);
-      submitData.append('status', formData.status);
+      // Build the JSON payload for the API
+      const payload = {
+        name: formData.name,
+        code: formData.code,
+        status: formData.status
+      };
+
+      // Add school type if selected
+      if (formData.schoolType) {
+        payload.schoolType = formData.schoolType;
+      }
 
       // Add project type if selected
       if (formData.projectTypeId) {
-        submitData.append('projectTypeId', formData.projectTypeId);
+        payload.projectTypeId = parseInt(formData.projectTypeId);
       }
 
       // Add location data in nested place object format (as expected by API)
@@ -335,18 +438,32 @@ export default function SchoolSettingsPage({ user }) {
       if (formData.commune_id) {
         placeData.communeId = parseInt(formData.commune_id);
       }
+      if (formData.village_id) {
+        placeData.villageId = parseInt(formData.village_id);
+      }
 
       if (Object.keys(placeData).length > 0) {
-        submitData.append('place', JSON.stringify(placeData));
+        payload.place = placeData;
       }
 
+      // Step 1: Upload profile image if provided (separate POST request)
       if (profileImage) {
-        submitData.append('profile', profileImage);
+        console.log('📸 Uploading school profile image...');
+        const imageResponse = await schoolService.uploadSchoolProfileImage(schoolId, profileImage);
+        if (!imageResponse?.success) {
+          showError(imageResponse?.error || 'Failed to upload school profile image');
+          return;
+        }
+        console.log('📸 Profile image uploaded successfully');
       }
 
-      console.log('📤 Submitting school update with place data:', placeData);
-      console.log('📤 Submitting school update with projectTypeId:', formData.projectTypeId);
-      const response = await schoolService.updateSchool(schoolId, submitData);
+      // Step 2: Update school data (JSON payload)
+      console.log('📤 Submitting school update with payload:', {
+        schoolType: payload.schoolType,
+        projectTypeId: payload.projectTypeId,
+        place: placeData
+      });
+      const response = await schoolService.updateSchool(schoolId, payload);
 
       if (response?.success) {
         showSuccess(t('schoolDataUpdated') || 'School data updated successfully');
@@ -426,15 +543,27 @@ export default function SchoolSettingsPage({ user }) {
                     className="cursor-pointer group relative"
                     onClick={() => document.getElementById('profileImageInput')?.click()}
                   >
-                    {previewUrl ? (
+                    {imageError ? (
+                      <div className="w-32 h-32 rounded-lg bg-red-50 border-2 border-red-300 flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                        <div className="text-center">
+                          <span className="text-xs text-red-600 font-medium block">
+                            {t('imageLoadFailed') || 'Image failed to load'}
+                          </span>
+                          <span className="text-xs text-red-500 block mt-1">
+                            {t('clickToTryAgain') || 'Click to retry'}
+                          </span>
+                        </div>
+                      </div>
+                    ) : previewUrl ? (
                       <div className="relative">
                         <img
                           src={previewUrl}
                           alt="School profile"
                           className="w-32 h-32 rounded-lg object-cover border border-gray-200 group-hover:opacity-75 transition-opacity"
+                          onError={handleImageLoadError}
                         />
                         <div className="absolute inset-0 rounded-lg bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <span className="text-white text-xs font-medium">Click to change</span>
+                          <span className="text-white text-xs font-medium">{t('clickToChan', 'Click to change')}</span>
                         </div>
                       </div>
                     ) : (
@@ -482,9 +611,9 @@ export default function SchoolSettingsPage({ user }) {
 
             <hr className="border-gray-200" />
 
-            <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
               {/* School Name */}
-              <div>
+              <div className="">
                 <label htmlFor="name" className="block text-sm font-medium text-gray-900 mb-2">
                   {t('schoolName') || 'School Name'} <span className="text-red-600">*</span>
                 </label>
@@ -517,6 +646,26 @@ export default function SchoolSettingsPage({ user }) {
                 />
               </div>
 
+              {/* School Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  {t('schoolType') || 'School Type'}
+                </label>
+                <Dropdown
+                  value={formData.schoolType}
+                  onValueChange={handleSchoolTypeChange}
+                  options={[
+                    { value: 'សាលារដ្ឋ', label: 'សាលារដ្ឋ (State/Public)' },
+                    { value: 'សាលាឯកជន', label: 'សាលាឯកជន (Private)' },
+                    { value: 'សាលាអង្គការ', label: 'សាលាអង្គការ (NGO)' }
+                  ]}
+                  placeholder={t('selectSchoolType') || 'Select School Type'}
+                  disabled={submitting}
+                  className="w-full"
+                  maxHeight="max-h-60"
+                />
+              </div>
+
               {/* Project Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -542,7 +691,7 @@ export default function SchoolSettingsPage({ user }) {
               <h3 className="text-sm font-medium text-gray-900 mb-4">
                 {t('location') || 'Location Information'}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Province */}
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -600,6 +749,25 @@ export default function SchoolSettingsPage({ user }) {
                   />
                 </div>
 
+                {/* Village */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    {t('village') || 'Village'}
+                  </label>
+                  <Dropdown
+                    value={formData.village_code}
+                    onValueChange={handleVillageChange}
+                    options={villages.map(vill => ({
+                      value: String(vill.village_code || vill.code),
+                      label: vill.village_name_kh || vill.village_name_en || vill.name_kh || vill.name_en || vill.name
+                    }))}
+                    placeholder={t('selectVillage') || 'Select Village'}
+                    disabled={submitting || !formData.commune_code}
+                    className="w-full"
+                    maxHeight="max-h-60"
+                  />
+                </div>
+
               </div>
             </div>
 
@@ -610,12 +778,15 @@ export default function SchoolSettingsPage({ user }) {
                 variant="outline"
                 onClick={() => navigate(-1)}
                 disabled={submitting}
+                size="sm"
               >
                 {t('cancel') || 'Cancel'}
               </Button>
               <Button
                 type="submit"
                 disabled={submitting}
+                variant="primary"
+                size="sm"
               >
                 {submitting ? (
                   <>
@@ -624,7 +795,7 @@ export default function SchoolSettingsPage({ user }) {
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4" />
+                    <Save className="w-4 h-4 mr-1" />
                     {t('save') || 'Save Changes'}
                   </>
                 )}

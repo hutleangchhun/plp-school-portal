@@ -738,7 +738,28 @@ export const en = {
 
 
   //school setting
-  //school setting
   projectType: 'Project Type',
   selectProjectType: 'Select Project Type',
+  schoolType: 'School Type',
+  selectSchoolType: 'Select School Type',
+  schoolSettings: 'School Settings',
+  updateSchoolInformation: 'Update School Information',
+  schoolName: 'School Name',
+  enterSchoolName: 'Enter school name',
+  schoolCode: 'School Code',
+  enterSchoolCode: 'Enter school code',
+  schoolNameRequired: 'School name is required',
+  schoolCodeRequired: 'School code is required',
+  schoolDataUpdated: 'School data updated successfully!',
+  errorUpdatingSchool: 'Failed to update school',
+  errorFetchingSchoolData: 'Failed to fetch school data',
+  schoolProfile: 'School Profile Image',
+  back: 'Back',
+  saving: 'Saving...',
+  village: 'Village',
+  selectVillage: 'Select Village',
+  clickToChange: 'Click to change image',
+  imageLoadFailed: 'Image failed to load',
+  clickToTryAgain: 'Click to retry',
+  errorReadingImage: 'Error reading image file',
 };  
