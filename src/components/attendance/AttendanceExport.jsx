@@ -303,7 +303,7 @@ export default function AttendanceExport({
       templateData.push(schoolRow);
 
       // Row 5: Attendance Title
-      templateData.push(['បញ្ជីហៅឈ្មោះសិស្ស', ...Array(38).fill('')]);
+      templateData.push(['បញ្ជីអវត្តមានប្រចាំខែ', ...Array(38).fill('')]);
 
       // Row 6: Section Title with class
       templateData.push([`ផ្នែកអវត្តមានប្រចាំខែ - ${className}`, ...Array(38).fill('')]);

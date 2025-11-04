@@ -556,6 +556,7 @@ export default function Attendance() {
                       attendance={weeklyAttendance}
                       className={classes.find(cls => cls.id === selectedClass)?.name || 'មិនមានថ្នាក់'}
                       schoolName={user?.school?.name || user?.schoolName || 'សាលា'}
+                      schoolId={schoolId}
                       selectedDate={currentWeekStart}
                       exportType="monthly"
                       disabled={loading}

@@ -431,10 +431,9 @@ export default function TeacherAttendance() {
 
       const result = await exportTeacherAttendanceToExcel(
         teachers,
-        weeklyAttendance,
+        schoolId,
         {
-          weekStartDate: currentWeekStart,
-          weekEndDate: weekDates[6],
+          selectedDate: currentWeekStart,
           schoolName,
           onSuccess: () => {
             _showSuccess(t('exportSuccess', 'នាំចេញជោគជ័យ'));
@@ -454,7 +453,7 @@ export default function TeacherAttendance() {
     } finally {
       stopLoading('exportAttendance');
     }
-  }, [teachers, weeklyAttendance, currentWeekStart, weekDates, schoolId, t, startLoading, stopLoading, _showSuccess, _showError]);
+  }, [teachers, currentWeekStart, schoolId, t, startLoading, stopLoading, _showSuccess, _showError]);
 
   // Function to open attendance modal
   const openAttendanceModal = useCallback((teacher, date, existingAttendance) => {
