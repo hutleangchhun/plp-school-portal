@@ -114,7 +114,7 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
 
         let statusMark = '';
         if (attendance?.status === 'PRESENT') {
-          statusMark = 'វត្ត';
+          statusMark = '';
         } else if (attendance?.status === 'ABSENT') {
           statusMark = 'អច្ប';
           absentCount++;
@@ -122,7 +122,7 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
           statusMark = 'ច្ប';
           leaveCount++;
         } else if (attendance?.status === 'LATE') {
-          statusMark = 'អ';
+          statusMark = '';
         }
 
         row[`cell_${day}`] = {

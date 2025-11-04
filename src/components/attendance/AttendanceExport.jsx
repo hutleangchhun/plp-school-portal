@@ -163,10 +163,10 @@ export default function AttendanceExport({
           const studentAttendance = actualAttendance[studentUserId]?.[dateStr];
 
           if (studentAttendance?.status) {
-            const statusMark = studentAttendance.status === 'PRESENT' ? 'វត្ត' :
+            const statusMark = studentAttendance.status === 'PRESENT' ? '' :
                              studentAttendance.status === 'ABSENT' ? 'អច្ប' :
                              studentAttendance.status === 'LEAVE' ? 'ច្ប' :
-                             studentAttendance.status === 'LATE' ? 'វត្ត' : '';
+                             studentAttendance.status === 'LATE' ? '' : '';
             row[day.toString()] = statusMark;
 
             // Count totals - only ABSENT and LEAVE
