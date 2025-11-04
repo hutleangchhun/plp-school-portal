@@ -52,7 +52,7 @@ export default function SchoolSettingsPage({ user }) {
   const [villages, setVillages] = useState([]);
   const [projectTypes, setProjectTypes] = useState([]);
 
-  const schoolId = user?.school_id || user?.schoolId;
+  const schoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId;
 
   // Construct full image URL from relative path
   const getFullImageUrl = useCallback((relativePath) => {
@@ -124,8 +124,12 @@ export default function SchoolSettingsPage({ user }) {
 
     if (schoolId) {
       fetchSchoolData();
+    } else {
+      // If no schoolId, stop loading
+      setLoading(false);
     }
-  }, [schoolId, clearError, handleError, t, getFullImageUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolId]);
 
   // Load districts, communes, and villages when school data is loaded with location data
   useEffect(() => {
