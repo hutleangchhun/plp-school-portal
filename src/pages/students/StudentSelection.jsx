@@ -279,15 +279,15 @@ const StudentSelection = () => {
 
   // Re-fetch school ID when user school_id changes (e.g., after login or transfer)
   useEffect(() => {
-    if (user?.school_id || user?.schoolId) {
-      const newSchoolId = user.school_id || user.schoolId;
+    if (user?.teacher?.schoolId || user?.school_id || user?.schoolId) {
+      const newSchoolId = user?.teacher?.schoolId || user.school_id || user.schoolId;
       console.log('🔄 User school_id changed in StudentSelection:', newSchoolId);
       if (schoolId !== newSchoolId) {
         console.log('Updating schoolId to new value');
         setSchoolId(newSchoolId);
       }
     }
-  }, [user?.school_id, user?.schoolId, schoolId]);
+  }, [user?.teacher?.schoolId, user?.school_id, user?.schoolId, schoolId]);
 
   // Fetch school ID when component mounts
   useEffect(() => {

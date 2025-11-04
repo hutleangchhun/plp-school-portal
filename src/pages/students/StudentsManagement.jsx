@@ -481,8 +481,8 @@ export default function StudentsManagement() {
 
   // Re-fetch school ID when user school_id changes (e.g., after login or transfer)
   useEffect(() => {
-    if (user?.school_id || user?.schoolId) {
-      const newSchoolId = user.school_id || user.schoolId;
+    if (user?.teacher?.schoolId || user?.school_id || user?.schoolId) {
+      const newSchoolId = user?.teacher?.schoolId || user.school_id || user.schoolId;
       console.log('🔄 User school_id changed:', newSchoolId);
       if (schoolId !== newSchoolId) {
         console.log('Resetting schoolId to trigger re-fetch');
@@ -492,7 +492,7 @@ export default function StudentsManagement() {
         initializeClasses();
       }
     }
-  }, [user?.school_id, user?.schoolId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.teacher?.schoolId, user?.school_id, user?.schoolId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize classes when component mounts
   useEffect(() => {

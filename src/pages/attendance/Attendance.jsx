@@ -80,7 +80,7 @@ export default function Attendance() {
     }
   });
 
-  const [schoolId, setSchoolId] = useState(user?.school_id || user?.schoolId || null);
+  const [schoolId, setSchoolId] = useState(user?.teacher?.schoolId || user?.school_id || user?.schoolId || null);
 
   // Listen for localStorage changes
   useEffect(() => {
@@ -90,8 +90,8 @@ export default function Attendance() {
         if (userData) {
           const parsedUser = JSON.parse(userData);
           setUser(parsedUser);
-          if (parsedUser?.school_id || parsedUser?.schoolId) {
-            setSchoolId(parsedUser.school_id || parsedUser.schoolId);
+          if (parsedUser?.teacher?.schoolId || parsedUser?.school_id || parsedUser?.schoolId) {
+            setSchoolId(parsedUser?.teacher?.schoolId || parsedUser.school_id || parsedUser.schoolId);
           }
         } else {
           setUser(null);
@@ -113,8 +113,8 @@ export default function Attendance() {
 
   // Sync schoolId when user changes
   useEffect(() => {
-    if (user?.school_id || user?.schoolId) {
-      setSchoolId(user.school_id || user.schoolId);
+    if (user?.teacher?.schoolId || user?.school_id || user?.schoolId) {
+      setSchoolId(user?.teacher?.schoolId || user.school_id || user.schoolId);
     }
   }, [user]);
 

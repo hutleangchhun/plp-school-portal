@@ -48,8 +48,8 @@ export default function ParentsManagement() {
           const parsedUser = JSON.parse(userData);
           setUser(parsedUser);
           // Update schoolId when user data changes
-          if (parsedUser?.school_id || parsedUser?.schoolId) {
-            setSchoolId(parsedUser.school_id || parsedUser.schoolId);
+          if (parsedUser?.teacher?.schoolId || parsedUser?.school_id || parsedUser?.schoolId) {
+            setSchoolId(parsedUser?.teacher?.schoolId || parsedUser.school_id || parsedUser.schoolId);
           }
         } else {
           setUser(null);
@@ -64,8 +64,8 @@ export default function ParentsManagement() {
     window.addEventListener('userDataUpdated', handleStorageChange);
 
     // Initialize schoolId from current user data
-    if (user?.school_id || user?.schoolId) {
-      setSchoolId(user.school_id || user.schoolId);
+    if (user?.teacher?.schoolId || user?.school_id || user?.schoolId) {
+      setSchoolId(user?.teacher?.schoolId || user.school_id || user.schoolId);
     }
 
     return () => {

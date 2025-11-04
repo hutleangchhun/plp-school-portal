@@ -306,10 +306,10 @@ export default function ClassesManagement() {
 
   // Re-fetch school info when user school_id changes (e.g., after login or transfer)
   useEffect(() => {
-    if (user?.school_id || user?.schoolId) {
+    if (user?.teacher?.schoolId || user?.school_id || user?.schoolId) {
       fetchSchoolInfo();
     }
-  }, [user?.school_id, user?.schoolId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.teacher?.schoolId, user?.school_id, user?.schoolId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch teachers when school info is loaded
   useEffect(() => {

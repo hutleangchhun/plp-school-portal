@@ -339,7 +339,7 @@ export default function Dashboard({ user: initialUser }) {
         <FadeInSection delay={300} className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Class Student Count Chart */}
           <ClassStudentCountChart
-            schoolId={user?.school_id || user?.school?.id || user?.teacher?.school?.id || '76525'}
+            schoolId={user?.teacher?.schoolId || user?.school_id || user?.school?.id || user?.teacher?.school?.id || '76525'}
           />
 
           {/* School Overview Chart */}

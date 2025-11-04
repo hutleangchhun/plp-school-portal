@@ -74,9 +74,10 @@ export default function TeacherExamRecords({ user }) {
   const fetchAllStudents = useCallback(async () => {
     try {
       let studentsList = [];
+      const schoolId = user?.teacher?.schoolId || user?.schoolId;
 
-      if (selectedClass && user?.schoolId) {
-        const response = await studentService.getStudentsBySchoolClasses(user.schoolId, {
+      if (selectedClass && schoolId) {
+        const response = await studentService.getStudentsBySchoolClasses(schoolId, {
           classId: selectedClass,
           limit: 1000
         });

@@ -47,8 +47,9 @@ export default function DirectorExamRecords({ user }) {
    */
   const fetchClasses = useCallback(async () => {
     try {
-      if (user?.schoolId) {
-        const response = await classService.getBySchool(user.schoolId, { limit: 10 });
+      const schoolId = user?.teacher?.schoolId || user?.schoolId;
+      if (schoolId) {
+        const response = await classService.getBySchool(schoolId, { limit: 10 });
         if (response.success && response.data) {
           setClasses(response.data || []);
         }
@@ -65,9 +66,10 @@ export default function DirectorExamRecords({ user }) {
   const fetchAllStudents = useCallback(async () => {
     try {
       let studentsList = [];
+      const schoolId = user?.teacher?.schoolId || user?.schoolId;
 
-      if (selectedClass && user?.schoolId) {
-        const response = await studentService.getStudentsBySchoolClasses(user.schoolId, {
+      if (selectedClass && schoolId) {
+        const response = await studentService.getStudentsBySchoolClasses(schoolId, {
           classId: selectedClass,
           limit: 10
         });
