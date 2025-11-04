@@ -15,13 +15,14 @@ import schoolService from './api/services/schoolService';
  * @param {Function} options.onError - Error callback
  */
 export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options = {}) => {
+  let {
+    selectedDate = new Date(),
+    schoolName = 'សាលា',
+    onSuccess,
+    onError
+  } = options;
+
   try {
-    let {
-      selectedDate = new Date(),
-      schoolName = 'សាលា',
-      onSuccess,
-      onError
-    } = options;
 
     // Fetch school name from API if schoolId is provided and schoolName not set
     if (schoolId && !schoolName) {
@@ -288,8 +289,8 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
       { wch: 25 }, // ឈ្មោះ
     ];
 
-    for (let i = 0; i < totalCells; i++) {
-      colWidths.push({ wch: 5 }); // Calendar cells with day name + number
+    for (let i = 0; i < daysInMonth; i++) {
+      colWidths.push({ wch: 3 }); // Calendar cells with day name + number
     }
 
     colWidths.push({ wch: 5 });  // អច្ប
