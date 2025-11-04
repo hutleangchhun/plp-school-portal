@@ -271,7 +271,7 @@ export const getKhmerDayShorthand = (dayOfWeek) => {
     3: 'ព្រ', // ព្រហស្បត៍ (Thursday)
     4: 'សុ', // សុក្រ (Friday)
     5: 'ស', // សៅរ៍ (Saturday)
-    6: 'ក' // អាទិត្យ (Sunday)
+    6: 'អា' // អាទិត្យ (Sunday)
   };
 
   return shortDays[dayOfWeek] || '';

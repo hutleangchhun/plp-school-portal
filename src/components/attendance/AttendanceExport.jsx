@@ -3,7 +3,7 @@ import { Download, ChevronDown } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
-import { formatDateKhmer } from '../../utils/formatters';
+import { formatDateKhmer, getKhmerDayShorthand, isWeekend } from '../../utils/formatters';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import schoolService from '../../utils/api/services/schoolService';
 
@@ -325,13 +325,18 @@ export default function AttendanceExport({
       // Calculate summary column position based on actual days in month
       const summaryStartCol = 4 + daysInMonth;
 
-      // Row 10: First header row with category labels
+      // Row 10: First header row with day names (Khmer shorthand)
       const headerRow1 = [...emptyRow];
       headerRow1[0] = 'ល.រ';
       headerRow1[1] = 'អត្តលេខ';
       headerRow1[2] = 'គោត្តនាម និងនាម';
       headerRow1[3] = 'ភេទ';
-      // Days section - leave empty for day numbers
+      // Add Khmer day names for each day of month
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+        const dayOfWeekNum = dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1; // 0 = Monday, 6 = Sunday
+        headerRow1[3 + day] = getKhmerDayShorthand(dayOfWeekNum);
+      }
       headerRow1[summaryStartCol] = 'ចំនួនអវត្តមាន'; // Spans 3 columns
       headerRow1[summaryStartCol + 3] = 'សេចក្តីប្រកាស';
       templateData.push(headerRow1);
@@ -530,6 +535,15 @@ export default function AttendanceExport({
           }
           // Rows 10-11: Table header (two rows) - Gray background, borders, bold
           else if (R === 10 || R === 11) {
+            // Check if this is a weekend column
+            let isWeekendCol = false;
+            if (C >= 4 && C < 4 + daysInMonth) {
+              const day = C - 4 + 1;
+              const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+              const dayOfWeekNum = dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1;
+              isWeekendCol = isWeekend(dayOfWeekNum);
+            }
+
             ws[cellAddress].s = {
               fill: {
                 fgColor: { rgb: 'E0E0E0' }
@@ -542,17 +556,28 @@ export default function AttendanceExport({
               },
               alignment: {
                 vertical: 'center',
-                horizontal: 'center'
+                horizontal: 'center',
+                wrapText: true
               },
               font: {
                 name: 'Khmer OS Battambang',
                 sz: 10,
-                bold: true
+                bold: true,
+                color: isWeekendCol ? { rgb: 'FF0000' } : undefined
               }
             };
           }
           // Data rows (12 to dataEndRow) - Borders, centered except name column
           else if (R >= 12 && R <= dataEndRow) {
+            // Check if this is a weekend column
+            let isWeekendCol = false;
+            if (C >= 4 && C < 4 + daysInMonth) {
+              const day = C - 4 + 1;
+              const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+              const dayOfWeekNum = dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1;
+              isWeekendCol = isWeekend(dayOfWeekNum);
+            }
+
             ws[cellAddress].s = {
               border: {
                 top: { style: 'thin', color: { rgb: '000000' } },
@@ -566,7 +591,8 @@ export default function AttendanceExport({
               },
               font: {
                 name: 'Khmer OS Battambang',
-                sz: 10
+                sz: 10,
+                color: isWeekendCol ? { rgb: 'FF0000' } : undefined
               }
             };
           }
