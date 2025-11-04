@@ -194,13 +194,106 @@ export const formatCurrency = (amount, currency = 'USD') => {
  */
 export const formatList = (items, maxDisplay = 3) => {
   if (!items || items.length === 0) return '';
-  
+
   if (items.length <= maxDisplay) {
     return items.join(', ');
   }
-  
+
   const displayed = items.slice(0, maxDisplay);
   const remaining = items.length - maxDisplay;
-  
+
   return `${displayed.join(', ')} and ${remaining} more`;
+};
+
+/**
+ * Get calendar layout for a month with proper day-of-week alignment
+ * @param {Date|number} date - Date object or year, or null for current month
+ * @param {number} month - Month (0-11), optional if date is provided
+ * @returns {Object} Calendar data with week array, starting day, and days in month
+ */
+export const getMonthCalendarLayout = (date = null, month = null) => {
+  let year, monthNum;
+
+  if (date instanceof Date) {
+    year = date.getFullYear();
+    monthNum = date.getMonth();
+  } else if (typeof date === 'number' && month !== null) {
+    year = date;
+    monthNum = month;
+  } else {
+    const now = new Date();
+    year = now.getFullYear();
+    monthNum = now.getMonth();
+  }
+
+  // Get first day of month (0 = Sunday, 1 = Monday, etc.)
+  const firstDay = new Date(year, monthNum, 1).getDay();
+  // Convert to Monday-based week (0 = Monday, 6 = Sunday)
+  const firstDayMondayBased = firstDay === 0 ? 6 : firstDay - 1;
+
+  // Get number of days in month
+  const daysInMonth = new Date(year, monthNum + 1, 0).getDate();
+
+  // Create array with empty slots and day numbers
+  const calendarDays = [];
+
+  // Add empty slots for days before month starts
+  for (let i = 0; i < firstDayMondayBased; i++) {
+    calendarDays.push(null);
+  }
+
+  // Add day numbers
+  for (let day = 1; day <= daysInMonth; day++) {
+    calendarDays.push(day);
+  }
+
+  return {
+    year,
+    month: monthNum,
+    daysInMonth,
+    firstDay: firstDayMondayBased,
+    calendarDays,
+    totalCells: calendarDays.length
+  };
+};
+
+/**
+ * Get shorthand Khmer day name for a day of week
+ * @param {number} dayOfWeek - Day of week (0 = Monday, 6 = Sunday)
+ * @returns {string} Shorthand Khmer day name
+ */
+export const getKhmerDayShorthand = (dayOfWeek) => {
+  // Shorthand Khmer day names
+  const shortDays = {
+    0: 'ច', // ច័ន្ទ (Monday)
+    1: 'អ', // អង្គារ (Tuesday)
+    2: 'ព', // ពុធ (Wednesday)
+    3: 'ព្រ', // ព្រហស្បត៍ (Thursday)
+    4: 'សុ', // សុក្រ (Friday)
+    5: 'ស', // សៅរ៍ (Saturday)
+    6: 'ក' // អាទិត្យ (Sunday)
+  };
+
+  return shortDays[dayOfWeek] || '';
+};
+
+/**
+ * Get Khmer day name with shorthand and day number
+ * @param {number} day - Day of month (1-31)
+ * @param {number} dayOfWeek - Day of week (0 = Monday, 6 = Sunday)
+ * @returns {string} Formatted as "១៥អ" (15 Tuesday)
+ */
+export const getKhmerDayWithShorthand = (day, dayOfWeek) => {
+  if (!day) return '';
+  const shorthand = getKhmerDayShorthand(dayOfWeek);
+  return `${day}${shorthand}`;
+};
+
+/**
+ * Check if day is weekend (Saturday or Sunday)
+ * @param {number} dayOfWeek - Day of week (0 = Monday, 6 = Sunday)
+ * @returns {boolean} True if Saturday (5) or Sunday (6)
+ */
+export const isWeekend = (dayOfWeek) => {
+  return dayOfWeek === 5 || dayOfWeek === 6; // Saturday or Sunday
 };

@@ -1,11 +1,11 @@
-import { formatDateKhmer } from './formatters';
+import { formatDateKhmer, getMonthCalendarLayout, getKhmerDayWithShorthand, isWeekend } from './formatters';
 import { getTimestampedFilename } from './exportUtils';
 import { attendanceService } from './api/services/attendanceService';
 import schoolService from './api/services/schoolService';
 
 /**
- * Export teacher attendance data to Excel with monthly format
- * Exactly matching student attendance export format
+ * Export teacher attendance data to Excel with monthly calendar format
+ * Exactly matching student attendance export format with calendar layout
  * @param {Array} teachers - Array of teacher objects
  * @param {number} schoolId - School ID for fetching attendance data
  * @param {Object} options - Export options
@@ -32,11 +32,9 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
         }
       } catch (err) {
         console.warn('Failed to fetch school name:', err);
-        // Continue with default or provided name
       }
     }
 
-    // Use default if still not set
     if (!schoolName) {
       schoolName = 'សាលា';
     }
@@ -48,8 +46,11 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
     const currentDate = new Date(selectedDate);
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
     const monthName = formatDateKhmer(currentDate, 'monthYear');
+
+    // Get calendar layout
+    const calendarLayout = getMonthCalendarLayout(currentDate);
+    const { daysInMonth, totalCells } = calendarLayout;
 
     // Format date to string (YYYY-MM-DD)
     const formatDateToString = (date) => {
@@ -72,7 +73,6 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
       });
 
       if (attendanceResponse?.success && attendanceResponse?.data) {
-        // Transform the fetched data: { userId: { date: { status, reason } } }
         attendanceResponse.data.forEach(record => {
           const userId = record.userId;
           const date = record.date;
@@ -89,11 +89,9 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
       }
     } catch (err) {
       console.warn('Failed to fetch monthly teacher attendance:', err);
-      // Continue with empty attendance data
     }
 
-    // Prepare export data with all days of month
-    // Using same format as student attendance
+    // Prepare export data with calendar layout
     const exportData = teachers.map((teacher, index) => {
       const teacherUserId = Number(teacher.id);
       const row = {
@@ -102,125 +100,134 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
         'ឈ្មោះ': teacher.name || `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || teacher.username || '',
       };
 
-      // Add columns for each day of the month
-      // Count only ABSENT and LEAVE like student attendance
       let absentCount = 0;
       let leaveCount = 0;
 
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dayDate = new Date(year, month, day);
-        const dateStr = formatDateToString(dayDate);
-        const attendance = monthlyAttendance[teacherUserId]?.[dateStr];
+      // Add data for each calendar cell (including empty cells for non-month days)
+      calendarLayout.calendarDays.forEach((day, cellIndex) => {
+        const dayOfWeekNum = cellIndex % 7; // 0 = Monday, 6 = Sunday
 
-        let statusMark = '';
-        if (attendance?.status === 'PRESENT') {
-          statusMark = 'វត្ត';
-        } else if (attendance?.status === 'ABSENT') {
-          statusMark = 'អច្ប';
-          absentCount++;
-        } else if (attendance?.status === 'LEAVE') {
-          statusMark = 'ច្ប';
-          leaveCount++;
-        } else if (attendance?.status === 'LATE') {
-          statusMark = 'អ';
+        if (day === null) {
+          // Empty cell for days outside this month
+          row[`cell_${cellIndex}`] = { value: '', dayNum: null, dayOfWeek: dayOfWeekNum };
         } else {
-          statusMark = '';
+          // Actual day of month
+          const dayDate = new Date(year, month, day);
+          const dateStr = formatDateToString(dayDate);
+          const attendance = monthlyAttendance[teacherUserId]?.[dateStr];
+
+          let statusMark = '';
+          if (attendance?.status === 'PRESENT') {
+            statusMark = 'វត្ត';
+          } else if (attendance?.status === 'ABSENT') {
+            statusMark = 'អច្ប';
+            absentCount++;
+          } else if (attendance?.status === 'LEAVE') {
+            statusMark = 'ច្ប';
+            leaveCount++;
+          } else if (attendance?.status === 'LATE') {
+            statusMark = 'អ';
+          }
+
+          row[`cell_${cellIndex}`] = {
+            value: statusMark,
+            dayNum: day,
+            dayOfWeek: dayOfWeekNum
+          };
         }
+      });
 
-        row[day.toString()] = statusMark;
-      }
-
-      // Add summary columns with 3 fields only (ABSENT, LEAVE, Total)
-      // Matching student attendance export format exactly
-      row['អច្ប'] = absentCount;                // ABSENT
-      row['ច្ប'] = leaveCount;                  // LEAVE only
-      row['សរុប'] = absentCount + leaveCount;  // Total (ABSENT + LEAVE)
+      // Summary columns
+      row['អច្ប'] = absentCount;
+      row['ច្ប'] = leaveCount;
+      row['សរុប'] = absentCount + leaveCount;
 
       return row;
     });
 
-    // Total columns: 3 info + daysInMonth days + 4 summary (ABSENT, LEAVE, TOTAL, Remarks)
-    const totalColumns = 3 + daysInMonth + 4;
+    // Total columns: 3 info + calendar cells + 4 summary
+    const totalColumns = 3 + totalCells + 4;
     const emptyRow = Array(totalColumns).fill('');
 
-    // Build header rows - exactly matching student attendance format
+    // Build template data
     const templateData = [];
 
     // Row 0: Kingdom header
     templateData.push(['ព្រះរាជាណាចក្រកម្ពុជា', ...Array(totalColumns - 1).fill('')]);
 
-    // Row 1: Nation/Religion/King in 3 columns
+    // Row 1: Nation/Religion/King
     const nationRow = [...emptyRow];
     nationRow[10] = 'ជាតិ';
     nationRow[18] = 'សាសនា';
     nationRow[28] = 'ព្រះមហាក្សត្រ';
     templateData.push(nationRow);
 
-    // Row 2: Department - left aligned
+    // Row 2: Department
     const deptRow = [...emptyRow];
     deptRow[0] = 'មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............';
     templateData.push(deptRow);
 
-    // Row 3: Office - left aligned
+    // Row 3: Office
     const officeRow = [...emptyRow];
     officeRow[0] = 'ការិយាល័យអប់រំ យុវជន និងកីឡារដ្ឋបាលក្រុង/ស្រុក/ខណ្ឌ.......................................';
     templateData.push(officeRow);
 
-    // Row 4: School - left aligned
+    // Row 4: School
     const schoolRow = [...emptyRow];
     schoolRow[0] = schoolName;
     templateData.push(schoolRow);
 
-    // Row 5: Attendance Title
+    // Row 5: Title
     templateData.push(['បញ្ជីវត្តមានគ្រូបង្រៀនប្រចាំខែ', ...Array(totalColumns - 1).fill('')]);
 
-    // Row 6: Empty row
+    // Row 6: Empty
     templateData.push([...emptyRow]);
 
     // Row 7: Month
     templateData.push([`ខែ: ${monthName}`, ...Array(totalColumns - 1).fill('')]);
 
-    // Row 8: Empty row
+    // Row 8: Empty
     templateData.push([...emptyRow]);
 
-    // Row 9: Info row with teacher counts
+    // Row 9: Info
     const infoRow = [...emptyRow];
     infoRow[0] = 'ប្រចាំខែ:............................. ឆ្នាំសិក្សា............................';
     const totalTeachers = teachers.length;
     infoRow[24] = `គ្រូបង្រៀនសរុប: ................${totalTeachers}នាក់`;
     templateData.push(infoRow);
 
-    // Two-row header structure
-    // Row 10: First header row with category labels
+    // Row 10: First header row
+    const summaryStartCol = 3 + totalCells;
     const headerRow1 = [...emptyRow];
     headerRow1[0] = 'ល.រ';
     headerRow1[1] = 'អត្តលេខ';
     headerRow1[2] = 'គោត្តនាម និងនាម';
-    // Days section - leave empty, will be merged
-    // Summary columns
-    const summaryStartCol = 3 + daysInMonth;
-    headerRow1[summaryStartCol] = 'ចំនួនអវត្តមាន'; // Spans 3 columns
+    headerRow1[summaryStartCol] = 'ចំនួនអវត្តមាន';
     headerRow1[summaryStartCol + 3] = 'សេចក្តីប្រកាស';
     templateData.push(headerRow1);
 
-    // Row 11: Second header row with day numbers
+    // Row 11: Second header row with day names and numbers
     const headerRow2 = [...emptyRow];
-    // First 3 columns are merged with row above, leave empty
     headerRow2[0] = '';
     headerRow2[1] = '';
     headerRow2[2] = '';
-    // Day numbers - only show actual days in month
-    for (let i = 1; i <= daysInMonth; i++) {
-      headerRow2[2 + i] = i.toString(); // Columns 3 onwards
-    }
-    // Summary columns with Khmer labels (3 fields only: ABSENT, LEAVE, TOTAL)
-    headerRow2[summaryStartCol] = 'អច្ប';    // ABSENT
-    headerRow2[summaryStartCol + 1] = 'ច្ប';     // LEAVE
-    headerRow2[summaryStartCol + 2] = 'សរុប';    // TOTAL
+
+    calendarLayout.calendarDays.forEach((day, cellIndex) => {
+      if (day === null) {
+        headerRow2[3 + cellIndex] = '';
+      } else {
+        const dayOfWeekNum = cellIndex % 7;
+        headerRow2[3 + cellIndex] = getKhmerDayWithShorthand(day, dayOfWeekNum);
+      }
+    });
+
+    headerRow2[summaryStartCol] = 'អច្ប';
+    headerRow2[summaryStartCol + 1] = 'ច្ប';
+    headerRow2[summaryStartCol + 2] = 'សរុប';
     headerRow2[summaryStartCol + 3] = '';
     templateData.push(headerRow2);
 
-    // Data rows starting from row 12
+    // Data rows
     const dataRows = exportData.map(row => {
       const arr = [
         row['ល.រ'],
@@ -228,12 +235,13 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
         row['ឈ្មោះ'],
       ];
 
-      // Add day columns - only actual days
-      for (let i = 1; i <= daysInMonth; i++) {
-        arr.push(row[i.toString()] || '');
-      }
+      // Add calendar cells
+      calendarLayout.calendarDays.forEach((_, cellIndex) => {
+        const cellData = row[`cell_${cellIndex}`];
+        arr.push(cellData?.value || '');
+      });
 
-      // Add summary columns
+      // Add summary
       arr.push(row['អច្ប'], row['ច្ប'], row['សរុប'], '');
 
       while (arr.length < totalColumns) arr.push('');
@@ -242,69 +250,59 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
 
     templateData.push(...dataRows);
 
-    // Add footer section
+    // Footer section
     const emptyFooterRow = Array(totalColumns).fill('');
 
-    // Empty row for spacing
     templateData.push([...emptyFooterRow]);
 
-    // First summary row
     const summaryRow1 = [...emptyFooterRow];
     summaryRow1[0] = `- ចំនួនគ្រូបង្រៀនក្នុងបញ្ជី..${totalTeachers}..នាក់ ចំនួនពេលដែលគ្រូបង្រៀនត្រូវមក..... ចំនួនពេលអវត្តមាន...... ចំនួនពេលដែលគ្រូបង្រៀនមករៀនពិតប្រាកដ........... គណនាភាគរយៈ  x100  = .............. %`;
     templateData.push(summaryRow1);
 
-    // Second row - times list stopped
     const summaryRow2 = [...emptyFooterRow];
     summaryRow2[0] = '- បញ្ឈប់បញ្ជីក្នុងខែនេះនូវចំនួន..........ពេល';
     templateData.push(summaryRow2);
 
-    // First date row
     const dateRow1 = [...emptyFooterRow];
     dateRow1[30] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ...... ព.ស.២៥...........';
     templateData.push(dateRow1);
 
-    // Second date row
     const dateRow2 = [...emptyFooterRow];
     dateRow2[30] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
     templateData.push(dateRow2);
 
-    // Empty row
     templateData.push([...emptyFooterRow]);
 
-    // Signature labels row
     const signatureRow = [...emptyFooterRow];
     signatureRow[5] = 'បានឃើញ';
     signatureRow[33] = 'នាយកសាលា';
     templateData.push(signatureRow);
 
-    // Empty rows for signatures
     templateData.push([...emptyFooterRow]);
     templateData.push([...emptyFooterRow]);
 
     // Create worksheet
     const ws = XLSXStyle.utils.aoa_to_sheet(templateData);
 
-    // Set column widths - matching student attendance format
+    // Set column widths
     const colWidths = [
-      { wch: 5 },  // ល.រ (No.)
-      { wch: 12 }, // អត្តលេខ (ID)
-      { wch: 25 }, // ឈ្មោះ (Name)
+      { wch: 5 },  // ល.រ
+      { wch: 12 }, // អត្តលេខ
+      { wch: 25 }, // ឈ្មោះ
     ];
 
-    // Add widths for day columns
-    for (let i = 1; i <= daysInMonth; i++) {
-      colWidths.push({ wch: 3 }); // Day columns - narrow
+    for (let i = 0; i < totalCells; i++) {
+      colWidths.push({ wch: 5 }); // Calendar cells with day name + number
     }
 
-    // Add widths for summary columns
-    colWidths.push({ wch: 5 });  // អច្ប (Absent)
-    colWidths.push({ wch: 5 });  // ច្ប (Leave)
-    colWidths.push({ wch: 5 });  // សរុប (Total)
-    colWidths.push({ wch: 20 }); // សេចក្តីប្រកាស (Remarks)
+    colWidths.push({ wch: 5 });  // អច្ប
+    colWidths.push({ wch: 5 });  // ច្ប
+    colWidths.push({ wch: 5 });  // សរុប
+    colWidths.push({ wch: 20 }); // សេចក្តីប្រកាស
 
     ws['!cols'] = colWidths;
 
-    // Apply borders and styling to all cells
+    // Apply styling
     const totalRows = templateData.length;
     const dataEndRow = 11 + dataRows.length;
 
@@ -316,81 +314,56 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
           ws[cellAddress] = { t: 's', v: '' };
         }
 
-        // Row 0: Kingdom - centered, bold
+        // Header rows styling
         if (R === 0) {
           ws[cellAddress].s = {
-            alignment: {
-              vertical: 'center',
-              horizontal: 'center'
+            alignment: { vertical: 'center', horizontal: 'center' },
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+          };
+        } else if (R === 1) {
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center' },
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+          };
+        } else if (R >= 2 && R <= 4) {
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'left' },
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+          };
+        } else if (R >= 5 && R < 10) {
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center' },
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+          };
+        } else if (R === 10 || R === 11) {
+          // Table headers - check if this is a weekend column
+          const isWeekendCol = R === 11 && C >= 3 && C < 3 + totalCells &&
+            calendarLayout.calendarDays[C - 3] !== null &&
+            isWeekend((C - 3) % 7);
+
+          ws[cellAddress].s = {
+            fill: { fgColor: { rgb: 'E0E0E0' } },
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } }
             },
+            alignment: { vertical: 'center', horizontal: 'center' },
             font: {
               name: 'Khmer OS Battambang',
-              sz: 11,
-              bold: true
+              sz: 10,
+              bold: true,
+              color: isWeekendCol ? { rgb: 'FF0000' } : undefined
             }
           };
-        }
-        // Row 1: Nation/Religion/King - centered, bold
-        else if (R === 1) {
+        } else if (R >= 12 && R <= dataEndRow) {
+          // Data rows - check if weekend column
+          const isWeekendCol = C >= 3 && C < 3 + totalCells &&
+            calendarLayout.calendarDays[C - 3] !== null &&
+            isWeekend((C - 3) % 7);
+
           ws[cellAddress].s = {
-            alignment: {
-              vertical: 'center',
-              horizontal: 'center'
-            },
-            font: {
-              name: 'Khmer OS Battambang',
-              sz: 11,
-              bold: true
-            }
-          };
-        }
-        // Rows 2-4: Department/Office/School - left-aligned, bold
-        else if (R >= 2 && R <= 4) {
-          ws[cellAddress].s = {
-            alignment: {
-              vertical: 'center',
-              horizontal: 'left'
-            },
-            font: {
-              name: 'Khmer OS Battambang',
-              sz: 11,
-              bold: true
-            }
-          };
-        }
-        // Rows 5-9: Remaining headers - centered, bold
-        else if (R >= 5 && R < 10) {
-          ws[cellAddress].s = {
-            alignment: {
-              vertical: 'center',
-              horizontal: 'center'
-            },
-            font: {
-              name: 'Khmer OS Battambang',
-              sz: 11,
-              bold: true
-            }
-          };
-        }
-        // Row 9: Info row - left-aligned
-        else if (R === 9) {
-          ws[cellAddress].s = {
-            alignment: {
-              vertical: 'center',
-              horizontal: 'left'
-            },
-            font: {
-              name: 'Khmer OS Battambang',
-              sz: 10
-            }
-          };
-        }
-        // Rows 10-11: Table header (two rows) - Gray background, borders, bold
-        else if (R === 10 || R === 11) {
-          ws[cellAddress].s = {
-            fill: {
-              fgColor: { rgb: 'E0E0E0' }
-            },
             border: {
               top: { style: 'thin', color: { rgb: '000000' } },
               bottom: { style: 'thin', color: { rgb: '000000' } },
@@ -399,74 +372,37 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
             },
             alignment: {
               vertical: 'center',
-              horizontal: 'center'
+              horizontal: C === 2 ? 'left' : 'center'
             },
             font: {
               name: 'Khmer OS Battambang',
               sz: 10,
-              bold: true
+              color: isWeekendCol ? { rgb: 'FF0000' } : undefined
             }
           };
-        }
-        // Data rows - Borders, centered except name column
-        else if (R >= 12 && R <= dataEndRow) {
+        } else {
+          // Footer
           ws[cellAddress].s = {
-            border: {
-              top: { style: 'thin', color: { rgb: '000000' } },
-              bottom: { style: 'thin', color: { rgb: '000000' } },
-              left: { style: 'thin', color: { rgb: '000000' } },
-              right: { style: 'thin', color: { rgb: '000000' } }
-            },
-            alignment: {
-              vertical: 'center',
-              horizontal: C === 2 ? 'left' : 'center' // Column C (ឈ្មោះ) left-aligned
-            },
-            font: {
-              name: 'Khmer OS Battambang',
-              sz: 10
-            }
-          };
-        }
-        // Footer rows - No borders, left-aligned
-        else {
-          ws[cellAddress].s = {
-            alignment: {
-              vertical: 'center',
-              horizontal: 'left'
-            },
-            font: {
-              name: 'Khmer OS Battambang',
-              sz: 10
-            }
+            alignment: { vertical: 'center', horizontal: 'left' },
+            font: { name: 'Khmer OS Battambang', sz: 10 }
           };
         }
       }
     }
 
-    // Merge header cells
+    // Merge cells
     ws['!merges'] = [
-      // Row 0: Kingdom - full width
       { s: { r: 0, c: 0 }, e: { r: 0, c: totalColumns - 1 } },
-      // Row 2: Department - full width
       { s: { r: 2, c: 0 }, e: { r: 2, c: totalColumns - 1 } },
-      // Row 3: Office - full width
       { s: { r: 3, c: 0 }, e: { r: 3, c: totalColumns - 1 } },
-      // Row 4: School - full width
       { s: { r: 4, c: 0 }, e: { r: 4, c: totalColumns - 1 } },
-      // Row 5: Title - full width
       { s: { r: 5, c: 0 }, e: { r: 5, c: totalColumns - 1 } },
-      // Row 7: Month - full width
       { s: { r: 7, c: 0 }, e: { r: 7, c: totalColumns - 1 } },
-      // Row 9: Info row - full width
       { s: { r: 9, c: 0 }, e: { r: 9, c: totalColumns - 1 } },
-      // Header row merges (Rows 10-11)
-      // Merge first 3 columns vertically
-      { s: { r: 10, c: 0 }, e: { r: 11, c: 0 } }, // ល.រ
-      { s: { r: 10, c: 1 }, e: { r: 11, c: 1 } }, // អត្តលេខ
-      { s: { r: 10, c: 2 }, e: { r: 11, c: 2 } }, // គោត្តនាម និងនាម
-      // Merge "ចំនួនអវត្តមាន" horizontally across 3 summary columns
+      { s: { r: 10, c: 0 }, e: { r: 11, c: 0 } },
+      { s: { r: 10, c: 1 }, e: { r: 11, c: 1 } },
+      { s: { r: 10, c: 2 }, e: { r: 11, c: 2 } },
       { s: { r: 10, c: summaryStartCol }, e: { r: 10, c: summaryStartCol + 2 } },
-      // Merge "សេចក្តីប្រកាស" vertically
       { s: { r: 10, c: summaryStartCol + 3 }, e: { r: 11, c: summaryStartCol + 3 } },
     ];
 
@@ -474,7 +410,6 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
     const wb = XLSXStyle.utils.book_new();
     XLSXStyle.utils.book_append_sheet(wb, ws, 'វត្តមានគ្រូ');
 
-    // Set workbook properties
     wb.Props = {
       Title: `បញ្ជីវត្តមានគ្រូបង្រៀន - ${monthName}`,
       Subject: 'វត្តមានគ្រូបង្រៀន',
@@ -482,14 +417,12 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
       CreatedDate: new Date()
     };
 
-    // Generate filename
     const monthStr = String(month + 1).padStart(2, '0');
     const filename = getTimestampedFilename(
       `teacher_attendance_${year}-${monthStr}`,
       'xlsx'
     );
 
-    // Export file
     XLSXStyle.writeFile(wb, filename);
 
     if (onSuccess) {
