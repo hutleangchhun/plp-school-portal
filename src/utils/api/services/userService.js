@@ -533,8 +533,17 @@ const userUtils = {
     
     // Handle different path formats
     let profilePath = profilePicture;
-    if (!profilePath.startsWith('/')) {
+
+    // Ensure path starts with /uploads/ (handle both 'uploads/...' and '/uploads/...' formats)
+    if (profilePath.startsWith('uploads/')) {
       profilePath = '/' + profilePath;
+    } else if (!profilePath.startsWith('/uploads/')) {
+      // If path doesn't have /uploads prefix, add it
+      if (profilePath.startsWith('/')) {
+        profilePath = '/uploads' + profilePath;
+      } else {
+        profilePath = '/uploads/' + profilePath;
+      }
     }
     
     // Handle special characters in filename by encoding only the filename part
