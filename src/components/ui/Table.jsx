@@ -94,14 +94,14 @@ const Table = ({
   };
 
   const headerBase = stickyHeader
-    ? 'sticky top-0 z-10 bg-blue-600 backdrop-blur supports-[backdrop-filter]:bg-blue-600 text-white'
-    : 'bg-blue-600';
+    ? 'sticky top-0 z-10 bg-blue-600 text-white'
+    : 'bg-blue-600 text-white';
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
       <div className="overflow-x-auto">
         <table className={`w-full text-sm ${className}`} {...props}>
-          <thead className={`${headerBase} border-b border-gray-200`}>
+          <thead className={`${headerBase} border-b border-gray-200`} style={{ backgroundColor: '#2563eb' }}>
             <tr className="group/header">
               {columns.map((column, index) => {
                 const isSortable = enableSort && !(column.disableSort) && (column.accessor || column.key);
@@ -109,9 +109,12 @@ const Table = ({
                   <th
                     key={column.key || index}
                     scope="col"
-                    className={`px-2 sm:px-3 md:px-6 ${dense ? 'py-2' : 'py-3.5'} text-left text-xs sm:text-sm font-medium text-white uppercase tracking-wide align-middle transition-colors duration-500 hover:bg-blue-700 hover:font-bold ${
+                    className={`px-2 sm:px-3 md:px-6 ${dense ? 'py-2' : 'py-3.5'} text-left text-xs sm:text-sm font-medium text-white uppercase tracking-wide align-middle transition-colors duration-500 hover:font-bold ${
                       column.headerClassName || ''
                     } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
+                    style={{ backgroundColor: '#2563eb' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
                   >
                     {isSortable ? (
                       <button

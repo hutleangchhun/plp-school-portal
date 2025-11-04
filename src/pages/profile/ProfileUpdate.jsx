@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Save, User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler, Download, QrCode as QrCodeIcon } from 'lucide-react';
+import { User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler, Download, QrCode as QrCodeIcon } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import ProfileImage from '../../components/ui/ProfileImage';
+import ProfileInfoDisplay from '../../components/ui/ProfileInfoDisplay';
 import { api, utils } from '../../utils/api';
 import Dropdown from '../../components/ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
@@ -33,6 +34,8 @@ export default function ProfileUpdate({ user, setUser }) {
     nationality: 'ខ្មែរ',
     roleNameEn: '',
     roleNameKh: '',
+    is_director: false,
+    school_name: '',
     weight_kg: '',
     height_cm: '',
     bmi: '',
@@ -209,6 +212,8 @@ export default function ProfileUpdate({ user, setUser }) {
           nationality: normalizedData.nationality || 'ខ្មែរ',
           roleNameEn: normalizedData.roleNameEn || '',
           roleNameKh: normalizedData.roleNameKh || '',
+          is_director: normalizedData.isDirector || teacher.isDirector || false,
+          school_name: teacher.school?.name || normalizedData.school_name || '',
           weight_kg: normalizedData.weight_kg || '',
           height_cm: normalizedData.height_cm || '',
           bmi: normalizedData.bmi || '',
@@ -437,12 +442,143 @@ export default function ProfileUpdate({ user, setUser }) {
   const downloadQRCode = () => {
     if (!formData.qr_code) return;
 
-    const link = document.createElement('a');
-    link.href = formData.qr_code;
-    link.download = `qr-code-${formData.username || 'user'}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `qr-code-${formData.username || 'user'}-${new Date().getTime()}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 'image/png');
+      };
+      img.onerror = () => {
+        // Fallback: try direct download
+        const link = document.createElement('a');
+        link.href = formData.qr_code;
+        link.download = `qr-code-${formData.username || 'user'}-${new Date().getTime()}.png`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+      img.src = formData.qr_code;
+    } catch (error) {
+      console.error('Download error:', error);
+      showError(t('downloadFailed') || 'Failed to download QR code');
+    }
+  };
+
+  // Download card as PNG image
+  const downloadCardAsImage = async () => {
+    try {
+      // Dynamic import of html2canvas
+      const html2canvas = (await import('html2canvas')).default;
+      const cardElement = document.querySelector('[data-card-download]');
+
+      if (!cardElement) {
+        showError('Card element not found');
+        return;
+      }
+
+      // Create canvas from the card
+      const canvas = await html2canvas(cardElement, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        width: cardElement.offsetWidth,
+        height: cardElement.offsetHeight
+      });
+
+      // Convert canvas to blob and download
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `profile-card-${formData.username || 'user'}-${new Date().getTime()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showSuccess(t('downloadSuccess') || 'Card downloaded successfully');
+      });
+    } catch (error) {
+      console.error('Download error:', error);
+      showError(t('downloadFailed') || 'Failed to download card. Please ensure html2canvas is installed.');
+    }
+  };
+
+  // Download profile data as JSON with image
+  const downloadProfileData = async () => {
+    try {
+      // Create a JSON object with all profile data
+      const profileData = {
+        personalInfo: {
+          username: formData.username,
+          email: formData.email,
+          firstName: formData.first_name,
+          lastName: formData.last_name,
+          fullName: formData.fullname,
+          gender: formData.gender,
+          phone: formData.phone,
+          dateOfBirth: formData.date_of_birth,
+          nationality: formData.nationality
+        },
+        teacherInfo: {
+          role: formData.roleNameKh,
+          teacherNumber: formData.teacher_number,
+          employmentType: formData.employment_type,
+          hireDate: formData.hire_date,
+          gradeLevel: formData.gradeLevel
+        },
+        healthInfo: {
+          weight: formData.weight_kg,
+          height: formData.height_cm,
+          bmi: calculateBMI()
+        },
+        locationInfo: {
+          residence: formData.residence,
+          placeOfBirth: formData.placeOfBirth
+        },
+        additionalInfo: {
+          ethnicity: formData.ethnic_group,
+          accessibility: formData.accessibility,
+          qrCode: formData.qr_code
+        },
+        downloadedAt: new Date().toISOString()
+      };
+
+      // Create JSON string
+      const jsonString = JSON.stringify(profileData, null, 2);
+
+      // Create blob and download JSON
+      const jsonBlob = new Blob([jsonString], { type: 'application/json' });
+      const jsonUrl = URL.createObjectURL(jsonBlob);
+      const jsonLink = document.createElement('a');
+      jsonLink.href = jsonUrl;
+      jsonLink.download = `profile-${formData.username || 'user'}-${new Date().getTime()}.json`;
+      document.body.appendChild(jsonLink);
+      jsonLink.click();
+      document.body.removeChild(jsonLink);
+      URL.revokeObjectURL(jsonUrl);
+
+      showSuccess(t('downloadSuccess') || 'Profile data downloaded successfully');
+    } catch (error) {
+      console.error('Download error:', error);
+      showError(t('downloadFailed') || 'Failed to download profile data');
+    }
   };
 
   const handleSubmit = (e) => {
@@ -849,7 +985,7 @@ export default function ProfileUpdate({ user, setUser }) {
   }
 
   return (
-    <div className="bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen p-3 sm:p-6">
+    <div className="bg-gray-100 p-3 sm:p-6">
       <div className="">
         <div className="bg-white rounded-2xl overflow-hidden">
           <div className="px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
@@ -865,82 +1001,133 @@ export default function ProfileUpdate({ user, setUser }) {
                   <p className="text-slate-500 text-xs sm:text-sm mt-1 hidden sm:block">{t('updateYourPersionalDetails','Update your personal details and preferences')}</p>
                 </div>
               </div>
-              <Button
-                type="button"
-                onClick={handleEditToggle}
-                variant="primary"
-                size="sm"
-                className="rounded-lg w-full sm:w-auto"
-              >
-                <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="text-xs sm:text-sm">{isEditMode ? t('cancel') || 'Cancel' : t('edit') || 'Edit'}</span>
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  onClick={handleEditToggle}
+                  variant="primary"
+                  size="sm"
+                  className="rounded-lg flex-1 sm:flex-initial"
+                >
+                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="text-xs sm:text-sm">{isEditMode ? t('cancel') || 'Cancel' : t('edit') || 'Edit'}</span>
+                </Button>
+                {isEditMode && (
+                  <button
+                    type="submit"
+                    form="profile-form"
+                    disabled={loading}
+                    className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{loading ? t('updating') : t('updateProfile')}</span>
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className='grid sm:grid-cols-3 grid-cols-1 gap-4'>
+            <div className="flex flex-col lg:flex-row gap-4">
               {/* Profile Picture Section */}
-              <div className="col-span-1 mb-8 p-6 rounded-xl border border-gray-100 shadow-sm">
+              <div data-card-download className="flex-shrink-0 w-full lg:w-96 p-6 lg:p-8 rounded-2xl bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-md hover:shadow-lg transition-shadow">
                 {/* Profile Picture with Dropdown */}
-                <div className="grid grid-cols-1 gap-3 justify-center items-center" ref={dropdownRef}>
+                <div className="flex flex-col gap-5 justify-center items-center" ref={dropdownRef}>
                   <div
-                    className={`relative my-3 inline-block ${isEditMode ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                    className={`relative ${isEditMode ? 'cursor-pointer group' : 'cursor-default'}`}
                     onClick={isEditMode ? () => setShowDropdown(!showDropdown) : undefined}
                   >
                     {profilePictureFile ? (
                       <div className='flex justify-center items-center'>
-                        <img
-                          src={URL.createObjectURL(profilePictureFile)}
-                          alt="Profile Preview"
-                          className="h-40 w-40 sm:h-40 sm:w-40 lg:h-40 lg:w-40 rounded-full object-cover border-4 border-white shadow-lg hover:shadow-xl transition-all"
-                        />
+                        <div className="relative">
+                          <img
+                            src={URL.createObjectURL(profilePictureFile)}
+                            alt="Profile Preview"
+                            className="h-32 w-32 sm:h-40 sm:w-40 rounded-full object-cover border-4 border-blue-500 shadow-lg group-hover:shadow-xl transition-all"
+                          />
+                          {isEditMode && (
+                            <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                              <Upload className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <div className='flex justify-center items-center'>
-                        <ProfileImage
-                          user={formData}
-                          size="custom"
-                          customSize="h-40 w-40 sm:h-40 sm:w-40 lg:h-40 lg:w-40"
-                          alt="Profile"
-                          className="shadow-lg"
-                          borderColor="border-white"
-                          fallbackType="image"
-                          clickable={isEditMode}
-                        />
+                        <div className="relative">
+                          <ProfileImage
+                            user={formData}
+                            size="custom"
+                            customSize="h-32 w-32 sm:h-40 sm:w-40"
+                            alt="Profile"
+                            className="shadow-lg"
+                            borderColor="border-blue-500"
+                            fallbackType="image"
+                            clickable={isEditMode}
+                          />
+                          {isEditMode && (
+                            <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                              <Upload className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
-
                   </div>
+
+                  {/* User Info Summary - Always Visible */}
+                  <div className="w-full text-center space-y-2">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">{formData.username || '-'}</h3>
+                    <div className="flex flex-col items-center gap-1">
+                      {formData.is_director && (
+                        <span className="inline-block px-2 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">
+                          {t('director') || 'Director'}
+                        </span>
+                      )}
+                      {formData.roleNameKh && (
+                        <p className="text-sm text-gray-600">{formData.roleNameKh}</p>
+                      )}
+                    </div>
+                    {/* School name would go here if available in formData */}
+                    {formData.school_name && (
+                      <p className="text-sm text-gray-500">{formData.school_name}</p>
+                    )}
+                  </div>
+
                   {/* QR Code Section */}
                   {formData.qr_code && (
-                    <div>
-                      <div className="p-3 gap-4 bg-white border-2 border-gray-200 rounded-2xl">
-                        <div className="flex flex-row justify-between items-center">
-                          <Button
-                            type="button"
-                            variant="link"
-                            size="sm"
-                            onClick={handleViewQRCode}
-                            className="flex items-center gap-2 text-xs sm:text-sm"
-                          >
-                            <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
-
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="link"
-                            size="sm"
-                            onClick={downloadQRCode}
-                            className="flex items-center gap-2 text-xs sm:text-sm"
-                          >
-                            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-
-                          </Button>
+                    <div className="w-full">
+                      <div className="p-4 sm:p-5 bg-gradient-to-b from-white to-gray-50 border-2 border-gray-200 rounded-2xl">
+                        <div className="flex flex-row justify-between items-center mb-4">
+                          <h5 className="text-sm font-semibold text-gray-900">QR Code</h5>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleViewQRCode}
+                              className="flex items-center gap-1 text-xs sm:text-sm hover:bg-blue-50"
+                              title="View QR Code"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={downloadCardAsImage}
+                              className="flex items-center gap-1 text-xs sm:text-sm hover:bg-blue-50"
+                              title="Download Card"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="py-6 flex justify-center items-center">
+                        <div className="py-4 flex justify-center items-center bg-white rounded-lg border border-gray-100">
                           <img
                             src={formData.qr_code}
                             alt="QR Code"
-                            className="h-72 w-72 object-contain"
+                            className="h-40 w-40 sm:h-48 sm:w-48 object-contain p-2"
                           />
                         </div>
                       </div>
@@ -949,8 +1136,8 @@ export default function ProfileUpdate({ user, setUser }) {
 
                   {/* Dropdown Menu */}
                   {showDropdown && (
-                    <div className="absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200">
-                      <div className="py-1">
+                    <div className="absolute z-10 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200">
+                      <div className="py-2">
                         {formData.profile_picture && (
                           <Button
                             type="button"
@@ -958,10 +1145,10 @@ export default function ProfileUpdate({ user, setUser }) {
                             variant="ghost"
                             size="sm"
                             fullWidth
-                            className="justify-start rounded-none"
+                            className="justify-start rounded-none px-4 py-2 hover:bg-gray-50 text-gray-700"
                           >
-                            <Eye className="h-4 w-4 mr-2" />
-                            {t('viewPicture') || 'View Picture'}
+                            <Eye className="h-4 w-4 mr-3 text-gray-500" />
+                            <span className="text-sm">{t('viewPicture') || 'View Picture'}</span>
                           </Button>
                         )}
                         <Button
@@ -970,10 +1157,10 @@ export default function ProfileUpdate({ user, setUser }) {
                           variant="ghost"
                           size="sm"
                           fullWidth
-                          className="justify-start rounded-none"
+                          className="justify-start rounded-none px-4 py-2 hover:bg-blue-50 text-gray-700"
                         >
-                          <Upload className="h-4 w-4 mr-2" />
-                          {t('uploadNewPicture') || 'Upload New Picture'}
+                          <Upload className="h-4 w-4 mr-3 text-blue-500" />
+                          <span className="text-sm">{t('uploadNewPicture') || 'Upload New Picture'}</span>
                         </Button>
                       </div>
                     </div>
@@ -990,21 +1177,51 @@ export default function ProfileUpdate({ user, setUser }) {
                 />
 
                 {profilePictureFile && (
-                  <div className='p-6 bg-green-100 rounded-lg border-1 border-green-300 mt-3'>
-                    <p className="text-sm text-green-600">
-                      {t('newPictureSelected') || 'New picture selected'}: {profilePictureFile.name}
-                    </p>
+                  <div className='w-full p-3 sm:p-4 bg-green-50 rounded-lg border border-green-300 mt-4'>
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 text-green-600 mt-0.5">
+                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-green-800">
+                          {t('newPictureSelected') || 'New picture selected'}
+                        </p>
+                        <p className="text-xs text-green-700 mt-1 truncate">
+                          {profilePictureFile.name}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
                 {pictureUploading && (
-                  <p className="mt-2 text-sm text-blue-600">{t('uploadingImage')}</p>
+                  <div className='w-full p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-300 mt-4'>
+                    <div className="flex items-center gap-3">
+                      <div className="animate-spin">
+                        <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                      </div>
+                      <p className="text-sm text-blue-700 font-medium">{t('uploadingImage')}</p>
+                    </div>
+                  </div>
                 )}
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 p-4 border border-gray-100 rounded-lg col-span-2 min-h-96 overflow-y-auto">
-                <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-4">{t('personalInformation') || 'Additional Information'}</h4>
-                <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-3">
+              {!isEditMode && (
+                <ProfileInfoDisplay
+                  formData={formData}
+                  calculateBMI={calculateBMI}
+                  getBMICategory={getBMICategory}
+                />
+              )}
+
+              {isEditMode && (
+              <form id="profile-form" onSubmit={handleSubmit} className="flex-1 space-y-4 lg:space-y-6 p-3 lg:p-4 border border-gray-100 rounded-lg bg-white max-h-[600px] overflow-y-auto">
+                <h4 className="text-base lg:text-lg font-medium text-gray-900 mb-4">{t('personalInformation') || 'Additional Information'}</h4>
+                <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
                   <div>
                     <label htmlFor="username" className="block text-xs sm:text-sm font-medium text-gray-700">
                       {t('username')}
@@ -1067,7 +1284,7 @@ export default function ProfileUpdate({ user, setUser }) {
                   </div>
 
                 </div>
-                <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-4">
+                <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
                   <div>
                     <label htmlFor="roleNameKh" className="block text-xs sm:text-sm font-medium text-gray-700">
                       {t('role') || 'Role'}
@@ -1156,7 +1373,7 @@ export default function ProfileUpdate({ user, setUser }) {
 
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                       {t('emailRequired')}
@@ -1219,8 +1436,8 @@ export default function ProfileUpdate({ user, setUser }) {
                 </div>
                 {/* Additional Information Fields */}
                 <div className="">
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <div className='grid grid-rows-4'>
+                  <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-2">
+                    <div className='grid grid-cols-1 gap-3 lg:gap-6 grid-rows-4'>
                       <div>
                         <label htmlFor="ethnic_group" className="block text-sm font-medium text-gray-700">
                           {t('ethnicGroup') || 'Ethnic Group'}
@@ -1400,12 +1617,12 @@ export default function ProfileUpdate({ user, setUser }) {
                   </div>
                 </div>
                 {/* Weight and Height */}
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
 
                 </div>
-                <div className='border-t-2 pt-3 sm:pt-6'>
-                  <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-4">{t('teacherInformation') || 'Teacher Information'}</h4>
-                  <div className='grid grid-cols-1 sm:grid-cols-4 gap-6 items-center'>
+                <div className='border-t-2 pt-3 lg:pt-6'>
+                  <h4 className="text-base lg:text-lg font-medium text-gray-900 mb-4">{t('teacherInformation') || 'Teacher Information'}</h4>
+                  <div className='grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4 items-center'>
                     <div>
                       <label htmlFor="teacher_number" className="block text-xs sm:text-sm font-medium text-gray-700">
                         {t('teacherNumber')}
@@ -1511,9 +1728,9 @@ export default function ProfileUpdate({ user, setUser }) {
                 </div>
 
                 {/* Current Residence Information */}
-                <div className="border-t-2 pt-4 sm:pt-6">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <h4 className="text-base sm:text-lg font-medium text-gray-900">{t('currentResidence') || 'Current Residence'}</h4>
+                <div className="border-t-2 pt-4 lg:pt-6">
+                  <div className="flex items-center justify-between mb-3 lg:mb-4">
+                    <h4 className="text-base lg:text-lg font-medium text-gray-900">{t('currentResidence') || 'Current Residence'}</h4>
                     {locationDataLoading && (
                       <DynamicLoader
                         type="dots"
@@ -1525,7 +1742,7 @@ export default function ProfileUpdate({ user, setUser }) {
                   </div>
 
                   {/* Province and District */}
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-4 mb-6">
+                  <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4 mb-6">
                     <div>
                       <label htmlFor="residence-province" className="block text-sm font-medium text-gray-700">
                         {t('province')}
@@ -1653,11 +1870,11 @@ export default function ProfileUpdate({ user, setUser }) {
                 </div>
 
                 {/* Place of Birth Information */}
-                <div className="border-t-2 pt-4 sm:pt-6">
-                  <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">{t('placeOfBirth') || 'Place of Birth'}</h4>
+                <div className="border-t-2 pt-4 lg:pt-6">
+                  <h4 className="text-base lg:text-lg font-medium text-gray-900 mb-3 lg:mb-4">{t('placeOfBirth') || 'Place of Birth'}</h4>
 
                   {/* Province and District */}
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-4 mb-6">
+                  <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4 mb-6">
                     <div>
                       <label htmlFor="birth-province" className="block text-sm font-medium text-gray-700">
                         {t('province')}
@@ -1780,22 +1997,8 @@ export default function ProfileUpdate({ user, setUser }) {
                   </div>
                 </div>
 
-                {isEditMode && (
-                  <div className="pt-4 sm:pt-6">
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      variant="primary"
-                      size="default"
-                      fullWidth
-                      className="text-sm sm:text-base"
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      {loading ? t('updating') : t('updateProfile')}
-                    </Button>
-                  </div>
-                )}
               </form>
+              )}
             </div>
           </div>
         </div>
