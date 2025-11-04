@@ -1,4 +1,4 @@
-import { formatDateKhmer, getMonthCalendarLayout, getKhmerDayWithShorthand, isWeekend } from './formatters';
+import { formatDateKhmer, getMonthCalendarLayout, getKhmerDayShorthand, getKhmerDayWithShorthand, isWeekend } from './formatters';
 import { getTimestampedFilename } from './exportUtils';
 import { attendanceService } from './api/services/attendanceService';
 import schoolService from './api/services/schoolService';
