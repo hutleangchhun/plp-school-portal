@@ -557,12 +557,7 @@ const userUtils = {
       profilePath = pathParts.join('/');
     }
     
-    // In production, use relative URL that will be proxied by Vercel
-    if (import.meta.env.PROD) {
-      return profilePath; // This will become /uploads/filename and be proxied by Vercel
-    }
-    
-    // In development, use full URL
+    // Always use full API URL for profile pictures
     return `${staticBaseUrl}${profilePath}`;
   },
 
