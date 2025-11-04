@@ -1,9 +1,29 @@
 // Template download utility
-export const templateDownloader = async () => {
+import schoolService from './api/services/schoolService';
+
+/**
+ * Download student import template
+ * @param {number} schoolId - School ID to fetch school name
+ */
+export const templateDownloader = async (schoolId = null) => {
   // Dynamically import xlsx-js-style for styling support
   const XLSXStyleModule = await import('xlsx-js-style');
   // xlsx-js-style exports as default, but we need to handle both cases
   const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
+
+  // Fetch school name if schoolId is provided
+  let schoolName = 'សាលាបឋមសិក្សា ..............';
+  if (schoolId) {
+    try {
+      const schoolResponse = await schoolService.getSchoolInfo(schoolId);
+      if (schoolResponse?.data?.name) {
+        schoolName = schoolResponse.data.name;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch school name for template:', err);
+      // Continue with default name
+    }
+  }
 
   // Create comprehensive template with Cambodian school headers
   const templateData = [
@@ -33,7 +53,7 @@ export const templateDownloader = async () => {
     ],
     // School Name - Row 4
     [
-      'សាលាបឋមសិក្សា ..............',
+      schoolName,
       '', '', '', '', '', '', '', '', '', '', '', '', '', '',
       '', '', '', '', '', '',
       '', '', '', '', '', '',

@@ -1,5 +1,6 @@
 import { formatDateKhmer } from './formatters';
 import { getTimestampedFilename } from './exportUtils';
+import schoolService from './api/services/schoolService';
 
 /**
  * Export students data to Excel in BulkStudentImport template format
@@ -7,17 +8,37 @@ import { getTimestampedFilename } from './exportUtils';
  * @param {Object} options - Export options
  * @param {Object} options.selectedClass - Selected class information
  * @param {string} options.schoolName - School name for header
+ * @param {number} options.schoolId - School ID to fetch school info
  * @param {Function} options.onSuccess - Success callback
  * @param {Function} options.onError - Error callback
  */
 export const exportStudentsToExcel = async (students, options = {}) => {
   try {
-    const {
+    let {
       selectedClass = null,
       schoolName = '',
+      schoolId = null,
       onSuccess,
       onError
     } = options;
+
+    // Fetch school name from API if schoolId is provided
+    if (schoolId && !schoolName) {
+      try {
+        const schoolResponse = await schoolService.getSchoolInfo(schoolId);
+        if (schoolResponse?.data?.name) {
+          schoolName = schoolResponse.data.name;
+        }
+      } catch (err) {
+        console.warn('Failed to fetch school name:', err);
+        // Continue with default or provided name
+      }
+    }
+
+    // Use default if still not set
+    if (!schoolName) {
+      schoolName = 'សាលា';
+    }
 
     // Dynamically import xlsx-js-style
     const XLSXStyleModule = await import('xlsx-js-style');

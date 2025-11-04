@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { debounce } from 'lodash';
-import { Calendar, Check, X, Clock, Users, Search, ChevronLeft, ChevronRight, Settings, FileCheck } from 'lucide-react';
+import { Calendar, Check, X, Clock, Users, Search, ChevronLeft, ChevronRight, Settings, FileCheck, Download } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -17,7 +17,9 @@ import { formatDateKhmer } from '../../utils/formatters';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { teacherService } from '../../utils/api/services/teacherService';
 import { teacherSettingsService } from '../../utils/api/services/teacherSettingsService';
+import schoolService from '../../utils/api/services/schoolService';
 import { isToday } from '../attendance/utils';
+import { exportTeacherAttendanceToExcel } from '../../utils/teacherAttendanceExportUtils';
 
 /**
  * TeacherAttendance Component
@@ -408,6 +410,52 @@ export default function TeacherAttendance() {
     }
   }, [selectedTeachers, teacherSettings, displayedTeachers, t, _showSuccess, _showError]);
 
+  // Function to export teacher attendance to Excel
+  const handleExportAttendance = useCallback(async () => {
+    try {
+      startLoading('exportAttendance', t('exportingAttendance', 'កំពុងនាំចេញ...'));
+
+      // Fetch school info to get school name
+      let schoolName = 'សាលា'; // Default fallback
+      try {
+        if (schoolId) {
+          const schoolResponse = await schoolService.getSchoolInfo(schoolId);
+          if (schoolResponse?.data?.name) {
+            schoolName = schoolResponse.data.name;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch school name:', err);
+        // Continue with default name
+      }
+
+      const result = await exportTeacherAttendanceToExcel(
+        teachers,
+        weeklyAttendance,
+        {
+          weekStartDate: currentWeekStart,
+          weekEndDate: weekDates[6],
+          schoolName,
+          onSuccess: () => {
+            _showSuccess(t('exportSuccess', 'នាំចេញជោគជ័យ'));
+          },
+          onError: (error) => {
+            _showError(t('exportError', 'នាំចេញបរាជ័យ: ' + error.message));
+          }
+        }
+      );
+
+      if (!result.success) {
+        throw new Error(result.error?.message || 'Export failed');
+      }
+    } catch (error) {
+      console.error('Error exporting attendance:', error);
+      _showError(t('exportError', 'នាំចេញបរាជ័យ'));
+    } finally {
+      stopLoading('exportAttendance');
+    }
+  }, [teachers, weeklyAttendance, currentWeekStart, weekDates, schoolId, t, startLoading, stopLoading, _showSuccess, _showError]);
+
   // Function to open attendance modal
   const openAttendanceModal = useCallback((teacher, date, existingAttendance) => {
     // Only allow marking attendance for today
@@ -637,7 +685,17 @@ export default function TeacherAttendance() {
                   />
                 </div>
               </div>
-              <div className="flex items-end">
+              <div className="flex items-end gap-2">
+                <Button
+                  onClick={handleExportAttendance}
+                  variant="outline"
+                  className="flex items-center gap-2 whitespace-nowrap"
+                  title={t('exportAttendance', 'នាំចេញវត្តមាន')}
+                  size="sm"
+                >
+                  <Download className="w-4 h-4" />
+                  {t('export', 'នាំចេញ')}
+                </Button>
                 <Button
                   onClick={() => navigate('/attendance/approval')}
                   variant="primary"

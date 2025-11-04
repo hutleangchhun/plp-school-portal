@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Download, ChevronDown } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { formatDateKhmer } from '../../utils/formatters';
 import { attendanceService } from '../../utils/api/services/attendanceService';
+import schoolService from '../../utils/api/services/schoolService';
 
 /**
  * AttendanceExport Component
@@ -17,6 +18,7 @@ import { attendanceService } from '../../utils/api/services/attendanceService';
  * @param {Object} props.attendance - Attendance data object
  * @param {string} props.className - Name of the class
  * @param {string} props.schoolName - Name of the school
+ * @param {number} props.schoolId - School ID to fetch school info
  * @param {Date} props.selectedDate - Selected date for export
  * @param {string} props.exportType - 'daily' or 'monthly'
  * @param {boolean} props.disabled - Disable export button
@@ -26,6 +28,7 @@ export default function AttendanceExport({
   attendance = {},
   className = 'Unknown-Class',
   schoolName = 'សាលា',
+  schoolId = null,
   selectedDate,
   exportType = 'monthly', // 'daily' or 'monthly'
   classId, // Required for API calls
@@ -36,6 +39,25 @@ export default function AttendanceExport({
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [resolvedSchoolName, setResolvedSchoolName] = useState(schoolName);
+
+  // Fetch school name from API if schoolId is provided
+  useEffect(() => {
+    if (schoolId && !schoolName) {
+      const fetchSchoolName = async () => {
+        try {
+          const schoolResponse = await schoolService.getSchoolInfo(schoolId);
+          if (schoolResponse?.data?.name) {
+            setResolvedSchoolName(schoolResponse.data.name);
+          }
+        } catch (err) {
+          console.warn('Failed to fetch school name:', err);
+          // Keep the default name
+        }
+      };
+      fetchSchoolName();
+    }
+  }, [schoolId, schoolName]);
 
   // Format date to string (YYYY-MM-DD)
   const formatDateToString = (date) => {
@@ -277,7 +299,7 @@ export default function AttendanceExport({
 
       // Row 4: School - left aligned
       const schoolRow = [...emptyRow];
-      schoolRow[0] = schoolName;
+      schoolRow[0] = resolvedSchoolName;
       templateData.push(schoolRow);
 
       // Row 5: Attendance Title
