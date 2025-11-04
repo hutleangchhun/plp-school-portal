@@ -48,9 +48,9 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
     const month = currentDate.getMonth();
     const monthName = formatDateKhmer(currentDate, 'monthYear');
 
-    // Get calendar layout
-    const calendarLayout = getMonthCalendarLayout(currentDate);
-    const { daysInMonth, totalCells } = calendarLayout;
+    // Get calendar layout but only use actual days (no blank cells for days outside month)
+    // This eliminates the extra blank columns that appear before the month starts
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     // Format date to string (YYYY-MM-DD)
     const formatDateToString = (date) => {
@@ -103,39 +103,33 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
       let absentCount = 0;
       let leaveCount = 0;
 
-      // Add data for each calendar cell (including empty cells for non-month days)
-      calendarLayout.calendarDays.forEach((day, cellIndex) => {
-        const dayOfWeekNum = cellIndex % 7; // 0 = Monday, 6 = Sunday
+      // Add data for each actual day of month
+      for (let day = 1; day <= daysInMonth; day++) {
+        // Calculate day of week for this day
+        const dayDate = new Date(year, month, day);
+        const dayOfWeekNum = dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1; // 0 = Monday, 6 = Sunday
+        const dateStr = formatDateToString(dayDate);
+        const attendance = monthlyAttendance[teacherUserId]?.[dateStr];
 
-        if (day === null) {
-          // Empty cell for days outside this month
-          row[`cell_${cellIndex}`] = { value: '', dayNum: null, dayOfWeek: dayOfWeekNum };
-        } else {
-          // Actual day of month
-          const dayDate = new Date(year, month, day);
-          const dateStr = formatDateToString(dayDate);
-          const attendance = monthlyAttendance[teacherUserId]?.[dateStr];
-
-          let statusMark = '';
-          if (attendance?.status === 'PRESENT') {
-            statusMark = 'វត្ត';
-          } else if (attendance?.status === 'ABSENT') {
-            statusMark = 'អច្ប';
-            absentCount++;
-          } else if (attendance?.status === 'LEAVE') {
-            statusMark = 'ច្ប';
-            leaveCount++;
-          } else if (attendance?.status === 'LATE') {
-            statusMark = 'អ';
-          }
-
-          row[`cell_${cellIndex}`] = {
-            value: statusMark,
-            dayNum: day,
-            dayOfWeek: dayOfWeekNum
-          };
+        let statusMark = '';
+        if (attendance?.status === 'PRESENT') {
+          statusMark = 'វត្ត';
+        } else if (attendance?.status === 'ABSENT') {
+          statusMark = 'អច្ប';
+          absentCount++;
+        } else if (attendance?.status === 'LEAVE') {
+          statusMark = 'ច្ប';
+          leaveCount++;
+        } else if (attendance?.status === 'LATE') {
+          statusMark = 'អ';
         }
-      });
+
+        row[`cell_${day}`] = {
+          value: statusMark,
+          dayNum: day,
+          dayOfWeek: dayOfWeekNum
+        };
+      }
 
       // Summary columns
       row['អច្ប'] = absentCount;
@@ -145,8 +139,8 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
       return row;
     });
 
-    // Total columns: 3 info + calendar cells + 4 summary
-    const totalColumns = 3 + totalCells + 4;
+    // Total columns: 3 info + actual days + 4 summary
+    const totalColumns = 3 + daysInMonth + 4;
     const emptyRow = Array(totalColumns).fill('');
 
     // Build template data
@@ -196,30 +190,33 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
     infoRow[24] = `គ្រូបង្រៀនសរុប: ................${totalTeachers}នាក់`;
     templateData.push(infoRow);
 
-    // Row 10: First header row
-    const summaryStartCol = 3 + totalCells;
+    // Row 10: First header row with day names
+    const summaryStartCol = 3 + daysInMonth;
     const headerRow1 = [...emptyRow];
     headerRow1[0] = 'ល.រ';
     headerRow1[1] = 'អត្តលេខ';
     headerRow1[2] = 'គោត្តនាម និងនាម';
+
+    // Add Khmer day names in header row 1
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayDate = new Date(year, month, day);
+      const dayOfWeekNum = dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1;
+      headerRow1[3 + day - 1] = getKhmerDayShorthand(dayOfWeekNum);
+    }
+
     headerRow1[summaryStartCol] = 'ចំនួនអវត្តមាន';
     headerRow1[summaryStartCol + 3] = 'សេចក្តីប្រកាស';
     templateData.push(headerRow1);
 
-    // Row 11: Second header row with day names and numbers
+    // Row 11: Second header row with day numbers
     const headerRow2 = [...emptyRow];
     headerRow2[0] = '';
     headerRow2[1] = '';
     headerRow2[2] = '';
 
-    calendarLayout.calendarDays.forEach((day, cellIndex) => {
-      if (day === null) {
-        headerRow2[3 + cellIndex] = '';
-      } else {
-        const dayOfWeekNum = cellIndex % 7;
-        headerRow2[3 + cellIndex] = getKhmerDayWithShorthand(day, dayOfWeekNum);
-      }
-    });
+    for (let day = 1; day <= daysInMonth; day++) {
+      headerRow2[3 + day - 1] = day.toString();
+    }
 
     headerRow2[summaryStartCol] = 'អច្ប';
     headerRow2[summaryStartCol + 1] = 'ច្ប';
@@ -235,11 +232,11 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
         row['ឈ្មោះ'],
       ];
 
-      // Add calendar cells
-      calendarLayout.calendarDays.forEach((_, cellIndex) => {
-        const cellData = row[`cell_${cellIndex}`];
+      // Add day columns
+      for (let day = 1; day <= daysInMonth; day++) {
+        const cellData = row[`cell_${day}`];
         arr.push(cellData?.value || '');
-      });
+      }
 
       // Add summary
       arr.push(row['អច្ប'], row['ច្ប'], row['សរុប'], '');
@@ -304,7 +301,8 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
 
     // Apply styling
     const totalRows = templateData.length;
-    const dataEndRow = 11 + dataRows.length;
+    const dataStartRow = 12; // Data starts after headers (row 10-11)
+    const dataEndRow = dataStartRow + dataRows.length - 1;
 
     for (let R = 0; R < totalRows; R++) {
       for (let C = 0; C < totalColumns; C++) {
@@ -337,9 +335,13 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
           };
         } else if (R === 10 || R === 11) {
           // Table headers - check if this is a weekend column
-          const isWeekendCol = R === 11 && C >= 3 && C < 3 + totalCells &&
-            calendarLayout.calendarDays[C - 3] !== null &&
-            isWeekend((C - 3) % 7);
+          let isWeekendCol = false;
+          if (C >= 3 && C < 3 + daysInMonth) {
+            const day = C - 3 + 1;
+            const dayDate = new Date(year, month, day);
+            const dayOfWeekNum = dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1;
+            isWeekendCol = isWeekend(dayOfWeekNum);
+          }
 
           ws[cellAddress].s = {
             fill: { fgColor: { rgb: 'E0E0E0' } },
@@ -349,7 +351,7 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
               left: { style: 'thin', color: { rgb: '000000' } },
               right: { style: 'thin', color: { rgb: '000000' } }
             },
-            alignment: { vertical: 'center', horizontal: 'center' },
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: {
               name: 'Khmer OS Battambang',
               sz: 10,
@@ -357,11 +359,15 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
               color: isWeekendCol ? { rgb: 'FF0000' } : undefined
             }
           };
-        } else if (R >= 12 && R <= dataEndRow) {
+        } else if (R >= dataStartRow && R <= dataEndRow) {
           // Data rows - check if weekend column
-          const isWeekendCol = C >= 3 && C < 3 + totalCells &&
-            calendarLayout.calendarDays[C - 3] !== null &&
-            isWeekend((C - 3) % 7);
+          let isWeekendCol = false;
+          if (C >= 3 && C < 3 + daysInMonth) {
+            const day = C - 3 + 1;
+            const dayDate = new Date(year, month, day);
+            const dayOfWeekNum = dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1;
+            isWeekendCol = isWeekend(dayOfWeekNum);
+          }
 
           ws[cellAddress].s = {
             border: {
