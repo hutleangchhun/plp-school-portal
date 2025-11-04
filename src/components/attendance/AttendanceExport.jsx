@@ -271,14 +271,15 @@ export default function AttendanceExport({
       const femaleStudents = students.filter(s => s.gender === 'FEMALE').length;
       const maleStudents = totalStudents - femaleStudents;
 
-      // Create template with headers (39 columns total: 4 info + 31 days + 4 summary)
-      const emptyRow = Array(39).fill('');
+      // Create template with headers (dynamic: 4 info + actual days + 4 summary)
+      const totalColumns = 4 + daysInMonth + 4;
+      const emptyRow = Array(totalColumns).fill('');
 
       // Build header rows - simplified structure
       const templateData = [];
 
       // Row 0: Kingdom header
-      templateData.push(['ព្រះរាជាណាចក្រកម្ពុជា', ...Array(38).fill('')]);
+      templateData.push(['ព្រះរាជាណាចក្រកម្ពុជា', ...Array(totalColumns - 1).fill('')]);
 
       // Row 1: Nation/Religion/King in 3 columns
       const nationRow = [...emptyRow];
@@ -303,13 +304,13 @@ export default function AttendanceExport({
       templateData.push(schoolRow);
 
       // Row 5: Attendance Title
-      templateData.push(['បញ្ជីអវត្តមានប្រចាំខែ', ...Array(38).fill('')]);
+      templateData.push(['បញ្ជីអវត្តមានប្រចាំខែ', ...Array(totalColumns - 1).fill('')]);
 
       // Row 6: Section Title with class
-      templateData.push([`ផ្នែកអវត្តមានប្រចាំខែ - ${className}`, ...Array(38).fill('')]);
+      templateData.push([`ផ្នែកអវត្តមានប្រចាំខែ - ${className}`, ...Array(totalColumns - 1).fill('')]);
 
       // Row 7: Month
-      templateData.push([`ខែ: ${monthName}`, ...Array(38).fill('')]);
+      templateData.push([`ខែ: ${monthName}`, ...Array(totalColumns - 1).fill('')]);
 
       // Row 8: Empty row
       templateData.push([...emptyRow]);
@@ -321,16 +322,18 @@ export default function AttendanceExport({
       templateData.push(infoRow);
 
       // Two-row header structure
+      // Calculate summary column position based on actual days in month
+      const summaryStartCol = 4 + daysInMonth;
+
       // Row 10: First header row with category labels
       const headerRow1 = [...emptyRow];
       headerRow1[0] = 'ល.រ';
       headerRow1[1] = 'អត្តលេខ';
       headerRow1[2] = 'គោត្តនាម និងនាម';
       headerRow1[3] = 'ភេទ';
-      // Days section spans columns 4-34 (31 days)
-      // Leave empty for now, will be merged
-      headerRow1[35] = 'ចំនួនអវត្តមាន'; // Spans columns 35-37
-      headerRow1[38] = 'សេចក្តីប្រកាស';
+      // Days section - leave empty for day numbers
+      headerRow1[summaryStartCol] = 'ចំនួនអវត្តមាន'; // Spans 3 columns
+      headerRow1[summaryStartCol + 3] = 'សេចក្តីប្រកាស';
       templateData.push(headerRow1);
 
       // Row 11: Second header row with day numbers
@@ -340,15 +343,15 @@ export default function AttendanceExport({
       headerRow2[1] = '';
       headerRow2[2] = '';
       headerRow2[3] = '';
-      // Day numbers 1-31
-      for (let i = 1; i <= 31; i++) {
-        headerRow2[3 + i] = i.toString(); // Columns 4-34
+      // Day numbers - only show actual days in month
+      for (let i = 1; i <= daysInMonth; i++) {
+        headerRow2[3 + i] = i.toString(); // Columns 4 onwards
       }
-      // Summary columns with Khmer labels (3 fields only: ABSENT, LEAVE, TOTAL)
-      headerRow2[35] = 'អច្ប';    // ABSENT
-      headerRow2[36] = 'ច្ប';     // LEAVE
-      headerRow2[37] = 'សរុប';    // TOTAL
-      headerRow2[38] = ''; // Merged with row above
+      // Summary columns positioned after actual days
+      headerRow2[summaryStartCol] = 'អច្ប';    // ABSENT
+      headerRow2[summaryStartCol + 1] = 'ច្ប';     // LEAVE
+      headerRow2[summaryStartCol + 2] = 'សរុប';    // TOTAL
+      headerRow2[summaryStartCol + 3] = ''; // Remarks
       templateData.push(headerRow2);
 
       // Data rows starting from row 8
@@ -360,15 +363,15 @@ export default function AttendanceExport({
           row['ភេទ']
         ];
 
-        // Add day columns
-        for (let i = 1; i <= 31; i++) {
+        // Add day columns - only actual days in month
+        for (let i = 1; i <= daysInMonth; i++) {
           arr.push(row[i.toString()] || '');
         }
 
         // Add summary columns with Khmer labels (3 fields: ABSENT, LEAVE, TOTAL)
         arr.push(row['អច្ប'], row['ច្ប'], row['សរុប'], ''); // Last column is blank ផ្សេងៗ
 
-        while (arr.length < 39) arr.push('');
+        while (arr.length < totalColumns) arr.push('');
         return arr;
       });
 
@@ -378,7 +381,7 @@ export default function AttendanceExport({
       // Note: Other calculation fields (attendance counts, percentage) left blank for manual entry as per standard format
 
       // Add footer section (summary statistics) - Structured format
-      const emptyFooterRow = Array(39).fill('');
+      const emptyFooterRow = Array(totalColumns).fill('');
 
       // Empty row for spacing
       templateData.push([...emptyFooterRow]);
@@ -392,7 +395,7 @@ export default function AttendanceExport({
       const summaryRow2 = [...emptyFooterRow];
       summaryRow2[0] = '- បញ្ឈប់បញ្ជីក្នុងខែនេះនូវចំនួន..........ពេល';
       templateData.push(summaryRow2);
-      
+
       // First date row - right aligned
       const dateRow1 = [...emptyFooterRow];
       dateRow1[30] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ...... ព.ស.២៥...........';
@@ -431,8 +434,8 @@ export default function AttendanceExport({
         { wch: 5 },  // ភេទ (Gender)
       ];
 
-      // Add widths for day columns (1-31)
-      for (let i = 1; i <= 31; i++) {
+      // Add widths for day columns - actual days in month
+      for (let i = 1; i <= daysInMonth; i++) {
         colWidths.push({ wch: 3 }); // Day columns - narrow
       }
 
@@ -446,11 +449,10 @@ export default function AttendanceExport({
 
       // Apply borders and styling to all cells
       const totalRows = templateData.length;
-      const totalCols = 39; // 4 info + 31 days + 4 summary = 39 columns (A-AM)
       const dataEndRow = 11 + dataRows.length; // Last row of actual student data (headers 0-8, info row 9, table headers 10-11, data starts at 12)
 
       for (let R = 0; R < totalRows; R++) {
-        for (let C = 0; C < totalCols; C++) {
+        for (let C = 0; C < totalColumns; C++) {
           const cellAddress = XLSXStyle.utils.encode_cell({ r: R, c: C });
 
           if (!ws[cellAddress]) {
@@ -587,22 +589,22 @@ export default function AttendanceExport({
       // Merge header cells
       ws['!merges'] = [
         // Row 0: Kingdom - full width
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 38 } },
+        { s: { r: 0, c: 0 }, e: { r: 0, c: totalColumns - 1 } },
         // Row 1: Nation/Religion/King - no merge (in columns 10, 18, 28)
         // Row 2: Department - full width
-        { s: { r: 2, c: 0 }, e: { r: 2, c: 38 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: totalColumns - 1 } },
         // Row 3: Office - full width
-        { s: { r: 3, c: 0 }, e: { r: 3, c: 38 } },
+        { s: { r: 3, c: 0 }, e: { r: 3, c: totalColumns - 1 } },
         // Row 4: School - full width
-        { s: { r: 4, c: 0 }, e: { r: 4, c: 38 } },
+        { s: { r: 4, c: 0 }, e: { r: 4, c: totalColumns - 1 } },
         // Row 5: Attendance Title - full width
-        { s: { r: 5, c: 0 }, e: { r: 5, c: 38 } },
+        { s: { r: 5, c: 0 }, e: { r: 5, c: totalColumns - 1 } },
         // Row 6: Section Title - full width
-        { s: { r: 6, c: 0 }, e: { r: 6, c: 38 } },
+        { s: { r: 6, c: 0 }, e: { r: 6, c: totalColumns - 1 } },
         // Row 7: Month - full width
-        { s: { r: 7, c: 0 }, e: { r: 7, c: 38 } },
+        { s: { r: 7, c: 0 }, e: { r: 7, c: totalColumns - 1 } },
         // Row 8: Empty row - full width
-        { s: { r: 8, c: 0 }, e: { r: 8, c: 38 } },
+        { s: { r: 8, c: 0 }, e: { r: 8, c: totalColumns - 1 } },
         // Row 9: Info row - no merge (spans naturally)
 
         // Two-row table header merges (Rows 10-11)
@@ -611,10 +613,10 @@ export default function AttendanceExport({
         { s: { r: 10, c: 1 }, e: { r: 11, c: 1 } }, // អត្តលេខ
         { s: { r: 10, c: 2 }, e: { r: 11, c: 2 } }, // គោត្តនាម និងនាម
         { s: { r: 10, c: 3 }, e: { r: 11, c: 3 } }, // ភេទ
-        // Merge "ចំនួនអវត្តមាន" horizontally across columns 35-37 in row 10
-        { s: { r: 10, c: 35 }, e: { r: 10, c: 37 } }, // ចំនួនអវត្តមាន
-        // Merge "សេចក្តីប្រកាស" vertically in column 38
-        { s: { r: 10, c: 38 }, e: { r: 11, c: 38 } }, // សេចក្តីប្រកាស
+        // Merge "ចំនួនអវត្តមាន" horizontally across 3 summary columns
+        { s: { r: 10, c: summaryStartCol }, e: { r: 10, c: summaryStartCol + 2 } }, // ចំនួនអវត្តមាន
+        // Merge "សេចក្តីប្រកាស" vertically
+        { s: { r: 10, c: summaryStartCol + 3 }, e: { r: 11, c: summaryStartCol + 3 } }, // សេចក្តីប្រកាស
       ];
 
       // Create workbook
