@@ -338,7 +338,7 @@ export default function AttendanceExport({
         headerRow1[3 + day] = getKhmerDayShorthand(dayOfWeekNum);
       }
       headerRow1[summaryStartCol] = 'ចំនួនអវត្តមាន'; // Spans 3 columns
-      headerRow1[summaryStartCol + 3] = 'សេចក្តីប្រកាស';
+      headerRow1[summaryStartCol + 3] = 'សេចក្តីផ្សេងៗ';
       templateData.push(headerRow1);
 
       // Row 11: Second header row with day numbers

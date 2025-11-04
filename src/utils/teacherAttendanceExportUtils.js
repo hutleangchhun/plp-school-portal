@@ -206,7 +206,7 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
     }
 
     headerRow1[summaryStartCol] = 'ចំនួនអវត្តមាន';
-    headerRow1[summaryStartCol + 3] = 'សេចក្តីប្រកាស';
+    headerRow1[summaryStartCol + 3] = 'សេចក្តីផ្សេងៗ';
     templateData.push(headerRow1);
 
     // Row 11: Second header row with day numbers
