@@ -316,7 +316,7 @@ export const km = {
   editClass: 'កែប្រែថ្នាក់រៀន',
   deleteClass: 'លុបថ្នាក់',
   grade: 'កម្រិតថ្នាក់',
-  manageClassSchedules: 'គ្រប់គ្រងថ្នាក់រៀន',
+  manageClassSchedules: 'គ្រប់គ្រងព័ត៌មានថ្នាក់រៀន​ ឆ្នាំសិក្សា​​ កំណត់ចំនួនសិស្ស',
   room: 'បន្ទប់រៀន',
   schedule: 'កាលវិភាគ',
   selectSubject: 'ជ្រើសរើសមុខវិជ្ជា',
@@ -333,7 +333,7 @@ export const km = {
   noClassesYet: 'មិនមានថ្នាក់ទេ',
   noClassesMatchFilter: 'មិនមានថ្នាក់ដែលត្រូវការការស្វែងរករបស់អ្នក',
   noClassesDescription: 'បង្កើតថ្នាក់រៀនតាមប្រើប្រាស់របស់អ្នក',
-  searchClasses: 'ស្វែងរកថ្នាក់',
+  searchClasses: 'ស្វែងរកថ្នាក់តាមឈ្មោះ',
 
   // Attendance
   attendanceFor: 'វត្តមានសម្រាប់',

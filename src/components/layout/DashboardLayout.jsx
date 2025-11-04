@@ -30,7 +30,7 @@ export default function DashboardLayout({ user, onLogout, children }) {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen">
       {/* Sidebar */}
       <Sidebar 
         isCollapsed={sidebarCollapsed} 
@@ -53,7 +53,7 @@ export default function DashboardLayout({ user, onLogout, children }) {
         </div>
         
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
+        <main className="flex-1 overflow-y-auto bg-white">
           {children ? children : <Outlet />}
         </main>
       </div>

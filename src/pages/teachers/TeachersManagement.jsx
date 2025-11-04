@@ -838,8 +838,8 @@ export default function TeachersManagement() {
   }
 
   return (
-    <div variant='fade' className="p-3 sm:p-6">
-      <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+    <div variant='fade' className="p-3 sm:p-4">
+      <div className=" p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
           <div>
             <div className="flex items-center space-x-4">

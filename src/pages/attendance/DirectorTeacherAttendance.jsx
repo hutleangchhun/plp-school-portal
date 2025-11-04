@@ -653,24 +653,24 @@ export default function TeacherAttendance() {
   }
 
   return (
-    <PageTransition variant="fade" className="flex-1 bg-gray-50">
-      <div className="p-3 sm:p-6">
+    <PageTransition variant="fade" className="flex-1">
+      <div className="p-3 sm:p-4">
         {/* Header */}
-        <FadeInSection className="mb-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <FadeInSection>
+          <div className="p-3 sm:p-4">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                   {t('teacherAttendanceTracking') || 'វត្តមានគ្រូបង្រៀន'}
                 </h1>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-xs sm:text-sm text-gray-500">
                   {t('trackTeacherAttendance') || 'តាមដាន និងគ្រប់គ្រងកំណត់ត្រាវត្តមានរបស់គ្រូបង្រៀន'}
                 </p>
               </div>
             </div>
             <div className="flex flex-col lg:flex-row gap-4 my-4">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   {t('search') || 'ស្វែងរក'}
                 </label>
                 <div className="relative">
@@ -678,7 +678,7 @@ export default function TeacherAttendance() {
                   <input
                     type="text"
                     placeholder={t('searchTeachers') || 'ស្វែងរកគ្រូបង្រៀន...'}
-                    className="pl-10 w-full border text-sm border-gray-300 rounded-sm px-3 py-2"
+                    className="pl-10 w-full border text-xs sm:text-sm border-gray-300 rounded-sm px-3 py-2"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -714,7 +714,7 @@ export default function TeacherAttendance() {
         {/* Bulk Actions Toolbar */}
         {selectedTeachers.size > 0 && (
           <FadeInSection>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+            <div className="p-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="text-sm font-medium text-blue-900">
                   {t('selectedCount', `${selectedTeachers.size} teacher(s) selected`)}
@@ -748,7 +748,7 @@ export default function TeacherAttendance() {
         )}
 
         {/* Attendance List */}
-        <FadeInSection>
+        <FadeInSection className='p-0 sm:px-4'>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-white">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -758,12 +758,12 @@ export default function TeacherAttendance() {
                       <Calendar className="inline-block h-5 w-5 text-indigo-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
+                      <h3 className="text-md sm:text-lg font-semibold text-gray-900">
                         {t('weeklyAttendance', 'វត្តមានប្រចាំសប្តាហ៍')}
                       </h3>
                     </div>
                   </div>
-                  <div className='flex justify-center items-center gap-3 mt-3'>
+                  <div className='flex justify-start items-center gap-3 mt-3'>
                     <button
                       onClick={goToPreviousWeek}
                       disabled={loading}
@@ -772,7 +772,7 @@ export default function TeacherAttendance() {
                       <ChevronLeft className="h-6 w-6" />
                     </button>
                     <div className="text-center mt-1">
-                      <p className="text-sm text-gray-600">
+                      <p className="text-xs sm:text-sm text-gray-600">
                         {formatDateKhmer(currentWeekStart, 'dayMonth')} - {formatDateKhmer(weekDates[6], 'short')}
                       </p>
                     </div>
@@ -881,7 +881,7 @@ export default function TeacherAttendance() {
                           <td className={`sticky left-0 z-10 px-4 py-3 whitespace-nowrap border-r ${selectedTeachers.has(teacher.id) ? 'bg-blue-50' : 'bg-white'}`}>
                             <div className="flex items-center">
                               <div className="ml-3">
-                                <div className="text-sm font-medium text-gray-900">{teacher.name}</div>
+                                <div className="text-xs sm:text-sm font-medium text-gray-900">{teacher.name}</div>
                               </div>
                             </div>
                           </td>

@@ -761,9 +761,9 @@ export default function ClassesManagement() {
 
   return (
     <PageTransition duration='200' variant='zoom'>
-      <div className="p-3 sm:p-6">
+      <div className="p-3 sm:p-4">
         {/* Header */}
-        <FadeInSection className='bg-white shadow rounded-lg p-4 sm:p-6 transition-all duration-300 mb-4'>
+        <FadeInSection className='rounded-lg p-4 sm:p-6 transition-all duration-300 mb-4'>
           <div className="mb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>

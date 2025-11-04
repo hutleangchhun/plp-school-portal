@@ -47,7 +47,7 @@ export default function ClassCard({
   const badgeColor = status === 'full' ? 'red' : status === 'high' ? 'yellow' : 'green';
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 shadow-sm transition-all">
+    <div className="bg-white rounded-md border border-gray-200 hover:border-gray-300 shadow-sm transition-all">
       <div className="p-6">
         <div className="flex items-start justify-between">
           <div className="min-w-0">

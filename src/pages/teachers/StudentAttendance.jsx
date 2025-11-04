@@ -411,13 +411,13 @@ export default function TeacherAttendance({ user }) {
   }
 
   return (
-    <PageTransition className='p-6'>
+    <PageTransition className='p-3 sm:p-4'>
       <div>
         <FadeInSection>
           {/* Filters */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="p-6">
             {/* Header */}
-          <div className="mb-6">
+          <div className="mb-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               {t('attendance', 'Attendance')}
             </h1>
@@ -425,7 +425,7 @@ export default function TeacherAttendance({ user }) {
               {t('markStudentAttendance', 'Mark student attendance for your classes')}
             </p>
           </div>
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <div className="flex gap-4 items-start items-center">
               {/* Class Selector */}
               <div className="w-full sm:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -530,8 +530,8 @@ export default function TeacherAttendance({ user }) {
               description={t('noStudentsInClass', 'There are no students in this class.')}
             />
           ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="overflow-x-auto">
+            <div className="p-4 sm:p-6 overflow-hidden">
+              <div className="overflow-x-auto rounded-lg shadow">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead>
                     <tr className='bg-blue-500'>
