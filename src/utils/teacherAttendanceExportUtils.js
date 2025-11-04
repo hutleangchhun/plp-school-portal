@@ -300,15 +300,6 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
 
     ws['!cols'] = colWidths;
 
-    // Define the border style for the table
-    const tableBorderStyle = {
-      top: { style: 'thin', color: { rgb: '000000' } },
-      bottom: { style: 'thin', color: { rgb: '000000' } },
-      left: { style: 'thin', color: { rgb: '000000' } },
-      right: { style: 'thin', color: { rgb: '000000' } }
-    };
-
-
     // Apply styling
     const totalRows = templateData.length;
     const dataStartRow = 12; // Data starts after headers (row 10-11)
@@ -321,31 +312,30 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
         if (!ws[cellAddress]) {
           ws[cellAddress] = { t: 's', v: '' };
         }
-        
-        // --- Cell Style Object Initialization ---
-        if (!ws[cellAddress].s) {
-            ws[cellAddress].s = {};
-        }
-        
-        // Default: Remove border for non-table areas
-        ws[cellAddress].s.border = undefined;
 
-
-        // Header rows styling (R < 10)
+        // Header rows styling
         if (R === 0) {
-          ws[cellAddress].s.alignment = { vertical: 'center', horizontal: 'center' };
-          ws[cellAddress].s.font = { name: 'Khmer OS Battambang', sz: 11, bold: true };
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center' },
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+          };
         } else if (R === 1) {
-          ws[cellAddress].s.alignment = { vertical: 'center', horizontal: 'center' };
-          ws[cellAddress].s.font = { name: 'Khmer OS Battambang', sz: 11, bold: true };
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center' },
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+          };
         } else if (R >= 2 && R <= 4) {
-          ws[cellAddress].s.alignment = { vertical: 'center', horizontal: 'left' };
-          ws[cellAddress].s.font = { name: 'Khmer OS Battambang', sz: 11, bold: true };
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'left' },
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+          };
         } else if (R >= 5 && R < 10) {
-          ws[cellAddress].s.alignment = { vertical: 'center', horizontal: 'center' };
-          ws[cellAddress].s.font = { name: 'Khmer OS Battambang', sz: 11, bold: true };
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center' },
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+          };
         } else if (R === 10 || R === 11) {
-          // Table headers - RE-ADDING BORDERS
+          // Table headers - check if this is a weekend column
           let isWeekendCol = false;
           if (C >= 3 && C < 3 + daysInMonth) {
             const day = C - 3 + 1;
@@ -354,17 +344,24 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
             isWeekendCol = isWeekend(dayOfWeekNum);
           }
 
-          ws[cellAddress].s.fill = { fgColor: { rgb: 'E0E0E0' } }; 
-          ws[cellAddress].s.border = tableBorderStyle; // <--- RE-APPLY BORDER
-          ws[cellAddress].s.alignment = { vertical: 'center', horizontal: 'center', wrapText: true };
-          ws[cellAddress].s.font = {
-            name: 'Khmer OS Battambang',
-            sz: 10,
-            bold: true,
-            color: isWeekendCol ? { rgb: 'FF0000' } : undefined
+          ws[cellAddress].s = {
+            fill: { fgColor: { rgb: 'E0E0E0' } },
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } }
+            },
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            font: {
+              name: 'Khmer OS Battambang',
+              sz: 10,
+              bold: true,
+              color: isWeekendCol ? { rgb: 'FF0000' } : undefined
+            }
           };
         } else if (R >= dataStartRow && R <= dataEndRow) {
-          // Data rows - RE-ADDING BORDERS
+          // Data rows - check if weekend column
           let isWeekendCol = false;
           if (C >= 3 && C < 3 + daysInMonth) {
             const day = C - 3 + 1;
@@ -372,27 +369,35 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
             const dayOfWeekNum = dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1;
             isWeekendCol = isWeekend(dayOfWeekNum);
           }
-          
-          ws[cellAddress].s.border = tableBorderStyle; // <--- RE-APPLY BORDER
-          ws[cellAddress].s.alignment = {
-            vertical: 'center',
-            horizontal: C === 2 ? 'left' : 'center'
-          };
-          ws[cellAddress].s.font = {
-            name: 'Khmer OS Battambang',
-            sz: 10,
-            color: isWeekendCol ? { rgb: 'FF0000' } : undefined
+
+          ws[cellAddress].s = {
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } }
+            },
+            alignment: {
+              vertical: 'center',
+              horizontal: C === 2 ? 'left' : 'center'
+            },
+            font: {
+              name: 'Khmer OS Battambang',
+              sz: 10,
+              color: isWeekendCol ? { rgb: 'FF0000' } : undefined
+            }
           };
         } else {
-          // Footer area (R > dataEndRow)
-          ws[cellAddress].s.alignment = { vertical: 'center', horizontal: 'left' };
-          ws[cellAddress].s.font = { name: 'Khmer OS Battambang', sz: 10 };
-          // Border remains undefined here
+          // Footer
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'left' },
+            font: { name: 'Khmer OS Battambang', sz: 10 }
+          };
         }
       }
     }
 
-    // Merge cells - kept as they do not affect borders in other cells
+    // Merge cells
     ws['!merges'] = [
       { s: { r: 0, c: 0 }, e: { r: 0, c: totalColumns - 1 } },
       { s: { r: 2, c: 0 }, e: { r: 2, c: totalColumns - 1 } },
@@ -413,15 +418,15 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
     XLSXStyle.utils.book_append_sheet(wb, ws, 'វត្តមានគ្រូ');
 
     wb.Props = {
-      Title: `បញ្ជីវត្តមានគ្រូបង្រៀន - ${monthName}`,
-      Subject: 'វត្តមានគ្រូបង្រៀន',
+      Title: `បញ្ជីអវត្តមានគ្រូបង្រៀន - ${monthName}`,
+      Subject: 'អវត្តមានគ្រូបង្រៀន',
       Author: 'Teacher Portal',
       CreatedDate: new Date()
     };
 
     const monthStr = String(month + 1).padStart(2, '0');
     const filename = getTimestampedFilename(
-      `teacher_attendance_${year}-${monthStr}`,
+      `បញ្ជីអវត្តមាន_${year}-${monthStr}`,
       'xlsx'
     );
 
