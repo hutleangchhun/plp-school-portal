@@ -254,6 +254,14 @@ export default function Reports() {
                 console.log(`🔍 Fetching parents for student ID: ${studentId}`);
                 const parentsResponse = await parentService.getParentsByStudentId(studentId);
                 
+                console.log(`👨‍👩‍👧 Parent response for student ${studentId}:`, {
+                  success: parentsResponse.success,
+                  hasData: !!parentsResponse.data,
+                  isArray: Array.isArray(parentsResponse.data),
+                  dataLength: Array.isArray(parentsResponse.data) ? parentsResponse.data.length : 'N/A',
+                  data: parentsResponse.data
+                });
+                
                 if (parentsResponse.success && parentsResponse.data) {
                   return {
                     ...student,
@@ -262,7 +270,7 @@ export default function Reports() {
                 }
                 return { ...student, parents: [] };
               } catch (error) {
-                console.warn(`Failed to fetch parents for student ${student.id}:`, error);
+                console.warn(`❌ Failed to fetch parents for student ${student.id}:`, error);
                 return { ...student, parents: [] };
               }
             })

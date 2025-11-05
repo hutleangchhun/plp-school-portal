@@ -11,45 +11,70 @@ export const transformStudentNameList = (rawData) => {
   if (!Array.isArray(rawData)) return [];
 
   return rawData.map((student, index) => {
-    // Extract parent information
-    const parents = student.parents || [];
-    const fatherData = parents.find(p => p.relationship === 'FATHER' || p.relationship === 'father') || {};
-    const motherData = parents.find(p => p.relationship === 'MOTHER' || p.relationship === 'mother') || {};
+    console.log(`🔍 Transforming student ${index + 1}:`, { 
+      id: student.id, 
+      studentId: student.studentId,
+      hasParents: !!student.parents,
+      parentsCount: student.parents?.length 
+    });
 
-    // Format student address
+    // Extract parent information - handle both array and nested structure
+    const parents = student.parents || [];
+    const fatherData = parents.find(p => 
+      (p.relationship === 'FATHER' || p.relationship === 'father' || 
+       p.user?.relationship === 'FATHER' || p.user?.relationship === 'father')
+    ) || {};
+    const motherData = parents.find(p => 
+      (p.relationship === 'MOTHER' || p.relationship === 'mother' ||
+       p.user?.relationship === 'MOTHER' || p.user?.relationship === 'mother')
+    ) || {};
+
+    // Extract user data from parent if nested
+    const fatherUser = fatherData.user || fatherData;
+    const motherUser = motherData.user || motherData;
+
+    // Format student address - handle nested location objects
     const residence = student.residence || {};
     const studentAddress = [
-      residence.village?.village_name_kh || residence.village,
-      residence.commune?.commune_name_kh || residence.commune,
-      residence.district?.district_name_kh || residence.district,
-      residence.province?.province_name_kh || residence.province
-    ].filter(Boolean).join(' ');
+      residence.village?.village_name_kh || residence.village?.name || residence.village,
+      residence.commune?.commune_name_kh || residence.commune?.name || residence.commune,
+      residence.district?.district_name_kh || residence.district?.name || residence.district,
+      residence.province?.province_name_kh || residence.province?.name || residence.province
+    ].filter(Boolean).join(', ');
 
     // Format father address
-    const fatherResidence = fatherData.residence || {};
+    const fatherResidence = fatherUser.residence || {};
     const fatherAddress = [
-      fatherResidence.village?.village_name_kh || fatherResidence.village,
-      fatherResidence.commune?.commune_name_kh || fatherResidence.commune,
-      fatherResidence.district?.district_name_kh || fatherResidence.district,
-      fatherResidence.province?.province_name_kh || fatherResidence.province
-    ].filter(Boolean).join(' ') || studentAddress;
+      fatherResidence.village?.village_name_kh || fatherResidence.village?.name || fatherResidence.village,
+      fatherResidence.commune?.commune_name_kh || fatherResidence.commune?.name || fatherResidence.commune,
+      fatherResidence.district?.district_name_kh || fatherResidence.district?.name || fatherResidence.district,
+      fatherResidence.province?.province_name_kh || fatherResidence.province?.name || fatherResidence.province
+    ].filter(Boolean).join(', ') || studentAddress;
 
     // Format mother address
-    const motherResidence = motherData.residence || {};
+    const motherResidence = motherUser.residence || {};
     const motherAddress = [
-      motherResidence.village?.village_name_kh || motherResidence.village,
-      motherResidence.commune?.commune_name_kh || motherResidence.commune,
-      motherResidence.district?.district_name_kh || motherResidence.district,
-      motherResidence.province?.province_name_kh || motherResidence.province
-    ].filter(Boolean).join(' ') || studentAddress;
+      motherResidence.village?.village_name_kh || motherResidence.village?.name || motherResidence.village,
+      motherResidence.commune?.commune_name_kh || motherResidence.commune?.name || motherResidence.commune,
+      motherResidence.district?.district_name_kh || motherResidence.district?.name || motherResidence.district,
+      motherResidence.province?.province_name_kh || motherResidence.province?.name || motherResidence.province
+    ].filter(Boolean).join(', ') || studentAddress;
 
     // Format gender
     const gender = (student.gender === 'M' || student.gender === 'MALE' || student.gender === 'male') ? 'ប្រុស' : 
                    (student.gender === 'F' || student.gender === 'FEMALE' || student.gender === 'female') ? 'ស្រី' : '';
 
-    // Format date of birth
+    // Format date of birth - handle different date formats
     const dob = student.dateOfBirth || student.date_of_birth;
-    const formattedDob = dob ? new Date(dob).toLocaleDateString('km-KH') : '';
+    let formattedDob = '';
+    if (dob) {
+      try {
+        const date = new Date(dob);
+        formattedDob = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+      } catch (e) {
+        formattedDob = dob;
+      }
+    }
 
     return {
       no: index + 1,
@@ -65,20 +90,20 @@ export const transformStudentNameList = (rawData) => {
       fullAddress: studentAddress,
       // Father info
       fatherInfo: {
-        firstName: fatherData.firstName || fatherData.first_name || '',
-        lastName: fatherData.lastName || fatherData.last_name || '',
-        phone: fatherData.phone || '',
+        firstName: fatherUser.firstName || fatherUser.first_name || '',
+        lastName: fatherUser.lastName || fatherUser.last_name || '',
+        phone: fatherUser.phone || '',
         gender: 'ប្រុស',
-        occupation: fatherData.occupation || '',
+        occupation: fatherUser.occupation || '',
         fullAddress: fatherAddress
       },
       // Mother info
       motherInfo: {
-        firstName: motherData.firstName || motherData.first_name || '',
-        lastName: motherData.lastName || motherData.last_name || '',
-        phone: motherData.phone || '',
+        firstName: motherUser.firstName || motherUser.first_name || '',
+        lastName: motherUser.lastName || motherUser.last_name || '',
+        phone: motherUser.phone || '',
         gender: 'ស្រី',
-        occupation: motherData.occupation || '',
+        occupation: motherUser.occupation || '',
         fullAddress: motherAddress
       },
       // Other info
