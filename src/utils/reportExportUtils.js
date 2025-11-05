@@ -864,6 +864,12 @@ export const exportStudentListWithParents = async (
       const fatherData = student.fatherInfo || {};
       const motherData = student.motherInfo || {};
       
+      console.log(`📝 Excel row ${index + 1}:`, {
+        studentNumber: student.studentNumber,
+        ethnicGroup: student.ethnicGroup,
+        specialNeeds: student.specialNeeds
+      });
+      
       wsData.push([
         index + 1,
         student.studentNumber || '',

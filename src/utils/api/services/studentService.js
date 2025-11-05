@@ -890,11 +890,15 @@ export const studentService = {
         placeOfBirth: student.place_of_birth || student.placeOfBirth || user.place_of_birth || user.placeOfBirth,
         nationality: student.nationality || user.nationality,
         minority: student.minority || user.minority,
+        ethnic_group: student.ethnic_group || user.ethnic_group,
+        ethnicGroup: student.ethnicGroup || student.ethnic_group || user.ethnicGroup || user.ethnic_group,
+        accessibility: student.accessibility || user.accessibility,
         specialNeeds: student.special_needs || student.specialNeeds || user.special_needs || user.specialNeeds,
         village: student.village || user.village,
         commune: student.commune || user.commune,
         district: student.district || user.district,
         province: student.province || user.province,
+        student: student.student || user.student,
         createdAt: student.student_created_at || student.createdAt || student.created_at || user.created_at,
         updatedAt: student.student_updated_at || student.updatedAt || student.updated_at || user.updated_at
       };
