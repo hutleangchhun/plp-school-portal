@@ -229,10 +229,10 @@ export default function Reports() {
           throw new Error(attendanceResponse.error || 'Failed to fetch attendance data');
         }
       } else if (selectedReport === 'report1') {
-        // For report1 (បញ្ជីហៅឈ្មោះសិស្ស), fetch students with parent information
+        // For report1 (បញ្ជីហៅឈ្មោះសិស្ស), fetch students with full details and parent information
         console.log('📋 Fetching students with parent information for report1');
         
-        // First, fetch all students
+        // Step 1: Fetch all students from school (returns basic info with user.id)
         const studentsResponse = await studentService.getStudentsBySchoolClasses(
           schoolId,
           {
@@ -243,61 +243,73 @@ export default function Reports() {
         );
 
         if (studentsResponse.success) {
-          const students = studentsResponse.data || [];
-          console.log(`✅ Fetched ${students.length} students`);
+          const basicStudents = studentsResponse.data || [];
+          console.log(`✅ Fetched ${basicStudents.length} students from school`);
           
-          // Fetch parent information for each student using studentId
-          const studentsWithParents = await Promise.all(
-            students.map(async (student) => {
+          // Step 2: For each student, fetch full details using user.id and then fetch parents using studentId
+          const studentsWithFullData = await Promise.all(
+            basicStudents.map(async (basicStudent) => {
               try {
-                const studentId = student.studentId || student.id;
-                console.log(`🔍 Fetching parents for student ID: ${studentId}`);
+                const userId = basicStudent.user?.id || basicStudent.userId;
+                const studentId = basicStudent.studentId || basicStudent.id;
+                
+                console.log(`🔍 Fetching full details for user ID: ${userId}, student ID: ${studentId}`);
+                
+                // Fetch full student details by user ID
+                const fullStudentResponse = await studentService.getStudentById(userId);
+                
+                if (!fullStudentResponse.success || !fullStudentResponse.data) {
+                  console.warn(`⚠️ Could not fetch full details for user ${userId}`);
+                  return { ...basicStudent, parents: [] };
+                }
+                
+                const fullStudent = fullStudentResponse.data;
+                console.log(`✅ Got full student data for ${fullStudent.first_name} ${fullStudent.last_name}`);
+                
+                // Fetch parent information using studentId
                 const parentsResponse = await parentService.getParentsByStudentId(studentId);
                 
                 console.log(`👨‍👩‍👧 Parent response for student ${studentId}:`, {
                   success: parentsResponse.success,
                   hasData: !!parentsResponse.data,
-                  isArray: Array.isArray(parentsResponse.data),
-                  dataLength: Array.isArray(parentsResponse.data) ? parentsResponse.data.length : 'N/A',
                   data: parentsResponse.data
                 });
                 
+                // Handle parent data
+                let parentsArray = [];
                 if (parentsResponse.success && parentsResponse.data) {
-                  // Handle both array and object responses
-                  let parentsArray = [];
                   if (Array.isArray(parentsResponse.data)) {
                     parentsArray = parentsResponse.data;
                   } else if (typeof parentsResponse.data === 'object') {
-                    // If it's an object with a parents property, use that
                     if (parentsResponse.data.parents && Array.isArray(parentsResponse.data.parents)) {
                       parentsArray = parentsResponse.data.parents;
                     } else {
-                      // Otherwise wrap the object in an array
                       parentsArray = [parentsResponse.data];
                     }
                   }
-                  
-                  console.log(`📋 Processed parents array for student ${studentId}:`, parentsArray);
-                  
-                  return {
-                    ...student,
-                    parents: parentsArray
-                  };
                 }
-                return { ...student, parents: [] };
+                
+                console.log(`📋 Processed ${parentsArray.length} parents for student ${studentId}`);
+                
+                // Combine full student data with parents
+                return {
+                  ...fullStudent,
+                  studentId: studentId,
+                  parents: parentsArray
+                };
               } catch (error) {
-                console.warn(`❌ Failed to fetch parents for student ${student.id}:`, error);
-                return { ...student, parents: [] };
+                console.warn(`❌ Failed to fetch data for student:`, error);
+                return { ...basicStudent, parents: [] };
               }
             })
           );
           
-          console.log(`✅ Processed ${studentsWithParents.length} students with parent data`);
-          console.log('📊 Sample student with parents:', studentsWithParents[0]);
-          setReportData(studentsWithParents);
+          console.log(`✅ Processed ${studentsWithFullData.length} students with full data and parents`);
+          console.log('📊 Sample student with full data:', studentsWithFullData[0]);
+          setReportData(studentsWithFullData);
           setSchoolInfo(studentsResponse.schoolInfo);
         } else {
-          throw new Error(studentsResponse.error || 'Failed to fetch students data');
+          throw new Error(studentsResponse.error || 'Failed to fetch students');
         }
       } else {
         // For other reports, fetch students data from API
