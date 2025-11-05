@@ -47,23 +47,27 @@ export const transformStudentNameList = (rawData) => {
       residence.province?.province_name_kh || residence.province?.name || ''
     ].filter(Boolean).join(', ');
 
-    // Format father address
+    // Format father address - only if father exists
     const fatherResidence = fatherUser.residence || {};
-    const fatherAddress = [
-      fatherResidence.village?.village_name_kh || fatherResidence.village?.name || fatherResidence.village,
-      fatherResidence.commune?.commune_name_kh || fatherResidence.commune?.name || fatherResidence.commune,
-      fatherResidence.district?.district_name_kh || fatherResidence.district?.name || fatherResidence.district,
-      fatherResidence.province?.province_name_kh || fatherResidence.province?.name || fatherResidence.province
-    ].filter(Boolean).join(', ') || studentAddress;
+    const fatherAddress = Object.keys(fatherData).length > 0 ? (
+      [
+        fatherResidence.village?.village_name_kh || fatherResidence.village?.name || fatherResidence.village,
+        fatherResidence.commune?.commune_name_kh || fatherResidence.commune?.name || fatherResidence.commune,
+        fatherResidence.district?.district_name_kh || fatherResidence.district?.name || fatherResidence.district,
+        fatherResidence.province?.province_name_kh || fatherResidence.province?.name || fatherResidence.province
+      ].filter(Boolean).join(', ')
+    ) : '';
 
-    // Format mother address
+    // Format mother address - only if mother exists
     const motherResidence = motherUser.residence || {};
-    const motherAddress = [
-      motherResidence.village?.village_name_kh || motherResidence.village?.name || motherResidence.village,
-      motherResidence.commune?.commune_name_kh || motherResidence.commune?.name || motherResidence.commune,
-      motherResidence.district?.district_name_kh || motherResidence.district?.name || motherResidence.district,
-      motherResidence.province?.province_name_kh || motherResidence.province?.name || motherResidence.province
-    ].filter(Boolean).join(', ') || studentAddress;
+    const motherAddress = Object.keys(motherData).length > 0 ? (
+      [
+        motherResidence.village?.village_name_kh || motherResidence.village?.name || motherResidence.village,
+        motherResidence.commune?.commune_name_kh || motherResidence.commune?.name || motherResidence.commune,
+        motherResidence.district?.district_name_kh || motherResidence.district?.name || motherResidence.district,
+        motherResidence.province?.province_name_kh || motherResidence.province?.name || motherResidence.province
+      ].filter(Boolean).join(', ')
+    ) : '';
 
     // Format gender - check all possible fields
     let gender = '';
