@@ -275,21 +275,62 @@ export default function Reports() {
                   data: parentsResponse.data
                 });
                 
-                // Handle parent data
+                // Handle parent data and fetch full parent details
                 let parentsArray = [];
                 if (parentsResponse.success && parentsResponse.data) {
+                  let rawParents = [];
                   if (Array.isArray(parentsResponse.data)) {
-                    parentsArray = parentsResponse.data;
+                    rawParents = parentsResponse.data;
                   } else if (typeof parentsResponse.data === 'object') {
-                    if (parentsResponse.data.parents && Array.isArray(parentsResponse.data.parents)) {
-                      parentsArray = parentsResponse.data.parents;
+                    if (parentsResponse.data.data && Array.isArray(parentsResponse.data.data)) {
+                      rawParents = parentsResponse.data.data;
+                    } else if (parentsResponse.data.parents && Array.isArray(parentsResponse.data.parents)) {
+                      rawParents = parentsResponse.data.parents;
                     } else {
-                      parentsArray = [parentsResponse.data];
+                      rawParents = [parentsResponse.data];
                     }
                   }
+                  
+                  // Fetch full details for each parent using their user ID
+                  parentsArray = await Promise.all(
+                    rawParents.map(async (parent) => {
+                      try {
+                        const parentUserId = parent.user?.id || parent.userId;
+                        if (!parentUserId) {
+                          console.warn(`⚠️ No user ID found for parent:`, parent);
+                          return {
+                            ...parent,
+                            user: parent.user || {}
+                          };
+                        }
+                        
+                        console.log(`🔍 Fetching full parent details for user ID: ${parentUserId}`);
+                        const parentUserResponse = await studentService.getStudentById(parentUserId);
+                        
+                        if (parentUserResponse.success && parentUserResponse.data) {
+                          console.log(`✅ Got full parent data for ${parentUserResponse.data.first_name} ${parentUserResponse.data.last_name}`);
+                          return {
+                            ...parent,
+                            user: parentUserResponse.data
+                          };
+                        }
+                        
+                        return {
+                          ...parent,
+                          user: parent.user || {}
+                        };
+                      } catch (error) {
+                        console.warn(`❌ Failed to fetch parent user details:`, error);
+                        return {
+                          ...parent,
+                          user: parent.user || {}
+                        };
+                      }
+                    })
+                  );
                 }
                 
-                console.log(`📋 Processed ${parentsArray.length} parents for student ${studentId}`);
+                console.log(`📋 Processed ${parentsArray.length} parents with full details for student ${studentId}`);
                 
                 // Combine full student data with parents
                 return {
