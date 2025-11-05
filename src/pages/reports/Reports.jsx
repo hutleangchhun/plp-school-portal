@@ -42,7 +42,6 @@ export default function Reports() {
   // 16 Report Types - waiting for your specific report names
   const reportTypes = [
     { value: 'report1', label: t('reportStudentNameInfo', 'បញ្ជីហៅឈ្មោះសិស្ស') },
-    { value: 'report2', label: t('report2', 'បញ្ជីហៅឈ្មោះសិស្សតាមថ្នាក់') },
     { value: 'report3', label: t('report3', 'បញ្ជីមធ្យមភាគសិស្ស') },
     { value: 'report4', label: t('report4', 'បញ្ជីអវត្តមានសិស្ស') },
     { value: 'report5', label: t('report5', 'បញ្ជីឈ្មោះសិស្សអាហារូបករណ៍') },
@@ -94,9 +93,9 @@ export default function Reports() {
     fetchReportData();
   }, [selectedReport, selectedPeriod, selectedMonth, selectedYear, selectedClass]);
 
-  // Fetch classes when report2, report3 or report4 is selected
+  // Fetch classes when report1, report3 or report4 is selected
   useEffect(() => {
-    if (['report2', 'report3', 'report4'].includes(selectedReport)) {
+    if (['report1', 'report3', 'report4'].includes(selectedReport)) {
       fetchSchoolClasses();
     }
   }, [selectedReport]);
@@ -243,12 +242,12 @@ export default function Reports() {
         } else {
           throw new Error(attendanceResponse.error || 'Failed to fetch attendance data');
         }
-      } else if (['report1', 'report2', 'report6', 'report9'].includes(selectedReport)) {
-        // For report1, report2, report6, report9 - fetch students with full details and parent information
+      } else if (['report1', 'report6', 'report9'].includes(selectedReport)) {
+        // For report1, report6, report9 - fetch students with full details and parent information
         console.log(`📋 Fetching students with parent information for ${selectedReport}`);
         
         // Step 1: Fetch all students from school in batches (API limit is 100 per page)
-        // For report2, filter by selected class
+        // For report1, filter by selected class if specified
         let allBasicStudents = [];
         let currentPage = 1;
         let hasMorePages = true;
@@ -259,8 +258,8 @@ export default function Reports() {
             limit: 100 // API maximum
           };
           
-          // Add class filter for report2
-          if (selectedReport === 'report2' && selectedClass && selectedClass !== 'all') {
+          // Add class filter for report1 if a specific class is selected
+          if (selectedReport === 'report1' && selectedClass && selectedClass !== 'all') {
             fetchParams.classId = selectedClass;
           }
           
@@ -493,9 +492,9 @@ export default function Reports() {
       const userData = JSON.parse(localStorage.getItem('user') || '{}');
       const schoolName = schoolInfo?.name || userData?.school?.name || 'PLP School';
 
-      // Get class name for report2
+      // Get class name for report1
       let className = '';
-      if (selectedReport === 'report2' && selectedClass && selectedClass !== 'all') {
+      if (selectedReport === 'report1' && selectedClass && selectedClass !== 'all') {
         const classOption = availableClasses.find(c => c.value === selectedClass);
         className = classOption?.label || '';
       }
@@ -557,7 +556,7 @@ export default function Reports() {
 
     // Calculate statistics for charts
     const calculateStats = () => {
-      if (['report1', 'report2', 'report6', 'report9'].includes(selectedReport)) {
+      if (['report1', 'report6', 'report9'].includes(selectedReport)) {
         // Gender distribution
         const genderCount = reportData.reduce((acc, student) => {
           const gender = student.gender || 'Unknown';
@@ -601,8 +600,8 @@ export default function Reports() {
 
     // Render data preview based on report type
     const renderDataPreview = () => {
-      // For report1, report2, report6, report9 - Show statistics
-      if (['report1', 'report2', 'report6', 'report9'].includes(selectedReport)) {
+      // For report1, report6, report9 - Show statistics
+      if (['report1', 'report6', 'report9'].includes(selectedReport)) {
         const maxValue = Math.max(...Object.values(stats?.genderCount || {}), 1);
         const maxParentValue = Math.max(
           stats?.parentStatus.bothParents || 0,
@@ -675,8 +674,8 @@ export default function Reports() {
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
-              {/* Report 1 & 2: Parent Status Chart */}
-              {['report1', 'report2'].includes(selectedReport) && parentStatusData.length > 0 && (
+              {/* Report 1: Parent Status Chart */}
+              {selectedReport === 'report1' && parentStatusData.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
                   <h4 className="text-base font-semibold text-gray-900 mb-4">{t('parentStatus', 'ស្ថានភាពឪពុកម្តាយ')}</h4>
                   <ChartContainer
@@ -760,8 +759,8 @@ export default function Reports() {
                 </div>
               )}
 
-              {/* Report 1 & 2: Ethnic Groups Pie Chart */}
-              {['report1', 'report2'].includes(selectedReport) && ethnicGroupData.length > 0 && (
+              {/* Report 1: Ethnic Groups Pie Chart */}
+              {selectedReport === 'report1' && ethnicGroupData.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
                   <h4 className="text-base font-semibold text-gray-900 mb-4">{t('ethnicGroups', 'ក្រុមជនជាតិ')}</h4>
                   <ChartContainer
@@ -863,7 +862,7 @@ export default function Reports() {
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              {!['report1', 'report2', 'report6', 'report9'].includes(selectedReport) && (
+              {!['report1', 'report6', 'report9'].includes(selectedReport) && (
                 <div className="text-xs text-gray-500">
                   <span>{timePeriods.find(p => p.value === selectedPeriod)?.label}</span>
                   {selectedPeriod === 'month' && selectedMonth && (
@@ -872,7 +871,7 @@ export default function Reports() {
                   <span> • {selectedYear}</span>
                 </div>
               )}
-              {selectedReport === 'report2' && selectedClass && selectedClass !== 'all' && (
+              {selectedReport === 'report1' && selectedClass && selectedClass !== 'all' && (
                 <div className="text-xs text-gray-500">
                   {availableClasses.find(c => c.value === selectedClass)?.label || selectedClass}
                 </div>
@@ -944,8 +943,8 @@ export default function Reports() {
               />
             </div>
 
-            {/* Time Period Dropdown - Hide for report1, report2, report6, report9 */}
-            {!['report1', 'report2', 'report6', 'report9'].includes(selectedReport) && (
+            {/* Time Period Dropdown - Hide for report1, report6, report9 */}
+            {!['report1', 'report6', 'report9'].includes(selectedReport) && (
               <div className="flex-shrink-0 w-full md:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Filter className="h-4 w-4 inline mr-1" />
@@ -963,8 +962,8 @@ export default function Reports() {
               </div>
             )}
 
-            {/* Conditional: Month Dropdown (shown when period is 'month') - Hide for report1, report2, report6, report9 */}
-            {!['report1', 'report2', 'report6', 'report9'].includes(selectedReport) && selectedPeriod === 'month' && (
+            {/* Conditional: Month Dropdown (shown when period is 'month') - Hide for report1, report6, report9 */}
+            {!['report1', 'report6', 'report9'].includes(selectedReport) && selectedPeriod === 'month' && (
               <div className="flex-shrink-0 w-full md:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="h-4 w-4 inline mr-1" />
@@ -982,8 +981,8 @@ export default function Reports() {
               </div>
             )}
 
-            {/* Year Dropdown (shown for all periods) - Hide for report1, report2, report6, report9 */}
-            {!['report1', 'report2', 'report6', 'report9'].includes(selectedReport) && (
+            {/* Year Dropdown (shown for all periods) - Hide for report1, report6, report9 */}
+            {!['report1', 'report6', 'report9'].includes(selectedReport) && (
               <div className="flex-shrink-0 w-full md:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="h-4 w-4 inline mr-1" />
@@ -1001,8 +1000,8 @@ export default function Reports() {
               </div>
             )}
 
-            {/* Class Filter - Shown for report2, report3, and report4 */}
-            {['report2', 'report3', 'report4'].includes(selectedReport) && (
+            {/* Class Filter - Shown for report1, report3, and report4 */}
+            {['report1', 'report3', 'report4'].includes(selectedReport) && (
               <div className="flex-shrink-0 w-full md:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Filter className="h-4 w-4 inline mr-1" />
