@@ -228,8 +228,8 @@ export default function Reports() {
         } else {
           throw new Error(attendanceResponse.error || 'Failed to fetch attendance data');
         }
-      } else if (selectedReport === 'report1' || selectedReport === 'report2') {
-        // For report1 and report2 (បញ្ជីហៅឈ្មោះសិស្ស), fetch students with full details and parent information
+      } else if (['report1', 'report2', 'report6', 'report9'].includes(selectedReport)) {
+        // For report1, report2, report6, report9 - fetch students with full details and parent information
         console.log(`📋 Fetching students with parent information for ${selectedReport}`);
         
         // Step 1: Fetch all students from school in batches (API limit is 100 per page)
@@ -405,7 +405,36 @@ export default function Reports() {
           
           console.log(`✅ Processed ${studentsWithFullData.length} students with full data and parents`);
           console.log('📊 Sample student with full data:', studentsWithFullData[0]);
-          setReportData(studentsWithFullData);
+          
+          // Apply filtering for specific reports
+          let filteredStudents = studentsWithFullData;
+          
+          if (selectedReport === 'report6') {
+            // Filter students with disabilities (accessibility field is not null/empty)
+            filteredStudents = studentsWithFullData.filter(student => {
+              const hasAccessibility = student.accessibility && 
+                                      student.accessibility !== '' && 
+                                      student.accessibility !== 'null' &&
+                                      student.accessibility !== 'none';
+              return hasAccessibility;
+            });
+            console.log(`🦽 Filtered ${filteredStudents.length} students with disabilities from ${studentsWithFullData.length} total students`);
+          } else if (selectedReport === 'report9') {
+            // Filter ethnic minority students (ethnic_group is not empty and not the majority group)
+            // Assuming majority group is 'ខ្មែរ' (Khmer) - adjust if needed
+            filteredStudents = studentsWithFullData.filter(student => {
+              const ethnicGroup = student.ethnic_group || student.ethnicGroup || '';
+              const isMinority = ethnicGroup && 
+                                ethnicGroup !== '' && 
+                                ethnicGroup !== 'null' &&
+                                ethnicGroup !== 'ខ្មែរ' && // Not Khmer majority
+                                ethnicGroup !== 'Khmer';
+              return isMinority;
+            });
+            console.log(`🌍 Filtered ${filteredStudents.length} ethnic minority students from ${studentsWithFullData.length} total students`);
+          }
+          
+          setReportData(filteredStudents);
         } else {
           console.warn('⚠️ No students found');
           setReportData([]);
@@ -524,7 +553,7 @@ export default function Reports() {
 
     // Calculate statistics for charts
     const calculateStats = () => {
-      if (selectedReport === 'report1' || selectedReport === 'report2') {
+      if (['report1', 'report2', 'report6', 'report9'].includes(selectedReport)) {
         // Gender distribution
         const genderCount = reportData.reduce((acc, student) => {
           const gender = student.gender || 'Unknown';
@@ -563,8 +592,8 @@ export default function Reports() {
 
     // Render data preview based on report type
     const renderDataPreview = () => {
-      // For report1 and report2 (Student Name List) - Show statistics
-      if (selectedReport === 'report1' || selectedReport === 'report2') {
+      // For report1, report2, report6, report9 - Show statistics
+      if (['report1', 'report2', 'report6', 'report9'].includes(selectedReport)) {
         const maxValue = Math.max(...Object.values(stats?.genderCount || {}), 1);
         const maxParentValue = Math.max(
           stats?.parentStatus.bothParents || 0,
@@ -573,16 +602,29 @@ export default function Reports() {
           1
         );
         
+        // Determine summary card color based on report type
+        const getSummaryCardColor = () => {
+          if (selectedReport === 'report6') return 'from-purple-500 to-purple-600';
+          if (selectedReport === 'report9') return 'from-orange-500 to-orange-600';
+          return 'from-indigo-500 to-purple-600';
+        };
+
+        const getSummaryTitle = () => {
+          if (selectedReport === 'report6') return t('studentsWithDisabilities', 'Students with Disabilities');
+          if (selectedReport === 'report9') return t('ethnicMinorityStudents', 'Ethnic Minority Students');
+          return 'Total Students';
+        };
+        
         return (
           <div className="space-y-6">
             {/* Total Students Summary */}
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg p-6 text-white">
+            <div className={`bg-gradient-to-r ${getSummaryCardColor()} rounded-lg p-6 text-white`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-indigo-100">Total Students</p>
+                  <p className="text-sm font-medium text-white opacity-90">{getSummaryTitle()}</p>
                   <p className="text-4xl font-bold mt-2">{reportData.length}</p>
                 </div>
-                <BarChart3 className="h-16 w-16 text-indigo-200" />
+                <BarChart3 className="h-16 w-16 text-white opacity-80" />
               </div>
             </div>
 
@@ -680,100 +722,167 @@ export default function Reports() {
                 </div>
               </div>
 
-              {/* Parent Status - Horizontal Bar Chart */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h4 className="text-base font-semibold text-gray-900 mb-6">Parent Status</h4>
-                <div className="space-y-6">
-                  {stats?.parentStatus.bothParents > 0 && (
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">Both Parents</span>
-                        <span className="text-sm font-bold text-gray-900">
-                          {stats.parentStatus.bothParents} ({((stats.parentStatus.bothParents / reportData.length) * 100).toFixed(1)}%)
-                        </span>
+              {/* Conditional Charts based on Report Type */}
+              
+              {/* Report 1 & 2: Show Parent Status */}
+              {['report1', 'report2'].includes(selectedReport) && (
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-base font-semibold text-gray-900 mb-6">Parent Status</h4>
+                  <div className="space-y-6">
+                    {stats?.parentStatus.bothParents > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700">Both Parents</span>
+                          <span className="text-sm font-bold text-gray-900">
+                            {stats.parentStatus.bothParents} ({((stats.parentStatus.bothParents / reportData.length) * 100).toFixed(1)}%)
+                          </span>
+                        </div>
+                        <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                          <div 
+                            className="absolute h-full bg-gradient-to-r from-green-500 to-green-400 rounded-lg transition-all duration-500"
+                            style={{ width: `${(stats.parentStatus.bothParents / maxParentValue) * 100}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                        <div 
-                          className="absolute h-full bg-gradient-to-r from-green-500 to-green-400 rounded-lg transition-all duration-500"
-                          style={{ width: `${(stats.parentStatus.bothParents / maxParentValue) * 100}%` }}
-                        ></div>
+                    )}
+                    {stats?.parentStatus.oneParent > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700">One Parent</span>
+                          <span className="text-sm font-bold text-gray-900">
+                            {stats.parentStatus.oneParent} ({((stats.parentStatus.oneParent / reportData.length) * 100).toFixed(1)}%)
+                          </span>
+                        </div>
+                        <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                          <div 
+                            className="absolute h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-lg transition-all duration-500"
+                            style={{ width: `${(stats.parentStatus.oneParent / maxParentValue) * 100}%` }}
+                          ></div>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {stats?.parentStatus.oneParent > 0 && (
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">One Parent</span>
-                        <span className="text-sm font-bold text-gray-900">
-                          {stats.parentStatus.oneParent} ({((stats.parentStatus.oneParent / reportData.length) * 100).toFixed(1)}%)
-                        </span>
+                    )}
+                    {stats?.parentStatus.noParents > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700">No Parents</span>
+                          <span className="text-sm font-bold text-gray-900">
+                            {stats.parentStatus.noParents} ({((stats.parentStatus.noParents / reportData.length) * 100).toFixed(1)}%)
+                          </span>
+                        </div>
+                        <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                          <div 
+                            className="absolute h-full bg-gradient-to-r from-red-500 to-red-400 rounded-lg transition-all duration-500"
+                            style={{ width: `${(stats.parentStatus.noParents / maxParentValue) * 100}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                        <div 
-                          className="absolute h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-lg transition-all duration-500"
-                          style={{ width: `${(stats.parentStatus.oneParent / maxParentValue) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  )}
-                  {stats?.parentStatus.noParents > 0 && (
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">No Parents</span>
-                        <span className="text-sm font-bold text-gray-900">
-                          {stats.parentStatus.noParents} ({((stats.parentStatus.noParents / reportData.length) * 100).toFixed(1)}%)
-                        </span>
-                      </div>
-                      <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                        <div 
-                          className="absolute h-full bg-gradient-to-r from-red-500 to-red-400 rounded-lg transition-all duration-500"
-                          style={{ width: `${(stats.parentStatus.noParents / maxParentValue) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Special Needs & Ethnic Groups - Combined */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h4 className="text-base font-semibold text-gray-900 mb-6">Special Needs & Ethnic Groups</h4>
-                <div className="space-y-6">
-                  {/* Special Needs */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Special Needs Students</span>
-                      <span className="text-sm font-bold text-purple-900">
-                        {stats?.specialNeedsCount || 0} ({((stats?.specialNeedsCount || 0) / reportData.length * 100).toFixed(1)}%)
-                      </span>
-                    </div>
-                    <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                      <div 
-                        className="absolute h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-lg transition-all duration-500"
-                        style={{ width: `${((stats?.specialNeedsCount || 0) / reportData.length) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  {/* Ethnic Groups */}
-                  <div className="pt-4 border-t border-gray-200">
-                    <p className="text-sm font-medium text-gray-700 mb-3">Ethnic Groups</p>
-                    <div className="space-y-2">
-                      {Object.entries(stats?.ethnicCount || {}).slice(0, 5).map(([ethnic, count], index) => {
-                        const percentage = ((count / reportData.length) * 100).toFixed(1);
-                        const colors = ['bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500', 'bg-orange-500'];
-                        return (
-                          <div key={ethnic} className="flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full ${colors[index % colors.length]}`}></div>
-                            <span className="text-xs text-gray-600 flex-1">{ethnic || 'Unknown'}</span>
-                            <span className="text-xs font-semibold text-gray-900">{count} ({percentage}%)</span>
+              {/* Report 6: Show Disability Types Distribution */}
+              {selectedReport === 'report6' && (
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-base font-semibold text-gray-900 mb-6">Disability Types</h4>
+                  <div className="space-y-4">
+                    {reportData.map((student, idx) => {
+                      const disabilityType = Array.isArray(student.accessibility) 
+                        ? student.accessibility.join(', ') 
+                        : student.accessibility || 'Not specified';
+                      return idx < 10 ? (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">
+                              {student.lastName} {student.firstName}
+                            </p>
+                            <p className="text-xs text-gray-600">{student.class?.name || 'N/A'}</p>
                           </div>
-                        );
-                      })}
+                          <div className="text-right">
+                            <p className="text-xs font-semibold text-purple-700">{disabilityType}</p>
+                          </div>
+                        </div>
+                      ) : null;
+                    })}
+                    {reportData.length > 10 && (
+                      <p className="text-xs text-center text-gray-500 pt-2">
+                        +{reportData.length - 10} more students
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Report 9: Show Ethnic Groups Distribution */}
+              {selectedReport === 'report9' && (
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-base font-semibold text-gray-900 mb-6">Ethnic Groups Distribution</h4>
+                  <div className="space-y-4">
+                    {Object.entries(stats?.ethnicCount || {}).map(([ethnic, count], index) => {
+                      const percentage = ((count / reportData.length) * 100).toFixed(1);
+                      const colors = ['from-blue-500 to-blue-400', 'from-indigo-500 to-indigo-400', 'from-purple-500 to-purple-400', 'from-pink-500 to-pink-400', 'from-orange-500 to-orange-400'];
+                      return (
+                        <div key={ethnic}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">{ethnic || 'Unknown'}</span>
+                            <span className="text-sm font-bold text-gray-900">
+                              {count} ({percentage}%)
+                            </span>
+                          </div>
+                          <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                            <div 
+                              className={`absolute h-full bg-gradient-to-r ${colors[index % colors.length]} rounded-lg transition-all duration-500`}
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Report 1 & 2: Show Special Needs & Ethnic Groups Combined */}
+              {['report1', 'report2'].includes(selectedReport) && (
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-base font-semibold text-gray-900 mb-6">Special Needs & Ethnic Groups</h4>
+                  <div className="space-y-6">
+                    {/* Special Needs */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Special Needs Students</span>
+                        <span className="text-sm font-bold text-purple-900">
+                          {stats?.specialNeedsCount || 0} ({((stats?.specialNeedsCount || 0) / reportData.length * 100).toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                        <div 
+                          className="absolute h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-lg transition-all duration-500"
+                          style={{ width: `${((stats?.specialNeedsCount || 0) / reportData.length) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    
+                    {/* Ethnic Groups */}
+                    <div className="pt-4 border-t border-gray-200">
+                      <p className="text-sm font-medium text-gray-700 mb-3">Ethnic Groups</p>
+                      <div className="space-y-2">
+                        {Object.entries(stats?.ethnicCount || {}).slice(0, 5).map(([ethnic, count], index) => {
+                          const percentage = ((count / reportData.length) * 100).toFixed(1);
+                          const colors = ['bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500', 'bg-orange-500'];
+                          return (
+                            <div key={ethnic} className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${colors[index % colors.length]}`}></div>
+                              <span className="text-xs text-gray-600 flex-1">{ethnic || 'Unknown'}</span>
+                              <span className="text-xs font-semibold text-gray-900">{count} ({percentage}%)</span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         );
@@ -845,7 +954,7 @@ export default function Reports() {
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              {!['report1', 'report2'].includes(selectedReport) && (
+              {!['report1', 'report2', 'report6', 'report9'].includes(selectedReport) && (
                 <div className="text-xs text-gray-500">
                   <span>{timePeriods.find(p => p.value === selectedPeriod)?.label}</span>
                   {selectedPeriod === 'month' && selectedMonth && (
@@ -926,8 +1035,8 @@ export default function Reports() {
               />
             </div>
 
-            {/* Time Period Dropdown - Hide for report1 and report2 */}
-            {!['report1', 'report2'].includes(selectedReport) && (
+            {/* Time Period Dropdown - Hide for report1, report2, report6, report9 */}
+            {!['report1', 'report2', 'report6', 'report9'].includes(selectedReport) && (
               <div className="flex-shrink-0 w-full md:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Filter className="h-4 w-4 inline mr-1" />
@@ -945,8 +1054,8 @@ export default function Reports() {
               </div>
             )}
 
-            {/* Conditional: Month Dropdown (shown when period is 'month') - Hide for report1 and report2 */}
-            {!['report1', 'report2'].includes(selectedReport) && selectedPeriod === 'month' && (
+            {/* Conditional: Month Dropdown (shown when period is 'month') - Hide for report1, report2, report6, report9 */}
+            {!['report1', 'report2', 'report6', 'report9'].includes(selectedReport) && selectedPeriod === 'month' && (
               <div className="flex-shrink-0 w-full md:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="h-4 w-4 inline mr-1" />
@@ -964,8 +1073,8 @@ export default function Reports() {
               </div>
             )}
 
-            {/* Year Dropdown (shown for all periods) - Hide for report1 and report2 */}
-            {!['report1', 'report2'].includes(selectedReport) && (
+            {/* Year Dropdown (shown for all periods) - Hide for report1, report2, report6, report9 */}
+            {!['report1', 'report2', 'report6', 'report9'].includes(selectedReport) && (
               <div className="flex-shrink-0 w-full md:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="h-4 w-4 inline mr-1" />
@@ -1013,7 +1122,7 @@ export default function Reports() {
               <Badge color="blue" variant="filled" size="sm">
                 {reportTypes.find(r => r.value === selectedReport)?.label || selectedReport}
               </Badge>
-              {!['report1', 'report2'].includes(selectedReport) && (
+              {!['report1', 'report2', 'report6', 'report9'].includes(selectedReport) && (
                 <>
                   <Badge color="green" variant="filled" size="sm">
                     {timePeriods.find(p => p.value === selectedPeriod)?.label || selectedPeriod}

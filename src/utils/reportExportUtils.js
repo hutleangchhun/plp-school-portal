@@ -275,24 +275,58 @@ export const transformNutritionSupportReport = (rawData) => {
 
 /**
  * Report 6: Students with Disabilities (បញ្ជីឈ្មោះសិស្សមានពិការភាព)
- * Lists students with disabilities
+ * Lists students with disabilities - uses same structure as report1
  */
 export const transformDisabilityReport = (rawData) => {
   if (!Array.isArray(rawData)) return [];
 
-  return rawData
-    .filter(student => student.disability || student.hasDisability)
-    .map((student, index) => ({
+  // Data is already filtered in Reports.jsx, just transform it
+  return rawData.map((student, index) => {
+    // Extract accessibility/disability information
+    const accessibilityInfo = student.accessibility || student.specialNeeds || student.special_needs || '';
+    const disabilityType = Array.isArray(accessibilityInfo) 
+      ? accessibilityInfo.join(', ') 
+      : accessibilityInfo;
+
+    // Format gender
+    let gender = '';
+    const genderValue = student.gender || student.sex;
+    if (genderValue === 'M' || genderValue === 'MALE' || genderValue === 'male' || genderValue === 'ប្រុស') {
+      gender = 'ប្រុស';
+    } else if (genderValue === 'F' || genderValue === 'FEMALE' || genderValue === 'female' || genderValue === 'ស្រី') {
+      gender = 'ស្រី';
+    }
+
+    // Format date of birth
+    const dob = student.dateOfBirth || student.date_of_birth || student.dob;
+    let formattedDob = '';
+    if (dob) {
+      try {
+        const date = new Date(dob);
+        if (!isNaN(date.getTime())) {
+          formattedDob = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+        } else {
+          formattedDob = dob;
+        }
+      } catch (e) {
+        formattedDob = dob;
+      }
+    }
+
+    return {
       no: index + 1,
-      studentId: student.id,
-      khmerName: student.khmerName,
-      englishName: student.englishName,
+      studentId: student.studentId || student.id,
+      lastName: student.lastName || student.last_name || '',
+      firstName: student.firstName || student.first_name || '',
+      khmerName: `${student.lastName || student.last_name || ''} ${student.firstName || student.first_name || ''}`.trim(),
+      gender: gender,
+      dateOfBirth: formattedDob,
       class: student.class?.name || '',
-      disabilityType: student.disabilityType || 'Unknown',
-      severity: student.disabilitySeverity || 'Moderate',
-      specialNeeds: student.specialNeeds || 'None',
-      assistanceRequired: student.disabilityAssistance || false
-    }));
+      disabilityType: disabilityType,
+      phone: student.phone || student.phoneNumber || '',
+      ethnicGroup: student.ethnicGroup || student.ethnic_group || ''
+    };
+  });
 };
 
 /**
@@ -341,24 +375,56 @@ export const transformPersonalIssuesReport = (rawData) => {
 
 /**
  * Report 9: Indigenous/Minority Students (បញ្ជីឈ្មោះសិស្សជាជនជាតិដើមភាគតិច)
- * Lists indigenous and ethnic minority students
+ * Lists indigenous and ethnic minority students - uses same structure as report1
  */
 export const transformIndigenousMinorityReport = (rawData) => {
   if (!Array.isArray(rawData)) return [];
 
-  return rawData
-    .filter(student => student.ethnicity && ['Indigenous', 'Minority', 'Hill Tribe'].includes(student.ethnicity))
-    .map((student, index) => ({
+  // Data is already filtered in Reports.jsx, just transform it
+  return rawData.map((student, index) => {
+    // Extract ethnic group information
+    const ethnicGroup = student.ethnicGroup || student.ethnic_group || '';
+
+    // Format gender
+    let gender = '';
+    const genderValue = student.gender || student.sex;
+    if (genderValue === 'M' || genderValue === 'MALE' || genderValue === 'male' || genderValue === 'ប្រុស') {
+      gender = 'ប្រុស';
+    } else if (genderValue === 'F' || genderValue === 'FEMALE' || genderValue === 'female' || genderValue === 'ស្រី') {
+      gender = 'ស្រី';
+    }
+
+    // Format date of birth
+    const dob = student.dateOfBirth || student.date_of_birth || student.dob;
+    let formattedDob = '';
+    if (dob) {
+      try {
+        const date = new Date(dob);
+        if (!isNaN(date.getTime())) {
+          formattedDob = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+        } else {
+          formattedDob = dob;
+        }
+      } catch (e) {
+        formattedDob = dob;
+      }
+    }
+
+    return {
       no: index + 1,
-      studentId: student.id,
-      khmerName: student.khmerName,
-      englishName: student.englishName,
+      studentId: student.studentId || student.id,
+      lastName: student.lastName || student.last_name || '',
+      firstName: student.firstName || student.first_name || '',
+      khmerName: `${student.lastName || student.last_name || ''} ${student.firstName || student.first_name || ''}`.trim(),
+      gender: gender,
+      dateOfBirth: formattedDob,
       class: student.class?.name || '',
-      ethnicity: student.ethnicity,
-      language: student.nativeLanguage || 'Unknown',
-      culturalBackground: student.culturalBackground || '',
-      specialSupport: student.minoritySupport || 'None'
-    }));
+      ethnicity: ethnicGroup,
+      phone: student.phone || student.phoneNumber || '',
+      language: student.nativeLanguage || student.native_language || '',
+      specialSupport: student.minoritySupport || student.minority_support || ''
+    };
+  });
 };
 
 /**
@@ -546,14 +612,16 @@ export const getReportColumns = (reportType) => {
       { header: 'Status', key: 'status' }
     ],
     report6: [
-      { header: 'No.', key: 'no' },
-      { header: 'Student ID', key: 'studentId' },
-      { header: 'Khmer Name', key: 'khmerName' },
-      { header: 'English Name', key: 'englishName' },
-      { header: 'Class', key: 'class' },
-      { header: 'Disability Type', key: 'disabilityType' },
-      { header: 'Severity', key: 'severity' },
-      { header: 'Special Needs', key: 'specialNeeds' }
+      { header: 'ល.រ', key: 'no' },
+      { header: 'អត្តលេខ', key: 'studentId' },
+      { header: 'គោត្តនាម', key: 'lastName' },
+      { header: 'នាម', key: 'firstName' },
+      { header: 'ភេទ', key: 'gender' },
+      { header: 'ថ្ងៃខែឆ្នាំកំណើត', key: 'dateOfBirth' },
+      { header: 'ថ្នាក់', key: 'class' },
+      { header: 'ប្រភេទពិការភាព', key: 'disabilityType' },
+      { header: 'ទូរស័ព្ទ', key: 'phone' },
+      { header: 'ជនជាតិ', key: 'ethnicGroup' }
     ],
     report7: [
       { header: 'No.', key: 'no' },
@@ -576,14 +644,17 @@ export const getReportColumns = (reportType) => {
       { header: 'Follow-up Date', key: 'followUpDate' }
     ],
     report9: [
-      { header: 'No.', key: 'no' },
-      { header: 'Student ID', key: 'studentId' },
-      { header: 'Khmer Name', key: 'khmerName' },
-      { header: 'English Name', key: 'englishName' },
-      { header: 'Class', key: 'class' },
-      { header: 'Ethnicity', key: 'ethnicity' },
-      { header: 'Language', key: 'language' },
-      { header: 'Special Support', key: 'specialSupport' }
+      { header: 'ល.រ', key: 'no' },
+      { header: 'អត្តលេខ', key: 'studentId' },
+      { header: 'គោត្តនាម', key: 'lastName' },
+      { header: 'នាម', key: 'firstName' },
+      { header: 'ភេទ', key: 'gender' },
+      { header: 'ថ្ងៃខែឆ្នាំកំណើត', key: 'dateOfBirth' },
+      { header: 'ថ្នាក់', key: 'class' },
+      { header: 'ជនជាតិ', key: 'ethnicity' },
+      { header: 'ទូរស័ព្ទ', key: 'phone' },
+      { header: 'ភាសាកំណើត', key: 'language' },
+      { header: 'ការគាំទ្រពិសេស', key: 'specialSupport' }
     ],
     report10: [
       { header: 'No.', key: 'no' },
