@@ -1035,6 +1035,70 @@ export const km = {
   selectReportType: 'ជ្រើសរើសប្រភេទរបាយការណ៍',
   loadingReportData: 'កំពុងទាញយកទិន្នន័យរបាយការណ៍',
   selectedFilters: 'កម្រងបានជ្រើសរើស',
+  
+  // Report Types
+  reportStudentNameInfo: 'បញ្ជីហៅឈ្មោះសិស្ស',
+  report2: 'បញ្ជីហៅឈ្មោះសិស្សតាមថ្នាក់',
+  report3: 'បញ្ជីមធ្យមភាគសិស្ស',
+  report4: 'បញ្ជីអវត្តមានសិស្ស',
+  report5: 'បញ្ជីឈ្មោះសិស្សអាហារូបករណ៍',
+  report6: 'បញ្ជីឈ្មោះសិស្សមានពិការភាព',
+  report7: 'បញ្ជីឈ្មោះសិស្សមានបញ្ហាសុខភាព',
+  report8: 'បញ្ជីឈ្មោះសិស្សមានបញ្ហាផ្ទាល់ខ្លួន',
+  report9: 'បញ្ជីឈ្មោះសិស្សជាជនជាតិដើមភាគតិច',
+  report10: 'បញ្ជីឈ្មោះសិស្សផ្លាស់ប្ដូរថ្នាក់',
+  report11: 'បញ្ជីឈ្មោះសិស្សបោះបង់ការសិក្សារ',
+  report12: 'សៀវភៅតាមដាន',
+  report13: 'សៀវភៅសិក្ខាគារិក',
+  
+  // Time Period
+  timePeriod: 'រយៈពេល',
+  selectTimePeriod: 'ជ្រើសរើសរយៈពេល',
+  selectMonth: 'ជ្រើសរើសខែ',
+  selectAcademicYear: 'ជ្រើសរើសឆ្នាំសិក្សា',
+  chooseYear: 'ជ្រើសរើសឆ្នាំ',
+  
+  // Months
+  january: 'មករា',
+  february: 'កុម្ភៈ',
+  march: 'មីនា',
+  april: 'មេសា',
+  may: 'ឧសភា',
+  june: 'មិថុនា',
+  july: 'កក្កដា',
+  august: 'សីហា',
+  september: 'កញ្ញា',
+  october: 'តុលា',
+  november: 'វិច្ឆិកា',
+  december: 'ធ្នូ',
+  
+  // Class Filter
+  allClasses: 'ថ្នាក់ទាំងអស់',
+  selectClass: 'ជ្រើសរើសថ្នាក់',
+  chooseClass: 'ជ្រើសរើសថ្នាក់',
+  
+  // Data Display
+  noDataAvailable: 'មិនមានទិន្នន័យ',
+  noDataMessage: 'សូមជ្រើសរើសកម្រងហើយរង់ចាំទិន្នន័យផ្ទុក',
+  recordsLoaded: 'កំណត់ត្រាបានផ្ទុក',
+  noDataToExport: 'មិនមានទិន្នន័យសម្រាប់នាំចេញ។ សូមរង់ចាំទិន្នន័យផ្ទុក។',
+  note: 'ចំណាំ',
+  reportReadyToExport: 'កំណត់ត្រា {count} ត្រៀមរួចសម្រាប់នាំចេញ។ ចុចប៊ូតុង "នាំចេញរបាយការណ៍" ខាងលើដើម្បីទាញយកជា Excel។',
+  
+  // Chart Titles
+  studentsWithDisabilities: 'សិស្សមានពិការភាព',
+  ethnicMinorityStudents: 'សិស្សជនជាតិដើមភាគតិច',
+  parentStatus: 'ស្ថានភាពឪពុកម្តាយ',
+  bothParents: 'មានឪពុកម្តាយទាំងពីរ',
+  oneParent: 'មានឪពុកម្តាយម្នាក់',
+  noParents: 'គ្មានឪពុកម្តាយ',
+  specialNeedsStudents: 'សិស្សត្រូវការពិសេស',
+  ethnicGroups: 'ក្រុមជនជាតិ',
+  disabilityTypes: 'ប្រភេទពិការភាព',
+  ethnicGroupsDistribution: 'ការចែកចាយក្រុមជនជាតិ',
+  
+  // Messages
+  noSchoolIdFound: 'រកមិនឃើញលេខសម្គាល់សាលារៀន។ សូមប្រាកដថាអ្នកបានចូលប្រើប្រាស់។',
 
   //school setting
   projectType: 'ប្រភេទគម្រោង',

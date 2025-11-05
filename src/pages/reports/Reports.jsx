@@ -635,12 +635,12 @@ export default function Reports() {
               {/* Report 1 & 2: Show Parent Status */}
               {['report1', 'report2'].includes(selectedReport) && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="text-base font-semibold text-gray-900 mb-6">Parent Status</h4>
+                  <h4 className="text-base font-semibold text-gray-900 mb-6">{t('parentStatus', 'Parent Status')}</h4>
                   <div className="space-y-6">
                     {stats?.parentStatus.bothParents > 0 && (
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-700">Both Parents</span>
+                          <span className="text-sm font-medium text-gray-700">{t('bothParents', 'Both Parents')}</span>
                           <span className="text-sm font-bold text-gray-900">
                             {stats.parentStatus.bothParents} ({((stats.parentStatus.bothParents / reportData.length) * 100).toFixed(1)}%)
                           </span>
@@ -656,7 +656,7 @@ export default function Reports() {
                     {stats?.parentStatus.oneParent > 0 && (
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-700">One Parent</span>
+                          <span className="text-sm font-medium text-gray-700">{t('oneParent', 'One Parent')}</span>
                           <span className="text-sm font-bold text-gray-900">
                             {stats.parentStatus.oneParent} ({((stats.parentStatus.oneParent / reportData.length) * 100).toFixed(1)}%)
                           </span>
@@ -672,7 +672,7 @@ export default function Reports() {
                     {stats?.parentStatus.noParents > 0 && (
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-700">No Parents</span>
+                          <span className="text-sm font-medium text-gray-700">{t('noParents', 'No Parents')}</span>
                           <span className="text-sm font-bold text-gray-900">
                             {stats.parentStatus.noParents} ({((stats.parentStatus.noParents / reportData.length) * 100).toFixed(1)}%)
                           </span>
@@ -692,7 +692,7 @@ export default function Reports() {
               {/* Report 6: Show Disability Types Distribution */}
               {selectedReport === 'report6' && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="text-base font-semibold text-gray-900 mb-6">Disability Types</h4>
+                  <h4 className="text-base font-semibold text-gray-900 mb-6">{t('disabilityTypes', 'Disability Types')}</h4>
                   <div className="space-y-4">
                     {reportData.map((student, idx) => {
                       const disabilityType = Array.isArray(student.accessibility) 
@@ -724,7 +724,7 @@ export default function Reports() {
               {/* Report 9: Show Ethnic Groups Distribution */}
               {selectedReport === 'report9' && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="text-base font-semibold text-gray-900 mb-6">Ethnic Groups Distribution</h4>
+                  <h4 className="text-base font-semibold text-gray-900 mb-6">{t('ethnicGroupsDistribution', 'Ethnic Groups Distribution')}</h4>
                   <div className="space-y-4">
                     {Object.entries(stats?.ethnicCount || {}).map(([ethnic, count], index) => {
                       const percentage = ((count / reportData.length) * 100).toFixed(1);
@@ -753,12 +753,12 @@ export default function Reports() {
               {/* Report 1 & 2: Show Special Needs & Ethnic Groups Combined */}
               {['report1', 'report2'].includes(selectedReport) && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="text-base font-semibold text-gray-900 mb-6">Special Needs & Ethnic Groups</h4>
+                  <h4 className="text-base font-semibold text-gray-900 mb-6">{t('specialNeedsStudents', 'Special Needs')} & {t('ethnicGroups', 'Ethnic Groups')}</h4>
                   <div className="space-y-6">
                     {/* Special Needs */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">Special Needs Students</span>
+                        <span className="text-sm font-medium text-gray-700">{t('specialNeedsStudents', 'Special Needs Students')}</span>
                         <span className="text-sm font-bold text-purple-900">
                           {stats?.specialNeedsCount || 0} ({((stats?.specialNeedsCount || 0) / reportData.length * 100).toFixed(1)}%)
                         </span>
@@ -773,7 +773,7 @@ export default function Reports() {
                     
                     {/* Ethnic Groups */}
                     <div className="pt-4 border-t border-gray-200">
-                      <p className="text-sm font-medium text-gray-700 mb-3">Ethnic Groups</p>
+                      <p className="text-sm font-medium text-gray-700 mb-3">{t('ethnicGroups', 'Ethnic Groups')}</p>
                       <div className="space-y-2">
                         {Object.entries(stats?.ethnicCount || {}).slice(0, 5).map(([ethnic, count], index) => {
                           const percentage = ((count / reportData.length) * 100).toFixed(1);
