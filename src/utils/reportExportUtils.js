@@ -494,7 +494,7 @@ export const getReportColumns = (reportType) => {
 };
 
 /**
- * Export report data to Excel
+ * Export report data to Excel with traditional Khmer format
  */
 export const exportReportToExcel = async (
   reportType,
@@ -510,38 +510,55 @@ export const exportReportToExcel = async (
 
     const columns = getReportColumns(reportType);
     const dateStr = new Date().toISOString().split('T')[0];
+    const currentDate = new Date().toLocaleDateString('km-KH', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Build worksheet data
+    // Build worksheet data with traditional Khmer header (matching studentExportUtils)
     const wsData = [];
 
-    // Add title row
-    wsData.push([reportName]);
+    // Traditional Khmer header (rows 0-8) - exact format from studentExportUtils
+    wsData.push(['ព្រះរាជាណាចក្រកម្ពុជា']); // Row 0: Kingdom of Cambodia
+    wsData.push(['ជាតិ       សាសនា       ព្រះមហាក្សត្រ']); // Row 1: Nation Religion King
+    wsData.push([schoolName || 'សាលាបថមសិក្សា ...........']); // Row 2: School name
+    wsData.push([reportName]); // Row 3: Report title
+    wsData.push([`${periodInfo}`]); // Row 4: Period info with academic year
+    wsData.push([]); // Row 5: Empty
+    wsData.push([]); // Row 6: Empty
+    wsData.push([]); // Row 7: Empty
+    wsData.push([]); // Row 8: Empty
 
-    // Add metadata row
-    wsData.push([`School: ${schoolName} | Period: ${periodInfo}`]);
-
-    // Add empty row
-    wsData.push([]);
-
-    // Add header row
+    // Add header row (row 9)
     wsData.push(columns.map(col => col.header));
 
-    // Add data rows
+    // Add data rows (starting from row 10)
     if (Array.isArray(transformedData)) {
       transformedData.forEach((item) => {
         const row = columns.map(col => {
           const value = item[col.key];
-          if (typeof value === 'object') {
+          if (typeof value === 'object' && value !== null) {
             return JSON.stringify(value);
           }
-          return value || '';
+          return value !== undefined && value !== null ? value : '';
         });
         wsData.push(row);
       });
     }
 
-    // Add footer row
-    wsData.push([`Total Records: ${transformedData.length}`]);
+    // Add footer section with signature areas
+    wsData.push([]); // Empty row
+    wsData.push([]); // Empty row
+    
+    // Signature row with three columns: left (teacher), center (empty), right (director)
+    const signatureRow = new Array(columns.length).fill('');
+    signatureRow[0] = 'គ្រូបង្រានរូបរ៉ាប់រង'; // Teacher signature (left)
+    if (columns.length > 2) {
+      signatureRow[Math.floor(columns.length / 2)] = ''; // Center empty
+      signatureRow[columns.length - 1] = 'នាយកសាលា'; // Director signature (right)
+    }
+    wsData.push(signatureRow);
+    
+    wsData.push([]); // Empty row for signature space
+    wsData.push([]); // Empty row for signature space
+    wsData.push([]); // Empty row for signature space
 
     // Create workbook
     const workbook = XLSX.utils.book_new();
@@ -549,64 +566,86 @@ export const exportReportToExcel = async (
 
     // Set column widths
     const colWidths = columns.map(col => ({
-      wch: col.header.length > 15 ? col.header.length + 2 : 15
+      wch: Math.max(col.header.length + 2, 12)
     }));
     worksheet['!cols'] = colWidths;
 
-    // Style header row (row 4 in wsData)
-    const headerRowIndex = 3; // 0-indexed, row 4
-    columns.forEach((col, colIdx) => {
-      const cellAddress = XLSX.utils.encode_cell({ r: headerRowIndex, c: colIdx });
-      if (!worksheet[cellAddress]) worksheet[cellAddress] = {};
-      worksheet[cellAddress].s = {
-        font: { bold: true, color: { rgb: 'FFFFFFFF' } },
-        fill: { fgColor: { rgb: 'FF366092' } },
-        alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
-      };
-    });
+    // Set cell merges for header rows (rows 0-8)
+    const numCols = columns.length;
+    const dataEndRow = 10 + transformedData.length - 1; // Last data row
+    const signatureRowIndex = dataEndRow + 3; // Signature row position
+    
+    worksheet['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: numCols - 1 } }, // Kingdom of Cambodia
+      { s: { r: 1, c: 0 }, e: { r: 1, c: numCols - 1 } }, // Nation Religion King
+      { s: { r: 2, c: 0 }, e: { r: 2, c: numCols - 1 } }, // School name
+      { s: { r: 3, c: 0 }, e: { r: 3, c: numCols - 1 } }, // Report title
+      { s: { r: 4, c: 0 }, e: { r: 4, c: numCols - 1 } }, // Period info
+      { s: { r: 5, c: 0 }, e: { r: 5, c: numCols - 1 } }, // Empty
+      { s: { r: 6, c: 0 }, e: { r: 6, c: numCols - 1 } }, // Empty
+      { s: { r: 7, c: 0 }, e: { r: 7, c: numCols - 1 } }, // Empty
+      { s: { r: 8, c: 0 }, e: { r: 8, c: numCols - 1 } }  // Empty
+    ];
 
-    // Style title row
-    const titleCell = XLSX.utils.encode_cell({ r: 0, c: 0 });
-    if (!worksheet[titleCell]) worksheet[titleCell] = {};
-    worksheet[titleCell].s = {
-      font: { bold: true, size: 14 },
-      alignment: { horizontal: 'center', vertical: 'center' }
-    };
+    // Apply styling to all cells
+    const range = XLSX.utils.decode_range(worksheet['!ref']);
+    for (let R = range.s.r; R <= range.e.r; R++) {
+      for (let C = range.s.c; C <= range.e.c; C++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!worksheet[cellAddress]) worksheet[cellAddress] = { t: 's', v: '' };
 
-    // Style metadata row
-    const metaCell = XLSX.utils.encode_cell({ r: 1, c: 0 });
-    if (!worksheet[metaCell]) worksheet[metaCell] = {};
-    worksheet[metaCell].s = {
-      font: { size: 10, italic: true },
-      alignment: { horizontal: 'center' }
-    };
-
-    // Alternate row colors for data
-    if (Array.isArray(transformedData)) {
-      transformedData.forEach((item, idx) => {
-        const dataRowIndex = 4 + idx; // Starting from row 5
-        columns.forEach((col, colIdx) => {
-          const cellAddress = XLSX.utils.encode_cell({ r: dataRowIndex, c: colIdx });
-          if (!worksheet[cellAddress]) worksheet[cellAddress] = {};
-          if (idx % 2 === 0) {
-            worksheet[cellAddress].s = {
-              fill: { fgColor: { rgb: 'FFF2F2F2' } },
-              alignment: { horizontal: 'left', vertical: 'center', wrapText: true }
-            };
-          } else {
-            worksheet[cellAddress].s = {
-              alignment: { horizontal: 'left', vertical: 'center', wrapText: true }
-            };
-          }
-        });
-      });
+        // Top header rows (0-8) - centered bold with Khmer font
+        if (R < 9) {
+          worksheet[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center' },
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+          };
+        }
+        // Header row (9)
+        else if (R === 9) {
+          worksheet[cellAddress].s = {
+            fill: { fgColor: { rgb: '4472C4' } },
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } }
+            }
+          };
+        }
+        // Signature and footer rows (after data)
+        else if (R > 10 + transformedData.length) {
+          worksheet[cellAddress].s = {
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: R === (10 + transformedData.length + 3) },
+            alignment: { horizontal: 'center', vertical: 'center' }
+          };
+        }
+        // Data rows
+        else {
+          const isEvenRow = (R - 10) % 2 === 0;
+          worksheet[cellAddress].s = {
+            fill: { fgColor: { rgb: isEvenRow ? 'F2F2F2' : 'FFFFFF' } },
+            font: { name: 'Khmer OS Battambang', sz: 10 },
+            alignment: { horizontal: C === 0 ? 'center' : 'left', vertical: 'center', wrapText: true },
+            border: {
+              top: { style: 'thin', color: { rgb: 'D0D0D0' } },
+              bottom: { style: 'thin', color: { rgb: 'D0D0D0' } },
+              left: { style: 'thin', color: { rgb: 'D0D0D0' } },
+              right: { style: 'thin', color: { rgb: 'D0D0D0' } }
+            }
+          };
+        }
+      }
     }
 
     // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'រាយការ');
 
-    // Write file
-    XLSX.writeFile(workbook, `${reportName}-${dateStr}.xlsx`);
+    // Write file with sanitized filename
+    const sanitizedReportName = reportName.replace(/[^a-zA-Z0-9\u1780-\u17FF]/g, '_');
+    XLSX.writeFile(workbook, `${sanitizedReportName}_${dateStr}.xlsx`);
 
     return true;
   } catch (error) {
