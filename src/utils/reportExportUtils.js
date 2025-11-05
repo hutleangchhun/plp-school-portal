@@ -24,7 +24,7 @@ export const transformStudentNameInfoReport = (rawData) => {
 
 /**
  * Report 2: Student List by Class (បញ្ជីហៅឈ្មោះសិស្សតាមថ្នាក់)
- * Groups students by class with count
+ * Groups students by class with count - returns flat array for Excel export
  */
 export const transformStudentByClassReport = (rawData) => {
   if (!Array.isArray(rawData)) return [];
@@ -38,18 +38,22 @@ export const transformStudentByClassReport = (rawData) => {
     return acc;
   }, {});
 
+  // Flatten the grouped data into a single array for Excel export
   const result = [];
+  let globalIndex = 1;
+  
   Object.entries(grouped).forEach(([className, students]) => {
-    result.push({
-      className,
-      totalStudents: students.length,
-      students: students.map((s, idx) => ({
-        no: idx + 1,
+    students.forEach((s) => {
+      result.push({
+        no: globalIndex++,
+        className: className,
         studentId: s.studentId || s.id,
         khmerName: s.khmerName || `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.name || '',
         englishName: s.englishName || s.name || `${s.firstName || ''} ${s.lastName || ''}`.trim() || '',
-        gender: (s.gender === 'M' || s.gender === 'MALE') ? 'ប្រុស' : 'ស្រី'
-      }))
+        gender: (s.gender === 'M' || s.gender === 'MALE') ? 'ប្រុស' : 'ស្រី',
+        dateOfBirth: s.dateOfBirth || '',
+        contact: s.phone || s.contact || s.email || ''
+      });
     });
   });
 
@@ -666,6 +670,14 @@ export const processAndExportReport = async (
   schoolName = 'School'
 ) => {
   try {
+    console.log('📋 Processing report:', {
+      reportType,
+      rawDataLength: rawData?.length,
+      reportName,
+      periodInfo,
+      schoolName
+    });
+
     // Get transformer function
     const transformer = reportTransformers[reportType];
     if (!transformer) {
@@ -674,6 +686,19 @@ export const processAndExportReport = async (
 
     // Transform data
     const transformedData = transformer(rawData);
+    console.log('✅ Transformed data:', {
+      transformedLength: transformedData?.length,
+      firstRecord: transformedData?.[0],
+      isArray: Array.isArray(transformedData)
+    });
+
+    if (!Array.isArray(transformedData) || transformedData.length === 0) {
+      console.warn('⚠️ No data to export after transformation');
+      return {
+        success: false,
+        error: 'No data available after transformation'
+      };
+    }
 
     // Export to Excel
     await exportReportToExcel(
@@ -690,7 +715,7 @@ export const processAndExportReport = async (
       message: `Report exported successfully with ${transformedData.length} records`
     };
   } catch (error) {
-    console.error('Error processing report:', error);
+    console.error('❌ Error processing report:', error);
     return {
       success: false,
       error: error.message
