@@ -3,6 +3,8 @@
  * Handles transformation of raw data for 13 different report types
  */
 
+import * as XLSX from 'xlsx-js-style';
+
 /**
  * Report 1: Student Name List (បញ្ជីហៅឈ្មោះសិស្ស)
  * Basic student information list with parent information

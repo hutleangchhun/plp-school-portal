@@ -263,9 +263,25 @@ export default function Reports() {
                 });
                 
                 if (parentsResponse.success && parentsResponse.data) {
+                  // Handle both array and object responses
+                  let parentsArray = [];
+                  if (Array.isArray(parentsResponse.data)) {
+                    parentsArray = parentsResponse.data;
+                  } else if (typeof parentsResponse.data === 'object') {
+                    // If it's an object with a parents property, use that
+                    if (parentsResponse.data.parents && Array.isArray(parentsResponse.data.parents)) {
+                      parentsArray = parentsResponse.data.parents;
+                    } else {
+                      // Otherwise wrap the object in an array
+                      parentsArray = [parentsResponse.data];
+                    }
+                  }
+                  
+                  console.log(`📋 Processed parents array for student ${studentId}:`, parentsArray);
+                  
                   return {
                     ...student,
-                    parents: Array.isArray(parentsResponse.data) ? parentsResponse.data : [parentsResponse.data]
+                    parents: parentsArray
                   };
                 }
                 return { ...student, parents: [] };
