@@ -885,16 +885,16 @@ export const exportStudentListWithParents = async (
         fatherData.firstName || '',
         fatherData.lastName || '',
         fatherData.phone || '',
-        fatherData.gender || 'ប្រុស',
+        fatherData.gender || '',
         fatherData.occupation || '',
-        fatherData.fullAddress || studentAddress,
+        fatherData.fullAddress || '',
         // Mother
         motherData.firstName || '',
         motherData.lastName || '',
         motherData.phone || '',
-        motherData.gender || 'ស្រី',
+        motherData.gender || '',
         motherData.occupation || '',
-        motherData.fullAddress || studentAddress,
+        motherData.fullAddress || '',
         // Other
         student.ethnicGroup || '',
         student.specialNeeds || ''
