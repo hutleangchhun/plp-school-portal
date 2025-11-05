@@ -12,13 +12,13 @@ export const transformStudentNameInfoReport = (rawData) => {
 
   return rawData.map((student, index) => ({
     no: index + 1,
-    studentId: student.id || '',
-    khmerName: student.khmerName || '',
-    englishName: student.englishName || '',
-    gender: student.gender === 'M' ? 'ប្រុស' : 'ស្រី',
+    studentId: student.studentId || student.id || '',
+    khmerName: student.khmerName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name || '',
+    englishName: student.englishName || student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
+    gender: (student.gender === 'M' || student.gender === 'MALE') ? 'ប្រុស' : 'ស្រី',
     dateOfBirth: student.dateOfBirth || '',
     class: student.class?.name || '',
-    contact: student.contact || ''
+    contact: student.phone || student.contact || student.email || ''
   }));
 };
 
@@ -45,10 +45,10 @@ export const transformStudentByClassReport = (rawData) => {
       totalStudents: students.length,
       students: students.map((s, idx) => ({
         no: idx + 1,
-        studentId: s.id,
-        khmerName: s.khmerName,
-        englishName: s.englishName,
-        gender: s.gender === 'M' ? 'ប្រុស' : 'ស្រី'
+        studentId: s.studentId || s.id,
+        khmerName: s.khmerName || `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.name || '',
+        englishName: s.englishName || s.name || `${s.firstName || ''} ${s.lastName || ''}`.trim() || '',
+        gender: (s.gender === 'M' || s.gender === 'MALE') ? 'ប្រុស' : 'ស្រី'
       }))
     });
   });
@@ -64,16 +64,16 @@ export const transformStudentAverageGradesReport = (rawData) => {
   if (!Array.isArray(rawData)) return [];
 
   return rawData.map((student, index) => {
-    const grades = student.grades || [];
-    const average = grades.length > 0
+    const grades = student.grades || student.scores || [];
+    const average = student.averageScore || (grades.length > 0
       ? (grades.reduce((sum, g) => sum + (g.score || 0), 0) / grades.length).toFixed(2)
-      : 0;
+      : 0);
 
     return {
       no: index + 1,
-      studentId: student.id,
-      khmerName: student.khmerName,
-      englishName: student.englishName,
+      studentId: student.studentId || student.id,
+      khmerName: student.khmerName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name || '',
+      englishName: student.englishName || student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
       class: student.class?.name || '',
       totalSubjects: grades.length,
       average: parseFloat(average),
@@ -99,9 +99,9 @@ export const transformStudentAbsenceReport = (rawData) => {
       const absences = student.attendances?.filter(a => a.status === 'ABSENT') || [];
       return {
         no: index + 1,
-        studentId: student.id,
-        khmerName: student.khmerName,
-        englishName: student.englishName,
+        studentId: student.studentId || student.id,
+        khmerName: student.khmerName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name || '',
+        englishName: student.englishName || student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
         class: student.class?.name || '',
         totalAbsences: absences.length,
         absencePercentage: student.attendances
@@ -340,6 +340,7 @@ export const transformConductReport = (rawData) => {
  * Mapping of report types to their transform functions
  */
 export const reportTransformers = {
+  report1: transformStudentNameInfoReport,
   reportStudent: transformStudentNameInfoReport,
   report2: transformStudentByClassReport,
   report3: transformStudentAverageGradesReport,

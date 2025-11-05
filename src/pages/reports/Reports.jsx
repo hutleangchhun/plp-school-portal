@@ -6,6 +6,8 @@ import DynamicLoader from '../../components/ui/DynamicLoader';
 import Dropdown from '../../components/ui/Dropdown';
 import Badge from '../../components/ui/Badge';
 import { processAndExportReport } from '../../utils/reportExportUtils';
+import { studentService } from '../../utils/api/services/studentService';
+import { classService } from '../../utils/api/services/classService';
 
 export default function Reports() {
   const { t } = useLanguage();
@@ -15,6 +17,10 @@ export default function Reports() {
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [loading, setLoading] = useState(false);
+  const [reportData, setReportData] = useState([]);
+  const [schoolInfo, setSchoolInfo] = useState(null);
+  const [availableClasses, setAvailableClasses] = useState([]);
+  const [selectedClass, setSelectedClass] = useState('all');
 
   // 16 Report Types - waiting for your specific report names
   const reportTypes = [
@@ -57,38 +63,112 @@ export default function Reports() {
     { value: '12', label: t('december', 'ធ្នូ') }
   ];
 
-  // Year Options (current year and previous 5 years)
+  // Year Options (2 years before, current year, and 2 years after)
   const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 6 }, (_, i) => ({
-    value: (currentYear - i).toString(),
-    label: (currentYear - i).toString()
-  }));
+  const yearOptions = Array.from({ length: 5 }, (_, i) => {
+    const year = currentYear - 2 + i; // Start from 2 years ago
+    return {
+      value: year.toString(),
+      label: year.toString()
+    };
+  });
 
   useEffect(() => {
     fetchReportData();
-  }, [selectedReport, selectedPeriod, selectedMonth, selectedYear]);
+  }, [selectedReport, selectedPeriod, selectedMonth, selectedYear, selectedClass]);
+
+  // Fetch classes when report4 (absence report) is selected
+  useEffect(() => {
+    if (selectedReport === 'report4') {
+      fetchSchoolClasses();
+    }
+  }, [selectedReport]);
+
+  const fetchSchoolClasses = async () => {
+    try {
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      const schoolId = userData?.school?.id || userData?.schoolId;
+
+      if (!schoolId) return;
+
+      console.log('📚 Fetching classes for school:', schoolId);
+
+      const response = await classService.getBySchool(schoolId, {
+        page: 1,
+        limit: 1000
+      });
+
+      if (response.success && response.classes) {
+        const classOptions = [
+          { value: 'all', label: t('allClasses', 'All Classes') },
+          ...response.classes.map(cls => ({
+            value: cls.id.toString(),
+            label: cls.name || `Class ${cls.id}`
+          }))
+        ];
+        setAvailableClasses(classOptions);
+        console.log(`✅ Fetched ${response.classes.length} classes`);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching classes:', error);
+    }
+  };
 
   const fetchReportData = async () => {
     setLoading(true);
     try {
-      // Simulate API call to fetch report data
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get user data from localStorage
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      const schoolId = userData?.school?.id || userData?.schoolId;
 
-      // TODO: Implement actual API call to fetch report data based on:
-      // - selectedReport (report type)
-      // - selectedPeriod (month/semester1/semester2/year)
-      // - selectedMonth (if period is 'month')
-      // - selectedYear
+      if (!schoolId) {
+        showError(t('noSchoolIdFound', 'No school ID found. Please ensure you are logged in.'));
+        setReportData([]);
+        return;
+      }
 
-      console.log('Fetching report:', {
+      console.log('📊 Fetching report data:', {
         report: selectedReport,
         period: selectedPeriod,
         month: selectedMonth,
-        year: selectedYear
+        year: selectedYear,
+        schoolId,
+        classId: selectedClass !== 'all' ? selectedClass : undefined
       });
+
+      // Build date filters based on period
+      const dateFilters = {};
+      if (selectedYear) {
+        dateFilters.academicYear = selectedYear;
+      }
+
+      // Add class filter if selected and not 'all'
+      if (selectedClass && selectedClass !== 'all') {
+        dateFilters.classId = selectedClass;
+      }
+
+      // Fetch students data from API
+      const response = await studentService.getStudentsBySchoolClasses(
+        schoolId,
+        {
+          page: 1,
+          limit: 100, // Get all students for report
+          ...dateFilters
+        }
+      );
+
+      if (response.success) {
+        const students = response.data || [];
+        console.log(`✅ Fetched ${students.length} students for report`);
+        setReportData(students);
+        setSchoolInfo(response.schoolInfo);
+      } else {
+        throw new Error(response.error || 'Failed to fetch students data');
+      }
     } catch (error) {
-      console.error('Error fetching report data:', error);
+      console.error('❌ Error fetching report data:', error);
       showError(t('errorFetchingReportData', 'Error fetching report data'));
+      setReportData([]);
     } finally {
       setLoading(false);
     }
@@ -105,50 +185,25 @@ export default function Reports() {
 
       const periodInfo = `${periodName}${monthName ? ` (${monthName})` : ''} ${selectedYear}`;
 
-      // TODO: Replace with actual API call to get report data
-      // Example: const response = await reportService.getReportData({
-      //   reportType: selectedReport,
-      //   period: selectedPeriod,
-      //   month: selectedMonth,
-      //   year: selectedYear
-      // });
-      // const rawData = response.data;
+      // Check if we have report data
+      if (!reportData || reportData.length === 0) {
+        showError(t('noDataToExport', 'No data available to export. Please wait for data to load.'));
+        return;
+      }
 
-      // Sample data for demonstration
-      const sampleData = [
-        {
-          id: '001',
-          khmerName: 'សុខា',
-          englishName: 'Sukha',
-          gender: 'M',
-          dateOfBirth: '2010-01-15',
-          class: { name: 'Grade 1' },
-          contact: '098765432',
-          attendances: Array(20).fill({ status: 'PRESENT' }).concat(Array(5).fill({ status: 'ABSENT' })),
-          grades: Array(5).fill({ score: 75 }),
-          status: 'Active'
-        },
-        {
-          id: '002',
-          khmerName: 'មនុស្ស',
-          englishName: 'Monosom',
-          gender: 'F',
-          dateOfBirth: '2010-05-20',
-          class: { name: 'Grade 1' },
-          contact: '098765433',
-          attendances: Array(18).fill({ status: 'PRESENT' }).concat(Array(7).fill({ status: 'ABSENT' })),
-          grades: Array(5).fill({ score: 85 }),
-          status: 'Active'
-        }
-      ];
+      // Get school name
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      const schoolName = schoolInfo?.name || userData?.school?.name || 'PLP School';
 
-      // Process and export the report
+      console.log(`📥 Exporting report: ${reportName} with ${reportData.length} records`);
+
+      // Process and export the report with real data
       const result = await processAndExportReport(
         selectedReport,
-        sampleData,
+        reportData,
         reportName,
         periodInfo,
-        'PLP School'
+        schoolName
       );
 
       if (result.success) {
@@ -157,7 +212,7 @@ export default function Reports() {
         showError(result.error || t('errorExportingReport', 'Error exporting report'));
       }
     } catch (error) {
-      console.error('Error exporting report:', error);
+      console.error('❌ Error exporting report:', error);
       showError(t('errorExportingReport', 'Error exporting report'));
     } finally {
       setLoading(false);
@@ -180,14 +235,16 @@ export default function Reports() {
 
     // Generic report placeholder for all 16 report types
     return (
-      <div className="bg-white rounded-lg shadow p-8">
+      <div className="mt-4 p-8">
         <div className="text-center">
           <BarChart3 className="h-16 w-16 text-indigo-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             {reportTypes.find(r => r.value === selectedReport)?.label || 'Report'}
           </h3>
           <p className="text-gray-600 mb-4">
-            {t('reportContentWillAppear', 'Report content will appear here')}
+            {reportData.length > 0
+              ? t('reportDataLoaded', `${reportData.length} records loaded. Click "Export Report" to download.`)
+              : t('reportContentWillAppear', 'Report content will appear here')}
           </p>
           <div className="inline-flex items-center space-x-2 text-sm text-gray-500">
             <span>Period: {timePeriods.find(p => p.value === selectedPeriod)?.label}</span>
@@ -211,7 +268,9 @@ export default function Reports() {
 
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>{t('note', 'Note')}:</strong> {t('reportImplementationNote', 'This is a placeholder. Replace with actual report implementation for each of the 16 report types.')}
+            <strong>{t('note', 'Note')}:</strong> {reportData.length > 0
+              ? t('reportReadyToExport', `${reportData.length} student records are ready to export. Click the "Export Report" button above to download as Excel.`)
+              : t('reportLoadingNote', 'Loading student data from the database. Please wait...')}
           </p>
         </div>
       </div>
@@ -219,9 +278,9 @@ export default function Reports() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Header */}
-      <div className="mb-8">
+      <div className="">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
@@ -243,7 +302,7 @@ export default function Reports() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="mt-4">
         <div className="overflow-x-auto">
           <div className="flex gap-4 min-w-max md:grid md:grid-cols-2 lg:grid-cols-4 md:min-w-full">
             {/* Report Type Dropdown */}
@@ -254,7 +313,13 @@ export default function Reports() {
               </label>
               <Dropdown
                 value={selectedReport}
-                onValueChange={setSelectedReport}
+                onValueChange={(value) => {
+                  setSelectedReport(value);
+                  // Reset class filter when changing report type
+                  if (value !== 'report4') {
+                    setSelectedClass('all');
+                  }
+                }}
                 options={reportTypes}
                 placeholder={t('selectReportType', 'Select report type...')}
                 minWidth="w-full"
@@ -294,7 +359,7 @@ export default function Reports() {
                   placeholder={t('selectMonth', 'Choose month...')}
                   minWidth="w-full"
                   maxHeight="max-h-40"
-                itemsToShow={5}
+                  itemsToShow={5}
                 />
               </div>
             )}
@@ -315,6 +380,26 @@ export default function Reports() {
                 itemsToShow={5}
               />
             </div>
+
+            {/* Class Filter - Only shown for report4 (Absence Report) */}
+            {['report3', 'report4'].includes(selectedReport) && (
+              <div className="flex-shrink-0 w-full md:w-auto">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Filter className="h-4 w-4 inline mr-1" />
+                  {t('selectClass') || 'Select Class'}
+                </label>
+                <Dropdown
+                  value={selectedClass}
+                  onValueChange={setSelectedClass}
+                  options={availableClasses}
+                  placeholder={t('chooseClass', 'Choose class...')}
+                  minWidth="w-full"
+                  maxHeight="max-h-56"
+                  itemsToShow={10}
+                />
+              </div>
+            )}
+
           </div>
         </div>
 
@@ -337,6 +422,11 @@ export default function Reports() {
               <Badge color="purple" variant="filled" size="sm">
                 {t('year', 'Year')}: {selectedYear}
               </Badge>
+              {selectedReport === 'report4' && selectedClass && selectedClass !== 'all' && (
+                <Badge color="indigo" variant="filled" size="sm">
+                  {t('class', 'Class')}: {availableClasses.find(c => c.value === selectedClass)?.label || selectedClass}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
