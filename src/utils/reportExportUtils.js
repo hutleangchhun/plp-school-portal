@@ -102,8 +102,8 @@ export const transformStudentNameList = (rawData) => {
       gender: gender,
       phone: phoneNumber,
       nationality: student.nationality || 'ខ្មែរ',
-      studentNumber: student.studentNumber || student.studentId || '',
-      academicYear: student.academicYear || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+      studentNumber: student.student?.studentNumber || student.studentNumber || '',
+      academicYear: student.academicYear || student.student?.academicYear || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
       fullAddress: studentAddress,
       // Father info
       fatherInfo: {
@@ -835,7 +835,7 @@ export const exportStudentListWithParents = async (
     // Main header row (row 9)
     wsData.push([
       '#',
-      'ព័ត៌មានសិស្ស', '', '', '', '', '', '', '', '', '',
+      'ព័ត៌មានសិស្ស', '', '', '', '', '', '', '', '',
       'ព័ត៌មានឪពុក', '', '', '', '', '',
       'ព័ត៌មានម្តាយ', '', '', '', '', '',
       'សេចក្ដីផ្សេងៗ', ''
@@ -845,7 +845,7 @@ export const exportStudentListWithParents = async (
     wsData.push([
       '#',
       'អត្តលេខ', 'គោត្តនាម', 'នាម',
-      'ថ្ងៃខែឆ្នាំកំណើត', 'ភេទ', 'លេខទូរស័ព្ទ', 'សញ្ជាតិ', 'លេខសិស្ស', 'ឆ្នាំសិក្សា',
+      'ថ្ងៃខែឆ្នាំកំណើត', 'ភេទ', 'លេខទូរស័ព្ទ', 'សញ្ជាតិ', 'ឆ្នាំសិក្សា',
       'អាសយដ្ឋានពេញ',
       // Father
       'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញឪពុក',
@@ -866,14 +866,13 @@ export const exportStudentListWithParents = async (
       
       wsData.push([
         index + 1,
-        student.studentId || '',
+        student.studentNumber || '',
         student.lastName || '',
         student.firstName || '',
         student.dateOfBirth || '',
         gender,
         student.phone || '',
         student.nationality || 'ខ្មែរ',
-        student.studentNumber || student.studentId || '',
         student.academicYear || '',
         studentAddress,
         // Father
@@ -897,12 +896,12 @@ export const exportStudentListWithParents = async (
     });
 
     // Create worksheet
-    const worksheet = XLSX.utils.aoa_to_sheet(wsData);
+    const worksheet = XLSXLib.utils.aoa_to_sheet(wsData);
 
     // Set column widths
     worksheet['!cols'] = [
       { wch: 5 },  // #
-      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 40 },
+      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 40 },
       { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 40 },
       { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 40 },
       { wch: 12 }, { wch: 20 }
@@ -910,20 +909,20 @@ export const exportStudentListWithParents = async (
 
     // Set cell merges
     worksheet['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 24 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 24 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 24 } },
-      { s: { r: 3, c: 0 }, e: { r: 3, c: 24 } },
-      { s: { r: 4, c: 0 }, e: { r: 4, c: 24 } },
-      { s: { r: 5, c: 0 }, e: { r: 5, c: 24 } },
-      { s: { r: 6, c: 0 }, e: { r: 6, c: 24 } },
-      { s: { r: 7, c: 0 }, e: { r: 7, c: 24 } },
-      { s: { r: 8, c: 0 }, e: { r: 8, c: 24 } },
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 22 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 22 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 22 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 22 } },
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 22 } },
+      { s: { r: 5, c: 0 }, e: { r: 5, c: 22 } },
+      { s: { r: 6, c: 0 }, e: { r: 6, c: 22 } },
+      { s: { r: 7, c: 0 }, e: { r: 7, c: 22 } },
+      { s: { r: 8, c: 0 }, e: { r: 8, c: 22 } },
       // Main header merges
-      { s: { r: 9, c: 1 }, e: { r: 9, c: 10 } },  // ព័ត៌មានសិស្ស
-      { s: { r: 9, c: 11 }, e: { r: 9, c: 16 } }, // ព័ត៌មានឪពុក
-      { s: { r: 9, c: 17 }, e: { r: 9, c: 22 } }, // ព័ត៌មានម្តាយ
-      { s: { r: 9, c: 23 }, e: { r: 9, c: 24 } }  // សេចក្ដីផ្សេងៗ
+      { s: { r: 9, c: 1 }, e: { r: 9, c: 9 } },   // ព័ត៌មានសិស្ស (9 columns)
+      { s: { r: 9, c: 10 }, e: { r: 9, c: 15 } }, // ព័ត៌មានឪពុក (6 columns)
+      { s: { r: 9, c: 16 }, e: { r: 9, c: 21 } }, // ព័ត៌មានម្តាយ (6 columns)
+      { s: { r: 9, c: 22 }, e: { r: 9, c: 23 } }  // សេចក្ដីផ្សេងៗ (2 columns)
     ];
 
     // Apply styling
