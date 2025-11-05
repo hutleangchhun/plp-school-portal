@@ -506,51 +506,369 @@ export default function Reports() {
       );
     }
 
-    // Generic report placeholder for all 16 report types
+    if (!reportData || reportData.length === 0) {
+      return (
+        <div className="bg-white rounded-lg shadow p-12">
+          <div className="text-center">
+            <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {t('noDataAvailable', 'No Data Available')}
+            </h3>
+            <p className="text-gray-600">
+              {t('noDataMessage', 'Please select filters and wait for data to load.')}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Calculate statistics for charts
+    const calculateStats = () => {
+      if (selectedReport === 'report1' || selectedReport === 'report2') {
+        // Gender distribution
+        const genderCount = reportData.reduce((acc, student) => {
+          const gender = student.gender || 'Unknown';
+          acc[gender] = (acc[gender] || 0) + 1;
+          return acc;
+        }, {});
+
+        // Ethnic group distribution
+        const ethnicCount = reportData.reduce((acc, student) => {
+          const ethnic = student.ethnicGroup || student.ethnic_group || 'Unknown';
+          acc[ethnic] = (acc[ethnic] || 0) + 1;
+          return acc;
+        }, {});
+
+        // Parent status
+        const parentStatus = reportData.reduce((acc, student) => {
+          const parentCount = student.parents?.length || 0;
+          if (parentCount === 0) acc.noParents = (acc.noParents || 0) + 1;
+          else if (parentCount === 1) acc.oneParent = (acc.oneParent || 0) + 1;
+          else acc.bothParents = (acc.bothParents || 0) + 1;
+          return acc;
+        }, {});
+
+        // Special needs
+        const specialNeedsCount = reportData.filter(s => 
+          s.accessibility || s.specialNeeds || s.special_needs
+        ).length;
+
+        return { genderCount, ethnicCount, parentStatus, specialNeedsCount };
+      }
+
+      return null;
+    };
+
+    const stats = calculateStats();
+
+    // Render data preview based on report type
+    const renderDataPreview = () => {
+      // For report1 and report2 (Student Name List) - Show statistics
+      if (selectedReport === 'report1' || selectedReport === 'report2') {
+        const maxValue = Math.max(...Object.values(stats?.genderCount || {}), 1);
+        const maxParentValue = Math.max(
+          stats?.parentStatus.bothParents || 0,
+          stats?.parentStatus.oneParent || 0,
+          stats?.parentStatus.noParents || 0,
+          1
+        );
+        
+        return (
+          <div className="space-y-6">
+            {/* Total Students Summary */}
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-indigo-100">Total Students</p>
+                  <p className="text-4xl font-bold mt-2">{reportData.length}</p>
+                </div>
+                <BarChart3 className="h-16 w-16 text-indigo-200" />
+              </div>
+            </div>
+
+            {/* Charts Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Gender Distribution - Vertical Bar Chart */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="text-base font-semibold text-gray-900 mb-6">Gender Distribution</h4>
+                <div className="flex items-end justify-around h-64 gap-4">
+                  {Object.entries(stats?.genderCount || {}).map(([gender, count]) => {
+                    const percentage = ((count / reportData.length) * 100).toFixed(1);
+                    const barHeight = (count / maxValue) * 100;
+                    return (
+                      <div key={gender} className="flex flex-col items-center flex-1">
+                        <div className="text-center mb-2">
+                          <p className="text-2xl font-bold text-gray-900">{count}</p>
+                          <p className="text-xs text-gray-500">{percentage}%</p>
+                        </div>
+                        <div 
+                          className={`w-full rounded-t-lg transition-all duration-500 ${
+                            gender === 'ប្រុស' ? 'bg-gradient-to-t from-green-500 to-green-400' : 'bg-gradient-to-t from-pink-500 to-pink-400'
+                          }`}
+                          style={{ height: `${barHeight}%` }}
+                        ></div>
+                        <p className="text-sm font-medium text-gray-700 mt-3">{gender}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Gender Distribution - Donut Chart */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="text-base font-semibold text-gray-900 mb-6">Gender Ratio</h4>
+                <div className="flex items-center justify-center">
+                  <div className="relative w-48 h-48">
+                    {/* Donut SVG */}
+                    <svg className="w-48 h-48 transform -rotate-90" viewBox="0 0 100 100">
+                      {(() => {
+                        const genderEntries = Object.entries(stats?.genderCount || {});
+                        let currentAngle = 0;
+                        const colors = { 'ប្រុស': '#10b981', 'ស្រី': '#ec4899' };
+                        
+                        return genderEntries.map(([gender, count]) => {
+                          const percentage = count / reportData.length;
+                          const angle = percentage * 360;
+                          const radius = 40;
+                          const circumference = 2 * Math.PI * radius;
+                          const strokeDasharray = `${(angle / 360) * circumference} ${circumference}`;
+                          const rotation = currentAngle;
+                          currentAngle += angle;
+                          
+                          return (
+                            <circle
+                              key={gender}
+                              cx="50"
+                              cy="50"
+                              r={radius}
+                              fill="none"
+                              stroke={colors[gender] || '#6366f1'}
+                              strokeWidth="20"
+                              strokeDasharray={strokeDasharray}
+                              style={{ 
+                                transform: `rotate(${rotation}deg)`,
+                                transformOrigin: '50% 50%'
+                              }}
+                            />
+                          );
+                        });
+                      })()}
+                    </svg>
+                    {/* Center text */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-900">{reportData.length}</p>
+                        <p className="text-xs text-gray-500">Students</p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Legend */}
+                  <div className="ml-8 space-y-3">
+                    {Object.entries(stats?.genderCount || {}).map(([gender, count]) => {
+                      const percentage = ((count / reportData.length) * 100).toFixed(1);
+                      return (
+                        <div key={gender} className="flex items-center gap-3">
+                          <div className={`w-4 h-4 rounded ${gender === 'ប្រុស' ? 'bg-green-500' : 'bg-pink-500'}`}></div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{gender}</p>
+                            <p className="text-xs text-gray-500">{count} ({percentage}%)</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Parent Status - Horizontal Bar Chart */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="text-base font-semibold text-gray-900 mb-6">Parent Status</h4>
+                <div className="space-y-6">
+                  {stats?.parentStatus.bothParents > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Both Parents</span>
+                        <span className="text-sm font-bold text-gray-900">
+                          {stats.parentStatus.bothParents} ({((stats.parentStatus.bothParents / reportData.length) * 100).toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                        <div 
+                          className="absolute h-full bg-gradient-to-r from-green-500 to-green-400 rounded-lg transition-all duration-500"
+                          style={{ width: `${(stats.parentStatus.bothParents / maxParentValue) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                  {stats?.parentStatus.oneParent > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">One Parent</span>
+                        <span className="text-sm font-bold text-gray-900">
+                          {stats.parentStatus.oneParent} ({((stats.parentStatus.oneParent / reportData.length) * 100).toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                        <div 
+                          className="absolute h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-lg transition-all duration-500"
+                          style={{ width: `${(stats.parentStatus.oneParent / maxParentValue) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                  {stats?.parentStatus.noParents > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">No Parents</span>
+                        <span className="text-sm font-bold text-gray-900">
+                          {stats.parentStatus.noParents} ({((stats.parentStatus.noParents / reportData.length) * 100).toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                        <div 
+                          className="absolute h-full bg-gradient-to-r from-red-500 to-red-400 rounded-lg transition-all duration-500"
+                          style={{ width: `${(stats.parentStatus.noParents / maxParentValue) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Special Needs & Ethnic Groups - Combined */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="text-base font-semibold text-gray-900 mb-6">Special Needs & Ethnic Groups</h4>
+                <div className="space-y-6">
+                  {/* Special Needs */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Special Needs Students</span>
+                      <span className="text-sm font-bold text-purple-900">
+                        {stats?.specialNeedsCount || 0} ({((stats?.specialNeedsCount || 0) / reportData.length * 100).toFixed(1)}%)
+                      </span>
+                    </div>
+                    <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                      <div 
+                        className="absolute h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-lg transition-all duration-500"
+                        style={{ width: `${((stats?.specialNeedsCount || 0) / reportData.length) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  {/* Ethnic Groups */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <p className="text-sm font-medium text-gray-700 mb-3">Ethnic Groups</p>
+                    <div className="space-y-2">
+                      {Object.entries(stats?.ethnicCount || {}).slice(0, 5).map(([ethnic, count], index) => {
+                        const percentage = ((count / reportData.length) * 100).toFixed(1);
+                        const colors = ['bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500', 'bg-orange-500'];
+                        return (
+                          <div key={ethnic} className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${colors[index % colors.length]}`}></div>
+                            <span className="text-xs text-gray-600 flex-1">{ethnic || 'Unknown'}</span>
+                            <span className="text-xs font-semibold text-gray-900">{count} ({percentage}%)</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // For other reports - show summary stats
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border border-indigo-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-indigo-600">Total Records</p>
+                  <p className="text-3xl font-bold text-indigo-900 mt-2">{reportData.length}</p>
+                </div>
+                <BarChart3 className="h-10 w-10 text-indigo-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 className="text-sm font-semibold text-gray-900 mb-4">Data Preview</h4>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                    {reportData[0] && Object.keys(reportData[0]).slice(0, 5).map(key => (
+                      <th key={key} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        {key}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {reportData.slice(0, 10).map((record, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 text-sm text-gray-900">{index + 1}</td>
+                      {Object.values(record).slice(0, 5).map((value, i) => (
+                        <td key={i} className="px-4 py-2 text-sm text-gray-600 truncate max-w-xs">
+                          {String(value || 'N/A')}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {reportData.length > 10 && (
+              <p className="text-center text-sm text-gray-500 mt-4">
+                Showing 10 of {reportData.length} records. Export to see all data.
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    };
+
     return (
-      <div className="mt-4 p-8">
-        <div className="text-center">
-          <BarChart3 className="h-16 w-16 text-indigo-600 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {reportTypes.find(r => r.value === selectedReport)?.label || 'Report'}
-          </h3>
-          <p className="text-gray-600 mb-4">
-            {reportData.length > 0
-              ? t('reportDataLoaded', `${reportData.length} records loaded. Click "Export Report" to download.`)
-              : t('reportContentWillAppear', 'Report content will appear here')}
-          </p>
-          {!['report1', 'report2'].includes(selectedReport) && (
-            <div className="inline-flex items-center space-x-2 text-sm text-gray-500">
-              <span>Period: {timePeriods.find(p => p.value === selectedPeriod)?.label}</span>
-              {selectedPeriod === 'month' && selectedMonth && (
-                <span>• Month: {monthOptions.find(m => m.value === selectedMonth)?.label}</span>
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {reportTypes.find(r => r.value === selectedReport)?.label || 'Report'}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {reportData.length} {t('recordsLoaded', 'records loaded')}
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              {!['report1', 'report2'].includes(selectedReport) && (
+                <div className="text-xs text-gray-500">
+                  <span>{timePeriods.find(p => p.value === selectedPeriod)?.label}</span>
+                  {selectedPeriod === 'month' && selectedMonth && (
+                    <span> • {monthOptions.find(m => m.value === selectedMonth)?.label}</span>
+                  )}
+                  <span> • {selectedYear}</span>
+                </div>
               )}
-              <span>• Year: {selectedYear}</span>
+              {selectedReport === 'report2' && selectedClass && selectedClass !== 'all' && (
+                <div className="text-xs text-gray-500">
+                  {availableClasses.find(c => c.value === selectedClass)?.label || selectedClass}
+                </div>
+              )}
             </div>
-          )}
-          {selectedReport === 'report2' && selectedClass && selectedClass !== 'all' && (
-            <div className="inline-flex items-center space-x-2 text-sm text-gray-500">
-              <span>Class: {availableClasses.find(c => c.value === selectedClass)?.label || selectedClass}</span>
-            </div>
-          )}
+          </div>
+          <div className="h-px bg-gray-200"></div>
         </div>
 
-        {/* Placeholder content grid */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="border border-gray-200 rounded-lg p-4">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
-              <div className="h-8 bg-gray-100 rounded w-1/2 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-full"></div>
-            </div>
-          ))}
-        </div>
+        {renderDataPreview()}
 
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>{t('note', 'Note')}:</strong> {reportData.length > 0
-              ? t('reportReadyToExport', `${reportData.length} student records are ready to export. Click the "Export Report" button above to download as Excel.`)
-              : t('reportLoadingNote', 'Loading student data from the database. Please wait...')}
+            <strong>{t('note', 'Note')}:</strong> {t('reportReadyToExport', `${reportData.length} records are ready to export. Click the "Export Report" button above to download as Excel.`)}
           </p>
         </div>
       </div>
@@ -560,10 +878,10 @@ export default function Reports() {
   return (
     <div className="p-3 sm:p-6">
       {/* Header */}
-      <div className="">
+      <div className=" p-4 sm:p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
               {t('reports') || 'Reports & Analytics'}
             </h1>
             <p className="mt-1 text-sm text-gray-500">
@@ -582,7 +900,7 @@ export default function Reports() {
       </div>
 
       {/* Filters */}
-      <div className="mt-4">
+      <div className="px-4 sm:px-4">
         <div className="overflow-x-auto">
           <div className="flex gap-4 min-w-max md:grid md:grid-cols-2 lg:grid-cols-4 md:min-w-full">
             {/* Report Type Dropdown */}
@@ -688,7 +1006,7 @@ export default function Reports() {
         </div>
 
         {/* Selected Filters Display */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="mt-4 py-4 border-t border-gray-200">
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm font-medium text-gray-700">{t('selectedFilters', 'Selected Filters')}:</span>
             <div className="flex flex-wrap gap-2">
