@@ -10,6 +10,21 @@ import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { parentService } from '../../utils/api/services/parentService';
+import { 
+  BarChart, 
+  Bar, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer,
+  LabelList
+} from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 export default function Reports() {
   const { t } = useLanguage();
@@ -249,7 +264,16 @@ export default function Reports() {
             fetchParams.classId = selectedClass;
           }
           
-          console.log(`📄 Fetching page ${currentPage} with limit 100...`);
+          // Add backend filters for report6 and report9 for performance optimization
+          if (selectedReport === 'report6') {
+            fetchParams.hasAccessibility = true; // Only fetch students with disabilities
+          }
+          
+          if (selectedReport === 'report9') {
+            fetchParams.isEthnicMinority = true; // Only fetch ethnic minority students
+          }
+          
+          console.log(`📄 Fetching page ${currentPage} with limit 100...`, fetchParams);
           
           const studentsResponse = await studentService.getStudentsBySchoolClasses(
             schoolId,
@@ -406,35 +430,15 @@ export default function Reports() {
           console.log(`✅ Processed ${studentsWithFullData.length} students with full data and parents`);
           console.log('📊 Sample student with full data:', studentsWithFullData[0]);
           
-          // Apply filtering for specific reports
-          let filteredStudents = studentsWithFullData;
-          
+          // Backend filtering is now applied for report6 and report9
+          // No need for client-side filtering - data is already filtered by the API
           if (selectedReport === 'report6') {
-            // Filter students with disabilities (accessibility field is not null/empty)
-            filteredStudents = studentsWithFullData.filter(student => {
-              const hasAccessibility = student.accessibility && 
-                                      student.accessibility !== '' && 
-                                      student.accessibility !== 'null' &&
-                                      student.accessibility !== 'none';
-              return hasAccessibility;
-            });
-            console.log(`🦽 Filtered ${filteredStudents.length} students with disabilities from ${studentsWithFullData.length} total students`);
+            console.log(`🦽 Backend filtered ${studentsWithFullData.length} students with disabilities`);
           } else if (selectedReport === 'report9') {
-            // Filter ethnic minority students (ethnic_group is not empty and not the majority group)
-            // Assuming majority group is 'ខ្មែរ' (Khmer) - adjust if needed
-            filteredStudents = studentsWithFullData.filter(student => {
-              const ethnicGroup = student.ethnic_group || student.ethnicGroup || '';
-              const isMinority = ethnicGroup && 
-                                ethnicGroup !== '' && 
-                                ethnicGroup !== 'null' &&
-                                ethnicGroup !== 'ខ្មែរ' && // Not Khmer majority
-                                ethnicGroup !== 'Khmer';
-              return isMinority;
-            });
-            console.log(`🌍 Filtered ${filteredStudents.length} ethnic minority students from ${studentsWithFullData.length} total students`);
+            console.log(`🌍 Backend filtered ${studentsWithFullData.length} ethnic minority students`);
           }
           
-          setReportData(filteredStudents);
+          setReportData(studentsWithFullData);
         } else {
           console.warn('⚠️ No students found');
           setReportData([]);
@@ -524,7 +528,7 @@ export default function Reports() {
   const renderReportContent = () => {
     if (loading) {
       return (
-        <div className="bg-white rounded-lg shadow p-12 flex justify-center items-center">
+        <div className=" flex justify-center items-center">
           <DynamicLoader
             type="spinner"
             size="xl"
@@ -562,8 +566,13 @@ export default function Reports() {
         }, {});
 
         // Ethnic group distribution
+        // Unknown or empty ethnic group means Khmer (majority group)
         const ethnicCount = reportData.reduce((acc, student) => {
-          const ethnic = student.ethnicGroup || student.ethnic_group || 'Unknown';
+          let ethnic = student.ethnicGroup || student.ethnic_group || '';
+          // Treat empty, null, or 'Unknown' as Khmer
+          if (!ethnic || ethnic === 'Unknown' || ethnic === 'unknown' || ethnic === 'null') {
+            ethnic = 'ខ្មែរ';
+          }
           acc[ethnic] = (acc[ethnic] || 0) + 1;
           return acc;
         }, {});
@@ -602,193 +611,185 @@ export default function Reports() {
           1
         );
         
-        // Determine summary card color based on report type
-        const getSummaryCardColor = () => {
-          if (selectedReport === 'report6') return 'from-purple-500 to-purple-600';
-          if (selectedReport === 'report9') return 'from-orange-500 to-orange-600';
-          return 'from-indigo-500 to-purple-600';
-        };
 
         const getSummaryTitle = () => {
           if (selectedReport === 'report6') return t('studentsWithDisabilities', 'Students with Disabilities');
           if (selectedReport === 'report9') return t('ethnicMinorityStudents', 'Ethnic Minority Students');
-          return 'Total Students';
+          return t('totalStudents', 'Total Students');
         };
         
+        // Prepare chart data
+        const parentStatusData = [
+          { name: t('bothParents', 'មានឪពុកម្តាយទាំងពីរ'), value: stats?.parentStatus.bothParents || 0, color: '#10b981' },
+          { name: t('oneParent', 'មានឪពុកម្តាយម្នាក់'), value: stats?.parentStatus.oneParent || 0, color: '#f59e0b' },
+          { name: t('noParents', 'គ្មានឪពុកម្តាយ'), value: stats?.parentStatus.noParents || 0, color: '#ef4444' }
+        ].filter(item => item.value > 0);
+
+        const ethnicGroupData = Object.entries(stats?.ethnicCount || {}).map(([name, value], index) => ({
+          name: name, // Name is already set to 'ខ្មែរ' for unknown values in calculateStats
+          value,
+          color: ['#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f97316'][index % 5]
+        }));
+
+        // Prepare accessibility data for report6
+        // Only include students with actual accessibility data (disabilities)
+        const accessibilityData = {};
+        reportData.forEach(student => {
+          const accessibility = student.accessibility;
+          
+          // Skip students without accessibility data
+          if (!accessibility || 
+              accessibility === '' || 
+              accessibility === 'null' || 
+              accessibility === 'none' ||
+              accessibility === 'None') {
+            return;
+          }
+          
+          const accessibilityLabel = Array.isArray(accessibility) 
+            ? accessibility.join(', ') 
+            : accessibility;
+            
+          accessibilityData[accessibilityLabel] = (accessibilityData[accessibilityLabel] || 0) + 1;
+        });
+
+        const accessibilityChartData = Object.entries(accessibilityData).map(([name, value], index) => ({
+          name,
+          value,
+          color: ['#eab308', '#f59e0b', '#f97316', '#ef4444', '#ec4899'][index % 5]
+        }));
+
         return (
           <div className="space-y-6">
             {/* Total Students Summary */}
-            <div className={`bg-gradient-to-r ${getSummaryCardColor()} rounded-lg p-6 text-white`}>
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-white opacity-90">{getSummaryTitle()}</p>
-                  <p className="text-4xl font-bold mt-2">{reportData.length}</p>
+                  <p className="text-sm font-medium text-gray-600">{getSummaryTitle()}</p>
+                  <p className="text-4xl font-bold mt-2 text-gray-900">{reportData.length} {t('students', 'សិស្ស')}</p>
                 </div>
-                <BarChart3 className="h-16 w-16 text-white opacity-80" />
+                <BarChart3 className="h-16 w-16 text-gray-400" />
               </div>
             </div>
 
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Conditional Charts based on Report Type */}
               
-              {/* Report 1 & 2: Show Parent Status */}
-              {['report1', 'report2'].includes(selectedReport) && (
+              {/* Report 1 & 2: Parent Status Chart */}
+              {['report1', 'report2'].includes(selectedReport) && parentStatusData.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="text-base font-semibold text-gray-900 mb-6">{t('parentStatus', 'Parent Status')}</h4>
-                  <div className="space-y-6">
-                    {stats?.parentStatus.bothParents > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-700">{t('bothParents', 'Both Parents')}</span>
-                          <span className="text-sm font-bold text-gray-900">
-                            {stats.parentStatus.bothParents} ({((stats.parentStatus.bothParents / reportData.length) * 100).toFixed(1)}%)
-                          </span>
-                        </div>
-                        <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                          <div 
-                            className="absolute h-full bg-gradient-to-r from-green-500 to-green-400 rounded-lg transition-all duration-500"
-                            style={{ width: `${(stats.parentStatus.bothParents / maxParentValue) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                    {stats?.parentStatus.oneParent > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-700">{t('oneParent', 'One Parent')}</span>
-                          <span className="text-sm font-bold text-gray-900">
-                            {stats.parentStatus.oneParent} ({((stats.parentStatus.oneParent / reportData.length) * 100).toFixed(1)}%)
-                          </span>
-                        </div>
-                        <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                          <div 
-                            className="absolute h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-lg transition-all duration-500"
-                            style={{ width: `${(stats.parentStatus.oneParent / maxParentValue) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                    {stats?.parentStatus.noParents > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-700">{t('noParents', 'No Parents')}</span>
-                          <span className="text-sm font-bold text-gray-900">
-                            {stats.parentStatus.noParents} ({((stats.parentStatus.noParents / reportData.length) * 100).toFixed(1)}%)
-                          </span>
-                        </div>
-                        <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                          <div 
-                            className="absolute h-full bg-gradient-to-r from-red-500 to-red-400 rounded-lg transition-all duration-500"
-                            style={{ width: `${(stats.parentStatus.noParents / maxParentValue) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <h4 className="text-base font-semibold text-gray-900 mb-4">{t('parentStatus', 'ស្ថានភាពឪពុកម្តាយ')}</h4>
+                  <ChartContainer
+                    config={{
+                      value: {
+                        label: t('students', 'សិស្ស'),
+                      },
+                    }}
+                    className="h-[300px] w-full"
+                  >
+                    <BarChart data={parentStatusData} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+                      <XAxis type="number" tickLine={false} axisLine={false} />
+                      <YAxis dataKey="name" type="category" width={90} tickLine={false} axisLine={false} className="text-xs" />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                        {parentStatusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
                 </div>
               )}
 
-              {/* Report 6: Show Disability Types Distribution */}
-              {selectedReport === 'report6' && (
+              {/* Report 6: Accessibility Distribution Pie Chart */}
+              {selectedReport === 'report6' && accessibilityChartData.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="text-base font-semibold text-gray-900 mb-6">{t('disabilityTypes', 'Disability Types')}</h4>
-                  <div className="space-y-4">
-                    {reportData.map((student, idx) => {
-                      const disabilityType = Array.isArray(student.accessibility) 
-                        ? student.accessibility.join(', ') 
-                        : student.accessibility || 'Not specified';
-                      return idx < 10 ? (
-                        <div key={idx} className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">
-                              {student.lastName} {student.firstName}
-                            </p>
-                            <p className="text-xs text-gray-600">{student.class?.name || 'N/A'}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs font-semibold text-purple-700">{disabilityType}</p>
-                          </div>
-                        </div>
-                      ) : null;
-                    })}
-                    {reportData.length > 10 && (
-                      <p className="text-xs text-center text-gray-500 pt-2">
-                        +{reportData.length - 10} more students
-                      </p>
-                    )}
-                  </div>
+                  <h4 className="text-base font-semibold text-gray-900 mb-4">{t('accessibilityDistribution', 'ការចែកចាយប្រភេទពិការភាព')}</h4>
+                  <ChartContainer
+                    config={{
+                      value: {
+                        label: t('students', 'សិស្ស'),
+                      },
+                    }}
+                    className="h-[300px] w-full"
+                  >
+                    <PieChart>
+                      <Pie
+                        data={accessibilityChartData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {accessibilityChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                    </PieChart>
+                  </ChartContainer>
                 </div>
               )}
 
-              {/* Report 9: Show Ethnic Groups Distribution */}
-              {selectedReport === 'report9' && (
+              {/* Report 9: Ethnic Groups Distribution Bar Chart */}
+              {selectedReport === 'report9' && ethnicGroupData.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="text-base font-semibold text-gray-900 mb-6">{t('ethnicGroupsDistribution', 'Ethnic Groups Distribution')}</h4>
-                  <div className="space-y-4">
-                    {Object.entries(stats?.ethnicCount || {}).map(([ethnic, count], index) => {
-                      const percentage = ((count / reportData.length) * 100).toFixed(1);
-                      const colors = ['from-blue-500 to-blue-400', 'from-indigo-500 to-indigo-400', 'from-purple-500 to-purple-400', 'from-pink-500 to-pink-400', 'from-orange-500 to-orange-400'];
-                      return (
-                        <div key={ethnic}>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-700">{ethnic || 'Unknown'}</span>
-                            <span className="text-sm font-bold text-gray-900">
-                              {count} ({percentage}%)
-                            </span>
-                          </div>
-                          <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                            <div 
-                              className={`absolute h-full bg-gradient-to-r ${colors[index % colors.length]} rounded-lg transition-all duration-500`}
-                              style={{ width: `${percentage}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <h4 className="text-base font-semibold text-gray-900 mb-4">{t('ethnicGroupsDistribution', 'ការចែកចាយក្រុមជនជាតិ')}</h4>
+                  <ChartContainer
+                    config={{
+                      value: {
+                        label: t('students', 'សិស្ស'),
+                      },
+                    }}
+                    className="h-[300px] w-full"
+                  >
+                    <BarChart data={ethnicGroupData} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                      <XAxis type="number" tickLine={false} axisLine={false} />
+                      <YAxis dataKey="name" type="category" width={70} tickLine={false} axisLine={false} className="text-xs" />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                        {ethnicGroupData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
                 </div>
               )}
 
-              {/* Report 1 & 2: Show Special Needs & Ethnic Groups Combined */}
-              {['report1', 'report2'].includes(selectedReport) && (
+              {/* Report 1 & 2: Ethnic Groups Pie Chart */}
+              {['report1', 'report2'].includes(selectedReport) && ethnicGroupData.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="text-base font-semibold text-gray-900 mb-6">{t('specialNeedsStudents', 'Special Needs')} & {t('ethnicGroups', 'Ethnic Groups')}</h4>
-                  <div className="space-y-6">
-                    {/* Special Needs */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">{t('specialNeedsStudents', 'Special Needs Students')}</span>
-                        <span className="text-sm font-bold text-purple-900">
-                          {stats?.specialNeedsCount || 0} ({((stats?.specialNeedsCount || 0) / reportData.length * 100).toFixed(1)}%)
-                        </span>
-                      </div>
-                      <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                        <div 
-                          className="absolute h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-lg transition-all duration-500"
-                          style={{ width: `${((stats?.specialNeedsCount || 0) / reportData.length) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    
-                    {/* Ethnic Groups */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <p className="text-sm font-medium text-gray-700 mb-3">{t('ethnicGroups', 'Ethnic Groups')}</p>
-                      <div className="space-y-2">
-                        {Object.entries(stats?.ethnicCount || {}).slice(0, 5).map(([ethnic, count], index) => {
-                          const percentage = ((count / reportData.length) * 100).toFixed(1);
-                          const colors = ['bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500', 'bg-orange-500'];
-                          return (
-                            <div key={ethnic} className="flex items-center gap-2">
-                              <div className={`w-3 h-3 rounded-full ${colors[index % colors.length]}`}></div>
-                              <span className="text-xs text-gray-600 flex-1">{ethnic || 'Unknown'}</span>
-                              <span className="text-xs font-semibold text-gray-900">{count} ({percentage}%)</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
+                  <h4 className="text-base font-semibold text-gray-900 mb-4">{t('ethnicGroups', 'ក្រុមជនជាតិ')}</h4>
+                  <ChartContainer
+                    config={{
+                      value: {
+                        label: t('students', 'សិស្ស'),
+                      },
+                    }}
+                    className="h-[300px] w-full"
+                  >
+                    <PieChart>
+                      <Pie
+                        data={ethnicGroupData.slice(0, 6)}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {ethnicGroupData.slice(0, 6).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                    </PieChart>
+                  </ChartContainer>
                 </div>
               )}
             </div>
@@ -803,7 +804,7 @@ export default function Reports() {
             <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border border-indigo-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-indigo-600">Total Records</p>
+                  <p className="text-sm font-medium text-indigo-600">{t('totalRecords', 'Total Records')}</p>
                   <p className="text-3xl font-bold text-indigo-900 mt-2">{reportData.length}</p>
                 </div>
                 <BarChart3 className="h-10 w-10 text-indigo-400" />
@@ -850,7 +851,7 @@ export default function Reports() {
     };
 
     return (
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+      <div className=" p-4 sm:p-6">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -1019,38 +1020,6 @@ export default function Reports() {
               </div>
             )}
 
-          </div>
-        </div>
-
-        {/* Selected Filters Display */}
-        <div className="mt-4 py-4 border-t border-gray-200">
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm font-medium text-gray-700">{t('selectedFilters', 'Selected Filters')}:</span>
-            <div className="flex flex-wrap gap-2">
-              <Badge color="blue" variant="filled" size="sm">
-                {reportTypes.find(r => r.value === selectedReport)?.label || selectedReport}
-              </Badge>
-              {!['report1', 'report2', 'report6', 'report9'].includes(selectedReport) && (
-                <>
-                  <Badge color="green" variant="filled" size="sm">
-                    {timePeriods.find(p => p.value === selectedPeriod)?.label || selectedPeriod}
-                  </Badge>
-                  {selectedPeriod === 'month' && selectedMonth && (
-                    <Badge color="orange" variant="filled" size="sm">
-                      {monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth}
-                    </Badge>
-                  )}
-                  <Badge color="purple" variant="filled" size="sm">
-                    {t('year', 'Year')}: {selectedYear}
-                  </Badge>
-                </>
-              )}
-              {['report2', 'report3', 'report4'].includes(selectedReport) && selectedClass && selectedClass !== 'all' && (
-                <Badge color="indigo" variant="filled" size="sm">
-                  {t('class', 'Class')}: {availableClasses.find(c => c.value === selectedClass)?.label || selectedClass}
-                </Badge>
-              )}
-            </div>
           </div>
         </div>
       </div>

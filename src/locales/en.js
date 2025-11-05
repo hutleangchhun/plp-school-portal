@@ -740,6 +740,13 @@ export const en = {
   // Export utilities
   notAvailable: 'N/A',
 
+ //report 
+   totalRecords: 'Total Records',
+   totalStudents: 'Total Students',
+  unknownEthnicGroup: 'Khmer', // Unknown ethnic group defaults to Khmer (majority)
+  count: 'Count',
+  students: 'Students',
+
 
   //school setting
   projectType: 'Project Type',

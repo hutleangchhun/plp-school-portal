@@ -666,6 +666,8 @@ export const studentService = {
    * @param {string} [params.gender] - Filter by gender (MALE/FEMALE)
    * @param {string} [params.dateOfBirth] - Filter by date of birth (YYYY-MM-DD)
    * @param {string|number} [params.gradeLevel] - Filter by grade level
+   * @param {boolean} [params.hasAccessibility] - Filter students with disabilities (accessibility field not empty)
+   * @param {boolean} [params.isEthnicMinority] - Filter ethnic minority students (ethnic_group not Khmer)
    * @returns {Promise<Object>} Response with student data from all classes in the school
    */
   async getStudentsBySchool(schoolId, params = {}) {
@@ -682,7 +684,9 @@ export const studentService = {
         academicYear,
         gender,
         dateOfBirth,
-        gradeLevel
+        gradeLevel,
+        hasAccessibility,
+        isEthnicMinority
       } = params;
 
       // Use the provided classId or default to no filter (get all students from school)
@@ -707,6 +711,10 @@ export const studentService = {
       if (gender) apiParams.gender = gender;
       if (dateOfBirth) apiParams.dateOfBirth = dateOfBirth;
       if (gradeLevel) apiParams.gradeLevel = gradeLevel;
+      
+      // Add report-specific filters for performance optimization
+      if (hasAccessibility === true) apiParams.hasAccessibility = true;
+      if (isEthnicMinority === true) apiParams.isEthnicMinority = true;
 
       const response = await classService.getMasterClasses(schoolId, apiParams);
       

@@ -1035,6 +1035,8 @@ export const km = {
   selectReportType: 'ជ្រើសរើសប្រភេទរបាយការណ៍',
   loadingReportData: 'កំពុងទាញយកទិន្នន័យរបាយការណ៍',
   selectedFilters: 'កម្រងបានជ្រើសរើស',
+  totalRecords: 'ទិន្នន័យដែលមានទាំងអស់',
+  totalStudents: 'ចំនួនសិស្សទាំងអស់',
   
   // Report Types
   reportStudentNameInfo: 'បញ្ជីហៅឈ្មោះសិស្ស',
@@ -1096,6 +1098,29 @@ export const km = {
   ethnicGroups: 'ក្រុមជនជាតិ',
   disabilityTypes: 'ប្រភេទពិការភាព',
   ethnicGroupsDistribution: 'ការចែកចាយក្រុមជនជាតិ',
+  accessibilityDistribution: 'ការចែកចាយប្រភេទពិការភាព',
+  
+  // Gender
+  male: 'ប្រុស',
+  female: 'ស្រី',
+  genderDistribution: 'ការចែកចាយតាមភេទ',
+  
+  // Accessibility Types
+  visualImpairment: 'ពិការភ្នែក',
+  hearingImpairment: 'ពិការត្រចៀក',
+  physicalDisability: 'ពិការរាងកាយ',
+  intellectualDisability: 'ពិការបញ្ញា',
+  learningDisability: 'ពិការការរៀន',
+  multipleDisabilities: 'ពិការច្រើនប្រភេទ',
+  otherDisability: 'ពិការផ្សេងៗ',
+  notSpecified: 'មិនបានបញ្ជាក់',
+  unknownEthnicGroup: 'ខ្មែរ', // Unknown ethnic group defaults to Khmer (majority)
+  
+  // Chart Labels
+  count: 'ចំនួន',
+  percentage: 'ភាគរយ',
+  students: 'សិស្ស',
+  total: 'សរុប',
   
   // Messages
   noSchoolIdFound: 'រកមិនឃើញលេខសម្គាល់សាលារៀន។ សូមប្រាកដថាអ្នកបានចូលប្រើប្រាស់។',
