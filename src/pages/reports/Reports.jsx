@@ -460,6 +460,13 @@ export default function Reports() {
       const userData = JSON.parse(localStorage.getItem('user') || '{}');
       const schoolName = schoolInfo?.name || userData?.school?.name || 'PLP School';
 
+      // Get class name for report2
+      let className = '';
+      if (selectedReport === 'report2' && selectedClass && selectedClass !== 'all') {
+        const classOption = availableClasses.find(c => c.value === selectedClass);
+        className = classOption?.label || '';
+      }
+
       console.log(`📥 Exporting report: ${reportName} with ${reportData.length} records`);
 
       // Process and export the report with real data
@@ -468,7 +475,8 @@ export default function Reports() {
         reportData,
         reportName,
         periodInfo,
-        schoolName
+        schoolName,
+        className
       );
 
       if (result.success) {

@@ -642,7 +642,8 @@ export const exportReportToExcel = async (
   transformedData,
   reportName,
   periodInfo,
-  schoolName
+  schoolName,
+  className = ''
 ) => {
   try {
     // Use custom absence report export for report4
@@ -652,7 +653,7 @@ export const exportReportToExcel = async (
 
     // Use student export format with parent info for report1 and report2
     if (reportType === 'report1' || reportType === 'report2') {
-      return await exportStudentListWithParents(transformedData, reportName, periodInfo, schoolName);
+      return await exportStudentListWithParents(transformedData, reportName, periodInfo, schoolName, className);
     }
 
     // Dynamically import xlsx-js-style
@@ -817,7 +818,8 @@ export const exportStudentListWithParents = async (
   transformedData,
   reportName,
   periodInfo,
-  schoolName
+  schoolName,
+  className = ''
 ) => {
   try {
     const dateStr = new Date().toISOString().split('T')[0];
@@ -983,9 +985,13 @@ export const exportStudentListWithParents = async (
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'បញ្ជីសិស្ស');
 
-    // Write file
+    // Write file with class name if provided
     const sanitizedReportName = reportName.replace(/[^a-zA-Z0-9\u1780-\u17FF]/g, '_');
-    XLSX.writeFile(workbook, `${sanitizedReportName}_${dateStr}.xlsx`);
+    const sanitizedClassName = className ? className.replace(/[^a-zA-Z0-9\u1780-\u17FF]/g, '_') : '';
+    const filename = sanitizedClassName 
+      ? `${sanitizedReportName}_${sanitizedClassName}_${dateStr}.xlsx`
+      : `${sanitizedReportName}_${dateStr}.xlsx`;
+    XLSX.writeFile(workbook, filename);
 
     return true;
   } catch (error) {
@@ -1170,7 +1176,8 @@ export const processAndExportReport = async (
   rawData,
   reportName,
   periodInfo,
-  schoolName = 'School'
+  schoolName = 'School',
+  className = ''
 ) => {
   try {
     console.log('📋 Processing report:', {
@@ -1178,7 +1185,8 @@ export const processAndExportReport = async (
       rawDataLength: rawData?.length,
       reportName,
       periodInfo,
-      schoolName
+      schoolName,
+      className
     });
 
     // Get transformer function
@@ -1209,7 +1217,8 @@ export const processAndExportReport = async (
       transformedData,
       reportName,
       periodInfo,
-      schoolName
+      schoolName,
+      className
     );
 
     return {
