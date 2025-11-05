@@ -14,6 +14,7 @@ export const transformStudentNameList = (rawData) => {
     console.log(`🔍 Transforming student ${index + 1}:`, { 
       id: student.id, 
       studentId: student.studentId,
+      rawStudent: student,
       hasParents: !!student.parents,
       parentsCount: student.parents?.length 
     });
@@ -29,17 +30,19 @@ export const transformStudentNameList = (rawData) => {
        p.user?.relationship === 'MOTHER' || p.user?.relationship === 'mother')
     ) || {};
 
+    console.log(`👨‍👩‍👧 Parents found:`, { fatherData, motherData });
+
     // Extract user data from parent if nested
     const fatherUser = fatherData.user || fatherData;
     const motherUser = motherData.user || motherData;
 
-    // Format student address - handle nested location objects
+    // Format student address - handle nested location objects from API
     const residence = student.residence || {};
     const studentAddress = [
-      residence.village?.village_name_kh || residence.village?.name || residence.village,
-      residence.commune?.commune_name_kh || residence.commune?.name || residence.commune,
-      residence.district?.district_name_kh || residence.district?.name || residence.district,
-      residence.province?.province_name_kh || residence.province?.name || residence.province
+      residence.village?.village_name_kh || residence.village?.name || '',
+      residence.commune?.commune_name_kh || residence.commune?.name || '',
+      residence.district?.district_name_kh || residence.district?.name || '',
+      residence.province?.province_name_kh || residence.province?.name || ''
     ].filter(Boolean).join(', ');
 
     // Format father address
@@ -60,30 +63,42 @@ export const transformStudentNameList = (rawData) => {
       motherResidence.province?.province_name_kh || motherResidence.province?.name || motherResidence.province
     ].filter(Boolean).join(', ') || studentAddress;
 
-    // Format gender
-    const gender = (student.gender === 'M' || student.gender === 'MALE' || student.gender === 'male') ? 'ប្រុស' : 
-                   (student.gender === 'F' || student.gender === 'FEMALE' || student.gender === 'female') ? 'ស្រី' : '';
+    // Format gender - check all possible fields
+    let gender = '';
+    const genderValue = student.gender || student.sex;
+    if (genderValue === 'M' || genderValue === 'MALE' || genderValue === 'male' || genderValue === 'ប្រុស') {
+      gender = 'ប្រុស';
+    } else if (genderValue === 'F' || genderValue === 'FEMALE' || genderValue === 'female' || genderValue === 'ស្រី') {
+      gender = 'ស្រី';
+    }
 
     // Format date of birth - handle different date formats
-    const dob = student.dateOfBirth || student.date_of_birth;
+    const dob = student.dateOfBirth || student.date_of_birth || student.dob;
     let formattedDob = '';
     if (dob) {
       try {
         const date = new Date(dob);
-        formattedDob = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+        if (!isNaN(date.getTime())) {
+          formattedDob = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+        } else {
+          formattedDob = dob;
+        }
       } catch (e) {
         formattedDob = dob;
       }
     }
 
-    return {
+    // Get phone number from multiple possible fields
+    const phoneNumber = student.phone || student.phoneNumber || student.contact || student.mobile || '';
+
+    const transformed = {
       no: index + 1,
       studentId: student.studentId || student.id,
       lastName: student.lastName || student.last_name || '',
       firstName: student.firstName || student.first_name || '',
       dateOfBirth: formattedDob,
       gender: gender,
-      phone: student.phone || '',
+      phone: phoneNumber,
       nationality: student.nationality || 'ខ្មែរ',
       studentNumber: student.studentNumber || student.studentId || '',
       academicYear: student.academicYear || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
@@ -92,7 +107,7 @@ export const transformStudentNameList = (rawData) => {
       fatherInfo: {
         firstName: fatherUser.firstName || fatherUser.first_name || '',
         lastName: fatherUser.lastName || fatherUser.last_name || '',
-        phone: fatherUser.phone || '',
+        phone: fatherUser.phone || fatherUser.phoneNumber || '',
         gender: 'ប្រុស',
         occupation: fatherUser.occupation || '',
         fullAddress: fatherAddress
@@ -101,7 +116,7 @@ export const transformStudentNameList = (rawData) => {
       motherInfo: {
         firstName: motherUser.firstName || motherUser.first_name || '',
         lastName: motherUser.lastName || motherUser.last_name || '',
-        phone: motherUser.phone || '',
+        phone: motherUser.phone || motherUser.phoneNumber || '',
         gender: 'ស្រី',
         occupation: motherUser.occupation || '',
         fullAddress: motherAddress
@@ -110,6 +125,9 @@ export const transformStudentNameList = (rawData) => {
       ethnicGroup: student.ethnicGroup || student.ethnic_group || '',
       specialNeeds: student.accessibility ? (Array.isArray(student.accessibility) ? student.accessibility.join(', ') : student.accessibility) : ''
     };
+
+    console.log(`✅ Transformed student ${index + 1}:`, transformed);
+    return transformed;
   });
 };
 
