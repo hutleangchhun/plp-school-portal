@@ -265,6 +265,15 @@ export default function Reports() {
                 
                 const fullStudent = fullStudentResponse.data;
                 console.log(`✅ Got full student data for ${fullStudent.first_name} ${fullStudent.last_name}`);
+                console.log(`📋 Student fields:`, {
+                  id: fullStudent.id,
+                  date_of_birth: fullStudent.date_of_birth,
+                  gender: fullStudent.gender,
+                  phone: fullStudent.phone,
+                  ethnic_group: fullStudent.ethnic_group,
+                  accessibility: fullStudent.accessibility,
+                  hasResidence: !!fullStudent.residence
+                });
                 
                 // Fetch parent information using studentId
                 const parentsResponse = await parentService.getParentsByStudentId(studentId);
@@ -272,24 +281,39 @@ export default function Reports() {
                 console.log(`👨‍👩‍👧 Parent response for student ${studentId}:`, {
                   success: parentsResponse.success,
                   hasData: !!parentsResponse.data,
-                  data: parentsResponse.data
+                  isArray: Array.isArray(parentsResponse.data),
+                  hasDataProperty: parentsResponse.data?.data !== undefined,
+                  dataType: typeof parentsResponse.data,
+                  fullData: parentsResponse.data
                 });
                 
                 // Handle parent data and fetch full parent details
                 let parentsArray = [];
                 if (parentsResponse.success && parentsResponse.data) {
                   let rawParents = [];
+                  
+                  // Check if data is directly an array
                   if (Array.isArray(parentsResponse.data)) {
                     rawParents = parentsResponse.data;
-                  } else if (typeof parentsResponse.data === 'object') {
-                    if (parentsResponse.data.data && Array.isArray(parentsResponse.data.data)) {
-                      rawParents = parentsResponse.data.data;
-                    } else if (parentsResponse.data.parents && Array.isArray(parentsResponse.data.parents)) {
-                      rawParents = parentsResponse.data.parents;
-                    } else {
-                      rawParents = [parentsResponse.data];
-                    }
+                    console.log(`📌 Parents data is array, length: ${rawParents.length}`);
+                  } 
+                  // Check if data has a 'data' property that is an array
+                  else if (parentsResponse.data.data && Array.isArray(parentsResponse.data.data)) {
+                    rawParents = parentsResponse.data.data;
+                    console.log(`📌 Parents in data.data array, length: ${rawParents.length}`);
+                  } 
+                  // Check if data has a 'parents' property that is an array
+                  else if (parentsResponse.data.parents && Array.isArray(parentsResponse.data.parents)) {
+                    rawParents = parentsResponse.data.parents;
+                    console.log(`📌 Parents in data.parents array, length: ${rawParents.length}`);
+                  } 
+                  // Otherwise treat as single parent object
+                  else if (typeof parentsResponse.data === 'object') {
+                    rawParents = [parentsResponse.data];
+                    console.log(`📌 Single parent object`);
                   }
+                  
+                  console.log(`📋 Raw parents to process:`, rawParents);
                   
                   // Fetch full details for each parent using their user ID
                   parentsArray = await Promise.all(

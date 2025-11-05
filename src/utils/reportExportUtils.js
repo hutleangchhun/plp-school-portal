@@ -816,9 +816,6 @@ export const exportStudentListWithParents = async (
   schoolName
 ) => {
   try {
-    const XLSXStyleModule = await import('xlsx-js-style');
-    const XLSX = XLSXStyleModule.default || XLSXStyleModule;
-
     const dateStr = new Date().toISOString().split('T')[0];
     
     // Build worksheet data
