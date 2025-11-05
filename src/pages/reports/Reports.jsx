@@ -79,9 +79,9 @@ export default function Reports() {
     fetchReportData();
   }, [selectedReport, selectedPeriod, selectedMonth, selectedYear, selectedClass]);
 
-  // Fetch classes when report3 or report4 is selected
+  // Fetch classes when report2, report3 or report4 is selected
   useEffect(() => {
-    if (['report3', 'report4'].includes(selectedReport)) {
+    if (['report2', 'report3', 'report4'].includes(selectedReport)) {
       fetchSchoolClasses();
     }
   }, [selectedReport]);
@@ -228,23 +228,57 @@ export default function Reports() {
         } else {
           throw new Error(attendanceResponse.error || 'Failed to fetch attendance data');
         }
-      } else if (selectedReport === 'report1') {
-        // For report1 (បញ្ជីហៅឈ្មោះសិស្ស), fetch students with full details and parent information
-        console.log('📋 Fetching students with parent information for report1');
+      } else if (selectedReport === 'report1' || selectedReport === 'report2') {
+        // For report1 and report2 (បញ្ជីហៅឈ្មោះសិស្ស), fetch students with full details and parent information
+        console.log(`📋 Fetching students with parent information for ${selectedReport}`);
         
-        // Step 1: Fetch all students from school (returns basic info with user.id)
-        const studentsResponse = await studentService.getStudentsBySchoolClasses(
-          schoolId,
-          {
-            page: 1,
-            limit: 100,
-            ...dateFilters
+        // Step 1: Fetch all students from school in batches (API limit is 100 per page)
+        // For report2, filter by selected class
+        let allBasicStudents = [];
+        let currentPage = 1;
+        let hasMorePages = true;
+        
+        while (hasMorePages) {
+          const fetchParams = {
+            page: currentPage,
+            limit: 100 // API maximum
+          };
+          
+          // Add class filter for report2
+          if (selectedReport === 'report2' && selectedClass && selectedClass !== 'all') {
+            fetchParams.classId = selectedClass;
           }
-        );
+          
+          console.log(`📄 Fetching page ${currentPage} with limit 100...`);
+          
+          const studentsResponse = await studentService.getStudentsBySchoolClasses(
+            schoolId,
+            fetchParams
+          );
 
-        if (studentsResponse.success) {
-          const basicStudents = studentsResponse.data || [];
-          console.log(`✅ Fetched ${basicStudents.length} students from school`);
+          if (studentsResponse.success) {
+            const pageStudents = studentsResponse.data || [];
+            allBasicStudents = [...allBasicStudents, ...pageStudents];
+            
+            console.log(`✅ Page ${currentPage}: Fetched ${pageStudents.length} students (Total: ${allBasicStudents.length})`);
+            
+            // Check if there are more pages
+            const pagination = studentsResponse.pagination;
+            if (pagination && currentPage < pagination.pages) {
+              currentPage++;
+            } else {
+              hasMorePages = false;
+            }
+          } else {
+            console.warn(`⚠️ Failed to fetch page ${currentPage}`);
+            hasMorePages = false;
+          }
+        }
+        
+        console.log(`✅ Fetched total of ${allBasicStudents.length} students from school`);
+
+        if (allBasicStudents.length > 0) {
+          const basicStudents = allBasicStudents;
           
           // Step 2: For each student, fetch full details using user.id and then fetch parents using studentId
           const studentsWithFullData = await Promise.all(
@@ -372,9 +406,9 @@ export default function Reports() {
           console.log(`✅ Processed ${studentsWithFullData.length} students with full data and parents`);
           console.log('📊 Sample student with full data:', studentsWithFullData[0]);
           setReportData(studentsWithFullData);
-          setSchoolInfo(studentsResponse.schoolInfo);
         } else {
-          throw new Error(studentsResponse.error || 'Failed to fetch students');
+          console.warn('⚠️ No students found');
+          setReportData([]);
         }
       } else {
         // For other reports, fetch students data from API
@@ -477,13 +511,20 @@ export default function Reports() {
               ? t('reportDataLoaded', `${reportData.length} records loaded. Click "Export Report" to download.`)
               : t('reportContentWillAppear', 'Report content will appear here')}
           </p>
-          <div className="inline-flex items-center space-x-2 text-sm text-gray-500">
-            <span>Period: {timePeriods.find(p => p.value === selectedPeriod)?.label}</span>
-            {selectedPeriod === 'month' && selectedMonth && (
-              <span>• Month: {monthOptions.find(m => m.value === selectedMonth)?.label}</span>
-            )}
-            <span>• Year: {selectedYear}</span>
-          </div>
+          {!['report1', 'report2'].includes(selectedReport) && (
+            <div className="inline-flex items-center space-x-2 text-sm text-gray-500">
+              <span>Period: {timePeriods.find(p => p.value === selectedPeriod)?.label}</span>
+              {selectedPeriod === 'month' && selectedMonth && (
+                <span>• Month: {monthOptions.find(m => m.value === selectedMonth)?.label}</span>
+              )}
+              <span>• Year: {selectedYear}</span>
+            </div>
+          )}
+          {selectedReport === 'report2' && selectedClass && selectedClass !== 'all' && (
+            <div className="inline-flex items-center space-x-2 text-sm text-gray-500">
+              <span>Class: {availableClasses.find(c => c.value === selectedClass)?.label || selectedClass}</span>
+            </div>
+          )}
         </div>
 
         {/* Placeholder content grid */}
@@ -559,25 +600,27 @@ export default function Reports() {
               />
             </div>
 
-            {/* Time Period Dropdown */}
-            <div className="flex-shrink-0 w-full md:w-auto">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Filter className="h-4 w-4 inline mr-1" />
-                {t('timePeriod') || 'Time Period'}
-              </label>
-              <Dropdown
-                value={selectedPeriod}
-                onValueChange={setSelectedPeriod}
-                options={timePeriods}
-                placeholder={t('selectTimePeriod', 'Select time period...')}
-                minWidth="w-full"
-                maxHeight="max-h-40"
-                itemsToShow={5}
-              />
-            </div>
+            {/* Time Period Dropdown - Hide for report1 and report2 */}
+            {!['report1', 'report2'].includes(selectedReport) && (
+              <div className="flex-shrink-0 w-full md:w-auto">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Filter className="h-4 w-4 inline mr-1" />
+                  {t('timePeriod') || 'Time Period'}
+                </label>
+                <Dropdown
+                  value={selectedPeriod}
+                  onValueChange={setSelectedPeriod}
+                  options={timePeriods}
+                  placeholder={t('selectTimePeriod', 'Select time period...')}
+                  minWidth="w-full"
+                  maxHeight="max-h-40"
+                  itemsToShow={5}
+                />
+              </div>
+            )}
 
-            {/* Conditional: Month Dropdown (shown when period is 'month') */}
-            {selectedPeriod === 'month' && (
+            {/* Conditional: Month Dropdown (shown when period is 'month') - Hide for report1 and report2 */}
+            {!['report1', 'report2'].includes(selectedReport) && selectedPeriod === 'month' && (
               <div className="flex-shrink-0 w-full md:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="h-4 w-4 inline mr-1" />
@@ -595,25 +638,27 @@ export default function Reports() {
               </div>
             )}
 
-            {/* Year Dropdown (shown for all periods) */}
-            <div className="flex-shrink-0 w-full md:w-auto">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="h-4 w-4 inline mr-1" />
-                {t('selectAcademicYear') || 'Select Year'}
-              </label>
-              <Dropdown
-                value={selectedYear}
-                onValueChange={setSelectedYear}
-                options={yearOptions}
-                placeholder={t('chooseYear', 'Choose year...')}
-                minWidth="w-full"
-                maxHeight="max-h-40"
-                itemsToShow={5}
-              />
-            </div>
+            {/* Year Dropdown (shown for all periods) - Hide for report1 and report2 */}
+            {!['report1', 'report2'].includes(selectedReport) && (
+              <div className="flex-shrink-0 w-full md:w-auto">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar className="h-4 w-4 inline mr-1" />
+                  {t('selectAcademicYear') || 'Select Year'}
+                </label>
+                <Dropdown
+                  value={selectedYear}
+                  onValueChange={setSelectedYear}
+                  options={yearOptions}
+                  placeholder={t('chooseYear', 'Choose year...')}
+                  minWidth="w-full"
+                  maxHeight="max-h-40"
+                  itemsToShow={5}
+                />
+              </div>
+            )}
 
-            {/* Class Filter - Only shown for report4 (Absence Report) */}
-            {['report3', 'report4'].includes(selectedReport) && (
+            {/* Class Filter - Shown for report2, report3, and report4 */}
+            {['report2', 'report3', 'report4'].includes(selectedReport) && (
               <div className="flex-shrink-0 w-full md:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Filter className="h-4 w-4 inline mr-1" />
@@ -642,18 +687,22 @@ export default function Reports() {
               <Badge color="blue" variant="filled" size="sm">
                 {reportTypes.find(r => r.value === selectedReport)?.label || selectedReport}
               </Badge>
-              <Badge color="green" variant="filled" size="sm">
-                {timePeriods.find(p => p.value === selectedPeriod)?.label || selectedPeriod}
-              </Badge>
-              {selectedPeriod === 'month' && selectedMonth && (
-                <Badge color="orange" variant="filled" size="sm">
-                  {monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth}
-                </Badge>
+              {!['report1', 'report2'].includes(selectedReport) && (
+                <>
+                  <Badge color="green" variant="filled" size="sm">
+                    {timePeriods.find(p => p.value === selectedPeriod)?.label || selectedPeriod}
+                  </Badge>
+                  {selectedPeriod === 'month' && selectedMonth && (
+                    <Badge color="orange" variant="filled" size="sm">
+                      {monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth}
+                    </Badge>
+                  )}
+                  <Badge color="purple" variant="filled" size="sm">
+                    {t('year', 'Year')}: {selectedYear}
+                  </Badge>
+                </>
               )}
-              <Badge color="purple" variant="filled" size="sm">
-                {t('year', 'Year')}: {selectedYear}
-              </Badge>
-              {selectedReport === 'report4' && selectedClass && selectedClass !== 'all' && (
+              {['report2', 'report3', 'report4'].includes(selectedReport) && selectedClass && selectedClass !== 'all' && (
                 <Badge color="indigo" variant="filled" size="sm">
                   {t('class', 'Class')}: {availableClasses.find(c => c.value === selectedClass)?.label || selectedClass}
                 </Badge>

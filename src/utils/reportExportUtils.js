@@ -481,7 +481,7 @@ export const transformConductReport = (rawData) => {
 export const reportTransformers = {
   report1: transformStudentNameList,
   reportStudent: transformStudentNameList,
-  report2: transformStudentByClassReport,
+  report2: transformStudentNameList, // Same as report1, but filtered by class
   report3: transformStudentAverageGradesReport,
   report4: transformStudentAbsenceReport,
   report5: transformNutritionSupportReport,
@@ -650,8 +650,8 @@ export const exportReportToExcel = async (
       return await exportAbsenceReportToExcel(transformedData, reportName, periodInfo, schoolName);
     }
 
-    // Use student export format with parent info for report1
-    if (reportType === 'report1') {
+    // Use student export format with parent info for report1 and report2
+    if (reportType === 'report1' || reportType === 'report2') {
       return await exportStudentListWithParents(transformedData, reportName, periodInfo, schoolName);
     }
 
