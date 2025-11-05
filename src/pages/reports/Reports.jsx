@@ -660,20 +660,10 @@ export default function Reports() {
 
         return (
           <div className="space-y-6">
-            {/* Total Students Summary */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{getSummaryTitle()}</p>
-                  <p className="text-4xl font-bold mt-2 text-gray-900">{reportData.length} {t('students', 'សិស្ស')}</p>
-                </div>
-                <BarChart3 className="h-16 w-16 text-gray-400" />
-              </div>
-            </div>
+            
 
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
               {/* Report 1: Parent Status Chart */}
               {selectedReport === 'report1' && parentStatusData.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
