@@ -4,22 +4,88 @@
  */
 
 /**
- * Report 1: Student Name & Info List (បញ្ជីហៅឈ្មោះសិស្ស)
- * Returns basic student information
+ * Report 1: Student Name List (បញ្ជីហៅឈ្មោះសិស្ស)
+ * Basic student information list with parent information
  */
-export const transformStudentNameInfoReport = (rawData) => {
+export const transformStudentNameList = (rawData) => {
   if (!Array.isArray(rawData)) return [];
 
-  return rawData.map((student, index) => ({
-    no: index + 1,
-    studentId: student.studentId || student.id || '',
-    khmerName: student.khmerName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name || '',
-    englishName: student.englishName || student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
-    gender: (student.gender === 'M' || student.gender === 'MALE') ? 'ប្រុស' : 'ស្រី',
-    dateOfBirth: student.dateOfBirth || '',
-    class: student.class?.name || '',
-    contact: student.phone || student.contact || student.email || ''
-  }));
+  return rawData.map((student, index) => {
+    // Extract parent information
+    const parents = student.parents || [];
+    const fatherData = parents.find(p => p.relationship === 'FATHER' || p.relationship === 'father') || {};
+    const motherData = parents.find(p => p.relationship === 'MOTHER' || p.relationship === 'mother') || {};
+
+    // Format student address
+    const residence = student.residence || {};
+    const studentAddress = [
+      residence.village?.village_name_kh || residence.village,
+      residence.commune?.commune_name_kh || residence.commune,
+      residence.district?.district_name_kh || residence.district,
+      residence.province?.province_name_kh || residence.province
+    ].filter(Boolean).join(' ');
+
+    // Format father address
+    const fatherResidence = fatherData.residence || {};
+    const fatherAddress = [
+      fatherResidence.village?.village_name_kh || fatherResidence.village,
+      fatherResidence.commune?.commune_name_kh || fatherResidence.commune,
+      fatherResidence.district?.district_name_kh || fatherResidence.district,
+      fatherResidence.province?.province_name_kh || fatherResidence.province
+    ].filter(Boolean).join(' ') || studentAddress;
+
+    // Format mother address
+    const motherResidence = motherData.residence || {};
+    const motherAddress = [
+      motherResidence.village?.village_name_kh || motherResidence.village,
+      motherResidence.commune?.commune_name_kh || motherResidence.commune,
+      motherResidence.district?.district_name_kh || motherResidence.district,
+      motherResidence.province?.province_name_kh || motherResidence.province
+    ].filter(Boolean).join(' ') || studentAddress;
+
+    // Format gender
+    const gender = (student.gender === 'M' || student.gender === 'MALE' || student.gender === 'male') ? 'ប្រុស' : 
+                   (student.gender === 'F' || student.gender === 'FEMALE' || student.gender === 'female') ? 'ស្រី' : '';
+
+    // Format date of birth
+    const dob = student.dateOfBirth || student.date_of_birth;
+    const formattedDob = dob ? new Date(dob).toLocaleDateString('km-KH') : '';
+
+    return {
+      no: index + 1,
+      studentId: student.studentId || student.id,
+      lastName: student.lastName || student.last_name || '',
+      firstName: student.firstName || student.first_name || '',
+      dateOfBirth: formattedDob,
+      gender: gender,
+      phone: student.phone || '',
+      nationality: student.nationality || 'ខ្មែរ',
+      studentNumber: student.studentNumber || student.studentId || '',
+      academicYear: student.academicYear || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+      fullAddress: studentAddress,
+      // Father info
+      fatherInfo: {
+        firstName: fatherData.firstName || fatherData.first_name || '',
+        lastName: fatherData.lastName || fatherData.last_name || '',
+        phone: fatherData.phone || '',
+        gender: 'ប្រុស',
+        occupation: fatherData.occupation || '',
+        fullAddress: fatherAddress
+      },
+      // Mother info
+      motherInfo: {
+        firstName: motherData.firstName || motherData.first_name || '',
+        lastName: motherData.lastName || motherData.last_name || '',
+        phone: motherData.phone || '',
+        gender: 'ស្រី',
+        occupation: motherData.occupation || '',
+        fullAddress: motherAddress
+      },
+      // Other info
+      ethnicGroup: student.ethnicGroup || student.ethnic_group || '',
+      specialNeeds: student.accessibility ? (Array.isArray(student.accessibility) ? student.accessibility.join(', ') : student.accessibility) : ''
+    };
+  });
 };
 
 /**
@@ -104,21 +170,27 @@ export const transformStudentAbsenceReport = (rawData) => {
       const leaves = student.attendances?.filter(a => a.status === 'LEAVE') || [];
       const totalAbsenceAndLeave = absences.length + leaves.length;
       
-      // Determine gender
+      // Determine gender - handle both formats
       let gender = '';
-      if (student.gender === 'MALE' || student.gender === 'M' || student.gender === 'male') {
+      const genderValue = student.gender || '';
+      if (genderValue === 'MALE' || genderValue === 'M' || genderValue === 'male') {
         gender = 'ប្រុស';
-      } else if (student.gender === 'FEMALE' || student.gender === 'F' || student.gender === 'female') {
+      } else if (genderValue === 'FEMALE' || genderValue === 'F' || genderValue === 'female') {
         gender = 'ស្រី';
       }
+      
+      // Use pre-formatted khmerName from Reports.jsx or construct it
+      const khmerName = student.khmerName || 
+                       `${student.lastName || ''} ${student.firstName || ''}`.trim() || 
+                       student.name || '';
       
       return {
         no: index + 1,
         studentId: student.studentId || student.id,
-        khmerName: student.khmerName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name || '',
+        khmerName: khmerName,
         englishName: student.englishName || student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
         gender: gender,
-        class: student.class?.name || '',
+        class: student.class?.name || student.class?.className || '',
         totalAbsences: absences.length,
         totalLeave: leaves.length,
         totalAbsenceAndLeave: totalAbsenceAndLeave,
@@ -529,6 +601,11 @@ export const exportReportToExcel = async (
       return await exportAbsenceReportToExcel(transformedData, reportName, periodInfo, schoolName);
     }
 
+    // Use student export format with parent info for report1
+    if (reportType === 'report1') {
+      return await exportStudentListWithParents(transformedData, reportName, periodInfo, schoolName);
+    }
+
     // Dynamically import xlsx-js-style
     const XLSXStyleModule = await import('xlsx-js-style');
     const XLSX = XLSXStyleModule.default || XLSXStyleModule;
@@ -683,6 +760,189 @@ export const exportReportToExcel = async (
  * Process and export a report
  * Combines transformation and Excel export
  */
+/**
+ * Custom export for student list with parent information (report1)
+ * Matches the format from studentExportUtils.js
+ */
+export const exportStudentListWithParents = async (
+  transformedData,
+  reportName,
+  periodInfo,
+  schoolName
+) => {
+  try {
+    const XLSXStyleModule = await import('xlsx-js-style');
+    const XLSX = XLSXStyleModule.default || XLSXStyleModule;
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    
+    // Build worksheet data
+    const wsData = [];
+
+    // Traditional Khmer header (rows 0-8)
+    wsData.push(['ព្រះរាជាណាចក្រកម្ពុជា']);
+    wsData.push(['ជាតិ       សាសនា       ព្រះមហាក្សត្រ']);
+    wsData.push([schoolName || 'សាលាបឋមសិក្សា ...........']);
+    wsData.push([reportName]);
+    wsData.push([periodInfo]);
+    wsData.push([]);
+    wsData.push([]);
+    wsData.push([]);
+    wsData.push([]);
+
+    // Main header row (row 9)
+    wsData.push([
+      '#',
+      'ព័ត៌មានសិស្ស', '', '', '', '', '', '', '', '', '',
+      'ព័ត៌មានឪពុក', '', '', '', '', '',
+      'ព័ត៌មានម្តាយ', '', '', '', '', '',
+      'សេចក្ដីផ្សេងៗ', ''
+    ]);
+
+    // Subheader row (row 10)
+    wsData.push([
+      '#',
+      'អត្តលេខ', 'គោត្តនាម', 'នាម',
+      'ថ្ងៃខែឆ្នាំកំណើត', 'ភេទ', 'លេខទូរស័ព្ទ', 'សញ្ជាតិ', 'លេខសិស្ស', 'ឆ្នាំសិក្សា',
+      'អាសយដ្ឋានពេញ',
+      // Father
+      'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញឪពុក',
+      // Mother
+      'នាម', 'គោត្តនាម', 'ទូរស័ព្ទ', 'ភេទ', 'មុខរបរ', 'អាសយដ្ឋានពេញម្តាយ',
+      // Other
+      'ជនជាតិភាគតិច', 'លក្ខណៈពិសេស'
+    ]);
+
+    // Data rows
+    transformedData.forEach((student, index) => {
+      const gender = student.gender === 'ប្រុស' ? 'ប្រុស' : student.gender === 'ស្រី' ? 'ស្រី' : '';
+      
+      const studentAddress = student.fullAddress || '';
+      
+      const fatherData = student.fatherInfo || {};
+      const motherData = student.motherInfo || {};
+      
+      wsData.push([
+        index + 1,
+        student.studentId || '',
+        student.lastName || '',
+        student.firstName || '',
+        student.dateOfBirth || '',
+        gender,
+        student.phone || '',
+        student.nationality || 'ខ្មែរ',
+        student.studentNumber || student.studentId || '',
+        student.academicYear || '',
+        studentAddress,
+        // Father
+        fatherData.firstName || '',
+        fatherData.lastName || '',
+        fatherData.phone || '',
+        fatherData.gender || 'ប្រុស',
+        fatherData.occupation || '',
+        fatherData.fullAddress || studentAddress,
+        // Mother
+        motherData.firstName || '',
+        motherData.lastName || '',
+        motherData.phone || '',
+        motherData.gender || 'ស្រី',
+        motherData.occupation || '',
+        motherData.fullAddress || studentAddress,
+        // Other
+        student.ethnicGroup || '',
+        student.specialNeeds || ''
+      ]);
+    });
+
+    // Create worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 5 },  // #
+      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 40 },
+      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 40 },
+      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 40 },
+      { wch: 12 }, { wch: 20 }
+    ];
+
+    // Set cell merges
+    worksheet['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 24 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 24 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 24 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 24 } },
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 24 } },
+      { s: { r: 5, c: 0 }, e: { r: 5, c: 24 } },
+      { s: { r: 6, c: 0 }, e: { r: 6, c: 24 } },
+      { s: { r: 7, c: 0 }, e: { r: 7, c: 24 } },
+      { s: { r: 8, c: 0 }, e: { r: 8, c: 24 } },
+      // Main header merges
+      { s: { r: 9, c: 1 }, e: { r: 9, c: 10 } },  // ព័ត៌មានសិស្ស
+      { s: { r: 9, c: 11 }, e: { r: 9, c: 16 } }, // ព័ត៌មានឪពុក
+      { s: { r: 9, c: 17 }, e: { r: 9, c: 22 } }, // ព័ត៌មានម្តាយ
+      { s: { r: 9, c: 23 }, e: { r: 9, c: 24 } }  // សេចក្ដីផ្សេងៗ
+    ];
+
+    // Apply styling
+    const range = XLSX.utils.decode_range(worksheet['!ref']);
+    for (let R = range.s.r; R <= range.e.r; R++) {
+      for (let C = range.s.c; C <= range.e.c; C++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!worksheet[cellAddress]) worksheet[cellAddress] = { t: 's', v: '' };
+
+        // Header rows (0-8)
+        if (R < 9) {
+          worksheet[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center' },
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+          };
+        }
+        // Main header and subheader rows (9-10)
+        else if (R === 9 || R === 10) {
+          worksheet[cellAddress].s = {
+            fill: { fgColor: { rgb: 'E0E0E0' } },
+            font: { name: 'Khmer OS Battambang', sz: 10, bold: true },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } }
+            }
+          };
+        }
+        // Data rows
+        else {
+          worksheet[cellAddress].s = {
+            font: { name: 'Khmer OS Battambang', sz: 10 },
+            alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+            border: {
+              top: { style: 'thin', color: { rgb: 'D0D0D0' } },
+              bottom: { style: 'thin', color: { rgb: 'D0D0D0' } },
+              left: { style: 'thin', color: { rgb: 'D0D0D0' } },
+              right: { style: 'thin', color: { rgb: 'D0D0D0' } }
+            }
+          };
+        }
+      }
+    }
+
+    // Create workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'បញ្ជីសិស្ស');
+
+    // Write file
+    const sanitizedReportName = reportName.replace(/[^a-zA-Z0-9\u1780-\u17FF]/g, '_');
+    XLSX.writeFile(workbook, `${sanitizedReportName}_${dateStr}.xlsx`);
+
+    return true;
+  } catch (error) {
+    console.error('Error exporting student list with parents:', error);
+    throw error;
+  }
+};
+
 /**
  * Custom export for absence report (report4) with attendance-style format
  */

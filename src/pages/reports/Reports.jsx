@@ -9,6 +9,7 @@ import { processAndExportReport } from '../../utils/reportExportUtils';
 import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
+import { parentService } from '../../utils/api/services/parentService';
 
 export default function Reports() {
   const { t } = useLanguage();
@@ -200,12 +201,18 @@ export default function Reports() {
           attendanceResponse.data.forEach(record => {
             const userId = record.userId;
             if (!attendanceByStudent[userId]) {
+              // Extract user data from the attendance record
+              const user = record.user || {};
+              const student = record.student || {};
+              
               attendanceByStudent[userId] = {
                 userId: userId,
-                studentId: record.student?.id || userId,
-                firstName: record.student?.firstName || '',
-                lastName: record.student?.lastName || '',
-                name: record.student?.name || '',
+                studentId: student.studentId || student.id || userId,
+                // Use first_name and last_name from user object
+                firstName: user.first_name || user.firstName || '',
+                lastName: user.last_name || user.lastName || '',
+                khmerName: `${user.last_name || user.lastName || ''} ${user.first_name || user.firstName || ''}`.trim(),
+                gender: user.gender || '',
                 class: record.class,
                 attendances: []
               };
@@ -216,9 +223,56 @@ export default function Reports() {
           // Convert to array format expected by transformer
           const studentsWithAttendance = Object.values(attendanceByStudent);
           console.log(`✅ Processed ${studentsWithAttendance.length} students with attendance data`);
+          console.log('📊 Sample student data:', studentsWithAttendance[0]);
           setReportData(studentsWithAttendance);
         } else {
           throw new Error(attendanceResponse.error || 'Failed to fetch attendance data');
+        }
+      } else if (selectedReport === 'report1') {
+        // For report1 (បញ្ជីហៅឈ្មោះសិស្ស), fetch students with parent information
+        console.log('📋 Fetching students with parent information for report1');
+        
+        // First, fetch all students
+        const studentsResponse = await studentService.getStudentsBySchoolClasses(
+          schoolId,
+          {
+            page: 1,
+            limit: 1000,
+            ...dateFilters
+          }
+        );
+
+        if (studentsResponse.success) {
+          const students = studentsResponse.data || [];
+          console.log(`✅ Fetched ${students.length} students`);
+          
+          // Fetch parent information for each student
+          const studentsWithParents = await Promise.all(
+            students.map(async (student) => {
+              try {
+                const studentId = student.studentId || student.id;
+                const parentsResponse = await parentService.getParentsByUserId(student.userId || student.id);
+                
+                if (parentsResponse.success && parentsResponse.data) {
+                  return {
+                    ...student,
+                    parents: Array.isArray(parentsResponse.data) ? parentsResponse.data : [parentsResponse.data]
+                  };
+                }
+                return { ...student, parents: [] };
+              } catch (error) {
+                console.warn(`Failed to fetch parents for student ${student.id}:`, error);
+                return { ...student, parents: [] };
+              }
+            })
+          );
+          
+          console.log(`✅ Processed ${studentsWithParents.length} students with parent data`);
+          console.log('📊 Sample student with parents:', studentsWithParents[0]);
+          setReportData(studentsWithParents);
+          setSchoolInfo(studentsResponse.schoolInfo);
+        } else {
+          throw new Error(studentsResponse.error || 'Failed to fetch students data');
         }
       } else {
         // For other reports, fetch students data from API
