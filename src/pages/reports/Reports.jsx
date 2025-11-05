@@ -8,6 +8,7 @@ import Badge from '../../components/ui/Badge';
 import { processAndExportReport } from '../../utils/reportExportUtils';
 import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
+import { attendanceService } from '../../utils/api/services/attendanceService';
 
 export default function Reports() {
   const { t } = useLanguage();
@@ -77,9 +78,9 @@ export default function Reports() {
     fetchReportData();
   }, [selectedReport, selectedPeriod, selectedMonth, selectedYear, selectedClass]);
 
-  // Fetch classes when report4 (absence report) is selected
+  // Fetch classes when report3 or report4 is selected
   useEffect(() => {
-    if (selectedReport === 'report4') {
+    if (['report3', 'report4'].includes(selectedReport)) {
       fetchSchoolClasses();
     }
   }, [selectedReport]);
@@ -147,23 +148,97 @@ export default function Reports() {
         dateFilters.classId = selectedClass;
       }
 
-      // Fetch students data from API
-      const response = await studentService.getStudentsBySchoolClasses(
-        schoolId,
-        {
-          page: 1,
-          limit: 100, // Get all students for report
-          ...dateFilters
+      // For report4 (absence report), fetch attendance data instead of student data
+      if (selectedReport === 'report4') {
+        // Calculate date range based on period
+        let startDate, endDate;
+        const currentDate = new Date();
+        
+        if (selectedPeriod === 'month' && selectedMonth) {
+          // Specific month
+          const monthIndex = parseInt(selectedMonth) - 1;
+          const year = parseInt(selectedYear);
+          startDate = new Date(year, monthIndex, 1);
+          endDate = new Date(year, monthIndex + 1, 0);
+        } else if (selectedPeriod === 'semester') {
+          // Semester (6 months)
+          const year = parseInt(selectedYear);
+          startDate = new Date(year, 0, 1);
+          endDate = new Date(year, 5, 30);
+        } else {
+          // Full year
+          const year = parseInt(selectedYear);
+          startDate = new Date(year, 0, 1);
+          endDate = new Date(year, 11, 31);
         }
-      );
 
-      if (response.success) {
-        const students = response.data || [];
-        console.log(`✅ Fetched ${students.length} students for report`);
-        setReportData(students);
-        setSchoolInfo(response.schoolInfo);
+        const formatDate = (date) => {
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, '0');
+          const d = String(date.getDate()).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        };
+
+        console.log('📅 Fetching attendance data:', {
+          classId: selectedClass !== 'all' ? selectedClass : undefined,
+          startDate: formatDate(startDate),
+          endDate: formatDate(endDate)
+        });
+
+        // Fetch attendance records
+        const attendanceResponse = await attendanceService.getAttendance({
+          classId: selectedClass !== 'all' ? parseInt(selectedClass) : undefined,
+          startDate: formatDate(startDate),
+          endDate: formatDate(endDate),
+          limit: 10000
+        });
+
+        if (attendanceResponse.success) {
+          // Group attendance by student and calculate absences
+          const attendanceByStudent = {};
+          
+          attendanceResponse.data.forEach(record => {
+            const userId = record.userId;
+            if (!attendanceByStudent[userId]) {
+              attendanceByStudent[userId] = {
+                userId: userId,
+                studentId: record.student?.id || userId,
+                firstName: record.student?.firstName || '',
+                lastName: record.student?.lastName || '',
+                name: record.student?.name || '',
+                class: record.class,
+                attendances: []
+              };
+            }
+            attendanceByStudent[userId].attendances.push(record);
+          });
+
+          // Convert to array format expected by transformer
+          const studentsWithAttendance = Object.values(attendanceByStudent);
+          console.log(`✅ Processed ${studentsWithAttendance.length} students with attendance data`);
+          setReportData(studentsWithAttendance);
+        } else {
+          throw new Error(attendanceResponse.error || 'Failed to fetch attendance data');
+        }
       } else {
-        throw new Error(response.error || 'Failed to fetch students data');
+        // For other reports, fetch students data from API
+        const response = await studentService.getStudentsBySchoolClasses(
+          schoolId,
+          {
+            page: 1,
+            limit: 100, // Get all students for report
+            ...dateFilters
+          }
+        );
+
+        if (response.success) {
+          const students = response.data || [];
+          console.log(`✅ Fetched ${students.length} students for report`);
+          setReportData(students);
+          setSchoolInfo(response.schoolInfo);
+        } else {
+          throw new Error(response.error || 'Failed to fetch students data');
+        }
       }
     } catch (error) {
       console.error('❌ Error fetching report data:', error);

@@ -101,20 +101,34 @@ export const transformStudentAbsenceReport = (rawData) => {
   return rawData
     .map((student, index) => {
       const absences = student.attendances?.filter(a => a.status === 'ABSENT') || [];
+      const leaves = student.attendances?.filter(a => a.status === 'LEAVE') || [];
+      const totalAbsenceAndLeave = absences.length + leaves.length;
+      
+      // Determine gender
+      let gender = '';
+      if (student.gender === 'MALE' || student.gender === 'M' || student.gender === 'male') {
+        gender = 'ប្រុស';
+      } else if (student.gender === 'FEMALE' || student.gender === 'F' || student.gender === 'female') {
+        gender = 'ស្រី';
+      }
+      
       return {
         no: index + 1,
         studentId: student.studentId || student.id,
         khmerName: student.khmerName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name || '',
         englishName: student.englishName || student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
+        gender: gender,
         class: student.class?.name || '',
         totalAbsences: absences.length,
+        totalLeave: leaves.length,
+        totalAbsenceAndLeave: totalAbsenceAndLeave,
         absencePercentage: student.attendances
-          ? ((absences.length / student.attendances.length) * 100).toFixed(2)
-          : 0
+          ? ((totalAbsenceAndLeave / student.attendances.length) * 100).toFixed(2)
+          : 0,
+        remarks: ''
       };
     })
-    .filter(s => s.totalAbsences > 0)
-    .sort((a, b) => b.totalAbsences - a.totalAbsences);
+    .sort((a, b) => b.totalAbsenceAndLeave - a.totalAbsenceAndLeave);
 };
 
 /**
@@ -390,13 +404,15 @@ export const getReportColumns = (reportType) => {
       { header: 'Average Grade', key: 'average' }
     ],
     report4: [
-      { header: 'No.', key: 'no' },
-      { header: 'Student ID', key: 'studentId' },
-      { header: 'Khmer Name', key: 'khmerName' },
-      { header: 'English Name', key: 'englishName' },
-      { header: 'Class', key: 'class' },
-      { header: 'Total Absences', key: 'totalAbsences' },
-      { header: 'Absence %', key: 'absencePercentage' }
+      { header: 'ល.រ', key: 'no' },
+      { header: 'អត្តលេខ', key: 'studentId' },
+      { header: 'គោត្តនាម និងនាម', key: 'khmerName' },
+      { header: 'ភេទ', key: 'gender' },
+      { header: 'ថ្នាក់', key: 'class' },
+      { header: 'អច្ប', key: 'totalAbsences' },
+      { header: 'ច្ប', key: 'totalLeave' },
+      { header: 'សរុប', key: 'totalAbsenceAndLeave' },
+      { header: 'សេចក្ដីផ្សេងៗ', key: 'remarks' }
     ],
     report5: [
       { header: 'No.', key: 'no' },
@@ -508,6 +524,11 @@ export const exportReportToExcel = async (
   schoolName
 ) => {
   try {
+    // Use custom absence report export for report4
+    if (reportType === 'report4') {
+      return await exportAbsenceReportToExcel(transformedData, reportName, periodInfo, schoolName);
+    }
+
     // Dynamically import xlsx-js-style
     const XLSXStyleModule = await import('xlsx-js-style');
     const XLSX = XLSXStyleModule.default || XLSXStyleModule;
@@ -654,6 +675,177 @@ export const exportReportToExcel = async (
     return true;
   } catch (error) {
     console.error('Error exporting report:', error);
+    throw error;
+  }
+};
+
+/**
+ * Process and export a report
+ * Combines transformation and Excel export
+ */
+/**
+ * Custom export for absence report (report4) with attendance-style format
+ */
+export const exportAbsenceReportToExcel = async (
+  transformedData,
+  reportName,
+  periodInfo,
+  schoolName
+) => {
+  try {
+    const XLSXStyleModule = await import('xlsx-js-style');
+    const XLSX = XLSXStyleModule.default || XLSXStyleModule;
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    const currentDate = new Date().toLocaleDateString('km-KH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Calculate totals
+    const totalStudents = transformedData.length;
+    const femaleStudents = transformedData.filter(s => s.gender === 'ស្រី').length;
+    const maleStudents = totalStudents - femaleStudents;
+
+    // Build worksheet data
+    const wsData = [];
+
+    // Traditional Khmer header (rows 0-8)
+    wsData.push(['ព្រះរាជាណាចក្រកម្ពុជា']); // Kingdom of Cambodia
+    wsData.push(['ជាតិ       សាសនា       ព្រះមហាក្សត្រ']); // Nation Religion King
+    wsData.push([schoolName || 'សាលាបថមសិក្សា ...........']); // School name
+    wsData.push([reportName]); // Report title
+    wsData.push([periodInfo]); // Period info
+    wsData.push([`ថ្ងៃទី: ${currentDate}`]); // Date
+    wsData.push([]); // Empty
+    wsData.push([`សិស្សសរុប: ${totalStudents}នាក់  ប្រុស: ${maleStudents}នាក់  ស្រី: ${femaleStudents}នាក់`]); // Student counts
+    wsData.push([]); // Empty
+
+    // Header row (row 9)
+    wsData.push(['ល.រ', 'អត្តលេខ', 'គោត្តនាម និងនាម', 'ភេទ', 'ថ្នាក់', 'អច្ប', 'ច្ប', 'សរុប', 'សេចក្ដីផ្សេងៗ']);
+
+    // Data rows (starting from row 10)
+    transformedData.forEach((item) => {
+      wsData.push([
+        item.no || '',
+        item.studentId || '',
+        item.khmerName || '',
+        item.gender || '',
+        item.class || '',
+        item.totalAbsences || 0,
+        item.totalLeave || 0,
+        item.totalAbsenceAndLeave || 0,
+        item.remarks || ''
+      ]);
+    });
+
+    // Footer section
+    wsData.push([]); // Empty row
+    wsData.push([]); // Empty row
+
+    // Signature row
+    const numCols = 9;
+    const signatureRow = new Array(numCols).fill('');
+    signatureRow[1] = 'បានឃើើញ'; // Left: Seen by
+    signatureRow[7] = 'គ្រូប្រចាំថ្នាក់'; // Right: Class teacher
+    wsData.push(signatureRow);
+
+    const positionRow = new Array(numCols).fill('');
+    positionRow[1] = 'នាយកសាលា'; // Director
+    wsData.push(positionRow);
+
+    wsData.push(new Array(numCols).fill('')); // Empty for signature
+    wsData.push(new Array(numCols).fill('')); // Empty for signature
+    wsData.push(new Array(numCols).fill('')); // Empty for signature
+
+    // Create worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 5 },  // No
+      { wch: 12 }, // Student ID
+      { wch: 25 }, // Name
+      { wch: 5 },  // Gender
+      { wch: 12 }, // Class
+      { wch: 6 },  // Absent
+      { wch: 6 },  // Leave
+      { wch: 6 },  // Total
+      { wch: 20 }  // Remarks
+    ];
+
+    // Set cell merges
+    worksheet['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }, // Kingdom
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } }, // Nation Religion King
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } }, // School
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 8 } }, // Title
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 8 } }, // Period
+      { s: { r: 5, c: 0 }, e: { r: 5, c: 8 } }, // Date
+      { s: { r: 6, c: 0 }, e: { r: 6, c: 8 } }, // Empty
+      { s: { r: 7, c: 0 }, e: { r: 7, c: 8 } }, // Student counts
+      { s: { r: 8, c: 0 }, e: { r: 8, c: 8 } }  // Empty
+    ];
+
+    // Apply styling
+    const range = XLSX.utils.decode_range(worksheet['!ref']);
+    for (let R = range.s.r; R <= range.e.r; R++) {
+      for (let C = range.s.c; C <= range.e.c; C++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!worksheet[cellAddress]) worksheet[cellAddress] = { t: 's', v: '' };
+
+        // Header rows (0-8)
+        if (R < 9) {
+          worksheet[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center' },
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+          };
+        }
+        // Column header row (9)
+        else if (R === 9) {
+          worksheet[cellAddress].s = {
+            fill: { fgColor: { rgb: 'E0E0E0' } },
+            font: { name: 'Khmer OS Battambang', sz: 10, bold: true },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } }
+            }
+          };
+        }
+        // Signature rows
+        else if (R > 10 + transformedData.length) {
+          worksheet[cellAddress].s = {
+            font: { name: 'Khmer OS Battambang', sz: 11, bold: R === (10 + transformedData.length + 3) },
+            alignment: { horizontal: 'center', vertical: 'center' }
+          };
+        }
+        // Data rows
+        else {
+          worksheet[cellAddress].s = {
+            font: { name: 'Khmer OS Battambang', sz: 10 },
+            alignment: { horizontal: C === 2 ? 'left' : 'center', vertical: 'center' },
+            border: {
+              top: { style: 'thin', color: { rgb: 'D0D0D0' } },
+              bottom: { style: 'thin', color: { rgb: 'D0D0D0' } },
+              left: { style: 'thin', color: { rgb: 'D0D0D0' } },
+              right: { style: 'thin', color: { rgb: 'D0D0D0' } }
+            }
+          };
+        }
+      }
+    }
+
+    // Create workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'បញ្ជីអវត្តមាន');
+
+    // Write file
+    const sanitizedReportName = reportName.replace(/[^a-zA-Z0-9\u1780-\u17FF]/g, '_');
+    XLSX.writeFile(workbook, `${sanitizedReportName}_${dateStr}.xlsx`);
+
+    return true;
+  } catch (error) {
+    console.error('Error exporting absence report:', error);
     throw error;
   }
 };
