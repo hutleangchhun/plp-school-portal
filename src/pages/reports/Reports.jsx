@@ -190,7 +190,7 @@ export default function Reports() {
           classId: selectedClass !== 'all' ? parseInt(selectedClass) : undefined,
           startDate: formatDate(startDate),
           endDate: formatDate(endDate),
-          limit: 10000
+          limit: 400
         });
 
         if (attendanceResponse.success) {
