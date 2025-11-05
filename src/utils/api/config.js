@@ -90,6 +90,7 @@ const ENDPOINTS = {
   PARENTS: {
     BASE: '/parents',
     BY_USER: (userId) => `/parents/user/${userId}`,
+    BY_STUDENT: (studentId) => `/parents/student/${studentId}`,
     BY_ID: (parentId) => `/parents/${parentId}`,
     CREATE: '/parents',
     UPDATE: (parentId) => `/parents/${parentId}`,

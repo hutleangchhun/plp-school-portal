@@ -97,7 +97,7 @@ export default function Reports() {
 
       const response = await classService.getBySchool(schoolId, {
         page: 1,
-        limit: 1000
+        limit: 100
       });
 
       if (response.success && response.classes) {
@@ -237,7 +237,7 @@ export default function Reports() {
           schoolId,
           {
             page: 1,
-            limit: 1000,
+            limit: 100,
             ...dateFilters
           }
         );
@@ -246,12 +246,13 @@ export default function Reports() {
           const students = studentsResponse.data || [];
           console.log(`✅ Fetched ${students.length} students`);
           
-          // Fetch parent information for each student
+          // Fetch parent information for each student using studentId
           const studentsWithParents = await Promise.all(
             students.map(async (student) => {
               try {
                 const studentId = student.studentId || student.id;
-                const parentsResponse = await parentService.getParentsByUserId(student.userId || student.id);
+                console.log(`🔍 Fetching parents for student ID: ${studentId}`);
+                const parentsResponse = await parentService.getParentsByStudentId(studentId);
                 
                 if (parentsResponse.success && parentsResponse.data) {
                   return {

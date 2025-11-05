@@ -430,8 +430,8 @@ export const transformConductReport = (rawData) => {
  * Mapping of report types to their transform functions
  */
 export const reportTransformers = {
-  report1: transformStudentNameInfoReport,
-  reportStudent: transformStudentNameInfoReport,
+  report1: transformStudentNameList,
+  reportStudent: transformStudentNameList,
   report2: transformStudentByClassReport,
   report3: transformStudentAverageGradesReport,
   report4: transformStudentAbsenceReport,

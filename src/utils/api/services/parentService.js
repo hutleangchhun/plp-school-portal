@@ -59,6 +59,19 @@ export const parentService = {
         };
     },
 
+    // Fetch parents by student ID
+    getParentsByStudentId: async (studentId) => {
+        const response = await handleApiResponse(() =>
+            apiClient_.get(ENDPOINTS.PARENTS.BY_STUDENT(studentId))
+        );
+
+        return {
+            success: response.success,
+            data: response?.data,
+            error: response.error
+        };
+    },
+
     // Create a new parent
     createParent: async (parentData) => {
         const response = await handleApiResponse(() =>
