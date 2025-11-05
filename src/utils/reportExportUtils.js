@@ -896,7 +896,7 @@ export const exportStudentListWithParents = async (
     });
 
     // Create worksheet
-    const worksheet = XLSXLib.utils.aoa_to_sheet(wsData);
+    const worksheet = XLSX.utils.aoa_to_sheet(wsData);
 
     // Set column widths
     worksheet['!cols'] = [
