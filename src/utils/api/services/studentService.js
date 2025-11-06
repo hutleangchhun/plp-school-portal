@@ -424,7 +424,9 @@ export const studentService = {
         search = '',
         classId,
         gradeLevel,
-        status
+        status,
+        hasAccessibility,
+        isEtnicgroup
       } = params;
 
       const queryParams = {
@@ -458,6 +460,16 @@ export const studentService = {
         } else if (typeof status === 'boolean') {
           queryParams.status = status;
         }
+      }
+
+      // Add hasAccessibility filter for students with disabilities (report6)
+      if (hasAccessibility === true) {
+        queryParams.hasAccessibility = true;
+      }
+
+      // Add isEtnicgroup filter for ethnic minority students (report9)
+      if (isEtnicgroup === true) {
+        queryParams.isEtnicgroup = true;
       }
 
       console.log('=== FETCHING STUDENTS WITH FILTERS ===');

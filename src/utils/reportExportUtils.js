@@ -280,8 +280,18 @@ export const transformNutritionSupportReport = (rawData) => {
 export const transformDisabilityReport = (rawData) => {
   if (!Array.isArray(rawData)) return [];
 
-  // Data is already filtered in Reports.jsx, just transform it
-  return rawData.map((student, index) => {
+  // Filter to only include students with actual accessibility/disability data
+  const studentsWithDisabilities = rawData.filter(student => {
+    const accessibilityInfo = student.accessibility || student.specialNeeds || student.special_needs || '';
+    // Only include students with valid accessibility data
+    return accessibilityInfo && 
+           accessibilityInfo !== '' && 
+           accessibilityInfo !== 'null' && 
+           accessibilityInfo !== 'none' &&
+           accessibilityInfo !== 'None';
+  });
+
+  return studentsWithDisabilities.map((student, index) => {
     // Extract accessibility/disability information
     const accessibilityInfo = student.accessibility || student.specialNeeds || student.special_needs || '';
     const disabilityType = Array.isArray(accessibilityInfo) 
@@ -380,8 +390,19 @@ export const transformPersonalIssuesReport = (rawData) => {
 export const transformIndigenousMinorityReport = (rawData) => {
   if (!Array.isArray(rawData)) return [];
 
-  // Data is already filtered in Reports.jsx, just transform it
-  return rawData.map((student, index) => {
+  // Filter to only include students with ethnic minority data (not Khmer)
+  const ethnicMinorityStudents = rawData.filter(student => {
+    const ethnicGroup = student.ethnicGroup || student.ethnic_group || '';
+    // Only include students with valid ethnic group data (not empty, not Khmer)
+    return ethnicGroup && 
+           ethnicGroup !== '' && 
+           ethnicGroup !== 'Unknown' && 
+           ethnicGroup !== 'unknown' && 
+           ethnicGroup !== 'null' &&
+           ethnicGroup !== 'ខ្មែរ';
+  });
+
+  return ethnicMinorityStudents.map((student, index) => {
     // Extract ethnic group information
     const ethnicGroup = student.ethnicGroup || student.ethnic_group || '';
 
