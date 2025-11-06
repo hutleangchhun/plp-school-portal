@@ -705,9 +705,9 @@ export default function Reports() {
                     className="h-[300px] w-full"
                   >
                     <BarChart data={parentStatusData} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
-                      <XAxis type="number" tickLine={false} axisLine={false} />
+                      <XAxis type="number" tickLine={false} axisLine={false} allowDecimals={false} />
                       <YAxis dataKey="name" type="category" width={90} tickLine={false} axisLine={false} className="text-xs" />
-                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartTooltip content={<ChartTooltipContent formatter={(value) => Math.round(value)} />} />
                       <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                         {parentStatusData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
@@ -745,7 +745,7 @@ export default function Reports() {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartTooltip content={<ChartTooltipContent formatter={(value) => Math.round(value)} />} />
                     </PieChart>
                   </ChartContainer>
                 </div>
@@ -764,9 +764,9 @@ export default function Reports() {
                     className="h-[300px] w-full"
                   >
                     <BarChart data={ethnicGroupData} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-                      <XAxis type="number" tickLine={false} axisLine={false} />
+                      <XAxis type="number" tickLine={false} axisLine={false} allowDecimals={false} />
                       <YAxis dataKey="name" type="category" width={70} tickLine={false} axisLine={false} className="text-xs" />
-                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartTooltip content={<ChartTooltipContent formatter={(value) => Math.round(value)} />} />
                       <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                         {ethnicGroupData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
@@ -804,7 +804,7 @@ export default function Reports() {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartTooltip content={<ChartTooltipContent formatter={(value) => Math.round(value)} />} />
                     </PieChart>
                   </ChartContainer>
                 </div>
