@@ -492,11 +492,39 @@ export default function TeacherAttendance() {
       return;
     }
 
+    const dateStr = date.toISOString().split('T')[0];
+    const existingAttendanceId = attendanceModal.existingAttendance?.id;
+
+    // Optimistic UI update - update state immediately
+    const optimisticAttendance = {
+      status: status.toUpperCase(),
+      time: new Date().toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }),
+      id: existingAttendanceId || Date.now(), // Temporary ID for new records
+      createdAt: new Date().toISOString(),
+      reason: reason || ''
+    };
+
+    // Update local state immediately for instant feedback
+    setWeeklyAttendance(prev => ({
+      ...prev,
+      [teacher.id]: {
+        ...(prev[teacher.id] || {}),
+        [dateStr]: optimisticAttendance
+      }
+    }));
+
+    // Close modal immediately for better UX
+    closeAttendanceModal();
+
+    // Show success message immediately
+    _showSuccess(t('attendanceMarkedSuccess', 'វត្តមានត្រូវបានបញ្ជូនដោយជោគជ័យ'));
+
     try {
       setSubmittingAttendance(true);
-      startLoading('markAttendance', t('submittingAttendance', 'កំពុងបញ្ជូនវត្តមាន...'));
-
-      const dateStr = date.toISOString().split('T')[0];
 
       // For teacher attendance: NO classId required (unlike student attendance)
       const payload = {
@@ -506,34 +534,64 @@ export default function TeacherAttendance() {
         reason: reason || null
       };
 
-      // Check if attendance already exists for this date
-      const existingAttendanceId = attendanceModal.existingAttendance?.id;
-
+      let response;
       if (existingAttendanceId) {
         // Update existing record using PATCH
-        await attendanceService.updateAttendance(existingAttendanceId, payload);
+        response = await attendanceService.updateAttendance(existingAttendanceId, payload);
       } else {
         // Create new record using POST
-        await attendanceService.createAttendance(payload);
+        response = await attendanceService.createAttendance(payload);
       }
 
-      _showSuccess(t('attendanceMarkedSuccess', 'វត្តមានត្រូវបានបញ្ជូនដោយជោគជ័យ'));
-
-      // Refresh attendance data
-      await fetchTeachersAndAttendance();
-
-      // Close modal
-      closeAttendanceModal();
+      // Update with actual server response if available
+      if (response?.data) {
+        const record = response.data;
+        setWeeklyAttendance(prev => ({
+          ...prev,
+          [teacher.id]: {
+            ...(prev[teacher.id] || {}),
+            [dateStr]: {
+              status: record.status?.toUpperCase() || status.toUpperCase(),
+              time: record.createdAt ? new Date(record.createdAt).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+              }) : optimisticAttendance.time,
+              id: record.id || optimisticAttendance.id,
+              createdAt: record.createdAt || optimisticAttendance.createdAt,
+              reason: record.reason || reason || ''
+            }
+          }
+        }));
+      }
     } catch (error) {
       console.error('Error marking attendance:', error);
+
+      // Revert optimistic update on error
+      setWeeklyAttendance(prev => {
+        const newState = { ...prev };
+        if (attendanceModal.existingAttendance) {
+          // Restore previous attendance
+          newState[teacher.id] = {
+            ...(prev[teacher.id] || {}),
+            [dateStr]: attendanceModal.existingAttendance
+          };
+        } else {
+          // Remove the optimistic entry
+          if (newState[teacher.id]) {
+            const { [dateStr]: removed, ...rest } = newState[teacher.id];
+            newState[teacher.id] = rest;
+          }
+        }
+        return newState;
+      });
 
       const errorMessage = error.response?.data?.message || error.message || '';
       _showError(t('failedToMarkAttendance', 'បរាជ័យក្នុងការបញ្ជូនវត្តមាន') + (errorMessage ? ': ' + errorMessage : ''));
     } finally {
       setSubmittingAttendance(false);
-      stopLoading('markAttendance');
     }
-  }, [attendanceModal, t, _showSuccess, _showError, startLoading, stopLoading, fetchTeachersAndAttendance, closeAttendanceModal]);
+  }, [attendanceModal, t, _showSuccess, _showError, closeAttendanceModal]);
 
   // Helper function to translate attendance status to Khmer
   const getStatusInKhmer = useCallback((status) => {
