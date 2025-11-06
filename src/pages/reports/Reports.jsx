@@ -6,11 +6,12 @@ import DynamicLoader from '../../components/ui/DynamicLoader';
 import Dropdown from '../../components/ui/Dropdown';
 import EmptyState from '../../components/ui/EmptyState';
 import { processAndExportReport } from '../../utils/reportExportUtils';
-import { exportReport4ToExcel } from '../../utils/report4ExportUtils';
 import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { parentService } from '../../utils/api/services/parentService';
+// Report 4 modular components
+import { useReport4Data, Report4Preview, exportReport4ToExcel } from './report4';
 import { 
   BarChart, 
   Bar, 
@@ -241,6 +242,16 @@ export default function Reports() {
         const classStudents = studentsResponse.data;
         console.log(`👥 Found ${classStudents.length} students in class`);
         console.log('📋 Sample student from API:', classStudents[0]);
+        console.log('🔍 Student fields:', {
+          hasStudentNumber: !!classStudents[0]?.studentNumber,
+          hasStudent_number: !!classStudents[0]?.student_number,
+          hasNestedStudent: !!classStudents[0]?.student,
+          hasNestedStudentNumber: !!classStudents[0]?.student?.studentNumber,
+          hasGender: !!classStudents[0]?.gender,
+          hasNestedGender: !!classStudents[0]?.student?.gender,
+          studentNumberValue: classStudents[0]?.studentNumber || classStudents[0]?.student_number || classStudents[0]?.student?.studentNumber,
+          genderValue: classStudents[0]?.gender || classStudents[0]?.student?.gender
+        });
 
         // Then fetch attendance records for the date range
         const attendanceResponse = await attendanceService.getAttendance({
@@ -262,24 +273,44 @@ export default function Reports() {
           });
         }
 
+        // Fetch full student details for each student (to get studentNumber and gender)
+        const studentsWithFullDetails = await Promise.all(
+          classStudents.map(async (student) => {
+            try {
+              const userId = student.userId || student.user?.id || student.id;
+              const studentId = student.studentId || student.id;
+              
+              // Fetch full student details
+              const fullStudentResponse = await studentService.getStudentById(userId);
+              
+              if (!fullStudentResponse.success || !fullStudentResponse.data) {
+                console.warn(`⚠️ Could not fetch full details for user ${userId}`);
+                return student; // Return basic student if full details fail
+              }
+              
+              const fullStudent = fullStudentResponse.data;
+              
+              // Merge basic student info with full details
+              return {
+                ...student,
+                student: fullStudent, // Full student object with all details
+                studentNumber: fullStudent.student?.studentNumber || fullStudent.studentNumber || '',
+                gender: fullStudent.gender || fullStudent.student?.gender || ''
+              };
+            } catch (error) {
+              console.error(`Error fetching full details for student:`, error);
+              return student; // Return basic student on error
+            }
+          })
+        );
+
+        console.log('✅ Fetched full details for all students');
+        console.log('📋 Sample student with full details:', studentsWithFullDetails[0]);
+
         // Combine students with their attendance records
-        const studentsWithAttendance = classStudents.map(student => {
+        const studentsWithAttendance = studentsWithFullDetails.map(student => {
           const userId = student.userId || student.id;
           const attendances = attendanceByUserId[userId] || [];
-
-          // Extract student number from various possible locations
-          const studentNumber = student.student?.studentNumber || 
-                               student.studentNumber || 
-                               student.student_number ||
-                               student.student?.student_number ||
-                               '';
-          
-          // Extract gender from various possible locations
-          const gender = student.student?.gender || 
-                        student.gender ||
-                        student.student?.sex ||
-                        student.sex ||
-                        '';
 
           return {
             userId: userId,
@@ -287,10 +318,10 @@ export default function Reports() {
             firstName: student.firstName || student.first_name || '',
             lastName: student.lastName || student.last_name || '',
             khmerName: `${student.lastName || student.last_name || ''} ${student.firstName || student.first_name || ''}`.trim(),
-            gender: gender,
+            gender: student.gender || '',
             class: student.class,
-            student: student.student || student, // Include nested student object for studentNumber and other details
-            studentNumber: studentNumber,
+            student: student.student || student, // Full student object
+            studentNumber: student.studentNumber || '',
             attendances: attendances
           };
         });
