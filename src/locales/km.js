@@ -1081,7 +1081,7 @@ export const km = {
   
   // Data Display
   noDataAvailable: 'មិនមានទិន្នន័យ',
-  noDataMessage: 'សូមជ្រើសរើសកម្រងហើយរង់ចាំទិន្នន័យផ្ទុក',
+  noDataMessage: 'សូមជ្រើសរើសកម្រងហើយរង់ចាំទិន្នន័យដែលមាន',
   recordsLoaded: 'កំណត់ត្រាបានផ្ទុក',
   noDataToExport: 'មិនមានទិន្នន័យសម្រាប់នាំចេញ។ សូមរង់ចាំទិន្នន័យផ្ទុក។',
   note: 'ចំណាំ',

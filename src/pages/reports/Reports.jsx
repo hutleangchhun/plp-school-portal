@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import DynamicLoader from '../../components/ui/DynamicLoader';
 import Dropdown from '../../components/ui/Dropdown';
-import Badge from '../../components/ui/Badge';
+import EmptyState from '../../components/ui/EmptyState';
 import { processAndExportReport } from '../../utils/reportExportUtils';
 import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
@@ -543,17 +543,12 @@ export default function Reports() {
 
     if (!reportData || reportData.length === 0) {
       return (
-        <div className="bg-white rounded-lg shadow p-12">
-          <div className="text-center">
-            <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              {t('noDataAvailable', 'No Data Available')}
-            </h3>
-            <p className="text-gray-600">
-              {t('noDataMessage', 'Please select filters and wait for data to load.')}
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={BarChart3}
+          title={t('noDataAvailable', 'No Data Available')}
+          description={t('noDataMessage', 'Please select filters and wait for data to load.')}
+          variant="info"
+        />
       );
     }
 
