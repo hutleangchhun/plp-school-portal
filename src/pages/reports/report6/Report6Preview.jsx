@@ -54,6 +54,9 @@ export const Report6Preview = ({ data }) => {
                 {t('gender', 'Gender')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('class', 'Class')}
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t('disabilityType', 'Disability Type')}
               </th>
             </tr>
@@ -74,6 +77,9 @@ export const Report6Preview = ({ data }) => {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {student.gender === 'MALE' ? t('male', 'ប្រុស') : student.gender === 'FEMALE' ? t('female', 'ស្រី') : ''}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {student.class?.name || student.className || ''}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {disabilityType || ''}

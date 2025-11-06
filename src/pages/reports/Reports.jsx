@@ -331,6 +331,7 @@ export default function Reports() {
 
         console.log(`✅ Processed ${studentsWithAttendance.length} students with attendance data`);
         console.log('📊 Sample student data:', studentsWithAttendance[0]);
+        console.log('📊 Sample student class:', studentsWithAttendance[0]?.class);
         setReportData(studentsWithAttendance);
       } else if (['report1', 'report6', 'report9'].includes(selectedReport)) {
         // For report1, report6, report9 - fetch students with full details and parent information
@@ -503,10 +504,12 @@ export default function Reports() {
                 
                 console.log(`📋 Processed ${parentsArray.length} parents with full details for student ${studentId}`);
                 
-                // Combine full student data with parents
+                // Combine full student data with parents and preserve class info
                 return {
                   ...fullStudent,
                   studentId: studentId,
+                  class: basicStudent.class || fullStudent.class, // Preserve class from basicStudent
+                  className: basicStudent.class?.name || fullStudent.class?.name, // Add className for easy access
                   parents: parentsArray
                 };
               } catch (error) {
@@ -518,6 +521,7 @@ export default function Reports() {
           
           console.log(`✅ Processed ${studentsWithFullData.length} students with full data and parents`);
           console.log('📊 Sample student with full data:', studentsWithFullData[0]);
+          console.log('📊 Sample student class:', studentsWithFullData[0]?.class);
           
           // Apply client-side filtering as backup (in case API filter doesn't work properly)
           let filteredData = studentsWithFullData;

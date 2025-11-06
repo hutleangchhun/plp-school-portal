@@ -69,6 +69,9 @@ export const Report4Preview = ({ data }) => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   {t('gender', 'ភេទ')}
                 </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  {t('class', 'ថ្នាក់')}
+                </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
                   {t('absent', 'អច្ប')}
                 </th>
@@ -88,6 +91,9 @@ export const Report4Preview = ({ data }) => {
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : ''}
                     </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {student.class?.name || student.className || ''}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-800">
                         {student.absentCount}
@@ -106,7 +112,7 @@ export const Report4Preview = ({ data }) => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-4 py-8 text-center text-sm text-gray-500">
+                  <td colSpan="6" className="px-4 py-8 text-center text-sm text-gray-500">
                     {t('noAbsences', 'មិនមានអវត្តមាន')}
                   </td>
                 </tr>
@@ -135,6 +141,9 @@ export const Report4Preview = ({ data }) => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   {t('gender', 'ភេទ')}
                 </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  {t('class', 'ថ្នាក់')}
+                </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
                   {t('leave', 'ច្ប')}
                 </th>
@@ -154,6 +163,9 @@ export const Report4Preview = ({ data }) => {
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : ''}
                     </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {student.class?.name || student.className || ''}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-orange-100 text-orange-800">
                         {student.leaveCount}
@@ -172,7 +184,7 @@ export const Report4Preview = ({ data }) => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-4 py-8 text-center text-sm text-gray-500">
+                  <td colSpan="6" className="px-4 py-8 text-center text-sm text-gray-500">
                     {t('noLeaves', 'មិនមានច្ប')}
                   </td>
                 </tr>
