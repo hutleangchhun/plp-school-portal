@@ -240,6 +240,7 @@ export default function Reports() {
 
         const classStudents = studentsResponse.data;
         console.log(`👥 Found ${classStudents.length} students in class`);
+        console.log('📋 Sample student from API:', classStudents[0]);
 
         // Then fetch attendance records for the date range
         const attendanceResponse = await attendanceService.getAttendance({
@@ -266,14 +267,30 @@ export default function Reports() {
           const userId = student.userId || student.id;
           const attendances = attendanceByUserId[userId] || [];
 
+          // Extract student number from various possible locations
+          const studentNumber = student.student?.studentNumber || 
+                               student.studentNumber || 
+                               student.student_number ||
+                               student.student?.student_number ||
+                               '';
+          
+          // Extract gender from various possible locations
+          const gender = student.student?.gender || 
+                        student.gender ||
+                        student.student?.sex ||
+                        student.sex ||
+                        '';
+
           return {
             userId: userId,
             studentId: student.studentId || student.id || userId,
             firstName: student.firstName || student.first_name || '',
             lastName: student.lastName || student.last_name || '',
             khmerName: `${student.lastName || student.last_name || ''} ${student.firstName || student.first_name || ''}`.trim(),
-            gender: student.gender || '',
+            gender: gender,
             class: student.class,
+            student: student.student || student, // Include nested student object for studentNumber and other details
+            studentNumber: studentNumber,
             attendances: attendances
           };
         });
@@ -913,8 +930,10 @@ export default function Reports() {
           
           return {
             ...student,
-            // Use actual studentNumber from student data (same as Report 1)
+            // Use actual studentNumber from nested student object (same as Report 1)
             studentNumber: student.student?.studentNumber || student.studentNumber || '',
+            // Use gender from nested student object with fallback
+            gender: student.student?.gender || student.gender || '',
             absentCount,
             leaveCount,
             totalAbsences,

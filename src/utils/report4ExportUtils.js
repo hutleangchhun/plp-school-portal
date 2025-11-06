@@ -89,6 +89,16 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
       }
     }
 
+    // Generate filename suffix based on period
+    let monthYearName = '';
+    if (period === 'month') {
+      monthYearName = formatDateKhmer(currentDate, 'monthYear');
+    } else if (period === 'semester') {
+      monthYearName = `${periodName}_${selectedYear}`;
+    } else {
+      monthYearName = selectedYear;
+    }
+
     // Format date to string (YYYY-MM-DD)
     const formatDateToString = (date) => {
       if (!date) return '';
