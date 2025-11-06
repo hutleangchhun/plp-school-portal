@@ -39,20 +39,23 @@ export default function Reports() {
   const [availableClasses, setAvailableClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState('all');
 
-  // 16 Report Types - waiting for your specific report names
+  // Report Types - Only showing working reports (others are commented out for future implementation)
   const reportTypes = [
+    // ✅ Working Reports
     { value: 'report1', label: t('reportStudentNameInfo', 'បញ្ជីហៅឈ្មោះសិស្ស') },
-    { value: 'report3', label: t('report3', 'បញ្ជីមធ្យមភាគសិស្ស') },
     { value: 'report4', label: t('report4', 'បញ្ជីអវត្តមានសិស្ស') },
-    { value: 'report5', label: t('report5', 'បញ្ជីឈ្មោះសិស្សអាហារូបករណ៍') },
     { value: 'report6', label: t('report6', 'បញ្ជីឈ្មោះសិស្សមានពិការភាព') },
-    { value: 'report7', label: t('report7', 'បញ្ជីឈ្មោះសិស្សមានបញ្ហាសុខភាព') },
-    { value: 'report8', label: t('report8', 'បញ្ជីឈ្មោះសិស្សមានបញ្ហាផ្ទាល់ខ្លួន') },
     { value: 'report9', label: t('report9', 'បញ្ជីឈ្មោះសិស្សជាជនជាតិដើមភាគតិច') },
-    { value: 'report10', label: t('report10', 'បញ្ជីឈ្មោះសិស្សផ្លាស់ប្ដូរថ្នាក់') },
-    { value: 'report11', label: t('report11', 'បញ្ជីឈ្មោះសិស្សបោះបង់ការសិក្សារ') },
-    { value: 'report12', label: t('report12', 'សៀវភៅតាមដាន') },
-    { value: 'report13', label: t('report13', 'សៀវភៅសិក្ខាគារិក') },
+    
+    // 🚧 Not Yet Implemented - Uncomment when ready
+    // { value: 'report3', label: t('report3', 'បញ្ជីមធ្យមភាគសិស្ស') },
+    // { value: 'report5', label: t('report5', 'បញ្ជីឈ្មោះសិស្សអាហារូបករណ៍') },
+    // { value: 'report7', label: t('report7', 'បញ្ជីឈ្មោះសិស្សមានបញ្ហាសុខភាព') },
+    // { value: 'report8', label: t('report8', 'បញ្ជីឈ្មោះសិស្សមានបញ្ហាផ្ទាល់ខ្លួន') },
+    // { value: 'report10', label: t('report10', 'បញ្ជីឈ្មោះសិស្សផ្លាស់ប្ដូរថ្នាក់') },
+    // { value: 'report11', label: t('report11', 'បញ្ជីឈ្មោះសិស្សបោះបង់ការសិក្សារ') },
+    // { value: 'report12', label: t('report12', 'សៀវភៅតាមដាន') },
+    // { value: 'report13', label: t('report13', 'សៀវភៅសិក្ខាគារិក') },
   ];
 
   // Time Period Options
