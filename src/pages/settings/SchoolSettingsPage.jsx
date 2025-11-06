@@ -563,7 +563,7 @@ export default function SchoolSettingsPage({ user }) {
                         <img
                           src={previewUrl}
                           alt="School profile"
-                          className="w-32 h-32 rounded-lg object-cover border border-gray-200 group-hover:opacity-75 transition-opacity"
+                          className="w-32 h-32 rounded-lg object-cover border border-gray-200 group-hover:opacity-75 transition-opacity bg-transparent"
                           onError={handleImageLoadError}
                         />
                         <div className="absolute inset-0 rounded-lg bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
