@@ -6,6 +6,7 @@ import DynamicLoader from '../../components/ui/DynamicLoader';
 import Dropdown from '../../components/ui/Dropdown';
 import EmptyState from '../../components/ui/EmptyState';
 import { processAndExportReport } from '../../utils/reportExportUtils';
+import { exportReport4ToExcel } from '../../utils/report4ExportUtils';
 import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
@@ -146,6 +147,16 @@ export default function Reports() {
         return;
       }
 
+      // For report4 (absence report), validate class selection first
+      if (selectedReport === 'report4') {
+        if (!selectedClass || selectedClass === 'all') {
+          // Don't show error, just set empty data and stop loading
+          setReportData([]);
+          setLoading(false);
+          return;
+        }
+      }
+
       console.log('📊 Fetching report data:', {
         report: selectedReport,
         period: selectedPeriod,
@@ -203,48 +214,73 @@ export default function Reports() {
           endDate: formatDate(endDate)
         });
 
-        // Fetch attendance records
-        const attendanceResponse = await attendanceService.getAttendance({
-          classId: selectedClass !== 'all' ? parseInt(selectedClass) : undefined,
-          startDate: formatDate(startDate),
-          endDate: formatDate(endDate),
-          limit: 400
+        // Calculate appropriate API limit based on period
+        // For ~60 students per class:
+        // - Monthly: ~1,800 records (60 × 30 days)
+        // - Semester: ~10,800 records (60 × 180 days)
+        // - Yearly: ~21,900 records (60 × 365 days)
+        let apiLimit = 200; // Default for monthly
+        if (selectedPeriod === 'semester') {
+          apiLimit = 1000; // Semester (6 months)
+        } else if (selectedPeriod === 'year') {
+          apiLimit = 2000; // Full year
+        }
+
+        // First, fetch all students in the selected class
+        console.log('👥 Fetching students for class:', selectedClass);
+        const studentsResponse = await studentService.getStudentsBySchoolClasses(schoolId, {
+          classId: parseInt(selectedClass),
+          limit: 100,
+          page: 1
         });
 
-        if (attendanceResponse.success) {
-          // Group attendance by student and calculate absences
-          const attendanceByStudent = {};
-          
+        if (!studentsResponse.success || !studentsResponse.data) {
+          throw new Error('Failed to fetch students for the selected class');
+        }
+
+        const classStudents = studentsResponse.data;
+        console.log(`👥 Found ${classStudents.length} students in class`);
+
+        // Then fetch attendance records for the date range
+        const attendanceResponse = await attendanceService.getAttendance({
+          classId: parseInt(selectedClass),
+          startDate: formatDate(startDate),
+          endDate: formatDate(endDate),
+          limit: apiLimit
+        });
+
+        // Create a map of attendance records by userId
+        const attendanceByUserId = {};
+        if (attendanceResponse.success && attendanceResponse.data) {
           attendanceResponse.data.forEach(record => {
             const userId = record.userId;
-            if (!attendanceByStudent[userId]) {
-              // Extract user data from the attendance record
-              const user = record.user || {};
-              const student = record.student || {};
-              
-              attendanceByStudent[userId] = {
-                userId: userId,
-                studentId: student.studentId || student.id || userId,
-                // Use first_name and last_name from user object
-                firstName: user.first_name || user.firstName || '',
-                lastName: user.last_name || user.lastName || '',
-                khmerName: `${user.last_name || user.lastName || ''} ${user.first_name || user.firstName || ''}`.trim(),
-                gender: user.gender || '',
-                class: record.class,
-                attendances: []
-              };
+            if (!attendanceByUserId[userId]) {
+              attendanceByUserId[userId] = [];
             }
-            attendanceByStudent[userId].attendances.push(record);
+            attendanceByUserId[userId].push(record);
           });
-
-          // Convert to array format expected by transformer
-          const studentsWithAttendance = Object.values(attendanceByStudent);
-          console.log(`✅ Processed ${studentsWithAttendance.length} students with attendance data`);
-          console.log('📊 Sample student data:', studentsWithAttendance[0]);
-          setReportData(studentsWithAttendance);
-        } else {
-          throw new Error(attendanceResponse.error || 'Failed to fetch attendance data');
         }
+
+        // Combine students with their attendance records
+        const studentsWithAttendance = classStudents.map(student => {
+          const userId = student.userId || student.id;
+          const attendances = attendanceByUserId[userId] || [];
+
+          return {
+            userId: userId,
+            studentId: student.studentId || student.id || userId,
+            firstName: student.firstName || student.first_name || '',
+            lastName: student.lastName || student.last_name || '',
+            khmerName: `${student.lastName || student.last_name || ''} ${student.firstName || student.first_name || ''}`.trim(),
+            gender: student.gender || '',
+            class: student.class,
+            attendances: attendances
+          };
+        });
+
+        console.log(`✅ Processed ${studentsWithAttendance.length} students with attendance data`);
+        console.log('📊 Sample student data:', studentsWithAttendance[0]);
+        setReportData(studentsWithAttendance);
       } else if (['report1', 'report6', 'report9'].includes(selectedReport)) {
         // For report1, report6, report9 - fetch students with full details and parent information
         console.log(`📋 Fetching students with parent information for ${selectedReport}`);
@@ -495,24 +531,63 @@ export default function Reports() {
       const userData = JSON.parse(localStorage.getItem('user') || '{}');
       const schoolName = schoolInfo?.name || userData?.school?.name || 'PLP School';
 
-      // Get class name for report1
+      // Get class name for report1 and report4
       let className = '';
-      if (selectedReport === 'report1' && selectedClass && selectedClass !== 'all') {
+      if (['report1', 'report4'].includes(selectedReport) && selectedClass && selectedClass !== 'all') {
         const classOption = availableClasses.find(c => c.value === selectedClass);
         className = classOption?.label || '';
       }
 
       console.log(`📥 Exporting report: ${reportName} with ${reportData.length} records`);
 
-      // Process and export the report with real data
-      const result = await processAndExportReport(
-        selectedReport,
-        reportData,
-        reportName,
-        periodInfo,
-        schoolName,
-        className
-      );
+      // Special handling for Report 4 (Absence Report) - use calendar format
+      let result;
+      if (selectedReport === 'report4') {
+        // Calculate date range and selected date based on period
+        let selectedDate = new Date();
+        let startDate, endDate;
+        const year = parseInt(selectedYear);
+        
+        if (selectedPeriod === 'month' && selectedMonth) {
+          // Monthly report
+          const monthIndex = parseInt(selectedMonth) - 1;
+          selectedDate = new Date(year, monthIndex, 15);
+          startDate = new Date(year, monthIndex, 1);
+          endDate = new Date(year, monthIndex + 1, 0);
+        } else if (selectedPeriod === 'semester') {
+          // Semester report (6 months)
+          selectedDate = new Date(year, 0, 15);
+          startDate = new Date(year, 0, 1);
+          endDate = new Date(year, 5, 30);
+        } else {
+          // Yearly report
+          selectedDate = new Date(year, 0, 15);
+          startDate = new Date(year, 0, 1);
+          endDate = new Date(year, 11, 31);
+        }
+
+        result = await exportReport4ToExcel(reportData, {
+          schoolName,
+          className: className || 'All Classes',
+          selectedDate,
+          period: selectedPeriod,
+          periodName,
+          monthName,
+          selectedYear,
+          startDate,
+          endDate
+        });
+      } else {
+        // Process and export other reports with standard format
+        result = await processAndExportReport(
+          selectedReport,
+          reportData,
+          reportName,
+          periodInfo,
+          schoolName,
+          className
+        );
+      }
 
       if (result.success) {
         showSuccess(t('reportExportedSuccessfully', `Report exported: ${reportName} - ${result.recordCount} records`));
@@ -542,6 +617,18 @@ export default function Reports() {
     }
 
     if (!reportData || reportData.length === 0) {
+      // Special message for Report 4 when no class is selected
+      if (selectedReport === 'report4' && (!selectedClass || selectedClass === 'all')) {
+        return (
+          <EmptyState
+            icon={Filter}
+            title={t('selectClassRequired', 'Class Selection Required')}
+            description={t('selectClassForReport4', 'Please select a specific class for the absence report')}
+            variant="warning"
+          />
+        );
+      }
+      
       return (
         <EmptyState
           icon={BarChart3}
@@ -812,6 +899,178 @@ export default function Reports() {
         );
       }
 
+      // For report4 - show students with most absences and leaves
+      if (selectedReport === 'report4') {
+        // Calculate absence statistics for each student
+        const studentsWithStats = reportData.map((student) => {
+          const attendances = student.attendances || [];
+          const absentCount = attendances.filter(a => a.status === 'ABSENT').length;
+          const leaveCount = attendances.filter(a => a.status === 'LEAVE').length;
+          const totalAbsences = absentCount + leaveCount;
+          const presentCount = attendances.filter(a => a.status === 'PRESENT').length;
+          const totalDays = attendances.length;
+          const attendanceRate = totalDays > 0 ? ((presentCount / totalDays) * 100).toFixed(1) : 0;
+          
+          return {
+            ...student,
+            // Use actual studentNumber from student data (same as Report 1)
+            studentNumber: student.student?.studentNumber || student.studentNumber || '',
+            absentCount,
+            leaveCount,
+            totalAbsences,
+            presentCount,
+            totalDays,
+            attendanceRate
+          };
+        });
+
+        // Get top 1 student with most absences
+        const topAbsentStudent = [...studentsWithStats]
+          .sort((a, b) => b.absentCount - a.absentCount)
+          .slice(0, 1);
+
+        // Get top 1 student with most leaves
+        const topLeaveStudent = [...studentsWithStats]
+          .sort((a, b) => b.leaveCount - a.leaveCount)
+          .slice(0, 1);
+
+        return (
+          <div className="space-y-6">
+            {/* Student with Most Absences Table */}
+            <div className="bg-white border border-red-200 rounded-lg p-6">
+              <h4 className="text-sm font-semibold text-red-900 mb-4 flex items-center">
+                <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-bold mr-2">អច្ប</span>
+                {t('studentWithMostAbsences', 'សិស្សដែលអវត្តមានច្រើនបំផុត')}
+              </h4>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-red-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        {t('studentId', 'អត្តលេខ')}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        {t('name', 'ឈ្មោះ')}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        {t('gender', 'ភេទ')}
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        {t('absent', 'អច្ប')}
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        {t('attendanceRate', 'អត្រាវត្តមាន')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {topAbsentStudent.length > 0 ? (
+                      topAbsentStudent.map((student, index) => (
+                        <tr key={index} className="hover:bg-red-50">
+                          <td className="px-4 py-3 text-sm text-gray-900 font-medium">{student.studentNumber}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || ''}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : ''}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-800">
+                              {student.absentCount}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                              student.attendanceRate >= 90 ? 'bg-green-100 text-green-800' :
+                              student.attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {student.attendanceRate}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="px-4 py-8 text-center text-sm text-gray-500">
+                          {t('noAbsences', 'មិនមានអវត្តមាន')}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Student with Most Leaves Table */}
+            <div className="bg-white border border-orange-200 rounded-lg p-6">
+              <h4 className="text-sm font-semibold text-orange-900 mb-4 flex items-center">
+                <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-bold mr-2">ច្ប</span>
+                {t('studentWithMostLeaves', 'សិស្សដែលច្បច្រើនបំផុត')}
+              </h4>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-orange-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        {t('studentId', 'អត្តលេខ')}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        {t('name', 'ឈ្មោះ')}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        {t('gender', 'ភេទ')}
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        {t('leave', 'ច្ប')}
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        {t('attendanceRate', 'អត្រាវត្តមាន')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {topLeaveStudent.length > 0 ? (
+                      topLeaveStudent.map((student, index) => (
+                        <tr key={index} className="hover:bg-orange-50">
+                          <td className="px-4 py-3 text-sm text-gray-900 font-medium">{student.studentNumber}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || ''}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : ''}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-orange-100 text-orange-800">
+                              {student.leaveCount}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                              student.attendanceRate >= 90 ? 'bg-green-100 text-green-800' :
+                              student.attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {student.attendanceRate}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="px-4 py-8 text-center text-sm text-gray-500">
+                          {t('noLeaves', 'មិនមានច្ប')}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       // For other reports - show summary stats
       return (
         <div className="space-y-6">
@@ -935,9 +1194,9 @@ export default function Reports() {
       {/* Filters */}
       <div className="px-4 sm:px-4">
         <div className="overflow-x-auto">
-          <div className="flex gap-4 min-w-max md:grid md:grid-cols-2 lg:grid-cols-4 md:min-w-full">
-            {/* Report Type Dropdown */}
-            <div className="flex-shrink-0 w-full md:w-auto">
+          <div className="flex gap-4 flex-wrap items-end">
+            {/* Step 1: Report Type Dropdown - Always shown first */}
+            <div className="flex-shrink-0 min-w-[200px]">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <BarChart3 className="h-4 w-4 inline mr-1" />
                 {t('reportType') || 'Report Type'}
@@ -959,69 +1218,13 @@ export default function Reports() {
               />
             </div>
 
-            {/* Time Period Dropdown - Hide for report1, report6, report9 */}
-            {!['report1', 'report6', 'report9'].includes(selectedReport) && (
-              <div className="flex-shrink-0 w-full md:w-auto">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Filter className="h-4 w-4 inline mr-1" />
-                  {t('timePeriod') || 'Time Period'}
-                </label>
-                <Dropdown
-                  value={selectedPeriod}
-                  onValueChange={setSelectedPeriod}
-                  options={timePeriods}
-                  placeholder={t('selectTimePeriod', 'Select time period...')}
-                  minWidth="w-full"
-                  maxHeight="max-h-40"
-                  itemsToShow={5}
-                />
-              </div>
-            )}
-
-            {/* Conditional: Month Dropdown (shown when period is 'month') - Hide for report1, report6, report9 */}
-            {!['report1', 'report6', 'report9'].includes(selectedReport) && selectedPeriod === 'month' && (
-              <div className="flex-shrink-0 w-full md:w-auto">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="h-4 w-4 inline mr-1" />
-                  {t('selectMonth') || 'Select Month'}
-                </label>
-                <Dropdown
-                  value={selectedMonth}
-                  onValueChange={setSelectedMonth}
-                  options={monthOptions}
-                  placeholder={t('selectMonth', 'Choose month...')}
-                  minWidth="w-full"
-                  maxHeight="max-h-40"
-                  itemsToShow={5}
-                />
-              </div>
-            )}
-
-            {/* Year Dropdown (shown for all periods) - Hide for report1, report6, report9 */}
-            {!['report1', 'report6', 'report9'].includes(selectedReport) && (
-              <div className="flex-shrink-0 w-full md:w-auto">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="h-4 w-4 inline mr-1" />
-                  {t('selectAcademicYear') || 'Select Year'}
-                </label>
-                <Dropdown
-                  value={selectedYear}
-                  onValueChange={setSelectedYear}
-                  options={yearOptions}
-                  placeholder={t('chooseYear', 'Choose year...')}
-                  minWidth="w-full"
-                  maxHeight="max-h-40"
-                  itemsToShow={5}
-                />
-              </div>
-            )}
-
-            {/* Class Filter - Shown for report1, report3, and report4 */}
+            {/* Step 2: Class Filter - Shown for report1, report3, and report4 (before date filters) */}
             {['report1', 'report3', 'report4'].includes(selectedReport) && (
-              <div className="flex-shrink-0 w-full md:w-auto">
+              <div className="flex-shrink-0 min-w-[200px]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Filter className="h-4 w-4 inline mr-1" />
                   {t('selectClass') || 'Select Class'}
+                  {selectedReport === 'report4' && <span className="text-red-500 ml-1">*</span>}
                 </label>
                 <Dropdown
                   value={selectedClass}
@@ -1033,6 +1236,123 @@ export default function Reports() {
                   itemsToShow={10}
                 />
               </div>
+            )}
+
+            {/* Step 3: Date filters - Only show after class is selected for report4 */}
+            {/* For report4: Show date filters only if class is selected */}
+            {selectedReport === 'report4' && selectedClass && selectedClass !== 'all' && (
+              <>
+                {/* Time Period Dropdown */}
+                <div className="flex-shrink-0 min-w-[200px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Filter className="h-4 w-4 inline mr-1" />
+                    {t('timePeriod') || 'Time Period'}
+                  </label>
+                  <Dropdown
+                    value={selectedPeriod}
+                    onValueChange={setSelectedPeriod}
+                    options={timePeriods}
+                    placeholder={t('selectTimePeriod', 'Select time period...')}
+                    minWidth="w-full"
+                    maxHeight="max-h-40"
+                    itemsToShow={5}
+                  />
+                </div>
+
+                {/* Month Dropdown (shown when period is 'month') */}
+                {selectedPeriod === 'month' && (
+                  <div className="flex-shrink-0 min-w-[200px]">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Calendar className="h-4 w-4 inline mr-1" />
+                      {t('selectMonth') || 'Select Month'}
+                    </label>
+                    <Dropdown
+                      value={selectedMonth}
+                      onValueChange={setSelectedMonth}
+                      options={monthOptions}
+                      placeholder={t('selectMonth', 'Choose month...')}
+                      minWidth="w-full"
+                      maxHeight="max-h-40"
+                      itemsToShow={5}
+                    />
+                  </div>
+                )}
+
+                {/* Year Dropdown */}
+                <div className="flex-shrink-0 min-w-[200px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="h-4 w-4 inline mr-1" />
+                    {t('selectAcademicYear') || 'Select Year'}
+                  </label>
+                  <Dropdown
+                    value={selectedYear}
+                    onValueChange={setSelectedYear}
+                    options={yearOptions}
+                    placeholder={t('chooseYear', 'Choose year...')}
+                    minWidth="w-full"
+                    maxHeight="max-h-40"
+                    itemsToShow={5}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* For other reports (not report1, report4, report6, report9): Show date filters normally */}
+            {!['report1', 'report4', 'report6', 'report9'].includes(selectedReport) && (
+              <>
+                {/* Time Period Dropdown */}
+                <div className="flex-shrink-0 min-w-[200px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Filter className="h-4 w-4 inline mr-1" />
+                    {t('timePeriod') || 'Time Period'}
+                  </label>
+                  <Dropdown
+                    value={selectedPeriod}
+                    onValueChange={setSelectedPeriod}
+                    options={timePeriods}
+                    placeholder={t('selectTimePeriod', 'Select time period...')}
+                    minWidth="w-full"
+                    maxHeight="max-h-40"
+                    itemsToShow={5}
+                  />
+                </div>
+
+                {/* Month Dropdown (shown when period is 'month') */}
+                {selectedPeriod === 'month' && (
+                  <div className="flex-shrink-0 min-w-[200px]">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Calendar className="h-4 w-4 inline mr-1" />
+                      {t('selectMonth') || 'Select Month'}
+                    </label>
+                    <Dropdown
+                      value={selectedMonth}
+                      onValueChange={setSelectedMonth}
+                      options={monthOptions}
+                      placeholder={t('selectMonth', 'Choose month...')}
+                      minWidth="w-full"
+                      maxHeight="max-h-40"
+                      itemsToShow={5}
+                    />
+                  </div>
+                )}
+
+                {/* Year Dropdown */}
+                <div className="flex-shrink-0 min-w-[200px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="h-4 w-4 inline mr-1" />
+                    {t('selectAcademicYear') || 'Select Year'}
+                  </label>
+                  <Dropdown
+                    value={selectedYear}
+                    onValueChange={setSelectedYear}
+                    options={yearOptions}
+                    placeholder={t('chooseYear', 'Choose year...')}
+                    minWidth="w-full"
+                    maxHeight="max-h-40"
+                    itemsToShow={5}
+                  />
+                </div>
+              </>
             )}
 
           </div>
