@@ -1080,12 +1080,6 @@ export default function Reports() {
         </div>
 
         {renderDataPreview()}
-
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>{t('note', 'Note')}:</strong> {t('reportReadyToExport', `${reportData.length} records are ready to export. Click the "Export Report" button above to download as Excel.`)}
-          </p>
-        </div>
       </div>
     );
   };

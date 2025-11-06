@@ -454,11 +454,11 @@ export default function Attendance() {
   }
 
   return (
-    <PageTransition variant="fade" className="flex-1 bg-gray-50">
-      <div className="p-4 sm:p-6 lg:p-8">
+    <PageTransition variant="fade" className="flex-1">
+      <div className="p-3 sm:p-4">
         {/* Header */}
-        <FadeInSection className="mb-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <FadeInSection>
+          <div className="p-4 sm:p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -508,7 +508,7 @@ export default function Attendance() {
         </FadeInSection>
         {/* Attendance List */}
         {selectedClass ? (
-          <FadeInSection>
+          <FadeInSection className='px-4 sm:px-6'>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200 bg-white">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

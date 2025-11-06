@@ -197,12 +197,12 @@ export default function AttendanceApprovalPage({ user }) {
   ];
 
   return (
-    <PageTransition className="flex-1 bg-gray-50 p-6">
+    <PageTransition className="flex-1 p-3 sm:p-4">
       <div className="mx-auto">
         {/* Header */}
-        <div className='bg-white p-6 rounded-lg shadow-sm'>
+        <div className='p-4 sm:p-6 sm:p-4'>
           <div className=' mb-6'>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
               {t('attendanceApprovals')}
             </h1>
             <p className="text-gray-600 mt-2">

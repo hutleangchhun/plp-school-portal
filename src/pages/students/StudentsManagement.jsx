@@ -1300,13 +1300,12 @@ export default function StudentsManagement() {
       )
     },
     {
-      key: 'gradeLevel',
-      header: t('gradeLevel', 'Grade Level'),
-      accessor: 'gradeLevel',
+      key: 'className',
+      header: t('class', 'Class'),
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (student) => (
-        <p>{student?.gradeLevel || 'N/A'}</p>
+        <p>{student?.class?.name || student?.className || 'N/A'}</p>
       )
     },
     {

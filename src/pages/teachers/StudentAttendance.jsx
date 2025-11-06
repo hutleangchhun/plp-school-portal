@@ -53,7 +53,7 @@ export default function TeacherAttendance({ user }) {
 
   const attendanceStatuses = [
     { value: 'PRESENT', label: t('present', 'Present'), icon: Check, color: 'green', bgColor: 'bg-green-100', textColor: 'text-green-600', borderColor: 'green' },
-    { value: 'ABSENT', label: t('absent', 'Absent'), icon: X, color: 'red', bgColor: 'bg-red-100', textColor: 'text-red-600', borderColor: 'red'  },
+    { value: 'ABSENT', label: t('absent', 'Absent'), icon: X, color: 'red', bgColor: 'bg-red-100', textColor: 'text-red-600', borderColor: 'red' },
     { value: 'LATE', label: t('late', 'Late'), icon: Clock, color: 'yellow', bgColor: 'bg-yellow-100', textColor: 'text-yellow-600', borderColor: 'yellow' },
     { value: 'LEAVE', label: t('leave', 'Leave'), icon: Calendar, color: 'purple', bgColor: 'bg-purple-100', textColor: 'text-purple-600', borderColor: 'purple' },
   ];
@@ -417,14 +417,14 @@ export default function TeacherAttendance({ user }) {
           {/* Filters */}
           <div className="p-6">
             {/* Header */}
-          <div className="mb-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              {t('attendance', 'Attendance')}
-            </h1>
-            <p className="text-sm text-gray-600 mt-1">
-              {t('markStudentAttendance', 'Mark student attendance for your classes')}
-            </p>
-          </div>
+            <div className="mb-4">
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
+                {t('attendance', 'Attendance')}
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                {t('markStudentAttendance', 'Mark student attendance for your classes')}
+              </p>
+            </div>
             <div className="flex gap-4 items-start items-center">
               {/* Class Selector */}
               <div className="w-full sm:w-auto">
@@ -583,11 +583,10 @@ export default function TeacherAttendance({ user }) {
                                     key={status.value}
                                     onClick={() => handleStatusChange(studentUserId, status.value)}
                                     disabled={isReadOnly}
-                                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all border-0 ${
-                                      isSelected
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all border-0 ${isSelected
                                         ? `${status.bgColor} ${status.textColor} border-${status.borderColor}-200`
                                         : `bg-transparent border-2 border-gray-100 text-gray-600 ${isReadOnly ? '' : 'hover:bg-gray-100'}`
-                                    } ${isReadOnly && !isSelected ? 'opacity-50' : ''} ${isReadOnly ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                      } ${isReadOnly && !isSelected ? 'opacity-50' : ''} ${isReadOnly ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                     title={isReadOnly ? t('cannotEditPastAttendance', 'Cannot edit attendance for past dates') : status.label}
                                   >
                                     <StatusIcon className="h-4 w-4" />
@@ -606,11 +605,10 @@ export default function TeacherAttendance({ user }) {
                                 placeholder={t('enterReason', 'Enter reason...')}
                                 disabled={isReadOnly}
                                 readOnly={isReadOnly}
-                                className={`block w-full p-3 border border-none ring-none outline-none rounded-md text-sm focus:outline-none focus:ring-none focus:border-none ${
-                                  isReadOnly
+                                className={`block w-full p-3 border border-none ring-none outline-none rounded-md text-sm focus:outline-none focus:ring-none focus:border-none ${isReadOnly
                                     ? 'bg-gray-50 cursor-not-allowed text-gray-700'
                                     : 'hover:bg-transparent'
-                                }`}
+                                  }`}
                               />
                             )}
                           </td>

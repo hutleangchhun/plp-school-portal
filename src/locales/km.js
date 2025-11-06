@@ -380,7 +380,7 @@ export const km = {
   // Reports & Analytics
   academicPerformance: 'ការអនុវត្តន៍សិក្សា',
   achievementsReport: 'របាយការណ៍សមិទ្ធិផល',
-  exportReport: 'នាំចេញរបាយការណ៍',
+  exportReport: 'ទាញរបាយការណ៍',
   overviewReport: 'របាយការណ៍ទូទៅ',
   reportType: 'ប្រភេទរបាយការណ៍',
   reports: 'របាយការណ៍',
@@ -1174,6 +1174,7 @@ export const km = {
   clickToChange: 'ចុចលើនេះដើម្បីប្ដូររូបភាព',
   imageLoadFailed: 'បរាជ័យក្នុងការផ្ទុករូបភាព',
   clickToTryAgain: 'ចុចដើម្បីព្យាយាមម្តងទៀត',
-  errorReadingImage: 'កំហុសក្នុងការអានឯកសាररូបភាព',
+  errorReadingImage: 'កំហុសក្នុងការអានឯកសារូបភាព',
+  basicInformation: 'ព័ត៌មានទូទៅ',
 
 };

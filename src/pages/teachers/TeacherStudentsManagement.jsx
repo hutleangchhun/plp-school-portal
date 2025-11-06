@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, ChevronDown, X, Users, Eye, Edit2, User } from 'lucide-react';
+import { Search, Download, ChevronDown, X, Users, Edit2, User } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../../components/ui/Button';
@@ -29,6 +29,7 @@ export default function TeacherStudentsManagement({ user }) {
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
+  const [schoolId, setSchoolId] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -36,25 +37,55 @@ export default function TeacherStudentsManagement({ user }) {
     pages: 1
   });
 
-  // Load classes once on mount
+  // Fetch school ID from my-account endpoint
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchSchoolId() {
+      try {
+        console.log('Fetching school ID from my-account endpoint...');
+        const accountData = await userService.getMyAccount();
+        console.log('📥 Account data:', accountData);
+
+        if (mounted && accountData && accountData.school_id) {
+          console.log('✅ School ID fetched:', accountData.school_id);
+          setSchoolId(accountData.school_id);
+        }
+      } catch (error) {
+        console.error('Error fetching school ID:', error);
+        showError(t('failedToFetchSchoolId', 'Failed to fetch school information'));
+      }
+    }
+
+    fetchSchoolId();
+
+    return () => {
+      mounted = false;
+    };
+  }, [showError, t]);
+
+  // Load classes using school classes endpoint
   useEffect(() => {
     let mounted = true;
 
     async function loadClasses() {
-      if (!user) {
+      if (!schoolId) {
+        console.log('School ID not available, skipping class load');
         setInitialLoading(false);
         return;
       }
 
       try {
-        const userId = user.id || user.userId || user.school_id || user.schoolId;
-        const response = await classService.getClassByUser(userId);
+        console.log('Loading classes for school:', schoolId);
+        const response = await classService.getBySchool(schoolId);
 
-        if (mounted && response.success) {
-          setClasses(response.classes || []);
+        if (mounted && response && response.success && response.classes) {
+          console.log('Classes loaded:', response.classes);
+          setClasses(response.classes);
         }
       } catch (error) {
         console.error('Error loading classes:', error);
+        showError(t('failedToFetchClasses', 'Failed to fetch classes'));
       } finally {
         if (mounted) {
           setInitialLoading(false);
@@ -67,12 +98,11 @@ export default function TeacherStudentsManagement({ user }) {
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [schoolId, showError, t]);
 
   // Load students when filters or page change
   useEffect(() => {
-    if (initialLoading) return;
+    if (initialLoading || !schoolId) return;
 
     let mounted = true;
 
@@ -82,9 +112,13 @@ export default function TeacherStudentsManagement({ user }) {
 
         const params = {
           page: pagination.page,
-          limit: 10,
-          search: searchInput.trim()
+          limit: 10
         };
+
+        // Add search parameter if provided
+        if (searchInput.trim()) {
+          params.search = searchInput.trim();
+        }
 
         // Only add classId filter if a specific class is selected (not 'all')
         if (selectedClassId && selectedClassId !== 'all') {
@@ -92,7 +126,7 @@ export default function TeacherStudentsManagement({ user }) {
         }
 
         console.log('Loading students with params:', params);
-        const response = await studentService.getMyStudents(params);
+        const response = await studentService.getStudentsBySchoolClasses(schoolId, params);
         console.log('Students response:', response);
 
         if (mounted && response.success) {
@@ -105,7 +139,7 @@ export default function TeacherStudentsManagement({ user }) {
         }
       } catch (error) {
         console.error('Error loading students:', error);
-        showError('Failed to load students');
+        showError(t('failedToLoadStudents', 'Failed to load students'));
       } finally {
         if (mounted) {
           setStudentsLoading(false);
@@ -118,7 +152,7 @@ export default function TeacherStudentsManagement({ user }) {
     return () => {
       mounted = false;
     };
-  }, [initialLoading, selectedClassId, searchInput, pagination.page, showError]);
+  }, [initialLoading, schoolId, selectedClassId, searchInput, pagination.page, showError, t]);
 
   // Handlers
   const handleSearchChange = (value) => {
@@ -169,12 +203,6 @@ export default function TeacherStudentsManagement({ user }) {
       showError(t('exportFailed', 'Failed to export data'));
     }
     setShowExportDropdown(false);
-  };
-
-  const handleViewStudent = (student) => {
-    // Open StudentEditModal directly for viewing and editing
-    setEditingStudent(student);
-    setShowEditModal(true);
   };
 
   const handleEditStudent = (student) => {
@@ -231,13 +259,12 @@ export default function TeacherStudentsManagement({ user }) {
       )
     },
     {
-      key: 'gradeLevel',
-      header: t('gradeLevel', 'Grade Level'),
-      accessor: 'gradeLevel',
+      key: 'className',
+      header: t('class', 'Class'),
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (student) => (
-        <p>{student?.gradeLevel || 'N/A'}</p>
+        <p>{student?.class?.name || student?.className || 'N/A'}</p>
       )
     },
     {
@@ -258,13 +285,6 @@ export default function TeacherStudentsManagement({ user }) {
       render: (student) => (
         <div className="flex items-center gap-2">
           <button
-            onClick={() => handleViewStudent(student)}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-            title={t('viewDetails', 'View Details')}
-          >
-            <Eye className="h-4 w-4" />
-          </button>
-          <button
             onClick={() => handleEditStudent(student)}
             className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
             title={t('editStudent', 'Edit Student')}
@@ -281,14 +301,14 @@ export default function TeacherStudentsManagement({ user }) {
   }
 
   return (
-    <PageTransition className='p-6'>
+    <PageTransition className='p-3 sm:p-4'>
       <div>
-        <FadeInSection>
+        <FadeInSection className='p-4 sm:p-6'>
           {/* Filters */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="mb-6">
             {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            <div className="mb-4">
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                 {t('studentsManagement', 'My Students')}
               </h1>
               <p className="text-sm text-gray-600 mt-1">

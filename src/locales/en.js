@@ -773,4 +773,5 @@ export const en = {
   imageLoadFailed: 'Image failed to load',
   clickToTryAgain: 'Click to retry',
   errorReadingImage: 'Error reading image file',
+  basicInformation: 'Basic Information',
 };  

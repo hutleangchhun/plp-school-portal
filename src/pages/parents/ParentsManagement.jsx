@@ -302,20 +302,26 @@ export default function ParentsManagement() {
         const parentsData = response.data || [];
 
         // Transform data to match expected format - the API returns parents with students array
-        const transformedParents = parentsData.map(parent => ({
-          ...parent.user, // Spread user data as the main parent object
-          parentId: parent.parentId,
-          id: parent.user.id,
-          students: parent.students || [], // Use students array from API response
-          fullname: parent.user.first_name && parent.user.last_name
-            ? `${parent.user.first_name} ${parent.user.last_name}`
-            : parent.user.username,
-          firstName: parent.user.first_name,
-          lastName: parent.user.last_name,
-          email: parent.user.email,
-          phone: parent.user.phone,
-          occupation: parent.occupation
-        }));
+        const transformedParents = parentsData.map(parent => {
+          // Handle both flat and nested parent structures
+          const userData = parent.user || parent;
+          const parentInfo = parent.parent || parent;
+
+          return {
+            ...userData, // Spread user data as the main parent object
+            parentId: parent.parentId || parentInfo.parentId,
+            id: userData.id,
+            students: parent.students || [], // Use students array from API response
+            fullname: userData.first_name && userData.last_name
+              ? `${userData.first_name} ${userData.last_name}`
+              : userData.username,
+            firstName: userData.first_name,
+            lastName: userData.last_name,
+            email: userData.email,
+            phone: userData.phone,
+            occupation: parent.occupation || parentInfo.occupation
+          };
+        });
 
         // Apply client-side search if needed
         const filtered = performClientSideSearch(transformedParents, searchTerm);
@@ -730,13 +736,13 @@ export default function ParentsManagement() {
 
   return (
     <div>
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="p-3 sm:p-4">
         {/* Header */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="p-4 sm:p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                     {t('parentsManagement', 'Parents Management')}
                   </h1>
                   <p className="text-gray-600 text-sm">
@@ -781,28 +787,30 @@ export default function ParentsManagement() {
             </div>
 
             <div className="my-6">
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 items-end">
                 {/* Search Bar */}
-                <div className="">
-                  <div className="relative flex-1 max-w-md">
+                <div className="flex flex-col flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('search', 'Search')}
+                  </label>
+                  <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
                       type="text"
-                      placeholder={t('searchParents', 'Search parents by name, email, or phone...')}
+                      placeholder={t('searchParents', 'Search parents...')}
                       value={localSearchTerm}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                      className="w-full h-10 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                     />
                   </div>
                 </div>
 
-                {/* Cascade Filters */}
-                <div className="flex justify-between items-center gap-4">
-                  {/* Class Filter */}
-                  <div className="flex justify-center items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700">
-                      {t('filterByClass', 'Filter by Class')}
-                    </label>
+                {/* Class Filter */}
+                <div className="flex flex-col">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('filterByClass', 'Filter by Class')}
+                  </label>
+                  <div className="flex-1">
                     <Dropdown
                       value={selectedClassId}
                       onValueChange={handleClassChange}
@@ -815,16 +823,17 @@ export default function ParentsManagement() {
                       ]}
                       placeholder={t('selectClass', 'Select class...')}
                       disabled={loadingClasses}
-                      minWidth="min-w-[200px]"
                       contentClassName="max-h-[200px] overflow-y-auto"
                     />
                   </div>
+                </div>
 
-                  {/* Student Filter */}
-                  <div className="flex justify-center items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700">
-                      {t('filterByStudent', 'Filter by Student')}
-                    </label>
+                {/* Student Filter */}
+                <div className="flex flex-col">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('filterByStudent', 'Filter by Student')}
+                  </label>
+                  <div className="flex-1">
                     <Dropdown
                       value={selectedStudentId}
                       onValueChange={handleStudentChange}
@@ -844,31 +853,28 @@ export default function ParentsManagement() {
                       ]}
                       placeholder={t('selectStudent', 'Select student...')}
                       disabled={loadingStudents || selectedClassId === 'all'}
-                      minWidth="min-w-[200px]"
                       contentClassName="max-h-[200px] overflow-y-auto"
                     />
                   </div>
-
-                  {/* Clear Filters Button */}
-                  {(selectedClassId !== 'all' || selectedStudentId !== 'all') && (
-                    <div className="flex items-end">
-                      <Button
-                        onClick={() => {
-                          setSelectedClassId('all');
-                          setSelectedStudentId('all');
-                          setStudents([]);
-                          setPagination(prev => ({ ...prev, page: 1 }));
-                        }}
-                        variant="outline"
-                        size="default"
-                        className="whitespace-nowrap"
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        <span className='text-xs sm:text-sm'>{t('resetFilters', 'Reset Filters')}</span>
-                      </Button>
-                    </div>
-                  )}
                 </div>
+
+                {/* Clear Filters Button */}
+                {(selectedClassId !== 'all' || selectedStudentId !== 'all') && (
+                  <Button
+                    onClick={() => {
+                      setSelectedClassId('all');
+                      setSelectedStudentId('all');
+                      setStudents([]);
+                      setPagination(prev => ({ ...prev, page: 1 }));
+                    }}
+                    variant="outline"
+                    size="default"
+                    className="whitespace-nowrap h-10"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    <span className='text-xs sm:text-sm'>{t('resetFilters', 'Reset Filters')}</span>
+                  </Button>
+                )}
               </div>
             </div>
             <div className="bg-white overflow-hidden">
