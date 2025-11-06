@@ -10,8 +10,11 @@ import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { parentService } from '../../utils/api/services/parentService';
-// Report 4 modular components
-import { useReport4Data, Report4Preview, exportReport4ToExcel } from './report4';
+// Modular report components
+import { useReport1Data, Report1Preview } from './report1/indexReport1';
+import { useReport4Data, Report4Preview, exportReport4ToExcel } from './report4/indexReport4';
+import { useReport6Data, Report6Preview } from './report6/indexReport6';
+import { useReport9Data, Report9Preview } from './report9/indexReport9';
 import { 
   BarChart, 
   Bar, 
@@ -516,15 +519,38 @@ export default function Reports() {
           console.log(`✅ Processed ${studentsWithFullData.length} students with full data and parents`);
           console.log('📊 Sample student with full data:', studentsWithFullData[0]);
           
-          // Backend filtering is now applied for report6 and report9
-          // No need for client-side filtering - data is already filtered by the API
+          // Apply client-side filtering as backup (in case API filter doesn't work properly)
+          let filteredData = studentsWithFullData;
+          
           if (selectedReport === 'report6') {
-            console.log(`🦽 Backend filtered ${studentsWithFullData.length} students with disabilities`);
+            // Filter students with actual disabilities
+            filteredData = studentsWithFullData.filter(student => {
+              const accessibility = student.accessibility || student.specialNeeds || student.special_needs || '';
+              const hasDisability = accessibility && 
+                                   accessibility !== '' && 
+                                   accessibility !== 'null' && 
+                                   accessibility !== 'none' &&
+                                   accessibility !== 'None';
+              return hasDisability;
+            });
+            console.log(`🦽 Filtered ${filteredData.length} students with disabilities (from ${studentsWithFullData.length} total)`);
           } else if (selectedReport === 'report9') {
-            console.log(`🌍 Backend filtered ${studentsWithFullData.length} ethnic minority students`);
+            // Filter students with actual ethnic minority groups (exclude Khmer majority)
+            filteredData = studentsWithFullData.filter(student => {
+              const ethnicGroup = student.ethnicGroup || student.ethnic_group || '';
+              const isValidEthnicGroup = ethnicGroup && 
+                                        ethnicGroup !== '' && 
+                                        ethnicGroup !== 'ខ្មែរ' && 
+                                        ethnicGroup !== 'Unknown' && 
+                                        ethnicGroup !== 'unknown' && 
+                                        ethnicGroup !== 'null' &&
+                                        ethnicGroup.toLowerCase() !== 'khmer';
+              return isValidEthnicGroup;
+            });
+            console.log(`🌍 Filtered ${filteredData.length} ethnic minority students (from ${studentsWithFullData.length} total)`);
           }
           
-          setReportData(studentsWithFullData);
+          setReportData(filteredData);
         } else {
           console.warn('⚠️ No students found');
           setReportData([]);
@@ -761,7 +787,24 @@ export default function Reports() {
 
     // Render data preview based on report type
     const renderDataPreview = () => {
-      // For report1, report6, report9 - Show statistics
+      // Use modular preview components
+      if (selectedReport === 'report1') {
+        return <Report1Preview data={reportData} />;
+      }
+      
+      if (selectedReport === 'report4') {
+        return <Report4Preview data={reportData} />;
+      }
+      
+      if (selectedReport === 'report6') {
+        return <Report6Preview data={reportData} />;
+      }
+      
+      if (selectedReport === 'report9') {
+        return <Report9Preview data={reportData} />;
+      }
+
+      // For report1, report6, report9 - Show statistics (OLD - keeping for charts)
       if (['report1', 'report6', 'report9'].includes(selectedReport)) {
         const maxValue = Math.max(...Object.values(stats?.genderCount || {}), 1);
         const maxParentValue = Math.max(
@@ -942,180 +985,6 @@ export default function Reports() {
                   </ChartContainer>
                 </div>
               )}
-            </div>
-          </div>
-        );
-      }
-
-      // For report4 - show students with most absences and leaves
-      if (selectedReport === 'report4') {
-        // Calculate absence statistics for each student
-        const studentsWithStats = reportData.map((student) => {
-          const attendances = student.attendances || [];
-          const absentCount = attendances.filter(a => a.status === 'ABSENT').length;
-          const leaveCount = attendances.filter(a => a.status === 'LEAVE').length;
-          const totalAbsences = absentCount + leaveCount;
-          const presentCount = attendances.filter(a => a.status === 'PRESENT').length;
-          const totalDays = attendances.length;
-          const attendanceRate = totalDays > 0 ? ((presentCount / totalDays) * 100).toFixed(1) : 0;
-          
-          return {
-            ...student,
-            // Use actual studentNumber from nested student object (same as Report 1)
-            studentNumber: student.student?.studentNumber || student.studentNumber || '',
-            // Use gender from nested student object with fallback
-            gender: student.student?.gender || student.gender || '',
-            absentCount,
-            leaveCount,
-            totalAbsences,
-            presentCount,
-            totalDays,
-            attendanceRate
-          };
-        });
-
-        // Get top 1 student with most absences
-        const topAbsentStudent = [...studentsWithStats]
-          .sort((a, b) => b.absentCount - a.absentCount)
-          .slice(0, 1);
-
-        // Get top 1 student with most leaves
-        const topLeaveStudent = [...studentsWithStats]
-          .sort((a, b) => b.leaveCount - a.leaveCount)
-          .slice(0, 1);
-
-        return (
-          <div className="space-y-6">
-            {/* Student with Most Absences Table */}
-            <div className="bg-white border border-red-200 rounded-lg p-6">
-              <h4 className="text-sm font-semibold text-red-900 mb-4 flex items-center">
-                <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-bold mr-2">អច្ប</span>
-                {t('studentWithMostAbsences', 'សិស្សដែលអវត្តមានច្រើនបំផុត')}
-              </h4>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-red-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('studentId', 'អត្តលេខ')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('name', 'ឈ្មោះ')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('gender', 'ភេទ')}
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('absent', 'អច្ប')}
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('attendanceRate', 'អត្រាវត្តមាន')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {topAbsentStudent.length > 0 ? (
-                      topAbsentStudent.map((student, index) => (
-                        <tr key={index} className="hover:bg-red-50">
-                          <td className="px-4 py-3 text-sm text-gray-900 font-medium">{student.studentNumber}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || ''}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
-                            {student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : ''}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-800">
-                              {student.absentCount}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                              student.attendanceRate >= 90 ? 'bg-green-100 text-green-800' :
-                              student.attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {student.attendanceRate}%
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="px-4 py-8 text-center text-sm text-gray-500">
-                          {t('noAbsences', 'មិនមានអវត្តមាន')}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Student with Most Leaves Table */}
-            <div className="bg-white border border-orange-200 rounded-lg p-6">
-              <h4 className="text-sm font-semibold text-orange-900 mb-4 flex items-center">
-                <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-bold mr-2">ច្ប</span>
-                {t('studentWithMostLeaves', 'សិស្សដែលច្បច្រើនបំផុត')}
-              </h4>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-orange-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('studentId', 'អត្តលេខ')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('name', 'ឈ្មោះ')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('gender', 'ភេទ')}
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('leave', 'ច្ប')}
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('attendanceRate', 'អត្រាវត្តមាន')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {topLeaveStudent.length > 0 ? (
-                      topLeaveStudent.map((student, index) => (
-                        <tr key={index} className="hover:bg-orange-50">
-                          <td className="px-4 py-3 text-sm text-gray-900 font-medium">{student.studentNumber}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || ''}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
-                            {student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : ''}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-orange-100 text-orange-800">
-                              {student.leaveCount}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                              student.attendanceRate >= 90 ? 'bg-green-100 text-green-800' :
-                              student.attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {student.attendanceRate}%
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="px-4 py-8 text-center text-sm text-gray-500">
-                          {t('noLeaves', 'មិនមានច្ប')}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
             </div>
           </div>
         );
