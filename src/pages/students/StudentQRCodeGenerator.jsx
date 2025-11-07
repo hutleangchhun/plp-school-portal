@@ -315,6 +315,7 @@ export default function StudentQRCodeGenerator() {
       startLoading('downloadCard', t('capturingCard', 'Capturing card...'));
 
       let elementToCapture = cardElement;
+      let isTemporaryElement = false;
 
       // If cardElement is not provided (table view), create a temporary card element
       if (!cardElement) {
@@ -346,6 +347,19 @@ export default function StudentQRCodeGenerator() {
         `;
         document.body.appendChild(tempCard);
         elementToCapture = tempCard;
+        isTemporaryElement = true;
+      } else {
+        // Clone the element to avoid modifying the original
+        elementToCapture = cardElement.cloneNode(true);
+      }
+
+      // Remove any buttons from the captured element
+      const buttons = elementToCapture.querySelectorAll('button');
+      buttons.forEach(button => button.remove());
+
+      // If it's from grid view, we need to append to body for html2canvas
+      if (!isTemporaryElement) {
+        document.body.appendChild(elementToCapture);
       }
 
       // Capture the card with html2canvas
@@ -357,10 +371,8 @@ export default function StudentQRCodeGenerator() {
         allowTaint: true
       });
 
-      // Remove temporary element if it was created
-      if (!cardElement) {
-        document.body.removeChild(elementToCapture);
-      }
+      // Remove temporary or cloned element
+      document.body.removeChild(elementToCapture);
 
       const link = document.createElement('a');
       link.href = canvas.toDataURL('image/png');
@@ -431,6 +443,9 @@ export default function StudentQRCodeGenerator() {
         } else {
           // Clone the card element to avoid modifying the original
           cardElement = cardElement.cloneNode(true);
+          // Remove any buttons from the cloned card
+          const buttons = cardElement.querySelectorAll('button');
+          buttons.forEach(button => button.remove());
         }
 
         containerDiv.appendChild(cardElement);
