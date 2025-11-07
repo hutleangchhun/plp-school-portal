@@ -133,6 +133,10 @@ export default function StudentQRCodeGenerator() {
           // setStudents(enrichedStudents);
 
           setStudents(response.data);
+
+          // Auto-log QR code status for debugging
+          console.log('🔍 QR Code Status Debug:');
+          studentService.utils.debugStudentListQRData(response.data);
         }
       } catch (err) {
         console.error('Error fetching students:', err);

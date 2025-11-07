@@ -825,6 +825,10 @@ export const studentService = {
           nameEn: 'Student',
           nameKh: 'សិស្ស'
         },
+        // QR Code data from nested user object
+        qrCode: user.qr_code || null,
+        qrToken: user.qr_token || null,
+        qrGeneratedAt: user.qr_generated_at || null,
         createdAt: user.created_at,
         updatedAt: user.updated_at
       };
@@ -919,6 +923,10 @@ export const studentService = {
         district: student.district || user.district,
         province: student.province || user.province,
         student: student.student || user.student,
+        // QR Code data from nested user object
+        qrCode: user.qr_code || null,
+        qrToken: user.qr_token || null,
+        qrGeneratedAt: user.qr_generated_at || null,
         createdAt: student.student_created_at || student.createdAt || student.created_at || user.created_at,
         updatedAt: student.student_updated_at || student.updatedAt || student.updated_at || user.updated_at
       };
@@ -1037,23 +1045,37 @@ export const studentService = {
     },
 
     /**
-     * Extract QR code data from enriched student profile
-     * @param {Object} enrichedStudent - Student object enriched with userProfile
+     * Extract QR code data from student
+     * Works with both formatted and enriched student data
+     *
+     * @param {Object} student - Student object (formatted or enriched)
      * @returns {Object|null} QR code object with qr_code and qr_token, or null if not available
      */
-    extractQRCodeFromProfile(enrichedStudent) {
-      const userProfile = enrichedStudent?.userProfile;
-      if (!userProfile?.qr_code || !userProfile?.qr_token) {
-        return null;
+    extractQRCodeFromProfile(student) {
+      // Try direct fields first (from formatted data)
+      if (student?.qrCode && student?.qrToken) {
+        return {
+          qr_code: student.qrCode,
+          qr_token: student.qrToken,
+          qr_generated_at: student.qrGeneratedAt,
+          username: student.username,
+          userId: student.userId
+        };
       }
 
-      return {
-        qr_code: userProfile.qr_code,
-        qr_token: userProfile.qr_token,
-        qr_generated_at: userProfile.qr_generated_at,
-        username: userProfile.username,
-        userId: userProfile.id
-      };
+      // Try enriched user profile
+      const userProfile = student?.userProfile;
+      if (userProfile?.qr_code && userProfile?.qr_token) {
+        return {
+          qr_code: userProfile.qr_code,
+          qr_token: userProfile.qr_token,
+          qr_generated_at: userProfile.qr_generated_at,
+          username: userProfile.username,
+          userId: userProfile.id
+        };
+      }
+
+      return null;
     },
 
     /**
@@ -1083,22 +1105,48 @@ export const studentService = {
 
     /**
      * Check if a student has an existing QR code
-     * @param {Object} enrichedStudent - Student object enriched with userProfile
+     * Works with both:
+     * 1. Formatted student data from getStudentsBySchoolClasses (has qrCode/qrToken directly)
+     * 2. Enriched student data with userProfile (has userProfile.qr_code/qr_token)
+     *
+     * @param {Object} student - Student object (formatted or enriched)
      * @returns {boolean} True if student has existing QR code
      */
-    hasExistingQRCode(enrichedStudent) {
-      const userProfile = enrichedStudent?.userProfile;
-      return !!(userProfile?.qr_code && userProfile?.qr_token);
+    hasExistingQRCode(student) {
+      // Check direct QR code fields (from formatted data)
+      if (student?.qrCode && student?.qrToken) {
+        return true;
+      }
+
+      // Check enriched user profile
+      const userProfile = student?.userProfile;
+      if (userProfile?.qr_code && userProfile?.qr_token) {
+        return true;
+      }
+
+      return false;
     },
 
     /**
      * Get QR code generation timestamp
-     * @param {Object} enrichedStudent - Student object enriched with userProfile
+     * Works with both formatted and enriched student data
+     *
+     * @param {Object} student - Student object (formatted or enriched)
      * @returns {string|null} ISO format timestamp when QR was generated, or null
      */
-    getQRGeneratedAt(enrichedStudent) {
-      const userProfile = enrichedStudent?.userProfile;
-      return userProfile?.qr_generated_at || null;
+    getQRGeneratedAt(student) {
+      // Check direct field (from formatted data)
+      if (student?.qrGeneratedAt) {
+        return student.qrGeneratedAt;
+      }
+
+      // Check enriched user profile
+      const userProfile = student?.userProfile;
+      if (userProfile?.qr_generated_at) {
+        return userProfile.qr_generated_at;
+      }
+
+      return null;
     },
 
     /**
@@ -1212,7 +1260,7 @@ export const studentService = {
         name: enrichedStudent.name,
         firstName: enrichedStudent.firstName,
         lastName: enrichedStudent.lastName,
-        username: userProfile?.username,
+        username: userProfile?.username || enrichedStudent.username,
         profilePicture: userProfile?.profile_picture || enrichedStudent.profilePicture,
         gradeLevel: enrichedStudent.gradeLevel,
         className: enrichedStudent.class?.name,
@@ -1222,11 +1270,93 @@ export const studentService = {
         qrToken: qrData?.qr_token || null,
         qrGeneratedAt: generatedAt,
         qrStatus, // 'current', 'expired', or 'none'
-        email: userProfile?.email,
-        phone: userProfile?.phone,
-        gender: userProfile?.gender,
-        dateOfBirth: userProfile?.date_of_birth
+        email: userProfile?.email || enrichedStudent.email,
+        phone: userProfile?.phone || enrichedStudent.phone,
+        gender: userProfile?.gender || enrichedStudent.gender,
+        dateOfBirth: userProfile?.date_of_birth || enrichedStudent.dateOfBirth
       };
+    },
+
+    /**
+     * Debug helper - Log QR code data for a student
+     * Use this to verify QR code data is present in formatted student data
+     *
+     * @param {Object} student - Student object to debug
+     * @returns {Object} Debug info with all QR related fields
+     */
+    debugStudentQRData(student) {
+      const hasDirectQR = !!(student?.qrCode && student?.qrToken);
+      const hasEnrichedQR = !!(student?.userProfile?.qr_code && student?.userProfile?.qr_token);
+      const qrData = this.extractQRCodeFromProfile(student);
+
+      const debugInfo = {
+        studentName: student?.name,
+        studentId: student?.studentId,
+        userId: student?.userId,
+        hasDirectQRFields: hasDirectQR,
+        directQRCode: student?.qrCode ? '✅ Present' : '❌ Missing',
+        directQRToken: student?.qrToken ? '✅ Present' : '❌ Missing',
+        directQRGeneratedAt: student?.qrGeneratedAt || '❌ Not available',
+        hasEnrichedQRFields: hasEnrichedQR,
+        enrichedQRCode: student?.userProfile?.qr_code ? '✅ Present' : '❌ Missing',
+        enrichedQRToken: student?.userProfile?.qr_token ? '✅ Present' : '❌ Missing',
+        enrichedQRGeneratedAt: student?.userProfile?.qr_generated_at || '❌ Not available',
+        hasExistingQRCode: this.hasExistingQRCode(student),
+        extractedQRData: qrData ? '✅ Successfully extracted' : '❌ Failed to extract',
+        qrStatus: qrData ? (this.getQRGeneratedAt(student) ? 'Has QR code' : 'No timestamp') : 'No QR data'
+      };
+
+      console.log(`🔍 QR Debug for ${student?.name}:`, debugInfo);
+      return debugInfo;
+    },
+
+    /**
+     * Debug helper - Log QR data for multiple students
+     * Use this to verify QR code presence across all students
+     *
+     * @param {Array} students - Array of students to debug
+     * @returns {Object} Summary of QR code status
+     */
+    debugStudentListQRData(students) {
+      if (!Array.isArray(students)) {
+        console.warn('debugStudentListQRData: Input is not an array');
+        return null;
+      }
+
+      let withQR = 0;
+      let withoutQR = 0;
+      const details = [];
+
+      students.forEach((student, index) => {
+        if (this.hasExistingQRCode(student)) {
+          withQR++;
+          details.push({
+            index,
+            name: student.name,
+            status: '✅ Has QR',
+            generatedAt: this.getQRGeneratedAt(student)
+          });
+        } else {
+          withoutQR++;
+          details.push({
+            index,
+            name: student.name,
+            status: '⚠️ No QR'
+          });
+        }
+      });
+
+      const summary = {
+        total: students.length,
+        withQR,
+        withoutQR,
+        percentage: students.length > 0 ? Math.round((withQR / students.length) * 100) : 0
+      };
+
+      console.log(`📊 QR Code Summary: ${withQR}/${students.length} students have QR codes (${summary.percentage}%)`);
+      console.log('📋 Details:', details);
+
+      return { summary, details };
     }
   }
 };
