@@ -19,7 +19,6 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { classService } from '../../utils/api/services/classService';
 import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
-import QRCode from 'qrcode';
 
 /**
  * StudentQRCodeGenerator Component
@@ -221,37 +220,45 @@ export default function StudentQRCodeGenerator() {
             }
           }
 
-          // Prepare QR data
+          // Prepare QR payload to send to API
           const qrPayload = {
-            id: userData.userId || userData.id,
+            userId: userData.userId || userData.id,
             username: userData.username,
             email: userData.email,
             name: userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
-            role: 'Student',
-            timestamp: new Date().toISOString()
+            role: 'Student'
           };
 
-          // Generate QR code
-          const qrDataUrl = await QRCode.toDataURL(JSON.stringify(qrPayload), {
-            errorCorrectionLevel: 'H',
-            type: 'image/png',
-            width: qrSize,
-            margin: 2,
-            color: {
-              dark: '#000000',
-              light: '#FFFFFF'
-            }
+          console.log(`📤 Posting QR code request for user ${qrPayload.userId}:`, qrPayload);
+
+          // Send request to generate QR code on backend
+          const response = await fetch('/api/v1/users/generate-qr-code', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+            },
+            body: JSON.stringify(qrPayload)
           });
 
+          if (!response.ok) {
+            throw new Error(`Failed to generate QR code: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+          console.log(`✅ Generated QR code for user ${qrPayload.userId}:`, result);
+
           qrData.push({
-            userId: userData.userId || userData.id,
-            studentId: userData.studentId || userData.id,
+            userId: qrPayload.userId,
+            studentId: student.studentId || student.id,
             name: qrPayload.name,
-            username: userData.username,
-            email: userData.email,
+            username: qrPayload.username,
+            email: qrPayload.email,
             classId: selectedClass,
             className: allClasses.find(c => c.id === parseInt(selectedClass))?.name || 'Unknown',
-            qrCode: qrDataUrl,
+            qrCode: result.qrCode || result.qr_code, // Handle both naming conventions
+            qrToken: result.qrToken || result.qr_token,
+            qrGeneratedAt: result.qrGeneratedAt || result.qr_generated_at,
             qrPayload: qrPayload
           });
 
