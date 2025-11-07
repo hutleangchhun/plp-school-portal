@@ -1037,6 +1037,11 @@ export const km = {
   selectedFilters: 'កម្រងបានជ្រើសរើស',
   totalRecords: 'ទិន្នន័យដែលមានទាំងអស់',
   totalStudents: 'ចំនួនសិស្សទាំងអស់',
+  startDate: 'ចាប់ផ្តើមកាលបរិច្ឆេទ',
+  endDate: 'បញ្ចប់កាលបរិច្ឆេទ',
+  selectStartDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
+  selectEndDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
+  
   
   // Report Types
   reportStudentNameInfo: 'បញ្ជីហៅឈ្មោះសិស្ស',

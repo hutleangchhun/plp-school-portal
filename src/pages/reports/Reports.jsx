@@ -5,6 +5,7 @@ import { useToast } from '../../contexts/ToastContext';
 import DynamicLoader from '../../components/ui/DynamicLoader';
 import Dropdown from '../../components/ui/Dropdown';
 import EmptyState from '../../components/ui/EmptyState';
+import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import { processAndExportReport } from '../../utils/reportExportUtils';
 import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
@@ -38,6 +39,8 @@ export default function Reports() {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedSemesterStartDate, setSelectedSemesterStartDate] = useState(null);
+  const [selectedSemesterEndDate, setSelectedSemesterEndDate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState([]);
   const [schoolInfo, setSchoolInfo] = useState(null);
@@ -99,7 +102,7 @@ export default function Reports() {
 
   useEffect(() => {
     fetchReportData();
-  }, [selectedReport, selectedPeriod, selectedMonth, selectedYear, selectedClass]);
+  }, [selectedReport, selectedPeriod, selectedMonth, selectedYear, selectedClass, selectedSemesterStartDate, selectedSemesterEndDate]);
 
   // Fetch classes when report1, report3 or report4 is selected
   useEffect(() => {
@@ -186,13 +189,17 @@ export default function Reports() {
         // Calculate date range based on period
         let startDate, endDate;
         const currentDate = new Date();
-        
+
         if (selectedPeriod === 'month' && selectedMonth) {
           // Specific month
           const monthIndex = parseInt(selectedMonth) - 1;
           const year = parseInt(selectedYear);
           startDate = new Date(year, monthIndex, 1);
           endDate = new Date(year, monthIndex + 1, 0);
+        } else if ((selectedPeriod === 'semester1' || selectedPeriod === 'semester2') && selectedSemesterStartDate && selectedSemesterEndDate) {
+          // Custom semester date range
+          startDate = selectedSemesterStartDate;
+          endDate = selectedSemesterEndDate;
         } else if (selectedPeriod === 'semester') {
           // Semester (6 months)
           const year = parseInt(selectedYear);
@@ -625,13 +632,18 @@ export default function Reports() {
         let selectedDate = new Date();
         let startDate, endDate;
         const year = parseInt(selectedYear);
-        
+
         if (selectedPeriod === 'month' && selectedMonth) {
           // Monthly report
           const monthIndex = parseInt(selectedMonth) - 1;
           selectedDate = new Date(year, monthIndex, 15);
           startDate = new Date(year, monthIndex, 1);
           endDate = new Date(year, monthIndex + 1, 0);
+        } else if ((selectedPeriod === 'semester1' || selectedPeriod === 'semester2') && selectedSemesterStartDate && selectedSemesterEndDate) {
+          // Custom semester date range
+          selectedDate = selectedSemesterStartDate;
+          startDate = selectedSemesterStartDate;
+          endDate = selectedSemesterEndDate;
         } else if (selectedPeriod === 'semester') {
           // Semester report (6 months)
           selectedDate = new Date(year, 0, 15);
@@ -1193,6 +1205,34 @@ export default function Reports() {
                       itemsToShow={5}
                     />
                   </div>
+                )}
+
+                {/* Date Range for Semester (shown when period is 'semester1' or 'semester2') */}
+                {(selectedPeriod === 'semester1' || selectedPeriod === 'semester2') && (
+                  <>
+                    <div className="flex-shrink-0 min-w-[200px]">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('startDate') || 'Start Date'}
+                      </label>
+                      <DatePickerWithDropdowns
+                        value={selectedSemesterStartDate}
+                        onChange={setSelectedSemesterStartDate}
+                        placeholder={t('selectStartDate', 'Select start date')}
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="flex-shrink-0 min-w-[200px]">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('endDate') || 'End Date'}
+                      </label>
+                      <DatePickerWithDropdowns
+                        value={selectedSemesterEndDate}
+                        onChange={setSelectedSemesterEndDate}
+                        placeholder={t('selectEndDate', 'Select end date')}
+                        className="w-full"
+                      />
+                    </div>
+                  </>
                 )}
 
                 {/* Year Dropdown */}

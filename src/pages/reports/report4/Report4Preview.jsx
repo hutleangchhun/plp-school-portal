@@ -10,8 +10,11 @@ import { useLanguage } from '../../../contexts/LanguageContext';
  * Preview component for Report 4
  * Shows two tables: top student with most absences and top student with most leaves
  */
-export const Report4Preview = ({ data }) => {
+export const Report4Preview = ({ data, semester, startDate, endDate, onDateRangeChange }) => {
   const { t } = useLanguage();
+  const [showDatePicker, setShowDatePicker] = React.useState(false);
+  const [localStartDate, setLocalStartDate] = React.useState(startDate || '');
+  const [localEndDate, setLocalEndDate] = React.useState(endDate || '');
 
   // Calculate absence statistics for each student
   const studentsWithStats = data.map((student) => {
