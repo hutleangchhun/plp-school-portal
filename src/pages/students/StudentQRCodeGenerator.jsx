@@ -307,14 +307,47 @@ export default function StudentQRCodeGenerator() {
     }
   };
 
+  // Convert base64 data URI to Blob
+  const base64ToBlob = (dataUri) => {
+    try {
+      // Handle data:image/png;base64,... format
+      const arr = dataUri.split(',');
+      const mime = arr[0].match(/:(.*?);/)[1];
+      const bstr = atob(arr[1]);
+      const n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      for (let i = 0; i < n; i++) {
+        u8arr[i] = bstr.charCodeAt(i);
+      }
+      return new Blob([u8arr], { type: mime });
+    } catch (err) {
+      console.error('Error converting base64 to blob:', err);
+      return null;
+    }
+  };
+
   const downloadQRCode = (qrCode) => {
-    const link = document.createElement('a');
-    link.href = qrCode.qrCode;
-    link.download = `${qrCode.name}_${qrCode.studentNumber}_QR.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showSuccess(`${t('downloaded', 'Downloaded')}: ${qrCode.name}`);
+    try {
+      const blob = base64ToBlob(qrCode.qrCode);
+      if (!blob) {
+        showError(t('failedToProcessImage', 'Failed to process image'));
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${qrCode.name}_${qrCode.studentNumber}_QR.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showSuccess(`${t('downloaded', 'Downloaded')}: ${qrCode.name}`);
+    } catch (err) {
+      console.error('Error downloading QR code:', err);
+      showError(t('failedToDownload', 'Failed to download QR code'));
+    }
   };
 
   const downloadAllQRCodes = async () => {
@@ -324,34 +357,63 @@ export default function StudentQRCodeGenerator() {
     }
 
     try {
-      startLoading('downloadAll', t('preparingDownload', 'Preparing download...'));
+      startLoading('downloadAll', t('downloadingQRCodes', 'Downloading QR codes...'));
 
-      // Create a ZIP file with all QR codes (using a simple approach)
-      // For now, we'll create a JSON file with all QR code data
-      const qrDataForExport = qrCodes.map(qr => ({
-        studentNumber: qr.studentNumber,
-        name: qr.name,
-        username: qr.username,
-        email: qr.email,
-        className: qr.className,
-        qrCodeBase64: qr.qrCode
-      }));
+      // Download all QR codes as PNG files with delays between downloads
+      const DELAY_BETWEEN_DOWNLOADS = 300; // 300ms delay between downloads
+      let successCount = 0;
+      let failedCount = 0;
 
-      const dataStr = JSON.stringify(qrDataForExport, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `student_qr_codes_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      for (let i = 0; i < qrCodes.length; i++) {
+        try {
+          const qrCode = qrCodes[i];
+          const blob = base64ToBlob(qrCode.qrCode);
 
-      showSuccess(t('qrCodesExported', 'QR codes exported successfully'));
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${qrCode.name}_${qrCode.studentNumber}_QR.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            successCount++;
+          } else {
+            failedCount++;
+          }
+
+          // Add delay between downloads to prevent browser issues
+          // Skip delay on last item
+          if (i < qrCodes.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_DOWNLOADS));
+          }
+        } catch (err) {
+          console.error(`Error downloading QR code ${i}:`, err);
+          failedCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        showSuccess(
+          t('qrCodesDownloaded', 'Successfully downloaded {count} QR code images').replace(
+            '{count}',
+            successCount
+          )
+        );
+      }
+
+      if (failedCount > 0) {
+        showError(
+          t('someQRCodesFailed', 'Failed to download {count} QR codes').replace(
+            '{count}',
+            failedCount
+          )
+        );
+      }
     } catch (err) {
       console.error('Error downloading QR codes:', err);
-      showError(t('failedToExport', 'Failed to export QR codes'));
+      showError(t('failedToDownloadQRCodes', 'Failed to download QR codes'));
     } finally {
       stopLoading('downloadAll');
     }
@@ -459,6 +521,8 @@ export default function StudentQRCodeGenerator() {
                 onClick={generateQRCodesForStudents}
                 disabled={students.length === 0 || generating || selectedClass === 'all'}
                 variant="primary"
+                className="flex items-center gap-2"
+                size="sm"
               >
                 {generating ? (
                   <>
@@ -478,6 +542,8 @@ export default function StudentQRCodeGenerator() {
                   <Button
                     onClick={downloadAllQRCodes}
                     variant="success"
+                    size="sm"
+                    className="flex items-center gap-2"
                   >
                     <Download className="h-4 w-4" />
                     {t('downloadAll', 'Download All')}
@@ -487,7 +553,8 @@ export default function StudentQRCodeGenerator() {
                     <Button
                       onClick={() => setViewMode('grid')}
                       variant={viewMode === 'grid' ? 'primary' : 'outline'}
-                      size="icon"
+                      size="sm"
+                      className="flex items-center gap-2"
                       title={t('gridView', 'Grid View')}
                     >
                       <Grid3X3 className="h-4 w-4" />
@@ -495,7 +562,8 @@ export default function StudentQRCodeGenerator() {
                     <Button
                       onClick={() => setViewMode('list')}
                       variant={viewMode === 'list' ? 'primary' : 'outline'}
-                      size="icon"
+                      size="sm"
+                      className="flex items-center gap-2"
                       title={t('listView', 'List View')}
                     >
                       <List className="h-4 w-4" />
@@ -566,16 +634,13 @@ export default function StudentQRCodeGenerator() {
                             {qrCode.name}
                           </p>
                           <p className="text-xs text-gray-500">{qrCode.username}</p>
-                          <Badge color="blue" variant="outline" size="sm" className="text-xs">
-                            {qrCode.studentNumber}
-                          </Badge>
                           <Button
                             onClick={() => downloadQRCode(qrCode)}
                             variant="primary"
                             size="sm"
-                            className="w-full mt-3"
+                            className="w-full mt-3 flex items-center gap-2"
                           >
-                            <Download className="h-3 w-3" />
+                            <Download className="h-4 w-4" />
                             {t('download', 'Download')}
                           </Button>
                         </div>
