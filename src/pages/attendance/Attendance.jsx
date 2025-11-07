@@ -12,6 +12,7 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { Button } from '../../components/ui/Button';
+import Pagination from '../../components/ui/Pagination';
 import Dropdown from '../../components/ui/Dropdown';
 import { DatePicker } from '../../components/ui/date-picker';
 import Badge from '@/components/ui/Badge';
@@ -41,7 +42,8 @@ export default function Attendance() {
   const [availableClasses, setAvailableClasses] = useState([]);
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
   const [loadingClasses, setLoadingClasses] = useState(false);
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10); // Show 15 students per page
 
   const fetchingRef = useRef(false);
 
@@ -317,7 +319,7 @@ export default function Attendance() {
 
   // Filter students based on search term
   // Server-side filtering may not work, so we apply client-side filtering as well
-  const displayedStudents = useMemo(() => {
+  const filteredStudents = useMemo(() => {
     if (!searchTerm || searchTerm.trim() === '') {
       return students;
     }
@@ -347,6 +349,19 @@ export default function Attendance() {
       );
     });
   }, [students, searchTerm]);
+
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const displayedStudents = useMemo(() => {
+    return filteredStudents.slice(startIndex, endIndex);
+  }, [filteredStudents, startIndex, endIndex]);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Debounce search to avoid too many API calls
   const debouncedFetchRef = useRef(null);
@@ -606,9 +621,9 @@ export default function Attendance() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                    {/* Export Component */}
+                    {/* Export Component - exports all students in the class */}
                     <AttendanceExport
-                      students={displayedStudents}
+                      students={students}
                       attendance={weeklyAttendance}
                       className={classes.find(cls => cls.id === selectedClass)?.name || 'មិនមានថ្នាក់'}
                       schoolName={user?.school?.name || user?.schoolName || 'សាលា'}
@@ -782,6 +797,19 @@ export default function Attendance() {
                   </table>
                 </div>
               )}
+
+              {/* Pagination Component */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                total={filteredStudents.length}
+                limit={itemsPerPage}
+                onPageChange={setCurrentPage}
+                t={t}
+                showFirstLast={true}
+                showInfo={true}
+                maxVisiblePages={5}
+              />
             </div>
           </FadeInSection>
         ) : (

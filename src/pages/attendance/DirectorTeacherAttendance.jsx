@@ -56,7 +56,7 @@ export default function TeacherAttendance() {
   });
   const [submittingAttendance, setSubmittingAttendance] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(15); // Show 15 teachers per page
+  const [itemsPerPage] = useState(10); // Show 15 teachers per page
 
   const fetchingRef = useRef(false);
 
@@ -174,7 +174,7 @@ export default function TeacherAttendance() {
       startLoading(loadingKey, t('loadingTeachers', 'Loading teachers...'));
 
       // Fetch teachers from the school
-      const response = await teacherService.getTeachersBySchool(schoolId, { limit: 70 });
+      const response = await teacherService.getTeachersBySchool(schoolId, { limit: 100 });
 
       if (response.data && Array.isArray(response.data)) {
         const formattedTeachers = response.data
