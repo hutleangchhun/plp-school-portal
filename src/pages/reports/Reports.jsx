@@ -131,50 +131,66 @@ export default function Reports() {
       if (response.success && response.classes) {
         // Store all classes for cascading filter
         setAllClasses(response.classes);
-
-        // Initialize available classes with all classes
-        const classOptions = [
-          { value: 'all', label: t('allClasses', 'All Classes') },
-          ...response.classes.map(cls => ({
-            value: cls.id.toString(),
-            label: cls.name || `Class ${cls.id}`,
-            gradeLevel: cls.gradeLevel || cls.grade_level
-          }))
-        ];
-        setAvailableClasses(classOptions);
-        console.log('📚 Class options created:', classOptions.slice(1, 3).map(c => ({ label: c.label, gradeLevel: c.gradeLevel })));
         console.log(`✅ Fetched ${response.classes.length} classes`);
+        console.log('📚 Classes with gradeLevel:', response.classes.slice(0, 3).map(c => ({
+          name: c.name,
+          gradeLevel: c.gradeLevel,
+          grade_level: c.grade_level,
+          id: c.id
+        })));
       }
     } catch (error) {
       console.error('❌ Error fetching classes:', error);
     }
   };
 
-  // Filter classes based on selected grade level
+  // Filter classes based on selected grade level - returns dropdown options
   const getFilteredClasses = () => {
+    const classOptions = [
+      { value: 'all', label: t('allClasses', 'All Classes') }
+    ];
+
     if (selectedGradeLevel === 'all') {
-      console.log('📚 Returning all classes, count:', availableClasses.length);
-      return availableClasses;
+      console.log('📚 Returning all classes, count:', allClasses.length);
+      // Add all classes as options
+      classOptions.push(...allClasses.map(cls => ({
+        value: cls.id.toString(),
+        label: cls.name || `Class ${cls.id}`,
+        gradeLevel: cls.gradeLevel || cls.grade_level
+      })));
+      return classOptions;
     }
 
-    console.log('🔍 Filtering classes by grade level:', selectedGradeLevel);
-    console.log('📚 Available classes for filtering:', availableClasses.map(c => ({ label: c.label, gradeLevel: c.gradeLevel })));
+    console.log('🔍 Filtering classes by grade level:', selectedGradeLevel, 'type:', typeof selectedGradeLevel);
+    console.log('📚 All classes for filtering:', allClasses.map(c => ({
+      name: c.name,
+      gradeLevel: c.gradeLevel,
+      grade_level: c.grade_level,
+      id: c.id
+    })));
 
-    const filtered = availableClasses.filter(cls => {
+    const filtered = allClasses.filter(cls => {
       const gradeLevel = cls.gradeLevel || cls.grade_level;
-      const matches = gradeLevel === selectedGradeLevel || Number(gradeLevel) === Number(selectedGradeLevel);
+      const selectedGradeLevelNum = Number(selectedGradeLevel);
+      const matches = gradeLevel === selectedGradeLevel || Number(gradeLevel) === selectedGradeLevelNum;
+
       if (!matches) {
-        console.log(`❌ Class "${cls.label}" gradeLevel=${gradeLevel} does not match ${selectedGradeLevel}`);
+        console.log(`❌ Class "${cls.name}" gradeLevel=${gradeLevel} (type: ${typeof gradeLevel}) does not match ${selectedGradeLevel} (type: ${typeof selectedGradeLevel})`);
+      } else {
+        console.log(`✅ Class "${cls.name}" gradeLevel=${gradeLevel} matches ${selectedGradeLevel}`);
       }
       return matches;
     });
 
-    console.log(`✅ Filtered classes count: ${filtered.length}`);
+    console.log(`✅ Total filtered classes count: ${filtered.length}`);
 
-    return [
-      { value: 'all', label: t('allClasses', 'All Classes') },
-      ...filtered
-    ];
+    classOptions.push(...filtered.map(cls => ({
+      value: cls.id.toString(),
+      label: cls.name || `Class ${cls.id}`,
+      gradeLevel: cls.gradeLevel || cls.grade_level
+    })));
+
+    return classOptions;
   };
 
   // Get unique grade levels from all classes

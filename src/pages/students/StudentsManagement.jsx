@@ -182,7 +182,7 @@ export default function StudentsManagement() {
     }
 
     console.log('🔍 Filtering classes by grade level:', selectedGradeLevel, 'type:', typeof selectedGradeLevel);
-    console.log('📚 Available classes for filtering:', allClasses.map(c => ({
+    console.log('📚 All classes for filtering:', allClasses.map(c => ({
       name: c.name,
       gradeLevel: c.gradeLevel,
       grade_level: c.grade_level,
@@ -207,26 +207,23 @@ export default function StudentsManagement() {
     return filtered;
   };
 
-  // Update filtered classes when allClasses or selectedGradeLevel changes
-  useEffect(() => {
-    const filtered = getFilteredClasses();
-    setAvailableClasses(filtered);
-    // Reset selectedClassId when grade level changes
-    setSelectedClassId('all');
-  }, [selectedGradeLevel, allClasses]);
-
   // Memoize class dropdown options to prevent unnecessary re-renders
   const classDropdownOptions = useMemo(() => {
+    const filteredClasses = getFilteredClasses();
     const options = [
       { value: 'all', label: t('allClasses', 'ថ្នាក់ទាំងអស់') },
-      ...availableClasses.map(cls => ({
+      ...filteredClasses.map(cls => ({
         value: String(cls.classId),
         label: cls.name
       }))
     ];
     return options;
-  }, [availableClasses, t]);
+  }, [allClasses, selectedGradeLevel, t]);
 
+  // Reset selectedClassId when grade level changes
+  useEffect(() => {
+    setSelectedClassId('all');
+  }, [selectedGradeLevel]);
 
   // Enhanced client-side search function for class-filtered results
   const performClientSideSearch = useCallback((studentsData, searchQuery) => {
@@ -1678,7 +1675,8 @@ export default function StudentsManagement() {
                 {selectedClassId !== 'all' && (
                   <div className="flex items-center space-x-2 text-xs text-gray-500">
                     {(() => {
-                      const selectedClass = availableClasses.find(c => c.classId.toString() === selectedClassId);
+                      const filteredClasses = getFilteredClasses();
+                      const selectedClass = filteredClasses.find(c => c.classId.toString() === selectedClassId);
                       return (
                         <>
                           {selectedClass && (

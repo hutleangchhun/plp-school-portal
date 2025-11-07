@@ -167,13 +167,10 @@ export default function Attendance() {
     return filtered;
   };
 
-  // Update filtered classes when allClasses or selectedGradeLevel changes
+  // Reset selectedClass when grade level changes
   useEffect(() => {
-    const filtered = getFilteredClasses();
-    setAvailableClasses(filtered);
-    // Reset selectedClass when grade level changes
     setSelectedClass('');
-  }, [selectedGradeLevel, allClasses]);
+  }, [selectedGradeLevel]);
 
   // Fetch classes for the school
   const fetchClasses = useCallback(async () => {
@@ -553,7 +550,7 @@ export default function Attendance() {
                   onValueChange={setSelectedClass}
                   options={[
                     { value: '', label: t('allClasses', 'All Classes') },
-                    ...availableClasses.map(cls => ({
+                    ...getFilteredClasses().map(cls => ({
                       value: cls.id || cls.classId || '',
                       label: cls.name || cls.className || `Grade ${cls.gradeLevel}`
                     }))
