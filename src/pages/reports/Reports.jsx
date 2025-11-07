@@ -107,12 +107,14 @@ export default function Reports() {
     fetchReportData();
   }, [selectedReport, selectedPeriod, selectedMonth, selectedYear, selectedClass, selectedSemesterStartDate, selectedSemesterEndDate]);
 
-  // Fetch classes when report1, report3 or report4 is selected
+  // Fetch classes when report1, report3 or report4 is selected, or when grade level changes
   useEffect(() => {
     if (['report1', 'report3', 'report4'].includes(selectedReport)) {
       fetchSchoolClasses();
+      // Reset class selection when grade level changes
+      setSelectedClass('all');
     }
-  }, [selectedReport]);
+  }, [selectedReport, selectedGradeLevel]);
 
   const fetchSchoolClasses = async () => {
     try {
@@ -121,15 +123,23 @@ export default function Reports() {
 
       if (!schoolId) return;
 
-      console.log('📚 Fetching classes for school:', schoolId);
+      console.log('📚 Fetching classes for school:', schoolId, 'with gradeLevel:', selectedGradeLevel);
 
-      const response = await classService.getBySchool(schoolId, {
+      // Build query parameters - pass gradeLevel to API for server-side filtering
+      const queryParams = {
         page: 1,
         limit: 100
-      });
+      };
+
+      // Add gradeLevel filter if not 'all'
+      if (selectedGradeLevel && selectedGradeLevel !== 'all') {
+        queryParams.gradeLevel = selectedGradeLevel;
+      }
+
+      const response = await classService.getBySchool(schoolId, queryParams);
 
       if (response.success && response.classes) {
-        // Store all classes for cascading filter
+        // Store filtered classes returned by API
         setAllClasses(response.classes);
         console.log(`✅ Fetched ${response.classes.length} classes`);
         console.log('📚 Classes with gradeLevel:', response.classes.slice(0, 3).map(c => ({
@@ -144,50 +154,15 @@ export default function Reports() {
     }
   };
 
-  // Filter classes based on selected grade level - returns dropdown options
-  const getFilteredClasses = () => {
+  // Build class dropdown options from filtered classes returned by API
+  const getClassOptions = () => {
     const classOptions = [
       { value: 'all', label: t('allClasses', 'All Classes') }
     ];
 
-    if (selectedGradeLevel === 'all') {
-      console.log('📚 Returning all classes, count:', allClasses.length);
-      // Add all classes as options
-      classOptions.push(...allClasses.map(cls => ({
-        value: cls.id.toString(),
-        label: cls.name || `Class ${cls.id}`,
-        gradeLevel: cls.gradeLevel || cls.grade_level
-      })));
-      return classOptions;
-    }
-
-    console.log('🔍 Filtering classes by grade level:', selectedGradeLevel, 'type:', typeof selectedGradeLevel);
-    console.log('📚 All classes for filtering:', allClasses.map(c => ({
-      name: c.name,
-      gradeLevel: c.gradeLevel,
-      grade_level: c.grade_level,
-      id: c.id
-    })));
-
-    const filtered = allClasses.filter(cls => {
-      const gradeLevel = cls.gradeLevel || cls.grade_level;
-      const selectedGradeLevelNum = Number(selectedGradeLevel);
-      const matches = gradeLevel === selectedGradeLevel || Number(gradeLevel) === selectedGradeLevelNum;
-
-      if (!matches) {
-        console.log(`❌ Class "${cls.name}" gradeLevel=${gradeLevel} (type: ${typeof gradeLevel}) does not match ${selectedGradeLevel} (type: ${typeof selectedGradeLevel})`);
-      } else {
-        console.log(`✅ Class "${cls.name}" gradeLevel=${gradeLevel} matches ${selectedGradeLevel}`);
-      }
-      return matches;
-    });
-
-    console.log(`✅ Total filtered classes count: ${filtered.length}`);
-
-    classOptions.push(...filtered.map(cls => ({
+    classOptions.push(...allClasses.map(cls => ({
       value: cls.id.toString(),
-      label: cls.name || `Class ${cls.id}`,
-      gradeLevel: cls.gradeLevel || cls.grade_level
+      label: cls.name || `Class ${cls.id}`
     })));
 
     return classOptions;
@@ -1272,7 +1247,7 @@ export default function Reports() {
                 <Dropdown
                   value={selectedClass}
                   onValueChange={setSelectedClass}
-                  options={getFilteredClasses()}
+                  options={getClassOptions()}
                   placeholder={t('chooseClass', 'Choose class...')}
                   minWidth="w-full"
                   maxHeight="max-h-56"

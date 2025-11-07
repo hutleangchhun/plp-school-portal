@@ -134,37 +134,12 @@ export default function Attendance() {
     return options;
   };
 
-  // Get filtered classes based on selected grade level
-  const getFilteredClasses = () => {
-    if (selectedGradeLevel === 'all') {
-      console.log('📚 Returning all classes, count:', allClasses.length);
-      return allClasses;
-    }
-
-    console.log('🔍 Filtering classes by grade level:', selectedGradeLevel, 'type:', typeof selectedGradeLevel);
-    console.log('📚 Available classes for filtering:', allClasses.map(c => ({
-      name: c.name,
-      gradeLevel: c.gradeLevel,
-      grade_level: c.grade_level,
-      id: c.id,
-      classId: c.classId
-    })));
-
-    const filtered = allClasses.filter(cls => {
-      const gradeLevel = cls.gradeLevel || cls.grade_level;
-      const selectedGradeLevelNum = Number(selectedGradeLevel);
-      const matches = gradeLevel === selectedGradeLevel || Number(gradeLevel) === selectedGradeLevelNum;
-
-      if (!matches) {
-        console.log(`❌ Class "${cls.name}" gradeLevel=${gradeLevel} (type: ${typeof gradeLevel}) does not match ${selectedGradeLevel} (type: ${typeof selectedGradeLevel})`);
-      } else {
-        console.log(`✅ Class "${cls.name}" gradeLevel=${gradeLevel} matches ${selectedGradeLevel}`);
-      }
-      return matches;
-    });
-
-    console.log(`✅ Total filtered classes count: ${filtered.length}`);
-    return filtered;
+  // Build class dropdown options from classes returned by API (already filtered by gradeLevel)
+  const getClassOptions = () => {
+    return allClasses.map(cls => ({
+      value: cls.id || cls.classId || '',
+      label: cls.name || cls.className || `Grade ${cls.gradeLevel}`
+    }));
   };
 
   // Reset selectedClass when grade level changes
@@ -172,16 +147,23 @@ export default function Attendance() {
     setSelectedClass('');
   }, [selectedGradeLevel]);
 
-  // Fetch classes for the school
+  // Fetch classes for the school with optional grade level filter
   const fetchClasses = useCallback(async () => {
     if (!schoolId) return;
 
     setLoadingClasses(true);
     try {
-      const response = await classService.getBySchool(schoolId);
+      // Build query parameters - pass gradeLevel to API for server-side filtering
+      const queryParams = {};
+      if (selectedGradeLevel && selectedGradeLevel !== 'all') {
+        queryParams.gradeLevel = selectedGradeLevel;
+      }
+
+      console.log('📚 Fetching classes for school:', schoolId, 'with gradeLevel:', selectedGradeLevel);
+      const response = await classService.getBySchool(schoolId, queryParams);
       if (response.success && response.classes) {
-        setClasses([{ id: '', name: t('allClasses', 'All Classes') }, ...response.classes]);
         setAllClasses(response.classes);
+        setClasses([{ id: '', name: t('allClasses', 'All Classes') }, ...response.classes]);
         console.log('📚 Class data with gradeLevel:', response.classes.slice(0, 3).map(c => ({ name: c.name, gradeLevel: c.gradeLevel, grade_level: c.grade_level })));
       }
     } catch (err) {
@@ -192,7 +174,7 @@ export default function Attendance() {
     } finally {
       setLoadingClasses(false);
     }
-  }, [schoolId, t, handleError]);
+  }, [schoolId, selectedGradeLevel, t, handleError]);
 
   // Fetch students and weekly attendance
   const fetchStudents = useCallback(async (searchQuery = '') => {
@@ -550,10 +532,7 @@ export default function Attendance() {
                   onValueChange={setSelectedClass}
                   options={[
                     { value: '', label: t('allClasses', 'All Classes') },
-                    ...getFilteredClasses().map(cls => ({
-                      value: cls.id || cls.classId || '',
-                      label: cls.name || cls.className || `Grade ${cls.gradeLevel}`
-                    }))
+                    ...getClassOptions()
                   ]}
                   placeholder={t('selectClass', 'Select class...')}
                   disabled={loadingClasses}

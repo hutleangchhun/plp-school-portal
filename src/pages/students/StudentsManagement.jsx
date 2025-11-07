@@ -174,51 +174,17 @@ export default function StudentsManagement() {
     return options;
   };
 
-  // Get filtered classes based on selected grade level
-  const getFilteredClasses = () => {
-    if (selectedGradeLevel === 'all') {
-      console.log('📚 Returning all classes, count:', allClasses.length);
-      return allClasses;
-    }
-
-    console.log('🔍 Filtering classes by grade level:', selectedGradeLevel, 'type:', typeof selectedGradeLevel);
-    console.log('📚 All classes for filtering:', allClasses.map(c => ({
-      name: c.name,
-      gradeLevel: c.gradeLevel,
-      grade_level: c.grade_level,
-      classId: c.classId,
-      id: c.id
-    })));
-
-    const filtered = allClasses.filter(cls => {
-      const gradeLevel = cls.gradeLevel || cls.grade_level;
-      const selectedGradeLevelNum = Number(selectedGradeLevel);
-      const matches = gradeLevel === selectedGradeLevel || Number(gradeLevel) === selectedGradeLevelNum;
-
-      if (!matches) {
-        console.log(`❌ Class "${cls.name}" gradeLevel=${gradeLevel} (type: ${typeof gradeLevel}) does not match ${selectedGradeLevel} (type: ${typeof selectedGradeLevel})`);
-      } else {
-        console.log(`✅ Class "${cls.name}" gradeLevel=${gradeLevel} matches ${selectedGradeLevel}`);
-      }
-      return matches;
-    });
-
-    console.log(`✅ Total filtered classes count: ${filtered.length}`);
-    return filtered;
-  };
-
-  // Memoize class dropdown options to prevent unnecessary re-renders
+  // Memoize class dropdown options from classes returned by API (already filtered by gradeLevel)
   const classDropdownOptions = useMemo(() => {
-    const filteredClasses = getFilteredClasses();
     const options = [
       { value: 'all', label: t('allClasses', 'ថ្នាក់ទាំងអស់') },
-      ...filteredClasses.map(cls => ({
+      ...allClasses.map(cls => ({
         value: String(cls.classId),
         label: cls.name
       }))
     ];
     return options;
-  }, [allClasses, selectedGradeLevel, t]);
+  }, [allClasses, t]);
 
   // Reset selectedClassId when grade level changes
   useEffect(() => {
@@ -312,9 +278,9 @@ export default function StudentsManagement() {
 
   // Initialize classes using new classes/user API
   const initializeClasses = useStableCallback(async () => {
-    console.log('🚀 initializeClasses called');
-    // Avoid re-initializing if classes are already loaded
-    if (classesInitialized.current) {
+    console.log('🚀 initializeClasses called with selectedGradeLevel:', selectedGradeLevel);
+    // Avoid re-initializing if classes are already loaded (unless grade level changed)
+    if (classesInitialized.current && selectedGradeLevel === 'all') {
       console.log('Classes already initialized, skipping');
       return;
     }
@@ -326,6 +292,7 @@ export default function StudentsManagement() {
       console.log('🚨 No user ID available for fetching classes');
       console.log('User object:', user);
       setClasses([]);
+      setAllClasses([]);
       setSelectedClassId('all');
 
       // If there's no user, that's likely an authentication issue
@@ -345,14 +312,21 @@ export default function StudentsManagement() {
         currentSchoolId = await fetchSchoolId();
         if (!currentSchoolId) {
           setClasses([]);
+          setAllClasses([]);
           setSelectedClassId('all');
           return;
         }
       }
 
+      // Build query parameters - pass gradeLevel to API for server-side filtering
+      const queryParams = {};
+      if (selectedGradeLevel && selectedGradeLevel !== 'all') {
+        queryParams.gradeLevel = selectedGradeLevel;
+      }
+
       // Get class data from /classes/school/{schoolId} endpoint
-      console.log('🌐 Calling classService.getBySchool with school ID:', currentSchoolId);
-      const classResponse = await classService.getBySchool(currentSchoolId);
+      console.log('🌐 Calling classService.getBySchool with school ID:', currentSchoolId, 'query params:', queryParams);
+      const classResponse = await classService.getBySchool(currentSchoolId, queryParams);
       console.log('📨 Got class response:', classResponse);
 
       if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
@@ -386,8 +360,8 @@ export default function StudentsManagement() {
         studentCount: classData.studentCount || 0
       }));
 
-      setClasses(teacherClasses);
       setAllClasses(teacherClasses);
+      setClasses(teacherClasses);
       console.log('📚 Class data with gradeLevel:', teacherClasses.slice(0, 3).map(c => ({ name: c.name, gradeLevel: c.gradeLevel })));
       classesInitialized.current = true;
 
@@ -402,7 +376,7 @@ export default function StudentsManagement() {
         setSelectedClassId(teacherClasses[0].classId.toString());
       }
 
-      console.log(`User ${user.username} has access to ${teacherClasses.length} classes:`,
+      console.log(`User ${user.username} has access to ${teacherClasses.length} classes (grade level: ${selectedGradeLevel}):`,
         teacherClasses.map(c => `${c.name} (ID: ${c.classId})`));
 
       // Mark classes as initialized successfully
@@ -419,9 +393,10 @@ export default function StudentsManagement() {
         toastMessage: t('failedToFetchClasses', 'Failed to fetch classes')
       });
       setClasses([]);
+      setAllClasses([]);
       setSelectedClassId('all');
     }
-  }, [user?.id, user?.username, handleError, t, schoolId, fetchSchoolId]);
+  }, [user?.id, user?.username, handleError, t, schoolId, fetchSchoolId, selectedGradeLevel]);
 
   // Fetch students with pagination and filters using school classes endpoint
   const fetchStudents = useStableCallback(async (search = searchTerm, force = false, skipLoading = false, academicYear = academicYearFilter) => {
@@ -551,13 +526,17 @@ export default function StudentsManagement() {
     }
   }, [user?.teacher?.schoolId, user?.school_id, user?.schoolId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Initialize classes when component mounts
+  // Initialize classes when component mounts or when grade level changes
   useEffect(() => {
-    console.log('🔄 Component mounted, initializing classes...');
+    console.log('🔄 Component mounted or grade level changed, initializing classes...');
+    // Reset the flag to force re-fetch when grade level changes
+    if (selectedGradeLevel !== 'all') {
+      classesInitialized.current = false;
+    }
     initializeClasses().catch((err) => {
       console.error('🚨 Unhandled error in initializeClasses:', err);
     });
-  }, [initializeClasses]);
+  }, [initializeClasses, selectedGradeLevel]);
 
   // Initial fetch when school ID becomes available
   useEffect(() => {
