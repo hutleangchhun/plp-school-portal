@@ -139,11 +139,8 @@ export default function StudentQRCodeGenerator() {
             if (qrData) {
               // Extract the correct student number from nested user profile
               // The user profile has nested student.student.studentNumber with the actual student number (e.g., "STU-2000")
-              const actualStudentNumber =
-                student.userProfile?.student?.studentNumber ||  // Actual student number from user profile
-                student.studentNumber ||                         // Fallback to formatted student number
-                student.studentId ||                             // Fallback to student ID
-                student.id;
+              // Only use the actual student number, don't fall back to other values
+              const actualStudentNumber = student.userProfile?.student?.studentNumber || '';
 
               console.log(`🔍 Student #${idx} data structure:`, {
                 studentNumber: student.studentNumber,
@@ -252,11 +249,8 @@ export default function StudentQRCodeGenerator() {
           console.log(`✅ Generated QR code for ${qrPayload.username}:`, result);
 
           // Extract the correct student number from nested user profile
-          const actualStudentNumber =
-            student.userProfile?.student?.studentNumber ||  // Actual student number from user profile
-            student.studentNumber ||                         // Fallback to formatted student number
-            student.studentId ||                             // Fallback to student ID
-            student.id;
+          // Only use the actual student number, don't fall back to other values
+          const actualStudentNumber = student.userProfile?.student?.studentNumber || '';
 
           qrData.push({
             userId: student.userId || student.id,
