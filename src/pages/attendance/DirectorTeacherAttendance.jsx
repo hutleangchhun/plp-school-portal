@@ -9,6 +9,7 @@ import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Button } from '../../components/ui/Button';
+import Pagination from '../../components/ui/Pagination';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import Badge from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -54,6 +55,8 @@ export default function TeacherAttendance() {
     existingAttendance: null
   });
   const [submittingAttendance, setSubmittingAttendance] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(15); // Show 15 teachers per page
 
   const fetchingRef = useRef(false);
 
@@ -317,7 +320,7 @@ export default function TeacherAttendance() {
   }, [schoolId, isDirector, currentWeekStart, getWeekDates, t, handleError, clearError, startLoading, stopLoading]);
 
   // Filter teachers based on search term
-  const displayedTeachers = useMemo(() => {
+  const filteredTeachers = useMemo(() => {
     if (!searchTerm || searchTerm.trim() === '') {
       return teachers;
     }
@@ -348,14 +351,37 @@ export default function TeacherAttendance() {
     });
   }, [teachers, searchTerm]);
 
-  // Function to select/deselect all teachers
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredTeachers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const displayedTeachers = useMemo(() => {
+    return filteredTeachers.slice(startIndex, endIndex);
+  }, [filteredTeachers, startIndex, endIndex]);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Function to select/deselect all teachers on current page
   const toggleSelectAll = useCallback(() => {
-    if (selectedTeachers.size === displayedTeachers.length && displayedTeachers.length > 0) {
-      setSelectedTeachers(new Set());
+    const pageTeacherIds = new Set(displayedTeachers.map(t => t.id));
+    const allPageSelected = displayedTeachers.length > 0 &&
+      displayedTeachers.every(t => selectedTeachers.has(t.id));
+
+    if (allPageSelected) {
+      // Deselect all on current page
+      const newSelection = new Set(selectedTeachers);
+      pageTeacherIds.forEach(id => newSelection.delete(id));
+      setSelectedTeachers(newSelection);
     } else {
-      setSelectedTeachers(new Set(displayedTeachers.map(t => t.id)));
+      // Select all on current page
+      const newSelection = new Set(selectedTeachers);
+      pageTeacherIds.forEach(id => newSelection.add(id));
+      setSelectedTeachers(newSelection);
     }
-  }, [selectedTeachers.size, displayedTeachers]);
+  }, [selectedTeachers, displayedTeachers]);
 
   // Function to bulk update teacher approval settings
   const bulkUpdateApprovalSettings = useCallback(async (requiresApproval) => {
@@ -872,7 +898,7 @@ export default function TeacherAttendance() {
                       <th className="sticky left-0 z-10 bg-blue-50 px-3 py-3 text-center border-r">
                         <input
                           type="checkbox"
-                          checked={selectedTeachers.size === displayedTeachers.length && displayedTeachers.length > 0}
+                          checked={displayedTeachers.length > 0 && displayedTeachers.every(t => selectedTeachers.has(t.id))}
                           onChange={toggleSelectAll}
                           className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                           title={t('selectAll', 'Select All')}
@@ -1049,6 +1075,19 @@ export default function TeacherAttendance() {
                 </table>
               </div>
             )}
+
+            {/* Pagination Component */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              total={filteredTeachers.length}
+              limit={itemsPerPage}
+              onPageChange={setCurrentPage}
+              t={t}
+              showFirstLast={true}
+              showInfo={true}
+              maxVisiblePages={5}
+            />
           </div>
         </FadeInSection>
       </div>
