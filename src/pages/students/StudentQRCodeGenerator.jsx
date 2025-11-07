@@ -14,7 +14,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
-import { Button } from '../../components/ui/button.jsx';
+import { Button } from '../../components/ui/Button';
 import Dropdown from '../../components/ui/Dropdown';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { classService } from '../../utils/api/services/classService';
