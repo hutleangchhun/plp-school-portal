@@ -41,7 +41,7 @@ export default function StudentQRCodeGenerator() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-  const [qrSize, setQrSize] = useState(200);
+  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
 
   const generatingRef = useRef(false);
 
@@ -134,12 +134,29 @@ export default function StudentQRCodeGenerator() {
 
           // Extract and display existing QR codes from enriched students
           const existingQRCodes = [];
-          enrichedStudents.forEach((student) => {
+          enrichedStudents.forEach((student, idx) => {
             const qrData = studentService.utils.extractQRCodeFromProfile(student);
             if (qrData) {
-              existingQRCodes.push({
+              // Extract the correct student number from nested user profile
+              // The user profile has nested student.student.studentNumber with the actual student number (e.g., "STU-2000")
+              const actualStudentNumber =
+                student.userProfile?.student?.studentNumber ||  // Actual student number from user profile
+                student.studentNumber ||                         // Fallback to formatted student number
+                student.studentId ||                             // Fallback to student ID
+                student.id;
+
+              console.log(`🔍 Student #${idx} data structure:`, {
+                studentNumber: student.studentNumber,
+                studentId: student.studentId,
+                userProfileStudent: student.userProfile?.student?.studentNumber,
+                actualStudentNumber: actualStudentNumber,
+                name: student.name,
+                allKeys: Object.keys(student).slice(0, 20)
+              });
+
+              const qrCodeObj = {
                 userId: qrData.userId,
-                studentId: student.studentId || student.id,
+                studentNumber: actualStudentNumber,
                 name: student.name,
                 username: student.username,
                 email: student.email,
@@ -149,12 +166,19 @@ export default function StudentQRCodeGenerator() {
                 qrToken: qrData.qr_token,
                 qrGeneratedAt: qrData.qr_generated_at,
                 isExisting: true // Mark as existing QR code from API
+              };
+
+              console.log(`📦 QR Code object being added:`, {
+                studentNumber: qrCodeObj.studentNumber,
+                name: qrCodeObj.name
               });
+
+              existingQRCodes.push(qrCodeObj);
             }
           });
-
           if (existingQRCodes.length > 0) {
             console.log(`✅ Found ${existingQRCodes.length} existing QR codes from API`);
+            console.log(`📊 First QR Code object:`, existingQRCodes[0]);
             setQrCodes(existingQRCodes);
           }
         }
@@ -188,6 +212,7 @@ export default function StudentQRCodeGenerator() {
       setGenerating(true);
       generatingRef.current = true;
       clearError();
+      setGenerationProgress({ current: 0, total: students.length });
 
       startLoading('generateQR', t('generatingQRCodes', 'Generating QR codes...'));
 
@@ -226,9 +251,16 @@ export default function StudentQRCodeGenerator() {
           const result = await response.json();
           console.log(`✅ Generated QR code for ${qrPayload.username}:`, result);
 
+          // Extract the correct student number from nested user profile
+          const actualStudentNumber =
+            student.userProfile?.student?.studentNumber ||  // Actual student number from user profile
+            student.studentNumber ||                         // Fallback to formatted student number
+            student.studentId ||                             // Fallback to student ID
+            student.id;
+
           qrData.push({
             userId: student.userId || student.id,
-            studentId: student.studentId || student.id,
+            studentNumber: actualStudentNumber,
             name: student.name,
             username: qrPayload.username,
             email: student.email,
@@ -241,11 +273,13 @@ export default function StudentQRCodeGenerator() {
           });
 
           // Update loading progress
-          const progress = Math.round(((i + 1) / students.length) * 100);
-          console.log(`Generated QR code ${i + 1}/${students.length} (${progress}%)`);
+          const currentIndex = i + 1;
+          const progress = Math.round((currentIndex / students.length) * 100);
+          console.log(`Generated QR code ${currentIndex}/${students.length} (${progress}%)`);
 
-          // Update state with generated QRs so far to show real-time progress
+          // Update state with generated QRs and progress
           setQrCodes([...qrData]);
+          setGenerationProgress({ current: currentIndex, total: students.length });
 
           // Add delay between requests to prevent overwhelming the API
           // Skip delay on last item
@@ -281,7 +315,7 @@ export default function StudentQRCodeGenerator() {
   const downloadQRCode = (qrCode) => {
     const link = document.createElement('a');
     link.href = qrCode.qrCode;
-    link.download = `${qrCode.name}_${qrCode.studentId}_QR.png`;
+    link.download = `${qrCode.name}_${qrCode.studentNumber}_QR.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -300,7 +334,7 @@ export default function StudentQRCodeGenerator() {
       // Create a ZIP file with all QR codes (using a simple approach)
       // For now, we'll create a JSON file with all QR code data
       const qrDataForExport = qrCodes.map(qr => ({
-        studentId: qr.studentId,
+        studentNumber: qr.studentNumber,
         name: qr.name,
         username: qr.username,
         email: qr.email,
@@ -391,7 +425,7 @@ export default function StudentQRCodeGenerator() {
             </div>
 
             {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
               {/* Grade Level Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -421,25 +455,6 @@ export default function StudentQRCodeGenerator() {
                   triggerClassName="w-full"
                   maxHeight="max-h-56"
                 />
-              </div>
-
-              {/* QR Size Control */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('qrCodeSize', 'QR Code Size')}
-                </label>
-                <input
-                  type="range"
-                  min="100"
-                  max="400"
-                  step="50"
-                  value={qrSize}
-                  onChange={(e) => setQrSize(parseInt(e.target.value))}
-                  className="w-full"
-                />
-                <span className="text-xs text-gray-500 mt-1 block">
-                  {qrSize}px
-                </span>
               </div>
             </div>
 
@@ -501,6 +516,30 @@ export default function StudentQRCodeGenerator() {
               )}
             </div>
 
+            {/* Generation Progress Bar */}
+            {generating && generationProgress.total > 0 && (
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-blue-900">
+                    {t('generatingProgress', 'Generating QR codes...')}
+                  </p>
+                  <p className="text-sm font-semibold text-blue-900">
+                    {generationProgress.current}/{generationProgress.total}
+                  </p>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2.5">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${(generationProgress.current / generationProgress.total) * 100}%`
+                    }}
+                  ></div>
+                </div>
+                <p className="mt-2 text-xs text-blue-700">
+                  {Math.round((generationProgress.current / generationProgress.total) * 100)}% Complete
+                </p>
+              </div>
+            )}
 
             {/* No class selected message */}
             {selectedClass === 'all' && students.length === 0 && (
@@ -539,7 +578,7 @@ export default function StudentQRCodeGenerator() {
                           </p>
                           <p className="text-xs text-gray-500">{qrCode.username}</p>
                           <Badge color="blue" variant="outline" size="sm" className="text-xs">
-                            {qrCode.studentId}
+                            {qrCode.studentNumber}
                           </Badge>
                           <button
                             onClick={() => downloadQRCode(qrCode)}
@@ -564,7 +603,7 @@ export default function StudentQRCodeGenerator() {
                             {t('username', 'Username')}
                           </th>
                           <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
-                            {t('studentId', 'Student ID')}
+                            {t('studentNumber', 'Student Number')}
                           </th>
                           <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                             {t('email', 'Email')}
@@ -579,7 +618,7 @@ export default function StudentQRCodeGenerator() {
                           <tr key={index} className="hover:bg-gray-50">
                             <td className="px-4 py-3 text-sm text-gray-900">{qrCode.name}</td>
                             <td className="px-4 py-3 text-sm text-gray-600">{qrCode.username}</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{qrCode.studentId}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{qrCode.studentNumber}</td>
                             <td className="px-4 py-3 text-sm text-gray-600">{qrCode.email}</td>
                             <td className="px-4 py-3 text-center">
                               <button

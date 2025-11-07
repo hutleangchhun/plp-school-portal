@@ -796,7 +796,26 @@ export const studentService = {
       const classInfo = student.class || {};
 
       // Extract student number from the nested student object if available
-      const studentNumber = student.student?.studentNumber || student.studentNumber || student.studentId;
+      // Try multiple possible locations where studentNumber might be
+      const studentNumber =
+        student.student?.studentNumber ||      // Nested in student.student.studentNumber
+        student.studentNumber ||                // Direct studentNumber field
+        user.student?.studentNumber ||          // Nested in user.student.studentNumber
+        student.studentId ||                    // Fallback to studentId
+        student.id;                             // Last resort fallback
+
+      // Debug logging for first student
+      if (!window.__studentFormatLogged) {
+        console.log('🔍 formatSchoolClassesStudentData debug:', {
+          'student.student?.studentNumber': student.student?.studentNumber,
+          'student.studentNumber': student.studentNumber,
+          'user.student?.studentNumber': user.student?.studentNumber,
+          'student.studentId': student.studentId,
+          'resolved studentNumber': studentNumber,
+          fullStudentObject: { ...student }
+        });
+        window.__studentFormatLogged = true;
+      }
 
       return {
         id: student.studentId,
