@@ -19,6 +19,7 @@ import StudentEditModal from '../../components/students/StudentEditModal';
 import StudentActionsModal from '../../components/students/StudentActionsModal';
 import Modal from '../../components/ui/Modal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
+import EmptyState from '../../components/ui/EmptyState';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 
@@ -333,9 +334,10 @@ export default function StudentsManagement() {
 
       if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
         console.log('🚨 No classes found in API response:', classResponse);
-        setClasses([]);
-        setAllClasses([]);
-        setSelectedClassId('all');
+        // Don't clear classes - keep them visible while loading
+        // setClasses([]);
+        // setAllClasses([]);
+        // setSelectedClassId('all');
 
         // This might indicate a backend issue or authorization problem
         if (!classResponse || !classResponse.success) {
@@ -1621,7 +1623,7 @@ export default function StudentsManagement() {
               )}
             </div>
 
-            {classes.length > 0 && (
+            {(
               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm">
                 {selectedGradeLevel !== 'all' && (
                   <div className="flex items-center space-x-2 text-xs text-gray-500">
@@ -1656,8 +1658,7 @@ export default function StudentsManagement() {
                 {selectedClassId !== 'all' && (
                   <div className="flex items-center space-x-2 text-xs text-gray-500">
                     {(() => {
-                      const filteredClasses = getFilteredClasses();
-                      const selectedClass = filteredClasses.find(c => c.classId.toString() === selectedClassId);
+                      const selectedClass = allClasses.find(c => c.classId.toString() === selectedClassId);
                       return (
                         <>
                           {selectedClass && (
@@ -1691,21 +1692,31 @@ export default function StudentsManagement() {
 
 
         {/* Students table - Show on all screen sizes */}
-        <Table
-          columns={tableColumns}
-          data={students}
-          emptyMessage={t('noStudentsFound', 'No students found')}
-          emptyIcon={Users}
-          emptyVariant='info'
-          emptyDescription={t('noStudentsFoundMatchingCriteria', 'No students found matching your criteria.')}
-          emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
-          onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
-          showPagination={true}
-          pagination={pagination}
-          onPageChange={handlePageChange}
-          rowClassName="hover:bg-blue-50"
-          t={t}
-        />
+        {/* Only show student data if grade level is 'all' OR if there are classes for the selected grade level */}
+        {selectedGradeLevel === 'all' || allClasses.length > 0 ? (
+          <Table
+            columns={tableColumns}
+            data={students}
+            emptyMessage={t('noStudentsFound', 'No students found')}
+            emptyIcon={Users}
+            emptyVariant='info'
+            emptyDescription={t('noStudentsFoundMatchingCriteria', 'No students found matching your criteria.')}
+            emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
+            onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
+            showPagination={true}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            rowClassName="hover:bg-blue-50"
+            t={t}
+          />
+        ) : (
+          <EmptyState
+            icon={Users}
+            title={t('noClassesAvailable', 'No Classes Available')}
+            description={t('selectedGradeLevelNoClasses', 'The selected grade level has no classes available.')}
+            variant="info"
+          />
+        )}
       </div>
 
       {/* Delete Confirmation */}
