@@ -193,8 +193,9 @@ export default function StudentQRCodeGenerator() {
       startLoading('generateQR', t('generatingQRCodes', 'Generating QR codes...'));
 
       const qrData = [];
+      const DELAY_BETWEEN_REQUESTS = 500; // 500ms delay between each request to avoid overwhelming the API
 
-      // Generate QR codes for each student
+      // Process students one by one with queue
       for (let i = 0; i < students.length; i++) {
         if (!generatingRef.current) break; // Allow cancellation
 
@@ -257,6 +258,15 @@ export default function StudentQRCodeGenerator() {
           // Update loading progress
           const progress = Math.round(((i + 1) / students.length) * 100);
           console.log(`Generated QR code ${i + 1}/${students.length} (${progress}%)`);
+
+          // Update state with generated QRs so far to show real-time progress
+          setQrCodes([...qrData]);
+
+          // Add delay between requests to prevent overwhelming the API
+          // Skip delay on last item
+          if (i < students.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_REQUESTS));
+          }
         } catch (err) {
           console.error(`Error generating QR code for student ${student.id}:`, err);
         }
