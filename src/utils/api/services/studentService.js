@@ -1328,7 +1328,9 @@ export const studentService = {
       const details = [];
 
       students.forEach((student, index) => {
-        if (this.hasExistingQRCode(student)) {
+        const hasQR = this.hasExistingQRCode(student);
+
+        if (hasQR) {
           withQR++;
           details.push({
             index,
@@ -1341,7 +1343,12 @@ export const studentService = {
           details.push({
             index,
             name: student.name,
-            status: '⚠️ No QR'
+            status: '⚠️ No QR',
+            // Show what we're looking for to debug
+            qrCodeField: student?.qrCode || 'undefined',
+            qrTokenField: student?.qrToken || 'undefined',
+            userProfileQRCode: student?.userProfile?.qr_code || 'undefined',
+            userProfileQRToken: student?.userProfile?.qr_token || 'undefined'
           });
         }
       });
@@ -1354,7 +1361,23 @@ export const studentService = {
       };
 
       console.log(`📊 QR Code Summary: ${withQR}/${students.length} students have QR codes (${summary.percentage}%)`);
-      console.log('📋 Details:', details);
+      console.log('📋 Detailed QR Status:', details);
+
+      // Log first student's full data structure for inspection
+      if (students.length > 0) {
+        console.log('🔎 First student raw data:', {
+          name: students[0].name,
+          qrCode: students[0].qrCode,
+          qrToken: students[0].qrToken,
+          qrGeneratedAt: students[0].qrGeneratedAt,
+          hasUserProfile: !!students[0].userProfile,
+          userProfile: students[0].userProfile ? {
+            qr_code: students[0].userProfile.qr_code,
+            qr_token: students[0].userProfile.qr_token,
+            qr_generated_at: students[0].userProfile.qr_generated_at
+          } : 'No userProfile'
+        });
+      }
 
       return { summary, details };
     }
