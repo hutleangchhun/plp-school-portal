@@ -14,6 +14,7 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import Badge from '../../components/ui/Badge';
+import { Button } from '../../components/ui/button';
 import Dropdown from '../../components/ui/Dropdown';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { classService } from '../../utils/api/services/classService';
@@ -454,10 +455,10 @@ export default function StudentQRCodeGenerator() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-2 mt-6">
-              <button
+              <Button
                 onClick={generateQRCodesForStudents}
                 disabled={students.length === 0 || generating || selectedClass === 'all'}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                variant="primary"
               >
                 {generating ? (
                   <>
@@ -470,41 +471,35 @@ export default function StudentQRCodeGenerator() {
                     {t('generateQRCodes', 'Generate QR Codes')}
                   </>
                 )}
-              </button>
+              </Button>
 
               {qrCodes.length > 0 && (
                 <>
-                  <button
+                  <Button
                     onClick={downloadAllQRCodes}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    variant="success"
                   >
                     <Download className="h-4 w-4" />
                     {t('downloadAll', 'Download All')}
-                  </button>
+                  </Button>
 
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
                       onClick={() => setViewMode('grid')}
-                      className={`px-3 py-2 rounded-lg ${
-                        viewMode === 'grid'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700'
-                      }`}
+                      variant={viewMode === 'grid' ? 'primary' : 'outline'}
+                      size="icon"
                       title={t('gridView', 'Grid View')}
                     >
                       <Grid3X3 className="h-4 w-4" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => setViewMode('list')}
-                      className={`px-3 py-2 rounded-lg ${
-                        viewMode === 'list'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700'
-                      }`}
+                      variant={viewMode === 'list' ? 'primary' : 'outline'}
+                      size="icon"
                       title={t('listView', 'List View')}
                     >
                       <List className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </div>
                 </>
               )}
@@ -574,13 +569,15 @@ export default function StudentQRCodeGenerator() {
                           <Badge color="blue" variant="outline" size="sm" className="text-xs">
                             {qrCode.studentNumber}
                           </Badge>
-                          <button
+                          <Button
                             onClick={() => downloadQRCode(qrCode)}
-                            className="w-full mt-3 px-2 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+                            variant="primary"
+                            size="sm"
+                            className="w-full mt-3"
                           >
                             <Download className="h-3 w-3" />
                             {t('download', 'Download')}
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -615,13 +612,14 @@ export default function StudentQRCodeGenerator() {
                             <td className="px-4 py-3 text-sm text-gray-600">{qrCode.studentNumber}</td>
                             <td className="px-4 py-3 text-sm text-gray-600">{qrCode.email}</td>
                             <td className="px-4 py-3 text-center">
-                              <button
+                              <Button
                                 onClick={() => downloadQRCode(qrCode)}
-                                className="text-blue-600 hover:text-blue-900"
+                                variant="ghost"
+                                size="icon"
                                 title={t('download', 'Download')}
                               >
                                 <Download className="h-4 w-4" />
-                              </button>
+                              </Button>
                             </td>
                           </tr>
                         ))}
