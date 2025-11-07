@@ -75,7 +75,7 @@ export const Report4Preview = ({ data }) => {
                     {t('class', 'ថ្នាក់')}
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('absent', 'អច្ប')}
+                    {t('absent', 'អត់ច្បាប់')}
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
                     {t('attendanceRate', 'អត្រាវត្តមាន')}
@@ -121,7 +121,7 @@ export const Report4Preview = ({ data }) => {
       {topLeaveStudent.length > 0 && (
         <div className="bg-white border border-orange-200 rounded-lg p-6">
           <h4 className="text-sm font-semibold text-orange-900 mb-4 flex items-center">
-            {t('studentWithMostLeaves', 'សិស្សដែលច្បច្រើនបំផុត')}
+            {t('studentWithMostLeaves', 'សិស្សដែលច្បាប់ច្រើនបំផុត')}
           </h4>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -137,10 +137,10 @@ export const Report4Preview = ({ data }) => {
                     {t('gender', 'ភេទ')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('class', 'ថ្នាក់')}
+                    {t('class', 'ថ្នាក់រៀន')}
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('leave', 'ច្ប')}
+                    {t('leave', 'ច្បាប់')}
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
                     {t('attendanceRate', 'អត្រាវត្តមាន')}
@@ -155,7 +155,7 @@ export const Report4Preview = ({ data }) => {
                       {student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || ''}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : ''}
+                      {student.gender === 'MALE' ? 'ប្រុស' : student.gender === 'FEMALE' ? 'ស្រី' : ''}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {student.class?.name || student.className || ''}
