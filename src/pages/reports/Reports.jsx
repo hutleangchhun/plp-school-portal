@@ -157,22 +157,18 @@ export default function Reports() {
 
     return [
       { value: 'all', label: t('allClasses', 'All Classes') },
-      ...availableClasses.filter(cls => cls.gradeLevel === selectedGradeLevel)
+      ...availableClasses.filter(cls => {
+        const gradeLevel = cls.gradeLevel || cls.grade_level;
+        return gradeLevel === selectedGradeLevel || Number(gradeLevel) === Number(selectedGradeLevel);
+      })
     ];
   };
 
   // Get unique grade levels from all classes
   const getGradeLevelOptions = () => {
-    const gradeLevels = new Set();
-    allClasses.forEach(cls => {
-      if (cls.gradeLevel) {
-        gradeLevels.add(cls.gradeLevel);
-      }
-    });
-
     const options = [
       { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
-      ...Array.from(gradeLevels).sort((a, b) => a - b).map(level => ({
+      ...Array.from([1, 2, 3, 4, 5, 6]).map(level => ({
         value: level,
         label: t(`Grade ${level}`, `Grade ${level}`)
       }))

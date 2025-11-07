@@ -163,16 +163,9 @@ export default function StudentsManagement() {
 
   // Get unique grade levels from all classes
   const getGradeLevelOptions = () => {
-    const gradeLevels = new Set();
-    allClasses.forEach(cls => {
-      if (cls.gradeLevel) {
-        gradeLevels.add(cls.gradeLevel);
-      }
-    });
-
     const options = [
       { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
-      ...Array.from(gradeLevels).sort((a, b) => a - b).map(level => ({
+      ...Array.from([1, 2, 3, 4, 5, 6]).map(level => ({
         value: level,
         label: t(`Grade ${level}`, `Grade ${level}`)
       }))
@@ -186,7 +179,10 @@ export default function StudentsManagement() {
     if (selectedGradeLevel === 'all') {
       return allClasses;
     }
-    return allClasses.filter(cls => cls.gradeLevel === selectedGradeLevel);
+    return allClasses.filter(cls => {
+      const gradeLevel = cls.gradeLevel || cls.grade_level;
+      return gradeLevel === selectedGradeLevel || Number(gradeLevel) === Number(selectedGradeLevel);
+    });
   };
 
   // Update filtered classes when allClasses or selectedGradeLevel changes
