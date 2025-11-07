@@ -463,12 +463,50 @@ export default function TeacherAttendance() {
         status: 'processing',
         progress: 10,
         processedItems: 0,
-        totalItems: teachers.length,
+        totalItems: 0,
         errorMessage: null
       });
 
-      // Update progress
-      setExportModal(prev => ({ ...prev, progress: 25 }));
+      // Fetch ALL teachers with limit 100 for export (not paginated)
+      console.log('Fetching all teachers for export...');
+      const allTeachersResponse = await teacherService.getTeachersBySchool(schoolId, {
+        limit: 100,
+        page: 1
+      });
+
+      if (!allTeachersResponse.data || !Array.isArray(allTeachersResponse.data)) {
+        throw new Error('Failed to fetch teachers for export');
+      }
+
+      // Format teachers
+      const exportTeachers = allTeachersResponse.data
+        .filter(teacher => teacher && (teacher.id || teacher.userId || teacher.user_id))
+        .map(teacher => {
+          const user = teacher.user || teacher;
+          const userId = user.id || teacher.id || teacher.userId || teacher.user_id;
+          const firstName = user.firstName || user.first_name || teacher.firstName || teacher.first_name || '';
+          const lastName = user.lastName || user.last_name || teacher.lastName || teacher.last_name || '';
+          const fullName = `${firstName} ${lastName}`.trim();
+          const username = user.username || teacher.username || '';
+
+          return {
+            id: Number(userId),
+            teacherId: Number(teacher.teacherId || teacher.teacher_id || teacher.id),
+            name: fullName || username || 'Unknown',
+            firstName,
+            lastName,
+            username,
+            teacherNumber: teacher.teacherNumber || teacher.teacher_number || '',
+            profilePicture: user.profile_picture || user.profilePicture || teacher.profile_picture || teacher.profilePicture || ''
+          };
+        });
+
+      setExportModal(prev => ({
+        ...prev,
+        progress: 30,
+        totalItems: exportTeachers.length,
+        processedItems: 0
+      }));
 
       // Fetch school info to get school name
       let schoolName = 'សាលា'; // Default fallback
@@ -484,16 +522,16 @@ export default function TeacherAttendance() {
         // Continue with default name
       }
 
-      setExportModal(prev => ({ ...prev, progress: 50 }));
+      setExportModal(prev => ({ ...prev, progress: 45 }));
 
       const result = await exportTeacherAttendanceToExcel(
-        teachers,
+        exportTeachers,
         schoolId,
         {
           selectedDate: currentWeekStart,
           schoolName,
           onProgress: (processed, total) => {
-            const progress = 50 + (processed / total) * 40; // 50-90%
+            const progress = 45 + (processed / total) * 45; // 45-90%
             setExportModal(prev => ({
               ...prev,
               progress: Math.round(progress),
@@ -509,10 +547,16 @@ export default function TeacherAttendance() {
               errorMessage: null
             }));
             _showSuccess(t('exportSuccess', 'នាំចេញជោគជ័យ'));
+            // Close modal after brief delay
+            setTimeout(() => {
+              setExportModal(prev => ({ ...prev, isOpen: false }));
+            }, 1000);
           },
           onError: (error) => {
+            // Close modal and show error toast
             setExportModal(prev => ({
               ...prev,
+              isOpen: false,
               status: 'error',
               errorMessage: error.message || 'Export failed'
             }));
@@ -526,14 +570,16 @@ export default function TeacherAttendance() {
       }
     } catch (error) {
       console.error('Error exporting attendance:', error);
+      // Close modal and show error toast
       setExportModal(prev => ({
         ...prev,
+        isOpen: false,
         status: 'error',
         errorMessage: error.message || 'An error occurred during export'
       }));
       _showError(t('exportError', 'នាំចេញបរាជ័យ'));
     }
-  }, [teachers, currentWeekStart, schoolId, t, _showSuccess, _showError]);
+  }, [schoolId, currentWeekStart, t, _showSuccess, _showError]);
 
   // Function to open attendance modal
   const openAttendanceModal = useCallback((teacher, date, existingAttendance) => {
@@ -1251,14 +1297,8 @@ export default function TeacherAttendance() {
       {/* Export Progress Modal */}
       <ExportProgressModal
         isOpen={exportModal.isOpen}
-        title="Exporting Teacher Attendance"
-        message="Please wait while we prepare your attendance data for download..."
         progress={exportModal.progress}
         status={exportModal.status}
-        errorMessage={exportModal.errorMessage}
-        totalItems={exportModal.totalItems}
-        processedItems={exportModal.processedItems}
-        showItemCount={true}
         onComplete={() => {
           setExportModal(prev => ({ ...prev, isOpen: false }));
         }}

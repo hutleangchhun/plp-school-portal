@@ -22,6 +22,7 @@ import schoolService from '../../utils/api/services/schoolService';
  * @param {Date} props.selectedDate - Selected date for export
  * @param {string} props.exportType - 'daily' or 'monthly'
  * @param {boolean} props.disabled - Disable export button
+ * @param {Function} props.onExportStart - Callback before showing export dropdown
  */
 export default function AttendanceExport({
   students = [],
@@ -32,7 +33,8 @@ export default function AttendanceExport({
   selectedDate,
   exportType = 'monthly', // 'daily' or 'monthly'
   classId, // Required for API calls
-  disabled = false
+  disabled = false,
+  onExportStart = null
 }) {
   // Default to current date if no selectedDate is provided and exportType is monthly
   const defaultSelectedDate = selectedDate || (exportType === 'monthly' ? new Date() : new Date());
@@ -248,10 +250,18 @@ export default function AttendanceExport({
   const handleExportExcel = async () => {
     try {
       let exportData, daysInMonth;
-      
+
       if (exportType === 'monthly') {
-        // Fetch current month's attendance data
-        const monthlyAttendance = await fetchMonthlyAttendanceData();
+        // Check if we have pre-fetched export data from modal handler
+        let monthlyAttendance = attendance;
+        if (window.exportAttendanceData) {
+          monthlyAttendance = window.exportAttendanceData.attendance;
+          // Clean up after use
+          window.exportAttendanceData = null;
+        } else {
+          // Fallback: Fetch current month's attendance data
+          monthlyAttendance = await fetchMonthlyAttendanceData();
+        }
         ({ exportData, daysInMonth } = prepareMonthlyExportData(monthlyAttendance));
       } else {
         ({ exportData, daysInMonth } = prepareDailyExportData());
@@ -678,10 +688,18 @@ export default function AttendanceExport({
   const handleExportCSV = async () => {
     try {
       let exportData;
-      
+
       if (exportType === 'monthly') {
-        // Fetch current month's attendance data
-        const monthlyAttendance = await fetchMonthlyAttendanceData();
+        // Check if we have pre-fetched export data from modal handler
+        let monthlyAttendance = attendance;
+        if (window.exportAttendanceData) {
+          monthlyAttendance = window.exportAttendanceData.attendance;
+          // Clean up after use
+          window.exportAttendanceData = null;
+        } else {
+          // Fallback: Fetch current month's attendance data
+          monthlyAttendance = await fetchMonthlyAttendanceData();
+        }
         ({ exportData } = prepareMonthlyExportData(monthlyAttendance));
       } else {
         ({ exportData } = prepareDailyExportData());
@@ -741,10 +759,20 @@ export default function AttendanceExport({
     }
   };
 
+  const handleExportClick = async () => {
+    // If onExportStart callback is provided, call it first (e.g., to fetch full data and show modal)
+    if (onExportStart) {
+      await onExportStart();
+    } else {
+      // Otherwise, just toggle the dropdown
+      setShowExportDropdown(!showExportDropdown);
+    }
+  };
+
   return (
     <div className="relative">
       <Button
-        onClick={() => setShowExportDropdown(!showExportDropdown)}
+        onClick={handleExportClick}
         variant="outline"
         size="sm"
         disabled={disabled || students.length === 0}

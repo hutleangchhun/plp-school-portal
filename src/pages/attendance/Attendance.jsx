@@ -20,6 +20,7 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import EmptyState from '@/components/ui/EmptyState';
 import AttendanceExport from '../../components/attendance/AttendanceExport';
 import { formatDateKhmer } from '../../utils/formatters';
+import ExportProgressModal from '../../components/modals/ExportProgressModal';
 
 export default function Attendance() {
   const { t, setLanguage } = useLanguage();
@@ -45,6 +46,14 @@ export default function Attendance() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10); // Default from API
   const [totalPages, setTotalPages] = useState(1); // Total pages from API
+  const [exportModal, setExportModal] = useState({
+    isOpen: false,
+    status: 'processing', // 'processing', 'success', 'error'
+    progress: 0,
+    processedItems: 0,
+    totalItems: 0,
+    errorMessage: null
+  });
 
   const fetchingRef = useRef(false);
 
@@ -444,7 +453,155 @@ export default function Attendance() {
     setCurrentWeekStart(getWeekStart(new Date()));
   }, [getWeekStart]);
 
+  // Export handler - fetch all students with limit 100 for complete export
+  const handleExportWithModal = useCallback(async () => {
+    if (!selectedClass) {
+      showError(t('selectClassToExport', 'Please select a class to export'));
+      return;
+    }
 
+    // Open modal with processing state
+    setExportModal({
+      isOpen: true,
+      status: 'processing',
+      progress: 10,
+      processedItems: 0,
+      totalItems: 0,
+      errorMessage: null
+    });
+
+    try {
+      // Update progress
+      setExportModal(prev => ({ ...prev, progress: 20 }));
+
+      // Fetch ALL students in the selected class with limit 100
+      const allStudentsResponse = await classService.getClassStudents(selectedClass, {
+        limit: 100,
+        page: 1
+      });
+
+      if (!allStudentsResponse.data || !Array.isArray(allStudentsResponse.data)) {
+        throw new Error(t('failedToFetchStudents', 'Failed to fetch students'));
+      }
+
+      const allStudents = allStudentsResponse.data
+        .filter(student => student && (student.userId || student.user_id || student.id))
+        .map(student => {
+          const userId = student.userId || student.user_id || student.id || student.user?.id;
+          const firstName = student.firstName || student.first_name || student.user?.first_name || '';
+          const lastName = student.lastName || student.last_name || student.user?.last_name || '';
+          const fullName = student.fullName || student.full_name || `${firstName} ${lastName}`.trim();
+          const username = student.username || student.user?.username || '';
+
+          return {
+            id: Number(userId),
+            studentId: student.studentId || student.student_id,
+            name: fullName || username || 'Unknown',
+            firstName,
+            lastName,
+            username,
+            classId: selectedClass
+          };
+        });
+
+      setExportModal(prev => ({
+        ...prev,
+        progress: 35,
+        totalItems: allStudents.length,
+        processedItems: 0
+      }));
+
+      // Fetch all attendance records for the class
+      const weeklyAttendanceData = {};
+      const dates = getWeekDates(currentWeekStart);
+      const startDate = dates[0].toISOString().split('T')[0];
+      const endDate = dates[6].toISOString().split('T')[0];
+
+      let currentPage = 1;
+      let hasMorePages = true;
+      const allAttendanceRecords = [];
+
+      while (hasMorePages) {
+        const attendanceResponse = await attendanceService.getAttendance({
+          classId: selectedClass,
+          startDate,
+          endDate,
+          page: currentPage,
+          limit: 400
+        });
+
+        if (attendanceResponse.success && attendanceResponse.data) {
+          const records = Array.isArray(attendanceResponse.data)
+            ? attendanceResponse.data
+            : attendanceResponse.data.records || [];
+          allAttendanceRecords.push(...records);
+          const pagination = attendanceResponse.pagination;
+          hasMorePages = pagination && currentPage < pagination.totalPages;
+          currentPage++;
+        } else {
+          hasMorePages = false;
+        }
+      }
+
+      allAttendanceRecords.forEach(record => {
+        const userId = Number(record.userId || record.user_id);
+        const recordDate = record.date ? record.date.split('T')[0] : null;
+        if (!userId || isNaN(userId) || !recordDate) return;
+
+        if (!weeklyAttendanceData[userId]) {
+          weeklyAttendanceData[userId] = {};
+        }
+
+        weeklyAttendanceData[userId][recordDate] = {
+          status: record.status?.toUpperCase() || 'PRESENT',
+          time: record.createdAt ? new Date(record.createdAt).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }) : null,
+          id: record.id,
+          createdAt: record.createdAt,
+          reason: record.reason || ''
+        };
+      });
+
+      setExportModal(prev => ({ ...prev, progress: 75 }));
+
+      // Store the export data globally for AttendanceExport to use
+      window.exportAttendanceData = {
+        students: allStudents,
+        attendance: weeklyAttendanceData,
+        className: classes.find(cls => cls.id === selectedClass)?.name || 'មិនមានថ្នាក់',
+        schoolName: user?.school?.name || user?.schoolName || 'សាលា'
+      };
+
+      // Update final progress
+      setExportModal(prev => ({
+        ...prev,
+        progress: 100,
+        status: 'success'
+      }));
+
+      // Show success toast
+      showSuccess(t('exportSuccess', 'Attendance data fetched successfully'));
+
+      // Auto-close modal after brief delay
+      setTimeout(() => {
+        setExportModal(prev => ({ ...prev, isOpen: false }));
+      }, 1000);
+    } catch (err) {
+      console.error('Error during export:', err);
+
+      // Close modal and show error toast
+      setExportModal(prev => ({
+        ...prev,
+        isOpen: false,
+        status: 'error'
+      }));
+
+      showError(err.message || t('exportFailed', 'Export failed. Please try again.'));
+    }
+  }, [selectedClass, currentWeekStart, getWeekDates, classes, user, t, showError, showSuccess]);
 
   // Get weekly attendance stats
   const getWeeklyStats = () => {
@@ -631,7 +788,7 @@ export default function Attendance() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                    {/* Export Component - exports all students in the class */}
+                    {/* Export Component - exports all students in the class with modal progress */}
                     <AttendanceExport
                       students={students}
                       attendance={weeklyAttendance}
@@ -641,6 +798,7 @@ export default function Attendance() {
                       selectedDate={currentWeekStart}
                       exportType="monthly"
                       disabled={loading}
+                      onExportStart={handleExportWithModal}
                     />
                   </div>
                 </div>
@@ -835,6 +993,16 @@ export default function Attendance() {
             />
           </FadeInSection>
         )}
+
+        {/* Export Progress Modal */}
+        <ExportProgressModal
+          isOpen={exportModal.isOpen}
+          progress={exportModal.progress}
+          status={exportModal.status}
+          onComplete={() => {
+            setExportModal(prev => ({ ...prev, isOpen: false }));
+          }}
+        />
       </div>
     </PageTransition>
   );
