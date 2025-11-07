@@ -181,19 +181,29 @@ export default function StudentsManagement() {
       return allClasses;
     }
 
-    console.log('🔍 Filtering classes by grade level:', selectedGradeLevel);
-    console.log('📚 Available classes for filtering:', allClasses.map(c => ({ name: c.name, gradeLevel: c.gradeLevel })));
+    console.log('🔍 Filtering classes by grade level:', selectedGradeLevel, 'type:', typeof selectedGradeLevel);
+    console.log('📚 Available classes for filtering:', allClasses.map(c => ({
+      name: c.name,
+      gradeLevel: c.gradeLevel,
+      grade_level: c.grade_level,
+      classId: c.classId,
+      id: c.id
+    })));
 
     const filtered = allClasses.filter(cls => {
       const gradeLevel = cls.gradeLevel || cls.grade_level;
-      const matches = gradeLevel === selectedGradeLevel || Number(gradeLevel) === Number(selectedGradeLevel);
+      const selectedGradeLevelNum = Number(selectedGradeLevel);
+      const matches = gradeLevel === selectedGradeLevel || Number(gradeLevel) === selectedGradeLevelNum;
+
       if (!matches) {
-        console.log(`❌ Class "${cls.name}" gradeLevel=${gradeLevel} does not match ${selectedGradeLevel}`);
+        console.log(`❌ Class "${cls.name}" gradeLevel=${gradeLevel} (type: ${typeof gradeLevel}) does not match ${selectedGradeLevel} (type: ${typeof selectedGradeLevel})`);
+      } else {
+        console.log(`✅ Class "${cls.name}" gradeLevel=${gradeLevel} matches ${selectedGradeLevel}`);
       }
       return matches;
     });
 
-    console.log(`✅ Filtered classes count: ${filtered.length}`);
+    console.log(`✅ Total filtered classes count: ${filtered.length}`);
     return filtered;
   };
 
