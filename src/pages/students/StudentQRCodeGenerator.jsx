@@ -2,13 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   QrCode,
   Download,
-  Users,
   Loader,
   AlertCircle,
-  CheckCircle,
   Grid3X3,
-  List,
-  TrendingUp
+  List
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -509,44 +506,6 @@ export default function StudentQRCodeGenerator() {
               )}
             </div>
 
-            {/* Statistics */}
-            {students.length > 0 && (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">{t('totalStudents', 'Total Students')}</p>
-                      <p className="text-2xl font-bold text-blue-600">{students.length}</p>
-                    </div>
-                    <Users className="h-8 w-8 text-blue-400" />
-                  </div>
-                </div>
-
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">{t('qrCodesGenerated', 'QR Codes Generated')}</p>
-                      <p className="text-2xl font-bold text-green-600">{qrCodes.length}</p>
-                    </div>
-                    <CheckCircle className="h-8 w-8 text-green-400" />
-                  </div>
-                </div>
-
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">{t('completionRate', 'Completion Rate')}</p>
-                      <p className="text-2xl font-bold text-purple-600">
-                        {students.length > 0
-                          ? `${Math.round((qrCodes.length / students.length) * 100)}%`
-                          : '0%'}
-                      </p>
-                    </div>
-                    <TrendingUp className="h-8 w-8 text-purple-400" />
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* No class selected message */}
             {selectedClass === 'all' && students.length === 0 && (
