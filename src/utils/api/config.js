@@ -56,6 +56,7 @@ const ENDPOINTS = {
     VERIFY_EMAIL: '/users/verify-email',
     RESEND_VERIFICATION: '/users/resend-verification',
     UPDATE_USER: (userId) => `/users/${userId}`,
+    GENERATE_QR_CODE: '/users/generate-qr-code',
   },
   SCHOOLS: {
     BASE: '/schools',

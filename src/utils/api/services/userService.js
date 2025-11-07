@@ -173,6 +173,19 @@ const userService = {
   },
 
   /**
+   * Generate QR code for a user using /api/v1/users/generate-qr-code route (POST method)
+   * @param {string} username - User's username
+   * @param {string} password - User's password
+   * @returns {Promise<Object>} QR code data
+   */
+  generateQRCode: async (username, password) => {
+    return post(ENDPOINTS.USERS.GENERATE_QR_CODE, {
+      username,
+      password
+    });
+  },
+
+  /**
    * Upload profile picture using /users/my-account/profile-picture route (PATCH method)
    * @param {File} file - Profile picture file
    * @param {string|number} [userId] - Optional user ID for specific user upload (uses /users/{id}/upload-profile)
