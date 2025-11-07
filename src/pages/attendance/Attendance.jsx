@@ -37,6 +37,9 @@ export default function Attendance() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [classes, setClasses] = useState([]);
+  const [allClasses, setAllClasses] = useState([]);
+  const [availableClasses, setAvailableClasses] = useState([]);
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
   const [loadingClasses, setLoadingClasses] = useState(false);
 
 
@@ -118,6 +121,42 @@ export default function Attendance() {
     }
   }, [user]);
 
+  // Get unique grade levels from all classes
+  const getGradeLevelOptions = () => {
+    const gradeLevels = new Set();
+    allClasses.forEach(cls => {
+      if (cls.gradeLevel) {
+        gradeLevels.add(cls.gradeLevel);
+      }
+    });
+
+    const options = [
+      { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
+      ...Array.from(gradeLevels).sort((a, b) => a - b).map(level => ({
+        value: level,
+        label: t(`Grade ${level}`, `Grade ${level}`)
+      }))
+    ];
+
+    return options;
+  };
+
+  // Get filtered classes based on selected grade level
+  const getFilteredClasses = () => {
+    if (selectedGradeLevel === 'all') {
+      return allClasses;
+    }
+    return allClasses.filter(cls => cls.gradeLevel === selectedGradeLevel);
+  };
+
+  // Update filtered classes when allClasses or selectedGradeLevel changes
+  useEffect(() => {
+    const filtered = getFilteredClasses();
+    setAvailableClasses(filtered);
+    // Reset selectedClass when grade level changes
+    setSelectedClass('');
+  }, [selectedGradeLevel, allClasses]);
+
   // Fetch classes for the school
   const fetchClasses = useCallback(async () => {
     if (!schoolId) return;
@@ -127,6 +166,7 @@ export default function Attendance() {
       const response = await classService.getBySchool(schoolId);
       if (response.success && response.classes) {
         setClasses([{ id: '', name: t('allClasses', 'All Classes') }, ...response.classes]);
+        setAllClasses(response.classes);
       }
     } catch (err) {
       console.error('Error fetching classes:', err);
@@ -472,12 +512,30 @@ export default function Attendance() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('selectGradeLevel', 'Grade Level')}
+                </label>
+                <Dropdown
+                  value={selectedGradeLevel}
+                  onValueChange={setSelectedGradeLevel}
+                  options={getGradeLevelOptions()}
+                  placeholder={t('chooseGradeLevel', 'Choose grade level...')}
+                  disabled={loadingClasses}
+                  minWidth="min-w-full"
+                  triggerClassName="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('class') || 'Class'}
                 </label>
                 <Dropdown
                   value={selectedClass}
                   onValueChange={setSelectedClass}
-                  options={classes.map(cls => ({
+                  options={[
+                    { id: '', name: t('allClasses', 'All Classes') },
+                    ...availableClasses
+                  ].map(cls => ({
                     value: cls.id,
                     label: cls.name || cls.className || `Grade ${cls.gradeLevel}`
                   }))}

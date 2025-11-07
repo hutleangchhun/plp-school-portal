@@ -114,6 +114,9 @@ export default function StudentsManagement() {
 
   // State for classes information (derived from authenticated user)
   const [classes, setClasses] = useState([]);
+  const [allClasses, setAllClasses] = useState([]);
+  const [availableClasses, setAvailableClasses] = useState([]);
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
   const [selectedClassId, setSelectedClassId] = useState('all');
 
   // Debug: Log filter changes
@@ -158,17 +161,53 @@ export default function StudentsManagement() {
   const [allStudents, setAllStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
 
+  // Get unique grade levels from all classes
+  const getGradeLevelOptions = () => {
+    const gradeLevels = new Set();
+    allClasses.forEach(cls => {
+      if (cls.gradeLevel) {
+        gradeLevels.add(cls.gradeLevel);
+      }
+    });
+
+    const options = [
+      { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
+      ...Array.from(gradeLevels).sort((a, b) => a - b).map(level => ({
+        value: level,
+        label: t(`Grade ${level}`, `Grade ${level}`)
+      }))
+    ];
+
+    return options;
+  };
+
+  // Get filtered classes based on selected grade level
+  const getFilteredClasses = () => {
+    if (selectedGradeLevel === 'all') {
+      return allClasses;
+    }
+    return allClasses.filter(cls => cls.gradeLevel === selectedGradeLevel);
+  };
+
+  // Update filtered classes when allClasses or selectedGradeLevel changes
+  useEffect(() => {
+    const filtered = getFilteredClasses();
+    setAvailableClasses(filtered);
+    // Reset selectedClassId when grade level changes
+    setSelectedClassId('all');
+  }, [selectedGradeLevel, allClasses]);
+
   // Memoize class dropdown options to prevent unnecessary re-renders
   const classDropdownOptions = useMemo(() => {
     const options = [
       { value: 'all', label: t('allClasses', 'ថ្នាក់ទាំងអស់') },
-      ...classes.map(cls => ({
+      ...availableClasses.map(cls => ({
         value: String(cls.classId),
         label: cls.name
       }))
     ];
     return options;
-  }, [classes, t]);
+  }, [availableClasses, t]);
 
 
   // Enhanced client-side search function for class-filtered results
@@ -304,6 +343,7 @@ export default function StudentsManagement() {
       if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
         console.log('🚨 No classes found in API response:', classResponse);
         setClasses([]);
+        setAllClasses([]);
         setSelectedClassId('all');
 
         // This might indicate a backend issue or authorization problem
@@ -332,6 +372,7 @@ export default function StudentsManagement() {
       }));
 
       setClasses(teacherClasses);
+      setAllClasses(teacherClasses);
       classesInitialized.current = true;
 
       // Extract and set school ID from the first class if not already set
@@ -1585,10 +1626,40 @@ export default function StudentsManagement() {
 
             {classes.length > 0 && (
               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm">
+                {selectedGradeLevel !== 'all' && (
+                  <div className="flex items-center space-x-2 text-xs text-gray-500">
+                    {(() => {
+                      const gradeOptions = getGradeLevelOptions();
+                      const selectedGrade = gradeOptions.find(g => g.value === selectedGradeLevel);
+                      return (
+                        <>
+                          {selectedGrade && (
+                            <Badge color="blue" className="text-xs">
+                              {selectedGrade.label}
+                            </Badge>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-700 font-medium">{t('selectGradeLevel', 'Grade Level')}:</span>
+                  <Dropdown
+                    value={selectedGradeLevel}
+                    onValueChange={(newValue) => {
+                      setSelectedGradeLevel(newValue);
+                    }}
+                    options={getGradeLevelOptions()}
+                    placeholder={t('chooseGradeLevel', 'Choose grade level...')}
+                    minWidth="min-w-[200px]"
+                    contentClassName="max-h-[200px] overflow-y-auto"
+                  />
+                </div>
                 {selectedClassId !== 'all' && (
                   <div className="flex items-center space-x-2 text-xs text-gray-500">
                     {(() => {
-                      const selectedClass = classes.find(c => c.classId.toString() === selectedClassId);
+                      const selectedClass = availableClasses.find(c => c.classId.toString() === selectedClassId);
                       return (
                         <>
                           {selectedClass && (

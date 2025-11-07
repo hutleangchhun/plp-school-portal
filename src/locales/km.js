@@ -99,6 +99,8 @@ export const km = {
   contract: 'កិច្ចសន្យា',
   agreement: 'កិច្ចព្រមព្រៀង',
   selectGradeLevel: 'ជ្រើសរើសកម្រិតថ្នាក់',
+  chooseGradeLevel: 'ជ្រើសរើសកម្រិតថ្នាក់...',
+  allGradeLevels: 'កម្រិតថ្នាក់ទាំងអស់',
   teacherInformation: 'ព័ត៌មានគ្រូបង្រៀន',
   updateYourPersionalDetails: 'ធ្វើបច្ចុប្បន្នភាពនៃព័ត៌មានរបស់លោកអ្នក',
   

@@ -45,7 +45,9 @@ export default function Reports() {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState([]);
   const [schoolInfo, setSchoolInfo] = useState(null);
-  const [availableClasses, setAvailableClasses] = useState([]);
+  const [allClasses, setAllClasses] = useState([]); // Store all classes from API
+  const [availableClasses, setAvailableClasses] = useState([]); // Filtered classes based on grade level
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState('all'); // Grade level filter
   const [selectedClass, setSelectedClass] = useState('all');
 
   // Report Types - Only showing working reports (others are commented out for future implementation)
@@ -127,11 +129,16 @@ export default function Reports() {
       });
 
       if (response.success && response.classes) {
+        // Store all classes for cascading filter
+        setAllClasses(response.classes);
+
+        // Initialize available classes with all classes
         const classOptions = [
           { value: 'all', label: t('allClasses', 'All Classes') },
           ...response.classes.map(cls => ({
             value: cls.id.toString(),
-            label: cls.name || `Class ${cls.id}`
+            label: cls.name || `Class ${cls.id}`,
+            gradeLevel: cls.gradeLevel
           }))
         ];
         setAvailableClasses(classOptions);
@@ -140,6 +147,38 @@ export default function Reports() {
     } catch (error) {
       console.error('❌ Error fetching classes:', error);
     }
+  };
+
+  // Filter classes based on selected grade level
+  const getFilteredClasses = () => {
+    if (selectedGradeLevel === 'all') {
+      return availableClasses;
+    }
+
+    return [
+      { value: 'all', label: t('allClasses', 'All Classes') },
+      ...availableClasses.filter(cls => cls.gradeLevel === selectedGradeLevel)
+    ];
+  };
+
+  // Get unique grade levels from all classes
+  const getGradeLevelOptions = () => {
+    const gradeLevels = new Set();
+    allClasses.forEach(cls => {
+      if (cls.gradeLevel) {
+        gradeLevels.add(cls.gradeLevel);
+      }
+    });
+
+    const options = [
+      { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
+      ...Array.from(gradeLevels).sort((a, b) => a - b).map(level => ({
+        value: level,
+        label: t(`Grade ${level}`, `Grade ${level}`)
+      }))
+    ];
+
+    return options;
   };
 
   const fetchReportData = async () => {
@@ -1174,7 +1213,30 @@ export default function Reports() {
               />
             </div>
 
-            {/* Step 2: Class Filter - Shown for report1, report3, and report4 (before date filters) */}
+            {/* Step 2a: Grade Level Filter - Shown for report1, report3, and report4 (cascade filter) */}
+            {['report1', 'report3', 'report4'].includes(selectedReport) && allClasses.length > 0 && (
+              <div className="flex-shrink-0 min-w-[200px]">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Filter className="h-4 w-4 inline mr-1" />
+                  {t('selectGradeLevel') || 'Select Grade Level'}
+                </label>
+                <Dropdown
+                  value={selectedGradeLevel}
+                  onValueChange={(value) => {
+                    setSelectedGradeLevel(value);
+                    // Reset class selection when grade level changes
+                    setSelectedClass('all');
+                  }}
+                  options={getGradeLevelOptions()}
+                  placeholder={t('chooseGradeLevel', 'Choose grade level...')}
+                  minWidth="w-full"
+                  maxHeight="max-h-56"
+                  itemsToShow={10}
+                />
+              </div>
+            )}
+
+            {/* Step 2b: Class Filter - Shown for report1, report3, and report4 (filtered by grade level) */}
             {['report1', 'report3', 'report4'].includes(selectedReport) && (
               <div className="flex-shrink-0 min-w-[200px]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1185,7 +1247,7 @@ export default function Reports() {
                 <Dropdown
                   value={selectedClass}
                   onValueChange={setSelectedClass}
-                  options={availableClasses}
+                  options={getFilteredClasses()}
                   placeholder={t('chooseClass', 'Choose class...')}
                   minWidth="w-full"
                   maxHeight="max-h-56"
