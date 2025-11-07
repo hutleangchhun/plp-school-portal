@@ -13,7 +13,7 @@ export default function Footer() {
               © {currentYear} {t('schoolManagement', 'School Management')} - {t('allRightsReserved', 'All rights reserved')}
             </p>
             <p className="mt-2">
-              {t('poweredBy', 'Powered by')} PLP & Sangapac
+              {t('poweredBy', 'Powered by')} PLP
             </p>
           </div>
         </div>
