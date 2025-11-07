@@ -540,6 +540,7 @@ export default function Attendance() {
                   disabled={loadingClasses}
                   minWidth="min-w-full"
                   triggerClassName="w-full"
+                  maxHeight="max-h-56"
                 />
               </div>
 
