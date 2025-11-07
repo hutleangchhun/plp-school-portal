@@ -137,12 +137,24 @@ export default function Attendance() {
   // Get filtered classes based on selected grade level
   const getFilteredClasses = () => {
     if (selectedGradeLevel === 'all') {
+      console.log('📚 Returning all classes, count:', allClasses.length);
       return allClasses;
     }
-    return allClasses.filter(cls => {
+
+    console.log('🔍 Filtering classes by grade level:', selectedGradeLevel);
+    console.log('📚 Available classes for filtering:', allClasses.map(c => ({ name: c.name, gradeLevel: c.gradeLevel })));
+
+    const filtered = allClasses.filter(cls => {
       const gradeLevel = cls.gradeLevel || cls.grade_level;
-      return gradeLevel === selectedGradeLevel || Number(gradeLevel) === Number(selectedGradeLevel);
+      const matches = gradeLevel === selectedGradeLevel || Number(gradeLevel) === Number(selectedGradeLevel);
+      if (!matches) {
+        console.log(`❌ Class "${cls.name}" gradeLevel=${gradeLevel} does not match ${selectedGradeLevel}`);
+      }
+      return matches;
     });
+
+    console.log(`✅ Filtered classes count: ${filtered.length}`);
+    return filtered;
   };
 
   // Update filtered classes when allClasses or selectedGradeLevel changes
@@ -163,6 +175,7 @@ export default function Attendance() {
       if (response.success && response.classes) {
         setClasses([{ id: '', name: t('allClasses', 'All Classes') }, ...response.classes]);
         setAllClasses(response.classes);
+        console.log('📚 Class data with gradeLevel:', response.classes.slice(0, 3).map(c => ({ name: c.name, gradeLevel: c.gradeLevel, grade_level: c.grade_level })));
       }
     } catch (err) {
       console.error('Error fetching classes:', err);

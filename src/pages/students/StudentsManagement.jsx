@@ -177,12 +177,24 @@ export default function StudentsManagement() {
   // Get filtered classes based on selected grade level
   const getFilteredClasses = () => {
     if (selectedGradeLevel === 'all') {
+      console.log('📚 Returning all classes, count:', allClasses.length);
       return allClasses;
     }
-    return allClasses.filter(cls => {
+
+    console.log('🔍 Filtering classes by grade level:', selectedGradeLevel);
+    console.log('📚 Available classes for filtering:', allClasses.map(c => ({ name: c.name, gradeLevel: c.gradeLevel })));
+
+    const filtered = allClasses.filter(cls => {
       const gradeLevel = cls.gradeLevel || cls.grade_level;
-      return gradeLevel === selectedGradeLevel || Number(gradeLevel) === Number(selectedGradeLevel);
+      const matches = gradeLevel === selectedGradeLevel || Number(gradeLevel) === Number(selectedGradeLevel);
+      if (!matches) {
+        console.log(`❌ Class "${cls.name}" gradeLevel=${gradeLevel} does not match ${selectedGradeLevel}`);
+      }
+      return matches;
     });
+
+    console.log(`✅ Filtered classes count: ${filtered.length}`);
+    return filtered;
   };
 
   // Update filtered classes when allClasses or selectedGradeLevel changes
@@ -357,7 +369,7 @@ export default function StudentsManagement() {
       const teacherClasses = classResponse.classes.map((classData) => ({
         classId: classData.classId,
         name: classData.name,
-        gradeLevel: classData.gradeLevel,
+        gradeLevel: classData.gradeLevel || classData.grade_level,
         section: classData.section || 'A',
         academicYear: classData.academicYear,
         teacherId: classData.teacherId,
@@ -369,6 +381,7 @@ export default function StudentsManagement() {
 
       setClasses(teacherClasses);
       setAllClasses(teacherClasses);
+      console.log('📚 Class data with gradeLevel:', teacherClasses.slice(0, 3).map(c => ({ name: c.name, gradeLevel: c.gradeLevel })));
       classesInitialized.current = true;
 
       // Extract and set school ID from the first class if not already set
