@@ -154,7 +154,9 @@ export default function Attendance() {
     setLoadingClasses(true);
     try {
       // Build query parameters - pass gradeLevel to API for server-side filtering
-      const queryParams = {};
+      const queryParams = {
+        limit: 100  // Fetch up to 100 classes to support cascade filter
+      };
       if (selectedGradeLevel && selectedGradeLevel !== 'all') {
         queryParams.gradeLevel = selectedGradeLevel;
       }
