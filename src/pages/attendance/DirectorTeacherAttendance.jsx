@@ -56,7 +56,7 @@ export default function TeacherAttendance() {
   });
   const [submittingAttendance, setSubmittingAttendance] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10); // Show 15 teachers per page
+  const [itemsPerPage, setItemsPerPage] = useState(10); // Default from API
 
   const fetchingRef = useRef(false);
 
@@ -175,6 +175,11 @@ export default function TeacherAttendance() {
 
       // Fetch teachers from the school
       const response = await teacherService.getTeachersBySchool(schoolId, { limit: 100 });
+
+      // Update items per page from API response if available
+      if (response.pagination?.limit) {
+        setItemsPerPage(response.pagination.limit);
+      }
 
       if (response.data && Array.isArray(response.data)) {
         const formattedTeachers = response.data

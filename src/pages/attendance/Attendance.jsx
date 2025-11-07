@@ -43,7 +43,7 @@ export default function Attendance() {
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10); // Show 15 students per page
+  const [itemsPerPage, setItemsPerPage] = useState(10); // Default from API
 
   const fetchingRef = useRef(false);
 
@@ -206,6 +206,11 @@ export default function Attendance() {
       const studentsResponse = await classService.getClassStudents(selectedClass, {
         search: searchQuery || undefined
       });
+
+      // Update items per page from API response if available
+      if (studentsResponse.pagination?.limit) {
+        setItemsPerPage(studentsResponse.pagination.limit);
+      }
 
       if (studentsResponse.data && Array.isArray(studentsResponse.data)) {
         const formattedStudents = studentsResponse.data
