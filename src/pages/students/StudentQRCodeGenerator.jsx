@@ -18,7 +18,7 @@ import Dropdown from '../../components/ui/Dropdown';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { classService } from '../../utils/api/services/classService';
 import { studentService } from '../../utils/api/services/studentService';
-import { userService } from '../../utils/api/services/userService';
+import { API_BASE_URL } from '../../utils/api/config';
 
 /**
  * StudentQRCodeGenerator Component
@@ -201,38 +201,16 @@ export default function StudentQRCodeGenerator() {
         const student = students[i];
 
         try {
-          // Get full user data using the user ID
-          let userData = student;
-
-          // If we need to fetch additional user data
-          if (student.userId) {
-            try {
-              const fullUserData = await userService.getUserByID(student.userId);
-              if (fullUserData) {
-                userData = {
-                  ...student,
-                  ...fullUserData
-                };
-              }
-            } catch (err) {
-              console.warn(`Could not fetch additional data for user ${student.userId}:`, err);
-              // Continue with the student data we have
-            }
-          }
-
-          // Prepare QR payload to send to API
+          // Prepare QR payload with only username and password
           const qrPayload = {
-            userId: userData.userId || userData.id,
-            username: userData.username,
-            email: userData.email,
-            name: userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
-            role: 'Student'
+            username: student.username,
+            password: 'student@123' // Default student password
           };
 
-          console.log(`📤 Posting QR code request for user ${qrPayload.userId}:`, qrPayload);
+          console.log(`📤 Posting QR code request for ${qrPayload.username}:`, qrPayload);
 
           // Send request to generate QR code on backend
-          const response = await fetch('/api/v1/users/generate-qr-code', {
+          const response = await fetch(`${API_BASE_URL}/users/generate-qr-code`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -246,14 +224,14 @@ export default function StudentQRCodeGenerator() {
           }
 
           const result = await response.json();
-          console.log(`✅ Generated QR code for user ${qrPayload.userId}:`, result);
+          console.log(`✅ Generated QR code for ${qrPayload.username}:`, result);
 
           qrData.push({
-            userId: qrPayload.userId,
+            userId: student.userId || student.id,
             studentId: student.studentId || student.id,
-            name: qrPayload.name,
+            name: student.name,
             username: qrPayload.username,
-            email: qrPayload.email,
+            email: student.email,
             classId: selectedClass,
             className: allClasses.find(c => c.id === parseInt(selectedClass))?.name || 'Unknown',
             qrCode: result.qrCode || result.qr_code, // Handle both naming conventions

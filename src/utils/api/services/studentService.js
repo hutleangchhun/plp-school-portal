@@ -795,10 +795,14 @@ export const studentService = {
       const user = student.user || student;
       const classInfo = student.class || {};
 
+      // Extract student number from the nested student object if available
+      const studentNumber = student.student?.studentNumber || student.studentNumber || student.studentId;
+
       return {
         id: student.studentId,
         userId: user.id,
         studentId: student.studentId,
+        studentNumber: studentNumber,
         name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown Student',
         firstName: user.first_name || '',
         lastName: user.last_name || '',
@@ -881,6 +885,7 @@ export const studentService = {
         // explicit users_id for API use
         userId: resolvedUserId,
         studentId: studentNumber,
+        studentNumber: studentNumber,
         name: `${firstName} ${lastName}`.trim() || student.fullname || user.fullname || 'Unknown Student',
         firstName,
         lastName,
