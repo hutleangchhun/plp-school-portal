@@ -21,6 +21,7 @@ import { teacherSettingsService } from '../../utils/api/services/teacherSettings
 import schoolService from '../../utils/api/services/schoolService';
 import { isToday } from '../attendance/utils';
 import { exportTeacherAttendanceToExcel } from '../../utils/teacherAttendanceExportUtils';
+import ExportProgressModal from '../../components/modals/ExportProgressModal';
 
 /**
  * TeacherAttendance Component
@@ -57,6 +58,15 @@ export default function TeacherAttendance() {
   const [submittingAttendance, setSubmittingAttendance] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10); // Default from API
+  const [totalPages, setTotalPages] = useState(1); // Total pages from API
+  const [exportModal, setExportModal] = useState({
+    isOpen: false,
+    status: 'processing', // 'processing', 'success', 'error'
+    progress: 0,
+    processedItems: 0,
+    totalItems: 0,
+    errorMessage: null
+  });
 
   const fetchingRef = useRef(false);
 
@@ -159,7 +169,7 @@ export default function TeacherAttendance() {
   }, [t, _showSuccess, _showError]);
 
   // Fetch teachers and attendance data
-  const fetchTeachersAndAttendance = useCallback(async (_searchQuery = '') => {
+  const fetchTeachersAndAttendance = useCallback(async (_searchQuery = '', pageNum = 1) => {
     if (fetchingRef.current || !schoolId || !isDirector) {
       console.log('Skipping fetch - already fetching or not director');
       return;
@@ -173,12 +183,18 @@ export default function TeacherAttendance() {
       const loadingKey = 'fetchTeachers';
       startLoading(loadingKey, t('loadingTeachers', 'Loading teachers...'));
 
-      // Fetch teachers from the school
-      const response = await teacherService.getTeachersBySchool(schoolId, { limit: 100 });
+      // Fetch teachers with backend pagination (10 per page)
+      const response = await teacherService.getTeachersBySchool(schoolId, {
+        limit: 10,
+        page: pageNum
+      });
 
-      // Update items per page from API response if available
+      // Update pagination info from API response
       if (response.pagination?.limit) {
         setItemsPerPage(response.pagination.limit);
+      }
+      if (response.pagination?.pages) {
+        setTotalPages(response.pagination.pages);
       }
 
       if (response.data && Array.isArray(response.data)) {
@@ -356,17 +372,14 @@ export default function TeacherAttendance() {
     });
   }, [teachers, searchTerm]);
 
-  // Calculate pagination values
-  const totalPages = Math.ceil(filteredTeachers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const displayedTeachers = useMemo(() => {
-    return filteredTeachers.slice(startIndex, endIndex);
-  }, [filteredTeachers, startIndex, endIndex]);
+  // With backend pagination, displayedTeachers comes directly from API
+  // filteredTeachers IS the displayed teachers (already paginated by backend)
+  const displayedTeachers = filteredTeachers;
 
   // Reset to page 1 when search term changes
   useEffect(() => {
     setCurrentPage(1);
+    fetchTeachersAndAttendance(searchTerm, 1);
   }, [searchTerm]);
 
   // Function to select/deselect all teachers on current page
@@ -444,7 +457,18 @@ export default function TeacherAttendance() {
   // Function to export teacher attendance to Excel
   const handleExportAttendance = useCallback(async () => {
     try {
-      startLoading('exportAttendance', t('exportingAttendance', 'កំពុងនាំចេញ...'));
+      // Open export modal with processing state
+      setExportModal({
+        isOpen: true,
+        status: 'processing',
+        progress: 10,
+        processedItems: 0,
+        totalItems: teachers.length,
+        errorMessage: null
+      });
+
+      // Update progress
+      setExportModal(prev => ({ ...prev, progress: 25 }));
 
       // Fetch school info to get school name
       let schoolName = 'សាលា'; // Default fallback
@@ -460,16 +484,38 @@ export default function TeacherAttendance() {
         // Continue with default name
       }
 
+      setExportModal(prev => ({ ...prev, progress: 50 }));
+
       const result = await exportTeacherAttendanceToExcel(
         teachers,
         schoolId,
         {
           selectedDate: currentWeekStart,
           schoolName,
+          onProgress: (processed, total) => {
+            const progress = 50 + (processed / total) * 40; // 50-90%
+            setExportModal(prev => ({
+              ...prev,
+              progress: Math.round(progress),
+              processedItems: processed,
+              totalItems: total
+            }));
+          },
           onSuccess: () => {
+            setExportModal(prev => ({
+              ...prev,
+              progress: 100,
+              status: 'success',
+              errorMessage: null
+            }));
             _showSuccess(t('exportSuccess', 'នាំចេញជោគជ័យ'));
           },
           onError: (error) => {
+            setExportModal(prev => ({
+              ...prev,
+              status: 'error',
+              errorMessage: error.message || 'Export failed'
+            }));
             _showError(t('exportError', 'នាំចេញបរាជ័យ: ' + error.message));
           }
         }
@@ -480,11 +526,14 @@ export default function TeacherAttendance() {
       }
     } catch (error) {
       console.error('Error exporting attendance:', error);
+      setExportModal(prev => ({
+        ...prev,
+        status: 'error',
+        errorMessage: error.message || 'An error occurred during export'
+      }));
       _showError(t('exportError', 'នាំចេញបរាជ័យ'));
-    } finally {
-      stopLoading('exportAttendance');
     }
-  }, [teachers, currentWeekStart, schoolId, t, startLoading, stopLoading, _showSuccess, _showError]);
+  }, [teachers, currentWeekStart, schoolId, t, _showSuccess, _showError]);
 
   // Function to open attendance modal
   const openAttendanceModal = useCallback((teacher, date, existingAttendance) => {
@@ -1085,9 +1134,12 @@ export default function TeacherAttendance() {
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
-              total={filteredTeachers.length}
+              total={teachers.length}
               limit={itemsPerPage}
-              onPageChange={setCurrentPage}
+              onPageChange={(pageNum) => {
+                setCurrentPage(pageNum);
+                fetchTeachersAndAttendance(searchTerm, pageNum);
+              }}
               t={t}
               showFirstLast={true}
               showInfo={true}
@@ -1195,6 +1247,22 @@ export default function TeacherAttendance() {
           </div>
         </div>
       )}
+
+      {/* Export Progress Modal */}
+      <ExportProgressModal
+        isOpen={exportModal.isOpen}
+        title="Exporting Teacher Attendance"
+        message="Please wait while we prepare your attendance data for download..."
+        progress={exportModal.progress}
+        status={exportModal.status}
+        errorMessage={exportModal.errorMessage}
+        totalItems={exportModal.totalItems}
+        processedItems={exportModal.processedItems}
+        showItemCount={true}
+        onComplete={() => {
+          setExportModal(prev => ({ ...prev, isOpen: false }));
+        }}
+      />
     </PageTransition>
   );
 }

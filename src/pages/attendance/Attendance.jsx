@@ -44,6 +44,7 @@ export default function Attendance() {
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10); // Default from API
+  const [totalPages, setTotalPages] = useState(1); // Total pages from API
 
   const fetchingRef = useRef(false);
 
@@ -181,7 +182,7 @@ export default function Attendance() {
   }, [schoolId, selectedGradeLevel, t, handleError]);
 
   // Fetch students and weekly attendance
-  const fetchStudents = useCallback(async (searchQuery = '') => {
+  const fetchStudents = useCallback(async (searchQuery = '', pageNum = 1) => {
     if (fetchingRef.current) {
       console.log('Already fetching students, skipping...');
       return;
@@ -202,14 +203,19 @@ export default function Attendance() {
       const loadingKey = 'fetchStudents';
       startLoading(loadingKey, t('loadingStudents', 'Loading students...'));
 
-      // Fetch students from the selected class with search term
+      // Fetch students from the selected class with search term and backend pagination
       const studentsResponse = await classService.getClassStudents(selectedClass, {
-        search: searchQuery || undefined
+        search: searchQuery || undefined,
+        limit: 10,
+        page: pageNum
       });
 
-      // Update items per page from API response if available
+      // Update pagination info from API response
       if (studentsResponse.pagination?.limit) {
         setItemsPerPage(studentsResponse.pagination.limit);
+      }
+      if (studentsResponse.pagination?.pages) {
+        setTotalPages(studentsResponse.pagination.pages);
       }
 
       if (studentsResponse.data && Array.isArray(studentsResponse.data)) {
@@ -355,18 +361,17 @@ export default function Attendance() {
     });
   }, [students, searchTerm]);
 
-  // Calculate pagination values
-  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const displayedStudents = useMemo(() => {
-    return filteredStudents.slice(startIndex, endIndex);
-  }, [filteredStudents, startIndex, endIndex]);
+  // With backend pagination, displayedStudents comes directly from API
+  // filteredStudents IS the displayed students (already paginated by backend)
+  const displayedStudents = filteredStudents;
 
   // Reset to page 1 when search term changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+    if (selectedClass) {
+      fetchStudents(searchTerm, 1);
+    }
+  }, [searchTerm, selectedClass]);
 
   // Debounce search to avoid too many API calls
   const debouncedFetchRef = useRef(null);
@@ -809,7 +814,10 @@ export default function Attendance() {
                 totalPages={totalPages}
                 total={filteredStudents.length}
                 limit={itemsPerPage}
-                onPageChange={setCurrentPage}
+                onPageChange={(pageNum) => {
+                  setCurrentPage(pageNum);
+                  fetchStudents(searchTerm, pageNum);
+                }}
                 t={t}
                 showFirstLast={true}
                 showInfo={true}
