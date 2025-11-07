@@ -15,6 +15,7 @@ import NotFound from './pages/NotFound';
 import StudentsManagement from './pages/students/StudentsManagement';
 import StudentSelection from './pages/students/StudentSelection';
 import BulkStudentImport from './pages/students/BulkStudentImport';
+import StudentQRCodeGenerator from './pages/students/StudentQRCodeGenerator';
 import ClassesManagement from './pages/classes/ClassesManagement';
 import TeachersManagement from './pages/teachers/TeachersManagement';
 import ParentsManagement from './pages/parents/ParentsManagement';
@@ -130,6 +131,11 @@ function AppContent() {
           }>
             <Route index element={<StudentsManagement />} />
             <Route path="select" element={<StudentSelection />} />
+            <Route path="qr-codes" element={
+              <ProtectedRoute path="/students/qr-codes" user={user}>
+                <StudentQRCodeGenerator />
+              </ProtectedRoute>
+            } />
             <Route path="bulk-import" element={
               <ProtectedRoute path="/students/bulk-import" user={user}>
                 <BulkStudentImport />

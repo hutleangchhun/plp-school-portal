@@ -83,6 +83,10 @@ export const routePermissions = {
   '/settings/school': {
     allowedRoles: [ROLES.DIRECTOR], // Directors only
     component: 'SchoolSettingsPage'
+  },
+  '/students/qr-codes': {
+    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR], // Both teachers and directors
+    component: 'StudentQRCodeGenerator'
   }
 };
 
@@ -104,10 +108,10 @@ export const hasRouteAccess = (path, user) => {
     return !!routePermissions[path];
   }
 
-  // Teacher: roleId = 8 && (isDirector = false OR undefined) can only access /attendance, /my-classes, /my-students, /my-attendance, and /profile
+  // Teacher: roleId = 8 && (isDirector = false OR undefined) can access /attendance, /my-classes, /my-students, /my-attendance, /profile, and /students/qr-codes
   // Teachers CANNOT access /students/bulk-import or /qr-code-admin
   if (user.roleId === ROLES.TEACHER && isNotDirector) {
-    return path === '/attendance' || path === '/my-classes' || path === '/my-students' || path === '/my-attendance' || path === '/profile';
+    return path === '/attendance' || path === '/my-classes' || path === '/my-students' || path === '/my-attendance' || path === '/profile' || path === '/students/qr-codes';
   }
 
   // Director: roleId = 8 && isDirector = true (already handled above in the first check)
@@ -182,6 +186,10 @@ export const getNavigationItems = (user, t) => {
       ],
     },
     {
+      name: t('studentQRCode', 'Student QR Codes'),
+      href: '/students/qr-codes',
+    },
+    {
       name: t('examRecord', 'Exam Records'),
       href: '/exam-records',
     },
@@ -221,6 +229,10 @@ export const getNavigationItems = (user, t) => {
           href: '/my-attendance',
         },
       ],
+    },
+    {
+      name: t('studentQRCode', 'Student QR Codes'),
+      href: '/students/qr-codes',
     },
     // Temporarily disabled - will implement later:
     // {

@@ -454,6 +454,8 @@ export const en = {
   classInformation: 'Class Information',
   gradeLevel: 'Grade Level',
   noStudentsFoundMatchingCriteria: 'No students found matching your criteria.',
+  noClassesAvailable: 'No Classes Available',
+  selectedGradeLevelNoClasses: 'The selected grade level has no classes available.',
   searchStudentsByNameOrEmail: 'Search students by name or email...',
   
   // Toast and action messages  

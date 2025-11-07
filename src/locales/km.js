@@ -557,6 +557,8 @@ export const km = {
   classInformation: 'ព័ត៌មានថ្នាក់',
   gradeLevel: 'កម្រិតថ្នាក់',
   noStudentsFoundMatchingCriteria: 'រកមិនឃើញសិស្សដែលស្របនឹងលក្ខខណ្ឌរបស់អ្នក។',
+  noClassesAvailable: 'មិនមានថ្នាក់ដែលអាចប្រើបាន',
+  selectedGradeLevelNoClasses: 'កម្រិតថ្នាក់ដែលបានជ្រើសរើសមិនមានថ្នាក់ដែលអាចប្រើបាន។',
   searchStudentsByNameOrEmail: 'ស្វែងរកសិស្សតាមឈ្មោះ ឬអ៊ីមែល...',
   
   // Toast and action messages  
