@@ -305,13 +305,13 @@ export default function Attendance() {
     }
   }, [selectedClass, currentWeekStart, getWeekDates, t, handleError, clearError, startLoading, stopLoading]);
 
-  // Initial fetch
+  // Initial fetch and re-fetch when grade level changes
   useEffect(() => {
     if (schoolId) {
       fetchClasses();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schoolId]); // Only re-fetch when schoolId changes
+  }, [schoolId, selectedGradeLevel]); // Re-fetch when schoolId or gradeLevel changes
 
   // Filter students based on search term
   // Server-side filtering may not work, so we apply client-side filtering as well
