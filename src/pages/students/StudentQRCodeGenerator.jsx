@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import {
   QrCode,
   Download,
@@ -45,6 +46,7 @@ export default function StudentQRCodeGenerator() {
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
 
   const generatingRef = useRef(false);
+  const cardRefsRef = useRef({}); // Store refs to all card elements
 
   // Get authenticated user data
   useEffect(() => {
@@ -307,46 +309,72 @@ export default function StudentQRCodeGenerator() {
     }
   };
 
-  // Convert base64 data URI to Blob
-  const base64ToBlob = (dataUri) => {
+  // Capture card element and download as image
+  const downloadQRCode = async (qrCode, cardElement) => {
     try {
-      // Handle data:image/png;base64,... format
-      const arr = dataUri.split(',');
-      const mime = arr[0].match(/:(.*?);/)[1];
-      const bstr = atob(arr[1]);
-      const n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      for (let i = 0; i < n; i++) {
-        u8arr[i] = bstr.charCodeAt(i);
-      }
-      return new Blob([u8arr], { type: mime });
-    } catch (err) {
-      console.error('Error converting base64 to blob:', err);
-      return null;
-    }
-  };
+      startLoading('downloadCard', t('capturingCard', 'Capturing card...'));
 
-  const downloadQRCode = (qrCode) => {
-    try {
-      const blob = base64ToBlob(qrCode.qrCode);
-      if (!blob) {
-        showError(t('failedToProcessImage', 'Failed to process image'));
-        return;
+      let elementToCapture = cardElement;
+
+      // If cardElement is not provided (table view), create a temporary card element
+      if (!cardElement) {
+        // Create a temporary card element for table view
+        const tempCard = document.createElement('div');
+        tempCard.style.position = 'absolute';
+        tempCard.style.left = '-9999px';
+        tempCard.style.top = '-9999px';
+        tempCard.style.width = '200px';
+        tempCard.style.padding = '16px';
+        tempCard.style.backgroundColor = '#ffffff';
+        tempCard.style.border = '1px solid #e5e7eb';
+        tempCard.style.borderRadius = '8px';
+        tempCard.innerHTML = `
+          <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+            <img src="${qrCode.qrCode}" alt="QR Code" style="width: 160px; height: 160px; border: 1px solid #d1d5db; border-radius: 4px;" />
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <p style="font-size: 14px; font-weight: 500; color: #111827; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${qrCode.name}
+            </p>
+            <p style="font-size: 12px; color: #6b7280; margin: 0;">
+              ${qrCode.username}
+            </p>
+            <p style="font-size: 12px; color: #6b7280; margin: 0;">
+              ${qrCode.studentNumber}
+            </p>
+          </div>
+        `;
+        document.body.appendChild(tempCard);
+        elementToCapture = tempCard;
       }
 
-      const url = URL.createObjectURL(blob);
+      // Capture the card with html2canvas
+      const canvas = await html2canvas(elementToCapture, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Higher quality
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+      });
+
+      // Remove temporary element if it was created
+      if (!cardElement) {
+        document.body.removeChild(elementToCapture);
+      }
+
       const link = document.createElement('a');
-      link.href = url;
-      link.download = `${qrCode.name}_${qrCode.studentNumber}_QR.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.download = `${qrCode.name}_${qrCode.studentNumber}_QR_Card.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(url);
 
       showSuccess(`${t('downloaded', 'Downloaded')}: ${qrCode.name}`);
     } catch (err) {
-      console.error('Error downloading QR code:', err);
-      showError(t('failedToDownload', 'Failed to download QR code'));
+      console.error('Error downloading QR code card:', err);
+      showError(t('failedToDownloadCard', 'Failed to download card'));
+    } finally {
+      stopLoading('downloadCard');
     }
   };
 
@@ -357,63 +385,90 @@ export default function StudentQRCodeGenerator() {
     }
 
     try {
-      startLoading('downloadAll', t('downloadingQRCodes', 'Downloading QR codes...'));
+      startLoading('downloadAll', t('downloadingAllCards', 'Creating combined QR code image...'));
 
-      // Download all QR codes as PNG files with delays between downloads
-      const DELAY_BETWEEN_DOWNLOADS = 300; // 300ms delay between downloads
-      let successCount = 0;
-      let failedCount = 0;
+      // Create a container for all cards
+      const containerDiv = document.createElement('div');
+      containerDiv.style.position = 'absolute';
+      containerDiv.style.left = '-9999px';
+      containerDiv.style.top = '-9999px';
+      containerDiv.style.padding = '20px';
+      containerDiv.style.backgroundColor = '#ffffff';
+      containerDiv.style.display = 'grid';
+      containerDiv.style.gridTemplateColumns = 'repeat(4, 1fr)';
+      containerDiv.style.gap = '16px';
+      containerDiv.style.maxWidth = '1200px';
 
-      for (let i = 0; i < qrCodes.length; i++) {
-        try {
-          const qrCode = qrCodes[i];
-          const blob = base64ToBlob(qrCode.qrCode);
+      // Create card elements for all QR codes
+      for (const qrCode of qrCodes) {
+        let cardElement = cardRefsRef.current[qrCode.userId];
 
-          if (blob) {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${qrCode.name}_${qrCode.studentNumber}_QR.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            successCount++;
-          } else {
-            failedCount++;
-          }
-
-          // Add delay between downloads to prevent browser issues
-          // Skip delay on last item
-          if (i < qrCodes.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_DOWNLOADS));
-          }
-        } catch (err) {
-          console.error(`Error downloading QR code ${i}:`, err);
-          failedCount++;
+        // If card element doesn't exist (table view), create a temporary one
+        if (!cardElement) {
+          const tempCard = document.createElement('div');
+          tempCard.style.width = '200px';
+          tempCard.style.padding = '16px';
+          tempCard.style.backgroundColor = '#ffffff';
+          tempCard.style.border = '1px solid #e5e7eb';
+          tempCard.style.borderRadius = '8px';
+          tempCard.innerHTML = `
+            <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+              <img src="${qrCode.qrCode}" alt="QR Code" style="width: 160px; height: 160px; border: 1px solid #d1d5db; border-radius: 4px;" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <p style="font-size: 14px; font-weight: 500; color: #111827; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; word-break: break-word;">
+                ${qrCode.name}
+              </p>
+              <p style="font-size: 12px; color: #6b7280; margin: 0;">
+                ${qrCode.username}
+              </p>
+              <p style="font-size: 12px; color: #6b7280; margin: 0;">
+                ${qrCode.studentNumber}
+              </p>
+            </div>
+          `;
+          cardElement = tempCard;
+        } else {
+          // Clone the card element to avoid modifying the original
+          cardElement = cardElement.cloneNode(true);
         }
+
+        containerDiv.appendChild(cardElement);
       }
 
-      if (successCount > 0) {
-        showSuccess(
-          t('qrCodesDownloaded', 'Successfully downloaded {count} QR code images').replace(
-            '{count}',
-            successCount
-          )
-        );
-      }
+      document.body.appendChild(containerDiv);
 
-      if (failedCount > 0) {
-        showError(
-          t('someQRCodesFailed', 'Failed to download {count} QR codes').replace(
-            '{count}',
-            failedCount
-          )
-        );
-      }
+      // Capture the entire container as a single image
+      const canvas = await html2canvas(containerDiv, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Higher quality
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        windowWidth: 1240 // Set consistent width for the capture
+      });
+
+      // Remove the temporary container
+      document.body.removeChild(containerDiv);
+
+      // Create download link for the combined image
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      const timestamp = new Date().toISOString().split('T')[0];
+      link.download = `QR_Codes_All_${timestamp}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showSuccess(
+        t('allCardsDownloaded', 'Successfully downloaded all {count} QR codes as a single image.').replace(
+          '{count}',
+          qrCodes.length
+        )
+      );
     } catch (err) {
-      console.error('Error downloading QR codes:', err);
-      showError(t('failedToDownloadQRCodes', 'Failed to download QR codes'));
+      console.error('Error downloading all QR codes:', err);
+      showError(t('failedToDownloadAllCards', 'Failed to download all QR codes'));
     } finally {
       stopLoading('downloadAll');
     }
@@ -620,6 +675,11 @@ export default function StudentQRCodeGenerator() {
                     {qrCodes.map((qrCode, index) => (
                       <div
                         key={index}
+                        ref={(el) => {
+                          if (el) {
+                            cardRefsRef.current[qrCode.userId] = el;
+                          }
+                        }}
                         className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
                       >
                         <div className="flex justify-center mb-3">
@@ -635,7 +695,7 @@ export default function StudentQRCodeGenerator() {
                           </p>
                           <p className="text-xs text-gray-500">{qrCode.username}</p>
                           <Button
-                            onClick={() => downloadQRCode(qrCode)}
+                            onClick={() => downloadQRCode(qrCode, cardRefsRef.current[qrCode.userId])}
                             variant="primary"
                             size="sm"
                             className="w-full mt-3 flex items-center gap-2"
