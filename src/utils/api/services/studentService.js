@@ -931,9 +931,9 @@ export const studentService = {
      */
     formatApiResponse(response) {
       if (!response) return { data: [], pagination: { page: 1, limit: 10, total: 0, pages: 1 } };
-      
+
       return {
-        data: Array.isArray(response.data) 
+        data: Array.isArray(response.data)
           ? response.data.map(item => this.formatStudentData(item))
           : [],
         pagination: {
@@ -942,6 +942,290 @@ export const studentService = {
           total: response.total || 0,
           pages: response.pages || 1
         }
+      };
+    },
+
+    /**
+     * Enrich student data with full user profile information by fetching user details by ID
+     * Fetches complete user data including QR code, residence info, and student details
+     *
+     * @param {Array} students - Array of students with userId (from nested user.id)
+     * @returns {Promise<Array>} Students enriched with full user profile data
+     *
+     * @example
+     * // Usage in component:
+     * const enrichedStudents = await studentService.enrichStudentsWithUserProfiles(students);
+     *
+     * // Each student will have:
+     * {
+     *   studentId: 414656,
+     *   userId: "1469188",
+     *   name: "ឈ្មោះ",
+     *   userProfile: {
+     *     id: "1469188",
+     *     username: "STU414656",
+     *     first_name: "ឈ្មោះ",
+     *     last_name: "ត្រកូល",
+     *     email: "...",
+     *     phone: "...",
+     *     gender: "MALE|FEMALE",
+     *     date_of_birth: "YYYY-MM-DD",
+     *     profile_picture: "...",
+     *     qr_code: "data:image/png;base64,...",
+     *     qr_token: "...",
+     *     qr_generated_at: "...",
+     *     student: { studentId, userId, academicYear, gradeLevel, classId, ... },
+     *     residence: { id, userId, provinceId, districtId, communeId, villageId, ... },
+     *     accessibility: [...],
+     *     is_active: true/false,
+     *     is_hidden: true/false,
+     *     last_login: "...",
+     *     created_at: "...",
+     *     updated_at: "...",
+     *     roleNameEn: "STUDENT",
+     *     roleNameKh: "សិស្ស"
+     *   }
+     * }
+     */
+    async enrichStudentsWithUserProfiles(students) {
+      try {
+        if (!Array.isArray(students) || students.length === 0) {
+          return students;
+        }
+
+        // Import userService here to avoid circular dependency
+        const { userService } = await import('./userService.js');
+
+        // Fetch user profiles in parallel for all unique user IDs
+        const userIds = [...new Set(students.map(s => s.userId).filter(Boolean))];
+
+        console.log(`Enriching ${students.length} students with full user profiles for ${userIds.length} unique users`);
+
+        const userProfiles = {};
+
+        // Fetch all user profiles in parallel
+        const profilePromises = userIds.map(userId =>
+          userService.getUserByID(userId)
+            .then(response => {
+              if (response.success && response.data) {
+                userProfiles[userId] = response.data;
+                console.log(`✅ Fetched profile for user ${userId}`);
+              }
+              return null;
+            })
+            .catch(error => {
+              console.error(`Failed to fetch user profile for userId ${userId}:`, error);
+              return null;
+            })
+        );
+
+        await Promise.all(profilePromises);
+
+        // Enrich students with complete user profile data
+        const enrichedStudents = students.map(student => ({
+          ...student,
+          userProfile: userProfiles[student.userId] || null
+        }));
+
+        console.log(`Enriched ${enrichedStudents.length} students with user profile data`);
+        return enrichedStudents;
+      } catch (error) {
+        console.error('Error enriching students with user profiles:', error);
+        // Return original students if enrichment fails
+        return students;
+      }
+    },
+
+    /**
+     * Extract QR code data from enriched student profile
+     * @param {Object} enrichedStudent - Student object enriched with userProfile
+     * @returns {Object|null} QR code object with qr_code and qr_token, or null if not available
+     */
+    extractQRCodeFromProfile(enrichedStudent) {
+      const userProfile = enrichedStudent?.userProfile;
+      if (!userProfile?.qr_code || !userProfile?.qr_token) {
+        return null;
+      }
+
+      return {
+        qr_code: userProfile.qr_code,
+        qr_token: userProfile.qr_token,
+        qr_generated_at: userProfile.qr_generated_at,
+        username: userProfile.username,
+        userId: userProfile.id
+      };
+    },
+
+    /**
+     * Extract residence information from enriched student profile
+     * @param {Object} enrichedStudent - Student object enriched with userProfile
+     * @returns {Object|null} Residence object with location details, or null if not available
+     */
+    extractResidenceFromProfile(enrichedStudent) {
+      const residence = enrichedStudent?.userProfile?.residence;
+      if (!residence) {
+        return null;
+      }
+
+      return {
+        id: residence.id,
+        provinceId: residence.provinceId,
+        districtId: residence.districtId,
+        communeId: residence.communeId,
+        villageId: residence.villageId,
+        fullAddress: residence.fullAddress,
+        province: residence.province,
+        district: residence.district,
+        commune: residence.commune,
+        village: residence.village
+      };
+    },
+
+    /**
+     * Check if a student has an existing QR code
+     * @param {Object} enrichedStudent - Student object enriched with userProfile
+     * @returns {boolean} True if student has existing QR code
+     */
+    hasExistingQRCode(enrichedStudent) {
+      const userProfile = enrichedStudent?.userProfile;
+      return !!(userProfile?.qr_code && userProfile?.qr_token);
+    },
+
+    /**
+     * Get QR code generation timestamp
+     * @param {Object} enrichedStudent - Student object enriched with userProfile
+     * @returns {string|null} ISO format timestamp when QR was generated, or null
+     */
+    getQRGeneratedAt(enrichedStudent) {
+      const userProfile = enrichedStudent?.userProfile;
+      return userProfile?.qr_generated_at || null;
+    },
+
+    /**
+     * Categorize students into groups based on QR code status
+     * Useful for showing current QR codes vs generating new ones
+     *
+     * @param {Array} enrichedStudents - Array of students enriched with userProfile
+     * @returns {Object} Categorized students with the structure:
+     * {
+     *   hasQRCode: Array<{student, qrCode, generatedAt}>,
+     *   needsQRCode: Array<student>,
+     *   summary: {
+     *     total: number,
+     *     withQR: number,
+     *     withoutQR: number
+     *   }
+     * }
+     *
+     * @example
+     * const enrichedStudents = await studentService.enrichStudentsWithUserProfiles(students);
+     * const categorized = studentService.categorizeStudentsByQRStatus(enrichedStudents);
+     *
+     * // Display existing QR codes
+     * categorized.hasQRCode.forEach(item => {
+     *   showQRCode(item.student.name, item.qrCode, item.generatedAt);
+     * });
+     *
+     * // Generate new QR codes for students who need them
+     * if (categorized.needsQRCode.length > 0) {
+     *   generateQRCodesForStudents(categorized.needsQRCode);
+     * }
+     */
+    categorizeStudentsByQRStatus(enrichedStudents) {
+      if (!Array.isArray(enrichedStudents)) {
+        return {
+          hasQRCode: [],
+          needsQRCode: [],
+          summary: { total: 0, withQR: 0, withoutQR: 0 }
+        };
+      }
+
+      const hasQRCode = [];
+      const needsQRCode = [];
+
+      enrichedStudents.forEach(student => {
+        if (this.hasExistingQRCode(student)) {
+          hasQRCode.push({
+            student,
+            qrCode: this.extractQRCodeFromProfile(student),
+            generatedAt: this.getQRGeneratedAt(student)
+          });
+        } else {
+          needsQRCode.push(student);
+        }
+      });
+
+      console.log(`QR Status Summary: ${hasQRCode.length} students have QR codes, ${needsQRCode.length} need new QR codes`);
+
+      return {
+        hasQRCode,
+        needsQRCode,
+        summary: {
+          total: enrichedStudents.length,
+          withQR: hasQRCode.length,
+          withoutQR: needsQRCode.length
+        }
+      };
+    },
+
+    /**
+     * Get display information for a student with QR code status
+     * Combines student data with QR code information for UI display
+     *
+     * @param {Object} enrichedStudent - Student object enriched with userProfile
+     * @returns {Object} Display-ready student data with QR status
+     *
+     * @example
+     * const displayData = studentService.getStudentQRDisplayInfo(student);
+     * console.log(displayData);
+     * // {
+     * //   id: 414656,
+     * //   name: "ឈ្មោះ ត្រកូល",
+     * //   hasQRCode: true,
+     * //   qrCode: "data:image/png;base64,...",
+     * //   qrToken: "1e101645f2bbbbd1121c1a1a20dd74d60f57b7cf...",
+     * //   qrGeneratedAt: "2025-11-04T07:01:13.407Z",
+     * //   qrStatus: "current" | "expired" | "none",
+     * //   username: "STU414656",
+     * //   profilePicture: "...",
+     * //   gradeLevel: "4",
+     * //   className: "Class Name"
+     * // }
+     */
+    getStudentQRDisplayInfo(enrichedStudent) {
+      const userProfile = enrichedStudent?.userProfile;
+      const qrData = this.extractQRCodeFromProfile(enrichedStudent);
+      const generatedAt = this.getQRGeneratedAt(enrichedStudent);
+
+      // Determine QR status (you can add expiration logic here if needed)
+      let qrStatus = 'none';
+      if (qrData) {
+        // Check if QR was generated recently (within last 30 days)
+        const generatedDate = new Date(generatedAt);
+        const daysSinceGeneration = Math.floor((Date.now() - generatedDate.getTime()) / (1000 * 60 * 60 * 24));
+        qrStatus = daysSinceGeneration <= 30 ? 'current' : 'expired';
+      }
+
+      return {
+        id: enrichedStudent.studentId || enrichedStudent.id,
+        userId: enrichedStudent.userId,
+        name: enrichedStudent.name,
+        firstName: enrichedStudent.firstName,
+        lastName: enrichedStudent.lastName,
+        username: userProfile?.username,
+        profilePicture: userProfile?.profile_picture || enrichedStudent.profilePicture,
+        gradeLevel: enrichedStudent.gradeLevel,
+        className: enrichedStudent.class?.name,
+        classId: enrichedStudent.class?.id,
+        hasQRCode: !!qrData,
+        qrCode: qrData?.qr_code || null,
+        qrToken: qrData?.qr_token || null,
+        qrGeneratedAt: generatedAt,
+        qrStatus, // 'current', 'expired', or 'none'
+        email: userProfile?.email,
+        phone: userProfile?.phone,
+        gender: userProfile?.gender,
+        dateOfBirth: userProfile?.date_of_birth
       };
     }
   }

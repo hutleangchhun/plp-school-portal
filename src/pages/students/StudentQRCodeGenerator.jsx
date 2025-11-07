@@ -117,15 +117,21 @@ export default function StudentQRCodeGenerator() {
 
         startLoading('fetchStudents', t('loadingStudents', 'Loading students...'));
 
-        // Fetch students for the selected class
-        const response = await studentService.getStudentsBySchool(schoolId, {
+        // Fetch students for the selected class using school classes endpoint
+        const response = await studentService.getStudentsBySchoolClasses(schoolId, {
           page: 1,
-          limit: 500, // Get more students for bulk QR generation
+          limit: 100, // Get more students for bulk QR generation
           classId: selectedClass !== 'all' ? parseInt(selectedClass) : undefined
         });
 
         if (response.success && response.data) {
           console.log('👥 Fetched', response.data.length, 'students');
+
+          // Optionally enrich students with full user profile information
+          // Uncomment the next 2 lines to fetch additional user details for each student
+          // const enrichedStudents = await studentService.enrichStudentsWithUserProfiles(response.data);
+          // setStudents(enrichedStudents);
+
           setStudents(response.data);
         }
       } catch (err) {
