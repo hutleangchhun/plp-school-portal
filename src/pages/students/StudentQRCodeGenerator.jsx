@@ -127,16 +127,40 @@ export default function StudentQRCodeGenerator() {
         if (response.success && response.data) {
           console.log('👥 Fetched', response.data.length, 'students');
 
-          // Optionally enrich students with full user profile information
-          // Uncomment the next 2 lines to fetch additional user details for each student
-          // const enrichedStudents = await studentService.enrichStudentsWithUserProfiles(response.data);
-          // setStudents(enrichedStudents);
-
-          setStudents(response.data);
+          // Enrich students with full user profile information to get QR codes
+          console.log('🔄 Enriching students with full user profile data...');
+          const enrichedStudents = await studentService.utils.enrichStudentsWithUserProfiles(response.data);
+          setStudents(enrichedStudents);
 
           // Auto-log QR code status for debugging
           console.log('🔍 QR Code Status Debug:');
-          studentService.utils.debugStudentListQRData(response.data);
+          studentService.utils.debugStudentListQRData(enrichedStudents);
+
+          // Extract and display existing QR codes from enriched students
+          const existingQRCodes = [];
+          enrichedStudents.forEach((student) => {
+            const qrData = studentService.utils.extractQRCodeFromProfile(student);
+            if (qrData) {
+              existingQRCodes.push({
+                userId: qrData.userId,
+                studentId: student.studentId || student.id,
+                name: student.name,
+                username: student.username,
+                email: student.email,
+                classId: selectedClass,
+                className: allClasses.find(c => c.id === parseInt(selectedClass))?.name || 'Unknown',
+                qrCode: qrData.qr_code, // This is already a base64 image from API
+                qrToken: qrData.qr_token,
+                qrGeneratedAt: qrData.qr_generated_at,
+                isExisting: true // Mark as existing QR code from API
+              });
+            }
+          });
+
+          if (existingQRCodes.length > 0) {
+            console.log(`✅ Found ${existingQRCodes.length} existing QR codes from API`);
+            setQrCodes(existingQRCodes);
+          }
         }
       } catch (err) {
         console.error('Error fetching students:', err);
@@ -156,7 +180,7 @@ export default function StudentQRCodeGenerator() {
       setStudents([]);
       setQrCodes([]);
     }
-  }, [selectedClass, schoolId, t, handleError, clearError, startLoading, stopLoading]);
+  }, [selectedClass, schoolId, t, handleError, clearError, startLoading, stopLoading, allClasses]);
 
   const generateQRCodesForStudents = async () => {
     if (students.length === 0) {

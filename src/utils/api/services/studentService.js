@@ -791,7 +791,8 @@ export const studentService = {
     formatSchoolClassesStudentData(student) {
       if (!student) return null;
 
-      const user = student.user || {};
+      // Handle both nested user object and flat user data
+      const user = student.user || student;
       const classInfo = student.class || {};
 
       return {
@@ -1015,9 +1016,28 @@ export const studentService = {
         const profilePromises = userIds.map(userId =>
           userService.getUserByID(userId)
             .then(response => {
-              if (response.success && response.data) {
-                userProfiles[userId] = response.data;
-                console.log(`✅ Fetched profile for user ${userId}`);
+              // Handle different response structures - API might return data directly or wrapped in .data
+              let profileData = null;
+
+              if (response && response.data && typeof response.data === 'object') {
+                // Response wrapped in .data (standard API response format)
+                profileData = response.data;
+              } else if (response && typeof response === 'object' && !Array.isArray(response)) {
+                // Response is direct data (some endpoints return data directly)
+                profileData = response;
+              }
+
+              if (profileData && profileData.id) {
+                userProfiles[userId] = profileData;
+                console.log(`✅ Fetched profile for user ${userId}:`, {
+                  hasQRCode: !!profileData.qr_code,
+                  hasQRToken: !!profileData.qr_token,
+                  qrCode: profileData.qr_code || 'undefined',
+                  qrToken: profileData.qr_token || 'undefined',
+                  allKeys: Object.keys(profileData).slice(0, 15)
+                });
+              } else {
+                console.warn(`⚠️ No valid data in response for userId ${userId}:`, response);
               }
               return null;
             })
@@ -1036,6 +1056,19 @@ export const studentService = {
         }));
 
         console.log(`Enriched ${enrichedStudents.length} students with user profile data`);
+
+        // Log enrichment result for first student
+        if (enrichedStudents.length > 0) {
+          const firstStudent = enrichedStudents[0];
+          console.log(`📦 First enriched student:`, {
+            name: firstStudent.name,
+            userId: firstStudent.userId,
+            hasUserProfile: !!firstStudent.userProfile,
+            userProfileQRCode: firstStudent.userProfile?.qr_code || 'undefined',
+            userProfileQRToken: firstStudent.userProfile?.qr_token || 'undefined'
+          });
+        }
+
         return enrichedStudents;
       } catch (error) {
         console.error('Error enriching students with user profiles:', error);
@@ -1065,14 +1098,23 @@ export const studentService = {
 
       // Try enriched user profile
       const userProfile = student?.userProfile;
-      if (userProfile?.qr_code && userProfile?.qr_token) {
-        return {
-          qr_code: userProfile.qr_code,
-          qr_token: userProfile.qr_token,
-          qr_generated_at: userProfile.qr_generated_at,
-          username: userProfile.username,
-          userId: userProfile.id
-        };
+      if (userProfile) {
+        // The API returns qr_code as a base64 string (data:image/png...)
+        // Validate both fields exist and have content
+        const hasQRCode = userProfile.qr_code &&
+                         (userProfile.qr_code.startsWith('data:') ||
+                          userProfile.qr_code.includes('-'));
+        const hasQRToken = userProfile.qr_token && userProfile.qr_token.length > 10;
+
+        if (hasQRCode && hasQRToken) {
+          return {
+            qr_code: userProfile.qr_code,
+            qr_token: userProfile.qr_token,
+            qr_generated_at: userProfile.qr_generated_at,
+            username: userProfile.username,
+            userId: userProfile.id
+          };
+        }
       }
 
       return null;
@@ -1120,8 +1162,17 @@ export const studentService = {
 
       // Check enriched user profile
       const userProfile = student?.userProfile;
-      if (userProfile?.qr_code && userProfile?.qr_token) {
-        return true;
+      if (userProfile) {
+        // The API returns qr_code as a base64 string (data:image/png...)
+        // Check if it's a valid base64 string or UUID token
+        const hasQRCode = userProfile.qr_code &&
+                         (userProfile.qr_code.startsWith('data:') ||
+                          userProfile.qr_code.includes('-'));
+        const hasQRToken = userProfile.qr_token && userProfile.qr_token.length > 10;
+
+        if (hasQRCode && hasQRToken) {
+          return true;
+        }
       }
 
       return false;
@@ -1377,6 +1428,10 @@ export const studentService = {
             qr_generated_at: students[0].userProfile.qr_generated_at
           } : 'No userProfile'
         });
+
+        // Log COMPLETE first student object to see all possible fields
+        console.log('📋 Complete first student object keys:', Object.keys(students[0]));
+        console.log('📄 Complete first student full object:', students[0]);
       }
 
       return { summary, details };
