@@ -7,6 +7,7 @@ import Dropdown from '../../components/ui/Dropdown';
 import EmptyState from '../../components/ui/EmptyState';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import { processAndExportReport } from '../../utils/reportExportUtils';
+import { exportReport4SemesterToExcel } from '../../utils/report4SemesterExportUtils';
 import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
@@ -639,34 +640,60 @@ export default function Reports() {
           selectedDate = new Date(year, monthIndex, 15);
           startDate = new Date(year, monthIndex, 1);
           endDate = new Date(year, monthIndex + 1, 0);
+
+          result = await exportReport4ToExcel(reportData, {
+            schoolName,
+            className: className || 'All Classes',
+            selectedDate,
+            period: selectedPeriod,
+            periodName,
+            monthName,
+            selectedYear,
+            startDate,
+            endDate
+          });
         } else if ((selectedPeriod === 'semester1' || selectedPeriod === 'semester2') && selectedSemesterStartDate && selectedSemesterEndDate) {
-          // Custom semester date range
-          selectedDate = selectedSemesterStartDate;
-          startDate = selectedSemesterStartDate;
-          endDate = selectedSemesterEndDate;
+          // Custom semester date range - use semester export function
+          result = await exportReport4SemesterToExcel(reportData, {
+            schoolName,
+            className: className || 'All Classes',
+            startDate: selectedSemesterStartDate,
+            endDate: selectedSemesterEndDate,
+            selectedYear,
+            periodName: selectedPeriod === 'semester1' ? 'ឆមាសទី១' : 'ឆមាសទី២'
+          });
         } else if (selectedPeriod === 'semester') {
           // Semester report (6 months)
           selectedDate = new Date(year, 0, 15);
           startDate = new Date(year, 0, 1);
           endDate = new Date(year, 5, 30);
+
+          result = await exportReport4SemesterToExcel(reportData, {
+            schoolName,
+            className: className || 'All Classes',
+            startDate,
+            endDate,
+            selectedYear,
+            periodName: 'ឆមាសទី១'
+          });
         } else {
           // Yearly report
           selectedDate = new Date(year, 0, 15);
           startDate = new Date(year, 0, 1);
           endDate = new Date(year, 11, 31);
-        }
 
-        result = await exportReport4ToExcel(reportData, {
-          schoolName,
-          className: className || 'All Classes',
-          selectedDate,
-          period: selectedPeriod,
-          periodName,
-          monthName,
-          selectedYear,
-          startDate,
-          endDate
-        });
+          result = await exportReport4ToExcel(reportData, {
+            schoolName,
+            className: className || 'All Classes',
+            selectedDate,
+            period: 'year',
+            periodName,
+            monthName,
+            selectedYear,
+            startDate,
+            endDate
+          });
+        }
       } else {
         // Process and export other reports with standard format
         result = await processAndExportReport(
