@@ -19,6 +19,22 @@ const StudentTableRow = ({
   selectedRange,
   studentsLength
 }) => {
+  const handleInputFocus = (colKey) => {
+    if (colKey !== 'actions') {
+      handleCellClick(rowIndex, colKey, {});
+    }
+  };
+
+  const handleInputKeyDown = (e) => {
+    // Allow navigation keys to bubble up to document listener
+    // Just prevent default to stop the input from handling these keys
+    const navigationKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'];
+    if (navigationKeys.includes(e.key)) {
+      e.preventDefault();
+      // Let the event bubble to document listener - don't stop propagation
+    }
+  };
+
   return (
     <tr className="hover:bg-gray-50 border-b border-gray-100">
       <td className="text-center text-xs text-gray-500 border-r border-gray-200 bg-gray-50">
@@ -37,9 +53,11 @@ const StudentTableRow = ({
         return (
           <td
             key={column.key}
+            data-row={rowIndex}
+            data-col={colIndex}
             className={`border-r border-gray-200 relative cursor-pointer ${
-              column.key === 'actions' 
-                ? 'sticky right-0 bg-white border-l border-gray-300 shadow-lg z-10' 
+              column.key === 'actions'
+                ? 'sticky right-0 bg-white border-l border-gray-300 shadow-lg z-10'
                 : isSelected ? '' :
                   isInRange ? 'bg-blue-50' :
                     'bg-white hover:bg-gray-50'
@@ -106,6 +124,8 @@ const StudentTableRow = ({
                   updateCell(rowIndex, column.key, e.target.value);
                 }}
                 onClick={(e) => e.stopPropagation()}
+                onFocus={() => handleInputFocus(column.key)}
+                onKeyDown={handleInputKeyDown}
                 className={`w-full px-3 py-2 text-xs border-0 bg-white focus:border focus:ring-1 ${isCellInvalid(student, column.key)
                   ? 'border-2 border-red-500 focus:border-red-500 focus:ring-red-500'
                   : 'focus:border-blue-500 focus:ring-blue-500'
@@ -135,6 +155,8 @@ const StudentTableRow = ({
                   }
                 }}
                 onClick={(e) => e.stopPropagation()}
+                onFocus={() => handleInputFocus(column.key)}
+                onKeyDown={handleInputKeyDown}
                 placeholder="dd/mm/yyyy"
                 className={`w-full px-3 py-2 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:border-blue-500 ${isCellInvalid(student, column.key)
                   ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
@@ -150,6 +172,8 @@ const StudentTableRow = ({
                   updateCell(rowIndex, column.key, e.target.value);
                 }}
                 onClick={(e) => e.stopPropagation()}
+                onFocus={() => handleInputFocus(column.key)}
+                onKeyDown={handleInputKeyDown}
                 className={`w-full px-3 py-2 text-xs border-0 focus:border focus:ring-1 ${column.key === 'schoolId'
                   ? 'bg-blue-50 cursor-not-allowed text-blue-700 font-medium focus:border-blue-500 focus:ring-blue-500'
                   : isCellInvalid(student, column.key)

@@ -411,13 +411,20 @@ export default function BulkStudentImport() {
   }, [selectedCell, selectedRange, students.length, columns, updateCell]);
 
   const handleKeyDown = useCallback((event) => {
-    // Don't handle keyboard shortcuts when user is typing in an input field
-    if (event.target.tagName === 'INPUT' || event.target.tagName === 'SELECT' || event.target.tagName === 'TEXTAREA') {
+    // Handle navigation keys even when focused on input fields
+    const navigationKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'];
+    const isInputFocused = event.target.tagName === 'INPUT' || event.target.tagName === 'SELECT' || event.target.tagName === 'TEXTAREA';
+
+    // For input fields, only handle navigation keys and copy/paste
+    if (isInputFocused) {
       // Allow normal input behavior for Delete/Backspace when in input fields
       if (event.key === 'Delete' || event.key === 'Backspace') {
         return; // Let the browser handle normal input deletion
       }
-      // For other keys, continue with navigation if it's an arrow key, tab, or enter
+      // For non-navigation keys that aren't copy/paste, let the input handle them
+      if (!navigationKeys.includes(event.key) && !(event.ctrlKey || event.metaKey)) {
+        return;
+      }
     }
 
     const { row, col } = selectedCell;
@@ -425,54 +432,97 @@ export default function BulkStudentImport() {
     switch (event.key) {
       case 'ArrowUp':
         event.preventDefault();
+        event.stopPropagation();
         if (row > 0) {
           setSelectedCell({ row: row - 1, col });
           setSelectedRange(null);
+          // Focus the input in the new cell
+          setTimeout(() => {
+            const input = document.querySelector(`[data-row="${row - 1}"][data-col="${col}"] input`);
+            if (input) input.focus();
+          }, 0);
         }
         break;
       case 'ArrowDown':
         event.preventDefault();
+        event.stopPropagation();
         if (row < students.length - 1) {
           setSelectedCell({ row: row + 1, col });
           setSelectedRange(null);
+          setTimeout(() => {
+            const input = document.querySelector(`[data-row="${row + 1}"][data-col="${col}"] input`);
+            if (input) input.focus();
+          }, 0);
         }
         break;
       case 'ArrowLeft':
         event.preventDefault();
+        event.stopPropagation();
         if (col > 0) {
           setSelectedCell({ row, col: col - 1 });
           setSelectedRange(null);
+          setTimeout(() => {
+            const input = document.querySelector(`[data-row="${row}"][data-col="${col - 1}"] input`);
+            if (input) input.focus();
+          }, 0);
         }
         break;
       case 'ArrowRight':
         event.preventDefault();
+        event.stopPropagation();
         if (col < columns.length - 2) { // -2 to skip actions column
           setSelectedCell({ row, col: col + 1 });
           setSelectedRange(null);
+          setTimeout(() => {
+            const input = document.querySelector(`[data-row="${row}"][data-col="${col + 1}"] input`);
+            if (input) input.focus();
+          }, 0);
         }
         break;
       case 'Tab':
         event.preventDefault();
+        event.stopPropagation();
         if (event.shiftKey) {
           if (col > 0) {
             setSelectedCell({ row, col: col - 1 });
+            setTimeout(() => {
+              const input = document.querySelector(`[data-row="${row}"][data-col="${col - 1}"] input`);
+              if (input) input.focus();
+            }, 0);
           } else if (row > 0) {
             setSelectedCell({ row: row - 1, col: columns.length - 2 });
+            setTimeout(() => {
+              const input = document.querySelector(`[data-row="${row - 1}"][data-col="${columns.length - 2}"] input`);
+              if (input) input.focus();
+            }, 0);
           }
         } else {
           if (col < columns.length - 2) {
             setSelectedCell({ row, col: col + 1 });
+            setTimeout(() => {
+              const input = document.querySelector(`[data-row="${row}"][data-col="${col + 1}"] input`);
+              if (input) input.focus();
+            }, 0);
           } else if (row < students.length - 1) {
             setSelectedCell({ row: row + 1, col: 0 });
+            setTimeout(() => {
+              const input = document.querySelector(`[data-row="${row + 1}"][data-col="0"] input`);
+              if (input) input.focus();
+            }, 0);
           }
         }
         setSelectedRange(null);
         break;
       case 'Enter':
         event.preventDefault();
+        event.stopPropagation();
         if (row < students.length - 1) {
           setSelectedCell({ row: row + 1, col });
           setSelectedRange(null);
+          setTimeout(() => {
+            const input = document.querySelector(`[data-row="${row + 1}"][data-col="${col}"] input`);
+            if (input) input.focus();
+          }, 0);
         }
         break;
       case 'Copy':
@@ -548,10 +598,10 @@ export default function BulkStudentImport() {
     }
   }, [showError]);
 
-  // Add keyboard event listener
+  // Add keyboard event listener in capture phase to intercept before input elements
   useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [handleKeyDown]);
 
   const addRow = () => {

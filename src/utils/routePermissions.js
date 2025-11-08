@@ -64,10 +64,6 @@ export const routePermissions = {
     allowedRoles: [ROLES.DIRECTOR], // Directors only
     component: 'AttendanceApprovalPage'
   },
-  '/qr-code-admin': {
-    allowedRoles: [ROLES.DIRECTOR], // Directors only
-    component: 'QRCodeAdminManagement'
-  },
   '/exam-records': {
     allowedRoles: [ROLES.DIRECTOR], // Directors only
     component: 'DirectorExamRecords'
@@ -197,11 +193,6 @@ export const getNavigationItems = (user, t) => {
       name: t('reports', 'Reports'),
       href: '/reports',
     },
-    // Temporarily disabled - will implement later:
-    // {
-    //   name: t('qrCodeManagementAdmin', 'QR Code Management - Admin'),
-    //   href: '/qr-code-admin',
-    // },
     // Other temporarily removed navigation items:
     // achievements, settings
   ];
