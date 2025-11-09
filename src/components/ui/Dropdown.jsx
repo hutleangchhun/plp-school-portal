@@ -22,9 +22,10 @@ export default function Dropdown({
   const displayValue = selectedOption?.label || placeholder;
   const {t} = useLanguage();
 
-  // Determine width classes - prioritize width prop, then className, then minWidth
-  const widthClass = width || (className.includes('w-') ? '' : minWidth);
-  const triggerWidthClass = width || (triggerClassName.includes('w-') ? '' : minWidth);
+  // Determine width classes - prioritize width prop, then custom classes, then minWidth
+  const hasCustomWidth = className.includes('w-') || triggerClassName.includes('w-') || width;
+  const widthClass = width || (hasCustomWidth ? '' : minWidth);
+  const triggerWidthClass = width || (hasCustomWidth ? '' : minWidth);
 
   return (
     <DropdownMenu.Root modal={false}>

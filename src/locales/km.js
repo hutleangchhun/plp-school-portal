@@ -1185,9 +1185,9 @@ export const km = {
   basicInformation: 'ព័ត៌មានទូទៅ',
 
   // QR Code Generator
+  studentQRCode: 'លេខកូដ QR សិស្ស',
   studentQRCodeGenerator: 'ឧបករណ៍បង្កើត QR Code សម្រាប់សិស្ស',
   generateQRCodesForStudents: 'បង្កើត និងទាញយក QR codes សម្រាប់សិស្សតាមថ្នាក់គ្រាប់ និងថ្នាក់',
-  selectGradeLevel: 'ជ្រើសរើសថ្នាក់គ្រាប់',
   chooseGradeLevel: 'ជ្រើសរើសថ្នាក់គ្រាប់...',
   allGradeLevels: 'ថ្នាក់គ្រាប់ទាំងអស់',
   selectClass: 'ជ្រើសរើសថ្នាក់',

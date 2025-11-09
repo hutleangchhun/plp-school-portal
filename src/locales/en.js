@@ -778,6 +778,7 @@ export const en = {
   basicInformation: 'Basic Information',
 
   // QR Code Generator
+  studentQRCode: 'Student QR Codes',
   studentQRCodeGenerator: 'Student QR Code Generator',
   generateQRCodesForStudents: 'Generate and download QR codes for students by grade level and class',
   selectGradeLevel: 'Grade Level',
