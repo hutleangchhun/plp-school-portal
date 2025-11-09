@@ -17,6 +17,7 @@ import { userService } from '../../utils/api/services/userService';
 import { schoolService } from '../../utils/api/services/schoolService';
 import { teacherService } from '../../utils/api/services/teacherService';
 import QRCodeDisplay from '@/components/qr-code/QRCodeDisplay';
+import ExportProgressModal from '@/components/modals/ExportProgressModal';
 
 export default function StudentQRCodeGenerator() {
   const { t, setLanguage } = useLanguage();
@@ -46,6 +47,9 @@ export default function StudentQRCodeGenerator() {
   const [studentCurrentPage, setStudentCurrentPage] = useState(1);
   const [studentTotalPages, setStudentTotalPages] = useState(1);
   const studentItemsPerPage = 10;
+  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [studentProgress, setStudentProgress] = useState(0);
+  const [showStudentProgress, setShowStudentProgress] = useState(false);
 
   // Teacher tab state
   const [selectedTeacherGradeLevel, setSelectedTeacherGradeLevel] = useState('all');
@@ -56,6 +60,9 @@ export default function StudentQRCodeGenerator() {
   const [teacherCurrentPage, setTeacherCurrentPage] = useState(1);
   const [teacherTotalPages, setTeacherTotalPages] = useState(1);
   const teacherItemsPerPage = 10;
+  const [selectedTeachers, setSelectedTeachers] = useState([]);
+  const [teacherProgress, setTeacherProgress] = useState(0);
+  const [showTeacherProgress, setShowTeacherProgress] = useState(false);
 
   const cardRefsRef = useRef({});
 
@@ -149,17 +156,16 @@ export default function StudentQRCodeGenerator() {
               
               enrichedStudents.push(enrichedStudent);
               
-              // Add to QR data if QR code exists
-              if (userData.qr_code) {
-                qrData.push({
-                  userId: userId,
-                  name: enrichedStudent.name,
-                  username: enrichedStudent.username,
-                  qrCode: userData.qr_code,
-                  studentNumber: student.studentNumber,
-                  email: enrichedStudent.email
-                });
-              }
+              // Add to QR data - include all students, even without QR codes
+              qrData.push({
+                userId: userId,
+                name: enrichedStudent.name,
+                username: enrichedStudent.username,
+                qrCode: userData.qr_code || null, // null if no QR code
+                studentNumber: student.studentNumber,
+                email: enrichedStudent.email,
+                hasQrCode: !!userData.qr_code
+              });
             }
           } catch (err) {
             console.warn(`Failed to fetch user data for student:`, err);
@@ -196,35 +202,72 @@ export default function StudentQRCodeGenerator() {
     }
   }, [activeTab, schoolId, selectedTeacherGradeLevel, teacherCurrentPage]);
 
+  // 🔹 Toggle student selection
+  const toggleStudentSelection = (userId) => {
+    setSelectedStudents(prev => {
+      if (prev.includes(userId)) {
+        return prev.filter(id => id !== userId);
+      } else {
+        return [...prev, userId];
+      }
+    });
+  };
+
+  // 🔹 Toggle all students selection
+  const toggleAllStudents = () => {
+    const studentsWithoutQR = studentQrCodes.filter(s => !s.hasQrCode);
+    if (selectedStudents.length === studentsWithoutQR.length) {
+      setSelectedStudents([]);
+    } else {
+      setSelectedStudents(studentsWithoutQR.map(s => s.userId));
+    }
+  };
+
   // 🔹 Generate QR codes for students who don't have one
   const generateQRCodesForStudents = async () => {
-    if (!students.length) return;
+    // Use selected students if any, otherwise use all students without QR
+    let studentsToGenerate = [];
+    
+    if (selectedStudents.length > 0) {
+      // Generate for selected students only
+      studentsToGenerate = studentQrCodes.filter(s => selectedStudents.includes(s.userId) && !s.hasQrCode);
+    } else {
+      // Generate for all students without QR
+      studentsToGenerate = studentQrCodes.filter(s => !s.hasQrCode);
+    }
 
-    const studentsWithoutQR = students.filter(
-      (student) => !studentService.utils.extractQRCodeFromProfile(student)
-    );
-
-    if (!studentsWithoutQR.length) {
+    if (!studentsToGenerate.length) {
       showError(t('allHaveQR', 'សិស្សទាំងអស់មានលេខកូដ QR រួចហើយ'));
       return;
     }
 
     try {
       setStudentGenerating(true);
-      startLoading(t('generatingQRCodes', 'កំពុងបង្កើតលេខកូដ QR...'));
+      setShowStudentProgress(true);
+      setStudentProgress(0);
 
-      console.log(`Generating QR codes for ${studentsWithoutQR.length} students without QR`);
+      console.log(`Generating QR codes for ${studentsToGenerate.length} students without QR`);
 
       let successCount = 0;
       let failureCount = 0;
+      let skippedCount = 0;
+      const total = studentsToGenerate.length;
 
       // Generate QR code for each student
-      for (const student of studentsWithoutQR) {
+      for (let i = 0; i < studentsToGenerate.length; i++) {
+        const student = studentsToGenerate[i];
         try {
-          // Use the student's username and a default/empty password for QR generation
+          // Skip if student already has QR code
+          if (student.hasQrCode) {
+            console.log(`⏭️ Skipping student ${student.username} - already has QR code`);
+            continue;
+          }
+
+          // Generate QR code with empty password (API accepts this for existing users)
           const response = await userService.generateQRCode(student.username, '');
 
-          if (response && response.qr_code) {
+          // API returns: { sessionId, qrCode, expiresIn } or { qr_code }
+          if (response && (response.qrCode || response.qr_code)) {
             successCount++;
             console.log(`✅ QR generated for student: ${student.username}`);
           } else {
@@ -232,18 +275,35 @@ export default function StudentQRCodeGenerator() {
             console.warn(`❌ Failed to generate QR for student: ${student.username}`);
           }
         } catch (err) {
-          failureCount++;
-          console.error(`Error generating QR for student ${student.username}:`, err);
+          // Handle 409 Conflict - invalid credentials or QR already exists
+          if (err.status === 409 || err.statusCode === 409) {
+            console.log(`⏭️ Student ${student.username} - 409 Conflict (QR may already exist or invalid credentials)`);
+            skippedCount++; // Count as skipped
+          } else {
+            failureCount++;
+            console.error(`Error generating QR for student ${student.username}:`, err);
+          }
         }
+        
+        // Update progress
+        const progress = Math.round(((i + 1) / total) * 100);
+        setStudentProgress(progress);
       }
 
       // Show result message
       if (successCount > 0) {
-        showSuccess(
-          t('qrGenerated', 'បង្កើតលេខកូដ QR ដោយជោគជ័យ') +
-          ` (${successCount}/${studentsWithoutQR.length})`
-        );
+        let message = t('qrGenerated', 'បង្កើតលេខកូដ QR ដោយជោគជ័យ') + ` (${successCount}/${studentsToGenerate.length})`;
+        if (skippedCount > 0) {
+          message += ` - ${skippedCount} ${t('skipped', 'skipped (already exist or invalid credentials)')}`;
+        }
+        showSuccess(message);
+        setSelectedStudents([]); // Clear selection
         await fetchStudents(); // ✅ refresh only the QR list, not full page
+      } else if (skippedCount > 0 && failureCount === 0) {
+        showError(
+          t('allSkipped', 'Cannot generate QR codes - API requires user passwords which are not available. QR codes may already exist or contact backend team to enable admin QR generation.') +
+          ` (${skippedCount} ${t('skipped', 'skipped')})`
+        );
       } else {
         showError(t('failedToGenerateQR', 'បរាជ័យក្នុងការបង្កើតលេខកូដ QR'));
       }
@@ -252,74 +312,113 @@ export default function StudentQRCodeGenerator() {
       showError(t('failedToGenerateQR', 'បរាជ័យក្នុងការបង្កើតលេខកូដ QR'));
     } finally {
       setStudentGenerating(false);
-      stopLoading();
+      setShowStudentProgress(false);
+      setStudentProgress(0);
+    }
+  };
+
+  // 🔹 Toggle teacher selection
+  const toggleTeacherSelection = (userId) => {
+    setSelectedTeachers(prev => {
+      if (prev.includes(userId)) {
+        return prev.filter(id => id !== userId);
+      } else {
+        return [...prev, userId];
+      }
+    });
+  };
+
+  // 🔹 Toggle all teachers selection
+  const toggleAllTeachers = () => {
+    const teachersWithoutQR = teacherQrCodes.filter(t => !t.hasQrCode);
+    if (selectedTeachers.length === teachersWithoutQR.length) {
+      setSelectedTeachers([]);
+    } else {
+      setSelectedTeachers(teachersWithoutQR.map(t => t.userId));
     }
   };
 
   // 🔹 Generate QR codes for teachers who don't have one
   const generateQRCodesForTeachers = async () => {
-    if (!teachers.length) return;
+    // Use selected teachers if any, otherwise use all teachers without QR
+    let teachersToGenerate = [];
+    
+    if (selectedTeachers.length > 0) {
+      // Generate for selected teachers only
+      teachersToGenerate = teacherQrCodes.filter(t => selectedTeachers.includes(t.userId) && !t.hasQrCode);
+    } else {
+      // Generate for all teachers without QR
+      teachersToGenerate = teacherQrCodes.filter(t => !t.hasQrCode);
+    }
 
-    // Find teachers without QR codes
-    const teachersWithoutQR = teachers.filter((teacher) => {
-      const userId = teacher.user?.id || teacher.userId || teacher.user_id;
-      const hasQR = teacherQrCodes.some((qr) => qr.userId === userId);
-      return !hasQR;
-    });
-
-    if (!teachersWithoutQR.length) {
+    if (!teachersToGenerate.length) {
       showError(t('allTeachersHaveQR', 'គ្រូបង្រៀនទាំងអស់មានលេខកូដ QR រួចហើយ'));
       return;
     }
 
     try {
       setTeacherGenerating(true);
-      startLoading(t('generatingQRCodes', 'កំពុងបង្កើតលេខកូដ QR...'));
+      setShowTeacherProgress(true);
+      setTeacherProgress(0);
 
-      console.log(`Generating QR codes for ${teachersWithoutQR.length} teachers without QR`);
+      console.log(`Generating QR codes for ${teachersToGenerate.length} teachers without QR`);
 
       let successCount = 0;
       let failureCount = 0;
+      let skippedCount = 0;
+      const total = teachersToGenerate.length;
 
       // Generate QR code for each teacher
-      for (const teacher of teachersWithoutQR) {
+      for (let i = 0; i < teachersToGenerate.length; i++) {
+        const teacher = teachersToGenerate[i];
         try {
-          // Get the teacher's username from full user data
-          const userId = teacher.user?.id || teacher.userId || teacher.user_id;
-
-          // Fetch user data to get username
-          const userResponse = await userService.getUserByID(userId);
-          const userData = userResponse?.data || userResponse;
-
-          if (!userData || !userData.username) {
-            failureCount++;
-            console.warn(`❌ Could not find username for teacher ${userId}`);
+          // Skip if teacher already has QR code
+          if (teacher.hasQrCode) {
+            console.log(`⏭️ Skipping teacher ${teacher.username} - already has QR code`);
             continue;
           }
 
-          // Generate QR code using username and empty password
-          const response = await userService.generateQRCode(userData.username, '');
+          // Generate QR code with empty password (API accepts this for existing users)
+          const response = await userService.generateQRCode(teacher.username, '');
 
-          if (response && response.qr_code) {
+          // API returns: { sessionId, qrCode, expiresIn } or { qr_code }
+          if (response && (response.qrCode || response.qr_code)) {
             successCount++;
-            console.log(`✅ QR generated for teacher: ${userData.username}`);
+            console.log(`✅ QR generated for teacher: ${teacher.username}`);
           } else {
             failureCount++;
-            console.warn(`❌ Failed to generate QR for teacher: ${userData.username}`);
+            console.warn(`❌ Failed to generate QR for teacher: ${teacher.username}`);
           }
         } catch (err) {
-          failureCount++;
-          console.error(`Error generating QR for teacher:`, err);
+          // Handle 409 Conflict - invalid credentials or QR already exists
+          if (err.status === 409 || err.statusCode === 409) {
+            console.log(`⏭️ Teacher ${teacher.username} - 409 Conflict (QR may already exist or invalid credentials)`);
+            skippedCount++; // Count as skipped
+          } else {
+            failureCount++;
+            console.error(`Error generating QR for teacher:`, err);
+          }
         }
+        
+        // Update progress
+        const progress = Math.round(((i + 1) / total) * 100);
+        setTeacherProgress(progress);
       }
 
       // Show result message
       if (successCount > 0) {
-        showSuccess(
-          t('qrGenerated', 'បង្កើតលេខកូដ QR ដោយជោគជ័យ') +
-          ` (${successCount}/${teachersWithoutQR.length})`
-        );
+        let message = t('qrGenerated', 'បង្កើតលេខកូដ QR ដោយជោគជ័យ') + ` (${successCount}/${teachersToGenerate.length})`;
+        if (skippedCount > 0) {
+          message += ` - ${skippedCount} ${t('skipped', 'skipped (already exist or invalid credentials)')}`;
+        }
+        showSuccess(message);
+        setSelectedTeachers([]); // Clear selection
         await fetchTeachers(); // ✅ refresh the QR list
+      } else if (skippedCount > 0 && failureCount === 0) {
+        showError(
+          t('allSkipped', 'Cannot generate QR codes - API requires user passwords which are not available. QR codes may already exist or contact backend team to enable admin QR generation.') +
+          ` (${skippedCount} ${t('skipped', 'skipped')})`
+        );
       } else {
         showError(t('failedToGenerateQR', 'បរាជ័យក្នុងការបង្កើតលេខកូដ QR'));
       }
@@ -328,7 +427,8 @@ export default function StudentQRCodeGenerator() {
       showError(t('failedToGenerateQR', 'បរាជ័យក្នុងការបង្កើតលេខកូដ QR'));
     } finally {
       setTeacherGenerating(false);
-      stopLoading();
+      setShowTeacherProgress(false);
+      setTeacherProgress(0);
     }
   };
 
@@ -392,17 +492,16 @@ export default function StudentQRCodeGenerator() {
 
               enrichedTeachers.push(enrichedTeacher);
 
-              // Add to QR data if QR code exists
-              if (userData.qr_code) {
-                qrData.push({
-                  userId: userId,
-                  name: enrichedTeacher.name,
-                  username: enrichedTeacher.username,
-                  qrCode: userData.qr_code,
-                  email: enrichedTeacher.email,
-                  teacherNumber: teacher.teacher_number || teacher.teacherNumber
-                });
-              }
+              // Add to QR data - include all teachers, even without QR codes
+              qrData.push({
+                userId: userId,
+                name: enrichedTeacher.name,
+                username: enrichedTeacher.username,
+                qrCode: userData.qr_code || null, // null if no QR code
+                email: enrichedTeacher.email,
+                teacherNumber: teacher.teacher_number || teacher.teacherNumber,
+                hasQrCode: !!userData.qr_code
+              });
             }
           } catch (err) {
             console.warn(`Failed to fetch user data for teacher:`, err);
@@ -444,6 +543,21 @@ export default function StudentQRCodeGenerator() {
   };
 
   return (
+    <>
+      {/* Student Progress Modal */}
+      <ExportProgressModal
+        isOpen={showStudentProgress}
+        progress={studentProgress}
+        status="processing"
+      />
+
+      {/* Teacher Progress Modal */}
+      <ExportProgressModal
+        isOpen={showTeacherProgress}
+        progress={teacherProgress}
+        status="processing"
+      />
+
     <PageTransition className="flex-1">
       <div className="p-4 sm:p-6">
         <FadeInSection>
@@ -578,6 +692,9 @@ export default function StudentQRCodeGenerator() {
                     downloadQRCode={downloadQRCode}
                     cardRefsRef={cardRefsRef}
                     t={t}
+                    selectedItems={selectedStudents}
+                    onToggleSelection={toggleStudentSelection}
+                    onToggleAll={toggleAllStudents}
                   />
                   {studentTotalPages > 1 && (
                     <Pagination
@@ -675,6 +792,9 @@ export default function StudentQRCodeGenerator() {
                     downloadQRCode={downloadQRCode}
                     cardRefsRef={cardRefsRef}
                     t={t}
+                    selectedItems={selectedTeachers}
+                    onToggleSelection={toggleTeacherSelection}
+                    onToggleAll={toggleAllTeachers}
                   />
                   {teacherTotalPages > 1 && (
                     <Pagination
@@ -694,5 +814,6 @@ export default function StudentQRCodeGenerator() {
         </FadeInSection>
       </div>
     </PageTransition>
+    </>
   );
 }

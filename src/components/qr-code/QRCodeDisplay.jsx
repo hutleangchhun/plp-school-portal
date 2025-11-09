@@ -1,8 +1,8 @@
 import React, { memo } from 'react';
 import { Button } from '../../components/ui/Button';
-import { Download, Loader } from 'lucide-react';
+import { Download, Loader, CheckSquare, Square } from 'lucide-react';
 
-function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef, t }) {
+function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef, t, selectedItems = [], onToggleSelection, onToggleAll }) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-10">
@@ -20,28 +20,72 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
     );
   }
 
+  const itemsWithoutQR = qrCodes.filter(qr => !qr.hasQrCode);
+  const hasSelectableItems = itemsWithoutQR.length > 0;
+  const allSelected = hasSelectableItems && selectedItems.length === itemsWithoutQR.length;
+
   return (
     <div className="mt-8">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">
-        {t('generatedQRCodes', 'Generated QR Codes')} ({qrCodes.length})
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">
+          {t('generatedQRCodes', 'Generated QR Codes')} ({qrCodes.length})
+          {selectedItems.length > 0 && (
+            <span className="ml-2 text-sm text-blue-600">({selectedItems.length} {t('selected', 'selected')})</span>
+          )}
+        </h2>
+        {hasSelectableItems && onToggleAll && (
+          <Button
+            onClick={onToggleAll}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            {allSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+            {allSelected ? t('deselectAll', 'Deselect All') : t('selectAll', 'Select All')}
+          </Button>
+        )}
+      </div>
 
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {qrCodes.map((qrCode, index) => (
+          {qrCodes.map((qrCode, index) => {
+            const isSelected = selectedItems.includes(qrCode.userId);
+            const canSelect = !qrCode.hasQrCode && onToggleSelection;
+            
+            return (
             <div
               key={qrCode.userId || index}
               ref={(el) => {
                 if (el) cardRefsRef.current[qrCode.userId] = el;
               }}
-              className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+              onClick={() => canSelect && onToggleSelection(qrCode.userId)}
+              className={`relative bg-white border-2 rounded-lg p-4 transition-all ${
+                canSelect ? 'cursor-pointer hover:shadow-md' : ''
+              } ${
+                isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+              }`}
             >
-              <div className="flex justify-center mb-3">
-                <img
-                  src={qrCode.qrCode}
-                  alt={`QR Code for ${qrCode.name}`}
-                  className="w-40 h-40 border border-gray-300 rounded"
-                />
+              {canSelect && (
+                <div className="absolute top-2 right-2">
+                  {isSelected ? (
+                    <CheckSquare className="h-5 w-5 text-blue-600" />
+                  ) : (
+                    <Square className="h-5 w-5 text-gray-400" />
+                  )}
+                </div>
+              )}
+              <div className="flex justify-center mb-3 relative">
+                {qrCode.qrCode ? (
+                  <img
+                    src={qrCode.qrCode}
+                    alt={`QR Code for ${qrCode.name}`}
+                    className="w-40 h-40 border border-gray-300 rounded"
+                  />
+                ) : (
+                  <div className="w-40 h-40 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50">
+                    <p className="text-xs text-gray-400 text-center px-2">{t('noQRCode', 'No QR Code')}</p>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-900 truncate">{qrCode.name}</p>
@@ -51,13 +95,15 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                   variant="primary"
                   size="sm"
                   className="w-full mt-3 flex items-center gap-2"
+                  disabled={!qrCode.qrCode}
                 >
                   <Download className="h-4 w-4" />
                   {t('download', 'Download')}
                 </Button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -82,24 +128,52 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {qrCodes.map((qrCode, index) => (
-                <tr key={qrCode.userId || index} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-900">{qrCode.name}</td>
+              {qrCodes.map((qrCode, index) => {
+                const isSelected = selectedItems.includes(qrCode.userId);
+                const canSelect = !qrCode.hasQrCode && onToggleSelection;
+                
+                return (
+                <tr 
+                  key={qrCode.userId || index} 
+                  onClick={() => canSelect && onToggleSelection(qrCode.userId)}
+                  className={`${
+                    canSelect ? 'cursor-pointer' : ''
+                  } ${
+                    isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <td className="px-4 py-3 text-sm text-gray-900">
+                    <div className="flex items-center gap-2">
+                      {canSelect && (
+                        isSelected ? (
+                          <CheckSquare className="h-4 w-4 text-blue-600" />
+                        ) : (
+                          <Square className="h-4 w-4 text-gray-400" />
+                        )
+                      )}
+                      {qrCode.name}
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{qrCode.username}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{qrCode.studentNumber}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{qrCode.email}</td>
                   <td className="px-4 py-3 text-center">
-                    <Button
-                      onClick={() => downloadQRCode(qrCode)}
-                      variant="ghost"
-                      size="icon"
-                      title={t('download', 'Download')}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    {qrCode.qrCode ? (
+                      <Button
+                        onClick={() => downloadQRCode(qrCode)}
+                        variant="ghost"
+                        size="icon"
+                        title={t('download', 'Download')}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-gray-400">{t('noQRCode', 'No QR')}</span>
+                    )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
