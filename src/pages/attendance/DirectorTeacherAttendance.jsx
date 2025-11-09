@@ -183,10 +183,11 @@ export default function TeacherAttendance() {
       const loadingKey = 'fetchTeachers';
       startLoading(loadingKey, t('loadingTeachers', 'Loading teachers...'));
 
-      // Fetch teachers with backend pagination (10 per page)
+      // Fetch teachers with backend pagination (10 per page) and search query
       const response = await teacherService.getTeachersBySchool(schoolId, {
         limit: 10,
-        page: pageNum
+        page: pageNum,
+        search: _searchQuery.trim() || undefined  // Pass search to API
       });
 
       // Update pagination info from API response
@@ -340,41 +341,9 @@ export default function TeacherAttendance() {
     }
   }, [schoolId, isDirector, currentWeekStart, getWeekDates, t, handleError, clearError, startLoading, stopLoading]);
 
-  // Filter teachers based on search term
-  const filteredTeachers = useMemo(() => {
-    if (!searchTerm || searchTerm.trim() === '') {
-      return teachers;
-    }
-
-    const searchLower = searchTerm.toLowerCase().trim();
-
-    return teachers.filter(teacher => {
-      const name = (teacher.name || '').toLowerCase();
-      const firstName = (teacher.firstName || '').toLowerCase();
-      const lastName = (teacher.lastName || '').toLowerCase();
-      const username = (teacher.username || '').toLowerCase();
-      const teacherNumber = (teacher.teacherNumber || '').toLowerCase();
-      const fullName = `${firstName} ${lastName}`.trim().toLowerCase();
-
-      return (
-        name.includes(searchLower) ||
-        firstName.includes(searchLower) ||
-        lastName.includes(searchLower) ||
-        username.includes(searchLower) ||
-        teacherNumber.includes(searchLower) ||
-        fullName.includes(searchLower) ||
-        // Support Khmer text (case-sensitive)
-        (teacher.name || '').includes(searchTerm) ||
-        (teacher.firstName || '').includes(searchTerm) ||
-        (teacher.lastName || '').includes(searchTerm) ||
-        `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim().includes(searchTerm)
-      );
-    });
-  }, [teachers, searchTerm]);
-
-  // With backend pagination, displayedTeachers comes directly from API
-  // filteredTeachers IS the displayed teachers (already paginated by backend)
-  const displayedTeachers = filteredTeachers;
+  // With server-side search and pagination, teachers are already filtered by API
+  // No need for client-side filtering
+  const displayedTeachers = teachers;
 
   // Reset to page 1 when search term changes
   useEffect(() => {
