@@ -59,7 +59,7 @@ export default function StudentQRCodeGenerator() {
   const [teacherGenerating, setTeacherGenerating] = useState(false);
   const [teacherCurrentPage, setTeacherCurrentPage] = useState(1);
   const [teacherTotalPages, setTeacherTotalPages] = useState(1);
-  const teacherItemsPerPage = 10;
+  const teacherItemsPerPage = 8;
   const [selectedTeachers, setSelectedTeachers] = useState([]);
   const [teacherProgress, setTeacherProgress] = useState(0);
   const [showTeacherProgress, setShowTeacherProgress] = useState(false);
