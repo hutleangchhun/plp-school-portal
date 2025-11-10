@@ -829,6 +829,7 @@ export const studentService = {
         phone: user.phone || '',
         gender: user.gender || '',
         dateOfBirth: user.date_of_birth || user.dateOfBirth,
+        date_of_birth: user.date_of_birth || user.dateOfBirth,
         academicYear: student.academicYear,
         gradeLevel: student.gradeLevel,
         profilePicture: user.profile_picture || user.profilePicture,
@@ -849,6 +850,10 @@ export const studentService = {
           nameEn: 'Student',
           nameKh: 'សិស្ស'
         },
+        // Health information
+        weight_kg: user.weight_kg,
+        height_cm: user.height_cm,
+        bmi: user.bmi,
         // QR Code data from nested user object
         qrCode: user.qr_code || null,
         qrToken: user.qr_token || null,
@@ -912,6 +917,7 @@ export const studentService = {
         phone: student.phone || user.phone || '',
         gender: student.gender || user.gender || '',
         dateOfBirth: student.date_of_birth || student.dateOfBirth || user.date_of_birth || user.dateOfBirth,
+        date_of_birth: student.date_of_birth || student.dateOfBirth || user.date_of_birth || user.dateOfBirth,
         academicYear: student.academic_year || classInfo.academicYear,
         gradeLevel: student.grade_level || classInfo.gradeLevel,
         profilePicture: student.profile_picture || student.profilePicture || user.profile_picture || user.profilePicture,
@@ -948,6 +954,10 @@ export const studentService = {
         district: student.district || user.district,
         province: student.province || user.province,
         student: student.student || user.student,
+        // Health information
+        weight_kg: student.weight_kg || user.weight_kg,
+        height_cm: student.height_cm || user.height_cm,
+        bmi: student.bmi || user.bmi,
         // QR Code data from nested user object
         qrCode: user.qr_code || null,
         qrToken: user.qr_token || null,

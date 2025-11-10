@@ -159,10 +159,10 @@ export const getNavigationItems = (user, t) => {
       name: t('students') || 'សិស្ស',
       href: '/students',
     },
-    {
-      name: t('parents') || 'ឪពុកម្តាយ',
-      href: '/parents',
-    },
+    // {
+    //   name: t('parents') || 'ឪពុកម្តាយ',
+    //   href: '/parents',
+    // },
     {
       name: t('attendance') || 'វត្តមាន',
       href: '#', // Parent item doesn't need a direct link
@@ -181,10 +181,10 @@ export const getNavigationItems = (user, t) => {
         },
       ],
     },
-    {
-      name: t('QRCodeManangement', 'QR Codes Management'),
-      href: '/qr-codes',
-    },
+    // {
+    //   name: t('QRCodeManangement', 'QR Codes Management'),
+    //   href: '/qr-codes',
+    // },
     {
       name: t('examRecord', 'Exam Records'),
       href: '/exam-records',

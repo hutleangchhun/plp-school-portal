@@ -17,7 +17,7 @@ import { Table } from '../../components/ui/Table';
 import { exportStudentsToExcel } from '../../utils/studentExportUtils';
 import StudentEditModal from '../../components/students/StudentEditModal';
 import StudentActionsModal from '../../components/students/StudentActionsModal';
-import Modal from '../../components/ui/Modal';
+import StudentViewModal from '../../components/students/StudentViewModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import EmptyState from '../../components/ui/EmptyState';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
@@ -134,10 +134,13 @@ export default function StudentsManagement() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [showStudentActionsModal, setShowStudentActionsModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [editingStudent, setEditingStudent] = useState(null);
+  const [viewingStudent, setViewingStudent] = useState(null);
+  const [loadingStudentDetails, setLoadingStudentDetails] = useState(false);
   const [transferTargetClassId, setTransferTargetClassId] = useState('');
   const [bulkTransferTargetClassId, setBulkTransferTargetClassId] = useState('');
   // Use the custom hook for managing selected students
@@ -1194,10 +1197,35 @@ export default function StudentsManagement() {
     }
   };
 
-  // Handle view student - open StudentEditModal directly
-  const handleViewStudent = (student) => {
-    setEditingStudent(student);
-    setShowEditModal(true);
+  // Handle view student - fetch full student details and open view modal
+  const handleViewStudent = async (student) => {
+    try {
+      setLoadingStudentDetails(true);
+      
+      // Get user ID from student object (try multiple possible fields)
+      const userId = student.userId || student.user_id || student.id;
+      console.log('Fetching student details for user ID:', userId);
+      
+      if (!userId) {
+        throw new Error('No valid user ID found for student');
+      }
+      
+      // Fetch full student details by user ID
+      const response = await studentService.getStudentById(userId);
+      console.log('Student details response:', response);
+      
+      if (response && response.success && response.data) {
+        setViewingStudent(response.data);
+        setShowViewModal(true);
+      } else {
+        throw new Error(response?.error || 'Failed to fetch student details');
+      }
+    } catch (error) {
+      console.error('Error fetching student details:', error);
+      showError(t('failedToFetchStudentDetails', 'Failed to fetch student details'));
+    } finally {
+      setLoadingStudentDetails(false);
+    }
   };
 
   // Handle edit student
@@ -1372,10 +1400,15 @@ export default function StudentsManagement() {
               e.stopPropagation();
               handleViewStudent(student);
             }}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             title={t('viewDetails', 'View Details')}
+            disabled={loadingStudentDetails}
           >
-            <Eye className="h-4 w-4" />
+            {loadingStudentDetails ? (
+              <DynamicLoader type="spinner" size="sm" variant="primary" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
           </button>
           <Button
             onClick={(e) => {
@@ -1740,6 +1773,16 @@ export default function StudentsManagement() {
         loading={isLoading('bulkTransfer') || isLoading('bulkDelete')}
         onRemoveStudent={removeStudent}
         onClearAll={clearAll}
+      />
+
+      {/* View Student Modal */}
+      <StudentViewModal
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setViewingStudent(null);
+        }}
+        student={viewingStudent}
       />
 
       {/* Edit Student Modal */}

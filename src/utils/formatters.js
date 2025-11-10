@@ -297,3 +297,43 @@ export const getKhmerDayWithShorthand = (day, dayOfWeek) => {
 export const isWeekend = (dayOfWeek) => {
   return dayOfWeek === 5 || dayOfWeek === 6; // Saturday or Sunday
 };
+
+/**
+ * Convert gender to Khmer
+ * @param {string} gender - Gender in English (MALE, FEMALE, or other format)
+ * @returns {string} Gender in Khmer (ប្រុស, ស្រី, or original value if not recognized)
+ */
+export const genderToKhmer = (gender) => {
+  if (!gender) return 'N/A';
+
+  const genderMap = {
+    'MALE': 'ប្រុស',
+    'male': 'ប្រុស',
+    'M': 'ប្រុស',
+    'FEMALE': 'ស្រី',
+    'female': 'ស្រី',
+    'F': 'ស្រី',
+    'OTHER': 'ផ្សេងទៀត',
+    'other': 'ផ្សេងទៀត'
+  };
+
+  return genderMap[gender] || gender;
+};
+
+/**
+ * Convert BMI status to Khmer
+ * @param {string} status - BMI status in English (underweight, normal, overweight, obese)
+ * @returns {string} BMI status in Khmer
+ */
+export const bmiStatusToKhmer = (status) => {
+  if (!status) return 'មិនមាន';
+
+  const statusMap = {
+    'underweight': 'មិនពេញលេញ',
+    'normal': 'ធម្មតា',
+    'overweight': 'ធ្វើឱ្យលើស',
+    'obese': 'មានលើស'
+  };
+
+  return statusMap[status.toLowerCase()] || status;
+};

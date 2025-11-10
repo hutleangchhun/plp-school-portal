@@ -28,7 +28,7 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
     <div className="mt-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900">
-          {t('generatedQRCodes', 'Generated QR Codes')} ({qrCodes.length})
+          {t('generatedQRCodes', 'Generated QR Codes')}<span className='text-sm'> ({qrCodes.length})</span>
           {selectedItems.length > 0 && (
             <span className="ml-2 text-sm text-blue-600">({selectedItems.length} {t('selected', 'selected')})</span>
           )}
@@ -88,13 +88,13 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                 )}
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-900 truncate">{qrCode.name}</p>
-                <p className="text-xs text-gray-500">{qrCode.username}</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{t('name', 'Name')}: {qrCode.name}</p>
+                <p className="text-xs text-gray-500">{t('username', 'Username')}: {qrCode.username}</p>
                 <Button
                   onClick={() => downloadQRCode(qrCode, cardRefsRef.current[qrCode.userId])}
-                  variant="primary"
+                  variant="outline"
                   size="sm"
-                  className="w-full mt-3 flex items-center gap-2"
+                  className="w-full mt-3 flex items-center gap-1"
                   disabled={!qrCode.qrCode}
                 >
                   <Download className="h-4 w-4" />
@@ -118,9 +118,6 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                   {t('studentNumber', 'Student Number')}
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
-                  {t('email', 'Email')}
                 </th>
                 <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">
                   {t('actions', 'Actions')}
@@ -156,7 +153,6 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{qrCode.username}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{qrCode.studentNumber}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{qrCode.email}</td>
                   <td className="px-4 py-3 text-center">
                     {qrCode.qrCode ? (
                       <Button

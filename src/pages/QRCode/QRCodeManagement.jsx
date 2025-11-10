@@ -558,17 +558,17 @@ export default function StudentQRCodeGenerator() {
         status="processing"
       />
 
-    <PageTransition className="flex-1">
+    <PageTransition className="flex-1 p-3 sm:p-4">
       <div className="p-4 sm:p-6">
         <FadeInSection>
           {/* Header */}
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <h1 className="sm:text-2xl text-lg font-bold text-gray-900 flex items-center gap-2">
                 <QrCode className="h-7 w-7 text-blue-600" />
                 {t('qrCodeGenerator', 'គ្រប់គ្រង QR-Code')}
               </h1>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm mt-1 text-gray-500">
                 {t('generateQRCodes', 'បង្កើត និងទាញយកលេខកូដ QR')}
               </p>
             </div>
@@ -599,9 +599,10 @@ export default function StudentQRCodeGenerator() {
             {/* Students Tab */}
             <Tabs.Content value="students" className="space-y-6">
               {/* Filters and Generate Button */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                {/* Grade Level Filter */}
-                <div>
+              <div className="flex justify-between">
+                <div className='grid grid-cols-2 sm:grid-cols-3 items-end gap-4'>
+                  {/* Grade Level Filter */}
+                <div> 
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {t('selectGradeLevel', 'ជ្រើសរើសកម្រិត')}
                   </label>
@@ -647,6 +648,7 @@ export default function StudentQRCodeGenerator() {
                     </>
                   )}
                 </Button>
+                </div>
 
                 {/* View Toggle */}
                 <div className="flex items-center gap-2 justify-start sm:justify-end">

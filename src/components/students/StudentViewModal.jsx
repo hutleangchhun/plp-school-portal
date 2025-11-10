@@ -1,0 +1,384 @@
+import { X, User, Mail, Phone, Calendar, MapPin, Heart, Ruler, Weight, Activity, Shield, Clock, Key, Hash, User2, BookOpen, QrCode, AlertCircle } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import Modal from '../ui/Modal';
+import { Badge } from '../ui/Badge';
+import ProfileImage from '../ui/ProfileImage';
+import { Button } from '../ui/Button';
+import { formatDateKhmer, genderToKhmer, bmiStatusToKhmer } from '../../utils/formatters';
+
+/**
+ * StudentViewModal - Read-only modal to display student details
+ */
+export default function StudentViewModal({ isOpen, onClose, student }) {
+  const { t } = useLanguage();
+
+  if (!student) return null;
+
+  // Helper function to display N/A in Khmer
+  const getEmptyDisplay = () => 'មិនមាន';
+
+  // Helper function to format date in Khmer
+  const formatDate = (dateString) => {
+    if (!dateString) return getEmptyDisplay();
+    try {
+      return formatDateKhmer(dateString, 'short') || getEmptyDisplay();
+    } catch (error) {
+      console.error('Error formatting date:', error, 'dateString:', dateString);
+      return dateString || getEmptyDisplay();
+    }
+  };
+
+  // Helper function to display array values
+  const displayArray = (arr) => {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) return getEmptyDisplay();
+    return arr.join(', ');
+  };
+
+  // Check for incomplete information
+  const checkIncompleteFields = () => {
+    const missingFields = [];
+
+    // Required personal information
+    if (!student.date_of_birth) missingFields.push(t('dateOfBirth', 'Date of Birth'));
+    if (!student.gender) missingFields.push(t('gender', 'Gender'));
+    if (!student.email) missingFields.push(t('email', 'Email'));
+    if (!student.phone) missingFields.push(t('phone', 'Phone'));
+    if (!student.nationality) missingFields.push(t('nationality', 'Nationality'));
+    if (!student.ethnic_group) missingFields.push(t('ethnicGroup', 'Ethnic Group'));
+
+    // Health information
+    if (!student.weight_kg) missingFields.push(t('weight', 'Weight'));
+    if (!student.height_cm) missingFields.push(t('height', 'Height'));
+
+    // Address information
+    if (!student.residence) missingFields.push(t('currentResidence', 'Residence Information'));
+    if (!student.placeOfBirth) missingFields.push(t('placeOfBirth', 'Place of Birth'));
+
+    return missingFields;
+  };
+
+  const incompleteFields = checkIncompleteFields();
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t('studentDetails', 'Student Details')}
+      size="2xl"
+      height='xl'
+      stickyFooter={true}
+      footer={
+        <div className="flex items-center justify-end">
+          <Button
+            onClick={onClose}
+            variant="outline"
+            size="sm"
+            className="min-w-[120px]"
+          >
+            {t('close', 'Close')}
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        {/* Incomplete Information Warning */}
+        {incompleteFields.length > 0 && (
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-semibold text-amber-900 mb-2">
+                  {t('incompleteInformation', 'Incomplete Information')}
+                </h4>
+                <p className="text-sm text-amber-800 mb-2">
+                  {t('pleaseCompleteFields', 'Please complete the following information:')}
+                </p>
+                <ul className="text-sm text-amber-800 space-y-1 ml-4 list-disc">
+                  {incompleteFields.map((field, index) => (
+                    <li key={index}>{field}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Personal Information */}
+        <div className="border-t pt-4">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            <User2 className="inline w-5 h-5 mr-2" />
+            {t('personalInformation', 'Personal Information')}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <InfoItem
+              icon={User}
+              label={t('username', 'Username')}
+              value={student.username || getEmptyDisplay()}
+            />
+            <InfoItem
+              icon={Calendar}
+              label={t('dateOfBirth', 'Date of Birth')}
+              value={formatDate(student.date_of_birth)}
+            />
+            <InfoItem
+              icon={User}
+              label={t('gender', 'Gender')}
+              value={genderToKhmer(student.gender) || getEmptyDisplay()}
+            />
+            <InfoItem
+              icon={Mail}
+              label={t('email', 'Email')}
+              value={student.email || getEmptyDisplay()}
+            />
+            <InfoItem
+              icon={Phone}
+              label={t('phone', 'Phone')}
+              value={student.phone || getEmptyDisplay()}
+            />
+            <InfoItem
+              icon={MapPin}
+              label={t('nationality', 'Nationality')}
+              value={student.nationality || getEmptyDisplay()}
+            />
+            <InfoItem
+              icon={User}
+              label={t('ethnicGroup', 'Ethnic Group')}
+              value={student.ethnic_group || getEmptyDisplay()}
+            />
+          </div>
+        </div>
+
+        {/* Account Information */}
+        <div className="border-t pt-4">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            <Key className="inline w-5 h-5 mr-2" />
+            {t('accountInformation', 'Account Information')}
+          </h3>
+        </div>
+
+        {/* Academic Information */}
+        {student.student && (
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <BookOpen className="inline w-5 h-5 mr-2" />
+              {t('academicInformation', 'Academic Information')}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InfoItem
+                label={t('studentNumber', 'Student Number')}
+                value={student.student.studentNumber || getEmptyDisplay()}
+              />
+              <InfoItem
+                label={t('gradeLevel', 'Grade Level')}
+                value={student.student.gradeLevel || getEmptyDisplay()}
+              />
+              <InfoItem
+                label={t('academicYear', 'Academic Year')}
+                value={student.student.academicYear || getEmptyDisplay()}
+              />
+              <InfoItem
+                label={t('isKindergartener', 'Is Kindergartener')}
+                value={student.student.isKidgardener ? t('yes', 'Yes') : t('no', 'No')}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Health Information */}
+        {(student.weight_kg || student.height_cm) && (
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <Heart className="inline w-5 h-5 mr-2" />
+              {t('healthInformation', 'Health Information')}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InfoItem
+                icon={Weight}
+                label={t('weight', 'Weight (kg)')}
+                value={student.weight_kg ? `${student.weight_kg} kg` : getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={Ruler}
+                label={t('height', 'Height (cm)')}
+                value={student.height_cm ? `${student.height_cm} cm` : getEmptyDisplay()}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* BMI Information */}
+        {student.bmi && typeof student.bmi === 'object' && (
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <Activity className="inline w-5 h-5 mr-2" />
+              {t('bmiInformation', 'BMI Information')}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <InfoItem
+                icon={Activity}
+                label={t('bmiValue', 'BMI Value')}
+                value={student.bmi.value !== undefined && student.bmi.value !== null ? student.bmi.value : getEmptyDisplay()}
+              />
+              <InfoItem
+                label={t('bmiCategory', 'BMI Category')}
+                value={student.bmi.category_km || student.bmi.category || getEmptyDisplay()}
+              />
+              <InfoItem
+                label={t('bmiStatus', 'BMI Status')}
+                value={bmiStatusToKhmer(student.bmi.status) || getEmptyDisplay()}
+              />
+              {student.bmi.age !== undefined && student.bmi.age !== null && (
+                <InfoItem
+                  label={t('age', 'Age')}
+                  value={student.bmi.age}
+                />
+              )}
+            </div>
+            {student.bmi.recommendations && Array.isArray(student.bmi.recommendations) && student.bmi.recommendations.length > 0 && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <h5 className="font-semibold text-blue-900 mb-2">
+                  {t('healthRecommendations', 'Health Recommendations')}
+                </h5>
+                <ul className="list-disc list-inside space-y-1 text-sm text-blue-800">
+                  {student.bmi.recommendations.map((rec, index) => (
+                    <li key={index}>{rec.km || rec.en}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Accessibility Information */}
+        {student.accessibility && student.accessibility.length > 0 && (
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <Shield className="inline w-5 h-5 mr-2" />
+              {t('accessibility', 'Accessibility Needs')}
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {student.accessibility.map((item, index) => (
+                <Badge key={index} color="orange" variant="outline">
+                  {item}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Residence Information */}
+        {student.residence && (
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <MapPin className="inline w-5 h-5 mr-2" />
+              {t('currentResidence', 'Residence Information')}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InfoItem
+                label={t('province', 'Province')}
+                value={student.residence.province
+                  ? `${student.residence.province.province_name_kh}`
+                  : getEmptyDisplay()}
+              />
+              <InfoItem
+                label={t('district', 'District')}
+                value={student.residence.district
+                  ? `${student.residence.district.district_name_kh}`
+                  : getEmptyDisplay()}
+              />
+              <InfoItem
+                label={t('commune', 'Commune')}
+                value={student.residence.commune
+                  ? `${student.residence.commune.commune_name_kh}`
+                  : getEmptyDisplay()}
+              />
+              <InfoItem
+                label={t('village', 'Village')}
+                value={student.residence.village
+                  ? `${student.residence.village.village_name_kh}`
+                  : getEmptyDisplay()}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Place of Birth */}
+        {student.placeOfBirth && (
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <MapPin className="inline w-5 h-5 mr-2" />
+              {t('placeOfBirth', 'Place of Birth')}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InfoItem
+                label={t('province', 'Province')}
+                value={student.placeOfBirth.province
+                  ? `${student.placeOfBirth.province.province_name_kh}`
+                  : getEmptyDisplay()}
+              />
+              <InfoItem
+                label={t('district', 'District')}
+                value={student.placeOfBirth.district
+                  ? `${student.placeOfBirth.district.district_name_kh}`
+                  : getEmptyDisplay()}
+              />
+              <InfoItem
+                label={t('commune', 'Commune')}
+                value={student.placeOfBirth.commune
+                  ? `${student.placeOfBirth.commune.commune_name_kh}`
+                  : getEmptyDisplay()}
+              />
+              <InfoItem
+                label={t('village', 'Village')}
+                value={student.placeOfBirth.village
+                  ? `${student.placeOfBirth.village.village_name_kh}`
+                  : getEmptyDisplay()}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* QR Code */}
+        {student.qr_code && (
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <QrCode className="inline w-5 h-5 mr-2" />
+              {t('qrCode', 'QR Code')}
+            </h3>
+            <div className="flex justify-center">
+              <img
+                src={student.qr_code}
+                alt="Student QR Code"
+                className="w-48 h-48 border-2 border-gray-300 rounded-lg"
+              />
+            </div>
+            {student.qr_generated_at && (
+              <p className="text-xs text-gray-500 text-center mt-2">
+                {t('qrGeneratedAt', 'Generated at')}: {formatDate(student.qr_generated_at)}
+              </p>
+            )}
+          </div>
+        )}
+
+      </div>
+    </Modal>
+  );
+}
+
+/**
+ * InfoItem Component - Displays a label-value pair
+ */
+function InfoItem({ icon: Icon, label, value }) {
+  // Convert N/A to Khmer "មិនមាន"
+  const displayValue = value === 'N/A' ? 'មិនមាន' : value;
+
+  return (
+    <div className="flex items-start space-x-2">
+      {Icon && <Icon className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-500">{label}</p>
+        <p className="text-sm text-gray-900 break-words">{displayValue}</p>
+      </div>
+    </div>
+  );
+}

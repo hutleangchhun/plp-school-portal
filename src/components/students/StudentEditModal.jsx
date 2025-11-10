@@ -578,6 +578,40 @@ const StudentEditModal = ({
                   placeholder={t('pickDate', 'Pick a date')}
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('nationality', 'Nationality')}
+                </label>
+                <Dropdown
+                  options={[
+                    { value: '', label: t('selectNationality', 'Select Nationality') },
+                    { value: 'ខ្មែរ', label: 'ខ្មែរ (Cambodian)' },
+                    { value: 'ថៃ', label: 'ថៃ (Thai)' },
+                    { value: 'វៀតណាម', label: 'វៀតណាម (Vietnamese)' },
+                    { value: 'ឡាវ', label: 'ឡាវ (Laotian)' },
+                    { value: 'អាមេរីក', label: 'អាមេរីក (American)' },
+                    { value: 'អង់គ្លេស', label: 'អង់គ្លេស (British)' },
+                    { value: 'ចិន', label: 'ចិន (Chinese)' },
+                    { value: 'ឥណ្ឌា', label: 'ឥណ្ឌា (Indian)' },
+                    { value: 'ជប៉ុន', label: 'ជប៉ុន (Japanese)' },
+                    { value: 'កូរេ', label: 'កូរេ (Korean)' },
+                    { value: 'បារាំង', label: 'បារាំង (French)' },
+                    { value: 'ឺម៉ង់', label: 'ឺម៉ង់ (German)' },
+                    { value: 'អេស្ប៉ាញ', label: 'អេស្ប៉ាញ (Spanish)' },
+                    { value: 'អ៊ីតាលី', label: 'អ៊ីតាលី (Italian)' },
+                    { value: 'កាណាដា', label: 'កាណាដា (Canadian)' },
+                    { value: 'អូស្ត្រាលី', label: 'អូស្ត្រាលី (Australian)' },
+                    { value: 'ផ្សេងទៀត', label: 'ផ្សេងទៀត (Other)' }
+                  ]}
+                  value={editForm.nationality}
+                  onValueChange={(value) => handleFormChange('nationality', value)}
+                  placeholder={t('selectNationality', 'Select Nationality')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={false}
+                  className='w-full'
+                />
+              </div>
             </div>
 
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4'>

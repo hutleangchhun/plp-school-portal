@@ -201,6 +201,17 @@ export const km = {
   deselectAll: 'លុបការជ្រើសរើសទាំងអស់',
   readyToTransfer: 'ការរៀបចំការផ្ទេរ',
   manageSelectedStudents: 'គ្រប់គ្រងការជ្រើសរើសសិស្ស',
+  incompleteInformation: 'ព័ត៌មានអ្នកមិនទាន់បានបញ្ចូល',
+  pleaseCompleteFields: 'សូមបញ្ចូលព័ត៌មានទាំងនេះ',
+  studentDetails: 'ព័ត៌មានលម្អិតសិស្ស',
+  healthRecommendations: 'ការណែនាំសុខភាព',
+  bmiInformation: 'ព័ត៌មាន BMI',
+  bmiValue: 'តម្លៃ BMI',
+  bmiCategory: 'ប្រភេទ BMI',
+  bmiStatus: 'ស្ថានភាព BMI',
+  isKindergartener: 'បានឆ្លងមត្តេយ្យសិក្សា',
+  age: 'អាយុ',
+  healthInformation: 'ព័ត៌មានសុខភាព',
 
   // Teacher Management
   addTeacher: 'បន្ថែមគ្រូ',
@@ -851,7 +862,7 @@ export const km = {
   enterStudentNumber: 'បញ្ចូលលេខសិស្ស',
   gradeLevel: 'ថ្នាក់រៀន',
   enterGradeLevel: 'ឧ. ១, ២, ៣...',
-  isKindergarten: 'ថ្នាក់ព្រឹត្តិបត្របាលកុមារ',
+  isKindergarten: 'ថ្នាក់មត្តេយ្យសិក្សា',
   yes: 'បាទ/ចាស',
   no: 'ទេ',
 
@@ -981,6 +992,7 @@ export const km = {
   place: 'ទីកន្លែង',
   
   // Common UI Components translations
+  close: 'បិទ',
   'បិទ': 'បិទ',
   'Close': 'បិទ',
   'បោះបង់': 'បោះបង់',
@@ -1186,10 +1198,10 @@ export const km = {
 
   // QR Code Generator
   studentQRCode: 'លេខកូដ QR សិស្ស',
-  studentQRCodeGenerator: 'ឧបករណ៍បង្កើត QR Code សម្រាប់សិស្ស',
-  generateQRCodesForStudents: 'បង្កើត និងទាញយក QR codes សម្រាប់សិស្សតាមថ្នាក់គ្រាប់ និងថ្នាក់',
-  chooseGradeLevel: 'ជ្រើសរើសថ្នាក់គ្រាប់...',
-  allGradeLevels: 'ថ្នាក់គ្រាប់ទាំងអស់',
+  student: 'ឧបករណ៍បង្កើត QR Code សម្រាប់សិស្ស',
+  generateQRCodesForStudents: 'បង្កើត និងទាញយក QR codes សម្រាប់សិស្សតាមថ្នាក់',
+  chooseGradeLevel: 'ជ្រើសរើសថ្នាក់...',
+  allGradeLevels: 'កម្រិតថ្នាក់ទាំងអស់',
   selectClass: 'ជ្រើសរើសថ្នាក់',
   allClasses: 'ថ្នាក់ទាំងអស់',
   generateQRCodes: 'បង្កើត QR Codes',
