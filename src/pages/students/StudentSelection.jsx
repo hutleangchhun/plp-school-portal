@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, User, X, ArrowLeft } from 'lucide-react';
+import { Filter, User, X, ArrowLeft, Search } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import studentService from '../../utils/api/services/studentService';
@@ -526,7 +526,7 @@ const StudentSelection = () => {
               className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 shadow-lg"
               title={t('filters', 'Filters')}
             >
-              <Search className="h-5 sm:h-4 w-5 sm:w-4" />
+              <Filter className="h-5 sm:h-4 w-5 sm:w-4" />
               <span className="sm:hidden">{t('filters', 'Filters')}</span>
               <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
               {(filters.search || filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel !== '' || filters.classId !== 'any') && (

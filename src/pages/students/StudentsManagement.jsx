@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, MinusCircle, Edit2, Users, Download, X, ArrowRightLeft, Eye } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, Users, Download, X, ArrowRightLeft, Eye, Filter } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -1544,7 +1544,7 @@ export default function StudentsManagement() {
               className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 shadow-lg"
               title={t('filters', 'Filters & Actions')}
             >
-              <Search className="h-4 w-4" />
+              <Filter className="h-4 w-4" />
               <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
               <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
               {(localSearchTerm || selectedGradeLevel !== 'all' || selectedClassId !== 'all') && (

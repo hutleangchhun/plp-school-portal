@@ -45,18 +45,18 @@ export default function Modal({
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay 
+        <Dialog.Overlay
           className="fixed inset-0 z-50 bg-gray-500/75"
           onClick={closeOnOverlayClick ? onClose : undefined}
         />
-        
-        <Dialog.Content 
-          className={`fixed left-1/2 top-1/2 z-50 w-full flex flex-col ${sizeClasses[size]} ${heightClasses[height]} ${roundedClass} ${borderClass} ${className} bg-white shadow-xl`}
+
+        <Dialog.Content
+          className={`fixed left-1/2 top-1/2 z-50 w-11/12 sm:w-full flex flex-col ${sizeClasses[size]} ${heightClasses[height]} ${roundedClass} ${borderClass} ${className} bg-white shadow-xl max-h-[90vh] sm:max-h-none`}
           style={{ transform: 'translate(-50%, -50%)' }}
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className={`flex-shrink-0 bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 ${roundedClass}`}>
+            <div className={`flex-shrink-0 bg-white px-3 pt-4 pb-3 sm:p-6 sm:pb-4 border-b border-gray-200 ${roundedClass}`}>
               <div className="flex items-center justify-between">
                 {title && (
                   <Dialog.Title className="text-lg font-medium text-gray-900">
@@ -78,13 +78,13 @@ export default function Modal({
           )}
           <Dialog.Description className="sr-only"></Dialog.Description>
           {/* Content */}
-          <div className={`flex-1 overflow-auto bg-white px-4 pt-5 sm:p-6 ${footer && stickyFooter ? 'pb-4' : 'pb-4'}`}>
+          <div className={`flex-1 overflow-auto bg-white px-3 pt-4 sm:p-6 ${footer && stickyFooter ? 'pb-3 sm:pb-4' : 'pb-3 sm:pb-4'}`}>
             {children}
           </div>
           
           {/* Footer */}
           {footer && (
-            <div className={`flex-shrink-0 ${roundedClass} bg-white px-4 py-4 sm:px-6 sm:pb-6 ${stickyFooter ? 'border-t border-gray-200' : ''}`}>
+            <div className={`flex-shrink-0 ${roundedClass} bg-white px-3 py-3 sm:px-6 sm:pb-6 ${stickyFooter ? 'border-t border-gray-200' : ''}`}>
               {footer}
             </div>
           )}
