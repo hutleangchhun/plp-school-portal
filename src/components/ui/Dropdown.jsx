@@ -2,11 +2,11 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ChevronDown, Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-export default function Dropdown({ 
-  value, 
-  onValueChange, 
-  options = [], 
-  placeholder = 'Select option...', 
+export default function Dropdown({
+  value,
+  onValueChange,
+  options = [],
+  placeholder = 'Select option...',
   className = '',
   triggerClassName = '',
   contentClassName = '',
@@ -15,7 +15,7 @@ export default function Dropdown({
   sideOffset = 4,
   minWidth = 'min-w-[200px]',
   width = '',
-  maxHeight = '',
+  maxHeight = 'max-h-[300px]',
   itemsToShow = null
 }) {
   const selectedOption = options.find(option => option.value === value);

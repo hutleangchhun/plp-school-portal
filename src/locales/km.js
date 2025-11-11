@@ -860,7 +860,6 @@ export const km = {
   enterAcademicYear: 'ឧ. ២០២៤',
   studentNumber: 'លេខសិស្ស',
   enterStudentNumber: 'បញ្ចូលលេខសិស្ស',
-  gradeLevel: 'ថ្នាក់រៀន',
   enterGradeLevel: 'ឧ. ១, ២, ៣...',
   isKindergarten: 'ថ្នាក់មត្តេយ្យសិក្សា',
   yes: 'បាទ/ចាស',
@@ -1243,7 +1242,7 @@ export const km = {
   successful: 'ដោយជោគជ័យ',
   failed: 'បរាជ័យ',
   successRate: 'អត្រាជោគជ័យ',
-  search: 'ស្វែងរកអ្នកប្រើប្រាស់...',
+  search: 'ស្វែងរក',
   allRoles: 'តួនាទីទាំងអស់',
   teachers: 'គ្រូបង្រៀន',
   directors: 'នាយក',
@@ -1269,5 +1268,39 @@ export const km = {
   director: 'នាយក',
   teacher: 'គ្រូបង្រៀន',
   student: 'សិស្ស',
+
+  // Teachers Management - Additional translations
+  apply: 'អនុវត្ត',
+  confirmDeleteTeacher: 'តើអ្នកប្រាកដថាចង់លុបគ្រូបង្រៀនរូបនេះទេ?',
+  deleteTeacher: 'លុបគ្រូបង្រៀន',
+  deleting: 'កំពុងលុប...',
+  errorSelectingAllTeachers: 'បរាជ័យក្នុងការជ្រើសរើសគ្រូទាំងអស់',
+  featureComingSoon: 'មុខងារនេះនឹងបង្ហាញឯកវេលា',
+  filters: 'ច្រោះ',
+  noTeachersFound: 'រកមិនឃើញគ្រូបង្រៀនទេ',
+  selectedTeachers: 'គ្រូបង្រៀនដែលបានជ្រើសរើស',
+  thisActionCannotBeUndone: 'សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+  thisTeacher: 'គ្រូបង្រៀនរូបនេះ',
+  viewSelected: 'មើលលម្អិត',
+
+  // Students Management - Additional translations
+  authenticationRequired: 'ការផ្ទៀងផ្ទាត់អត្តសញ្ញាណត្រូវបានទាមទារ',
+  errorSelectingAllStudents: 'បរាជ័យក្នុងការជ្រើសរើសិស្សទាំងអស់',
+  failedToFetchStudentDetails: 'បរាជ័យក្នុងការទាញយកព័ត៌មានលម្អិតសិស្ស',
+  failedToParseUserData: 'បរាជ័យក្នុងការវិភាគទិន្នន័យអ្នកប្រើប្រាស់',
+  failedTransferStudents: 'បរាជ័យក្នុងការផ្ទេរសិស្ស',
+  noTargetClassSelected: 'គ្មានថ្នាក់គោលដៅត្រូវបានជ្រើសរើស',
+  studentsTransferredSuccess: 'បានផ្ទេរសិស្សដោយជោគជ័យ',
+  viewDetails: 'មើលលម្អិត',
+
+  // Classes Management - Additional translations
+  errorUpdatingClass: 'បរាជ័យក្នុងការកែប្រែថ្នាក់',
+  failedToFetchTeachers: 'បរាជ័យក្នុងការទាញយកគ្រូបង្រៀន',
+  failedToFetchUserData: 'បរាជ័យក្នុងការទាញយកទិន្នន័យអ្នកប្រើប្រាស់',
+  loadingSchool: 'កំពុងផ្ទុកព័ត៌មានសាលារៀន...',
+  userDataUpdated: 'ទិន្នន័យអ្នកប្រើប្រាស់បានធ្វើបច្ចុប្បន្នភាព',
+
+  // Parents Management - Additional translations
+  deleteSelected: 'លុបលម្អិត',
 
 };

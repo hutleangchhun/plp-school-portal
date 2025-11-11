@@ -94,14 +94,14 @@ const Table = ({
   };
 
   const headerBase = stickyHeader
-    ? 'sticky top-0 z-10 bg-blue-600 text-white'
-    : 'bg-blue-600 text-white';
+    ? 'sticky top-0 z-10 bg-white'
+    : 'bg-white';
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className={`w-full text-sm ${className}`} {...props}>
-          <thead className={`${headerBase} border-b border-gray-200`} style={{ backgroundColor: '#2563eb' }}>
+      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+        <table className={`w-full text-sm min-w-full ${className}`} {...props}>
+          <thead className={`${headerBase} border-b border-gray-200`}>
             <tr className="group/header">
               {columns.map((column, index) => {
                 const isSortable = enableSort && !(column.disableSort) && (column.accessor || column.key);
@@ -109,18 +109,15 @@ const Table = ({
                   <th
                     key={column.key || index}
                     scope="col"
-                    className={`px-2 sm:px-3 md:px-6 ${dense ? 'py-2' : 'py-3.5'} text-left text-xs sm:text-sm font-medium text-white uppercase tracking-wide align-middle transition-colors duration-500 hover:font-bold ${
+                    className={`px-2 sm:px-3 md:px-6 ${dense ? 'py-2' : 'py-3'} text-left text-md font-bold text-gray-700 uppercase tracking-wider align-middle transition-colors duration-200 ${
                       column.headerClassName || ''
                     } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
-                    style={{ backgroundColor: '#2563eb' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
                   >
                     {isSortable ? (
                       <button
                         type="button"
                         onClick={() => handleHeaderSort(column)}
-                        className="inline-flex items-center text-white"
+                        className="inline-flex items-center text-gray-700 hover:text-gray-900 transition-colors"
                         title={t ? t('sort', 'Sort') : 'Sort'}
                       >
                         <span className="whitespace-nowrap">{column.header}</span>
@@ -133,11 +130,11 @@ const Table = ({
               })}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-100">
             {sortedData.map((item, rowIndex) => (
               <tr
                 key={item.id || rowIndex}
-                className={`hover:bg-gray-50 transition-colors ${rowClassName} ${
+                className={`hover:bg-gray-50 transition-colors duration-150 ${rowClassName} ${
                   onRowClick ? 'cursor-pointer' : ''
                 }`}
                 onClick={() => handleRowClick(item, rowIndex)}
@@ -146,7 +143,7 @@ const Table = ({
                 {columns.map((column, colIndex) => (
                   <td
                     key={column.key || colIndex}
-                    className={`px-2 sm:px-3 md:px-6 ${dense ? 'py-1.5' : 'py-2.5'} text-xs sm:text-sm whitespace-nowrap align-middle ${
+                    className={`px-2 sm:px-3 md:px-6 ${dense ? 'py-1.5' : 'py-2'} text-xs sm:text-sm text-gray-700 align-middle ${
                       column.cellClassName || ''
                     } ${column.hidden ? 'hidden' : ''} ${column.responsive || ''}`}
                   >
@@ -183,12 +180,13 @@ const getNestedValue = (obj, path) => {
 // Advanced Pagination component
 const Pagination = ({ pagination, onPageChange, t }) => {
   const { page, pages, total, limit } = pagination;
+  const showFirstLast = true;
 
   // Helper function to generate page numbers with ellipsis
   const generatePageNumbers = () => {
     const pageNumbers = [];
     const maxVisiblePages = 5;
-    
+
     if (pages <= maxVisiblePages + 2) {
       // Show all pages if total pages is small
       for (let i = 1; i <= pages; i++) {
@@ -197,10 +195,10 @@ const Pagination = ({ pagination, onPageChange, t }) => {
     } else {
       // Always show first page
       pageNumbers.push(1);
-      
+
       // Calculate start and end of middle pages
       let startPage, endPage;
-      
+
       if (page <= 4) {
         // Near the beginning
         startPage = 2;
@@ -214,37 +212,37 @@ const Pagination = ({ pagination, onPageChange, t }) => {
         startPage = page - 2;
         endPage = page + 2;
       }
-      
+
       // Add ellipsis before middle pages if needed
       if (startPage > 2) {
         pageNumbers.push('ellipsis-start');
       }
-      
+
       // Add middle pages
       for (let i = startPage; i <= endPage; i++) {
         if (i > 1 && i < pages) {
           pageNumbers.push(i);
         }
       }
-      
+
       // Add ellipsis after middle pages if needed
       if (endPage < pages - 1) {
         pageNumbers.push('ellipsis-end');
       }
-      
+
       // Always show last page if more than 1 page
       if (pages > 1) {
         pageNumbers.push(pages);
       }
     }
-    
+
     return pageNumbers;
   };
 
   const pageNumbers = generatePageNumbers();
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+    <div className={`flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6`}>
       {/* Mobile pagination */}
       <div className="flex-1 flex justify-between sm:hidden">
         <Button
@@ -272,36 +270,40 @@ const Pagination = ({ pagination, onPageChange, t }) => {
 
       {/* Desktop pagination */}
       <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        {true && (
+          <div>
+            <p className="text-sm text-gray-700">
+              {t ? t('showing', 'Showing') : 'Showing'}{' '}
+              <span className="font-medium">
+                {total === 0 ? 0 : (page - 1) * limit + 1}
+              </span>{' '}
+              {t ? t('to', 'to') : 'to'}{' '}
+              <span className="font-medium">
+                {Math.min(page * limit, total)}
+              </span>{' '}
+              {t ? t('of', 'of') : 'of'}{' '}
+              <span className="font-medium">{total}</span>{' '}
+              {t ? t('results', 'results') : 'results'}
+            </p>
+          </div>
+        )}
+
         <div>
-          <p className="text-sm text-gray-700">
-            {t ? t('showing', 'Showing') : 'Showing'}{' '}
-            <span className="font-medium">
-              {total === 0 ? 0 : (page - 1) * limit + 1}
-            </span>{' '}
-            {t ? t('to', 'to') : 'to'}{' '}
-            <span className="font-medium">
-              {Math.min(page * limit, total)}
-            </span>{' '}
-            {t ? t('of', 'of') : 'of'}{' '}
-            <span className="font-medium">{total}</span>{' '}
-            {t ? t('results', 'results') : 'results'}
-          </p>
-        </div>
-        
-        <div>
-          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label={t('pagination')}>
+          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label={t ? t('pagination', 'Pagination') : 'Pagination'}>
             {/* First page button */}
-            <Button
-              onClick={() => onPageChange(1)}
-              disabled={page === 1}
-              variant="outline"
-              size="sm"
-              className="rounded-l-md rounded-r-none border-r-0"
-              title={t ? t('firstPage', 'First page') : 'First page'}
-            >
-              <span className="sr-only">First</span>
-              <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
-            </Button>
+            {showFirstLast && (
+              <Button
+                onClick={() => onPageChange(1)}
+                disabled={page === 1}
+                variant="outline"
+                size="sm"
+                className="rounded-l-md rounded-r-none border-r-0"
+                title={t ? t('firstPage', 'First page') : 'First page'}
+              >
+                <span className="sr-only">First</span>
+                <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            )}
 
             {/* Previous page button */}
             <Button
@@ -309,13 +311,13 @@ const Pagination = ({ pagination, onPageChange, t }) => {
               disabled={page === 1}
               variant="outline"
               size="sm"
-              className="rounded-none border-r-0"
+              className={`${showFirstLast ? 'rounded-none border-r-0' : 'rounded-l-md rounded-r-none border-r-0'}`}
               title={t ? t('previousPage', 'Previous page') : 'Previous page'}
             >
               <span className="sr-only">Previous</span>
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
-            
+
             {/* Page numbers */}
             {pageNumbers.map((pageNum, index) => {
               if (typeof pageNum === 'string' && pageNum.startsWith('ellipsis')) {
@@ -328,7 +330,7 @@ const Pagination = ({ pagination, onPageChange, t }) => {
                   </span>
                 );
               }
-              
+
               return (
                 <Button
                   key={pageNum}
@@ -349,7 +351,7 @@ const Pagination = ({ pagination, onPageChange, t }) => {
               disabled={page >= pages}
               variant="outline"
               size="sm"
-              className="rounded-none border-r-0"
+              className={`${showFirstLast ? 'rounded-none border-r-0' : 'rounded-r-md rounded-l-none'}`}
               title={t ? t('nextPage', 'Next page') : 'Next page'}
             >
               <span className="sr-only">Next</span>
@@ -357,17 +359,19 @@ const Pagination = ({ pagination, onPageChange, t }) => {
             </Button>
 
             {/* Last page button */}
-            <Button
-              onClick={() => onPageChange(pages)}
-              disabled={page >= pages}
-              variant="outline"
-              size="sm"
-              className="rounded-r-md rounded-l-none"
-              title={`${t ? t('lastPage', 'Last page') : 'Last page'} (${pages})`}
-            >
-              <span className="sr-only">Last</span>
-              <ChevronsRight className="h-4 w-4" aria-hidden="true" />
-            </Button>
+            {showFirstLast && (
+              <Button
+                onClick={() => onPageChange(pages)}
+                disabled={page >= pages}
+                variant="outline"
+                size="sm"
+                className="rounded-r-md rounded-l-none"
+                title={`${t ? t('lastPage', 'Last page') : 'Last page'} (${pages})`}
+              >
+                <span className="sr-only">Last</span>
+                <ChevronsRight className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            )}
           </nav>
         </div>
       </div>

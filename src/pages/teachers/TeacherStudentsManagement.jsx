@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, ChevronDown, X, Users, Edit2, User } from 'lucide-react';
+import { Search, Download, ChevronDown, X, Users, Edit2, User, Plus } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../../components/ui/Button';
@@ -15,6 +15,7 @@ import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import EmptyState from '@/components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StudentEditModal from '../../components/students/StudentEditModal';
+import SidebarFilter from '../../components/ui/SidebarFilter';
 
 export default function TeacherStudentsManagement({ user }) {
   const { t } = useLanguage();
@@ -27,6 +28,7 @@ export default function TeacherStudentsManagement({ user }) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [schoolId, setSchoolId] = useState(null);
@@ -315,74 +317,97 @@ export default function TeacherStudentsManagement({ user }) {
                 {t('manageYourStudents', 'View and manage students in your classes')}
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              {/* Search */}
-              <div className="relative flex-1 w-full sm:max-w-md">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
+            {/* Filter Button - Responsive (works on all screen sizes) */}
+            <button
+              onClick={() => setShowMobileFilters(true)}
+              className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 sm:py-2 px-4 sm:px-3 rounded-lg shadow-lg flex items-center justify-center sm:justify-start gap-2 transition-all duration-200 active:scale-95 text-sm"
+              title={t('filters', 'Filters & Actions')}
+            >
+              <Search className="h-5 sm:h-4 w-5 sm:w-4" />
+              <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
+              <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
+              {(searchInput || selectedClassId !== 'all') && (
+                <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
+                  {(searchInput ? 1 : 0) + (selectedClassId !== 'all' ? 1 : 0)}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Mobile Filters Sidebar */}
+          <SidebarFilter
+            isOpen={showMobileFilters}
+            onClose={() => setShowMobileFilters(false)}
+            title={t('filters', 'Filters & Actions')}
+            subtitle={t('manageYourStudents', 'View and manage students in your classes')}
+            hasFilters={searchInput || selectedClassId !== 'all'}
+            onClearFilters={() => {
+              handleSearchChange('');
+              handleClassFilterChange('all');
+            }}
+            onApply={() => {}}
+            children={
+              <>
+                {/* Search Input */}
+                <div>
+                  <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('search', 'Search')}</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 text-blue-400" />
+                    </div>
+                    <input
+                      type="text"
+                      className="block w-full pl-10 pr-8 py-2.5 border border-gray-200 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm transition-colors"
+                      placeholder={t('searchStudents', 'Search students...')}
+                      value={searchInput}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                    />
+                    {searchInput && (
+                      <button
+                        onClick={() => handleSearchChange('')}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                        title={t('clearSearch', 'Clear search')}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <input
-                  type="text"
-                  className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  placeholder={t('searchStudents', 'Search students...')}
-                  value={searchInput}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                />
-                {searchInput && (
-                  <button
-                    onClick={() => handleSearchChange('')}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-              <div className='flex justify-center items-center gap-2'>
+
                 {/* Class Filter */}
                 {classes.length > 0 && (
-                  <div className="w-full sm:w-auto">
+                  <div>
+                    <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('selectClass', 'Class')}</label>
                     <Dropdown
                       value={selectedClassId}
                       onValueChange={handleClassFilterChange}
                       options={classDropdownOptions}
                       placeholder={t('selectClass', 'Select class...')}
-                      minWidth="min-w-[200px] sm:min-w-[250px]"
-                      className="w-full sm:w-auto"
+                      minWidth="w-full"
+                      triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
                     />
                   </div>
                 )}
-
-                {/* Export */}
-                <div className="relative">
-                  <Button
-                    onClick={() => setShowExportDropdown(!showExportDropdown)}
-                    variant="outline"
-                    disabled={students.length === 0}
+              </>
+            }
+            actionsContent={
+              <>
+                {/* Export Button */}
+                {students.length > 0 && (
+                  <button
+                    onClick={() => {
+                      handleExportExcel();
+                      setShowMobileFilters(false);
+                    }}
+                    className="w-full bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-medium py-2.5 px-3 rounded-lg flex items-center gap-2.5 transition-colors text-sm"
                   >
-                    <Download className="h-5 w-5 mr-2" />
-                    {t('export', 'Export')}
-                    <ChevronDown className="h-4 w-4 ml-1" />
-                  </Button>
-
-                  {showExportDropdown && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
-                      <div className="py-1">
-                        <button onClick={handleExportExcel} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
-                          {t('exportToExcel', 'Export to Excel')}
-                        </button>
-                        <button onClick={handleExportCSV} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
-                          {t('exportToCSV', 'Export to CSV')}
-                        </button>
-                        <button onClick={handleExportPDF} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
-                          {t('exportToPDF', 'Export to PDF')}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+                    <Download className="h-4 w-4 text-purple-500" />
+                    <span className="flex-1 text-left">{t('exportToExcel', 'Export to Excel')}</span>
+                  </button>
+                )}
+              </>
+            }
+          />
 
           {/* Table/Cards */}
           {studentsLoading ? (

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, MinusCircle, Edit2, Users, ChevronDown, Download, X, ArrowRightLeft, Eye, User } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, Users, Download, X, ArrowRightLeft, Eye } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -22,6 +22,7 @@ import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import EmptyState from '../../components/ui/EmptyState';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
+import SidebarFilter from '../../components/ui/SidebarFilter';
 
 /**
  * StudentsManagement Component
@@ -156,6 +157,7 @@ export default function StudentsManagement() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [dataFetched, setDataFetched] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
   const searchTimeoutRef = useRef(null);
@@ -1377,14 +1379,15 @@ export default function StudentsManagement() {
       )
     },
     {
-      key: 'status',
-      header: t('status', 'Status'),
+      key: 'academicYear',
+      header: t('academicYear', 'Academic Year'),
       render: (student) => (
         <Badge
-          color={student.isActive ? 'green' : 'gray'}
+          color='blue'
           variant="filled"
+          size='sm'
         >
-          {student.isActive ? t('active', 'Active') : t('inactive', 'Inactive')}
+          {student.academicYear}
         </Badge>
       )
     },
@@ -1394,35 +1397,35 @@ export default function StudentsManagement() {
       headerClassName: 'relative',
       cellClassName: 'text-left text-sm font-medium',
       render: (student) => (
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center gap-4">
           <button
             onClick={(e) => {
               e.stopPropagation();
               handleViewStudent(student);
             }}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            title={t('viewDetails', 'View Details')}
             disabled={loadingStudentDetails}
+            className="p-1.5 text-gray-500 hover:text-gray-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={t('viewDetails', 'View Details')}
+            aria-label={t('viewDetails', 'View Details')}
           >
             {loadingStudentDetails ? (
               <DynamicLoader type="spinner" size="sm" variant="primary" />
             ) : (
-              <Eye className="h-4 w-4" />
+              <Eye className="h-4 w-4 stroke-[1.5]" />
             )}
           </button>
-          <Button
+          <button
             onClick={(e) => {
               e.stopPropagation();
               handleEditStudent(student);
             }}
-            variant="ghost"
-            size="sm"
-            className="text-green-600 hover:text-green-900 hover:bg-green-50 hover:scale-110"
+            className="p-1.5 text-gray-500 hover:text-gray-900 transition-colors"
             title={t('editStudent', 'Edit student')}
+            aria-label={t('editStudent', 'Edit student')}
           >
-            <Edit2 className="h-4 w-4" />
-          </Button>
-          <Button
+            <Edit2 className="h-4 w-4 stroke-[1.5]" />
+          </button>
+          <button
             onClick={(e) => {
               e.stopPropagation();
               console.log('Transfer button clicked for student:', student);
@@ -1436,21 +1439,18 @@ export default function StudentsManagement() {
               setSelectedStudent(studentToTransfer);
               setShowTransferDialog(true);
             }}
-            variant="ghost"
-            size="sm"
-            className="text-green-600 hover:text-green-900 hover:bg-green-50 hover:scale-110"
+            className="p-1.5 text-gray-500 hover:text-gray-900 transition-colors"
             title={t('transferStudent', 'Transfer student to another class')}
+            aria-label={t('transferStudent', 'Transfer student to another class')}
           >
-            <ArrowRightLeft className="h-4 w-4" />
-          </Button>
-          <Button
+            <ArrowRightLeft className="h-4 w-4 stroke-[1.5]" />
+          </button>
+          <button
             onClick={(e) => {
               e.stopPropagation();
               console.log('Delete button clicked for student:', student);
-              // Make sure we have the student ID in the expected format
               const studentToDelete = {
                 ...student,
-                // Ensure we have all possible ID fields
                 id: student.id || student.student_id || student.user_id,
                 student_id: student.student_id || student.id || student.user_id,
                 user_id: student.user_id || student.id || student.student_id
@@ -1459,13 +1459,12 @@ export default function StudentsManagement() {
               setSelectedStudent(studentToDelete);
               setShowDeleteDialog(true);
             }}
-            variant="ghost"
-            size="sm"
-            className="text-red-600 hover:text-red-900 hover:bg-red-50 hover:scale-110"
+            className="p-1.5 text-gray-500 hover:text-gray-900 transition-colors"
             title={t('moveStudentToMaster', 'Move student to master class')}
+            aria-label={t('moveStudentToMaster', 'Move student to master class')}
           >
-            <MinusCircle className="h-4 w-4" />
-          </Button>
+            <MinusCircle className="h-4 w-4 stroke-[1.5]" />
+          </button>
         </div>
       )
     }
@@ -1536,14 +1535,30 @@ export default function StudentsManagement() {
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2 flex-wrap sm:space-x-2">
+            {/* Filter Button - Responsive (works on all screen sizes) */}
+            <button
+              onClick={() => setShowMobileFilters(true)}
+              className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 sm:py-2 px-4 sm:px-3 rounded-lg shadow-lg flex items-center justify-center sm:justify-start gap-2 transition-all duration-200 active:scale-95 text-sm"
+              title={t('filters', 'Filters & Actions')}
+            >
+              <Search className="h-5 sm:h-4 w-5 sm:w-4" />
+              <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
+              <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
+              {(localSearchTerm || selectedGradeLevel !== 'all' || selectedClassId !== 'all') && (
+                <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
+                  {(localSearchTerm ? 1 : 0) + (selectedGradeLevel !== 'all' ? 1 : 0) + (selectedClassId !== 'all' ? 1 : 0)}
+                </span>
+              )}
+            </button>
+
             {/* Select All / Deselect All Button */}
             {students.length > 0 && (
               <Button
                 onClick={handleSelectAll}
                 variant="outline"
                 size="default"
-                className="shadow-lg"
+                className="shadow-lg hidden sm:inline-flex"
                 disabled={selectingAll}
               >
                 {selectingAll ? (
@@ -1592,156 +1607,135 @@ export default function StudentsManagement() {
               </div>
             )}
 
-            {/* Export Dropdown */}
-            <div className="relative export-dropdown">
-              <Button
-                onClick={() => setShowExportDropdown(!showExportDropdown)}
-                variant="outline"
-                size="default"
-                className="shadow-lg"
-                disabled={students.length === 0}
-              >
-                <Download className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                <span className="text-xs sm:text-sm">{t('export', 'Export')}</span>
-                <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
-              </Button>
-
-              {showExportDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
-                  <div className="py-1">
-                    <button
-                      onClick={handleExportExcel}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                    >
-                      {t('exportToExcel')}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Add Student Button */}
-            <Button
-              onClick={handleAddStudentClick}
-              variant="primary"
-              size="default"
-              className="shadow-lg"
-            >
-              <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-              <span className="text-xs sm:text-sm">{t('addStudent')}</span>
-            </Button>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 flex-1 justify-between">
-            <div className="relative flex-1 max-w-md">
-              <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+
+        {/* Mobile Filters Sidebar */}
+        <SidebarFilter
+          isOpen={showMobileFilters}
+          onClose={() => setShowMobileFilters(false)}
+          title={t('filters', 'Filters & Actions')}
+          subtitle={t('manageStudentRecords', 'Manage your filters and actions')}
+          hasFilters={localSearchTerm || selectedGradeLevel !== 'all' || selectedClassId !== 'all'}
+          onClearFilters={() => {
+            handleSearchChange('');
+            setSelectedGradeLevel('all');
+            setSelectedClassId('all');
+            setPagination(prev => ({ ...prev, page: 1 }));
+          }}
+          onApply={() => {}}
+          children={
+            <>
+              {/* Search Input */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('search', 'Search')}</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-blue-400" />
+                  </div>
+                  <input
+                    type="text"
+                    className="block w-full pl-10 pr-8 py-2.5 border border-gray-200 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm transition-colors"
+                    placeholder={t('searchStudents', 'Search students by name or username...')}
+                    value={localSearchTerm}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                  />
+                  {localSearchTerm && (
+                    <button
+                      onClick={() => handleSearchChange('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                      title={t('clearSearch', 'Clear search')}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               </div>
-              <input
-                type="text"
-                className="block w-full pl-8 sm:pl-10 pr-8 sm:pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                placeholder={t('searchStudents', 'Search students by name, username, email, phone, or class...')}
-                value={localSearchTerm}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
-              {localSearchTerm && (
+
+              {/* Grade Level Filter */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('selectGradeLevel', 'Grade Level')}</label>
+                <Dropdown
+                  value={selectedGradeLevel}
+                  onValueChange={(value) => {
+                    setSelectedGradeLevel(value);
+                    setPagination(prev => ({ ...prev, page: 1 }));
+                  }}
+                  options={getGradeLevelOptions()}
+                  placeholder={t('chooseGradeLevel', 'Choose grade level...')}
+                  minWidth="w-full"
+                  triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
+                />
+              </div>
+
+              {/* Class Filter */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('selectClass', 'Class')}</label>
+                <Dropdown
+                  value={selectedClassId}
+                  onValueChange={(value) => {
+                    setSelectedClassId(value);
+                    setPagination(prev => ({ ...prev, page: 1 }));
+                  }}
+                  options={classDropdownOptions}
+                  placeholder={t('selectClass', 'Select class...')}
+                  minWidth="w-full"
+                  triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
+                />
+              </div>
+            </>
+          }
+          actionsContent={
+            <>
+              {/* Export Button */}
+              {students.length > 0 && (
                 <button
-                  onClick={() => handleSearchChange('')}
-                  className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                  title={t('clearSearch', 'Clear search')}
+                  onClick={() => {
+                    handleExportExcel();
+                    setShowMobileFilters(false);
+                  }}
+                  className="w-full bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-medium py-2.5 px-3 rounded-lg flex items-center gap-2.5 transition-colors text-sm"
                 >
-                  <X className="h-4 w-4" />
+                  <Download className="h-4 w-4 text-purple-500" />
+                  <span className="flex-1 text-left">{t('exportToExcel', 'Export to Excel')}</span>
                 </button>
               )}
-            </div>
 
-            {(
-              <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm">
-                {selectedGradeLevel !== 'all' && (
-                  <div className="flex items-center space-x-2 text-xs text-gray-500">
-                    {(() => {
-                      const gradeOptions = getGradeLevelOptions();
-                      const selectedGrade = gradeOptions.find(g => g.value === selectedGradeLevel);
-                      return (
-                        <>
-                          {selectedGrade && (
-                            <Badge color="blue" className="text-xs">
-                              {selectedGrade.label}
-                            </Badge>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                )}
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-700 font-medium">{t('selectGradeLevel', 'Grade Level')}:</span>
-                  <Dropdown
-                    value={selectedGradeLevel}
-                    onValueChange={(newValue) => {
-                      setSelectedGradeLevel(newValue);
-                    }}
-                    options={getGradeLevelOptions()}
-                    placeholder={t('chooseGradeLevel', 'Choose grade level...')}
-                    minWidth="min-w-[200px]"
-                    contentClassName="max-h-[200px] overflow-y-auto"
-                  />
-                </div>
-                {selectedClassId !== 'all' && (
-                  <div className="flex items-center space-x-2 text-xs text-gray-500">
-                    {(() => {
-                      const selectedClass = allClasses.find(c => c.classId.toString() === selectedClassId);
-                      return (
-                        <>
-                          {selectedClass && (
-                            <Badge color="orange" className="text-xs">
-                              {selectedClass.name}
-                            </Badge>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                )}
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-700 font-medium">{t('selectClass', 'Class')}:</span>
-                  <Dropdown
-                    value={selectedClassId}
-                    onValueChange={(newValue) => {
-                      setSelectedClassId(newValue);
-                    }}
-                    options={classDropdownOptions}
-                    placeholder={t('selectClass', 'ជ្រើសរើសថ្នាក់')}
-                    minWidth="min-w-[200px]"
-                    contentClassName="max-h-[200px] overflow-y-auto"
-                  />
-                </div>
-              </div>
-            )}
-
-          </div>
-        </div>
-
+              {/* Add Student Button */}
+              <button
+                onClick={() => {
+                  handleAddStudentClick();
+                  setShowMobileFilters(false);
+                }}
+                className="w-full bg-green-50 hover:bg-green-100 border border-green-200 text-green-900 font-medium py-2.5 px-3 rounded-lg flex items-center gap-2.5 transition-colors text-sm"
+              >
+                <Plus className="h-4 w-4 text-green-500" />
+                <span className="flex-1 text-left">{t('addStudent', 'Add Student')}</span>
+              </button>
+            </>
+          }
+        />
 
         {/* Students table - Show on all screen sizes */}
         {/* Only show student data if grade level is 'all' OR if there are classes for the selected grade level */}
         {selectedGradeLevel === 'all' || allClasses.length > 0 ? (
-          <Table
-            columns={tableColumns}
-            data={students}
-            emptyMessage={t('noStudentsFound', 'No students found')}
-            emptyIcon={Users}
-            emptyVariant='info'
-            emptyDescription={t('noStudentsFoundMatchingCriteria', 'No students found matching your criteria.')}
-            emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
-            onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
-            showPagination={true}
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            rowClassName="hover:bg-blue-50"
-            t={t}
-          />
+          <>
+            <Table
+              columns={tableColumns}
+              data={students}
+              emptyMessage={t('noStudentsFound', 'No students found')}
+              emptyIcon={Users}
+              emptyVariant='info'
+              emptyDescription={t('noStudentsFoundMatchingCriteria', 'No students found matching your criteria.')}
+              emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
+              onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
+              rowClassName="hover:bg-blue-50"
+              showPagination={students.length > 0}
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              t={t}
+            />
+          </>
         ) : (
           <EmptyState
             icon={Users}

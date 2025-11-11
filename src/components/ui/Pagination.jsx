@@ -77,7 +77,7 @@ const Pagination = ({
   }
 
   return (
-    <div className={`flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6 ${className}`}>
+    <div className={`flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 mt-3 sm:px-6 ${className}`}>
       {/* Mobile pagination */}
       <div className="flex-1 flex justify-between sm:hidden">
         <Button

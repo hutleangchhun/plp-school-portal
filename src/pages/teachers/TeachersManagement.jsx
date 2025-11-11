@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Search, Plus, MinusCircle, Edit2, Users, ChevronDown, Download, X } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, Users, Download, X } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -21,6 +21,7 @@ import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import Modal from '../../components/ui/Modal';
 import SelectedCard from '../../components/ui/SelectedCard';
 import Dropdown from '../../components/ui/Dropdown';
+import SidebarFilter from '../../components/ui/SidebarFilter';
 
 export default function TeachersManagement() {
   const { t } = useLanguage();
@@ -96,6 +97,7 @@ export default function TeachersManagement() {
   const [dataFetched, setDataFetched] = useState(false);
   const [selectingAll, setSelectingAll] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
   const searchTimeoutRef = useRef(null);
@@ -239,19 +241,20 @@ export default function TeachersManagement() {
         id: teacher.teacherId,
         teacherId: teacher.teacherId,
         userId: teacher.userId,
-        username: teacher.user?.username || 'N/A',
+        username: teacher.user?.username || '',
         firstName: teacher.user?.first_name || '',
         lastName: teacher.user?.last_name || '',
         name: `${teacher.user?.first_name || ''} ${teacher.user?.last_name || ''}`.trim(),
-        email: teacher.user?.email || 'N/A',
+        email: teacher.user?.email || '',
         phone: teacher.user?.phone || '',
         schoolId: teacher.schoolId,
-        schoolName: teacher.school?.name || 'N/A',
+        schoolName: teacher.school?.name || '',
         hireDate: teacher.hire_date,
         gradeLevel: teacher.gradeLevel || null,
+        employmentType: teacher.employment_type || '',
         isDirector: teacher.isDirector,
         status: teacher.status,
-        isActive: teacher.status === 'ACTIVE',  
+        isActive: teacher.status === 'ACTIVE',
         classes: teacher.classes || []
       }));
 
@@ -728,29 +731,12 @@ export default function TeachersManagement() {
       )
     },
     {
-      key: 'role',
-      header: t('role', 'Role'),
+      key: 'employmentType',
+      header: t('employmentType', 'Employment Type'),
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (teacher) => (
-        <Badge
-          color={teacher.isDirector ? 'blue' : 'purple'}
-          variant="outline"
-        >
-          {teacher.isDirector ? t('director', 'Director') : t('teacher', 'Teacher')}
-        </Badge>
-      )
-    },
-    {
-      key: 'status',
-      header: t('status', 'Status'),
-      render: (teacher) => (
-        <Badge
-          color={teacher.isActive ? 'green' : 'gray'}
-          variant="filled"
-        >
-          {teacher.isActive ? t('active', 'Active') : t('inactive', 'Inactive')}
-        </Badge>
+        <p>{teacher.employmentType}</p>
       )
     },
     {
@@ -767,6 +753,7 @@ export default function TeachersManagement() {
                 color="blue"
                 variant="filled"
                 size="xs"
+                className='pt-1'
               >
                 {classItem.name || `${classItem.gradeLevel}${classItem.section}`}
               </Badge>
@@ -864,47 +851,63 @@ export default function TeachersManagement() {
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            {/* View Selected Teachers Button */}
+          <div className="flex items-center gap-2 flex-wrap sm:space-x-2">
+            {/* View Selected Teachers Button - Hidden on mobile */}
             {selectedTeachers.length > 0 && (
               <Button
                 onClick={() => setShowTeachersManagerOpen(true)}
                 variant="outline"
-                size="default"
-                className="shadow-lg"
+                size="sm"
+                className="hidden sm:inline-flex shadow-lg"
               >
-                <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                <span className="text-xs sm:text-sm">
-                  {t('viewSelected', 'View Selected')} ({selectedTeachers.length})
-                </span>
+                <Users className="h-4 w-4 mr-1.5" />
+                <span>{t('viewSelected', 'View Selected')} ({selectedTeachers.length})</span>
               </Button>
             )}
 
-            {/* Select All / Deselect All Button */}
+            {/* Filter Button - Responsive (works on all screen sizes) */}
+            <button
+              onClick={() => setShowMobileFilters(true)}
+              className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 sm:py-2 px-4 sm:px-3 rounded-lg shadow-lg flex items-center justify-center sm:justify-start gap-2 transition-all duration-200 active:scale-95 text-sm"
+              title={t('filters', 'Filters & Actions')}
+            >
+              <Search className="h-5 sm:h-4 w-5 sm:w-4" />
+              <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
+              <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
+              {(localSearchTerm || selectedGradeLevel) && (
+                <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
+                  {(localSearchTerm ? 1 : 0) + (selectedGradeLevel ? 1 : 0)}
+                </span>
+              )}
+            </button>
+
+            {/* Select All / Deselect All Button - Responsive */}
             {teachers.length > 0 && (
               <Button
                 onClick={handleSelectAll}
                 variant="outline"
-                size="default"
-                className="shadow-lg"
+                size="sm"
                 disabled={selectingAll}
+                className="hidden sm:inline-flex shadow-lg"
               >
                 {selectingAll ? (
-                  <DynamicLoader
-                    type="spinner"
-                    size="sm"
-                    variant="primary"
-                    message={t('selectingAll', 'Selecting...')}
-                  />
+                  <>
+                    <DynamicLoader
+                      type="spinner"
+                      size="sm"
+                      variant="primary"
+                    />
+                    <span className="ml-2">{t('selectingAll', 'Selecting...')}</span>
+                  </>
                 ) : selectedTeachers.length === teachers.length && teachers.length > 0 ? (
                   <>
-                    <X className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                    <span className="text-xs sm:text-sm">{t('deselectAll', 'Deselect All')}</span>
+                    <X className="h-4 w-4 mr-1.5" />
+                    <span>{t('deselectAll', 'Deselect All')}</span>
                   </>
                 ) : (
                   <>
-                    <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                    <span className="text-xs sm:text-sm">
+                    <Users className="h-4 w-4 mr-1.5" />
+                    <span>
                       {t('selectAll', 'Select All')}
                       {selectedTeachers.length > 0 && ` (${selectedTeachers.length}/${teachers.length})`}
                     </span>
@@ -912,107 +915,145 @@ export default function TeachersManagement() {
                 )}
               </Button>
             )}
-
-            <div className="relative export-dropdown">
-              <Button
-                onClick={() => setShowExportDropdown(!showExportDropdown)}
-                variant="outline"
-                size="default"
-                className="shadow-lg"
-                disabled={teachers.length === 0}
-              >
-                <Download className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                <span className="text-xs sm:text-sm">{t('export', 'Export')}</span>
-                <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
-              </Button>
-
-              {showExportDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
-                  <div className="py-1">
-                    <button
-                      onClick={handleExportExcel}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
-                    >
-                      {t('exportToExcel', 'Export to Excel')}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <Button
-              onClick={() => showSuccess(t('featureComingSoon', 'This feature is coming soon'))}
-              variant="primary"
-              size="default"
-              className="shadow-lg"
-            >
-              <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-              <span className="text-xs sm:text-sm">{t('addTeacher', 'Add Teacher')}</span>
-            </Button>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 flex-1 justify-between">
-            <div className="relative flex-1 max-w-md">
-              <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+        {/* Mobile Filters Sidebar */}
+        <SidebarFilter
+          isOpen={showMobileFilters}
+          onClose={() => setShowMobileFilters(false)}
+          title={t('filters', 'Filters & Actions')}
+          subtitle={t('manageTeacherRecords', 'Manage your filters and actions')}
+          hasFilters={localSearchTerm || selectedGradeLevel}
+          onClearFilters={() => {
+            handleSearchChange('');
+            setSelectedGradeLevel('');
+            setPagination(prev => ({ ...prev, page: 1 }));
+          }}
+          onApply={() => {}}
+          children={
+            <>
+              {/* Search Input */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('search', 'Search')}</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-blue-400" />
+                  </div>
+                  <input
+                    type="text"
+                    className="block w-full pl-10 pr-8 py-2.5 border border-gray-200 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm transition-colors"
+                    placeholder={t('searchTeachers', 'Search by name or username...')}
+                    value={localSearchTerm}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                  />
+                  {localSearchTerm && (
+                    <button
+                      onClick={() => handleSearchChange('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                      title={t('clearSearch', 'Clear search')}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               </div>
-              <input
-                type="text"
-                className="block w-full pl-8 sm:pl-10 pr-8 sm:pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                placeholder={t('searchTeachers', 'Search by first name, last name, full name, or username...')}
-                value={localSearchTerm}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
-              {localSearchTerm && (
-                <button
-                  onClick={() => handleSearchChange('')}
-                  className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                  title={t('clearSearch', 'Clear search')}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Dropdown
-                value={selectedGradeLevel}
-                onValueChange={(value) => {
-                  setSelectedGradeLevel(value);
-                  setPagination(prev => ({ ...prev, page: 1 }));
-                }}
-                options={[
-                  { value: '', label: t('allGrades', 'All Grades') },
-                  { value: '1', label: t('grade1', 'Grade 1') },
-                  { value: '2', label: t('grade2', 'Grade 2') },
-                  { value: '3', label: t('grade3', 'Grade 3') },
-                  { value: '4', label: t('grade4', 'Grade 4') },
-                  { value: '5', label: t('grade5', 'Grade 5') },
-                  { value: '6', label: t('grade6', 'Grade 6') }
-                ]}
-                placeholder={t('selectGrade', 'Select Grade')}
-                minWidth="min-w-[150px]"
-                triggerClassName="text-sm"
-              />
-              {(localSearchTerm || selectedGradeLevel) && (
-                <Button
-                  onClick={() => {
-                    handleSearchChange('');
-                    setSelectedGradeLevel('');
+
+              {/* Grade Level Filter */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('selectGrade', 'Grade Level')}</label>
+                <Dropdown
+                  value={selectedGradeLevel}
+                  onValueChange={(value) => {
+                    setSelectedGradeLevel(value);
                     setPagination(prev => ({ ...prev, page: 1 }));
                   }}
-                  variant="outline"
-                  size="sm"
-                  className="whitespace-nowrap"
+                  options={[
+                    { value: '', label: t('allGrades', 'All Grades') },
+                    { value: '1', label: t('grade1', 'Grade 1') },
+                    { value: '2', label: t('grade2', 'Grade 2') },
+                    { value: '3', label: t('grade3', 'Grade 3') },
+                    { value: '4', label: t('grade4', 'Grade 4') },
+                    { value: '5', label: t('grade5', 'Grade 5') },
+                    { value: '6', label: t('grade6', 'Grade 6') }
+                  ]}
+                  placeholder={t('selectGrade', 'Select Grade')}
+                  minWidth="w-full"
+                  triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
+                />
+              </div>
+            </>
+          }
+          actionsContent={
+            <>
+              {/* Select All / Deselect All Button */}
+              {teachers.length > 0 && (
+                <button
+                  onClick={() => {
+                    handleSelectAll();
+                    setShowMobileFilters(false);
+                  }}
+                  className="w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-900 font-medium py-2.5 px-3 rounded-lg flex items-center gap-2.5 transition-colors text-sm"
                 >
-                  <X className="h-4 w-4 mr-1" />
-                  {t('clearFilters', 'Clear Filters')}
-                </Button>
+                  <Users className="h-4 w-4 text-blue-500" />
+                  <span className="flex-1 text-left">
+                    {selectedTeachers.length === teachers.length && teachers.length > 0
+                      ? t('deselectAll', 'Deselect All')
+                      : t('selectAll', 'Select All')}
+                  </span>
+                  {selectedTeachers.length > 0 && (
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                      {selectedTeachers.length}/{teachers.length}
+                    </span>
+                  )}
+                </button>
               )}
-            </div>
-          </div>
-        </div>
+
+              {/* View Selected Teachers Button */}
+              {selectedTeachers.length > 0 && (
+                <button
+                  onClick={() => {
+                    setShowTeachersManagerOpen(true);
+                    setShowMobileFilters(false);
+                  }}
+                  className="w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 font-medium py-2.5 px-3 rounded-lg flex items-center gap-2.5 transition-colors text-sm"
+                >
+                  <Users className="h-4 w-4 text-blue-500" />
+                  <span className="flex-1 text-left">{t('viewSelected', 'View Selected')}</span>
+                  <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded font-bold">
+                    {selectedTeachers.length}
+                  </span>
+                </button>
+              )}
+
+              {/* Export Button */}
+              {teachers.length > 0 && (
+                <button
+                  onClick={() => {
+                    handleExportExcel();
+                    setShowMobileFilters(false);
+                  }}
+                  className="w-full bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-medium py-2.5 px-3 rounded-lg flex items-center gap-2.5 transition-colors text-sm"
+                >
+                  <Download className="h-4 w-4 text-purple-500" />
+                  <span className="flex-1 text-left">{t('exportToExcel', 'Export to Excel')}</span>
+                </button>
+              )}
+
+              {/* Add Teacher Button */}
+              <button
+                onClick={() => {
+                  showSuccess(t('featureComingSoon', 'This feature is coming soon'));
+                  setShowMobileFilters(false);
+                }}
+                className="w-full bg-green-50 hover:bg-green-100 border border-green-200 text-green-900 font-medium py-2.5 px-3 rounded-lg flex items-center gap-2.5 transition-colors text-sm"
+              >
+                <Plus className="h-4 w-4 text-green-500" />
+                <span className="flex-1 text-left">{t('addTeacher', 'Add Teacher')}</span>
+              </button>
+            </>
+          }
+        />
 
         <Table
           columns={tableColumns}
