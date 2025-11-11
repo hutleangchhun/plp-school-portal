@@ -1537,12 +1537,14 @@ export default function StudentsManagement() {
           </div>
           <div className="flex items-center gap-2 flex-wrap sm:space-x-2">
             {/* Filter Button - Responsive (works on all screen sizes) */}
-            <button
+            <Button
               onClick={() => setShowMobileFilters(true)}
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 sm:py-2 px-4 sm:px-3 rounded-lg shadow-lg flex items-center justify-center sm:justify-start gap-2 transition-all duration-200 active:scale-95 text-sm"
+              variant="primary"
+              size="sm"
+              className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 shadow-lg"
               title={t('filters', 'Filters & Actions')}
             >
-              <Search className="h-5 sm:h-4 w-5 sm:w-4" />
+              <Search className="h-4 w-4" />
               <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
               <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
               {(localSearchTerm || selectedGradeLevel !== 'all' || selectedClassId !== 'all') && (
@@ -1550,40 +1552,8 @@ export default function StudentsManagement() {
                   {(localSearchTerm ? 1 : 0) + (selectedGradeLevel !== 'all' ? 1 : 0) + (selectedClassId !== 'all' ? 1 : 0)}
                 </span>
               )}
-            </button>
+            </Button>
 
-            {/* Select All / Deselect All Button */}
-            {students.length > 0 && (
-              <Button
-                onClick={handleSelectAll}
-                variant="outline"
-                size="default"
-                className="shadow-lg hidden sm:inline-flex"
-                disabled={selectingAll}
-              >
-                {selectingAll ? (
-                  <DynamicLoader
-                    type="spinner"
-                    size="sm"
-                    variant="primary"
-                    message={t('selectingAll', 'Selecting...')}
-                  />
-                ) : selectedStudents.length === students.length && students.length > 0 ? (
-                  <>
-                    <X className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                    <span className="text-xs sm:text-sm">{t('deselectAll', 'Deselect All')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                    <span className="text-xs sm:text-sm">
-                      {t('selectAll', 'Select All')}
-                      {selectedStudents.length > 0 && ` (${selectedStudents.length}/${students.length})`}
-                    </span>
-                  </>
-                )}
-              </Button>
-            )}
 
             {/* Student Actions Floating Button - Show when students are selected */}
             {selectedStudents.length > 0 && (
@@ -1687,6 +1657,36 @@ export default function StudentsManagement() {
           }
           actionsContent={
             <>
+              {/* Select All / Deselect All Button */}
+              {students.length > 0 && (
+                <Button
+                  onClick={handleSelectAll}
+                  variant={selectedStudents.length > 0 ? "danger" : "primary"}
+                  size="sm"
+                  disabled={selectingAll}
+                  className="w-full flex items-center justify-center gap-2"
+                >
+                  {selectingAll ? (
+                    <DynamicLoader
+                      type="spinner"
+                      size="sm"
+                      variant="white"
+                      message={t('selectingAll', 'Selecting...')}
+                    />
+                  ) : selectedStudents.length === students.length && students.length > 0 ? (
+                    <>
+                      <X className="h-4 w-4" />
+                      <span>{t('deselectAll', 'Deselect All')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Users className="h-4 w-4" />
+                      <span>{t('selectAll', 'Select All')}</span>
+                    </>
+                  )}
+                </Button>
+              )}
+
               {/* Export Button */}
               {students.length > 0 && (
                 <button

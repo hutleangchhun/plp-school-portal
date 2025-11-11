@@ -866,12 +866,14 @@ export default function TeachersManagement() {
             )}
 
             {/* Filter Button - Responsive (works on all screen sizes) */}
-            <button
+            <Button
               onClick={() => setShowMobileFilters(true)}
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 sm:py-2 px-4 sm:px-3 rounded-lg shadow-lg flex items-center justify-center sm:justify-start gap-2 transition-all duration-200 active:scale-95 text-sm"
+              variant="primary"
+              size="sm"
+              className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 shadow-lg"
               title={t('filters', 'Filters & Actions')}
             >
-              <Search className="h-5 sm:h-4 w-5 sm:w-4" />
+              <Search className="h-4 w-4" />
               <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
               <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
               {(localSearchTerm || selectedGradeLevel) && (
@@ -879,42 +881,8 @@ export default function TeachersManagement() {
                   {(localSearchTerm ? 1 : 0) + (selectedGradeLevel ? 1 : 0)}
                 </span>
               )}
-            </button>
+            </Button>
 
-            {/* Select All / Deselect All Button - Responsive */}
-            {teachers.length > 0 && (
-              <Button
-                onClick={handleSelectAll}
-                variant="outline"
-                size="sm"
-                disabled={selectingAll}
-                className="hidden sm:inline-flex shadow-lg"
-              >
-                {selectingAll ? (
-                  <>
-                    <DynamicLoader
-                      type="spinner"
-                      size="sm"
-                      variant="primary"
-                    />
-                    <span className="ml-2">{t('selectingAll', 'Selecting...')}</span>
-                  </>
-                ) : selectedTeachers.length === teachers.length && teachers.length > 0 ? (
-                  <>
-                    <X className="h-4 w-4 mr-1.5" />
-                    <span>{t('deselectAll', 'Deselect All')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Users className="h-4 w-4 mr-1.5" />
-                    <span>
-                      {t('selectAll', 'Select All')}
-                      {selectedTeachers.length > 0 && ` (${selectedTeachers.length}/${teachers.length})`}
-                    </span>
-                  </>
-                )}
-              </Button>
-            )}
           </div>
         </div>
 
@@ -988,25 +956,35 @@ export default function TeachersManagement() {
             <>
               {/* Select All / Deselect All Button */}
               {teachers.length > 0 && (
-                <button
+                <Button
                   onClick={() => {
                     handleSelectAll();
                     setShowMobileFilters(false);
                   }}
-                  className="w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-900 font-medium py-2.5 px-3 rounded-lg flex items-center gap-2.5 transition-colors text-sm"
+                  variant={selectedTeachers.length > 0 ? "danger" : "primary"}
+                  size="sm"
+                  disabled={selectingAll}
+                  className="w-full flex items-center justify-center gap-2"
                 >
-                  <Users className="h-4 w-4 text-blue-500" />
-                  <span className="flex-1 text-left">
-                    {selectedTeachers.length === teachers.length && teachers.length > 0
-                      ? t('deselectAll', 'Deselect All')
-                      : t('selectAll', 'Select All')}
-                  </span>
-                  {selectedTeachers.length > 0 && (
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                      {selectedTeachers.length}/{teachers.length}
-                    </span>
+                  {selectingAll ? (
+                    <DynamicLoader
+                      type="spinner"
+                      size="sm"
+                      variant="white"
+                      message={t('selectingAll') || 'Selecting...'}
+                    />
+                  ) : selectedTeachers.length === teachers.length && teachers.length > 0 ? (
+                    <>
+                      <X className="h-4 w-4" />
+                      <span>{t('deselectAll', 'Deselect All')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Users className="h-4 w-4" />
+                      <span>{t('selectAll', 'Select All')}</span>
+                    </>
                   )}
-                </button>
+                </Button>
               )}
 
               {/* View Selected Teachers Button */}

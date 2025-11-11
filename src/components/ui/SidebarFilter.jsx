@@ -47,12 +47,15 @@ export default function SidebarFilter({
             <h2 className="text-xl font-bold">{title}</h2>
             <p className="text-blue-100 text-sm mt-1">{subtitle}</p>
           </div>
-          <button
+          <Button
             onClick={onClose}
-            className="p-2 text-blue-100 hover:text-white hover:bg-blue-700 rounded-lg transition-colors"
+            variant="ghost"
+            size="icon"
+            className="text-blue-100 hover:text-white hover:bg-blue-700"
+            title={t('close', 'Close')}
           >
             <X className="h-6 w-6" />
-          </button>
+          </Button>
         </div>
 
         {/* Content */}
@@ -92,26 +95,30 @@ export default function SidebarFilter({
         {/* Footer */}
         <div className="border-t border-gray-200 p-4 space-y-2">
           {hasFilters && (
-            <button
+            <Button
               onClick={() => {
                 onClearFilters();
                 onClose();
               }}
-              className="w-full bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
+              variant="danger"
+              size="sm"
+              className="w-full flex items-center justify-center gap-2"
             >
               <X className="h-4 w-4" />
               {t('clearFilters', 'Clear Filters')}
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             onClick={() => {
               if (onApply) onApply();
               onClose();
             }}
-            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-200 active:scale-95 text-sm"
+            variant="primary"
+            size="default"
+            className="w-full"
           >
             {t('apply', 'Apply Filters')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

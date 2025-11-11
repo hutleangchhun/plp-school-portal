@@ -17,11 +17,12 @@ import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dr
 import Dropdown from '../../components/ui/Dropdown';
 import DynamicLoader from '../../components/ui/DynamicLoader';
 import { formatDateKhmer } from '../../utils/formatters';
+import SidebarFilter from '../../components/ui/SidebarFilter';
 
 const StudentSelection = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { showError, showSuccess } = useToast();
+  const { showError } = useToast();
 
   // Track renders to detect infinite loops (development only)
   useRenderTracker('StudentSelection');
@@ -142,8 +143,8 @@ const StudentSelection = () => {
     gradeLevel: '',
     classId: 'any' // Filter by class assignment: 'any', 'null', or specific class ID
   });
-  const [selectingAll, setSelectingAll] = useState(false);
   const [showSelectedStudentsSidebar, setShowSelectedStudentsSidebar] = useState(false);
+  const [showFilterSidebar, setShowFilterSidebar] = useState(false);
 
   // Clear any persisted selected students on component mount (fresh session)
   useEffect(() => {
@@ -408,87 +409,6 @@ const StudentSelection = () => {
     // Page reset is handled by useEffect for filter changes
   };
 
-  // Handle select/unselect all students (with current filters)
-  const handleToggleSelectAllStudents = async () => {
-    if (selectingAll) return;
-
-    // If students are already selected, unselect all
-    if (actualSelectedStudents.length > 0) {
-      actualClearAll();
-      showSuccess(t('unselectedAllStudents', 'Unselected all students'));
-      return;
-    }
-
-    // Otherwise, select all students
-    try {
-      setSelectingAll(true);
-
-      // Build filter parameters to get all students matching current filters
-      const filterParams = {
-        search: debouncedSearch,
-        page: 1,
-        limit: 1000, // Get a large number to capture all students
-      };
-
-      // Add additional filters
-      if (filters.academicYear) filterParams.academicYear = filters.academicYear;
-      if (filters.gender) filterParams.gender = filters.gender;
-      if (filters.dateOfBirth) {
-        // Format date as YYYY-MM-DD for API
-        const year = filters.dateOfBirth.getFullYear();
-        const month = String(filters.dateOfBirth.getMonth() + 1).padStart(2, '0');
-        const day = String(filters.dateOfBirth.getDate()).padStart(2, '0');
-        filterParams.dateOfBirth = `${year}-${month}-${day}`;
-      }
-      if (filters.gradeLevel) filterParams.gradeLevel = filters.gradeLevel;
-
-      // Add class filter
-      if (filters.classId && filters.classId !== 'any') {
-        filterParams.classId = filters.classId; // 'null' for no class, or specific class ID
-      }
-
-      // Fetch all students matching current filters
-      const allStudentsResponse = await studentService.getStudentsBySchool(schoolId, filterParams);
-
-      if (allStudentsResponse && allStudentsResponse.success && allStudentsResponse.data) {
-        // Filter out students that are already selected OR have a class assigned
-        const studentsToSelect = allStudentsResponse.data.filter(student => {
-          const hasClass = !!(student.class?.name || student.class_name || student.class?.id || student.class_id);
-          return !actualIsSelected(student.id) && !hasClass;
-        });
-
-        // Select students in batches to avoid blocking the UI
-        let selectedCount = 0;
-        const batchSize = 50;
-
-        for (let i = 0; i < studentsToSelect.length; i += batchSize) {
-          const batch = studentsToSelect.slice(i, i + batchSize);
-
-          // Use setTimeout to yield control to the UI between batches
-          await new Promise(resolve => {
-            setTimeout(() => {
-              batch.forEach(student => {
-                actualHandleSelectStudent(student);
-                selectedCount++;
-              });
-              resolve();
-            }, 0);
-          });
-        }
-
-        showSuccess(
-          t('selectedAllStudents') ||
-          `Selected ${selectedCount} student${selectedCount !== 1 ? 's' : ''} (students without class)`
-        );
-      }
-    } catch (error) {
-      console.error('Error selecting all students:', error);
-      const errorMsg = error.message || t('errorSelectingAllStudents') || 'Failed to select all students';
-      showError(`${errorMsg} - ${t('checkConnection', 'Please check your connection and try again.')}`);
-    } finally {
-      setSelectingAll(false);
-    }
-  };
 
   // Check if all current page students (without class) are selected
   const areAllCurrentStudentsSelected = () => {
@@ -597,69 +517,77 @@ const StudentSelection = () => {
               </Button>
             </div>
           </div>
-          <div className="">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  placeholder={t('searchStudents') || 'ស្វែងរកសិស្ស...'}
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange({ ...filters, search: e.target.value })}
-                />
-              </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Filter Button - Responsive */}
+            <Button
+              onClick={() => setShowFilterSidebar(true)}
+              variant="primary"
+              size="sm"
+              className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 shadow-lg"
+              title={t('filters', 'Filters')}
+            >
+              <Search className="h-5 sm:h-4 w-5 sm:w-4" />
+              <span className="sm:hidden">{t('filters', 'Filters')}</span>
+              <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
+              {(filters.search || filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel !== '' || filters.classId !== 'any') && (
+                <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
+                  {(filters.search ? 1 : 0) + (filters.academicYear ? 1 : 0) + (filters.gender ? 1 : 0) + (filters.dateOfBirth ? 1 : 0) + (filters.gradeLevel !== '' ? 1 : 0) + (filters.classId !== 'any' ? 1 : 0)}
+                </span>
+              )}
+            </Button>
+          </div>
           
-              <div className="flex justify-end space-x-2">
-                <Button
-                  onClick={handleToggleSelectAllStudents}
-                  variant={actualSelectedStudents.length > 0 ? "danger" : "primary"}
-                  size="sm"
-                  disabled={selectingAll}
-                >
-                  {selectingAll ? (
-                    <DynamicLoader
-                      type="spinner"
-                      size="sm"
-                      variant="white"
-                      message={t('selectingAll') || 'Selecting...'}
-                    />
-                  ) : actualSelectedStudents.length > 0 ? (
-                    <>
-                      <X className="h-4 w-4 mr-1" />
-                      {t('unselectAll') || 'Unselect All'}
-                    </>
-                  ) : (
-                    <>
-                      <User className="h-4 w-4 mr-1" />
-                      {t('selectAllStudents') || 'Select All'}
-                    </>
+        </FadeInSection>
+
+        {/* Filters Sidebar */}
+        <SidebarFilter
+          isOpen={showFilterSidebar}
+          onClose={() => setShowFilterSidebar(false)}
+          title={t('filters', 'Filters & Search')}
+          subtitle={t('selectStudentsForAction') || 'Refine your search and filters'}
+          hasFilters={filters.search || filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel !== '' || filters.classId !== 'any'}
+          onClearFilters={() => {
+            handleFilterChange({
+              search: '',
+              academicYear: '',
+              gender: '',
+              dateOfBirth: null,
+              gradeLevel: '',
+              classId: 'any'
+            });
+          }}
+          onApply={() => {}}
+          children={
+            <>
+              {/* Search Input */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('search', 'Search')}</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-blue-400" />
+                  </div>
+                  <input
+                    type="text"
+                    className="block w-full pl-10 pr-8 py-2.5 border border-gray-200 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm transition-colors"
+                    placeholder={t('searchStudents', 'Search students by name or username...')}
+                    value={filters.search}
+                    onChange={(e) => handleFilterChange({ ...filters, search: e.target.value })}
+                  />
+                  {filters.search && (
+                    <button
+                      onClick={() => handleFilterChange({ ...filters, search: '' })}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                      title={t('clearSearch', 'Clear search')}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                   )}
-                </Button>
-                <Button
-                  onClick={() => handleFilterChange({
-                    search: '',
-                    academicYear: '',
-                    gender: '',
-                    dateOfBirth: null,
-                    gradeLevel: '',
-                    classId: 'any'
-                  })}
-                  variant="outline"
-                  size="sm"
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  {t('resetFilters') || 'កំណត់ឡើងវិញ'}
-                </Button>
+                </div>
               </div>
-            </div>
-            
-            {/* Additional Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="flex flex-col space-y-1">
-                <label className="text-sm font-medium text-gray-700">{t('classFilter', 'Class')}</label>
+
+              {/* Class Filter */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('classFilter', 'Class')}</label>
                 <Dropdown
                   value={filters.classId}
                   onValueChange={(value) => handleFilterChange({ ...filters, classId: value })}
@@ -672,22 +600,26 @@ const StudentSelection = () => {
                     }))
                   ]}
                   placeholder={t('selectClassFilter', 'Select Class')}
+                  minWidth="w-full"
+                  triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
                 />
               </div>
 
-              <div className="flex flex-col space-y-1">
-                <label className="text-sm font-medium text-gray-700">{t('academicYear', 'Academic Year')}</label>
+              {/* Academic Year Filter */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('academicYear', 'Academic Year')}</label>
                 <input
                   type="text"
                   placeholder="2024-2025"
                   value={filters.academicYear}
                   onChange={(e) => handleFilterChange({ ...filters, academicYear: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-gray-50 placeholder-gray-400 transition-colors"
                 />
               </div>
 
-              <div className="flex flex-col space-y-1">
-                <label className="text-sm font-medium text-gray-700">{t('gender', 'Gender')}</label>
+              {/* Gender Filter */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('gender', 'Gender')}</label>
                 <Dropdown
                   value={filters.gender}
                   onValueChange={(value) => handleFilterChange({ ...filters, gender: value })}
@@ -697,11 +629,14 @@ const StudentSelection = () => {
                     { value: 'FEMALE', label: t('female', 'Female') }
                   ]}
                   placeholder={t('selectGender', 'Select Gender')}
+                  minWidth="w-full"
+                  triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
                 />
               </div>
 
-              <div className="flex flex-col space-y-1">
-                <label className="text-sm font-medium text-gray-700">{t('dateOfBirth', 'Date of Birth')}</label>
+              {/* Date of Birth Filter */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('dateOfBirth', 'Date of Birth')}</label>
                 <DatePickerWithDropdowns
                   value={filters.dateOfBirth}
                   onChange={(date) => handleFilterChange({ ...filters, dateOfBirth: date })}
@@ -709,8 +644,9 @@ const StudentSelection = () => {
                 />
               </div>
 
-              <div className="flex flex-col space-y-1">
-                <label className="text-sm font-medium text-gray-700">{t('gradeLevel', 'Grade Level')}</label>
+              {/* Grade Level Filter */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('gradeLevel', 'Grade Level')}</label>
                 <Dropdown
                   value={filters.gradeLevel}
                   onValueChange={(value) => handleFilterChange({ ...filters, gradeLevel: value })}
@@ -724,12 +660,14 @@ const StudentSelection = () => {
                     { value: 6, label: t('grade6', 'Grade 6') }
                   ]}
                   placeholder={t('selectGrade', 'Select Grade')}
+                  minWidth="w-full"
+                  triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
                 />
               </div>
-            </div>
-          </div>
-          
-        </FadeInSection>
+            </>
+          }
+        />
+
         {/* Students List */}
         <FadeInSection delay={400}>
           <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
