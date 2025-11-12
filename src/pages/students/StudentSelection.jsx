@@ -494,7 +494,7 @@ const StudentSelection = () => {
 
   return (
     <PageTransition variant="slideUp" duration="duration-700">
-      <div className="p-6">
+      <div className="p-3 sm:p-4">
         <FadeInSection delay={100} className='bg-white shadow rounded-lg p-4 sm:p-6 transition-all duration-300 mb-4'>
           <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between">
             <div>

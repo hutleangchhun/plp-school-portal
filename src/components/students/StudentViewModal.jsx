@@ -64,8 +64,8 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
       isOpen={isOpen}
       onClose={onClose}
       title={t('studentDetails', 'Student Details')}
-      size="2xl"
-      height='xl'
+      size="full"
+      height='2xl'
       stickyFooter={true}
       footer={
         <div className="flex items-center justify-end">

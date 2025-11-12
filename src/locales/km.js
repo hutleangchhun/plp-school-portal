@@ -179,7 +179,7 @@ export const km = {
   addStudent: 'បន្ថែមសិស្ស',
   editStudent: 'កែប្រែសិស្ស',
   errorFetchingStudents: 'កំហុសក្នុងការទាញយកព័ត៌មានសិស្ស',
-  manageStudentRecords: 'គ្រប់គ្រងសិស្ស',
+  manageStudentRecords: 'គ្រប់គ្រងទិន្នន័យរបស់សិស្ស',
   promote: 'ដំឡើងថ្នាក់',
   promoteStudents: 'ដំឡើងថ្នាក់សិស្ស',
   promoteStudentsToNextGrade: 'ដំឡើងសិស្សទៅថ្នាក់បន្ទាប់',

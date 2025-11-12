@@ -1687,32 +1687,17 @@ export default function StudentsManagement() {
         {/* Header and search bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-4 sm:space-y-0">
           <div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center">
               <h1 className="text-2xl font-bold text-gray-900">{t('studentsManagement')}</h1>
             </div>
-            <div className="mt-1 space-y-1">
+            <div className="mt-2 space-y-1">
               <div className="flex items-center space-x-4">
                 <p className="text-sm text-gray-600">
-                  {t('manageStudentRecords')}
+                  {t('manageStudentRecords', 'Manage Student Records')}
                 </p>
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-600">
-                    {students.length} {students.length === 1 ? t('student', 'student') : t('students', 'students')}
-                    {localSearchTerm && allStudents.length !== students.length && (
-                      <span className="text-xs text-gray-500 ml-1">
-                        ({t('filteredFrom', 'filtered from')} {allStudents.length})
-                      </span>
-                    )}
-                    {selectedClassId !== 'all' && (() => {
-                      const selectedClass = classes.find(c => c.classId.toString() === selectedClassId);
-                      return selectedClass ? ` នៅ ${selectedClass.name}` : '';
-                    })()}
-                  </span>
-                </div>
               </div>
               <div>
-                
+
               </div>
             </div>
           </div>
@@ -1967,6 +1952,7 @@ export default function StudentsManagement() {
           setShowEditModal(false);
           setEditingStudent(null);
         }}
+        className="w-full"
         student={editingStudent}
         onStudentUpdated={handleStudentUpdated}
       />

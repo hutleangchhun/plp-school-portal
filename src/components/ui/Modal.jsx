@@ -25,7 +25,7 @@ export default function Modal({
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
     '2xl': 'max-w-7xl',
-    full: 'max-w-full'
+    full: 'w-11/12 sm:w-[95vw]'
   };
 
   const heightClasses = {
