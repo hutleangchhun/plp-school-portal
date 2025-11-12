@@ -12,10 +12,12 @@ import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { parentService } from '../../utils/api/services/parentService';
+import { bmiService } from '../../utils/api/services/bmiService';
 // Modular report components
 import { useReport1Data, Report1Preview } from './report1/indexReport1';
 import { useReport4Data, Report4Preview, exportReport4ToExcel } from './report4/indexReport4';
 import { useReport6Data, Report6Preview } from './report6/indexReport6';
+import { useReport8Data, Report8Preview } from './report8/indexReport8';
 import { useReport9Data, Report9Preview } from './report9/indexReport9';
 import { 
   BarChart, 
@@ -39,7 +41,7 @@ export default function Reports() {
   const [selectedReport, setSelectedReport] = useState('report1');
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [selectedMonth, setSelectedMonth] = useState('');
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedYear, setSelectedYear] = useState(`${new Date().getFullYear()}-${new Date().getFullYear() + 1}`);
   const [selectedSemesterStartDate, setSelectedSemesterStartDate] = useState(null);
   const [selectedSemesterEndDate, setSelectedSemesterEndDate] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -56,13 +58,13 @@ export default function Reports() {
     { value: 'report1', label: t('reportStudentNameInfo', 'បញ្ជីហៅឈ្មោះសិស្ស') },
     { value: 'report4', label: t('report4', 'បញ្ជីអវត្តមានសិស្ស') },
     { value: 'report6', label: t('report6', 'បញ្ជីឈ្មោះសិស្សមានពិការភាព') },
+    { value: 'report8', label: t('report8', 'បញ្ជីឈ្មោះសិស្សមានទិន្នន័យ BMI') },
     { value: 'report9', label: t('report9', 'បញ្ជីឈ្មោះសិស្សជាជនជាតិដើមភាគតិច') },
     
     // 🚧 Not Yet Implemented - Uncomment when ready
     // { value: 'report3', label: t('report3', 'បញ្ជីមធ្យមភាគសិស្ស') },
     // { value: 'report5', label: t('report5', 'បញ្ជីឈ្មោះសិស្សអាហារូបករណ៍') },
     // { value: 'report7', label: t('report7', 'បញ្ជីឈ្មោះសិស្សមានបញ្ហាសុខភាព') },
-    // { value: 'report8', label: t('report8', 'បញ្ជីឈ្មោះសិស្សមានបញ្ហាផ្ទាល់ខ្លួន') },
     // { value: 'report10', label: t('report10', 'បញ្ជីឈ្មោះសិស្សផ្លាស់ប្ដូរថ្នាក់') },
     // { value: 'report11', label: t('report11', 'បញ្ជីឈ្មោះសិស្សបោះបង់ការសិក្សារ') },
     // { value: 'report12', label: t('report12', 'សៀវភៅតាមដាន') },
@@ -93,13 +95,15 @@ export default function Reports() {
     { value: '12', label: t('december', 'ធ្នូ') }
   ];
 
-  // Year Options (2 years before, current year, and 2 years after)
+  // Academic Year Options (2 years before, current year, and 2 years after)
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 5 }, (_, i) => {
-    const year = currentYear - 2 + i; // Start from 2 years ago
+    const startYear = currentYear - 2 + i; // Start from 2 years ago
+    const endYear = startYear + 1;
+    const academicYear = `${startYear}-${endYear}`;
     return {
-      value: year.toString(),
-      label: year.toString()
+      value: academicYear,
+      label: academicYear
     };
   });
 
@@ -107,9 +111,9 @@ export default function Reports() {
     fetchReportData();
   }, [selectedReport, selectedPeriod, selectedMonth, selectedYear, selectedClass, selectedSemesterStartDate, selectedSemesterEndDate]);
 
-  // Fetch classes when report1, report3 or report4 is selected, or when grade level changes
+  // Fetch classes when report1, report3, report4, or report8 is selected, or when grade level changes
   useEffect(() => {
-    if (['report1', 'report3', 'report4'].includes(selectedReport)) {
+    if (['report1', 'report3', 'report4', 'report8'].includes(selectedReport)) {
       fetchSchoolClasses();
       // Reset class selection when grade level changes
       setSelectedClass('all');
@@ -134,6 +138,9 @@ export default function Reports() {
       // Add gradeLevel filter if not 'all'
       if (selectedGradeLevel && selectedGradeLevel !== 'all') {
         queryParams.gradeLevel = selectedGradeLevel;
+        console.log('🎯 Applying grade level filter to classes:', selectedGradeLevel);
+      } else {
+        console.log('📋 Fetching all classes (no grade level filter)');
       }
 
       const response = await classService.getBySchool(schoolId, queryParams);
@@ -173,7 +180,7 @@ export default function Reports() {
     const options = [
       { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
       ...Array.from([1, 2, 3, 4, 5, 6]).map(level => ({
-        value: level,
+        value: level.toString(), // Ensure value is string for consistency
         label: t(`Grade ${level}`, `Grade ${level}`)
       }))
     ];
@@ -380,6 +387,191 @@ export default function Reports() {
         console.log('📊 Sample student data:', studentsWithAttendance[0]);
         console.log('📊 Sample student class:', studentsWithAttendance[0]?.class);
         setReportData(studentsWithAttendance);
+      } else if (selectedReport === 'report8') {
+        // For report8 (BMI report) - fetch students with BMI history
+        console.log('📊 Fetching students with BMI history for report8');
+        
+        // Step 1: Fetch all students from school in batches (API limit is 100 per page)
+        let allBasicStudents = [];
+        let currentPage = 1;
+        let hasMorePages = true;
+        
+        while (hasMorePages) {
+          const fetchParams = {
+            page: currentPage,
+            limit: 100 // API maximum
+          };
+          
+          // Add class filter if a specific class is selected
+          if (selectedClass && selectedClass !== 'all') {
+            fetchParams.classId = selectedClass;
+          }
+          
+          // Note: Grade level filtering is handled by class filtering (cascade)
+          // Grade level filters classes, then class filters students
+          
+          console.log(`📄 Fetching page ${currentPage} with limit 100...`, fetchParams);
+          console.log(`🔍 BMI Report Filter Debug:`, {
+            selectedGradeLevel,
+            selectedClass,
+            selectedYear,
+            fetchParams
+          });
+          
+          const studentsResponse = await studentService.getStudentsBySchoolClasses(
+            schoolId,
+            fetchParams
+          );
+
+          if (studentsResponse.success) {
+            const pageStudents = studentsResponse.data || [];
+            allBasicStudents = [...allBasicStudents, ...pageStudents];
+            
+            console.log(`✅ Page ${currentPage}: Fetched ${pageStudents.length} students (Total: ${allBasicStudents.length})`);
+            
+            // Check if there are more pages
+            const pagination = studentsResponse.pagination;
+            if (pagination && currentPage < pagination.pages) {
+              currentPage++;
+            } else {
+              hasMorePages = false;
+            }
+          } else {
+            console.warn(`⚠️ Failed to fetch page ${currentPage}`);
+            hasMorePages = false;
+          }
+        }
+        
+        console.log(`✅ Fetched total of ${allBasicStudents.length} students from school`);
+
+        if (allBasicStudents.length > 0) {
+          // Step 2: For each student, fetch BMI history
+          const studentsWithBmiData = await Promise.all(
+            allBasicStudents.map(async (basicStudent) => {
+              try {
+                const userId = basicStudent.user?.id || basicStudent.userId;
+                const studentId = basicStudent.studentId || basicStudent.id;
+                
+                console.log(`🔍 Fetching BMI history for user ID: ${userId}, student ID: ${studentId}`);
+                
+                // Fetch BMI history for this user
+                const bmiParams = {};
+                if (selectedYear) {
+                  bmiParams.year = selectedYear;
+                }
+                bmiParams.limit = 1; // Get latest BMI record
+                
+                const bmiResponse = await bmiService.getBmiHistoryByUser(userId, bmiParams);
+                
+                let bmiData = null;
+                if (bmiResponse.success && bmiResponse.data && bmiResponse.data.length > 0) {
+                  bmiData = bmiResponse.data[0]; // Get the latest BMI record
+                  console.log(`✅ Got BMI data for ${basicStudent.firstName} ${basicStudent.lastName}:`, bmiData);
+                } else {
+                  console.log(`⚠️ No BMI data found for user ${userId}`);
+                }
+                
+                // Format gender to Khmer - check multiple possible locations
+                const rawGender = basicStudent.gender || 
+                                basicStudent.user?.gender || 
+                                basicStudent.sex ||
+                                basicStudent.user?.sex ||
+                                '';
+                
+                console.log(`🔍 Gender debug for student ${studentId}:`, {
+                  'basicStudent.gender': basicStudent.gender,
+                  'basicStudent.user?.gender': basicStudent.user?.gender,
+                  'basicStudent.sex': basicStudent.sex,
+                  'basicStudent.user?.sex': basicStudent.user?.sex,
+                  'rawGender': rawGender,
+                  'fullBasicStudent': basicStudent
+                });
+                
+                let formattedGender = '';
+                if (rawGender === 'M' || rawGender === 'MALE' || rawGender === 'male' || rawGender === 'ប្រុស') {
+                  formattedGender = 'ប្រុស';
+                } else if (rawGender === 'F' || rawGender === 'FEMALE' || rawGender === 'female' || rawGender === 'ស្រី') {
+                  formattedGender = 'ស្រី';
+                } else {
+                  formattedGender = rawGender || '';
+                }
+
+                // Combine student info with BMI data
+                return {
+                  ...basicStudent,
+                  userId: userId,
+                  studentId: studentId,
+                  firstName: basicStudent.firstName || basicStudent.first_name || '',
+                  lastName: basicStudent.lastName || basicStudent.last_name || '',
+                  khmerName: `${basicStudent.lastName || basicStudent.last_name || ''} ${basicStudent.firstName || basicStudent.first_name || ''}`.trim(),
+                  gender: formattedGender,
+                  dateOfBirth: basicStudent.dateOfBirth || basicStudent.date_of_birth,
+                  class: basicStudent.class,
+                  studentNumber: basicStudent.studentNumber || '',
+                  
+                  // BMI information
+                  height: bmiData?.height_cm || bmiData?.height || null,
+                  weight: bmiData?.weight_kg || bmiData?.weight || null,
+                  bmi: bmiData?.bmi || null,
+                  bmiCategory: bmiData?.bmi ? bmiService.utils.getBmiCategory(bmiData.bmi) : 'មិនបានកំណត់',
+                  recordDate: bmiData?.recorded_at || bmiData?.createdAt || bmiData?.created_at || null,
+                  academicYear: selectedYear || basicStudent.academicYear,
+                  gradeLevel: basicStudent.gradeLevel || basicStudent.class?.gradeLevel
+                };
+              } catch (error) {
+                console.warn(`❌ Failed to fetch BMI data for student:`, error);
+                
+                // Format gender to Khmer (same as success case)
+                const rawGender = basicStudent.gender || 
+                                basicStudent.user?.gender || 
+                                basicStudent.sex ||
+                                basicStudent.user?.sex ||
+                                '';
+                
+                console.log(`🔍 Gender debug (error case) for student ${basicStudent.studentId}:`, {
+                  'basicStudent.gender': basicStudent.gender,
+                  'basicStudent.user?.gender': basicStudent.user?.gender,
+                  'basicStudent.sex': basicStudent.sex,
+                  'basicStudent.user?.sex': basicStudent.user?.sex,
+                  'rawGender': rawGender
+                });
+                
+                let formattedGender = '';
+                if (rawGender === 'M' || rawGender === 'MALE' || rawGender === 'male' || rawGender === 'ប្រុស') {
+                  formattedGender = 'ប្រុស';
+                } else if (rawGender === 'F' || rawGender === 'FEMALE' || rawGender === 'female' || rawGender === 'ស្រី') {
+                  formattedGender = 'ស្រី';
+                } else {
+                  formattedGender = rawGender || '';
+                }
+                
+                return {
+                  ...basicStudent,
+                  firstName: basicStudent.firstName || basicStudent.first_name || '',
+                  lastName: basicStudent.lastName || basicStudent.last_name || '',
+                  khmerName: `${basicStudent.lastName || basicStudent.last_name || ''} ${basicStudent.firstName || basicStudent.first_name || ''}`.trim(),
+                  gender: formattedGender,
+                  dateOfBirth: basicStudent.dateOfBirth || basicStudent.date_of_birth,
+                  class: basicStudent.class,
+                  studentNumber: basicStudent.studentNumber || '',
+                  height: null,
+                  weight: null,
+                  bmi: null,
+                  bmiCategory: 'មិនបានកំណត់',
+                  recordDate: null
+                };
+              }
+            })
+          );
+          
+          console.log(`✅ Processed ${studentsWithBmiData.length} students with BMI data`);
+          console.log('📊 Sample student BMI data:', studentsWithBmiData[0]);
+          
+          setReportData(studentsWithBmiData);
+        } else {
+          console.warn('⚠️ No students found');
+          setReportData([]);
+        }
       } else if (['report1', 'report6', 'report9'].includes(selectedReport)) {
         // For report1, report6, report9 - fetch students with full details and parent information
         console.log(`📋 Fetching students with parent information for ${selectedReport}`);
@@ -882,6 +1074,10 @@ export default function Reports() {
         return <Report6Preview data={reportData} />;
       }
       
+      if (selectedReport === 'report8') {
+        return <Report8Preview data={reportData} />;
+      }
+      
       if (selectedReport === 'report9') {
         return <Report9Preview data={reportData} />;
       }
@@ -1213,8 +1409,8 @@ export default function Reports() {
               />
             </div>
 
-            {/* Step 2a: Grade Level Filter - Shown for report1, report3, and report4 (cascade filter) */}
-            {['report1', 'report3', 'report4'].includes(selectedReport) && allClasses.length > 0 && (
+            {/* Step 2a: Grade Level Filter - Shown for report1, report3, report4, and report8 (cascade filter) */}
+            {['report1', 'report3', 'report4', 'report8'].includes(selectedReport) && allClasses.length > 0 && (
               <div className="flex-shrink-0 min-w-[200px]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Filter className="h-4 w-4 inline mr-1" />
@@ -1236,8 +1432,8 @@ export default function Reports() {
               </div>
             )}
 
-            {/* Step 2b: Class Filter - Shown for report1, report3, and report4 (filtered by grade level) */}
-            {['report1', 'report3', 'report4'].includes(selectedReport) && (
+            {/* Step 2b: Class Filter - Shown for report1, report3, report4, and report8 (filtered by grade level) */}
+            {['report1', 'report3', 'report4', 'report8'].includes(selectedReport) && (
               <div className="flex-shrink-0 min-w-[200px]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Filter className="h-4 w-4 inline mr-1" />
@@ -1252,6 +1448,25 @@ export default function Reports() {
                   minWidth="w-full"
                   maxHeight="max-h-56"
                   itemsToShow={10}
+                />
+              </div>
+            )}
+
+            {/* Step 3a: Academic Year Filter - Shown for report8 */}
+            {selectedReport === 'report8' && (
+              <div className="flex-shrink-0 min-w-[200px]">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar className="h-4 w-4 inline mr-1" />
+                  {t('selectAcademicYear') || 'Academic Year'}
+                </label>
+                <Dropdown
+                  value={selectedYear}
+                  onValueChange={setSelectedYear}
+                  options={yearOptions}
+                  placeholder={t('chooseYear', 'Choose academic year...')}
+                  minWidth="w-full"
+                  maxHeight="max-h-40"
+                  itemsToShow={5}
                 />
               </div>
             )}
@@ -1343,8 +1558,8 @@ export default function Reports() {
               </>
             )}
 
-            {/* For other reports (not report1, report4, report6, report9): Show date filters normally */}
-            {!['report1', 'report4', 'report6', 'report9'].includes(selectedReport) && (
+            {/* For other reports (not report1, report4, report6, report8, report9): Show date filters normally */}
+            {!['report1', 'report4', 'report6', 'report8', 'report9'].includes(selectedReport) && (
               <>
                 {/* Time Period Dropdown */}
                 <div className="flex-shrink-0 min-w-[200px]">

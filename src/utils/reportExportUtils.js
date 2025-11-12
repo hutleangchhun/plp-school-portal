@@ -362,25 +362,71 @@ export const transformHealthIssuesReport = (rawData) => {
 };
 
 /**
- * Report 8: Students with Personal Issues (បញ្ជីឈ្មោះសិស្សមានបញ្ហាផ្ទាល់ខ្លួន)
- * Lists students with personal/social issues
+ * Report 8: BMI Report (បញ្ជីឈ្មោះសិស្សមានទិន្នន័យ BMI)
+ * Lists students with BMI data including height, weight, and BMI category
  */
-export const transformPersonalIssuesReport = (rawData) => {
+export const transformBmiReport = (rawData) => {
   if (!Array.isArray(rawData)) return [];
 
-  return rawData
-    .filter(student => student.personalIssues && student.personalIssues.length > 0)
-    .map((student, index) => ({
+  return rawData.map((student, index) => {
+    // Format gender
+    let gender = '';
+    const genderValue = student.gender || student.sex;
+    if (genderValue === 'M' || genderValue === 'MALE' || genderValue === 'male' || genderValue === 'ប្រុស') {
+      gender = 'ប្រុស';
+    } else if (genderValue === 'F' || genderValue === 'FEMALE' || genderValue === 'female' || genderValue === 'ស្រី') {
+      gender = 'ស្រី';
+    }
+
+    // Format date of birth
+    const dob = student.dateOfBirth || student.date_of_birth || student.dob;
+    let formattedDob = '';
+    if (dob) {
+      try {
+        const date = new Date(dob);
+        if (!isNaN(date.getTime())) {
+          formattedDob = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+        } else {
+          formattedDob = dob;
+        }
+      } catch (e) {
+        formattedDob = dob;
+      }
+    }
+
+    // Format record date
+    let formattedRecordDate = '';
+    if (student.recordDate) {
+      try {
+        const date = new Date(student.recordDate);
+        if (!isNaN(date.getTime())) {
+          formattedRecordDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+        } else {
+          formattedRecordDate = student.recordDate;
+        }
+      } catch (e) {
+        formattedRecordDate = student.recordDate;
+      }
+    }
+
+    return {
       no: index + 1,
-      studentId: student.id,
-      khmerName: student.khmerName,
-      englishName: student.englishName,
+      studentNumber: student.studentNumber || '',
+      studentId: student.studentId || student.id || '',
+      khmerName: student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || '',
+      englishName: `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
+      gender: gender,
+      dateOfBirth: formattedDob,
       class: student.class?.name || '',
-      issues: (student.personalIssues || []).join(', '),
-      severity: student.issuesSeverity || 'Low',
-      counsellorAssigned: student.counsellorId ? 'Yes' : 'No',
-      followUpDate: student.issuesFollowUpDate || ''
-    }));
+      gradeLevel: student.gradeLevel || student.class?.gradeLevel || '',
+      height: student.height ? `${student.height} cm` : '',
+      weight: student.weight ? `${student.weight} kg` : '',
+      bmi: student.bmi ? student.bmi.toFixed(1) : '',
+      bmiCategory: student.bmiCategory || 'មិនបានកំណត់',
+      recordDate: formattedRecordDate,
+      academicYear: student.academicYear || ''
+    };
+  });
 };
 
 /**
@@ -574,7 +620,7 @@ export const reportTransformers = {
   report5: transformNutritionSupportReport,
   report6: transformDisabilityReport,
   report7: transformHealthIssuesReport,
-  report8: transformPersonalIssuesReport,
+  report8: transformBmiReport,
   report9: transformIndigenousMinorityReport,
   report10: transformClassChangeReport,
   report11: transformDropoutReport,
@@ -655,14 +701,21 @@ export const getReportColumns = (reportType) => {
       { header: 'Medication', key: 'medication' }
     ],
     report8: [
-      { header: 'No.', key: 'no' },
-      { header: 'Student ID', key: 'studentId' },
-      { header: 'Khmer Name', key: 'khmerName' },
-      { header: 'English Name', key: 'englishName' },
-      { header: 'Class', key: 'class' },
-      { header: 'Issues', key: 'issues' },
-      { header: 'Severity', key: 'severity' },
-      { header: 'Follow-up Date', key: 'followUpDate' }
+      { header: 'ល.រ', key: 'no' },
+      { header: 'លេខសិស្ស', key: 'studentNumber' },
+      { header: 'អត្តលេខ', key: 'studentId' },
+      { header: 'គោត្តនាម និងនាម', key: 'khmerName' },
+      { header: 'ឈ្មោះអង់គ្លេស', key: 'englishName' },
+      { header: 'ភេទ', key: 'gender' },
+      { header: 'ថ្ងៃខែឆ្នាំកំណើត', key: 'dateOfBirth' },
+      { header: 'ថ្នាក់', key: 'class' },
+      { header: 'កម្រិតថ្នាក់', key: 'gradeLevel' },
+      { header: 'កម្ពស់', key: 'height' },
+      { header: 'ទម្ងន់', key: 'weight' },
+      { header: 'BMI', key: 'bmi' },
+      { header: 'ប្រភេទ BMI', key: 'bmiCategory' },
+      { header: 'កាលបរិច្ឆេទកត់ត្រា', key: 'recordDate' },
+      { header: 'ឆ្នាំសិក្សា', key: 'academicYear' }
     ],
     report9: [
       { header: 'ល.រ', key: 'no' },

@@ -158,6 +158,10 @@ const ENDPOINTS = {
     BY_CLASS: (classId) => `/exam-history/class/${classId}`,
     DETAILS: (examHistoryId) => `/exam-history/${examHistoryId}`,
   },
+  BMI: {
+    BASE: '/bmi',
+    BY_USER: (userId) => `/users/${userId}/bmi-history`,
+  },
 };
 
 // HTTP Status codes for consistent error handling
