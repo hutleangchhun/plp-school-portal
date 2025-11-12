@@ -409,19 +409,49 @@ export const transformBmiReport = (rawData) => {
       }
     }
 
+    // Calculate age from date of birth
+    let ageInYears = '';
+    let ageInYearsAndMonths = '';
+    let ageInMonths = '';
+    if (dob) {
+      try {
+        const birthDate = new Date(dob);
+        if (!isNaN(birthDate.getTime())) {
+          const today = new Date();
+          let years = today.getFullYear() - birthDate.getFullYear();
+          let months = today.getMonth() - birthDate.getMonth();
+          
+          if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
+            years--;
+            months += 12;
+          }
+          
+          if (today.getDate() < birthDate.getDate()) {
+            months--;
+          }
+          
+          ageInYears = years.toString();
+          ageInYearsAndMonths = months > 0 ? `${years} ឆ្នាំ ${months} ខែ` : `${years} ឆ្នាំ`;
+          ageInMonths = (years * 12 + months).toString();
+        }
+      } catch (e) {
+        // Keep empty if calculation fails
+      }
+    }
+
     return {
       no: index + 1,
-      studentNumber: student.studentNumber || '',
-      studentId: student.studentId || student.id || '',
       khmerName: student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || '',
-      englishName: `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
       gender: gender,
       dateOfBirth: formattedDob,
       class: student.class?.name || '',
-      gradeLevel: student.gradeLevel || student.class?.gradeLevel || '',
       height: student.height ? `${student.height} cm` : '',
       weight: student.weight ? `${student.weight} kg` : '',
       bmi: (student.bmi && typeof student.bmi === 'number') ? student.bmi.toFixed(1) : '',
+      age: student.age || '',
+      ageInYears: ageInYears,
+      ageInYearsAndMonths: ageInYearsAndMonths,
+      ageInMonths: ageInMonths,
       bmiCategory: student.bmiCategory || 'មិនបានកំណត់',
       recordDate: formattedRecordDate,
       academicYear: student.academicYear || ''
@@ -702,17 +732,17 @@ export const getReportColumns = (reportType) => {
     ],
     report8: [
       { header: 'ល.រ', key: 'no' },
-      { header: 'លេខសិស្ស', key: 'studentNumber' },
-      { header: 'អត្តលេខ', key: 'studentId' },
       { header: 'គោត្តនាម និងនាម', key: 'khmerName' },
-      { header: 'ឈ្មោះអង់គ្លេស', key: 'englishName' },
       { header: 'ភេទ', key: 'gender' },
       { header: 'ថ្ងៃខែឆ្នាំកំណើត', key: 'dateOfBirth' },
       { header: 'ថ្នាក់', key: 'class' },
-      { header: 'កម្រិតថ្នាក់', key: 'gradeLevel' },
       { header: 'កម្ពស់', key: 'height' },
       { header: 'ទម្ងន់', key: 'weight' },
       { header: 'BMI', key: 'bmi' },
+      { header: 'អាយុ', key: 'age' },
+      { header: 'អាយុជាឆ្នាំ', key: 'ageInYears' },
+      { header: 'អាយុជាឆ្នាំនិងខែ', key: 'ageInYearsAndMonths' },
+      { header: 'អាយុជាខែ', key: 'ageInMonths' },
       { header: 'ប្រភេទ BMI', key: 'bmiCategory' },
       { header: 'កាលបរិច្ឆេទកត់ត្រា', key: 'recordDate' },
       { header: 'ឆ្នាំសិក្សា', key: 'academicYear' }

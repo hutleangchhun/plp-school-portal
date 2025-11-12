@@ -484,7 +484,40 @@ export default function Reports() {
                   formattedGender = rawGender || '';
                 }
 
-                // Combine student info with BMI data
+                // Parse BMI as number for calculations
+                const bmiValue = bmiData?.bmi ? parseFloat(bmiData.bmi) : null;
+                
+                // Calculate age from date of birth
+                let ageInYears = null;
+                let ageInYearsAndMonths = '';
+                let ageInMonths = null;
+                const dob = basicStudent.dateOfBirth || basicStudent.date_of_birth;
+                if (dob) {
+                  try {
+                    const birthDate = new Date(dob);
+                    if (!isNaN(birthDate.getTime())) {
+                      const today = new Date();
+                      let years = today.getFullYear() - birthDate.getFullYear();
+                      let months = today.getMonth() - birthDate.getMonth();
+                      
+                      if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
+                        years--;
+                        months += 12;
+                      }
+                      
+                      if (today.getDate() < birthDate.getDate()) {
+                        months--;
+                      }
+                      
+                      ageInYears = years;
+                      ageInYearsAndMonths = months > 0 ? `${years} ឆ្នាំ ${months} ខែ` : `${years} ឆ្នាំ`;
+                      ageInMonths = years * 12 + months;
+                    }
+                  } catch (e) {
+                    // Keep null if calculation fails
+                  }
+                }
+                
                 return {
                   ...basicStudent,
                   userId: userId,
@@ -495,13 +528,17 @@ export default function Reports() {
                   gender: formattedGender,
                   dateOfBirth: basicStudent.dateOfBirth || basicStudent.date_of_birth,
                   class: basicStudent.class,
-                  studentNumber: basicStudent.studentNumber || '',
+                  studentNumber: basicStudent.studentNumber || basicStudent.student_number || basicStudent.number || '',
                   
                   // BMI information
                   height: bmiData?.height_cm || bmiData?.height || null,
                   weight: bmiData?.weight_kg || bmiData?.weight || null,
-                  bmi: bmiData?.bmi || null,
-                  bmiCategory: bmiData?.bmi ? bmiService.utils.getBmiCategory(bmiData.bmi) : 'មិនបានកំណត់',
+                  bmi: bmiValue,
+                  bmiCategory: bmiValue ? bmiService.utils.getBmiCategory(bmiValue) : 'មិនបានកំណត់',
+                  age: bmiData?.age || null,
+                  ageInYears: ageInYears,
+                  ageInYearsAndMonths: ageInYearsAndMonths,
+                  ageInMonths: ageInMonths,
                   recordDate: bmiData?.recorded_at || bmiData?.createdAt || bmiData?.created_at || null,
                   academicYear: selectedYear || basicStudent.academicYear,
                   gradeLevel: basicStudent.gradeLevel || basicStudent.class?.gradeLevel
@@ -535,11 +572,15 @@ export default function Reports() {
                   gender: formattedGender,
                   dateOfBirth: basicStudent.dateOfBirth || basicStudent.date_of_birth,
                   class: basicStudent.class,
-                  studentNumber: basicStudent.studentNumber || '',
+                  studentNumber: basicStudent.studentNumber || basicStudent.student_number || basicStudent.number || '',
                   height: null,
                   weight: null,
                   bmi: null,
                   bmiCategory: 'មិនបានកំណត់',
+                  age: null,
+                  ageInYears: null,
+                  ageInYearsAndMonths: '',
+                  ageInMonths: null,
                   recordDate: null
                 };
               }

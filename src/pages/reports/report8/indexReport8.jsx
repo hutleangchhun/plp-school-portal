@@ -115,10 +115,7 @@ export function Report8Preview({ data }) {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('no', 'លរ')}
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('studentNumber', 'លេខសិស្ស')}
+                  {t('no', '#')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('khmerName', 'ឈ្មោះខ្មែរ')}
@@ -139,6 +136,18 @@ export function Report8Preview({ data }) {
                   {t('bmi', 'BMI')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {t('age', 'អាយុ')}
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {t('ageInYears', 'អាយុជាឆ្នាំ')}
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {t('ageInYearsAndMonths', 'អាយុជាឆ្នាំនិងខែ')}
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {t('ageInMonths', 'អាយុជាខែ')}
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('bmiCategory', 'ប្រភេទ BMI')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -151,9 +160,6 @@ export function Report8Preview({ data }) {
                 <tr key={student.userId || index} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm text-gray-900">
                     {index + 1}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
-                    {student.studentNumber || ''}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
                     {student.khmerName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || ''}
@@ -172,6 +178,18 @@ export function Report8Preview({ data }) {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {student.bmi && typeof student.bmi === 'number' ? student.bmi.toFixed(1) : ''}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {student.age || ''}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {student.ageInYears || ''}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {student.ageInYearsAndMonths || ''}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {student.ageInMonths || ''}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
