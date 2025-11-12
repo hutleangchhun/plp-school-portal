@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LogIn, Eye, EyeOff, User, Lock, Search } from 'lucide-react';
+import { LogIn, Eye, EyeOff, User, Lock } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import LanguageSwitcher from '../../components/common/LanguageSwitcher';
@@ -89,41 +89,41 @@ export default function Login({ setUser }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex flex-col bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50 flex flex-col bg-gray-50">
       {/* Language Switcher at the top */}
       <div className="flex justify-end p-4">
         <LanguageSwitcher />
       </div>
       
       {/* Main content area */}
-      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
+      <div className="flex-1 flex items-center justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md sm:max-w-lg w-full bg-white rounded-xl shadow-lg border border-gray-200 p-6 sm:p-8 space-y-6 sm:space-y-8">
           {/* Logos Section */}
-          <div className="flex justify-center items-center space-x-8 mb-8">
+          <div className="flex justify-center items-center space-x-4 sm:space-x-8 mb-6 sm:mb-8">
             <img 
               src={moeysLogo} 
               alt={t('MoEYS Logo') || 'រូបសញ្ញាក្រសួងអប់រំ'} 
-              className="h-16 w-auto object-contain"
+              className="h-12 sm:h-16 w-auto object-contain"
             />
-            <div className="h-12 w-px bg-gray-300"></div>
+            <div className="h-8 sm:h-12 w-px bg-gray-300"></div>
             <img 
               src={plpLogo} 
               alt={t('PLP Logo') || 'រូបសញ្ញា PLP'} 
-              className="h-16 w-auto object-contain"
+              className="h-12 sm:h-16 w-auto object-contain"
             />
           </div>
           
-          <div>
-            <h2 className="mt-6 text-center  text-2xl sm:text-3xl font-extrabold text-gray-900">
+          <div className="text-center">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 mb-2">
               {t('schoolManagement', 'ប្រព័ន្ធគ្រប់គ្រងសាលារៀន')}
             </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               {t('signInToAccount', 'Sign in to your account')}
             </p>
           </div>
           
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
+          <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                   {t('username')}
@@ -183,7 +183,7 @@ export default function Login({ setUser }) {
                 type="submit"
                 disabled={loading}
                 variant="primary"
-                size="default"
+                size="sm"
                 fullWidth
                 className="relative group"
               >
@@ -193,29 +193,21 @@ export default function Login({ setUser }) {
                 {loading ? t('signingIn', 'Signing in...') : t('signIn', 'Sign in')}
               </Button>
             </div>
-
-            {/* School Lookup Button */}
-            <div className="mt-4">
+            <div className="">
               <Button
                 type="button"
                 onClick={() => navigate('/schools/lookup')}
-                variant="outline"
-                size="default"
+                variant="link"
+                size="sm"
                 fullWidth
-                className="relative group"
+                className="relative group mt-0"
               >
-                <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                  <Search className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
-                </span>
                 {t('ស្វែងរកគណនីសម្រាប់គ្រូ', 'Search Teacher Account')}
               </Button>
             </div>
           </form>
         </div>
       </div>
-      
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }
