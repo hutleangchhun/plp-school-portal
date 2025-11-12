@@ -712,40 +712,136 @@ export default function StudentsManagement() {
   );
 
   // Transfer Student Dialog
+  const [transferFilterGradeLevel, setTransferFilterGradeLevel] = useState('all');
+  const [transferFilteredClasses, setTransferFilteredClasses] = useState([]);
+  const [transferLoadingClasses, setTransferLoadingClasses] = useState(false);
+
+  // Fetch classes by grade level for transfer dialog
+  useEffect(() => {
+    if (!showTransferDialog || !schoolId) {
+      setTransferFilteredClasses([]);
+      return;
+    }
+
+    const fetchTransferClasses = async () => {
+      try {
+        setTransferLoadingClasses(true);
+
+        if (transferFilterGradeLevel === 'all') {
+          // Use all available classes if 'all' is selected
+          const availableClasses = classes.filter(cls => cls.classId.toString() !== selectedStudent?.class?.id?.toString());
+          setTransferFilteredClasses(availableClasses);
+        } else {
+          // Fetch classes for the selected grade level from API
+          const response = await classService.getBySchool(schoolId, {
+            gradeLevel: transferFilterGradeLevel,
+            limit: 100
+          });
+
+          if (response && response.classes && Array.isArray(response.classes)) {
+            // Filter out current student's class
+            const availableClasses = response.classes.filter(cls => cls.classId.toString() !== selectedStudent?.class?.id?.toString());
+            setTransferFilteredClasses(availableClasses);
+          } else {
+            setTransferFilteredClasses([]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching classes by grade level:', error);
+        setTransferFilteredClasses([]);
+      } finally {
+        setTransferLoadingClasses(false);
+      }
+    };
+
+    fetchTransferClasses();
+  }, [transferFilterGradeLevel, showTransferDialog, schoolId, selectedStudent?.class?.id, classes]);
+
+  // Reset transfer filter when dialog opens
+  useEffect(() => {
+    if (showTransferDialog) {
+      setTransferFilterGradeLevel('all');
+      const availableClasses = classes.filter(cls => cls.classId.toString() !== selectedStudent?.class?.id?.toString());
+      setTransferFilteredClasses(availableClasses);
+    }
+  }, [showTransferDialog, selectedStudent?.class?.id, classes]);
+
+  // Get unique grade levels for transfer dialog
+  const getTransferGradeLevelOptions = () => {
+    const uniqueLevels = new Set();
+    allClasses.forEach(cls => {
+      if (cls.gradeLevel) {
+        uniqueLevels.add(cls.gradeLevel);
+      }
+    });
+
+    return [
+      { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
+      ...Array.from(uniqueLevels)
+        .sort((a, b) => Number(a) - Number(b))
+        .map(level => ({
+          value: level,
+          label: t(`Grade ${level}`, `Grade ${level}`)
+        }))
+    ];
+  };
+
   const TransferDialog = () => (
     <ConfirmDialog
       isOpen={showTransferDialog}
       onClose={() => {
         setShowTransferDialog(false);
         setTransferTargetClassId('');
+        setTransferFilterGradeLevel('all');
       }}
       onConfirm={handleTransferStudent}
       title={t('transferStudent', 'Transfer Student')}
       message={
         <div className="space-y-4">
           <p>{t('selectTargetClass', 'Select the class to transfer the student to')}:</p>
-          <div className="space-y-2">
+          <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-700">
               {t('student', 'Student')}: <span className="font-bold">{selectedStudent?.name}</span>
             </label>
             <label className="block text-sm font-medium text-gray-700">
               {t('currentClass', 'Current Class')}: <span className="font-bold">{selectedStudent?.class?.name || 'N/A'}</span>
             </label>
-            <label className="block text-sm font-medium text-gray-700">
-              {t('targetClass', 'Target Class')}:
-            </label>
-            <Dropdown
-              value={transferTargetClassId}
-              onValueChange={setTransferTargetClassId}
-              options={classes
-                .filter(cls => cls.classId.toString() !== selectedStudent?.class?.id?.toString())
-                .map(cls => ({
+
+            {/* Grade Level Filter for Transfer */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('gradeLevel', 'Filter by Grade Level')}
+              </label>
+              <Dropdown
+                value={transferFilterGradeLevel}
+                onValueChange={setTransferFilterGradeLevel}
+                options={getTransferGradeLevelOptions()}
+                placeholder={t('chooseGradeLevel', 'Choose grade level...')}
+                minWidth="w-full"
+                disabled={transferLoadingClasses}
+                triggerClassName="text-sm"
+              />
+            </div>
+
+            {/* Target Class Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('targetClass', 'Target Class')}:
+              </label>
+              <Dropdown
+                value={transferTargetClassId}
+                onValueChange={setTransferTargetClassId}
+                options={transferFilteredClasses.map(cls => ({
                   value: cls.classId.toString(),
                   label: `${cls.name} - ${cls.academicYear}`
                 }))}
-              placeholder={t('selectClass', 'Select a class')}
-              minWidth="w-full"
-            />
+                placeholder={transferLoadingClasses ? (t('loadingClasses') || 'Loading classes...') : (transferFilteredClasses.length === 0 ? t('noClassesAvailable', 'No classes available') : t('selectClass', 'Select a class'))}
+                minWidth="w-full"
+                triggerClassName="text-sm"
+                disabled={transferLoadingClasses || transferFilteredClasses.length === 0}
+                maxHeight="max-h-[250px]"
+              />
+            </div>
           </div>
         </div>
       }
@@ -1203,19 +1299,19 @@ export default function StudentsManagement() {
   const handleViewStudent = async (student) => {
     try {
       setLoadingStudentDetails(true);
-      
+
       // Get user ID from student object (try multiple possible fields)
       const userId = student.userId || student.user_id || student.id;
       console.log('Fetching student details for user ID:', userId);
-      
+
       if (!userId) {
         throw new Error('No valid user ID found for student');
       }
-      
+
       // Fetch full student details by user ID
       const response = await studentService.getStudentById(userId);
       console.log('Student details response:', response);
-      
+
       if (response && response.success && response.data) {
         setViewingStudent(response.data);
         setShowViewModal(true);
@@ -1268,18 +1364,21 @@ export default function StudentsManagement() {
     });
   };
 
-  // Handle select all students on current page
-  const handleSelectAll = async () => {
+  // Handle select all students on current page only
+  const handleSelectAllCurrentPage = async () => {
     if (selectingAll) return;
 
-    // If all students are already selected, deselect all
+    // If all current page students are already selected, deselect all current page
     if (selectedStudents.length === students.length && students.length > 0) {
-      clearAll(); // Deselect all
-      showSuccess(t('deselectedAllStudents', 'All students deselected'));
+      // Only deselect students from current page
+      students.forEach(student => {
+        removeStudent(student.id);
+      });
+      showSuccess(t('deselectedAllStudents', 'All students on this page deselected'));
       return;
     }
 
-    // Otherwise, select all students with loading animation
+    // Otherwise, select all students on current page
     try {
       setSelectingAll(true);
 
@@ -1289,6 +1388,84 @@ export default function StudentsManagement() {
 
       for (let i = 0; i < students.length; i += batchSize) {
         const batch = students.slice(i, i + batchSize);
+
+        // Use setTimeout to yield control to the UI between batches
+        await new Promise(resolve => {
+          setTimeout(() => {
+            batch.forEach(student => {
+              if (!isSelected(student.id)) {
+                handleSelectStudent(student);
+                selectedCount++;
+              }
+            });
+            resolve();
+          }, 0);
+        });
+      }
+
+      if (selectedCount > 0) {
+        showSuccess(
+          t('selectedAllStudents') ||
+          `Selected ${selectedCount} student${selectedCount !== 1 ? 's' : ''}`
+        );
+      }
+    } catch (error) {
+      console.error('Error selecting all students:', error);
+      showError(t('errorSelectingAllStudents', 'Failed to select all students'));
+    } finally {
+      setSelectingAll(false);
+    }
+  };
+
+  // Handle select all filtered students (all pages) - for toolbar button
+  const handleSelectAllFiltered = async () => {
+    if (selectingAll) return;
+
+    // If all students are already selected, deselect all
+    if (selectedStudents.length === pagination.total && pagination.total > 0) {
+      clearAll(); // Deselect all
+      showSuccess(t('deselectedAllStudents', 'All students deselected'));
+      return;
+    }
+
+    // Otherwise, fetch and select all filtered students with loading animation
+    try {
+      setSelectingAll(true);
+
+      // Build request params with current filters (same as fetchStudents)
+      const requestParams = {
+        page: 1,
+        limit: pagination.total || 1000 // Fetch all results
+      };
+
+      // Add search parameter if provided
+      if (searchTerm && searchTerm.trim()) {
+        requestParams.search = searchTerm.trim();
+      }
+
+      // Add class filter if selected (server-side filtering)
+      if (selectedClassId && selectedClassId !== 'all') {
+        requestParams.classId = selectedClassId;
+      }
+
+      console.log('Fetching all filtered students with params:', requestParams);
+
+      // Fetch all students with current filters
+      const response = await studentService.getStudentsBySchoolClasses(schoolId, requestParams);
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch all students');
+      }
+
+      let allFilteredStudents = response.data || [];
+      console.log(`Fetched ${allFilteredStudents.length} total filtered students`);
+
+      // Select all fetched students in batches to avoid blocking the UI
+      const batchSize = 50;
+      let selectedCount = 0;
+
+      for (let i = 0; i < allFilteredStudents.length; i += batchSize) {
+        const batch = allFilteredStudents.slice(i, i + batchSize);
 
         // Use setTimeout to yield control to the UI between batches
         await new Promise(resolve => {
@@ -1330,9 +1507,10 @@ export default function StudentsManagement() {
             <input
               type="checkbox"
               checked={selectedStudents.length === students.length && students.length > 0}
-              onChange={handleSelectAll}
+              onChange={handleSelectAllCurrentPage}
               disabled={selectingAll}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              title={t('selectAllOnPage', 'Select all on this page')}
             />
           )}
         </div>
@@ -1505,9 +1683,9 @@ export default function StudentsManagement() {
   return (
     <div className="p-3 sm:p-4">
       {/* Search and filter */}
-      <div className=" p-4 sm:p-6">
+      <div className=" p-2 sm:p-6">
         {/* Header and search bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-4 sm:space-y-0">
           <div>
             <div className="flex items-center space-x-4">
               <h1 className="text-2xl font-bold text-gray-900">{t('studentsManagement')}</h1>
@@ -1533,51 +1711,95 @@ export default function StudentsManagement() {
                   </span>
                 </div>
               </div>
+              <div>
+                
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap sm:space-x-2">
-            {/* Filter Button - Responsive (works on all screen sizes) */}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap sm:space-x-2 mb-4">
+          {/* Add Student Button */}
+          <Button
+            onClick={() => {
+              handleAddStudentClick();
+              setShowMobileFilters(false);
+            }}
+            size="sm"
+            variant="success"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            <span className="flex-1 text-left">{t('addStudent', 'Add Student')}</span>
+          </Button>
+          {/* Filter Button - Responsive (works on all screen sizes) */}
+          <Button
+            onClick={() => setShowMobileFilters(true)}
+            variant="primary"
+            size="sm"
+            className=" flex items-center justify-center sm:justify-start gap-2 shadow-lg"
+            title={t('filters', 'Filters & Actions')}
+          >
+            <Filter className="h-4 w-4" />
+            <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
+            <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
+            {(localSearchTerm || selectedGradeLevel !== 'all' || selectedClassId !== 'all') && (
+              <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
+                {(localSearchTerm ? 1 : 0) + (selectedGradeLevel !== 'all' ? 1 : 0) + (selectedClassId !== 'all' ? 1 : 0)}
+              </span>
+            )}
+          </Button>
+
+          {/* Select All / Deselect All Button - Outside Sidebar (Selects all filtered students across all pages) */}
+          {students.length > 0 && (
             <Button
-              onClick={() => setShowMobileFilters(true)}
-              variant="primary"
+              onClick={handleSelectAllFiltered}
+              variant={selectedStudents.length > 0 ? "danger" : "primary"}
               size="sm"
-              className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 shadow-lg"
-              title={t('filters', 'Filters & Actions')}
+              disabled={selectingAll}
+              className=" flex items-center justify-center sm:justify-start gap-2"
+              title={selectedStudents.length > 0 ? t('deselectAllFiltered', 'Deselect all filtered students') : t('selectAllFiltered', 'Select all filtered students')}
             >
-              <Filter className="h-4 w-4" />
-              <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
-              <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
-              {(localSearchTerm || selectedGradeLevel !== 'all' || selectedClassId !== 'all') && (
-                <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
-                  {(localSearchTerm ? 1 : 0) + (selectedGradeLevel !== 'all' ? 1 : 0) + (selectedClassId !== 'all' ? 1 : 0)}
-                </span>
+              {selectingAll ? (
+                <DynamicLoader
+                  type="spinner"
+                  size="sm"
+                  variant={selectedStudents.length > 0 ? "white" : "primary"}
+                />
+              ) : selectedStudents.length > 0 ? (
+                <>
+                  <X className="h-4 w-4" />
+                  <span>{t('deselectAll', 'Deselect All')}</span>
+                </>
+              ) : (
+                <>
+                  <Users className="h-4 w-4" />
+                  <span>{t('selectAll', 'Select All')}</span>
+                </>
               )}
             </Button>
+          )}
 
+          {/* Student Actions Floating Button - Show when students are selected */}
+          {selectedStudents.length > 0 && (
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowStudentActionsModal(true)}
+                className="group relative inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                title={t('manageStudents', 'Manage Selected Students')}
+              >
+                <Users className="h-5 w-5" />
+                {/* Notification count badge */}
+                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md border-2 border-white">
+                  {selectedStudents.length > 99 ? '99+' : selectedStudents.length}
+                </div>
+                {/* Tooltip */}
+                <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
+                  {t('manageStudents', 'Manage Selected Students')}
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                </div>
+              </button>
+            </div>
+          )}
 
-            {/* Student Actions Floating Button - Show when students are selected */}
-            {selectedStudents.length > 0 && (
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setShowStudentActionsModal(true)}
-                  className="group relative inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300"
-                  title={t('manageStudents', 'Manage Selected Students')}
-                >
-                  <Users className="h-5 w-5" />
-                  {/* Notification count badge */}
-                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md border-2 border-white">
-                    {selectedStudents.length > 99 ? '99+' : selectedStudents.length}
-                  </div>
-                  {/* Tooltip */}
-                  <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
-                    {t('manageStudents', 'Manage Selected Students')}
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                  </div>
-                </button>
-              </div>
-            )}
-
-          </div>
         </div>
 
         {/* Mobile Filters Sidebar */}
@@ -1593,7 +1815,7 @@ export default function StudentsManagement() {
             setSelectedClassId('all');
             setPagination(prev => ({ ...prev, page: 1 }));
           }}
-          onApply={() => {}}
+          onApply={() => { }}
           children={
             <>
               {/* Search Input */}
@@ -1657,36 +1879,6 @@ export default function StudentsManagement() {
           }
           actionsContent={
             <>
-              {/* Select All / Deselect All Button */}
-              {students.length > 0 && (
-                <Button
-                  onClick={handleSelectAll}
-                  variant={selectedStudents.length > 0 ? "danger" : "primary"}
-                  size="sm"
-                  disabled={selectingAll}
-                  className="w-full flex items-center justify-center gap-2"
-                >
-                  {selectingAll ? (
-                    <DynamicLoader
-                      type="spinner"
-                      size="sm"
-                      variant="white"
-                      message={t('selectingAll', 'Selecting...')}
-                    />
-                  ) : selectedStudents.length === students.length && students.length > 0 ? (
-                    <>
-                      <X className="h-4 w-4" />
-                      <span>{t('deselectAll', 'Deselect All')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Users className="h-4 w-4" />
-                      <span>{t('selectAll', 'Select All')}</span>
-                    </>
-                  )}
-                </Button>
-              )}
-
               {/* Export Button */}
               {students.length > 0 && (
                 <button
@@ -1700,18 +1892,6 @@ export default function StudentsManagement() {
                   <span className="flex-1 text-left">{t('exportToExcel', 'Export to Excel')}</span>
                 </button>
               )}
-
-              {/* Add Student Button */}
-              <button
-                onClick={() => {
-                  handleAddStudentClick();
-                  setShowMobileFilters(false);
-                }}
-                className="w-full bg-green-50 hover:bg-green-100 border border-green-200 text-green-900 font-medium py-2.5 px-3 rounded-lg flex items-center gap-2.5 transition-colors text-sm"
-              >
-                <Plus className="h-4 w-4 text-green-500" />
-                <span className="flex-1 text-left">{t('addStudent', 'Add Student')}</span>
-              </button>
             </>
           }
         />
@@ -1767,6 +1947,7 @@ export default function StudentsManagement() {
         loading={isLoading('bulkTransfer') || isLoading('bulkDelete')}
         onRemoveStudent={removeStudent}
         onClearAll={clearAll}
+        schoolId={schoolId}
       />
 
       {/* View Student Modal */}

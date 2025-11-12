@@ -1,10 +1,12 @@
-import { useState } from 'react';
-import { User, ArrowRightLeft, MinusCircle, Trash2, Users, Folder, FolderOpen } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, ArrowRightLeft, MinusCircle, Trash2, Users } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Button } from '../ui/Button';
 import Modal from '../ui/Modal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import SelectedCard from '../ui/SelectedCard';
+import Dropdown from '../ui/Dropdown';
+import classService from '../../utils/api/services/classService';
 
 const StudentActionsModal = ({
   isOpen,
@@ -16,15 +18,86 @@ const StudentActionsModal = ({
   onRemove,
   loading = false,
   onRemoveStudent,
-  onClearAll
+  onClearAll,
+  schoolId // New prop to support cascading filters
 }) => {
   const { t } = useLanguage();
   const [targetClassId, setTargetClassId] = useState('');
   const [activeTab, setActiveTab] = useState('transfer'); // 'transfer' or 'remove'
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
+  const [filteredClasses, setFilteredClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
 
   // Get array of student data from selected IDs
   const studentsArray = selectedStudents.map(id => selectedStudentsData[id]).filter(Boolean);
+
+  // Fetch classes by grade level when grade level changes
+  useEffect(() => {
+    if (!isOpen || !schoolId) {
+      setFilteredClasses([]);
+      return;
+    }
+
+    const fetchClassesByGradeLevel = async () => {
+      try {
+        setLoadingClasses(true);
+
+        if (selectedGradeLevel === 'all') {
+          // Use all available classes if 'all' is selected
+          setFilteredClasses(classes);
+        } else {
+          // Fetch classes for the selected grade level from API
+          const response = await classService.getBySchool(schoolId, {
+            gradeLevel: selectedGradeLevel,
+            limit: 100
+          });
+
+          if (response && response.classes && Array.isArray(response.classes)) {
+            setFilteredClasses(response.classes);
+          } else {
+            setFilteredClasses([]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching classes by grade level:', error);
+        setFilteredClasses([]);
+      } finally {
+        setLoadingClasses(false);
+      }
+    };
+
+    fetchClassesByGradeLevel();
+  }, [selectedGradeLevel, isOpen, schoolId, classes]);
+
+  // Reset filters when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedGradeLevel('all');
+      setTargetClassId('');
+      setFilteredClasses(classes);
+    }
+  }, [isOpen, classes]);
+
+  // Get unique grade levels from all available classes
+  const getGradeLevelOptions = () => {
+    const uniqueLevels = new Set();
+    classes.forEach(cls => {
+      if (cls.gradeLevel) {
+        uniqueLevels.add(cls.gradeLevel);
+      }
+    });
+
+    return [
+      { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
+      ...Array.from(uniqueLevels)
+        .sort((a, b) => Number(a) - Number(b))
+        .map(level => ({
+          value: level,
+          label: t(`Grade ${level}`, `Grade ${level}`)
+        }))
+    ];
+  };
 
   const handleTransfer = () => {
     if (targetClassId) {
@@ -78,6 +151,7 @@ const StudentActionsModal = ({
               variant="outline"
               onClick={handleClose}
               disabled={loading}
+              size="sm"
             >
               {t('cancel', 'Cancel')}
             </Button>
@@ -86,6 +160,7 @@ const StudentActionsModal = ({
                 variant="primary"
                 onClick={handleTransfer}
                 disabled={!targetClassId || loading || studentsArray.length === 0}
+                size="sm"
               >
                 <ArrowRightLeft className="h-4 w-4 mr-2" />
                 {loading ? t('transferring', 'Transferring...') : t('transfer', 'Transfer')}
@@ -95,6 +170,7 @@ const StudentActionsModal = ({
                 variant="danger"
                 onClick={handleRemove}
                 disabled={loading || studentsArray.length === 0}
+                size="sm"
               >
                 <MinusCircle className="h-4 w-4 mr-2" />
                 {loading ? t('removing', 'Removing...') : t('remove', 'Remove')}
@@ -134,61 +210,39 @@ const StudentActionsModal = ({
 
         {/* Transfer Tab Content */}
         {activeTab === 'transfer' && (
-          <div className="space-y-4 space-x-4 flex items-center">
+          <div className="space-y-4">
+            {/* Grade Level Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('selectGradeLevel', 'Grade Level')}
+              </label>
+              <Dropdown
+                value={selectedGradeLevel}
+                onValueChange={setSelectedGradeLevel}
+                options={getGradeLevelOptions()}
+                placeholder={t('chooseGradeLevel', 'Choose grade level...')}
+                minWidth="w-full"
+                disabled={loadingClasses}
+              />
+            </div>
+
             {/* Target Class Selector */}
-            <div className='w-full'>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('selectTargetClass', 'Select Target Class')}
               </label>
-              <div className={`border border-gray-300 rounded-md ${classes.length > 3 ? 'max-h-[180px] overflow-y-auto' : ''}`}>
-                {classes.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500 text-sm">
-                    {t('loadingClasses') || 'Loading classes...'}
-                  </div>
-                ) : (
-                  <div className="divide-y divide-gray-200">
-                    {classes.map((cls) => {
-                      const classId = cls.classId.toString();
-                      const isSelected = targetClassId === classId;
-                      return (
-                        <div
-                          key={classId}
-                          onClick={() => setTargetClassId(isSelected ? '' : classId)}
-                          className={`flex items-center p-3 cursor-pointer transition-colors hover:bg-gray-50 ${
-                            isSelected ? 'bg-blue-50 border-blue-200' : ''
-                          }`}
-                        >
-                          <div className="flex items-center space-x-3 flex-1">
-                            {isSelected ? (
-                              <FolderOpen className="h-5 w-5 text-blue-600" />
-                            ) : (
-                              <Folder className="h-5 w-5 text-gray-500" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm font-medium text-gray-900 truncate">
-                                  {cls.name}
-                                </p>
-                                {isSelected && (
-                                  <div className="w-2 h-2 bg-blue-600 rounded-full ml-2"></div>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-500">
-                                ថ្នាក់ទី{cls.gradeLevel} • {cls.academicYear}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              {targetClassId && (
-                <p className="text-xs text-blue-600 mt-2 font-medium">
-                  {t('transferringCount', `Transferring ${studentsArray.length} student(s) to selected class`)}
-                </p>
-              )}
+              <Dropdown
+                value={targetClassId}
+                onValueChange={setTargetClassId}
+                options={filteredClasses.map(cls => ({
+                  value: cls.classId.toString(),
+                  label: `${cls.name} - ${cls.academicYear}`
+                }))}
+                placeholder={loadingClasses ? (t('loadingClasses') || 'Loading classes...') : (filteredClasses.length === 0 ? t('noClassesAvailable', 'No classes available') : t('selectTargetClass', 'Select Target Class'))}
+                minWidth="w-full"
+                disabled={loadingClasses || filteredClasses.length === 0}
+                maxHeight="max-h-[250px]"
+              />
             </div>
 
             {/* Summary */}

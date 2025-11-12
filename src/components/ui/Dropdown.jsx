@@ -40,10 +40,11 @@ export default function Dropdown({
       </DropdownMenu.Trigger>
       
       <DropdownMenu.Portal>
-        <DropdownMenu.Content 
-          className={`${widthClass} bg-white rounded-md shadow-lg border border-gray-200 p-1 z-[9999] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 ${maxHeight ? maxHeight + ' overflow-y-auto' : ''} ${contentClassName}`}
+        <DropdownMenu.Content
+          className={`${widthClass} bg-white rounded-md shadow-lg border border-gray-200 p-1 z-[9999] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 ${maxHeight ? maxHeight + ' overflow-y-scroll' : ''} ${contentClassName}`}
           align={align}
           sideOffset={sideOffset}
+          onWheel={(e) => e.stopPropagation()}
         >
           {options.map((option) => (
             <DropdownMenu.Item

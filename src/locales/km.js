@@ -212,6 +212,7 @@ export const km = {
   isKindergartener: 'បានឆ្លងមត្តេយ្យសិក្សា',
   age: 'អាយុ',
   healthInformation: 'ព័ត៌មានសុខភាព',
+  willBeTransferredTo: 'នឹងត្រូវបានផ្ទេរទៅ',
 
   // Teacher Management
   addTeacher: 'បន្ថែមគ្រូ',
