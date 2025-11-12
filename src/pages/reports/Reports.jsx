@@ -411,12 +411,7 @@ export default function Reports() {
           // Grade level filters classes, then class filters students
           
           console.log(`📄 Fetching page ${currentPage} with limit 100...`, fetchParams);
-          console.log(`🔍 BMI Report Filter Debug:`, {
-            selectedGradeLevel,
-            selectedClass,
-            selectedYear,
-            fetchParams
-          });
+          // Filter debug logging removed to prevent performance issues
           
           const studentsResponse = await studentService.getStudentsBySchoolClasses(
             schoolId,
@@ -478,14 +473,7 @@ export default function Reports() {
                                 basicStudent.user?.sex ||
                                 '';
                 
-                console.log(`🔍 Gender debug for student ${studentId}:`, {
-                  'basicStudent.gender': basicStudent.gender,
-                  'basicStudent.user?.gender': basicStudent.user?.gender,
-                  'basicStudent.sex': basicStudent.sex,
-                  'basicStudent.user?.sex': basicStudent.user?.sex,
-                  'rawGender': rawGender,
-                  'fullBasicStudent': basicStudent
-                });
+                // Debug logging removed to prevent performance issues
                 
                 let formattedGender = '';
                 if (rawGender === 'M' || rawGender === 'MALE' || rawGender === 'male' || rawGender === 'ប្រុស') {
@@ -528,13 +516,7 @@ export default function Reports() {
                                 basicStudent.user?.sex ||
                                 '';
                 
-                console.log(`🔍 Gender debug (error case) for student ${basicStudent.studentId}:`, {
-                  'basicStudent.gender': basicStudent.gender,
-                  'basicStudent.user?.gender': basicStudent.user?.gender,
-                  'basicStudent.sex': basicStudent.sex,
-                  'basicStudent.user?.sex': basicStudent.user?.sex,
-                  'rawGender': rawGender
-                });
+                // Debug logging removed to prevent performance issues
                 
                 let formattedGender = '';
                 if (rawGender === 'M' || rawGender === 'MALE' || rawGender === 'male' || rawGender === 'ប្រុស') {

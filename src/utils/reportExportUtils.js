@@ -421,7 +421,7 @@ export const transformBmiReport = (rawData) => {
       gradeLevel: student.gradeLevel || student.class?.gradeLevel || '',
       height: student.height ? `${student.height} cm` : '',
       weight: student.weight ? `${student.weight} kg` : '',
-      bmi: student.bmi ? student.bmi.toFixed(1) : '',
+      bmi: (student.bmi && typeof student.bmi === 'number') ? student.bmi.toFixed(1) : '',
       bmiCategory: student.bmiCategory || 'មិនបានកំណត់',
       recordDate: formattedRecordDate,
       academicYear: student.academicYear || ''
