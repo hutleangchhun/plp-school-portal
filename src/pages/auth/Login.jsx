@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { LogIn, Eye, EyeOff, User, Lock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { LogIn, Eye, EyeOff, User, Lock, Search } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import LanguageSwitcher from '../../components/common/LanguageSwitcher';
@@ -15,12 +16,27 @@ export default function Login({ setUser }) {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const { error, handleError, clearError, retry } = useErrorHandler();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Check for username in URL parameters and pre-fill
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const usernameParam = urlParams.get('username');
+    
+    if (usernameParam) {
+      setFormData(prev => ({
+        ...prev,
+        username: decodeURIComponent(usernameParam)
+      }));
+    }
+  }, [location.search]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,7 +89,7 @@ export default function Login({ setUser }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex flex-col bg-gray-50">
       {/* Language Switcher at the top */}
       <div className="flex justify-end p-4">
         <LanguageSwitcher />
@@ -175,6 +191,23 @@ export default function Login({ setUser }) {
                   <LogIn className="h-5 w-5 text-blue-300 group-hover:text-blue-200" />
                 </span>
                 {loading ? t('signingIn', 'Signing in...') : t('signIn', 'Sign in')}
+              </Button>
+            </div>
+
+            {/* School Lookup Button */}
+            <div className="mt-4">
+              <Button
+                type="button"
+                onClick={() => navigate('/schools/lookup')}
+                variant="outline"
+                size="default"
+                fullWidth
+                className="relative group"
+              >
+                <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                  <Search className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
+                </span>
+                {t('ស្វែងរកគណនីសម្រាប់គ្រូ', 'Search Teacher Account')}
               </Button>
             </div>
           </form>

@@ -112,10 +112,49 @@ export const schoolService = {
 
     async getSchoolsByDistrict(districtId) {
         try {
+            console.log('🌐 API: Getting schools by district ID:', districtId);
+            const endpoint = ENDPOINTS.SCHOOLS.SCHOOL_BY_DISTRICT(districtId);
+            console.log('🌐 API: Full endpoint URL:', endpoint);
+            
             const response = await handleApiResponse(() =>
-                apiClient_.get(ENDPOINTS.SCHOOLS.SCHOOL_BY_DISTRICT(districtId))
+                apiClient_.get(endpoint)
             );
-            console.log('Raw schools by district API response:', response);
+            
+            console.log('🌐 API: Raw response status:', response?.status);
+            console.log('🌐 API: Raw response headers:', response?.headers);
+            console.log('🌐 API: Raw schools by district API response:', response);
+            
+            if (response.data && Array.isArray(response.data)) {
+                console.log(`🌐 API: Found ${response.data.length} schools`);
+                const formattedData = response.data.map(school => {
+                    console.log('Raw school before formatting:', school);
+                    const formatted = schoolService.utils.formatSchoolData(school);
+                    console.log('Formatted school:', formatted);
+                    return formatted;
+                });
+                return { data: formattedData };
+            } else {
+                console.warn('🌐 API: No data or data is not an array:', response.data);
+                return { data: [] };
+            }
+        } catch (error) {
+            console.error('🌐 API: Error fetching schools by district:', error);
+            console.error('🌐 API: Error details:', {
+                message: error.message,
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data
+            });
+            throw error;
+        }
+    },
+
+    async getSchoolsByCommune(communeCode) {
+        try {
+            const response = await handleApiResponse(() =>
+                apiClient_.get(ENDPOINTS.SCHOOLS.SCHOOL_BY_COMMUNE(communeCode))
+            );
+            console.log('Raw schools by commune API response:', response);
             if (response.data && Array.isArray(response.data)) {
                 const formattedData = response.data.map(school => {
                     console.log('Raw school before formatting:', school);
@@ -127,7 +166,7 @@ export const schoolService = {
             }
             return { data: [] };
         } catch (error) {
-            console.error('Error fetching schools by district:', error);
+            console.error('Error fetching schools by commune:', error);
             throw error;
         }
     },

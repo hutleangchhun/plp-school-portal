@@ -1174,6 +1174,8 @@ export const km = {
   selectProjectType: 'ជ្រើសរើសប្រភេទគម្រោង',
   schoolType: 'ប្រភេទសាលារៀន',
   selectSchoolType: 'ជ្រើសរើសប្រភេទសាលារៀន',
+  selectSchool: 'ជ្រើសរើសសាលារៀន',
+  'ស្វែងរកគណនីសម្រាប់គ្រូ': 'ស្វែងរកគណនីសម្រាប់គ្រូ',
   schoolSettings: 'ការកំណត់សាលារៀន',
   updateSchoolInformation: 'កែប្រែព័ត៌មានសាលារៀន',
   schoolName: 'ឈ្មោះសាលារៀន',

@@ -1,0 +1,483 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../../contexts/LanguageContext';
+import locationService from '../../utils/api/services/locationService';
+import schoolService from '../../utils/api/services/schoolService';
+import { userService } from '../../utils/api/services/userService';
+import Dropdown from '../../components/ui/Dropdown';
+import Table from '../../components/ui/Table';
+import { SquarePen, Building2, Users, Phone, Mail, ExternalLink, User, GraduationCap } from 'lucide-react';
+
+const SchoolLookup = () => {
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+
+  // Location and school states
+  const [provinces, setProvinces] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [schools, setSchools] = useState([]);
+
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [selectedSchool, setSelectedSchool] = useState('');
+
+  const [loading, setLoading] = useState(false);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
+
+  // Teacher states
+  const [teachers, setTeachers] = useState([]);
+  const [teachersLoading, setTeachersLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('8'); // Default to teachers
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalTeachers, setTotalTeachers] = useState(0);
+  const [schoolInfo, setSchoolInfo] = useState(null);
+  const [showTeachers, setShowTeachers] = useState(false);
+
+  const limit = 10;
+
+  // Load provinces on component mount
+  useEffect(() => {
+    loadProvinces();
+  }, []);
+
+  const loadProvinces = async () => {
+    try {
+      setLoading(true);
+      const response = await locationService.getProvinces();
+      console.log('Provinces response:', response);
+
+      // Handle response format from locationService
+      if (response && (response.data || Array.isArray(response))) {
+        const provincesData = response.data || response;
+        console.log('Provinces data structure:', provincesData[0]); // Log first province structure
+        setProvinces(provincesData);
+      }
+    } catch (error) {
+      console.error('Error loading provinces:', error);
+      console.error('Province error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      alert(t('មិនអាចផ្ទុកបញ្ជីខេត្តបាន', 'Unable to load provinces'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadDistricts = async (provinceId) => {
+    try {
+      setLoading(true);
+
+      // Validate province ID
+      if (!provinceId || provinceId === '') {
+        throw new Error('Province ID is required');
+      }
+
+      // Find the selected province object to get more info
+      const selectedProvinceObj = provinces.find(p => p.id == provinceId);
+      console.log('Selected province object:', selectedProvinceObj);
+
+      // Ensure provinceId is a numeric string
+      const provinceIdStr = String(provinceId);
+      if (!/^\d+$/.test(provinceIdStr)) {
+        throw new Error(`Invalid province ID format: ${provinceIdStr}`);
+      }
+
+      console.log('Loading districts for province ID:', provinceIdStr);
+      console.log('API URL will be:', `/locations/districts?province_id=${provinceIdStr}`);
+      const response = await locationService.getDistrictsByProvince(provinceIdStr);
+      console.log('Districts response:', response);
+      console.log('Districts response type:', typeof response);
+      console.log('Districts response keys:', Object.keys(response || {}));
+
+      // Handle response format from locationService
+      if (response && (response.data || Array.isArray(response))) {
+        const districtsData = response.data || response;
+        console.log('Districts data:', districtsData);
+        console.log('Districts data length:', districtsData?.length);
+
+        // Log first district structure for debugging
+        if (districtsData && districtsData.length > 0) {
+          console.log('🔍 DEBUG: First district structure:', districtsData[0]);
+          console.log('🔍 DEBUG: District fields:', Object.keys(districtsData[0]));
+        }
+
+        if (Array.isArray(districtsData)) {
+          setDistricts(districtsData);
+          console.log(`✅ Loaded ${districtsData.length} districts`);
+        } else {
+          console.warn('Districts data is not an array:', districtsData);
+          setDistricts([]);
+        }
+      } else {
+        console.warn('No districts data in response');
+        setDistricts([]);
+      }
+
+      setSchools([]);
+      setSelectedDistrict('');
+    } catch (error) {
+      console.error('Error loading districts:', error);
+      console.error('District error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      alert('មិនអាចផ្ទុកបញ្ជីស្រុកបាន');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const loadSchools = async (districtCode) => {
+    if (!districtCode) {
+      setSchools([]);
+      return;
+    }
+
+    try {
+      setSchoolsLoading(true);
+
+      // Find the district object
+      const districtObj = districts.find(d => d.district_code === districtCode);
+      console.log('🔍 DEBUG: Found district object:', districtObj);
+
+      if (!districtObj) {
+        console.error('❌ District not found in districts list');
+        throw new Error('District not found in the districts list');
+      }
+
+      // Check all possible ID fields
+      const possibleIds = [
+        districtObj.district_id,
+        districtObj.id,
+        districtObj.districtId
+      ];
+
+      const districtId = possibleIds.find(id => id != null);
+      if (!districtId) {
+        console.error('❌ No valid district ID found in:', districtObj);
+        throw new Error('District ID is missing from district object');
+      }
+
+      console.log('🔍 DEBUG: Loading schools for district ID:', districtId);
+      const response = await schoolService.getSchoolsByDistrict(districtId);
+      console.log('Schools by district response:', response);
+
+      if (response && response.data) {
+        setSchools(response.data);
+        console.log(`✅ Found ${response.data.length} schools in district`);
+      } else {
+        console.warn('No schools data in response');
+        setSchools([]);
+      }
+    } catch (error) {
+      console.error('Error loading schools:', error);
+      alert('មានបញ្ហាក្នុងការផ្ទុកសាលារៀន');
+      setSchools([]);
+    } finally {
+      setSchoolsLoading(false);
+    }
+  };
+
+  const handleProvinceChange = (provinceId) => {
+    setSelectedProvince(provinceId);
+    setSelectedDistrict('');
+    setSelectedSchool('');
+    setShowTeachers(false);
+    setTeachers([]);
+
+    if (provinceId) {
+      loadDistricts(provinceId);
+    } else {
+      setDistricts([]);
+      setSchools([]);
+    }
+  };
+
+  const handleDistrictChange = (districtCode) => {
+    setSelectedDistrict(districtCode);
+    setSelectedSchool('');
+    setShowTeachers(false);
+    setTeachers([]);
+
+    if (districtCode) {
+      loadSchools(districtCode);
+    } else {
+      setSchools([]);
+    }
+  };
+
+  const handleSchoolChange = (schoolId) => {
+    setSelectedSchool(schoolId);
+
+    if (schoolId) {
+      const selectedSchoolObj = schools.find(s => s.id.toString() === schoolId);
+      if (selectedSchoolObj) {
+        setSchoolInfo(selectedSchoolObj);
+        setShowTeachers(true);
+        setCurrentPage(1);
+        loadTeachers(schoolId);
+      }
+    } else {
+      setShowTeachers(false);
+      setTeachers([]);
+      setSchoolInfo(null);
+    }
+  };
+
+  // Teacher-related functions
+  const loadTeachers = async (schoolId) => {
+    try {
+      setTeachersLoading(true);
+
+      const params = {
+        page: currentPage,
+        limit: limit,
+        roleId: selectedRole
+      };
+
+      const response = await userService.getPublicSchoolUsers(schoolId, params);
+      console.log('Teachers response:', response);
+
+      if (response && response.data) {
+        setTeachers(response.data);
+        setTotalPages(response.totalPages || 1);
+        setTotalTeachers(response.total || 0);
+
+        // Update school info if available
+        if (response.schoolInfo) {
+          setSchoolInfo({
+            id: response.schoolInfo.schoolId,
+            name: response.schoolInfo.name
+          });
+        }
+      } else {
+        setTeachers([]);
+        setTotalPages(1);
+        setTotalTeachers(0);
+      }
+    } catch (error) {
+      console.error('Error loading teachers:', error);
+      setTeachers([]);
+      alert(t('មានបញ្ហាក្នុងការផ្ទុកបញ្ជីគ្រូបង្រៀន', 'Error loading teachers'));
+    } finally {
+      setTeachersLoading(false);
+    }
+  };
+
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleRowClick = (teacher) => {
+    // Navigate to login page with username pre-filled
+    navigate(`/login?username=${encodeURIComponent(teacher.username)}`);
+  };
+
+  // Load teachers when page changes
+  useEffect(() => {
+    if (selectedSchool && showTeachers) {
+      loadTeachers(selectedSchool);
+    }
+  }, [currentPage, selectedSchool]);
+
+  // Define table columns for teachers
+  const teacherColumns = [
+    {
+      key: 'name',
+      header: t('name', 'Name'),
+      accessor: 'name',
+      render: (teacher) => (
+        <div className="font-medium text-gray-900">
+          {`${teacher.first_name || ''} ${teacher.last_name || ''}`.trim()}
+        </div>
+      )
+    },
+    {
+      key: 'username',
+      header: t('username', 'Username'),
+      accessor: 'username',
+      render: (teacher) => (
+        <span className="font-mono text-xs text-gray-600">
+          {teacher.username}
+        </span>
+      )
+    },
+    {
+      key: 'role',
+      header: t('role', 'Role'),
+      accessor: 'roleNameKh',
+      render: (teacher) => {
+        const isDirector = teacher.roleId === 8 && teacher.is_director === true;
+        const roleText = isDirector ? 'នាយក' : 'គ្រូបង្រៀន';
+        const bgColor = isDirector ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
+
+        return (
+          <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${bgColor}`}>
+            <span>{roleText}</span>
+          </span>
+        );
+      }
+    },
+  ];
+
+  // Pagination object for Table component
+  const pagination = {
+    page: currentPage,
+    pages: totalPages,
+    total: totalTeachers,
+    limit: limit
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="flex justify-center mb-6">
+            <div className="bg-gradient-to-r from-blue-500 to-green-500 p-4 rounded-full shadow-lg">
+              <Building2 className="h-8 w-8 text-white" />
+            </div>
+          </div>
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-900 mb-4">
+            ស្វែងរកគណនីសម្រាប់គ្រូ
+          </h1>
+          <p className="text-sm sm:text-lg text-gray-600 leading-relaxed">
+            កន្លែងស្វែងរកគណនីសម្រាប់គ្រូបង្រៀនប្រើប្រាស់នៅក្នុងប្រព័ន្ធគ្រប់គ្រងសាលារៀន
+          </p>
+          <div className="mt-6 h-1 w-24 bg-gradient-to-r from-blue-500 to-green-500 mx-auto rounded-full"></div>
+        </div>
+
+        {/* Filter Form */}
+        <div className=" p-8 mb-12 border border-gray-100 bg-white rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Province Selection */}
+            <div className="space-y-3">
+              <label className="flex items-center text-sm font-semibold text-gray-700">
+                {t('province', 'Province')} *
+              </label>
+              <Dropdown
+                value={selectedProvince}
+                onValueChange={handleProvinceChange}
+                options={provinces.map((province) => ({
+                  value: province.id.toString(),
+                  label: province.province_name_kh || province.province_name_en
+                }))}
+                placeholder={t('selectProvince', 'Select Province')}
+                disabled={loading}
+                className="w-full h-12 text-base"
+                minWidth="w-full"
+              />
+            </div>
+
+            {/* District Selection */}
+            <div className="space-y-3">
+              <label className="flex items-center text-sm font-semibold text-gray-700">
+                {t('district', 'District')} *
+              </label>
+              <Dropdown
+                value={selectedDistrict}
+                onValueChange={handleDistrictChange}
+                options={districts.map((district) => ({
+                  value: district.district_code,
+                  label: district.district_name_kh || district.district_name_en
+                }))}
+                placeholder={t('selectDistrict', 'Select District')}
+                disabled={loading || !selectedProvince}
+                className="w-full h-12 text-base"
+                minWidth="w-full"
+              />
+            </div>
+
+            {/* School Selection */}
+            <div className="space-y-3">
+              <label className="flex items-center text-sm font-semibold text-gray-700">
+                {t('school', 'School')} *
+              </label>
+              <Dropdown
+                value={selectedSchool}
+                onValueChange={handleSchoolChange}
+                options={schools.map((school) => ({
+                  value: school.id.toString(),
+                  label: school.name
+                }))}
+                placeholder={t('selectSchool', 'Select School')}
+                disabled={schoolsLoading || !selectedDistrict}
+                className="w-full h-12 text-base"
+                minWidth="w-full"
+              />
+            </div>
+          </div>
+          {/* Instructions Card */}
+          {!showTeachers && (
+            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-md p-8 border border-blue-100 mt-4">
+              <div className="">
+                <div className='flex justify-start gap-2 items-center '>
+                  <div className="bg-blue-600 p-2 rounded-md">
+                    <SquarePen className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-gray-800">
+                      របៀបប្រើប្រាស់
+                    </h3>
+                  </div>
+                </div>
+                <div className="p-3 space-y-3 text-gray-600 text-start">
+                  <ul className='list-disc pl-6 space-y-2 text-gray-700'>
+                    <li>ជ្រើសរើសខេត្ត</li>
+                    <li>ជ្រើសរើសស្រុក</li>
+                    <li>ជ្រើសរើសសាលារៀន</li>
+                    <li>មើលបញ្ជីគ្រូបង្រៀន</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Teachers Section */}
+          {showTeachers && schoolInfo && (
+            <div className="space-y-8 mt-4">
+              {/* Teachers Table */}
+              <div className="bg-white rounded-md overflow-hidden border border-gray-100">
+                <div className=" px-6 py-4 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <h3 className="text-base font-semibold text-gray-800">
+                        បញ្ជីគ្រូបង្រៀន
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+
+                <Table
+                  columns={teacherColumns}
+                  data={teachers}
+                  loading={teachersLoading}
+                  emptyMessage={'មិនមានគ្រូបង្រៀនក្នុងសាលារៀននេះទេ'}
+                  emptyIcon={Users}
+                  emptyVariant="neutral"
+                  showPagination={totalPages > 1}
+                  pagination={pagination}
+                  onPageChange={handlePageChange}
+                  onRowClick={handleRowClick}
+                  rowClassName="cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 transition-all duration-200"
+                  t={t}
+                  enableSort={true}
+                  stickyHeader={false}
+                  className="border-0 shadow-none"
+                />
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SchoolLookup;

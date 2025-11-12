@@ -408,6 +408,26 @@ const userService = {
    */
   resendVerificationEmail: async () => {
     return post(ENDPOINTS.USERS.RESEND_VERIFICATION);
+  },
+
+  /**
+   * Get users by school ID (public endpoint)
+   * @param {string|number} schoolId - School ID
+   * @param {Object} params - Query parameters {page, limit, roleId}
+   * @returns {Promise<Object>} Users data with pagination
+   */
+  getPublicSchoolUsers: async (schoolId, params = {}) => {
+    const { page = 1, limit = 10, roleId = '8' } = params;
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      roleId: roleId.toString()
+    });
+    
+    const url = `${ENDPOINTS.USERS.PUBLIC_SCHOOL_USERS(schoolId)}?${queryParams}`;
+    console.log('🌐 Loading users from:', url);
+    
+    return get(url);
   }
 };
 

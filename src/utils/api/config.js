@@ -57,12 +57,14 @@ const ENDPOINTS = {
     RESEND_VERIFICATION: '/users/resend-verification',
     UPDATE_USER: (userId) => `/users/${userId}`,
     GENERATE_QR_CODE: '/users/generate-qr-code',
+    PUBLIC_SCHOOL_USERS: (schoolId) => `/users/public/school/${schoolId}`,
   },
   SCHOOLS: {
     BASE: '/schools',
     SCHOOL_BY_ID: (schoolId) => `/schools${schoolId}`,
     SCHOOL_BY_PROVINCE: (provinceId) => `/schools/province/${provinceId}`,
     SCHOOL_BY_DISTRICT: (districtId) => `/schools/district/${districtId}`,
+    SCHOOL_BY_COMMUNE: (communeCode) => `/schools/commune/${communeCode}`,
     PROJECT_TYPES: '/school-project-types',
   },
   LOCATION: {

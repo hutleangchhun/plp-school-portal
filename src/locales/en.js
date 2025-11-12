@@ -755,6 +755,8 @@ export const en = {
   selectProjectType: 'Select Project Type',
   schoolType: 'School Type',
   selectSchoolType: 'Select School Type',
+  selectSchool: 'Select School',
+  'ស្វែងរកគណនីសម្រាប់គ្រូ': 'Search Teacher Account',
   schoolSettings: 'School Settings',
   updateSchoolInformation: 'Update School Information',
   schoolName: 'School Name',

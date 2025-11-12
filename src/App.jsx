@@ -6,6 +6,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
 import StudentRegistration from './pages/auth/StudentRegistration';
+import SchoolLookup from './pages/public/SchoolLookup';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/dashboard/Dashboard';
 import ProfileUpdate from './pages/profile/ProfileUpdate';
@@ -98,6 +99,12 @@ function AppContent() {
           element={<StudentRegistration />}
         />
 
+
+        {/* Public school lookup route */}
+        <Route
+          path="/schools/lookup"
+          element={<SchoolLookup />}
+        />
         {/* Protected routes with Layout */}
         <Route 
           path="/" 
