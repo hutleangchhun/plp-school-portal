@@ -51,7 +51,7 @@ export default function Modal({
         />
 
         <Dialog.Content
-          className={`fixed left-1/2 top-1/2 z-50 w-11/12 sm:w-full flex flex-col ${sizeClasses[size]} ${heightClasses[height]} ${roundedClass} ${borderClass} ${className} bg-white shadow-xl max-h-[90vh] sm:max-h-none`}
+          className={`fixed left-1/2 top-1/2 z-50 w-11/12 sm:w-auto flex flex-col ${sizeClasses[size]} ${heightClasses[height]} ${roundedClass} ${borderClass} ${className} bg-white shadow-xl max-h-[90vh] overflow-hidden`}
           style={{ transform: 'translate(-50%, -50%)' }}
         >
           {/* Header */}
@@ -77,11 +77,11 @@ export default function Modal({
             </div>
           )}
           <Dialog.Description className="sr-only"></Dialog.Description>
-          {/* Content */}
-          <div className={`flex-1 overflow-auto bg-white px-3 pt-4 sm:p-6 ${footer && stickyFooter ? 'pb-3 sm:pb-4' : 'pb-3 sm:pb-4'}`}>
+          {/* Content - Scrollable */}
+          <div className={`flex-1 min-h-0 overflow-y-auto bg-white px-3 pt-4 sm:p-6 ${footer && stickyFooter ? 'pb-3 sm:pb-4' : 'pb-3 sm:pb-4'}`}>
             {children}
           </div>
-          
+
           {/* Footer */}
           {footer && (
             <div className={`flex-shrink-0 ${roundedClass} bg-white px-3 py-3 sm:px-6 sm:pb-6 ${stickyFooter ? 'border-t border-gray-200' : ''}`}>
