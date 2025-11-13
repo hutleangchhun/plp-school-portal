@@ -21,6 +21,7 @@ import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import EmptyState from '../../components/ui/EmptyState';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 export default function ClassesManagement() {
   const { t } = useLanguage();
@@ -97,6 +98,7 @@ export default function ClassesManagement() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [dataFetched, setDataFetched] = useState(false);
+  const [paginationLoading, setPaginationLoading] = useState(false);
   const [schoolInfo, setSchoolInfo] = useState({ id: null, name: 'Loading...' });
   const [availableTeachers, setAvailableTeachers] = useState([]);
   const [filteredTeachers, setFilteredTeachers] = useState([]);
@@ -324,9 +326,13 @@ export default function ClassesManagement() {
   // Note: fetchClasses now uses my-account API directly, so we don't need to depend on user.classIds
 
 
-  const fetchClasses = useStableCallback(async (page = currentPage, gradeLevel = selectedGradeLevel, search = searchTerm) => {
+  const fetchClasses = useStableCallback(async (page = currentPage, gradeLevel = selectedGradeLevel, search = searchTerm, isPagination = false) => {
     try {
-      startLoading('fetchClasses', t('loadingClasses', 'Loading classes...'));
+      if (isPagination) {
+        setPaginationLoading(true);
+      } else {
+        startLoading('fetchClasses', t('loadingClasses', 'Loading classes...'));
+      }
 
       if (!user?.id) {
         setClasses([]);
@@ -448,7 +454,11 @@ export default function ClassesManagement() {
       setDataFetched(true); // Mark data as fetched even on error
       setInitialLoading(false); // End initial loading even on error
     } finally {
-      stopLoading('fetchClasses');
+      if (isPagination) {
+        setPaginationLoading(false);
+      } else {
+        stopLoading('fetchClasses');
+      }
     }
   }, [startLoading, stopLoading, t, user?.id, handleError, schoolInfo?.id, classesPerPage]);
   // Main effect to fetch classes when user and school are available
@@ -456,7 +466,7 @@ export default function ClassesManagement() {
     if (user?.id && schoolInfo?.id) {
       fetchClasses(currentPage, selectedGradeLevel, searchTerm);
     }
-  }, [user?.id, schoolInfo?.id, currentPage]); // Removed fetchClasses from dependencies
+  }, [user?.id, schoolInfo?.id]); // Removed currentPage to prevent double fetch on pagination
 
   // Auto-apply filters when search term or grade level changes (with debounce for search)
   useEffect(() => {
@@ -722,11 +732,12 @@ export default function ClassesManagement() {
 
   // Pagination handlers - memoized to prevent unnecessary re-renders
   const handlePageChange = React.useCallback((newPage) => {
-    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage && !paginationLoading) {
       setCurrentPage(newPage);
+      fetchClasses(newPage, selectedGradeLevel, searchTerm, true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [currentPage, totalPages]);
+  }, [currentPage, totalPages, paginationLoading, fetchClasses, selectedGradeLevel, searchTerm]);
 
 
   // Use the shared enrollment status utility from exportUtils
@@ -843,7 +854,13 @@ export default function ClassesManagement() {
             </div>
             {/* Classes Grid */}
         <FadeInSection delay={0.2} className='mt-3 sm:mt-6'>
-          {classes.length === 0 && dataFetched ? (
+          {paginationLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <LoadingSpinner size="lg" variant="primary">
+                {t('loadingPage', 'Loading page...')}
+              </LoadingSpinner>
+            </div>
+          ) : classes.length === 0 && dataFetched ? (
             <EmptyState
               icon={BookOpen}
               title={searchTerm || selectedGradeLevel ?
@@ -910,6 +927,7 @@ export default function ClassesManagement() {
                 showFirstLast={true}
                 showInfo={true}
                 maxVisiblePages={5}
+                disabled={paginationLoading}
               />
             </div>
           )}
