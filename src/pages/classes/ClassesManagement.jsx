@@ -152,8 +152,10 @@ export default function ClassesManagement() {
         return;
       }
 
-      // Build request parameters
-      const params = {};
+      // Build request parameters with proper limits
+      const params = {
+        limit: 50 // Set a reasonable limit for dropdown
+      };
       if (gradeLevel) {
         params.grade_level = gradeLevel;
       }
@@ -715,7 +717,7 @@ export default function ClassesManagement() {
     setSearchTerm('');
     setSelectedGradeLevel('');
     setCurrentPage(1);
-    setIsFiltering(false);
+    // Fetch classes will be triggered by useEffect
   };
 
   // Pagination handlers - memoized to prevent unnecessary re-renders
@@ -725,6 +727,7 @@ export default function ClassesManagement() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentPage, totalPages]);
+
 
   // Use the shared enrollment status utility from exportUtils
 
@@ -1211,6 +1214,7 @@ export default function ClassesManagement() {
             </div>
           </form>
         </Modal>
+
         {/* Delete Confirmation */}
         <ConfirmDialog
           isOpen={showDeleteDialog}
