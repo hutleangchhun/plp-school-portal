@@ -1282,7 +1282,7 @@ export const km = {
   deleting: 'កំពុងលុប...',
   errorSelectingAllTeachers: 'បរាជ័យក្នុងការជ្រើសរើសគ្រូទាំងអស់',
   featureComingSoon: 'មុខងារនេះនឹងបង្ហាញឯកវេលា',
-  filters: 'ច្រោះ',
+  filters: 'តម្រង',
   noTeachersFound: 'រកមិនឃើញគ្រូបង្រៀនទេ',
   selectedTeachers: 'គ្រូបង្រៀនដែលបានជ្រើសរើស',
   thisActionCannotBeUndone: 'សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
