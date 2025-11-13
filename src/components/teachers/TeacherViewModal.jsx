@@ -69,14 +69,14 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             onClick={onClose}
             variant="outline"
             size="sm"
-            className="min-w-[120px]"
+            className="min-w-[100px] sm:min-w-[120px] w-full sm:w-auto"
           >
             {t('close', 'Close')}
           </Button>
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Incomplete Information Warning */}
         {incompleteFields.length > 0 && (
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
@@ -99,28 +99,13 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
           </div>
         )}
 
-        {/* Profile Picture */}
-        <div className="flex justify-center">
-          <ProfileImage
-            user={{ 
-              profile_picture: teacher.profilePicture || teacher.profile_picture, 
-              firstName: teacher.firstName || teacher.first_name, 
-              lastName: teacher.lastName || teacher.last_name 
-            }}
-            size="2xl"
-            alt="Teacher Profile"
-            className="border-4 border-gray-200"
-            fallbackType="image"
-          />
-        </div>
-
         {/* Personal Information */}
         <div className="border-t pt-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            <User2 className="inline w-5 h-5 mr-2" />
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+            <User2 className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             {t('personalInformation', 'Personal Information')}
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <InfoItem
               icon={User}
               label={t('firstName', 'First Name')}
@@ -171,11 +156,11 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
 
         {/* Employment Information */}
         <div className="border-t pt-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            <Building className="inline w-5 h-5 mr-2" />
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+            <Building className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             {t('employmentInformation', 'Employment Information')}
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <InfoItem
               icon={Hash}
               label={t('teacherId', 'Teacher ID')}
@@ -219,11 +204,11 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
         {/* Health Information */}
         {(teacher.weight_kg || teacher.weight || teacher.height_cm || teacher.height) && (
           <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <Heart className="inline w-5 h-5 mr-2" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+              <Heart className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               {t('healthInformation', 'Health Information')}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <InfoItem
                 icon={Weight}
                 label={t('weight', 'Weight (kg)')}

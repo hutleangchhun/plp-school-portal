@@ -1087,7 +1087,6 @@ export default function TeachersManagement() {
           setViewingTeacher(null);
         }}
         teacher={viewingTeacher}
-        className="full"
       />
 
       {/* Edit Teacher Modal */}
@@ -1099,7 +1098,6 @@ export default function TeachersManagement() {
         }}
         teacher={editingTeacher}
         onTeacherUpdated={handleTeacherUpdated}
-        className="full"
       />
 
       {/* Disabled: Selected Teachers Modal */}

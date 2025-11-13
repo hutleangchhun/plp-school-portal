@@ -73,14 +73,14 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
             onClick={onClose}
             variant="outline"
             size="sm"
-            className="min-w-[120px]"
+            className="min-w-[100px] sm:min-w-[120px] w-full sm:w-auto"
           >
             {t('close', 'Close')}
           </Button>
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Incomplete Information Warning */}
         {incompleteFields.length > 0 && (
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
@@ -105,11 +105,11 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
 
         {/* Personal Information */}
         <div className="border-t pt-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            <User2 className="inline w-5 h-5 mr-2" />
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+            <User2 className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             {t('personalInformation', 'Personal Information')}
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <InfoItem
               icon={User}
               label={t('username', 'Username')}
@@ -151,7 +151,6 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* Account Information */}
         <div className="border-t pt-4">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
-            <Key className="inline w-5 h-5 mr-2" />
             {t('accountInformation', 'Account Information')}
           </h3>
         </div>
@@ -159,11 +158,11 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* Academic Information */}
         {student.student && (
           <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <BookOpen className="inline w-5 h-5 mr-2" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+              <BookOpen className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               {t('academicInformation', 'Academic Information')}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <InfoItem
                 label={t('studentNumber', 'Student Number')}
                 value={student.student.studentNumber || getEmptyDisplay()}
@@ -187,11 +186,11 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* Health Information */}
         {(student.weight_kg || student.height_cm) && (
           <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <Heart className="inline w-5 h-5 mr-2" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+              <Heart className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               {t('healthInformation', 'Health Information')}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <InfoItem
                 icon={Weight}
                 label={t('weight', 'Weight (kg)')}
@@ -209,11 +208,11 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* BMI Information */}
         {student.bmi && typeof student.bmi === 'object' && (
           <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <Activity className="inline w-5 h-5 mr-2" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+              <Activity className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               {t('bmiInformation', 'BMI Information')}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <InfoItem
                 icon={Activity}
                 label={t('bmiValue', 'BMI Value')}
@@ -252,8 +251,8 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* Accessibility Information */}
         {student.accessibility && student.accessibility.length > 0 && (
           <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <Shield className="inline w-5 h-5 mr-2" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+              <Shield className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               {t('accessibility', 'Accessibility Needs')}
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -269,11 +268,11 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* Residence Information */}
         {student.residence && (
           <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <MapPin className="inline w-5 h-5 mr-2" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+              <MapPin className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               {t('currentResidence', 'Residence Information')}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <InfoItem
                 label={t('province', 'Province')}
                 value={student.residence.province
@@ -305,11 +304,11 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* Place of Birth */}
         {student.placeOfBirth && (
           <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <MapPin className="inline w-5 h-5 mr-2" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+              <MapPin className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               {t('placeOfBirth', 'Place of Birth')}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <InfoItem
                 label={t('province', 'Province')}
                 value={student.placeOfBirth.province

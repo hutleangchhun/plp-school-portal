@@ -25,7 +25,7 @@ export default function Modal({
     lg: 'max-w-4xl',
     xl: 'max-w-6xl',
     '2xl': 'max-w-7xl',
-    full: 'w-11/12 sm:w-[98vw] max-w-[1400px]'
+    full: 'w-[95vw] sm:w-[98vw] max-w-[1400px]'
   };
 
   const heightClasses = {
@@ -51,15 +51,15 @@ export default function Modal({
         />
 
         <Dialog.Content
-          className={`fixed left-1/2 top-1/2 z-50 w-11/12 sm:w-auto flex flex-col ${sizeClasses[size]} ${heightClasses[height]} ${roundedClass} ${borderClass} ${className} bg-white shadow-xl max-h-[90vh] overflow-hidden`}
+          className={`fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-auto flex flex-col ${sizeClasses[size]} ${heightClasses[height]} ${roundedClass} ${borderClass} ${className} bg-white shadow-xl max-h-[90vh] sm:max-h-[95vh] overflow-hidden`}
           style={{ transform: 'translate(-50%, -50%)' }}
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className={`flex-shrink-0 bg-white px-3 pt-4 pb-3 sm:p-6 sm:pb-4 border-b border-gray-200 ${roundedClass}`}>
+            <div className={`flex-shrink-0 bg-white px-3 pt-3 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b border-gray-200 ${roundedClass}`}>
               <div className="flex items-center justify-between">
                 {title && (
-                  <Dialog.Title className="text-lg font-medium text-gray-900">
+                  <Dialog.Title className="text-base sm:text-lg font-medium text-gray-900 pr-2">
                     {title}
                   </Dialog.Title>
                 )}
@@ -78,7 +78,7 @@ export default function Modal({
           )}
           <Dialog.Description className="sr-only"></Dialog.Description>
           {/* Content - Scrollable */}
-          <div className={`flex-1 min-h-0 overflow-y-auto bg-white px-3 pt-4 sm:p-6 ${footer && stickyFooter ? 'pb-3 sm:pb-4' : 'pb-3 sm:pb-4'}`}>
+          <div className={`flex-1 min-h-0 overflow-y-auto bg-white px-3 pt-3 sm:px-6 sm:pt-6 ${footer && stickyFooter ? 'pb-3 sm:pb-4' : 'pb-3 sm:pb-6'}`}>
             {children}
           </div>
 
