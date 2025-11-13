@@ -20,12 +20,12 @@ export default function Modal({
   const { t } = useLanguage();
 
   const sizeClasses = {
-    sm: 'max-w-lg',
-    md: 'max-w-2xl',
-    lg: 'max-w-4xl',
-    xl: 'max-w-6xl',
+    sm: 'max-w-md',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
     '2xl': 'max-w-7xl',
-    full: 'w-[95vw] sm:w-[98vw] max-w-[1400px]'
+    full: 'w-full max-w-7xl'
   };
 
   const heightClasses = {
@@ -51,7 +51,7 @@ export default function Modal({
         />
 
         <Dialog.Content
-          className={`fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-auto flex flex-col ${sizeClasses[size]} ${heightClasses[height]} ${roundedClass} ${borderClass} ${className} bg-white shadow-xl max-h-[90vh] sm:max-h-[95vh] overflow-hidden`}
+          className={`fixed left-1/2 top-1/2 z-50 ${size === 'full' ? 'w-full' : 'w-full sm:w-auto'} flex flex-col ${sizeClasses[size]} ${heightClasses[height]} ${roundedClass} ${borderClass} ${className} bg-white shadow-xl max-h-[90vh] sm:max-h-[95vh] overflow-hidden`}
           style={{ transform: 'translate(-50%, -50%)' }}
         >
           {/* Header */}
