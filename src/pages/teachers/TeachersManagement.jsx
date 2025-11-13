@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Search, Plus, MinusCircle, Edit2, Users, Download, X, Filter, User } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, Users, Download, X, Filter, User, Eye } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -792,7 +792,7 @@ export default function TeachersManagement() {
             className="text-green-600 hover:text-green-900 hover:bg-green-50 hover:scale-110"
             title={t('viewTeacher', 'View teacher details')}
           >
-            <User className="h-4 w-4" />
+            <Eye className="h-4 w-4" />
           </Button>
           <Button
             onClick={(e) => {
@@ -806,6 +806,7 @@ export default function TeachersManagement() {
           >
             <Edit2 className="h-4 w-4" />
           </Button>
+          {/*
           <Button
             onClick={() => showSuccess(t('featureComingSoon', 'This feature is coming soon'))}
             variant="ghost"
@@ -816,6 +817,7 @@ export default function TeachersManagement() {
           >
             <MinusCircle className="h-4 w-4" />
           </Button>
+           */}
         </div>
       )
     }
@@ -860,17 +862,6 @@ export default function TeachersManagement() {
                 <p className="text-sm text-gray-600">
                   {t('manageTeacherRecords', 'Manage teacher records for your school')}
                 </p>
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-600">
-                    {teachers.length} {teachers.length === 1 ? t('teacher', 'teacher') : t('teachers', 'teachers')}
-                    {localSearchTerm && allTeachers.length !== teachers.length && (
-                      <span className="text-xs text-gray-500 ml-1">
-                        ({t('filteredFrom', 'filtered from')} {allTeachers.length})
-                      </span>
-                    )}
-                  </span>
-                </div>
               </div>
             </div>
           </div>
@@ -1042,6 +1033,7 @@ export default function TeachersManagement() {
               )}
 
               {/* Add Teacher Button */}
+              {/* 
               <button
                 onClick={() => {
                   showSuccess(t('featureComingSoon', 'This feature is coming soon'));
@@ -1052,6 +1044,7 @@ export default function TeachersManagement() {
                 <Plus className="h-4 w-4 text-green-500" />
                 <span className="flex-1 text-left">{t('addTeacher', 'Add Teacher')}</span>
               </button>
+              */}
             </>
           }
         />
@@ -1094,6 +1087,7 @@ export default function TeachersManagement() {
           setViewingTeacher(null);
         }}
         teacher={viewingTeacher}
+        className="full"
       />
 
       {/* Edit Teacher Modal */}
@@ -1105,6 +1099,7 @@ export default function TeachersManagement() {
         }}
         teacher={editingTeacher}
         onTeacherUpdated={handleTeacherUpdated}
+        className="full"
       />
 
       {/* Disabled: Selected Teachers Modal */}

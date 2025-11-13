@@ -1947,6 +1947,7 @@ export default function StudentsManagement() {
           setViewingStudent(null);
         }}
         student={viewingStudent}
+        className="full"
       />
 
       {/* Edit Student Modal */}
@@ -1956,7 +1957,7 @@ export default function StudentsManagement() {
           setShowEditModal(false);
           setEditingStudent(null);
         }}
-        className="w-full"
+        className="full"
         student={editingStudent}
         onStudentUpdated={handleStudentUpdated}
       />
