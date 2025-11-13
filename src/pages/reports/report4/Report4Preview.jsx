@@ -159,15 +159,14 @@ export const Report4Preview = ({ data, semester, startDate, endDate, onDateRange
   ];
 
   return (
-    <div className="space-y-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
       {/* Student with Most Absences Table - Only show if there is absent data */}
       {topAbsentStudent.length > 0 && (
         <div className="space-y-4">
-          <div className="bg-white border border-red-200 rounded-lg p-6">
             <h4 className="text-sm font-semibold text-red-900 mb-4 flex items-center">
               {t('studentWithMostAbsences', 'សិស្សដែលអវត្តមានច្រើនបំផុត')}
             </h4>
-          </div>
+          
           
           <Table
             columns={absentColumns}
@@ -184,11 +183,9 @@ export const Report4Preview = ({ data, semester, startDate, endDate, onDateRange
       {/* Student with Most Leaves Table - Only show if there is leave data */}
       {topLeaveStudent.length > 0 && (
         <div className="space-y-4">
-          <div className="bg-white border border-orange-200 rounded-lg p-6">
             <h4 className="text-sm font-semibold text-orange-900 mb-4 flex items-center">
               {t('studentWithMostLeaves', 'សិស្សដែលច្បាប់ច្រើនបំផុត')}
             </h4>
-          </div>
           
           <Table
             columns={leaveColumns}

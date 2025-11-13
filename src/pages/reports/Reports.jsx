@@ -13,6 +13,7 @@ import { classService } from '../../utils/api/services/classService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { parentService } from '../../utils/api/services/parentService';
 import { bmiService } from '../../utils/api/services/bmiService';
+import { Button } from '@/components/ui/Button';
 // Modular report components
 import { useReport1Data, Report1Preview } from './report1/indexReport1';
 import { useReport4Data, Report4Preview, exportReport4ToExcel } from './report4/indexReport4';
@@ -1394,14 +1395,15 @@ export default function Reports() {
               {t('viewAnalytics') || 'View comprehensive analytics and generate reports'}
             </p>
           </div>
-          <button
+          <Button
             onClick={handleExportReport}
             disabled={loading}
-            className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            size="sm"
+            variant="default"
           >
             <Download className="h-4 w-4 mr-2" />
             {loading ? 'Exporting...' : (t('exportReport') || 'Export Report')}
-          </button>
+          </Button>
         </div>
       </div>
 
