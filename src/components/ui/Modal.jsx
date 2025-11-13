@@ -20,12 +20,12 @@ export default function Modal({
   const { t } = useLanguage();
 
   const sizeClasses = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
+    sm: 'max-w-lg',
+    md: 'max-w-2xl',
+    lg: 'max-w-4xl',
+    xl: 'max-w-6xl',
     '2xl': 'max-w-7xl',
-    full: 'w-11/12 sm:w-[95vw]'
+    full: 'w-11/12 sm:w-[98vw] max-w-[1400px]'
   };
 
   const heightClasses = {

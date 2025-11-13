@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Search, Plus, MinusCircle, Edit2, Users, Download, X, Filter } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, Users, Download, X, Filter, User } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -15,6 +15,7 @@ import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import TeacherEditModal from '../../components/teachers/TeacherEditModal';
+import TeacherViewModal from '../../components/teachers/TeacherViewModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
@@ -88,8 +89,10 @@ export default function TeachersManagement() {
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [editingTeacher, setEditingTeacher] = useState(null);
+  const [viewingTeacher, setViewingTeacher] = useState(null);
   const [selectedTeachers, setSelectedTeachers] = useState([]);
   const [showTeachersManagerOpen, setShowTeachersManagerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -652,6 +655,13 @@ export default function TeachersManagement() {
     setSelectedTeachers([]);
   };
 
+  // Handle view teacher
+  const handleViewTeacher = (teacher) => {
+    console.log('View button clicked for teacher:', teacher);
+    setViewingTeacher(teacher);
+    setShowViewModal(true);
+  };
+
   // Handle edit teacher
   const handleEditTeacher = (teacher) => {
     console.log('Edit button clicked for teacher:', teacher);
@@ -672,27 +682,28 @@ export default function TeachersManagement() {
 
   // Define table columns
   const tableColumns = [
-    {
-      key: 'select',
-      header: (
-        <input
-          type="checkbox"
-          checked={selectedTeachers.length === teachers.length && teachers.length > 0}
-          onChange={handleSelectAll}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
-      ),
-      headerClassName: 'w-12',
-      cellClassName: 'w-12',
-      render: (teacher) => (
-        <input
-          type="checkbox"
-          checked={selectedTeachers.some(t => t.id === teacher.id)}
-          onChange={() => handleSelectTeacher(teacher)}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
-      )
-    },
+    // Disabled: Select checkbox column
+    // {
+    //   key: 'select',
+    //   header: (
+    //     <input
+    //       type="checkbox"
+    //       checked={selectedTeachers.length === teachers.length && teachers.length > 0}
+    //       onChange={handleSelectAll}
+    //       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+    //     />
+    //   ),
+    //   headerClassName: 'w-12',
+    //   cellClassName: 'w-12',
+    //   render: (teacher) => (
+    //     <input
+    //       type="checkbox"
+    //       checked={selectedTeachers.some(t => t.id === teacher.id)}
+    //       onChange={() => handleSelectTeacher(teacher)}
+    //       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+    //     />
+    //   )
+    // },
     {
       key: 'name',
       header: t('name', 'Name'),
@@ -774,6 +785,18 @@ export default function TeachersManagement() {
           <Button
             onClick={(e) => {
               e.stopPropagation();
+              handleViewTeacher(teacher);
+            }}
+            variant="ghost"
+            size="sm"
+            className="text-green-600 hover:text-green-900 hover:bg-green-50 hover:scale-110"
+            title={t('viewTeacher', 'View teacher details')}
+          >
+            <User className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
               handleEditTeacher(teacher);
             }}
             variant="ghost"
@@ -852,8 +875,8 @@ export default function TeachersManagement() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap sm:space-x-2">
-            {/* View Selected Teachers Button - Hidden on mobile */}
-            {selectedTeachers.length > 0 && (
+            {/* Disabled: View Selected Teachers Button */}
+            {/* {selectedTeachers.length > 0 && (
               <Button
                 onClick={() => setShowTeachersManagerOpen(true)}
                 variant="outline"
@@ -863,7 +886,7 @@ export default function TeachersManagement() {
                 <Users className="h-4 w-4 mr-1.5" />
                 <span>{t('viewSelected', 'View Selected')} ({selectedTeachers.length})</span>
               </Button>
-            )}
+            )} */}
 
             {/* Filter Button - Responsive (works on all screen sizes) */}
             <Button
@@ -954,8 +977,8 @@ export default function TeachersManagement() {
           }
           actionsContent={
             <>
-              {/* Select All / Deselect All Button */}
-              {teachers.length > 0 && (
+              {/* Disabled: Select All / Deselect All Button */}
+              {/* {teachers.length > 0 && (
                 <Button
                   onClick={() => {
                     handleSelectAll();
@@ -985,10 +1008,10 @@ export default function TeachersManagement() {
                     </>
                   )}
                 </Button>
-              )}
+              )} */}
 
-              {/* View Selected Teachers Button */}
-              {selectedTeachers.length > 0 && (
+              {/* Disabled: View Selected Teachers Button */}
+              {/* {selectedTeachers.length > 0 && (
                 <button
                   onClick={() => {
                     setShowTeachersManagerOpen(true);
@@ -1002,7 +1025,7 @@ export default function TeachersManagement() {
                     {selectedTeachers.length}
                   </span>
                 </button>
-              )}
+              )} */}
 
               {/* Export Button */}
               {teachers.length > 0 && (
@@ -1063,6 +1086,16 @@ export default function TeachersManagement() {
         isConfirming={isLoading('deleteTeacher')}
       />
 
+      {/* View Teacher Modal */}
+      <TeacherViewModal
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setViewingTeacher(null);
+        }}
+        teacher={viewingTeacher}
+      />
+
       {/* Edit Teacher Modal */}
       <TeacherEditModal
         isOpen={showEditModal}
@@ -1074,8 +1107,8 @@ export default function TeachersManagement() {
         onTeacherUpdated={handleTeacherUpdated}
       />
 
-      {/* Selected Teachers Modal */}
-      <Modal
+      {/* Disabled: Selected Teachers Modal */}
+      {/* <Modal
         isOpen={showTeachersManagerOpen}
         onClose={() => setShowTeachersManagerOpen(false)}
         title={
@@ -1118,7 +1151,7 @@ export default function TeachersManagement() {
             })}
           </div>
         )}
-      </Modal>
+      </Modal> */}
     </div>
   );
 }

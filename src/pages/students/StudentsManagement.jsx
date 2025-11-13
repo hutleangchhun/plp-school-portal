@@ -809,7 +809,7 @@ export default function StudentsManagement() {
 
             {/* Grade Level Filter for Transfer */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm text-start font-medium text-gray-700 mb-1">
                 {t('gradeLevel', 'Filter by Grade Level')}
               </label>
               <Dropdown
@@ -825,7 +825,7 @@ export default function StudentsManagement() {
 
             {/* Target Class Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm text-start font-medium text-gray-700 mb-1">
                 {t('targetClass', 'Target Class')}:
               </label>
               <Dropdown
@@ -1688,7 +1688,7 @@ export default function StudentsManagement() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-4 sm:space-y-0">
           <div>
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">{t('studentsManagement')}</h1>
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">{t('studentsManagement')}</h1>
             </div>
             <div className="mt-2 space-y-1">
               <div className="flex items-center space-x-4">
@@ -1702,89 +1702,93 @@ export default function StudentsManagement() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap sm:space-x-2 mb-4">
-          {/* Add Student Button */}
-          <Button
-            onClick={() => {
-              handleAddStudentClick();
-              setShowMobileFilters(false);
-            }}
-            size="sm"
-            variant="success"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            <span className="flex-1 text-left">{t('addStudent', 'Add Student')}</span>
-          </Button>
-          {/* Filter Button - Responsive (works on all screen sizes) */}
-          <Button
-            onClick={() => setShowMobileFilters(true)}
-            variant="primary"
-            size="sm"
-            className=" flex items-center justify-center sm:justify-start gap-2 shadow-lg"
-            title={t('filters', 'Filters & Actions')}
-          >
-            <Filter className="h-4 w-4" />
-            <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
-            <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
-            {(localSearchTerm || selectedGradeLevel !== 'all' || selectedClassId !== 'all') && (
-              <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
-                {(localSearchTerm ? 1 : 0) + (selectedGradeLevel !== 'all' ? 1 : 0) + (selectedClassId !== 'all' ? 1 : 0)}
-              </span>
-            )}
-          </Button>
-
-          {/* Select All / Deselect All Button - Outside Sidebar (Selects all filtered students across all pages) */}
-          {students.length > 0 && (
+        <div className="flex items-center justify-between gap-2 flex-wrap sm:space-x-2 mb-4">
+          <div className='flex gap-2'>
+            {/* Add Student Button */}
             <Button
-              onClick={handleSelectAllFiltered}
-              variant={selectedStudents.length > 0 ? "danger" : "primary"}
+              onClick={() => {
+                handleAddStudentClick();
+                setShowMobileFilters(false);
+              }}
               size="sm"
-              disabled={selectingAll}
-              className=" flex items-center justify-center sm:justify-start gap-2"
-              title={selectedStudents.length > 0 ? t('deselectAllFiltered', 'Deselect all filtered students') : t('selectAllFiltered', 'Select all filtered students')}
+              variant="success"
             >
-              {selectingAll ? (
-                <DynamicLoader
-                  type="spinner"
-                  size="sm"
-                  variant={selectedStudents.length > 0 ? "white" : "primary"}
-                />
-              ) : selectedStudents.length > 0 ? (
-                <>
-                  <X className="h-4 w-4" />
-                  <span>{t('deselectAll', 'Deselect All')}</span>
-                </>
-              ) : (
-                <>
-                  <Users className="h-4 w-4" />
-                  <span>{t('selectAll', 'Select All')}</span>
-                </>
+              <Plus className="h-4 w-4 mr-1" />
+              <span className="flex-1 text-left">{t('addStudent', 'Add Student')}</span>
+            </Button>
+            {/* Filter Button - Responsive (works on all screen sizes) */}
+            <Button
+              onClick={() => setShowMobileFilters(true)}
+              variant="primary"
+              size="sm"
+              className=" flex items-center justify-center sm:justify-start gap-2 shadow-lg"
+              title={t('filters', 'Filters & Actions')}
+            >
+              <Filter className="h-4 w-4" />
+              <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
+              <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
+              {(localSearchTerm || selectedGradeLevel !== 'all' || selectedClassId !== 'all') && (
+                <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
+                  {(localSearchTerm ? 1 : 0) + (selectedGradeLevel !== 'all' ? 1 : 0) + (selectedClassId !== 'all' ? 1 : 0)}
+                </span>
               )}
             </Button>
-          )}
+          </div>
+          <div className='flex gap-2 items-center justify-end'>
 
-          {/* Student Actions Floating Button - Show when students are selected */}
-          {selectedStudents.length > 0 && (
-            <div className="flex justify-center">
-              <button
-                onClick={() => setShowStudentActionsModal(true)}
-                className="group relative inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300"
-                title={t('manageStudents', 'Manage Selected Students')}
+            {/* Select All / Deselect All Button - Outside Sidebar (Selects all filtered students across all pages) */}
+            {students.length > 0 && (
+              <Button
+                onClick={handleSelectAllFiltered}
+                variant={selectedStudents.length > 0 ? "danger" : "primary"}
+                size="sm"
+                disabled={selectingAll}
+                className=" flex items-center justify-center sm:justify-start gap-2"
+                title={selectedStudents.length > 0 ? t('deselectAllFiltered', 'Deselect all filtered students') : t('selectAllFiltered', 'Select all filtered students')}
               >
-                <Users className="h-5 w-5" />
-                {/* Notification count badge */}
-                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md border-2 border-white">
-                  {selectedStudents.length > 99 ? '99+' : selectedStudents.length}
-                </div>
-                {/* Tooltip */}
-                <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
-                  {t('manageStudents', 'Manage Selected Students')}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                </div>
-              </button>
-            </div>
-          )}
+                {selectingAll ? (
+                  <DynamicLoader
+                    type="spinner"
+                    size="sm"
+                    variant={selectedStudents.length > 0 ? "white" : "primary"}
+                  />
+                ) : selectedStudents.length > 0 ? (
+                  <>
+                    <X className="h-4 w-4" />
+                    <span>{t('deselectAll', 'Deselect All')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Users className="h-4 w-4" />
+                    <span>{t('selectAll', 'Select All')}</span>
+                  </>
+                )}
+              </Button>
+            )}
 
+            {/* Student Actions Floating Button - Show when students are selected */}
+            {selectedStudents.length > 0 && (
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setShowStudentActionsModal(true)}
+                  className="group relative inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                  title={t('manageStudents', 'Manage Selected Students')}
+                >
+                  <Users className="h-5 w-5" />
+                  {/* Notification count badge */}
+                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md border-2 border-white">
+                    {selectedStudents.length > 99 ? '99+' : selectedStudents.length}
+                  </div>
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
+                    {t('manageStudents', 'Manage Selected Students')}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                  </div>
+                </button>
+              </div>
+            )}
+
+          </div>
         </div>
 
         {/* Mobile Filters Sidebar */}

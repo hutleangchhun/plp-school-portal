@@ -69,7 +69,7 @@ const StudentSelection = () => {
 
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
-  
+
   // Using fresh state for student selection (no localStorage persistence)
 
   // Override: Always start with empty selection for StudentSelection
@@ -306,12 +306,12 @@ const StudentSelection = () => {
       setListLoading(true);
       setFetchError(null); // Clear any previous errors
       setStudents([]); // Clear previous students data when loading starts
-      
+
       console.log('=== STUDENT SELECTION FETCH DEBUG ===');
       console.log('School ID:', schoolId);
       console.log('Search term:', debouncedSearch);
       console.log('Pagination:', pagination);
-      
+
       // Build filter parameters
       const filterParams = {
         search: debouncedSearch,
@@ -346,7 +346,7 @@ const StudentSelection = () => {
         // Server handles gradeLevel filtering via gradeId parameter
         setStudents(studentsResponse.data);
         console.log(`Loaded ${studentsResponse.data.length} students from school ${schoolId} for selection`);
-        
+
         if (studentsResponse.pagination) {
           console.log('Pagination data:', studentsResponse.pagination);
           setPagination(prev => ({
@@ -360,7 +360,7 @@ const StudentSelection = () => {
       }
     } catch (error) {
       console.error('Error fetching student data from master-class:', error);
-      
+
       // Set error state for display
       const errorMessage = error.message || t('errorFetchingData') || 'Error fetching data from server';
       setFetchError({
@@ -368,7 +368,7 @@ const StudentSelection = () => {
         type: error.response?.status >= 500 ? 'server' : 'network',
         canRetry: true
       });
-      
+
       // Show toast error
       showError(errorMessage);
       setStudents([]);
@@ -495,48 +495,36 @@ const StudentSelection = () => {
   return (
     <PageTransition variant="slideUp" duration="duration-700">
       <div className="p-3 sm:p-4">
-        <FadeInSection delay={100} className='bg-white shadow rounded-lg p-4 sm:p-6 transition-all duration-300 mb-4'>
+        <FadeInSection delay={100} className=' rounded-lg p-4 sm:p-6 transition-all duration-300'>
           <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                 {t('studentSelection') || 'ការជ្រើសរើសសិស្ស'}
               </h1>
               <p className="mt-1 text-sm text-gray-500">
                 {t('selectStudentsForAction') || 'ជ្រើសរើសសិស្សដើម្បីអនុវត្តសកម្មភាពជាក្រុម'}
               </p>
             </div>
-            <div className="">
+            <div className="mt-4 sm:mt-0">
               <Button
-                onClick={() => navigate('/students')}
-                variant="outline"
+                onClick={() => setShowFilterSidebar(true)}
+                variant="primary"
                 size="sm"
-                className="flex items-center space-x-2"
+                className=" flex items-center justify-center sm:justify-start gap-2 shadow-lg"
+                title={t('filters', 'Filters')}
               >
-                <ArrowLeft className="h-4 w-4" />
-                <span>{t('backToStudents') || 'ត្រឡប់ទៅសិស្ស'}</span>
+                <Filter className="h-4 w-4" />
+                <span className="sm:hidden">{t('filters', 'Filters')}</span>
+                <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
+                {(filters.search || filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel !== '' || filters.classId !== 'any') && (
+                  <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
+                    {(filters.search ? 1 : 0) + (filters.academicYear ? 1 : 0) + (filters.gender ? 1 : 0) + (filters.dateOfBirth ? 1 : 0) + (filters.gradeLevel !== '' ? 1 : 0) + (filters.classId !== 'any' ? 1 : 0)}
+                  </span>
+                )}
               </Button>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            {/* Filter Button - Responsive */}
-            <Button
-              onClick={() => setShowFilterSidebar(true)}
-              variant="primary"
-              size="sm"
-              className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 shadow-lg"
-              title={t('filters', 'Filters')}
-            >
-              <Filter className="h-5 sm:h-4 w-5 sm:w-4" />
-              <span className="sm:hidden">{t('filters', 'Filters')}</span>
-              <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
-              {(filters.search || filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel !== '' || filters.classId !== 'any') && (
-                <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
-                  {(filters.search ? 1 : 0) + (filters.academicYear ? 1 : 0) + (filters.gender ? 1 : 0) + (filters.dateOfBirth ? 1 : 0) + (filters.gradeLevel !== '' ? 1 : 0) + (filters.classId !== 'any' ? 1 : 0)}
-                </span>
-              )}
-            </Button>
-          </div>
-          
+
         </FadeInSection>
 
         {/* Filters Sidebar */}
@@ -556,7 +544,7 @@ const StudentSelection = () => {
               classId: 'any'
             });
           }}
-          onApply={() => {}}
+          onApply={() => { }}
           children={
             <>
               {/* Search Input */}
@@ -669,233 +657,230 @@ const StudentSelection = () => {
         />
 
         {/* Students List */}
-        <FadeInSection delay={400}>
+        <FadeInSection delay={400} className='px-5'>
           <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
-        {/* Header with select all checkbox */}
-        {!listLoading && students.length > 0 && (
-          <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  checked={areAllCurrentStudentsSelected()}
-                  onChange={handleSelectAllCurrentPage}
-                  className="h-4 w-4 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-gray-300 rounded-md transition-colors"
-                />
-                <label className="text-sm font-medium text-gray-700">
-                  {areAllCurrentStudentsSelected() 
-                    ? (t('deselectAllOnPage') || 'Deselect all on page')
-                    : (t('selectAllOnPage') || 'Select all on page')
-                  }
-                </label>
-              </div>
-              <div className='flex'>
-                {/* Selected Students Sidebar */}
-                <SelectedStudentsManager
-                  selectedStudents={actualSelectedStudents}
-                  selectedStudentsData={actualSelectedStudentsData}
-                  onRemoveStudent={actualRemoveStudent}
-                  onClearAll={actualClearAll}
-                  classes={classes}
-                  isOpen={showSelectedStudentsSidebar}
-                  onToggle={setShowSelectedStudentsSidebar}
-                  autoOpen={false}
-                  onRefresh={fetchData}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {listLoading ? (
-          <div className="w-full flex items-center justify-center py-8">
-            <LoadingSpinner size="default" variant="primary" />
-          </div>
-        ) : fetchError ? (
-          <div className="flex items-center justify-center min-h-[400px] p-6">
-            <div className="text-center space-y-4 max-w-md">
-              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-                <X className="h-10 w-10 text-red-500" />
-              </div>
-              <div className="space-y-2">
-                <p className="text-lg font-medium text-red-600">
-                  {t('connectionError', 'Connection Error')}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {fetchError.message}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {fetchError.type === 'server' 
-                    ? (t('serverError', 'Server is temporarily unavailable. Please try again later.'))
-                    : (t('networkError', 'Please check your internet connection and try again.'))
-                  }
-                </p>
-              </div>
-              {fetchError.canRetry && (
-                <Button
-                  onClick={() => fetchData()}
-                  variant="primary"
-                  size="sm"
-                  className="mt-4"
-                >
-                  {t('retry', 'Try Again')}
-                </Button>
-              )}
-            </div>
-          </div>
-        ) : students.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
-            {students.map((student) => {
-              // Check if student has a class assigned
-              const hasClass = !!(student.class?.name || student.class_name || student.class?.id || student.class_id);
-
-              return (
-              <div key={student.id} className={`group transition-colors duration-150 border rounded-lg p-4 ${
-                hasClass
-                  ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
-                  : 'hover:bg-gray-50/50 border-gray-100'
-              }`}>
-                <div className="flex items-center space-x-4">
-                  <div className="flex-shrink-0">
+            {/* Header with select all checkbox */}
+            {!listLoading && students.length > 0 && (
+              <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
                     <input
-                      id={`student-${student.id}`}
-                      name="students"
                       type="checkbox"
-                      className={`h-5 w-5 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-gray-300 rounded-md transition-colors ${
-                        hasClass
-                          ? 'text-gray-400 cursor-not-allowed'
-                          : 'text-indigo-600 cursor-pointer'
-                      }`}
-                      checked={actualIsSelected(student.id)}
-                      onChange={() => !hasClass && actualHandleSelectStudent(student)}
-                      disabled={hasClass}
+                      checked={areAllCurrentStudentsSelected()}
+                      onChange={handleSelectAllCurrentPage}
+                      className="h-4 w-4 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-gray-300 rounded-md transition-colors"
                     />
+                    <label className="text-sm font-medium text-gray-700">
+                      {areAllCurrentStudentsSelected()
+                        ? (t('deselectAllOnPage') || 'Deselect all on page')
+                        : (t('selectAllOnPage') || 'Select all on page')
+                      }
+                    </label>
                   </div>
-                  
-                  <div className="flex items-center space-x-3 min-w-0 flex-1">
-                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-indigo-600" />
-                    </div>
-                    
-                    <div className="min-w-0 flex-1">
-                      <div className="flex justify-between space-x-2">
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-900 truncate">
-                            {student.name}
-                          </h3>
-                        </div>
-                        {/* Display class information badge */}
-                        {student.class?.name || student.class_name ? (
-                          <Badge color="indigo" size="sm">
-                            {student.class?.name || student.class_name}
-                          </Badge>
-                        ) : (
-                          <Badge color="gray" size="sm" className="italic">
-                            {t('noClasses', "Don't have class")}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-2 text-xs text-gray-500 flex-wrap">
-                        <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
-                          {student.studentId}
-                        </span>
-                        <span>•</span>
-                        {student.gender && (
-                          <>
-                            <span className={`px-2 py-0.5 rounded font-medium ${
-                              student.gender === 'MALE'
-                                ? 'bg-blue-100 text-blue-700'
-                                : student.gender === 'FEMALE'
-                                ? 'bg-pink-100 text-pink-700'
-                                : 'bg-gray-100 text-gray-700'
-                            }`}>
-                              {student.gender === 'MALE' ? t('male', 'Male') :
-                               student.gender === 'FEMALE' ? t('female', 'Female') :
-                               student.gender}
-                            </span>
-                            <span>•</span>
-                          </>
-                        )}
-                        {student.gradeLevel && (
-                          <>
-                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium">
-                              {t('grade', 'Grade')} {student.gradeLevel}
-                            </span>
-                            <span>•</span>
-                          </>
-                        )}
-                        {student.academicYear && (
-                          <>
-                            <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium">
-                              {student.academicYear}
-                            </span>
-                            <span>•</span>
-                          </>
-                        )}
-                        {student.dateOfBirth && (
-                          <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded font-medium">
-                            {formatDateKhmer(student.dateOfBirth, 'short')}
-                          </span>
-                        )}
-                      </div>
-                      
-                    </div>
+                  <div className='flex'>
+                    {/* Selected Students Sidebar */}
+                    <SelectedStudentsManager
+                      selectedStudents={actualSelectedStudents}
+                      selectedStudentsData={actualSelectedStudentsData}
+                      onRemoveStudent={actualRemoveStudent}
+                      onClearAll={actualClearAll}
+                      classes={classes}
+                      isOpen={showSelectedStudentsSidebar}
+                      onToggle={setShowSelectedStudentsSidebar}
+                      autoOpen={false}
+                      onRefresh={fetchData}
+                    />
                   </div>
                 </div>
               </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex items-center justify-center min-h-[400px] p-6">
-            <div className="text-center space-y-4">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                <User className="h-10 w-10 text-gray-400" />
+            )}
+
+            {listLoading ? (
+              <div className="w-full flex items-center justify-center py-8">
+                <LoadingSpinner size="default" variant="primary" />
               </div>
-              <div className="space-y-2">
-                <p className="text-lg font-medium text-gray-500">
-                  {t('noStudentsFound') || 'រកមិនឃើញសិស្សដែលស្របនឹងលក្ខខណ្ឌរបស់អ្នក។'}
-                </p>
-                <p className="text-sm text-gray-400">
-                  {debouncedSearch 
-                    ? (t('tryDifferentSearch') || 'Try adjusting your search criteria')
-                    : (t('noStudentsAvailable') || 'No students are available in this school')
-                  }
-                </p>
+            ) : fetchError ? (
+              <div className="flex items-center justify-center min-h-[400px] p-6">
+                <div className="text-center space-y-4 max-w-md">
+                  <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                    <X className="h-10 w-10 text-red-500" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-lg font-medium text-red-600">
+                      {t('connectionError', 'Connection Error')}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {fetchError.message}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {fetchError.type === 'server'
+                        ? (t('serverError', 'Server is temporarily unavailable. Please try again later.'))
+                        : (t('networkError', 'Please check your internet connection and try again.'))
+                      }
+                    </p>
+                  </div>
+                  {fetchError.canRetry && (
+                    <Button
+                      onClick={() => fetchData()}
+                      variant="primary"
+                      size="sm"
+                      className="mt-4"
+                    >
+                      {t('retry', 'Try Again')}
+                    </Button>
+                  )}
+                </div>
               </div>
-              {(debouncedSearch || filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel || filters.classId !== 'any') && (
-                <Button
-                  onClick={() => handleFilterChange({
-                    search: '',
-                    academicYear: '',
-                    gender: '',
-                    dateOfBirth: null,
-                    gradeLevel: '',
-                    classId: 'any'
-                  })}
-                  variant="outline"
-                  size="sm"
-                  className="mt-4"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  {t('clearFilters') || 'Clear Filters'}
-                </Button>
-              )}
-            </div>
+            ) : students.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
+                {students.map((student) => {
+                  // Check if student has a class assigned
+                  const hasClass = !!(student.class?.name || student.class_name || student.class?.id || student.class_id);
+
+                  return (
+                    <div key={student.id} className={`group transition-colors duration-150 border rounded-lg p-4 ${hasClass
+                        ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
+                        : 'hover:bg-gray-50/50 border-gray-100'
+                      }`}>
+                      <div className="flex items-center space-x-4">
+                        <div className="flex-shrink-0">
+                          <input
+                            id={`student-${student.id}`}
+                            name="students"
+                            type="checkbox"
+                            className={`h-5 w-5 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 border-gray-300 rounded-md transition-colors ${hasClass
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-indigo-600 cursor-pointer'
+                              }`}
+                            checked={actualIsSelected(student.id)}
+                            onChange={() => !hasClass && actualHandleSelectStudent(student)}
+                            disabled={hasClass}
+                          />
+                        </div>
+
+                        <div className="flex items-center space-x-3 min-w-0 flex-1">
+                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-full flex items-center justify-center">
+                            <User className="h-5 w-5 text-indigo-600" />
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex justify-between space-x-2">
+                              <div>
+                                <h3 className="text-sm font-semibold text-gray-900 truncate">
+                                  {student.name}
+                                </h3>
+                              </div>
+                              {/* Display class information badge */}
+                              {student.class?.name || student.class_name ? (
+                                <Badge color="indigo" size="sm">
+                                  {student.class?.name || student.class_name}
+                                </Badge>
+                              ) : (
+                                <Badge color="gray" size="sm" className="italic">
+                                  {t('noClasses', "Don't have class")}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2 text-xs text-gray-500 flex-wrap">
+                              <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
+                                {student.studentId}
+                              </span>
+                              <span>•</span>
+                              {student.gender && (
+                                <>
+                                  <span className={`px-2 py-0.5 rounded font-medium ${student.gender === 'MALE'
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : student.gender === 'FEMALE'
+                                        ? 'bg-pink-100 text-pink-700'
+                                        : 'bg-gray-100 text-gray-700'
+                                    }`}>
+                                    {student.gender === 'MALE' ? t('male', 'Male') :
+                                      student.gender === 'FEMALE' ? t('female', 'Female') :
+                                        student.gender}
+                                  </span>
+                                  <span>•</span>
+                                </>
+                              )}
+                              {student.gradeLevel && (
+                                <>
+                                  <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium">
+                                    {t('grade', 'Grade')} {student.gradeLevel}
+                                  </span>
+                                  <span>•</span>
+                                </>
+                              )}
+                              {student.academicYear && (
+                                <>
+                                  <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium">
+                                    {student.academicYear}
+                                  </span>
+                                  <span>•</span>
+                                </>
+                              )}
+                              {student.dateOfBirth && (
+                                <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded font-medium">
+                                  {formatDateKhmer(student.dateOfBirth, 'short')}
+                                </span>
+                              )}
+                            </div>
+
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center min-h-[400px] p-6">
+                <div className="text-center space-y-4">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                    <User className="h-10 w-10 text-gray-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-lg font-medium text-gray-500">
+                      {t('noStudentsFound') || 'រកមិនឃើញសិស្សដែលស្របនឹងលក្ខខណ្ឌរបស់អ្នក។'}
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      {debouncedSearch
+                        ? (t('tryDifferentSearch') || 'Try adjusting your search criteria')
+                        : (t('noStudentsAvailable') || 'No students are available in this school')
+                      }
+                    </p>
+                  </div>
+                  {(debouncedSearch || filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel || filters.classId !== 'any') && (
+                    <Button
+                      onClick={() => handleFilterChange({
+                        search: '',
+                        academicYear: '',
+                        gender: '',
+                        dateOfBirth: null,
+                        gradeLevel: '',
+                        classId: 'any'
+                      })}
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      {t('clearFilters') || 'Clear Filters'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Pagination (shadcn-styled from shared UI) */}
+            {!listLoading && students.length > 0 && (
+              <FadeInSection delay={500}>
+                <UIPagination
+                  pagination={pagination}
+                  onPageChange={handlePageChange}
+                  t={(key, fallback) => t(key) || fallback}
+                />
+              </FadeInSection>
+            )}
           </div>
-        )}
-        
-        {/* Pagination (shadcn-styled from shared UI) */}
-        {!listLoading && students.length > 0 && (
-          <FadeInSection delay={500}>
-            <UIPagination
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              t={(key, fallback) => t(key) || fallback}
-            />
-          </FadeInSection>
-        )}
-        </div>
         </FadeInSection>
 
       </div>
