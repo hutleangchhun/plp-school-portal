@@ -42,63 +42,6 @@ export function Report8Preview({ data }) {
 
   return (
     <div className="space-y-6">
-      {/* Summary Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-600">{t('totalStudents', 'សិស្សទាំងអស់')}</p>
-              <p className="text-3xl font-bold text-blue-900 mt-2">{data.length}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-green-600">{t('withBmiData', 'មានទិន្នន័យ BMI')}</p>
-              <p className="text-3xl font-bold text-green-900 mt-2">{bmiStats.totalWithBmi}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-yellow-600">{t('averageBmi', 'BMI ជាមធ្យម')}</p>
-              <p className="text-3xl font-bold text-yellow-900 mt-2">{averageBmi}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-red-600">{t('noData', 'គ្មានទិន្នន័យ')}</p>
-              <p className="text-3xl font-bold text-red-900 mt-2">{bmiStats.noData}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* BMI Categories Distribution */}
-      {Object.keys(bmiStats.categories).length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h4 className="text-base font-semibold text-gray-900 mb-4">{t('bmiCategoriesDistribution', 'ការចែកចាយតាមប្រភេទ BMI')}</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(bmiStats.categories).map(([category, count]) => (
-              <div key={category} className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">{category}</p>
-                <p className="text-2xl font-bold text-gray-900">{count}</p>
-                <p className="text-xs text-gray-500">
-                  {((count / bmiStats.totalWithBmi) * 100).toFixed(1)}%
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Data Table */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
