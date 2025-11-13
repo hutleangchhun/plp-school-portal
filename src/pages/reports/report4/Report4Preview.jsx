@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import Table from '../../../components/ui/Table';
 
 /**
  * Preview component for Report 4
@@ -53,135 +54,151 @@ export const Report4Preview = ({ data, semester, startDate, endDate, onDateRange
     .sort((a, b) => b.leaveCount - a.leaveCount)
     .slice(0, 1);
 
+  // Define columns for absent students table
+  const absentColumns = [
+    {
+      key: 'studentId',
+      header: t('studentId', 'អត្តលេខ'),
+      render: (student) => student.studentNumber,
+      cellClassName: 'font-medium'
+    },
+    {
+      key: 'name',
+      header: t('name', 'ឈ្មោះ'),
+      render: (student) => student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || '',
+      cellClassName: 'font-medium text-gray-900'
+    },
+    {
+      key: 'gender',
+      header: t('gender', 'ភេទ'),
+      render: (student) => student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : ''
+    },
+    {
+      key: 'class',
+      header: t('class', 'ថ្នាក់'),
+      render: (student) => student.class?.name || student.className || ''
+    },
+    {
+      key: 'absent',
+      header: t('absent', 'អត់ច្បាប់'),
+      render: (student) => (
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-800">
+          {student.absentCount}
+        </span>
+      ),
+      headerClassName: 'text-center',
+      cellClassName: 'text-center'
+    },
+    {
+      key: 'attendanceRate',
+      header: t('attendanceRate', 'អត្រាវត្តមាន'),
+      render: (student) => (
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+          student.attendanceRate >= 90 ? 'bg-green-100 text-green-800' :
+          student.attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-800' :
+          'bg-red-100 text-red-800'
+        }`}>
+          {student.attendanceRate}%
+        </span>
+      ),
+      headerClassName: 'text-center',
+      cellClassName: 'text-center'
+    }
+  ];
+
+  // Define columns for leave students table
+  const leaveColumns = [
+    {
+      key: 'studentId',
+      header: t('studentId', 'អត្តលេខ'),
+      render: (student) => student.studentNumber,
+      cellClassName: 'font-medium'
+    },
+    {
+      key: 'name',
+      header: t('name', 'ឈ្មោះ'),
+      render: (student) => student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || '',
+      cellClassName: 'font-medium text-gray-900'
+    },
+    {
+      key: 'gender',
+      header: t('gender', 'ភេទ'),
+      render: (student) => student.gender === 'MALE' ? 'ប្រុស' : student.gender === 'FEMALE' ? 'ស្រី' : ''
+    },
+    {
+      key: 'class',
+      header: t('class', 'ថ្នាក់រៀន'),
+      render: (student) => student.class?.name || student.className || ''
+    },
+    {
+      key: 'leave',
+      header: t('leave', 'ច្បាប់'),
+      render: (student) => (
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-orange-100 text-orange-800">
+          {student.leaveCount}
+        </span>
+      ),
+      headerClassName: 'text-center',
+      cellClassName: 'text-center'
+    },
+    {
+      key: 'attendanceRate',
+      header: t('attendanceRate', 'អត្រាវត្តមាន'),
+      render: (student) => (
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+          student.attendanceRate >= 90 ? 'bg-green-100 text-green-800' :
+          student.attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-800' :
+          'bg-red-100 text-red-800'
+        }`}>
+          {student.attendanceRate}%
+        </span>
+      ),
+      headerClassName: 'text-center',
+      cellClassName: 'text-center'
+    }
+  ];
+
   return (
-    <div className="space-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="space-y-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
       {/* Student with Most Absences Table - Only show if there is absent data */}
       {topAbsentStudent.length > 0 && (
-        <div className="bg-white border border-red-200 rounded-lg p-6">
-          <h4 className="text-sm font-semibold text-red-900 mb-4 flex items-center">
-            {t('studentWithMostAbsences', 'សិស្សដែលអវត្តមានច្រើនបំផុត')}
-          </h4>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-red-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('studentId', 'អត្តលេខ')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('name', 'ឈ្មោះ')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('gender', 'ភេទ')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('class', 'ថ្នាក់')}
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('absent', 'អត់ច្បាប់')}
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('attendanceRate', 'អត្រាវត្តមាន')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {topAbsentStudent.map((student, index) => (
-                  <tr key={index} className="hover:bg-red-50">
-                    <td className="px-4 py-3 text-sm text-gray-900 font-medium">{student.studentNumber}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || ''}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : ''}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {student.class?.name || student.className || ''}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-800">
-                        {student.absentCount}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        student.attendanceRate >= 90 ? 'bg-green-100 text-green-800' :
-                        student.attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {student.attendanceRate}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="space-y-4">
+          <div className="bg-white border border-red-200 rounded-lg p-6">
+            <h4 className="text-sm font-semibold text-red-900 mb-4 flex items-center">
+              {t('studentWithMostAbsences', 'សិស្សដែលអវត្តមានច្រើនបំផុត')}
+            </h4>
           </div>
+          
+          <Table
+            columns={absentColumns}
+            data={topAbsentStudent}
+            t={t}
+            emptyMessage={t('noDataAvailable', 'No data available')}
+            enableSort={false}
+            rowClassName="hover:bg-red-50"
+            className="border-red-200"
+          />
         </div>
       )}
 
       {/* Student with Most Leaves Table - Only show if there is leave data */}
       {topLeaveStudent.length > 0 && (
-        <div className="bg-white border border-orange-200 rounded-lg p-6">
-          <h4 className="text-sm font-semibold text-orange-900 mb-4 flex items-center">
-            {t('studentWithMostLeaves', 'សិស្សដែលច្បាប់ច្រើនបំផុត')}
-          </h4>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-orange-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('studentId', 'អត្តលេខ')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('name', 'ឈ្មោះ')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('gender', 'ភេទ')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('class', 'ថ្នាក់រៀន')}
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('leave', 'ច្បាប់')}
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    {t('attendanceRate', 'អត្រាវត្តមាន')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {topLeaveStudent.map((student, index) => (
-                  <tr key={index} className="hover:bg-orange-50">
-                    <td className="px-4 py-3 text-sm text-gray-900 font-medium">{student.studentNumber}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || ''}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {student.gender === 'MALE' ? 'ប្រុស' : student.gender === 'FEMALE' ? 'ស្រី' : ''}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {student.class?.name || student.className || ''}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-orange-100 text-orange-800">
-                        {student.leaveCount}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        student.attendanceRate >= 90 ? 'bg-green-100 text-green-800' :
-                        student.attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {student.attendanceRate}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="space-y-4">
+          <div className="bg-white border border-orange-200 rounded-lg p-6">
+            <h4 className="text-sm font-semibold text-orange-900 mb-4 flex items-center">
+              {t('studentWithMostLeaves', 'សិស្សដែលច្បាប់ច្រើនបំផុត')}
+            </h4>
           </div>
+          
+          <Table
+            columns={leaveColumns}
+            data={topLeaveStudent}
+            t={t}
+            emptyMessage={t('noDataAvailable', 'No data available')}
+            enableSort={false}
+            rowClassName="hover:bg-orange-50"
+            className="border-orange-200"
+          />
         </div>
       )}
     </div>

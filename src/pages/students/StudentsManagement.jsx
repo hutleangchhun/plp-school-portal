@@ -800,6 +800,7 @@ export default function StudentsManagement() {
   const TransferDialog = () => (
     <ConfirmDialog
       isOpen={showTransferDialog}
+      type='transfer'
       onClose={() => {
         setShowTransferDialog(false);
         setTransferTargetClassId('');
@@ -808,7 +809,7 @@ export default function StudentsManagement() {
       onConfirm={handleTransferStudent}
       title={t('transferStudent', 'Transfer Student')}
       message={
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
           <p>{t('selectTargetClass', 'Select the class to transfer the student to')}:</p>
           <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-700">
@@ -831,6 +832,7 @@ export default function StudentsManagement() {
                 minWidth="w-full"
                 disabled={transferLoadingClasses}
                 triggerClassName="text-sm"
+                className=''
               />
             </div>
 

@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import Pagination from '../../../components/ui/Pagination';
+import Table from '../../../components/ui/Table';
 
 /**
  * Preview component for Report 1
@@ -29,65 +29,67 @@ export const Report1Preview = ({ data }) => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentData = data.slice(startIndex, endIndex);
-  const showingFrom = startIndex + 1;
-  const showingTo = Math.min(endIndex, data.length);
+
+  // Add row numbers to data
+  const dataWithRowNumbers = currentData.map((student, index) => ({
+    ...student,
+    rowNumber: startIndex + index + 1
+  }));
+
+  const columns = [
+    {
+      key: 'rowNumber',
+      header: '#',
+      accessor: 'rowNumber',
+      cellClassName: 'font-medium'
+    },
+    {
+      key: 'studentId',
+      header: t('studentId', 'Student ID'),
+      render: (student) => student.student?.studentNumber || student.studentNumber || ''
+    },
+    {
+      key: 'name',
+      header: t('name', 'Name'),
+      render: (student) => student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
+      cellClassName: 'font-medium text-gray-900'
+    },
+    {
+      key: 'gender',
+      header: t('gender', 'Gender'),
+      render: (student) => student.gender === 'MALE' ? t('male', 'ប្រុស') : student.gender === 'FEMALE' ? t('female', 'ស្រី') : ''
+    },
+    {
+      key: 'class',
+      header: t('class', 'Class'),
+      render: (student) => student.class?.name || student.className || ''
+    }
+  ];
+
+  const pagination = {
+    page: currentPage,
+    pages: totalPages,
+    total: data.length,
+    limit: itemsPerPage
+  };
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="p-6">
-        <h4 className="text-sm font-semibold text-gray-900 mb-4">
-          {t('dataPreview', 'Data Preview')} ({data.length} {t('students', 'students')})
-        </h4>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h4 className="text-base font-semibold text-gray-900">
+          {t('studentList', 'Student List')}</h4>
+        <span className="text-sm text-gray-500">
+          ({data.length} {t('students', 'students')})</span>
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                #
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t('studentId', 'Student ID')}
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t('name', 'Name')}
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t('gender', 'Gender')}
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t('class', 'Class')}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {currentData.map((student, index) => (
-              <tr key={index} className="hover:bg-gray-50">
-                <td className="px-4 py-3 text-sm text-gray-900 font-medium">{startIndex + index + 1}</td>
-                <td className="px-4 py-3 text-sm text-gray-600">
-                  {student.student?.studentNumber || student.studentNumber || ''}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-900">
-                  {student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || ''}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600">
-                  {student.gender === 'MALE' ? t('male', 'ប្រុស') : student.gender === 'FEMALE' ? t('female', 'ស្រី') : ''}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600">
-                  {student.class?.name || student.className || ''}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        total={data.length}
-        limit={itemsPerPage}
+      <Table
+        columns={columns}
+        data={dataWithRowNumbers}
+        showPagination={true}
+        pagination={pagination}
         onPageChange={setCurrentPage}
         t={t}
+        emptyMessage={t('noDataAvailable', 'No data available')}
+        enableSort={false}
       />
     </div>
   );

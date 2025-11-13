@@ -1064,6 +1064,7 @@ export const km = {
   endDate: 'បញ្ចប់កាលបរិច្ឆេទ',
   selectStartDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
   selectEndDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
+  studentList: 'បញ្ជីឈ្មោះសិស្ស',
   
   
   // Report Types

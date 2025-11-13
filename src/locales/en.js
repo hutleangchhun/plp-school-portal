@@ -749,6 +749,7 @@ export const en = {
   unknownEthnicGroup: 'Khmer', // Unknown ethnic group defaults to Khmer (majority)
   count: 'Count',
   students: 'Students',
+  studentList: 'Student List',
 
 
   //school setting

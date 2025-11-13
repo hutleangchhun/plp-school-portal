@@ -1,5 +1,5 @@
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
-import { AlertTriangle, Info, HelpCircle } from 'lucide-react';
+import { AlertTriangle, Info, HelpCircle, ArrowRightLeft } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Button } from './Button';
 
@@ -40,7 +40,13 @@ export default function ConfirmDialog({
       iconColor: 'text-gray-400',
       bgColor: 'bg-gray-100',
       variant: 'secondary'
-    }
+    },
+    transfer: {
+      icon: ArrowRightLeft,
+      iconColor: 'text-blue-400',
+      bgColor: 'bg-blue-100',
+      variant: 'primary'
+    },
   };
 
   const config = typeConfig[type];
