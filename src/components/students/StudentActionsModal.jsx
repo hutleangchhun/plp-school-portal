@@ -267,25 +267,7 @@ const StudentActionsModal = ({
             )}
           </div>
         )}
-
-        {/* Remove Tab Content */}
-        {activeTab === 'remove' && (
-          <div className="space-y-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-start">
-                <Trash2 className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-red-900">
-                    {t('removeStudentsWarning', 'Remove Students from Classes')}
-                  </p>
-                  <p className="text-xs text-red-700 mt-1">
-                    {t('removeStudentsDescription', `This will remove ${studentsArray.length} student(s) from their current classes. They will be moved back to the master class.`)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        
 
         {/* Selected Students List */}
         <div>
@@ -314,7 +296,7 @@ const StudentActionsModal = ({
                     key={student.id}
                     title={displayName}
                     subtitle={subtitle}
-                    statusColor="blue"
+                    statusColor=""
                     onRemove={() => onRemoveStudent(student.id)}
                   />
                 );

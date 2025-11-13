@@ -23,6 +23,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import SidebarFilter from '../../components/ui/SidebarFilter';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 /**
  * StudentsManagement Component
@@ -156,6 +157,7 @@ export default function StudentsManagement() {
   const [selectingAll, setSelectingAll] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [dataFetched, setDataFetched] = useState(false);
+  const [paginationLoading, setPaginationLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const fetchingRef = useRef(false);
@@ -408,7 +410,7 @@ export default function StudentsManagement() {
   }, [user?.id, user?.username, handleError, t, schoolId, fetchSchoolId, selectedGradeLevel]);
 
   // Fetch students with pagination and filters using school classes endpoint
-  const fetchStudents = useStableCallback(async (search = searchTerm, force = false, skipLoading = false, academicYear = academicYearFilter) => {
+  const fetchStudents = useStableCallback(async (search = searchTerm, force = false, skipLoading = false, academicYear = academicYearFilter, isPagination = false) => {
     // Ensure we have school ID before fetching students
     if (!schoolId) {
       console.log('School ID not available, skipping student fetch...');
@@ -434,7 +436,11 @@ export default function StudentsManagement() {
     lastFetchParams.current = currentParams;
     try {
       if (!skipLoading) {
-        startLoading('fetchStudents', t('loadingStudents', 'Loading students...'));
+        if (isPagination) {
+          setPaginationLoading(true);
+        } else {
+          startLoading('fetchStudents', t('loadingStudents', 'Loading students...'));
+        }
       }
 
       console.log(`=== FETCH STUDENTS (SCHOOL CLASSES) ===`);
@@ -514,7 +520,11 @@ export default function StudentsManagement() {
       setInitialLoading(false); // End initial loading even on error
     } finally {
       if (!skipLoading) {
-        stopLoading('fetchStudents');
+        if (isPagination) {
+          setPaginationLoading(false);
+        } else {
+          stopLoading('fetchStudents');
+        }
       }
       fetchingRef.current = false;
     }
@@ -646,15 +656,16 @@ export default function StudentsManagement() {
     console.log(`Total pages available: ${pagination.pages}`);
     console.log(`Current limit: ${pagination.limit}`);
 
-    if (newPage >= 1 && newPage <= pagination.pages) {
+    if (newPage >= 1 && newPage <= pagination.pages && !paginationLoading) {
       console.log(`Valid page change - updating pagination state`);
       setPagination(prev => {
         const newPagination = { ...prev, page: newPage };
         console.log(`New pagination state:`, newPagination);
         return newPagination;
       });
+      fetchStudents(searchTerm, false, false, academicYearFilter, true); // Call with isPagination = true
     } else {
-      console.warn(`Invalid page change attempted: page ${newPage} not in range 1-${pagination.pages}`);
+      console.warn(`Invalid page change attempted: page ${newPage} not in range 1-${pagination.pages} or loading in progress`);
     }
     console.log(`=== END PAGINATION CHANGE DEBUG ===`);
   };
@@ -1889,21 +1900,30 @@ export default function StudentsManagement() {
         {/* Only show student data if grade level is 'all' OR if there are classes for the selected grade level */}
         {selectedGradeLevel === 'all' || allClasses.length > 0 ? (
           <>
-            <Table
-              columns={tableColumns}
-              data={students}
-              emptyMessage={t('noStudentsFound', 'No students found')}
-              emptyIcon={Users}
-              emptyVariant='info'
-              emptyDescription={t('noStudentsFoundMatchingCriteria', 'No students found matching your criteria.')}
-              emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
-              onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
-              rowClassName="hover:bg-blue-50"
-              showPagination={students.length > 0}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              t={t}
-            />
+            {paginationLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <LoadingSpinner size="lg" variant="primary">
+                  {t('loadingPage', 'Loading page...')}
+                </LoadingSpinner>
+              </div>
+            ) : (
+              <Table
+                columns={tableColumns}
+                data={students}
+                emptyMessage={t('noStudentsFound', 'No students found')}
+                emptyIcon={Users}
+                emptyVariant='info'
+                emptyDescription={t('noStudentsFoundMatchingCriteria', 'No students found matching your criteria.')}
+                emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
+                onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
+                rowClassName="hover:bg-blue-50"
+                showPagination={students.length > 0}
+                pagination={pagination}
+                onPageChange={handlePageChange}
+                t={t}
+                disabled={paginationLoading}
+              />
+            )}
           </>
         ) : (
           <EmptyState

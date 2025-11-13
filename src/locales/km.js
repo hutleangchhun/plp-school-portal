@@ -213,6 +213,13 @@ export const km = {
   age: 'អាយុ',
   healthInformation: 'ព័ត៌មានសុខភាព',
   willBeTransferredTo: 'នឹងត្រូវបានផ្ទេរទៅ',
+  removeStudentsFromClasses: 'ដកសិស្សចេញពីថ្នាក់',
+  confirmRemoveStudentsMessage: 'តើអ្នកប្រាកដថាចង់ដកសិស្សដែលបានជ្រើសរើសចេញពីថ្នាក់ទេបច្ចុប្បន្នដែរឬទេ?',
+  filterByGradeLevel: 'ត្រងតាមកម្រិតថ្នាក់',
+  allGrades: 'កម្រិតថ្នាក់ទាំងអស់',
+  noClassesForGrade: 'មិនមានថ្នាក់សម្រាប់កម្រិតថ្នាក់ដែលបានជ្រើសរើស',
+  selectGradeLevel: 'ជ្រើសរើសកម្រិតថ្នាក់',
+  scrollToSeeMoreStudents: 'អូសទៅក្រោមដើម្បីបង្ហាញសិស្សទៀត',
 
   // Teacher Management
   addTeacher: 'បន្ថែមគ្រូ',

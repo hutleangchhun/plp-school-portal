@@ -23,6 +23,7 @@ import Modal from '../../components/ui/Modal';
 import SelectedCard from '../../components/ui/SelectedCard';
 import Dropdown from '../../components/ui/Dropdown';
 import SidebarFilter from '../../components/ui/SidebarFilter';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 export default function TeachersManagement() {
   const { t } = useLanguage();
@@ -98,6 +99,7 @@ export default function TeachersManagement() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [dataFetched, setDataFetched] = useState(false);
+  const [paginationLoading, setPaginationLoading] = useState(false);
   const [selectingAll, setSelectingAll] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -179,7 +181,7 @@ export default function TeachersManagement() {
   }, [schoolId, showError, t, handleError]);
 
   // Fetch teachers from the school
-  const fetchTeachers = useStableCallback(async (force = false) => {
+  const fetchTeachers = useStableCallback(async (force = false, isPagination = false) => {
     if (!schoolId) {
       console.log('No school ID available, skipping teacher fetch...');
       return;
@@ -202,7 +204,11 @@ export default function TeachersManagement() {
     lastFetchParams.current = currentParams;
 
     try {
-      setLoading(true);
+      if (isPagination) {
+        setPaginationLoading(true);
+      } else {
+        setLoading(true);
+      }
 
       console.log(`=== FETCH TEACHERS ===`);
       console.log(`School ID: ${schoolId}`);
@@ -300,7 +306,12 @@ export default function TeachersManagement() {
       setDataFetched(true); // Mark data as fetched even on error
       setInitialLoading(false); // End initial loading even on error
     } finally {
-      stopLoading('fetchTeachers');
+      if (isPagination) {
+        setPaginationLoading(false);
+      } else {
+        stopLoading('fetchTeachers');
+      }
+      setLoading(false);
       fetchingRef.current = false;
     }
   }, [schoolId, searchTerm, selectedGradeLevel, pagination.page, pagination.limit, showError, t, handleError, stopLoading]);
@@ -369,8 +380,9 @@ export default function TeachersManagement() {
   const handlePageChange = (newPage) => {
     console.log(`Changing from page ${pagination.page} to page ${newPage}`);
 
-    if (newPage >= 1 && newPage <= pagination.pages) {
+    if (newPage >= 1 && newPage <= pagination.pages && !paginationLoading) {
       setPagination(prev => ({ ...prev, page: newPage }));
+      fetchTeachers(false, true); // Call with isPagination = true
     }
   };
 
@@ -1049,22 +1061,31 @@ export default function TeachersManagement() {
           }
         />
 
-        <Table
-          columns={tableColumns}
-          data={teachers}
-          loading={isLoading('fetchTeachers')}
-          emptyMessage={t('noTeachersFound', 'No teachers found')}
-          emptyIcon={Users}
-          emptyVariant='info'
-          emptyDescription={t('noDataFound', 'No data found')}
-          emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
-          onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
-          showPagination={true}
-          pagination={pagination}
-          onPageChange={handlePageChange}
-          rowClassName="hover:bg-blue-50"
-          t={t}
-        />
+        {paginationLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <LoadingSpinner size="lg" variant="primary">
+              {t('loadingPage', 'Loading page...')}
+            </LoadingSpinner>
+          </div>
+        ) : (
+          <Table
+            columns={tableColumns}
+            data={teachers}
+            loading={isLoading('fetchTeachers')}
+            emptyMessage={t('noTeachersFound', 'No teachers found')}
+            emptyIcon={Users}
+            emptyVariant='info'
+            emptyDescription={t('noDataFound', 'No data found')}
+            emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
+            onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
+            showPagination={true}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            rowClassName="hover:bg-blue-50"
+            t={t}
+            disabled={paginationLoading}
+          />
+        )}
       </div>
 
       <ConfirmDialog

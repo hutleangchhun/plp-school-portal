@@ -99,6 +99,11 @@ export default function ClassesManagement() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [dataFetched, setDataFetched] = useState(false);
   const [paginationLoading, setPaginationLoading] = useState(false);
+  
+  // Debug pagination loading state changes
+  useEffect(() => {
+    console.log('🔄 paginationLoading changed:', paginationLoading);
+  }, [paginationLoading]);
   const [schoolInfo, setSchoolInfo] = useState({ id: null, name: 'Loading...' });
   const [availableTeachers, setAvailableTeachers] = useState([]);
   const [filteredTeachers, setFilteredTeachers] = useState([]);
@@ -329,8 +334,10 @@ export default function ClassesManagement() {
   const fetchClasses = useStableCallback(async (page = currentPage, gradeLevel = selectedGradeLevel, search = searchTerm, isPagination = false) => {
     try {
       if (isPagination) {
+        console.log('🔄 Setting pagination loading to true');
         setPaginationLoading(true);
       } else {
+        console.log('🔄 Setting regular loading');
         startLoading('fetchClasses', t('loadingClasses', 'Loading classes...'));
       }
 
@@ -461,12 +468,13 @@ export default function ClassesManagement() {
       }
     }
   }, [startLoading, stopLoading, t, user?.id, handleError, schoolInfo?.id, classesPerPage]);
-  // Main effect to fetch classes when user and school are available
+  // Main effect to fetch classes when user and school are available (initial load only)
   useEffect(() => {
-    if (user?.id && schoolInfo?.id) {
-      fetchClasses(currentPage, selectedGradeLevel, searchTerm);
+    if (user?.id && schoolInfo?.id && currentPage === 1) {
+      console.log('📄 Initial fetch triggered');
+      fetchClasses(currentPage, selectedGradeLevel, searchTerm, false);
     }
-  }, [user?.id, schoolInfo?.id]); // Removed currentPage to prevent double fetch on pagination
+  }, [user?.id, schoolInfo?.id]); // Only for initial load, pagination handled in handlePageChange
 
   // Auto-apply filters when search term or grade level changes (with debounce for search)
   useEffect(() => {
@@ -732,10 +740,16 @@ export default function ClassesManagement() {
 
   // Pagination handlers - memoized to prevent unnecessary re-renders
   const handlePageChange = React.useCallback((newPage) => {
+    console.log('🔄 Pagination click:', { newPage, currentPage, totalPages, paginationLoading });
     if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage && !paginationLoading) {
+      console.log('✅ Valid pagination change, setting pagination loading and updating page');
+      setPaginationLoading(true); // Set loading immediately
       setCurrentPage(newPage);
+      // Call fetchClasses directly with pagination flag
       fetchClasses(newPage, selectedGradeLevel, searchTerm, true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      console.log('❌ Invalid pagination change blocked');
     }
   }, [currentPage, totalPages, paginationLoading, fetchClasses, selectedGradeLevel, searchTerm]);
 
@@ -856,6 +870,7 @@ export default function ClassesManagement() {
         <FadeInSection delay={0.2} className='mt-3 sm:mt-6'>
           {paginationLoading ? (
             <div className="flex items-center justify-center py-12">
+              {console.log('🎯 Rendering LoadingSpinner for pagination')}
               <LoadingSpinner size="lg" variant="primary">
                 {t('loadingPage', 'Loading page...')}
               </LoadingSpinner>

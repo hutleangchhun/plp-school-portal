@@ -182,7 +182,8 @@ export const en = {
   targetGrade: 'Target Grade',
   deselectAll: 'Deselect All',
   readyToTransfer: 'Ready To Transfter',
-    manageSelectedStudents: 'Manage Selected Students',
+  manageSelectedStudents: 'Manage Selected Students',
+  scrollToSeeMoreStudents: 'Scroll To See More Students',
 
 
   // Teacher Management

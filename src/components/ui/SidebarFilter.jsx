@@ -114,7 +114,7 @@ export default function SidebarFilter({
               onClose();
             }}
             variant="primary"
-            size="default"
+            size="sm"
             className="w-full"
           >
             {t('apply', 'Apply Filters')}

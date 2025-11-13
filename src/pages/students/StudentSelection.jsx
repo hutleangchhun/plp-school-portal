@@ -684,7 +684,7 @@ const StudentSelection = () => {
                       selectedStudentsData={actualSelectedStudentsData}
                       onRemoveStudent={actualRemoveStudent}
                       onClearAll={actualClearAll}
-                      classes={classes}
+                      schoolId={schoolId}
                       isOpen={showSelectedStudentsSidebar}
                       onToggle={setShowSelectedStudentsSidebar}
                       autoOpen={false}

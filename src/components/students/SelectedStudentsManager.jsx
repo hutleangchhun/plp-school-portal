@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Folder, FolderOpen } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Users, Folder, FolderOpen, Filter } from 'lucide-react';
 import { Button } from '../ui/Button';
 import Modal from '../ui/Modal';
+import Dropdown from '../ui/Dropdown';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import studentService from '../../utils/api/services/studentService';
+import classService from '../../utils/api/services/classService';
 import DynamicLoader from '../ui/DynamicLoader';
 import SelectedCard from '../ui/SelectedCard';
 
@@ -15,7 +17,7 @@ const SelectedStudentsManager = ({
   onClearAll,
   onBulkAction,
   actions = [],
-  classes = [],
+  schoolId, // Add schoolId prop to fetch classes
   className = '',
   showActions = true,
   isOpen: externalIsOpen,
@@ -25,10 +27,21 @@ const SelectedStudentsManager = ({
 }) => {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
+  
+  // Debug: Log component props
+  console.log('🏗️ SelectedStudentsManager mounted with props:', {
+    schoolId,
+    selectedStudentsCount: selectedStudents.length,
+    showActions,
+    isOpen: externalIsOpen
+  });
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [userManuallyClosed, setUserManuallyClosed] = useState(false);
   const [selectedClass, setSelectedClass] = useState('');
   const [assigningStudents, setAssigningStudents] = useState(false);
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
+  const [classes, setClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
 
   // Use external control if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -39,6 +52,74 @@ const SelectedStudentsManager = ({
       setUserManuallyClosed(false);
     }
   }, [selectedStudents.length]);
+
+  // Fetch classes when schoolId or selectedGradeLevel changes
+  useEffect(() => {
+    console.log('🔍 SelectedStudentsManager useEffect triggered with:', { schoolId, selectedGradeLevel });
+    
+    const fetchClasses = async () => {
+      if (!schoolId) {
+        console.log('❌ No schoolId provided, skipping class fetch');
+        setClasses([]);
+        return;
+      }
+
+      try {
+        setLoadingClasses(true);
+        console.log('🔄 Starting to fetch classes for school:', schoolId, 'grade:', selectedGradeLevel);
+        
+        // Build query parameters like in ClassesManagement.jsx
+        const queryParams = {
+          limit: 1000 // Set a high limit to get all classes
+        };
+        if (selectedGradeLevel && selectedGradeLevel !== 'all') {
+          queryParams.gradeLevel = selectedGradeLevel;
+          console.log('🎯 Filtering by grade level:', selectedGradeLevel);
+        }
+        
+        console.log('🌐 Making API call to classService.getBySchool with params:', queryParams);
+        const response = await classService.getBySchool(schoolId, queryParams);
+        console.log('📚 Raw API response:', response);
+        
+        if (response && response.success && response.classes) {
+          setClasses(response.classes);
+          console.log('✅ Classes loaded successfully:', response.classes.length, 'classes for grade:', selectedGradeLevel);
+          console.log('📝 First class example:', response.classes[0]);
+        } else {
+          console.warn('⚠️ No classes found in response or response.success is false');
+          console.log('🔍 Response structure:', response);
+          setClasses([]);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching classes:', error);
+        console.error('🔍 Error details:', error.message, error.stack);
+        showError(t('errorFetchingClasses', 'Failed to load classes'));
+        setClasses([]);
+      } finally {
+        setLoadingClasses(false);
+        console.log('🏁 Finished fetching classes, loadingClasses set to false');
+      }
+    };
+
+    fetchClasses();
+  }, [schoolId, selectedGradeLevel, showError, t]);
+
+  // Create dropdown options for grade levels 1-6 (always show all grades)
+  const gradeLevelOptions = useMemo(() => {
+    const allGradeLevels = [1, 2, 3, 4, 5, 6];
+    
+    return [
+      { value: 'all', label: t('allGrades') || 'All Grades' },
+      ...allGradeLevels.map(level => ({
+        value: level,
+        label: t(`grade${level}`) || `Grade ${level}`
+      }))
+    ];
+  }, [t]);
+
+  // No need for client-side filtering since we're doing server-side filtering
+  // The classes array already contains only the classes for the selected grade level
+  const filteredClasses = classes;
 
   // Auto-open disabled - now controlled by button click only
 
@@ -191,16 +272,42 @@ const SelectedStudentsManager = ({
                   {t('assignToClass') || 'កំណត់ទៅថ្នាក់'}:
                 </h4>
                 <div className="space-y-3">
+                  {/* Grade Level Filter */}
                   <div>
-                    
-                    <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto">
-                      {classes.length === 0 ? (
+                    <label className="block text-xs font-medium text-gray-600 mb-2">
+                      <Filter className="h-3 w-3 inline mr-1" />
+                      {t('gradeLevel') || 'Filter by Grade Level'}:
+                    </label>
+                    <Dropdown
+                      value={selectedGradeLevel}
+                      onValueChange={(value) => {
+                        setSelectedGradeLevel(value);
+                        setSelectedClass(''); // Reset class selection when grade changes
+                      }}
+                      options={gradeLevelOptions}
+                      placeholder={t('selectGradeLevel') || 'Select Grade Level'}
+                      className="w-full"
+                      minWidth="w-full"
+                    />
+                  </div>
+                  <div>
+                    <div className="border border-gray-300 rounded-md max-h-64 overflow-y-auto">
+                      {loadingClasses ? (
                         <div className="p-4 text-center text-gray-500 text-sm">
+                          <DynamicLoader type="spinner" size="sm" className="inline-block mr-2" />
                           {t('loadingClasses') || 'Loading classes...'}
+                        </div>
+                      ) : classes.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500 text-sm">
+                          {t('noClassesAvailable') || 'No classes available'}
+                        </div>
+                      ) : filteredClasses.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500 text-sm">
+                          {t('noClassesForGrade') || 'No classes available for selected grade level'}
                         </div>
                       ) : (
                         <div className="divide-y divide-gray-200">
-                          {classes.map((cls) => {
+                          {filteredClasses.map((cls) => {
                             const classId = (cls.id || cls.classId).toString();
                             const isSelected = selectedClass === classId;
                             return (
@@ -272,32 +379,60 @@ const SelectedStudentsManager = ({
           </div>
         }
       >
-        {/* Selected Students List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {selectedStudents.map(studentId => {
-            const student = selectedStudentsData[studentId];
+        {/* Selected Students List - Scrollable */}
+        <div className="max-h-96 overflow-y-auto pr-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {selectedStudents.map(studentId => {
+              const student = selectedStudentsData[studentId];
 
-            // Handle case where student data might be missing
-            const studentName = student
-              ? (student.name ||
-                  `${student.firstName || ''} ${student.lastName || ''}`.trim() ||
-                  student.username || 'No Name')
-              : `Student ID: ${studentId}`;
+              // Handle case where student data might be missing
+              const studentName = student
+                ? (student.name ||
+                    `${student.firstName || ''} ${student.lastName || ''}`.trim() ||
+                    student.username || 'No Name')
+                : `Student ID: ${studentId}`;
 
-            const studentInfo = student
-              ? `${student.email || 'No email'} • ${student.studentId || 'No ID'}`
-              : 'Student data not available';
+              const studentInfo = student
+                ? `${student.email || 'No email'} • ${student.studentId || 'No ID'}`
+                : 'Student data not available';
 
-            return (
-              <SelectedCard
-                key={studentId}
-                title={studentName}
-                subtitle={studentInfo}
-                statusColor={student ? "blue" : "orange"}
-                onRemove={() => onRemoveStudent(studentId)}
-              />
-            );
-          })}
+              return (
+                <div key={studentId} className="bg-blue-50 border border-blue-200 rounded-lg p-3 transition-all duration-200 hover:shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      {/* Selection indicator */}
+                      <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                          {studentName}
+                        </h4>
+                        <p className="text-xs text-gray-600 truncate">
+                          {studentInfo}
+                        </p>
+                      </div>
+                    </div>
+                    {/* Remove button */}
+                    <button
+                      onClick={() => onRemoveStudent(studentId)}
+                      className="ml-2 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors duration-200 flex-shrink-0"
+                      title="Remove student"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Scroll indicator */}
+          {selectedStudents.length > 5 && (
+            <div className="text-center mt-3 text-xs text-gray-500">
+              {selectedStudents.length > 5 ? (t('scrollToSeeMoreStudents') || 'រំកិលដើម្បីមើលសិស្សបន្ថែម') : ''}
+            </div>
+          )}
         </div>
       </Modal>
     </>
