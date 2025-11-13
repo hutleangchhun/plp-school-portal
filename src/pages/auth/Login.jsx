@@ -183,7 +183,7 @@ export default function Login({ setUser }) {
                 type="submit"
                 disabled={loading}
                 variant="primary"
-                size="sm"
+                size="default"
                 fullWidth
                 className="relative group"
               >
