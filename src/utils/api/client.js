@@ -63,10 +63,13 @@ apiClient.interceptors.response.use(
       // Handle specific status codes
       if (status === 401) {
         // Unauthorized - clear auth data
-        // Only redirect if not already on login page to prevent refresh loop
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
-        if (!window.location.pathname.includes('/login')) {
+        // Only redirect if not already on login page or public pages to prevent refresh loop
+        const publicPages = ['/login', '/school-lookup', '/register'];
+        const isPublicPage = publicPages.some(page => window.location.pathname.includes(page));
+        
+        if (!isPublicPage) {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
           window.location.href = '/login';
         }
       } else if (status === 403) {
