@@ -108,31 +108,41 @@ export default function DirectorExamRecords({ user }) {
    * Fetch all students from school using school API with pagination
    * Pagination is controlled by the API response
    */
-  const fetchAllStudents = useCallback(async (page = 1) => {
+  const fetchAllStudents = useCallback(async (page = 1, pageSize = 10) => {
     try {
       let studentsList = [];
       const schoolId = user?.teacher?.schoolId || user?.schoolId;
 
       if (selectedClass && schoolId) {
-        // Let the API handle pagination - don't specify limit, let it use its default
-        const response = await studentService.getStudentsBySchoolClasses(schoolId, {
+        // Send page and limit to API, let API handle pagination
+        const apiParams = {
           classId: selectedClass,
-          page: page
-        });
+          page: page,
+          limit: pageSize
+        };
+
+        console.log('Fetching students with pagination params:', apiParams);
+
+        const response = await studentService.getStudentsBySchoolClasses(schoolId, apiParams);
+
+        console.log('API Response - Total:', response.total, 'Pages:', response.pages, 'Limit:', response.limit);
+
         if (response.success) {
           studentsList = response.data || [];
 
           // Update pagination info from API response
           // API should return: total, pages, page, limit, or similar fields
           const total = response.total || response.data?.length || 0;
-          const totalPages = response.pages || response.totalPages || Math.ceil(total / (response.limit || 10)) || 1;
-          const pageSize = response.limit || response.pageSize || 10;
+          const totalPages = response.pages || response.totalPages || Math.ceil(total / (response.limit || pageSize)) || 1;
+          const apiPageSize = response.limit || pageSize;
           const currentPage = response.page || page || 1;
+
+          console.log('Pagination state updated:', { currentPage, pageSize: apiPageSize, totalStudents: total, totalPages });
 
           setPagination(prev => ({
             ...prev,
             currentPage: currentPage,
-            pageSize: pageSize,
+            pageSize: apiPageSize,
             totalStudents: total,
             totalPages: totalPages,
             allStudents: studentsList
@@ -164,8 +174,8 @@ export default function DirectorExamRecords({ user }) {
       setError(null);
       startLoading('fetchExamRecords', t('loadingExamRecords', 'Loading exam records...'));
 
-      // Fetch students for the current page (pagination handled by API)
-      const studentsList = await fetchAllStudents(page);
+      // Fetch students for the current page with limit (pagination handled by API)
+      const studentsList = await fetchAllStudents(page, 10);
 
       // Fetch exam records for each student using the new endpoint
       const studentRecordsMap = new Map();
