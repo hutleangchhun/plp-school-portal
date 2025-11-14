@@ -7,15 +7,42 @@ import { ENDPOINTS } from '../config.js';
  */
 export const examHistoryService = {
   /**
-   * Get exam history for a specific user
+   * Get exam history for a specific user with optional filters
    * @param {number} userId - User ID to fetch exam history for
+   * @param {Object} params - Query parameters
+   * @param {string} [params.examType] - Optional exam type filter (e.g., 'exam', 'quiz')
+   * @param {string} [params.startDate] - Optional start date (YYYY-MM-DD format)
+   * @param {string} [params.endDate] - Optional end date (YYYY-MM-DD format)
+   * @param {string} [params.status] - Optional status filter (e.g., 'COMPLETED', 'IN_PROGRESS')
+   * @param {string|number} [params.subjectId] - Optional subject filter
+   * @param {string|number} [params.subject_id] - Optional subject filter (alternative naming)
    * @returns {Promise<Object>} Response with exam history data
    */
-  async getUserExamHistory(userId) {
+  async getUserExamHistory(userId, params = {}) {
+    const queryParams = {};
+
+    if (params.examType !== undefined) queryParams.examType = params.examType;
+    if (params.startDate !== undefined) queryParams.startDate = params.startDate;
+    if (params.endDate !== undefined) queryParams.endDate = params.endDate;
+    if (params.status !== undefined) queryParams.status = params.status;
+
+    // Pass subjectId as-is (backend expects camelCase based on your API route)
+    if (params.subjectId !== undefined) queryParams.subjectId = params.subjectId;
+
     const response = await handleApiResponse(() =>
-      apiClient_.get(ENDPOINTS.EXAM_HISTORY.BY_USER(userId))
+      apiClient_.get(ENDPOINTS.EXAM_HISTORY.BY_USER(userId), { params: queryParams })
     );
     return response;
+  },
+
+  /**
+   * Get exam history for a specific user (alias for getUserExamHistory for backward compatibility)
+   * @param {number} userId - User ID to fetch exam history for
+   * @param {Object} params - Query parameters
+   * @returns {Promise<Object>} Response with filtered exam history data
+   */
+  async getUserExamHistoryFiltered(userId, params = {}) {
+    return this.getUserExamHistory(userId, params);
   },
 
   /**

@@ -252,11 +252,11 @@ export default function TeacherExamRecords({ user }) {
   }
 
   return (
-    <PageTransition variant="fade" className="flex-1 bg-gray-50">
+    <PageTransition variant="fade" className="flex-1">
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <FadeInSection className="mb-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="bg-white rounded-xl p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-3 bg-blue-100 rounded-lg">
                 <BookOpen className="w-6 h-6 text-blue-600" />

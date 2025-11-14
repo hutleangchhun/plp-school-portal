@@ -1,27 +1,23 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { examHistoryService } from '../../utils/api/services/examHistoryService';
 import { classService, studentService } from '@/utils/api';
+import { encryptId } from '../../utils/encryption';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import EmptyState from '../../components/ui/EmptyState';
+import Table from '../../components/ui/Table';
 import { Button } from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
-import { Tooltip } from '../../components/ui/Tooltip';
 import Dropdown from '../../components/ui/Dropdown';
 import {
   BookOpen,
-  Calendar,
-  Download,
-  Filter,
-  Search,
-  Users,
-  CheckCircle,
-  XCircle,
-  AlertCircle
+  Eye,
+  Search
 } from 'lucide-react';
 
 /**
@@ -32,33 +28,72 @@ export default function DirectorExamRecords({ user }) {
   const { t } = useLanguage();
   const { showError, showSuccess } = useToast();
   const { startLoading, stopLoading } = useLoading();
+  const navigate = useNavigate();
 
   // State
   const [studentRecords, setStudentRecords] = useState([]);
+  const [gradeLevels, setGradeLevels] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   /**
-   * Fetch all classes for the school
+   * Fetch all grade levels for the school
+   */
+  const fetchGradeLevels = useCallback(async () => {
+    try {
+      const schoolId = user?.teacher?.schoolId || user?.schoolId;
+      if (schoolId) {
+        // Fetch all classes to extract unique grade levels
+        const response = await classService.getBySchool(schoolId, { limit: 1000 });
+        if (response.success && response.data && Array.isArray(response.data)) {
+          // Extract unique grade levels
+          const uniqueGradeLevels = [...new Set(response.data.map(cls => cls.gradeLevel))];
+          const sorted = uniqueGradeLevels
+            .filter(gl => gl) // Remove null/undefined
+            .sort((a, b) => {
+              // Sort numerically if they're numbers, otherwise alphabetically
+              const aNum = parseInt(a);
+              const bNum = parseInt(b);
+              return isNaN(aNum) ? a.localeCompare(b) : aNum - bNum;
+            });
+          setGradeLevels(sorted);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching grade levels:', error);
+      // Continue without grade levels - show all classes instead
+    }
+  }, [user]);
+
+  /**
+   * Fetch classes filtered by grade level
    */
   const fetchClasses = useCallback(async () => {
     try {
       const schoolId = user?.teacher?.schoolId || user?.schoolId;
       if (schoolId) {
-        const response = await classService.getBySchool(schoolId, { limit: 10 });
+        // If a grade level is selected, filter by that grade level
+        const params = { limit: 1000 };
+        if (selectedGradeLevel) {
+          params.gradeLevel = selectedGradeLevel;
+        }
+
+        const response = await classService.getBySchool(schoolId, params);
         if (response.success && response.data) {
           setClasses(response.data || []);
+          // Reset selected class when grade level changes
+          setSelectedClass(null);
         }
       }
     } catch (error) {
       console.error('Error fetching classes:', error);
       showError(t('errorFetchingClasses', 'Failed to fetch classes'));
     }
-  }, [user, showError, t]);
+  }, [user, selectedGradeLevel, showError, t]);
 
   /**
    * Fetch all students from school using school API
@@ -102,26 +137,67 @@ export default function DirectorExamRecords({ user }) {
       setError(null);
       startLoading('fetchExamRecords', t('loadingExamRecords', 'Loading exam records...'));
 
-      let allRecords = [];
-
-      // Fetch exam records for the selected class
-      const response = await examHistoryService.getClassExamHistory(selectedClass);
-      if (response.success) {
-        allRecords = response.data || [];
-      }
-
       // Fetch all students in the class
       const studentsList = await fetchAllStudents();
 
-      // Merge students with their exam records
-      const merged = studentsList.map(student => {
-        const studentExams = allRecords.filter(record => record.userId === student.id);
-        return {
+      // Fetch exam records for each student using the new endpoint
+      const studentRecordsMap = new Map();
+
+      for (const student of studentsList) {
+        try {
+          // Extract userId from nested user object or use direct id
+          // Response structure: { studentId, user: { id, username, first_name, last_name, ... }, class, ... }
+          const userId = student.user?.id || student.userId || student.id;
+
+          if (!userId) {
+            console.warn('Student has no userId:', student);
+            studentRecordsMap.set(student.studentId || student.id, {
+              student: student,
+              exams: [],
+              hasRecords: false
+            });
+            continue;
+          }
+
+          console.log(`Fetching exam history for student userId: ${userId}, studentId: ${student.studentId}`);
+
+          const response = await examHistoryService.getUserExamHistoryFiltered(userId, {
+            examType: 'exam'
+            // Optionally add date filters:
+            // startDate: '2025-01-01',
+            // endDate: '2025-12-31'
+          });
+
+          // API returns array of exam records for the user
+          const exams = Array.isArray(response.data) ? response.data : (response.data ? [response.data] : []);
+
+          console.log(`Found ${exams.length} exam records for userId ${userId}`);
+
+          studentRecordsMap.set(student.studentId || student.id, {
+            student: student,
+            exams: exams,
+            hasRecords: exams.length > 0
+          });
+        } catch (error) {
+          const userId = student.user?.id || student.userId || student.id;
+          console.warn(`Failed to fetch exam history for student ${userId}:`, error);
+          // Continue with other students even if one fails
+          studentRecordsMap.set(student.studentId || student.id, {
+            student: student,
+            exams: [],
+            hasRecords: false
+          });
+        }
+      }
+
+      // Convert map to array, maintaining student order
+      const merged = studentsList.map(student =>
+        studentRecordsMap.get(student.studentId || student.id) || {
           student: student,
-          exams: studentExams,
-          hasRecords: studentExams.length > 0
-        };
-      });
+          exams: [],
+          hasRecords: false
+        }
+      );
 
       setStudentRecords(merged);
     } catch (error) {
@@ -135,7 +211,14 @@ export default function DirectorExamRecords({ user }) {
   }, [selectedClass, startLoading, stopLoading, t, fetchAllStudents]);
 
   /**
-   * Initial load
+   * Initial load - fetch grade levels
+   */
+  useEffect(() => {
+    fetchGradeLevels();
+  }, [fetchGradeLevels]);
+
+  /**
+   * Fetch classes when grade level changes
    */
   useEffect(() => {
     fetchClasses();
@@ -227,6 +310,147 @@ export default function DirectorExamRecords({ user }) {
     }
   };
 
+  /**
+   * Handle viewing student exam records
+   * Navigate to the student exam records page with encrypted user ID
+   */
+  const handleViewStudentRecords = (studentRecord) => {
+    const userId = studentRecord.student.user?.id || studentRecord.student.userId || studentRecord.student.id;
+    const encryptedUserId = encryptId(userId);
+
+    navigate(`/exam-records/${encryptedUserId}`, {
+      state: {
+        student: studentRecord.student,
+        exams: studentRecord.exams || []
+      }
+    });
+  };
+
+  /**
+   * Get table columns configuration - shows only students with records
+   */
+  const getTableColumns = () => [
+    {
+      key: 'studentName',
+      header: t('student', 'Student'),
+      accessor: 'studentName',
+      disableSort: false
+    },
+    {
+      key: 'totalExams',
+      header: t('totalExams', 'Total Exams'),
+      accessor: 'totalExams',
+      render: (item) => (
+        <Badge color="blue" variant="outline">
+          {item.totalExams}
+        </Badge>
+      ),
+      disableSort: false
+    },
+    {
+      key: 'passedCount',
+      header: t('passed', 'Passed'),
+      accessor: 'passedCount',
+      render: (item) => (
+        <Badge color="green" variant="solid" size="sm">
+          {item.passedCount}
+        </Badge>
+      ),
+      disableSort: false
+    },
+    {
+      key: 'failedCount',
+      header: t('failed', 'Failed'),
+      accessor: 'failedCount',
+      render: (item) => (
+        <Badge color="red" variant="solid" size="sm">
+          {item.failedCount}
+        </Badge>
+      ),
+      disableSort: false
+    },
+    {
+      key: 'completedCount',
+      header: t('completed', 'Completed'),
+      accessor: 'completedCount',
+      render: (item) => (
+        <Badge color="gray" variant="outline" size="sm">
+          {item.completedCount}
+        </Badge>
+      ),
+      disableSort: false
+    },
+    {
+      key: 'actions',
+      header: t('actions', 'Actions'),
+      disableSort: true,
+      render: (item) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleViewStudentRecords(item.studentRecord)}
+          className="flex items-center gap-1"
+        >
+          <Eye className="w-4 h-4" />
+          {t('viewRecords', 'View Records')}
+        </Button>
+      )
+    }
+  ];
+
+  /**
+   * Get table data - students with exam records only
+   */
+  const getTableData = useMemo(() => {
+    const rows = [];
+
+    studentRecords.forEach((sr) => {
+      // Only include students with exam records
+      if (!sr.hasRecords || !sr.exams || sr.exams.length === 0) {
+        return;
+      }
+
+      // Handle nested user structure
+      const firstName = sr.student.user?.first_name || sr.student.firstName || '';
+      const lastName = sr.student.user?.last_name || sr.student.lastName || '';
+      const studentName = `${firstName} ${lastName}`.trim() || '-';
+      const studentId = sr.student.studentId || sr.student.user?.id || sr.student.id;
+
+      // Calculate statistics
+      const totalExams = sr.exams.length;
+      const passedCount = sr.exams.filter(e => e.status === 'COMPLETED' && e.passed).length;
+      const failedCount = sr.exams.filter(e => e.status === 'COMPLETED' && !e.passed).length;
+      const completedCount = sr.exams.filter(e => e.status === 'COMPLETED').length;
+
+      rows.push({
+        id: `student-${studentId}`,
+        studentName,
+        totalExams,
+        passedCount,
+        failedCount,
+        completedCount,
+        studentRecord: sr // Keep full record for modal
+      });
+    });
+
+    return rows;
+  }, [studentRecords, t]);
+
+  /**
+   * Apply search filter to table data
+   */
+  const filteredTableData = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return getTableData;
+    }
+
+    const search = searchTerm.toLowerCase();
+    return getTableData.filter((row) => {
+      const studentName = (row.studentName || '').toLowerCase();
+      return studentName.includes(search);
+    });
+  }, [getTableData, searchTerm]);
+
   // Loading state
   if (loading && classes.length === 0) {
     return <PageLoader message={t('loadingExamRecords', 'Loading exam records...')} />;
@@ -243,11 +467,11 @@ export default function DirectorExamRecords({ user }) {
   }
 
   return (
-    <PageTransition variant="fade" className="flex-1 bg-gray-50">
+    <PageTransition variant="fade" className="flex-1">
       <div className="p-3 sm:p-6">
         {/* Header */}
         <FadeInSection className="mb-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="bg-white rounded-xl p-6">
             <div className="flex items-center gap-3 mb-2">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -259,7 +483,30 @@ export default function DirectorExamRecords({ user }) {
               </div>
             </div>
             <div className="mt-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Primary Filters: Grade Level, Class, Search */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                {/* Grade Level Filter */}
+                {gradeLevels.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('gradeLevel', 'Grade Level')}
+                    </label>
+                    <Dropdown
+                      value={selectedGradeLevel || ''}
+                      onValueChange={(value) => setSelectedGradeLevel(value || null)}
+                      options={[
+                        { value: '', label: t('allGradeLevels', 'All Grades') },
+                        ...gradeLevels.map(level => ({
+                          value: level,
+                          label: `${t('grade', 'Grade')} ${level}`
+                        }))
+                      ]}
+                      placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                      className='w-full'
+                    />
+                  </div>
+                )}
+
                 {/* Class Selection - Mandatory */}
                 {classes.length > 0 && (
                   <div>
@@ -302,173 +549,25 @@ export default function DirectorExamRecords({ user }) {
                   title={t('selectClassFirst', 'Select a Class')}
                   description={t('selectClassFirstDesc', 'Please select a class from the filters above to view exam records')}
                 />
-              ) : studentRecords.length === 0 ? (
+              ) : loading ? (
+                <PageLoader message={t('loadingExamRecords', 'Loading exam records...')} />
+              ) : filteredTableData.length === 0 ? (
                 <EmptyState
                   icon={BookOpen}
-                  title={t('noStudents', 'No Students')}
-                  description={t('noStudentsDesc', 'No students found in the selected class')}
-                  action={
-                    <Button onClick={() => {
-                      setSearchTerm('');
-                      setStatusFilter('ALL');
-                    }}>
-                      {t('clearFilters', 'Clear Filters')}
-                    </Button>
-                  }
+                  title={filteredTableData.length === 0 && getTableData.length > 0 ? t('noResults', 'No Results') : t('noStudentsWithRecords', 'No Students with Records')}
+                  description={filteredTableData.length === 0 && getTableData.length > 0 ? t('adjustFiltersOrSearch', 'Try adjusting your search or filters') : t('noStudentExamRecords', 'No students in this class have exam records')}
+                  actionLabel={t('clearFilters', 'Clear Filters')}
+                  onAction={() => {
+                    setSearchTerm('');
+                  }}
                 />
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                          {t('student', 'Student')}
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                          {t('exam', 'Exam')}
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                          {t('subject', 'Subject')}
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                          {t('grade', 'Grade')}
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                          {t('status', 'Status')}
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                          {t('score', 'Score')}
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                          {t('date', 'Date')}
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                          {t('duration', 'Duration')}
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                          {t('actions', 'Actions')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {studentRecords
-                        .filter(sr => {
-                          // Apply search filter
-                          if (searchTerm.trim()) {
-                            const search = searchTerm.toLowerCase();
-                            const studentName = `${sr.student.firstName || ''} ${sr.student.lastName || ''}`.toLowerCase();
-                            const hasMatchInStudent = studentName.includes(search);
-                            const hasMatchInExams = sr.exams.some(exam =>
-                              exam.examTitle?.toLowerCase().includes(search) ||
-                              exam.subjectName?.toLowerCase().includes(search) ||
-                              exam.subjectKhmerName?.toLowerCase().includes(search)
-                            );
-                            return hasMatchInStudent || hasMatchInExams;
-                          }
-                          return true;
-                        })
-                        .map((sr) => {
-                          const studentName = `${sr.student.firstName || ''} ${sr.student.lastName || ''}`.trim() || '-';
-
-                          if (!sr.hasRecords) {
-                            // Student with no exam records
-                            return (
-                              <tr key={`student-${sr.student.id}`} className="bg-gray-50 hover:bg-gray-100 transition-colors">
-                                <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                                  {studentName}
-                                </td>
-                                <td colSpan="8" className="px-4 py-3 text-xs text-gray-500">
-                                  {t('noExamRecordsForStudent', 'No exam records available')}
-                                </td>
-                              </tr>
-                            );
-                          }
-
-                          // Student with exam records - show first exam in student row, then rest below
-                          return sr.exams
-                            .filter(exam => statusFilter === 'ALL' || exam.status === statusFilter)
-                            .map((exam, examIndex) => (
-                              <tr
-                                key={`exam-${sr.student.id}-${exam.id}-${examIndex}`}
-                                className={`${examIndex === 0 ? 'bg-blue-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}
-                              >
-                                {examIndex === 0 && (
-                                  <td rowSpan={sr.exams.filter(e => statusFilter === 'ALL' || e.status === statusFilter).length} className="px-4 py-3 text-sm font-semibold text-gray-900 bg-blue-50">
-                                    {studentName}
-                                  </td>
-                                )}
-                                {examIndex > 0 && <td className="px-4 py-3"></td>}
-                                <td className="px-4 py-3 text-sm text-gray-900">
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{exam.examTitle || '-'}</span>
-                                    <span className="text-xs text-gray-500">{exam.examType || ''}</span>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-900">
-                                  <div className="flex flex-col">
-                                    <span>{exam.subjectName || '-'}</span>
-                                    <span className="text-xs text-gray-500">{exam.subjectKhmerName || ''}</span>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-900">
-                                  {exam.grade || '-'}
-                                </td>
-                                <td className="px-4 py-3 text-sm">
-                                  {getStatusBadge(exam.status, exam.passed)}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-900">
-                                  {exam.status === 'COMPLETED' ? (
-                                    <div className="flex flex-col">
-                                      <span className="font-semibold">
-                                        {exam.score != null ? `${exam.score}%` : '-'}
-                                      </span>
-                                      <span className="text-xs text-gray-500">
-                                        {exam.letterGrade || ''}
-                                      </span>
-                                      <span className="text-xs text-gray-500">
-                                        {exam.correctAnswers}/{exam.totalQuestions}
-                                      </span>
-                                    </div>
-                                  ) : (
-                                    '-'
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-900">
-                                  <div className="flex flex-col">
-                                    <span>{formatDate(exam.completedAt || exam.startedAt)}</span>
-                                    {exam.completedAt && (
-                                      <span className="text-xs text-gray-500">
-                                        {new Date(exam.completedAt).toLocaleTimeString('en-US', {
-                                          hour: '2-digit',
-                                          minute: '2-digit'
-                                        })}
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-900">
-                                  {formatDuration(exam.timeTaken)}
-                                </td>
-                                <td className="px-4 py-3 text-sm">
-                                  {exam.certificateFile && (
-                                    <Tooltip content={t('downloadCertificate', 'Download Certificate')}>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleDownloadCertificate(exam)}
-                                        className="flex items-center gap-1"
-                                      >
-                                        <Download className="w-4 h-4" />
-                                      </Button>
-                                    </Tooltip>
-                                  )}
-                                </td>
-                              </tr>
-                            ));
-                        })}
-                    </tbody>
-                  </table>
-                </div>
+                <Table
+                  columns={getTableColumns()}
+                  data={filteredTableData}
+                  loading={loading}
+                  t={t}
+                />
               )}
             </div>
           </div>

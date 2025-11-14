@@ -430,6 +430,176 @@ export const classService = {
       console.error('Error fetching class by user ID:', error);
       throw error;
     }
+  },
+
+  /**
+   * Get classes with cascading filters (grade level, section, etc.)
+   * Filters by school, grade level, and other criteria with pagination
+   * @param {number} schoolId - School ID to filter by (required)
+   * @param {Object} params - Query parameters
+   * @param {string} [params.gradeLevel] - Grade level to filter by (e.g., '1', '2', '3', etc.)
+   * @param {string} [params.section] - Section to filter by (e.g., 'A', 'B', 'C')
+   * @param {string} [params.academicYear] - Academic year to filter by (e.g., '2025-2026')
+   * @param {string} [params.status] - Class status to filter by (e.g., 'ACTIVE', 'INACTIVE')
+   * @param {string} [params.search] - Search term to filter by name
+   * @param {number} [params.page=1] - Page number for pagination
+   * @param {number} [params.limit=10] - Number of items per page
+   * @returns {Promise<Object>} Response with classes, pagination info, and school info
+   */
+  async getClassesWithFilters(schoolId, params = {}) {
+    try {
+      if (!schoolId) {
+        throw new Error('School ID is required');
+      }
+
+      // Build query parameters with all filters
+      const queryParams = {
+        page: params.page || 1,
+        limit: params.limit || 10
+      };
+
+      // Add cascade filters
+      if (params.gradeLevel) queryParams.gradeLevel = params.gradeLevel;
+      if (params.section) queryParams.section = params.section;
+      if (params.academicYear) queryParams.academicYear = params.academicYear;
+      if (params.status) queryParams.status = params.status;
+      if (params.search && params.search.trim()) queryParams.search = params.search.trim();
+
+      console.log('Fetching classes with cascade filters for school', schoolId, ':', queryParams);
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.CLASSES.CLASS_BY_SCHOOL(schoolId), { params: queryParams })
+      );
+
+      console.log('Classes with filters response:', response);
+
+      // Handle response structure
+      const responseData = response.data || response;
+      const classesArray = responseData.classes || responseData.data || [];
+
+      if (Array.isArray(classesArray)) {
+        const formattedData = classesArray.map(cls =>
+          classService.utils.formatClassData(cls)
+        );
+
+        return {
+          success: true,
+          message: responseData.message,
+          classes: formattedData,
+          data: formattedData,
+          total: responseData.total || formattedData.length,
+          pagination: {
+            page: queryParams.page,
+            limit: queryParams.limit,
+            total: responseData.total || formattedData.length,
+            totalPages: Math.ceil((responseData.total || formattedData.length) / queryParams.limit)
+          },
+          schoolInfo: responseData.schoolInfo,
+          appliedFilters: {
+            gradeLevel: params.gradeLevel || null,
+            section: params.section || null,
+            academicYear: params.academicYear || null,
+            status: params.status || null,
+            search: params.search || null
+          }
+        };
+      }
+
+      return {
+        success: true,
+        classes: [],
+        data: [],
+        total: 0,
+        pagination: {
+          page: queryParams.page,
+          limit: queryParams.limit,
+          total: 0,
+          totalPages: 0
+        },
+        schoolInfo: responseData.schoolInfo,
+        appliedFilters: {
+          gradeLevel: params.gradeLevel || null,
+          section: params.section || null,
+          academicYear: params.academicYear || null,
+          status: params.status || null,
+          search: params.search || null
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching classes with filters for school', schoolId, ':', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get grade levels available in a school (for cascade filter dropdown)
+   * @param {number} schoolId - School ID
+   * @returns {Promise<Array>} List of unique grade levels
+   */
+  async getGradeLevelsBySchool(schoolId) {
+    try {
+      if (!schoolId) {
+        throw new Error('School ID is required');
+      }
+
+      // Fetch all classes without pagination to get all grade levels
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.CLASSES.CLASS_BY_SCHOOL(schoolId), { params: { limit: 1000 } })
+      );
+
+      const responseData = response.data || response;
+      const classesArray = responseData.classes || responseData.data || [];
+
+      // Extract unique grade levels
+      const gradeLevels = [...new Set(classesArray.map(cls => cls.gradeLevel))];
+      const sorted = gradeLevels
+        .filter(gl => gl) // Remove null/undefined
+        .sort((a, b) => {
+          // Sort numerically if they're numbers, otherwise alphabetically
+          const aNum = parseInt(a);
+          const bNum = parseInt(b);
+          return isNaN(aNum) ? a.localeCompare(b) : aNum - bNum;
+        });
+
+      return {
+        success: true,
+        data: sorted,
+        count: sorted.length
+      };
+    } catch (error) {
+      console.error('Error fetching grade levels for school', schoolId, ':', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get sections/classes for a specific grade level in a school
+   * @param {number} schoolId - School ID
+   * @param {string} gradeLevel - Grade level to filter by
+   * @returns {Promise<Array>} List of sections with their class info
+   */
+  async getClassesByGradeLevel(schoolId, gradeLevel) {
+    try {
+      if (!schoolId || !gradeLevel) {
+        throw new Error('School ID and Grade Level are required');
+      }
+
+      // Fetch classes filtered by grade level
+      const response = await classService.getClassesWithFilters(schoolId, {
+        gradeLevel: gradeLevel,
+        limit: 1000
+      });
+
+      return {
+        success: true,
+        data: response.data || [],
+        total: response.total || 0,
+        gradeLevel: gradeLevel
+      };
+    } catch (error) {
+      console.error(`Error fetching classes for grade level ${gradeLevel}:`, error);
+      throw error;
+    }
   }
 };
 

@@ -27,6 +27,7 @@ import TeacherSelfAttendance from './pages/attendance/TeacherSelfAttendance';
 import AttendanceApprovalPage from './pages/attendance/AttendanceApprovalPage';
 import DirectorExamRecords from './pages/exam/DirectorExamRecords';
 import TeacherExamRecords from './pages/exam/TeacherExamRecords';
+import StudentExamRecordsPage from './pages/exam/StudentExamRecordsPage';
 import SchoolSettingsPage from './pages/settings/SchoolSettingsPage';
 // import Achievements from './pages/achievements/Achievements';
 // import Settings from './pages/settings/Settings';
@@ -243,7 +244,16 @@ function AppContent() {
             </ProtectedRoute>
           } />
 
-          {/* Director Exam Records route */}
+          {/* Sub-route for viewing specific student exam records - MUST come before /exam-records */}
+          <Route path="exam-records/:userId" element={
+            <ProtectedRoute path="/exam-records/:userId" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout}>
+                <StudentExamRecordsPage user={user} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* Director Exam Records routes with nested sub-routes */}
           <Route path="exam-records" element={
             <ProtectedRoute path="/exam-records" user={user}>
               <DashboardLayout user={user} onLogout={handleLogout}>

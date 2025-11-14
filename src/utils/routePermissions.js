@@ -68,6 +68,10 @@ export const routePermissions = {
     allowedRoles: [ROLES.DIRECTOR], // Directors only
     component: 'DirectorExamRecords'
   },
+  '/exam-records/:userId': {
+    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    component: 'StudentExamRecordsPage'
+  },
   '/my-students-exams': {
     allowedRoles: [ROLES.TEACHER],
     component: 'TeacherExamRecords'
@@ -99,9 +103,31 @@ export const hasRouteAccess = (path, user) => {
   const isDirector = user.teacher?.isDirector === true || user.isDirector === true;
   const isNotDirector = !isDirector;
 
+  // Helper function to check if a path matches a route pattern
+  const matchRoute = (pattern, pathname) => {
+    // Exact match
+    if (pattern === pathname) return true;
+
+    // Pattern match (e.g., /exam-records/:userId matches /exam-records/123)
+    const patternParts = pattern.split('/');
+    const pathParts = pathname.split('/');
+
+    if (patternParts.length !== pathParts.length) return false;
+
+    return patternParts.every((part, index) => {
+      return part.startsWith(':') || part === pathParts[index];
+    });
+  };
+
   // Director: roleId = 8 && isDirector = true can access all routes
   if (user.roleId === ROLES.DIRECTOR && isDirector) {
-    return !!routePermissions[path];
+    // Check exact match first
+    if (routePermissions[path]) return true;
+
+    // Check pattern match
+    return Object.keys(routePermissions).some(routePath =>
+      matchRoute(routePath, path)
+    );
   }
 
   // Teacher: roleId = 8 && (isDirector = false OR undefined) can access /attendance, /my-classes, /my-students, /my-attendance, /profile, and /students/qr-codes
