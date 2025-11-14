@@ -106,28 +106,32 @@ export default function DirectorExamRecords({ user }) {
 
   /**
    * Fetch all students from school using school API with pagination
+   * Pagination is controlled by the API response
    */
-  const fetchAllStudents = useCallback(async (page = 1, pageSize = 10) => {
+  const fetchAllStudents = useCallback(async (page = 1) => {
     try {
       let studentsList = [];
       const schoolId = user?.teacher?.schoolId || user?.schoolId;
 
       if (selectedClass && schoolId) {
+        // Let the API handle pagination - don't specify limit, let it use its default
         const response = await studentService.getStudentsBySchoolClasses(schoolId, {
           classId: selectedClass,
-          limit: pageSize,
           page: page
         });
         if (response.success) {
           studentsList = response.data || [];
 
-          // Update pagination info from response
+          // Update pagination info from API response
+          // API should return: total, pages, page, limit, or similar fields
           const total = response.total || response.data?.length || 0;
-          const totalPages = response.pages || Math.ceil(total / pageSize) || 1;
+          const totalPages = response.pages || response.totalPages || Math.ceil(total / (response.limit || 10)) || 1;
+          const pageSize = response.limit || response.pageSize || 10;
+          const currentPage = response.page || page || 1;
 
           setPagination(prev => ({
             ...prev,
-            currentPage: page,
+            currentPage: currentPage,
             pageSize: pageSize,
             totalStudents: total,
             totalPages: totalPages,
@@ -160,8 +164,8 @@ export default function DirectorExamRecords({ user }) {
       setError(null);
       startLoading('fetchExamRecords', t('loadingExamRecords', 'Loading exam records...'));
 
-      // Fetch students for the current page
-      const studentsList = await fetchAllStudents(page, 10);
+      // Fetch students for the current page (pagination handled by API)
+      const studentsList = await fetchAllStudents(page);
 
       // Fetch exam records for each student using the new endpoint
       const studentRecordsMap = new Map();
