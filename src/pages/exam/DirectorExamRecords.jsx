@@ -123,28 +123,30 @@ export default function DirectorExamRecords({ user }) {
 
         const response = await studentService.getStudentsBySchoolClasses(schoolId, apiParams);
 
-        console.log('API Response - Total:', response.total, 'Pages:', response.pages, 'Limit:', response.limit);
+        console.log('API Response:', response);
+        console.log('Pagination from API:', response.pagination);
 
         if (response.success) {
           studentsList = response.data || [];
 
-          // Update pagination info from API response
-          // API should return: total, pages, page, limit, or similar fields
-          const total = response.total || response.data?.length || 0;
-          const totalPages = response.pages || response.totalPages || Math.ceil(total / (response.limit || pageSize)) || 1;
-          const apiPageSize = response.limit || pageSize;
-          const currentPage = response.page || page || 1;
+          // Update pagination info from API response directly
+          // The API controls pagination, so use what it returns
+          console.log('=== PAGINATION DEBUG ===');
+          console.log('Requested pageSize:', pageSize);
+          console.log('API returned students count:', studentsList.length);
+          console.log('API pagination object:', response.pagination);
+          console.log('=== END DEBUG ===');
 
-          console.log('Pagination state updated:', { currentPage, pageSize: apiPageSize, totalStudents: total, totalPages });
-
-          setPagination(prev => ({
-            ...prev,
-            currentPage: currentPage,
-            pageSize: apiPageSize,
-            totalStudents: total,
-            totalPages: totalPages,
-            allStudents: studentsList
-          }));
+          if (response.pagination) {
+            setPagination(prev => ({
+              ...prev,
+              currentPage: response.pagination.page,
+              pageSize: response.pagination.limit,
+              totalStudents: response.pagination.total,
+              totalPages: response.pagination.pages,
+              allStudents: studentsList
+            }));
+          }
         }
       }
 
@@ -172,8 +174,8 @@ export default function DirectorExamRecords({ user }) {
       setError(null);
       startLoading('fetchExamRecords', t('loadingExamRecords', 'Loading exam records...'));
 
-      // Fetch students for the current page with limit (pagination handled by API)
-      const studentsList = await fetchAllStudents(page, 10);
+      // Fetch students for the current page with the current pageSize limit (pagination handled by API)
+      const studentsList = await fetchAllStudents(page, pagination.pageSize);
 
       // Fetch exam records for each student using the new endpoint
       const studentRecordsMap = new Map();
@@ -243,7 +245,7 @@ export default function DirectorExamRecords({ user }) {
       setLoading(false);
       stopLoading('fetchExamRecords');
     }
-  }, [selectedClass, startLoading, stopLoading, t, fetchAllStudents]);
+  }, [selectedClass, startLoading, stopLoading, t, fetchAllStudents, pagination.pageSize]);
 
   /**
    * Initial load - fetch grade levels
