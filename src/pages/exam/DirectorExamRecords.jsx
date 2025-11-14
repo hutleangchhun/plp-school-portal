@@ -17,7 +17,9 @@ import Dropdown from '../../components/ui/Dropdown';
 import {
   BookOpen,
   Eye,
-  Search
+  Search,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 /**
@@ -39,6 +41,13 @@ export default function DirectorExamRecords({ user }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageSize: 10,
+    totalStudents: 0,
+    totalPages: 1,
+    allStudents: []
+  });
 
   /**
    * Fetch all grade levels for the school
@@ -96,9 +105,9 @@ export default function DirectorExamRecords({ user }) {
   }, [user, selectedGradeLevel, showError, t]);
 
   /**
-   * Fetch all students from school using school API
+   * Fetch all students from school using school API with pagination
    */
-  const fetchAllStudents = useCallback(async () => {
+  const fetchAllStudents = useCallback(async (page = 1, pageSize = 10) => {
     try {
       let studentsList = [];
       const schoolId = user?.teacher?.schoolId || user?.schoolId;
@@ -106,10 +115,24 @@ export default function DirectorExamRecords({ user }) {
       if (selectedClass && schoolId) {
         const response = await studentService.getStudentsBySchoolClasses(schoolId, {
           classId: selectedClass,
-          limit: 10
+          limit: pageSize,
+          page: page
         });
         if (response.success) {
           studentsList = response.data || [];
+
+          // Update pagination info from response
+          const total = response.total || response.data?.length || 0;
+          const totalPages = response.pages || Math.ceil(total / pageSize) || 1;
+
+          setPagination(prev => ({
+            ...prev,
+            currentPage: page,
+            pageSize: pageSize,
+            totalStudents: total,
+            totalPages: totalPages,
+            allStudents: studentsList
+          }));
         }
       }
 
@@ -121,9 +144,9 @@ export default function DirectorExamRecords({ user }) {
   }, [selectedClass, user]);
 
   /**
-   * Fetch exam records
+   * Fetch exam records for the current page
    */
-  const fetchExamRecords = useCallback(async () => {
+  const fetchExamRecords = useCallback(async (page = 1) => {
     try {
       // Only proceed if a class is selected
       if (!selectedClass) {
@@ -137,8 +160,8 @@ export default function DirectorExamRecords({ user }) {
       setError(null);
       startLoading('fetchExamRecords', t('loadingExamRecords', 'Loading exam records...'));
 
-      // Fetch all students in the class
-      const studentsList = await fetchAllStudents();
+      // Fetch students for the current page
+      const studentsList = await fetchAllStudents(page, 10);
 
       // Fetch exam records for each student using the new endpoint
       const studentRecordsMap = new Map();
@@ -225,13 +248,17 @@ export default function DirectorExamRecords({ user }) {
   }, [fetchClasses]);
 
   /**
-   * Load exam records when class is selected
+   * Reset pagination and load exam records when class is selected
    */
   useEffect(() => {
     if (selectedClass) {
-      fetchExamRecords();
+      setPagination(prev => ({
+        ...prev,
+        currentPage: 1
+      }));
+      fetchExamRecords(1);
     }
-  }, [fetchExamRecords, selectedClass]);
+  }, [selectedClass, fetchExamRecords]);
 
   /**
    * Get status badge
@@ -562,12 +589,60 @@ export default function DirectorExamRecords({ user }) {
                   }}
                 />
               ) : (
-                <Table
-                  columns={getTableColumns()}
-                  data={filteredTableData}
-                  loading={loading}
-                  t={t}
-                />
+                <>
+                  <Table
+                    columns={getTableColumns()}
+                    data={filteredTableData}
+                    loading={loading}
+                    t={t}
+                  />
+
+                  {/* Pagination Controls */}
+                  {pagination.totalPages > 1 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+                      <div className="text-sm text-gray-600">
+                        {t('page', 'Page')} {pagination.currentPage} {t('of', 'of')} {pagination.totalPages} • {t('total', 'Total')}: {pagination.totalStudents} {t('students', 'students')}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          onClick={() => {
+                            const newPage = Math.max(1, pagination.currentPage - 1);
+                            setPagination(prev => ({
+                              ...prev,
+                              currentPage: newPage
+                            }));
+                            fetchExamRecords(newPage);
+                          }}
+                          disabled={pagination.currentPage === 1 || loading}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                          {t('previous', 'Previous')}
+                        </Button>
+
+                        <Button
+                          onClick={() => {
+                            const newPage = Math.min(pagination.totalPages, pagination.currentPage + 1);
+                            setPagination(prev => ({
+                              ...prev,
+                              currentPage: newPage
+                            }));
+                            fetchExamRecords(newPage);
+                          }}
+                          disabled={pagination.currentPage >= pagination.totalPages || loading}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1"
+                        >
+                          {t('next', 'Next')}
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
