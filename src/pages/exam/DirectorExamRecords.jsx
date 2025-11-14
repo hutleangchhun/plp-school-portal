@@ -426,17 +426,12 @@ export default function DirectorExamRecords({ user }) {
   ];
 
   /**
-   * Get table data - students with exam records only
+   * Get table data - ALL students, but calculate stats only for those with exam records
    */
   const getTableData = useMemo(() => {
     const rows = [];
 
     studentRecords.forEach((sr) => {
-      // Only include students with exam records
-      if (!sr.hasRecords || !sr.exams || sr.exams.length === 0) {
-        return;
-      }
-
       // Handle nested user structure
       const firstName = sr.student.user?.first_name || sr.student.firstName || '';
       const lastName = sr.student.user?.last_name || sr.student.lastName || '';
@@ -444,10 +439,10 @@ export default function DirectorExamRecords({ user }) {
       const studentId = sr.student.studentId || sr.student.user?.id || sr.student.id;
 
       // Calculate statistics
-      const totalExams = sr.exams.length;
-      const passedCount = sr.exams.filter(e => e.status === 'COMPLETED' && e.passed).length;
-      const failedCount = sr.exams.filter(e => e.status === 'COMPLETED' && !e.passed).length;
-      const completedCount = sr.exams.filter(e => e.status === 'COMPLETED').length;
+      const totalExams = sr.exams?.length || 0;
+      const passedCount = sr.exams?.filter(e => e.status === 'COMPLETED' && e.passed).length || 0;
+      const failedCount = sr.exams?.filter(e => e.status === 'COMPLETED' && !e.passed).length || 0;
+      const completedCount = sr.exams?.filter(e => e.status === 'COMPLETED').length || 0;
 
       rows.push({
         id: `student-${studentId}`,
@@ -456,7 +451,8 @@ export default function DirectorExamRecords({ user }) {
         passedCount,
         failedCount,
         completedCount,
-        studentRecord: sr // Keep full record for modal
+        studentRecord: sr, // Keep full record for modal
+        hasRecords: sr.hasRecords // Flag to filter in display
       });
     });
 
@@ -464,7 +460,7 @@ export default function DirectorExamRecords({ user }) {
   }, [studentRecords, t]);
 
   /**
-   * Apply search filter to table data
+   * Apply search filter to table data (show all students)
    */
   const filteredTableData = useMemo(() => {
     if (!searchTerm.trim()) {
@@ -581,9 +577,9 @@ export default function DirectorExamRecords({ user }) {
               ) : filteredTableData.length === 0 ? (
                 <EmptyState
                   icon={BookOpen}
-                  title={filteredTableData.length === 0 && getTableData.length > 0 ? t('noResults', 'No Results') : t('noStudentsWithRecords', 'No Students with Records')}
-                  description={filteredTableData.length === 0 && getTableData.length > 0 ? t('adjustFiltersOrSearch', 'Try adjusting your search or filters') : t('noStudentExamRecords', 'No students in this class have exam records')}
-                  actionLabel={t('clearFilters', 'Clear Filters')}
+                  title={t('noStudents', 'No Students')}
+                  description={t('noStudentsInClass', 'No students found in this class')}
+                  actionLabel={t('clearSearch', 'Clear Search')}
                   onAction={() => {
                     setSearchTerm('');
                   }}
