@@ -17,9 +17,7 @@ import Dropdown from '../../components/ui/Dropdown';
 import {
   BookOpen,
   Eye,
-  Search,
-  ChevronLeft,
-  ChevronRight
+  Search
 } from 'lucide-react';
 
 /**
@@ -605,53 +603,21 @@ export default function DirectorExamRecords({ user }) {
                     data={filteredTableData}
                     loading={loading}
                     t={t}
+                    showPagination={pagination.totalPages > 1}
+                    pagination={{
+                      page: pagination.currentPage,
+                      pages: pagination.totalPages,
+                      total: pagination.totalStudents,
+                      limit: pagination.pageSize
+                    }}
+                    onPageChange={(newPage) => {
+                      setPagination(prev => ({
+                        ...prev,
+                        currentPage: newPage
+                      }));
+                      fetchExamRecords(newPage);
+                    }}
                   />
-
-                  {/* Pagination Controls */}
-                  {pagination.totalPages > 1 && (
-                    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
-                      <div className="text-sm text-gray-600">
-                        {t('page', 'Page')} {pagination.currentPage} {t('of', 'of')} {pagination.totalPages} • {t('total', 'Total')}: {pagination.totalStudents} {t('students', 'students')}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          onClick={() => {
-                            const newPage = Math.max(1, pagination.currentPage - 1);
-                            setPagination(prev => ({
-                              ...prev,
-                              currentPage: newPage
-                            }));
-                            fetchExamRecords(newPage);
-                          }}
-                          disabled={pagination.currentPage === 1 || loading}
-                          variant="outline"
-                          size="sm"
-                          className="flex items-center gap-1"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                          {t('previous', 'Previous')}
-                        </Button>
-
-                        <Button
-                          onClick={() => {
-                            const newPage = Math.min(pagination.totalPages, pagination.currentPage + 1);
-                            setPagination(prev => ({
-                              ...prev,
-                              currentPage: newPage
-                            }));
-                            fetchExamRecords(newPage);
-                          }}
-                          disabled={pagination.currentPage >= pagination.totalPages || loading}
-                          variant="outline"
-                          size="sm"
-                          className="flex items-center gap-1"
-                        >
-                          {t('next', 'Next')}
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                 </>
               )}
             </div>
