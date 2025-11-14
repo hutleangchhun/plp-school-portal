@@ -242,6 +242,23 @@ const StudentEditModal = ({
     setShowDropdown(false);
   };
 
+  const getAcademicYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const options = [
+      { value: '', label: t('selectAcademicYear', 'Select Academic Year') }
+    ];
+
+    // Generate options for current year and 10 years ahead
+    for (let i = 0; i <= 10; i++) {
+      const year = currentYear + i;
+      const nextYear = year + 1;
+      const label = `${year}-${nextYear}`;
+      options.push({ value: label, label });
+    }
+
+    return options;
+  };
+
   const handleClose = () => {
     resetForm();
     onClose();
@@ -757,16 +774,17 @@ const StudentEditModal = ({
                   />
                 </div>
                 <div>
-                  <label htmlFor="academicYear" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     {t('academicYear', 'Academic Year')}
                   </label>
-                  <input
-                    type="text"
-                    id="academicYear"
+                  <Dropdown
+                    options={getAcademicYearOptions()}
                     value={editForm.academicYear}
-                    onChange={(e) => handleFormChange('academicYear', e.target.value)}
-                    className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={t('enterAcademicYear', 'e.g., 2024')}
+                    onValueChange={(value) => handleFormChange('academicYear', value)}
+                    placeholder={t('selectAcademicYear', 'Select Academic Year')}
+                    contentClassName="max-h-[200px] overflow-y-auto"
+                    disabled={false}
+                    className='w-full'
                   />
                 </div>
                 <div>
