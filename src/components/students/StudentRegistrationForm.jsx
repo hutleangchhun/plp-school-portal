@@ -7,6 +7,7 @@ import { DatePickerWithDropdowns } from '../ui/date-picker-with-dropdowns';
 import Dropdown from '../ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { studentService } from '../../utils/api/services/studentService';
+import { ethnicGroupOptions as baseEthnicGroupOptions, accessibilityOptions as baseAccessibilityOptions } from '../../utils/formOptions';
 
 const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
   const { t } = useLanguage();
@@ -391,38 +392,23 @@ const StudentRegistrationForm = ({ onSuccess, onCancel }) => {
     { value: 'OTHER', label: 'ផ្សេងៗ' }
   ];
 
+  // Map centralized accessibility options to form-compatible format with English values
   const accessibilityOptions = [
     { value: '', label: 'ជ្រើសរើសតម្រូវការប្រើប្រាស់' },
-    { value: 'MOBILITY_DIFFICULTY', label: 'ពិបាកក្នុងការធ្វើចលនា' },
-    { value: 'HEARING_DIFFICULTY', label: 'ពិបាកក្នុងការស្ដាប់' },
-    { value: 'SPEECH_DIFFICULTY', label: 'ពិបាកក្នុងការនីយាយ' },
-    { value: 'VISION_DIFFICULTY', label: 'ពិបាកក្នុងការមើល' },
-    { value: 'INTERNAL_DISABILITY', label: 'ពិការសរីរាង្គខាងក្នុង' },
-    { value: 'INTELLECTUAL_DISABILITY', label: 'ពិការសតិបញ្ញា' },
-    { value: 'MENTAL_DISABILITY', label: 'ពិការផ្លូវចិត្ត' },
-    { value: 'OTHER_DISABILITIES', label: 'ពិការផ្សេងៗ' }
+    { value: 'MOBILITY_DIFFICULTY', label: baseAccessibilityOptions[0].label },
+    { value: 'HEARING_DIFFICULTY', label: baseAccessibilityOptions[1].label },
+    { value: 'SPEECH_DIFFICULTY', label: baseAccessibilityOptions[2].label },
+    { value: 'VISION_DIFFICULTY', label: baseAccessibilityOptions[3].label },
+    { value: 'INTERNAL_DISABILITY', label: baseAccessibilityOptions[4].label },
+    { value: 'INTELLECTUAL_DISABILITY', label: baseAccessibilityOptions[5].label },
+    { value: 'MENTAL_DISABILITY', label: baseAccessibilityOptions[6].label },
+    { value: 'OTHER_DISABILITIES', label: baseAccessibilityOptions[7].label }
   ];
 
+  // Add placeholder option to ethnic group options
   const ethnicGroupOptions = [
     { value: '', label: 'ជ្រើសរើសជនជាតិភាគតិច' },
-    { value: 'ជនជាតិភ្នង', label: 'ជនជាតិភ្នង' },
-    { value: 'ជនជាតិរអួង', label: 'ជនជាតិរអួង' },
-    { value: 'ជនជាតិគួយ', label: 'ជនជាតិគួយ' },
-    { value: 'ជនជាតិគ្រឹង', label: 'ជនជាតិគ្រឹង' },
-    { value: 'ជនជាតិរដែរ', label: 'ជនជាតិរដែរ' },
-    { value: 'ជនជាតិស្ទៀង', label: 'ជនជាតិស្ទៀង' },
-    { value: 'ជនជាតិទំពួន', label: 'ជនជាតិទំពួន' },
-    { value: 'ជនជាតិអានោង', label: 'ជនជាតិអានោង' },
-    { value: 'ជនជាតិថ្មូន', label: 'ជនជាតិថ្មូន' },
-    { value: 'ជនជាតិខា', label: 'ជនជាតិខា' },
-    { value: 'ជនជាតិក្រោល', label: 'ជនជាតិក្រោល' },
-    { value: 'ជនជាតិស្មិល', label: 'ជនជាតិស្មិល' },
-    { value: 'ជនជាតិចារាយ', label: 'ជនជាតិចារាយ' },
-    { value: 'ជនជាតិប្រ៊ូវ', label: 'ជនជាតិប្រ៊ូវ' },
-    { value: 'ជនជាតិវៀតណាម', label: 'ជនជាតិវៀតណាម' },
-    { value: 'ជនជាតិចាម', label: 'ជនជាតិចាម' },
-    { value: 'ផ្សេងៗ', label: 'ផ្សេងៗ' }
-    
+    ...baseEthnicGroupOptions
   ];
 
   return (

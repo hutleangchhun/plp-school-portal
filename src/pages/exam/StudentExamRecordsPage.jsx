@@ -508,7 +508,7 @@ export default function StudentExamRecordsPage({ user }) {
             )
           },
           {
-            header: t('grade', 'Grade'),
+            header: t('gradeLevel', 'Grade Level'),
             accessor: 'letterGrade',
             render: (exam) => (
               <div>
@@ -755,7 +755,7 @@ export default function StudentExamRecordsPage({ user }) {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">{t('grade', 'Grade')}</p>
+                  <p className="text-sm font-medium text-gray-500">{t('gradeLevel', 'Grade Level')}</p>
                   <p className={`text-2xl font-bold ${getGradeColor(selectedExam.letterGrade, selectedExam.percentage)}`}>{selectedExam.letterGrade || '-'}</p>
                 </div>
                 <div>

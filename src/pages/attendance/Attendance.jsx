@@ -699,7 +699,7 @@ export default function Attendance() {
                             <td className="sticky left-0 z-10 bg-white px-4 py-3 whitespace-nowrap border-r">
                               <div className="flex items-center">
                                 <div className="ml-3">
-                                  <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                                  <div className="text-sm font-medium text-gray-900">{student.name || '-'}</div>
                                 </div>
                               </div>
                             </td>

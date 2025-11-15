@@ -9,6 +9,7 @@ import ProfileImage from '../ui/ProfileImage';
 import Dropdown from '../ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
+import { gradeLevelOptions } from '../../utils/formOptions';
 
 const StudentEditModal = ({
   isOpen,
@@ -795,12 +796,10 @@ const StudentEditModal = ({
                   <Dropdown
                     options={[
                       { value: '', label: t('selectGradeLevel', 'Select Grade Level') },
-                      { value: '1', label: t('grade1', 'Grade 1') },
-                      { value: '2', label: t('grade2', 'Grade 2') },
-                      { value: '3', label: t('grade3', 'Grade 3') },
-                      { value: '4', label: t('grade4', 'Grade 4') },
-                      { value: '5', label: t('grade5', 'Grade 5') },
-                      { value: '6', label: t('grade6', 'Grade 6') }
+                      ...gradeLevelOptions.map(option => ({
+                        ...option,
+                        label: option.translationKey ? t(option.translationKey, option.label) : option.label
+                      }))
                     ]}
                     value={editForm.gradeLevel}
                     onValueChange={(value) => handleFormChange('gradeLevel', value)}

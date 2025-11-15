@@ -14,6 +14,7 @@ import schoolService from '../../utils/api/services/schoolService'; // Import sc
 import { teacherService } from '../../utils/api/services/teacherService'; // Import teacherService for teacher selection
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
+import { gradeLevelOptions } from '../../utils/formOptions';
 import Dropdown from '@/components/ui/Dropdown';
 import { Button } from '../../components/ui/Button';
 import React from 'react'; // Added for useMemo
@@ -138,14 +139,10 @@ export default function ClassesManagement() {
     };
   });
 
-  const grades = [
-    { value: '1', label: t('grade1', 'Grade 1') },
-    { value: '2', label: t('grade2', 'Grade 2') },
-    { value: '3', label: t('grade3', 'Grade 3') },
-    { value: '4', label: t('grade4', 'Grade 4') },
-    { value: '5', label: t('grade5', 'Grade 5') },
-    { value: '6', label: t('grade6', 'Grade 6') }
-  ];
+  const grades = gradeLevelOptions.map(option => ({
+    ...option,
+    label: option.translationKey ? t(option.translationKey, option.label) : option.label
+  }));
 
   // Generate academic years dynamically (2 past, current, 3 future for better coverage)
   const academicYears = generateAcademicYears(2, 3);

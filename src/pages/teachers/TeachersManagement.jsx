@@ -736,7 +736,7 @@ export default function TeachersManagement() {
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (teacher) => (
-        <p>{teacher.username || 'N/A'}</p>
+        <p>{teacher.username || '-'}</p>
       )
     },
     {
@@ -748,8 +748,8 @@ export default function TeachersManagement() {
       render: (teacher) => (
         <p>
           {teacher.gradeLevel 
-            ? `${t('grade', 'Grade')} ${teacher.gradeLevel}` 
-            : t('notAssigned', 'Not Assigned')}
+            ? `${t('gradeLevel', 'Grade Level')} ${teacher.gradeLevel}` 
+            : '-'}
         </p>
       )
     },

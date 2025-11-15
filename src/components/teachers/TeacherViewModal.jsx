@@ -169,7 +169,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             <InfoItem
               icon={BookOpen}
               label={t('gradeLevel', 'Grade Level')}
-              value={teacher.gradeLevel ? `${t('grade', 'Grade')} ${teacher.gradeLevel}` : getEmptyDisplay()}
+              value={teacher.gradeLevel ? `${t('gradeLevel', 'GradeLevel')} ${teacher.gradeLevel}` : getEmptyDisplay()}
             />
             <InfoItem
               icon={Building}

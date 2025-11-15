@@ -804,7 +804,7 @@ const StudentSelection = () => {
                               {student.gradeLevel && (
                                 <>
                                   <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium">
-                                    {t('grade', 'Grade')} {student.gradeLevel}
+                                    {t('gradeLevel', 'Grade Level')} {student.gradeLevel}
                                   </span>
                                   <span>•</span>
                                 </>

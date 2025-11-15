@@ -53,7 +53,7 @@ export default function TeacherClasses({ user }) {
                 key={cls.id}
                 title={cls.name || t('untitledClass', 'Untitled Class')}
                 subtitleParts={[
-                  cls.grade ? `${t('grade', 'Grade')} ${cls.grade}` : null,
+                  cls.grade ? `${t('gradeLevel', 'Grade Level')} ${cls.grade}` : null,
                   cls.section ? `${t('section', 'Section')} ${cls.section}` : null,
                   cls.academicYear || null,
                   user ? user.name : null,

@@ -535,7 +535,7 @@ export default function DirectorExamRecords({ user }) {
                         { value: '', label: t('allGradeLevels', 'All Grades') },
                         ...gradeLevels.map(level => ({
                           value: level,
-                          label: `${t('grade', 'Grade')} ${level}`
+                          label: `${t('gradeLevel', 'Grade Level')} ${level}`
                         }))
                       ]}
                       placeholder={t('selectGradeLevel', 'Select Grade Level')}

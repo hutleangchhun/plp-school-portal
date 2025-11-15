@@ -10,6 +10,7 @@ import Dropdown from '../ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { teacherService } from '../../utils/api/services/teacherService';
 import { userService } from '../../utils/api/services/userService';
+import { ethnicGroupOptions as baseEthnicGroupOptions, accessibilityOptions as baseAccessibilityOptions, gradeLevelOptions } from '../../utils/formOptions';
 
 const TeacherEditModal = ({
   isOpen,
@@ -601,12 +602,10 @@ const TeacherEditModal = ({
                 <Dropdown
                   options={[
                     { value: '', label: t('selectGradeLevel', 'Select Grade Level') },
-                    { value: '1', label: t('grade1', 'Grade 1') },
-                    { value: '2', label: t('grade2', 'Grade 2') },
-                    { value: '3', label: t('grade3', 'Grade 3') },
-                    { value: '4', label: t('grade4', 'Grade 4') },
-                    { value: '5', label: t('grade5', 'Grade 5') },
-                    { value: '6', label: t('grade6', 'Grade 6') }
+                    ...gradeLevelOptions.map(option => ({
+                      ...option,
+                      label: option.translationKey ? t(option.translationKey, option.label) : option.label
+                    }))
                   ]}
                   value={editForm.gradeLevel}
                   onValueChange={(value) => handleFormChange('gradeLevel', value)}
@@ -715,21 +714,7 @@ const TeacherEditModal = ({
                   <Dropdown
                     options={[
                       { value: '', label: t('selectEthnicGroup', 'ជ្រើសរើសជនជាតិភាគតិច') },
-                      { value: 'ជនជាតិព្នង', label: 'ជនជាតិព្នង' },
-                      { value: 'ជនជាតិកួយ', label: 'ជនជាតិកួយ' },
-                      { value: 'ជនជាតិគ្រឹង', label: 'ជនជាតិគ្រឹង' },
-                      { value: 'ជនជាតិរដែរ', label: 'ជនជាតិរដែរ' },
-                      { value: 'ជនជាតិស្ទៀង', label: 'ជនជាតិស្ទៀង' },
-                      { value: 'ជនជាតិទំពួន', label: 'ជនជាតិទំពួន' },
-                      { value: 'ជនជាតិព្រៅ', label: 'ជនជាតិព្រៅ' },
-                      { value: 'ជនជាតិកាវែត', label: 'ជនជាតិកាវែត' },
-                      { value: 'ជនជាតិកាចក់', label: 'ជនជាតិកាចក់' },
-                      { value: 'ជនជាតិព័រ', label: 'ជនជាតិព័រ' },
-                      { value: 'ជនជាតិខោញ', label: 'ជនជាតិខោញ' },
-                      { value: 'ជនជាតិលាវ', label: 'ជនជាតិលាវ' },
-                      { value: 'ជនជាតិផ្សេងទៀត', label: 'ជនជាតិផ្សេងទៀត' },
-                      { value: 'ជនជាតិមិល', label: 'ជនជាតិមិល' },
-                      { value: 'ជនជាតិចារាយ', label: 'ជនជាតិចារាយ' }
+                      ...baseEthnicGroupOptions
                     ]}
                     value={editForm.ethnicGroup}
                     onValueChange={(value) => handleFormChange('ethnicGroup', value)}
@@ -748,16 +733,7 @@ const TeacherEditModal = ({
                     {t('accessibility', 'Accessibility')}
                   </label>
                   <div className="mt-1 space-y-2 p-3 border border-gray-300 rounded-md bg-white max-h-48 overflow-y-auto">
-                    {[
-                      { value: 'ពិបាកក្នុងការធ្វើចលនា', label: 'ពិបាកក្នុងការធ្វើចលនា' },
-                      { value: 'ពិបាកក្នុងការស្ដាប់', label: 'ពិបាកក្នុងការស្ដាប់' },
-                      { value: 'ពិបាកក្នុងការនីយាយ', label: 'ពិបាកក្នុងការនីយាយ' },
-                      { value: 'ពិបាកក្នុងការមើល', label: 'ពិបាកក្នុងការមើល' },
-                      { value: 'ពិការសរីរាង្គខាងក្នុង', label: 'ពិការសរីរាង្គខាងក្នុង' },
-                      { value: 'ពិការសតិបញ្ញា', label: 'ពិការសតិបញ្ញា' },
-                      { value: 'ពិការផ្លូវចិត្ត', label: 'ពិការផ្លូវចិត្ត' },
-                      { value: 'ពិការផ្សេងៗ', label: 'ពិការផ្សេងៗ' }
-                    ].map((option) => (
+                    {baseAccessibilityOptions.map((option) => (
                       <label key={option.value} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                         <input
                           type="checkbox"

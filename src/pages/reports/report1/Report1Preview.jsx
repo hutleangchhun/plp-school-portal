@@ -46,23 +46,23 @@ export const Report1Preview = ({ data }) => {
     {
       key: 'studentId',
       header: t('studentId', 'Student ID'),
-      render: (student) => student.student?.studentNumber || student.studentNumber || ''
+      render: (student) => student.student?.studentNumber || student.studentNumber || '-'
     },
     {
       key: 'name',
       header: t('name', 'Name'),
-      render: (student) => student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
+      render: (student) => student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '-',
       cellClassName: 'font-medium text-gray-900'
     },
     {
       key: 'gender',
       header: t('gender', 'Gender'),
-      render: (student) => student.gender === 'MALE' ? t('male', 'ប្រុស') : student.gender === 'FEMALE' ? t('female', 'ស្រី') : ''
+      render: (student) => student.gender === 'MALE' ? t('male', 'ប្រុស') : student.gender === 'FEMALE' ? t('female', 'ស្រី') : '-'
     },
     {
       key: 'class',
       header: t('class', 'Class'),
-      render: (student) => student.class?.name || student.className || ''
+      render: (student) => student.class?.name || student.className || '-'
     }
   ];
 

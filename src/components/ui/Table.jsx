@@ -150,8 +150,8 @@ const Table = ({
                     {column.render
                       ? column.render(item, rowIndex)
                       : column.accessor
-                      ? getNestedValue(item, column.accessor)
-                      : item[column.key]
+                      ? getNestedValue(item, column.accessor) ?? '-'
+                      : item[column.key] ?? '-'
                     }
                   </td>
                 ))}

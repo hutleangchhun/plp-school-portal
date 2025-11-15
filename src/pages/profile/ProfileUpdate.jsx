@@ -12,6 +12,7 @@ import Dropdown from '../../components/ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { useStableCallback } from '../../utils/reactOptimization';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
+import { ethnicGroupOptions as baseEthnicGroupOptions } from '../../utils/formOptions';
 
 export default function ProfileUpdate({ user, setUser }) {
   const { t } = useLanguage();
@@ -1446,21 +1447,7 @@ export default function ProfileUpdate({ user, setUser }) {
                           <Dropdown
                             options={[
                               { value: '', label: t('selectEthnicGroup', 'ជ្រើសរើសជនជាតិភាគតិច') },
-                              { value: 'ជនជាតិព្នង', label: 'ជនជាតិព្នង' },
-                              { value: 'ជនជាតិកួយ', label: 'ជនជាតិកួយ' },
-                              { value: 'ជនជាតិគ្រឹង', label: 'ជនជាតិគ្រឹង' },
-                              { value: 'ជនជាតិរដែរ', label: 'ជនជាតិរដែរ' },
-                              { value: 'ជនជាតិស្ទៀង', label: 'ជនជាតិស្ទៀង' },
-                              { value: 'ជនជាតិទំពួន', label: 'ជនជាតិទំពួន' },
-                              { value: 'ជនជាតិព្រៅ', label: 'ជនជាតិព្រៅ' },
-                              { value: 'ជនជាតិកាវែត', label: 'ជនជាតិកាវែត' },
-                              { value: 'ជនជាតិកាចក់', label: 'ជនជាតិកាចក់' },
-                              { value: 'ជនជាតិព័រ', label: 'ជនជាតិព័រ' },
-                              { value: 'ជនជាតិខោញ', label: 'ជនជាតិខោញ' },
-                              { value: 'ជនជាតិលាវ', label: 'ជនជាតិលាវ' },
-                              { value: 'ជនជាតិផ្សេងទៀត', label: 'ជនជាតិផ្សេងទៀត' },
-                              { value: 'ជនជាតិមិល', label: 'ជនជាតិមិល' },
-                              { value: 'ជនជាតិចារាយ', label: 'ជនជាតិចារាយ' }
+                              ...baseEthnicGroupOptions
                             ]}
                             value={formData.ethnic_group}
                             onValueChange={(value) => setFormData(prev => ({ ...prev, ethnic_group: value }))}

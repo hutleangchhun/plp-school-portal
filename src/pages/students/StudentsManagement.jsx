@@ -1546,7 +1546,7 @@ export default function StudentsManagement() {
         <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
           {student.name || (student.firstName || student.lastName
             ? `${student.firstName || ''} ${student.lastName || ''}`.trim()
-            : student.username || t('noName', 'No Name'))}
+            : student.username || '-')}
         </div>
       )
     },
@@ -1557,7 +1557,7 @@ export default function StudentsManagement() {
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (student) => (
-        <p>{student.username || 'N/A'}</p>
+        <p>{student.username || '-'}</p>
       )
     },
     {
@@ -1566,7 +1566,7 @@ export default function StudentsManagement() {
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (student) => (
-        <p>{student?.class?.name || student?.className || 'N/A'}</p>
+        <p>{student?.class?.name || student?.className || '-'}</p>
       )
     },
     {
@@ -1578,7 +1578,7 @@ export default function StudentsManagement() {
           variant="filled"
           size='sm'
         >
-          {student.academicYear}
+          {student.academicYear || '-'}
         </Badge>
       )
     },
