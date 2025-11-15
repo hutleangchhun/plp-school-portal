@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { QrCode, Download, Loader, Grid3X3, List, Sparkles, Users } from 'lucide-react';
+import { QrCode, Download, Grid3X3, List, Users } from 'lucide-react';
 import * as Tabs from '@radix-ui/react-tabs';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -17,11 +17,10 @@ import { userService } from '../../utils/api/services/userService';
 import { schoolService } from '../../utils/api/services/schoolService';
 import { teacherService } from '../../utils/api/services/teacherService';
 import QRCodeDisplay from '@/components/qr-code/QRCodeDisplay';
-import ExportProgressModal from '@/components/modals/ExportProgressModal';
 
 export default function StudentQRCodeGenerator() {
   const { t, setLanguage } = useLanguage();
-  const { showError, showSuccess } = useToast();
+  const { showError } = useToast();
   const { startLoading, stopLoading } = useLoading();
   const { error, handleError, clearError } = useErrorHandler();
 
@@ -43,26 +42,18 @@ export default function StudentQRCodeGenerator() {
   const [students, setStudents] = useState([]);
   const [studentQrCodes, setStudentQrCodes] = useState([]);
   const [studentLoading, setStudentLoading] = useState(false);
-  const [studentGenerating, setStudentGenerating] = useState(false);
   const [studentCurrentPage, setStudentCurrentPage] = useState(1);
   const [studentTotalPages, setStudentTotalPages] = useState(1);
   const studentItemsPerPage = 10;
-  const [selectedStudents, setSelectedStudents] = useState([]);
-  const [studentProgress, setStudentProgress] = useState(0);
-  const [showStudentProgress, setShowStudentProgress] = useState(false);
 
   // Teacher tab state
   const [selectedTeacherGradeLevel, setSelectedTeacherGradeLevel] = useState('all');
   const [teachers, setTeachers] = useState([]);
   const [teacherQrCodes, setTeacherQrCodes] = useState([]);
   const [teacherLoading, setTeacherLoading] = useState(false);
-  const [teacherGenerating, setTeacherGenerating] = useState(false);
   const [teacherCurrentPage, setTeacherCurrentPage] = useState(1);
   const [teacherTotalPages, setTeacherTotalPages] = useState(1);
   const teacherItemsPerPage = 8;
-  const [selectedTeachers, setSelectedTeachers] = useState([]);
-  const [teacherProgress, setTeacherProgress] = useState(0);
-  const [showTeacherProgress, setShowTeacherProgress] = useState(false);
 
   const cardRefsRef = useRef({});
 
@@ -202,235 +193,6 @@ export default function StudentQRCodeGenerator() {
     }
   }, [activeTab, schoolId, selectedTeacherGradeLevel, teacherCurrentPage]);
 
-  // 🔹 Toggle student selection
-  const toggleStudentSelection = (userId) => {
-    setSelectedStudents(prev => {
-      if (prev.includes(userId)) {
-        return prev.filter(id => id !== userId);
-      } else {
-        return [...prev, userId];
-      }
-    });
-  };
-
-  // 🔹 Toggle all students selection
-  const toggleAllStudents = () => {
-    const studentsWithoutQR = studentQrCodes.filter(s => !s.hasQrCode);
-    if (selectedStudents.length === studentsWithoutQR.length) {
-      setSelectedStudents([]);
-    } else {
-      setSelectedStudents(studentsWithoutQR.map(s => s.userId));
-    }
-  };
-
-  // 🔹 Generate QR codes for students who don't have one
-  const generateQRCodesForStudents = async () => {
-    // Use selected students if any, otherwise use all students without QR
-    let studentsToGenerate = [];
-    
-    if (selectedStudents.length > 0) {
-      // Generate for selected students only
-      studentsToGenerate = studentQrCodes.filter(s => selectedStudents.includes(s.userId) && !s.hasQrCode);
-    } else {
-      // Generate for all students without QR
-      studentsToGenerate = studentQrCodes.filter(s => !s.hasQrCode);
-    }
-
-    if (!studentsToGenerate.length) {
-      showError(t('allHaveQR', 'សិស្សទាំងអស់មានលេខកូដ QR រួចហើយ'));
-      return;
-    }
-
-    try {
-      setStudentGenerating(true);
-      setShowStudentProgress(true);
-      setStudentProgress(0);
-
-      console.log(`Generating QR codes for ${studentsToGenerate.length} students without QR`);
-
-      let successCount = 0;
-      let failureCount = 0;
-      let skippedCount = 0;
-      const total = studentsToGenerate.length;
-
-      // Generate QR code for each student
-      for (let i = 0; i < studentsToGenerate.length; i++) {
-        const student = studentsToGenerate[i];
-        try {
-          // Skip if student already has QR code
-          if (student.hasQrCode) {
-            console.log(`⏭️ Skipping student ${student.username} - already has QR code`);
-            continue;
-          }
-
-          // Generate QR code with empty password (API accepts this for existing users)
-          const response = await userService.generateQRCode(student.username, '');
-
-          // API returns: { sessionId, qrCode, expiresIn } or { qr_code }
-          if (response && (response.qrCode || response.qr_code)) {
-            successCount++;
-            console.log(`✅ QR generated for student: ${student.username}`);
-          } else {
-            failureCount++;
-            console.warn(`❌ Failed to generate QR for student: ${student.username}`);
-          }
-        } catch (err) {
-          // Handle 409 Conflict - invalid credentials or QR already exists
-          if (err.status === 409 || err.statusCode === 409) {
-            console.log(`⏭️ Student ${student.username} - 409 Conflict (QR may already exist or invalid credentials)`);
-            skippedCount++; // Count as skipped
-          } else {
-            failureCount++;
-            console.error(`Error generating QR for student ${student.username}:`, err);
-          }
-        }
-        
-        // Update progress
-        const progress = Math.round(((i + 1) / total) * 100);
-        setStudentProgress(progress);
-      }
-
-      // Show result message
-      if (successCount > 0) {
-        let message = t('qrGenerated', 'បង្កើតលេខកូដ QR ដោយជោគជ័យ') + ` (${successCount}/${studentsToGenerate.length})`;
-        if (skippedCount > 0) {
-          message += ` - ${skippedCount} ${t('skipped', 'skipped (already exist or invalid credentials)')}`;
-        }
-        showSuccess(message);
-        setSelectedStudents([]); // Clear selection
-        await fetchStudents(); // ✅ refresh only the QR list, not full page
-      } else if (skippedCount > 0 && failureCount === 0) {
-        showError(
-          t('allSkipped', 'Cannot generate QR codes - API requires user passwords which are not available. QR codes may already exist or contact backend team to enable admin QR generation.') +
-          ` (${skippedCount} ${t('skipped', 'skipped')})`
-        );
-      } else {
-        showError(t('failedToGenerateQR', 'បរាជ័យក្នុងការបង្កើតលេខកូដ QR'));
-      }
-    } catch (err) {
-      handleError(err);
-      showError(t('failedToGenerateQR', 'បរាជ័យក្នុងការបង្កើតលេខកូដ QR'));
-    } finally {
-      setStudentGenerating(false);
-      setShowStudentProgress(false);
-      setStudentProgress(0);
-    }
-  };
-
-  // 🔹 Toggle teacher selection
-  const toggleTeacherSelection = (userId) => {
-    setSelectedTeachers(prev => {
-      if (prev.includes(userId)) {
-        return prev.filter(id => id !== userId);
-      } else {
-        return [...prev, userId];
-      }
-    });
-  };
-
-  // 🔹 Toggle all teachers selection
-  const toggleAllTeachers = () => {
-    const teachersWithoutQR = teacherQrCodes.filter(t => !t.hasQrCode);
-    if (selectedTeachers.length === teachersWithoutQR.length) {
-      setSelectedTeachers([]);
-    } else {
-      setSelectedTeachers(teachersWithoutQR.map(t => t.userId));
-    }
-  };
-
-  // 🔹 Generate QR codes for teachers who don't have one
-  const generateQRCodesForTeachers = async () => {
-    // Use selected teachers if any, otherwise use all teachers without QR
-    let teachersToGenerate = [];
-    
-    if (selectedTeachers.length > 0) {
-      // Generate for selected teachers only
-      teachersToGenerate = teacherQrCodes.filter(t => selectedTeachers.includes(t.userId) && !t.hasQrCode);
-    } else {
-      // Generate for all teachers without QR
-      teachersToGenerate = teacherQrCodes.filter(t => !t.hasQrCode);
-    }
-
-    if (!teachersToGenerate.length) {
-      showError(t('allTeachersHaveQR', 'គ្រូបង្រៀនទាំងអស់មានលេខកូដ QR រួចហើយ'));
-      return;
-    }
-
-    try {
-      setTeacherGenerating(true);
-      setShowTeacherProgress(true);
-      setTeacherProgress(0);
-
-      console.log(`Generating QR codes for ${teachersToGenerate.length} teachers without QR`);
-
-      let successCount = 0;
-      let failureCount = 0;
-      let skippedCount = 0;
-      const total = teachersToGenerate.length;
-
-      // Generate QR code for each teacher
-      for (let i = 0; i < teachersToGenerate.length; i++) {
-        const teacher = teachersToGenerate[i];
-        try {
-          // Skip if teacher already has QR code
-          if (teacher.hasQrCode) {
-            console.log(`⏭️ Skipping teacher ${teacher.username} - already has QR code`);
-            continue;
-          }
-
-          // Generate QR code with empty password (API accepts this for existing users)
-          const response = await userService.generateQRCode(teacher.username, '');
-
-          // API returns: { sessionId, qrCode, expiresIn } or { qr_code }
-          if (response && (response.qrCode || response.qr_code)) {
-            successCount++;
-            console.log(`✅ QR generated for teacher: ${teacher.username}`);
-          } else {
-            failureCount++;
-            console.warn(`❌ Failed to generate QR for teacher: ${teacher.username}`);
-          }
-        } catch (err) {
-          // Handle 409 Conflict - invalid credentials or QR already exists
-          if (err.status === 409 || err.statusCode === 409) {
-            console.log(`⏭️ Teacher ${teacher.username} - 409 Conflict (QR may already exist or invalid credentials)`);
-            skippedCount++; // Count as skipped
-          } else {
-            failureCount++;
-            console.error(`Error generating QR for teacher:`, err);
-          }
-        }
-        
-        // Update progress
-        const progress = Math.round(((i + 1) / total) * 100);
-        setTeacherProgress(progress);
-      }
-
-      // Show result message
-      if (successCount > 0) {
-        let message = t('qrGenerated', 'បង្កើតលេខកូដ QR ដោយជោគជ័យ') + ` (${successCount}/${teachersToGenerate.length})`;
-        if (skippedCount > 0) {
-          message += ` - ${skippedCount} ${t('skipped', 'skipped (already exist or invalid credentials)')}`;
-        }
-        showSuccess(message);
-        setSelectedTeachers([]); // Clear selection
-        await fetchTeachers(); // ✅ refresh the QR list
-      } else if (skippedCount > 0 && failureCount === 0) {
-        showError(
-          t('allSkipped', 'Cannot generate QR codes - API requires user passwords which are not available. QR codes may already exist or contact backend team to enable admin QR generation.') +
-          ` (${skippedCount} ${t('skipped', 'skipped')})`
-        );
-      } else {
-        showError(t('failedToGenerateQR', 'បរាជ័យក្នុងការបង្កើតលេខកូដ QR'));
-      }
-    } catch (err) {
-      handleError(err);
-      showError(t('failedToGenerateQR', 'បរាជ័យក្នុងការបង្កើតលេខកូដ QR'));
-    } finally {
-      setTeacherGenerating(false);
-      setShowTeacherProgress(false);
-      setTeacherProgress(0);
-    }
-  };
 
   // 🔹 Fetch Teachers + QR Codes using getTeachersBySchool
   const fetchTeachers = async () => {
@@ -543,21 +305,6 @@ export default function StudentQRCodeGenerator() {
   };
 
   return (
-    <>
-      {/* Student Progress Modal */}
-      <ExportProgressModal
-        isOpen={showStudentProgress}
-        progress={studentProgress}
-        status="processing"
-      />
-
-      {/* Teacher Progress Modal */}
-      <ExportProgressModal
-        isOpen={showTeacherProgress}
-        progress={teacherProgress}
-        status="processing"
-      />
-
     <PageTransition className="flex-1 p-3 sm:p-4">
       <div className="p-4 sm:p-6">
         <FadeInSection>
@@ -598,64 +345,44 @@ export default function StudentQRCodeGenerator() {
 
             {/* Students Tab */}
             <Tabs.Content value="students" className="space-y-6">
-              {/* Filters and Generate Button */}
-              <div className="flex justify-between">
-                <div className='grid grid-cols-2 sm:grid-cols-3 items-end gap-4'>
+              {/* Filters and View Toggle */}
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                {/* Filters Container */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                   {/* Grade Level Filter */}
-                <div> 
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('selectGradeLevel', 'ជ្រើសរើសកម្រិត')}
-                  </label>
-                  <Dropdown
-                    value={selectedGradeLevel}
-                    onValueChange={setSelectedGradeLevel}
-                    options={getGradeLevelOptions()}
-                    className="w-full"
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('selectGradeLevel', 'ជ្រើសរើសកម្រិត')}
+                    </label>
+                    <Dropdown
+                      value={selectedGradeLevel}
+                      onValueChange={setSelectedGradeLevel}
+                      options={getGradeLevelOptions()}
+                      className="w-full"
+                    />
+                  </div>
+
+                  {/* Class Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('selectClass', 'ជ្រើសរើសថ្នាក់')}
+                    </label>
+                    <Dropdown
+                      value={selectedClass}
+                      onValueChange={setSelectedClass}
+                      options={getClassOptions()}
+                      className="w-full"
+                    />
+                  </div>
                 </div>
 
-                {/* Class Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('selectClass', 'ជ្រើសរើសថ្នាក់')}
-                  </label>
-                  <Dropdown
-                    value={selectedClass}
-                    onValueChange={setSelectedClass}
-                    options={getClassOptions()}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Generate Button */}
-                <Button
-                  onClick={generateQRCodesForStudents}
-                  disabled={studentGenerating || selectedClass === 'all'}
-                  variant="primary"
-                  size="sm"
-                  className="flex items-center justify-center gap-2 w-full"
-                >
-                  {studentGenerating ? (
-                    <>
-                      <Loader className="h-4 w-4 animate-spin" />
-                      <span className="hidden sm:inline">{t('generating', 'កំពុងបង្កើត...')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      <span className="hidden sm:inline">{t('generateQRCodes', 'បង្កើតលេខកូដ QR')}</span>
-                      <span className="sm:hidden text-xs">{t('generate', 'បង្កើត')}</span>
-                    </>
-                  )}
-                </Button>
-                </div>
-
-                {/* View Toggle */}
-                <div className="flex items-center gap-2 justify-start sm:justify-end">
+                {/* View Toggle - Always on the right */}
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <Button
                     onClick={() => setViewMode('grid')}
                     variant={viewMode === 'grid' ? 'primary' : 'outline'}
                     size="sm"
+                    title={t('gridView', 'Grid View')}
                   >
                     <Grid3X3 className="h-4 w-4" />
                   </Button>
@@ -663,6 +390,7 @@ export default function StudentQRCodeGenerator() {
                     onClick={() => setViewMode('list')}
                     variant={viewMode === 'list' ? 'primary' : 'outline'}
                     size="sm"
+                    title={t('listView', 'List View')}
                   >
                     <List className="h-4 w-4" />
                   </Button>
@@ -694,9 +422,6 @@ export default function StudentQRCodeGenerator() {
                     downloadQRCode={downloadQRCode}
                     cardRefsRef={cardRefsRef}
                     t={t}
-                    selectedItems={selectedStudents}
-                    onToggleSelection={toggleStudentSelection}
-                    onToggleAll={toggleAllStudents}
                   />
                   {studentTotalPages > 1 && (
                     <Pagination
@@ -715,10 +440,10 @@ export default function StudentQRCodeGenerator() {
 
             {/* Teachers Tab */}
             <Tabs.Content value="teachers" className="space-y-6">
-              {/* Grade Level Filter, Generate Button and View Toggle */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+              {/* Filters and View Toggle */}
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                 {/* Grade Level Filter */}
-                <div>
+                <div className="w-full sm:w-auto">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {t('selectGradeLevel', 'ជ្រើសរើសកម្រិត')}
                   </label>
@@ -730,34 +455,13 @@ export default function StudentQRCodeGenerator() {
                   />
                 </div>
 
-                {/* Generate Button */}
-                <Button
-                  onClick={generateQRCodesForTeachers}
-                  disabled={teacherGenerating || teachers.length === 0}
-                  variant="primary"
-                  size="sm"
-                  className="flex items-center justify-center gap-2 w-full"
-                >
-                  {teacherGenerating ? (
-                    <>
-                      <Loader className="h-4 w-4 animate-spin" />
-                      <span className="hidden sm:inline">{t('generating', 'កំពុងបង្កើត...')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      <span className="hidden sm:inline">{t('generateQRCodes', 'បង្កើតលេខកូដ QR')}</span>
-                      <span className="sm:hidden text-xs">{t('generate', 'បង្កើត')}</span>
-                    </>
-                  )}
-                </Button>
-
-                {/* View Toggle */}
-                <div className="flex items-center gap-2 justify-start sm:justify-end">
+                {/* View Toggle - Always on the right */}
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <Button
                     onClick={() => setViewMode('grid')}
                     variant={viewMode === 'grid' ? 'primary' : 'outline'}
                     size="sm"
+                    title={t('gridView', 'Grid View')}
                   >
                     <Grid3X3 className="h-4 w-4" />
                   </Button>
@@ -765,6 +469,7 @@ export default function StudentQRCodeGenerator() {
                     onClick={() => setViewMode('list')}
                     variant={viewMode === 'list' ? 'primary' : 'outline'}
                     size="sm"
+                    title={t('listView', 'List View')}
                   >
                     <List className="h-4 w-4" />
                   </Button>
@@ -794,9 +499,6 @@ export default function StudentQRCodeGenerator() {
                     downloadQRCode={downloadQRCode}
                     cardRefsRef={cardRefsRef}
                     t={t}
-                    selectedItems={selectedTeachers}
-                    onToggleSelection={toggleTeacherSelection}
-                    onToggleAll={toggleAllTeachers}
                   />
                   {teacherTotalPages > 1 && (
                     <Pagination
@@ -816,6 +518,5 @@ export default function StudentQRCodeGenerator() {
         </FadeInSection>
       </div>
     </PageTransition>
-    </>
   );
 }
