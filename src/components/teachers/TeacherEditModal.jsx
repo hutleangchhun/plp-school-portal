@@ -10,7 +10,7 @@ import Dropdown from '../ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { teacherService } from '../../utils/api/services/teacherService';
 import { userService } from '../../utils/api/services/userService';
-import { ethnicGroupOptions as baseEthnicGroupOptions, accessibilityOptions as baseAccessibilityOptions, gradeLevelOptions } from '../../utils/formOptions';
+import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions } from '../../utils/formOptions';
 
 const TeacherEditModal = ({
   isOpen,
@@ -714,7 +714,7 @@ const TeacherEditModal = ({
                   <Dropdown
                     options={[
                       { value: '', label: t('selectEthnicGroup', 'ជ្រើសរើសជនជាតិភាគតិច') },
-                      ...baseEthnicGroupOptions
+                      ...ethnicGroupOptions
                     ]}
                     value={editForm.ethnicGroup}
                     onValueChange={(value) => handleFormChange('ethnicGroup', value)}
@@ -733,7 +733,7 @@ const TeacherEditModal = ({
                     {t('accessibility', 'Accessibility')}
                   </label>
                   <div className="mt-1 space-y-2 p-3 border border-gray-300 rounded-md bg-white max-h-48 overflow-y-auto">
-                    {baseAccessibilityOptions.map((option) => (
+                    {accessibilityOptions.map((option) => (
                       <label key={option.value} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                         <input
                           type="checkbox"

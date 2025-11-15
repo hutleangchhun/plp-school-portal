@@ -17,6 +17,11 @@ export const en = {
   //chart
   classStudentCounts: 'Class Student Counts',
   schoolPopulationDistribution: 'School Population Distribution',
+  ethnicGroupsDistribution: 'Ethnic Groups Distribution',
+  accessibilityDistribution: 'Accessibility Distribution',
+  studentEthnicGroupDistribution: 'Student Ethnic Group Distribution',
+  studentAccessibilityDistribution: 'Student Accessibility Distribution',
+  topEthnicGroups: 'Top Ethnic Groups',
 
 
   

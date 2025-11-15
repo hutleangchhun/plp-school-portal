@@ -9,7 +9,7 @@ import ProfileImage from '../ui/ProfileImage';
 import Dropdown from '../ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
-import { gradeLevelOptions } from '../../utils/formOptions';
+import { gradeLevelOptions, ethnicGroupOptions, accessibilityOptions } from '../../utils/formOptions';
 
 const StudentEditModal = ({
   isOpen,
@@ -682,31 +682,7 @@ const StudentEditModal = ({
                   <Dropdown
                     options={[
                       { value: '', label: t('selectEthnicGroup', 'ជ្រើសរើសជនជាតិភាគតិច') },
-                      { value: 'ជនជាតិព្នង', label: 'ជនជាតិព្នង' },
-                      { value: 'ជនជាតិកួយ', label: 'ជនជាតិកួយ' },
-                      { value: 'ជនជាតិគ្រឹង', label: 'ជនជាតិគ្រឹង' },
-                      { value: 'ជនជាតិរដែរ', label: 'ជនជាតិរដែរ' },
-                      { value: 'ជនជាតិស្ទៀង', label: 'ជនជាតិស្ទៀង' },
-                      { value: 'ជនជាតិទំពួន', label: 'ជនជាតិទំពួន' },
-                      { value: 'ជនជាតិព្រៅ', label: 'ជនជាតិព្រៅ' },
-                      { value: 'ជនជាតិកាវែត', label: 'ជនជាតិកាវែត' },
-                      { value: 'ជនជាតិកាចក់', label: 'ជនជាតិកាចក់' },
-                      { value: 'ជនជាតិព័រ', label: 'ជនជាតិព័រ' },
-                      { value: 'ជនជាតិខោញ', label: 'ជនជាតិខោញ' },
-                      { value: 'ជនជាតិជង', label: 'ជនជាតិជង' },
-                      { value: 'ជនជាតិស្អូច', label: 'ជនជាតិស្អូច' },
-                      { value: 'ជនជាតិរដែ', label: 'ជនជាតិរដែ' },
-                      { value: 'ជនជាតិខិ', label: 'ជនជាតិខិ' },
-                      { value: 'ជនជាតិរអង', label: 'ជនជាតិរអង' },
-                      { value: 'ជនជាតិស្ពុង', label: 'ជនជាតិស្ពុង' },
-                      { value: 'ជនជាតិល្អឺន', label: 'ជនជាតិល្អឺន' },
-                      { value: 'ជនជាតិសំរែ', label: 'ជនជាតិសំរែ' },
-                      { value: 'ជនជាតិសួយ', label: 'ជនជាតិសួយ' },
-                      { value: 'ជនជាតិថ្មូន', label: 'ជនជាតិថ្មូន' },
-                      { value: 'ជនជាតិលុន', label: 'ជនជាតិលុន' },
-                      { value: 'ជនជាតិក្រោល', label: 'ជនជាតិក្រោល' },
-                      { value: 'ជនជាតិមិល', label: 'ជនជាតិមិល' },
-                      { value: 'ជនជាតិចារាយ', label: 'ជនជាតិចារាយ' }
+                      ...ethnicGroupOptions
                     ]}
                     value={editForm.ethnicGroup}
                     onValueChange={(value) => handleFormChange('ethnicGroup', value)}
@@ -725,16 +701,7 @@ const StudentEditModal = ({
                     {t('accessibility', 'Accessibility')}
                   </label>
                   <div className="mt-1 space-y-2 p-3 border border-gray-300 rounded-md bg-white max-h-48 overflow-y-auto">
-                    {[
-                      { value: 'ពិបាកក្នុងការធ្វើចលនា', label: 'ពិបាកក្នុងការធ្វើចលនា' },
-                      { value: 'ពិបាកក្នុងការស្ដាប់', label: 'ពិបាកក្នុងការស្ដាប់' },
-                      { value: 'ពិបាកក្នុងការនីយាយ', label: 'ពិបាកក្នុងការនីយាយ' },
-                      { value: 'ពិបាកក្នុងការមើល', label: 'ពិបាកក្នុងការមើល' },
-                      { value: 'ពិការសរីរាង្គខាងក្នុង', label: 'ពិការសរីរាង្គខាងក្នុង' },
-                      { value: 'ពិការសតិបញ្ញា', label: 'ពិការសតិបញ្ញា' },
-                      { value: 'ពិការផ្លូវចិត្ត', label: 'ពិការផ្លូវចិត្ត' },
-                      { value: 'ពិការផ្សេងៗ', label: 'ពិការផ្សេងៗ' }
-                    ].map((option) => (
+                    {accessibilityOptions.map((option) => (
                       <label key={option.value} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                         <input
                           type="checkbox"

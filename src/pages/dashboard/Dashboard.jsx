@@ -1,6 +1,6 @@
 import { User, Edit, Edit2, Building2, Users, BookOpen, Award, Shield, Briefcase } from 'lucide-react';
-import ClassStudentCountChart from '../../components/ui/ClassStudentCountChart';
 import SchoolOverviewChart from '../../components/ui/SchoolOverviewChart';
+import StudentDemographicsChart from '../../components/ui/StudentDemographicsChart';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -128,18 +128,18 @@ export default function Dashboard({ user: initialUser }) {
           const classesResponse = await classService.getBySchool(accountData.school_id);
           const totalClasses = classesResponse?.classes?.length || 0;
 
-          // Get total students count
+          // Get total students count - fetch all students without pagination
           const studentsResponse = await studentService.getStudentsBySchoolClasses(accountData.school_id, {
             page: 1,
-            limit: 1 // Only need the count from pagination
+            limit: 100 // API max limit is 100
           });
 
-          const totalStudents = studentsResponse?.pagination?.total || 0;
+          const totalStudents = studentsResponse?.data?.length || studentsResponse?.pagination?.total || 0;
 
-          // Get teachers count from the teachers endpoint
+          // Get teachers count from the teachers endpoint - fetch all teachers
           const teachersResponse = await teacherService.getTeachersBySchool(accountData.school_id, {
             page: 1,
-            limit: 100 // Get all teachers to count properly
+            limit: 100 // API max limit is 100
           });
 
           // Count based on isDirector field
@@ -335,17 +335,30 @@ export default function Dashboard({ user: initialUser }) {
           />
         </FadeInSection>
 
-        {/* Charts Grid */}
-        <FadeInSection delay={300} className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Class Student Count Chart */}
-          <ClassStudentCountChart
-            schoolId={user?.teacher?.schoolId || user?.school_id || user?.school?.id || user?.teacher?.school?.id || '76525'}
-          />
+        {/* Charts Grid - Responsive Layout */}
+        <FadeInSection delay={300} className="grid grid-cols-1 gap-6 mb-6">
+          {/* School Overview Chart - 1 column on mobile, 1 column on desktop */}
+          <div className="lg:col-span-1">
+            <SchoolOverviewChart
+              schoolStats={schoolStats}
+            />
+          </div>
+          {/* Student Demographics Charts - 2 columns on mobile, 2 columns on desktop */}
+          <div className="">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Ethnic Groups Demographics */}
+              <StudentDemographicsChart
+                schoolId={user?.teacher?.schoolId || user?.school_id || user?.school?.id || user?.teacher?.school?.id || '76525'}
+                defaultTab="ethnic"
+              />
 
-          {/* School Overview Chart */}
-          <SchoolOverviewChart
-            schoolStats={schoolStats}
-          />
+              {/* Accessibility Needs Demographics */}
+              <StudentDemographicsChart
+                schoolId={user?.teacher?.schoolId || user?.school_id || user?.school?.id || user?.teacher?.school?.id || '76525'}
+                defaultTab="accessibility"
+              />
+            </div>
+          </div>
         </FadeInSection>
 
 

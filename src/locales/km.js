@@ -1,3 +1,4 @@
+import { accessibilityOptions } from "@/utils/formOptions";
 import { Accessibility } from "lucide-react";
 
 // Khmer translations
@@ -462,7 +463,7 @@ export const km = {
   adjustFiltersOrSearch: 'សូមលាយប្រែការរើសចេញឬស្វែងរកឡើងវិញ',
   clearFilters: 'សម្អាតការរើសចេញ',
   selectClass: 'ជ្រើសរើសថ្នាក់',
-  selectGradeLevel: 'ជ្រើសរើសថ្នាក់រៀន',
+  selectGradeLevel: 'ជ្រើសរើសកម្រិតថ្នាក់',
   allGradeLevels: 'ថ្នាក់រៀនទាំងអស់',
   grade: 'ចំណាត់ថ្នាក់',
   class: 'ថ្នាក់រៀន',
@@ -1214,10 +1215,14 @@ export const km = {
   oneParent: 'មានឪពុកម្តាយម្នាក់',
   noParents: 'គ្មានឪពុកម្តាយ',
   specialNeedsStudents: 'សិស្សត្រូវការពិសេស',
-  ethnicGroups: 'ក្រុមជនជាតិ',
+  ethnicGroups: 'ជនជាតិ',
+  accessibility: 'ប្រភេទពិការភាព',
   disabilityTypes: 'ប្រភេទពិការភាព',
-  ethnicGroupsDistribution: 'ការចែកចាយក្រុមជនជាតិ',
-  accessibilityDistribution: 'ការចែកចាយប្រភេទពិការភាព',
+  ethnicGroupsDistribution: 'បំណែងចែកក្រុមជនជាតិ',
+  topEthnicGroups: 'បំណែងចែកក្រុមជនជាតិ',
+  accessibilityDistribution: 'បំណែងចែកក្រុមប្រភេទពិការភាព',
+  studentEthnicGroupDistribution: 'ស្ថិតិប្រភេទជនជាតិសម្រាប់សិស្ស',
+  studentAccessibilityDistribution: 'ស្ថិតិប្រភេទពិការភាពសម្រាប់សិស្ស',
   
   // Gender
   male: 'ប្រុស',
