@@ -832,7 +832,7 @@ export const en = {
   successful: 'Successful',
   failed: 'Failed',
   successRate: 'Success Rate',
-  search: 'Search users...',
+  search: 'Search',
   allRoles: 'All Roles',
   teachers: 'Teachers',
   directors: 'Directors',
@@ -858,4 +858,13 @@ export const en = {
   director: 'Director',
   teacher: 'Teacher',
   student: 'Student',
+  duration: 'Duration',
+  score: 'Score',
+  details: 'Details',
+  examType: 'Exam Type',
+  examTitle: 'Exam Title',
+  filter: 'Filter',
+  filters: 'Filters',
+  // exam record
+  examRecords: 'Exam Records',
 };  

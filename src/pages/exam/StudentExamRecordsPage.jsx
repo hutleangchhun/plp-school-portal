@@ -417,7 +417,7 @@ export default function StudentExamRecordsPage({ user }) {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={t('searchExams', 'Search by exam or subject...')}
+            placeholder={t('search', 'Search ...')}
             className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -507,14 +507,14 @@ export default function StudentExamRecordsPage({ user }) {
             accessor: 'letterGrade',
             render: (exam) => (
               <div>
-                <p className="font-medium text-gray-900 text-center">
+                <p className="font-medium text-gray-900 text-start">
                   {exam.letterGrade || '-'}
                 </p>
               </div>
             )
           },
           {
-            header: t('time', 'Time'),
+            header: t('duration', 'Duration'),
             accessor: 'timeTaken',
             render: (exam) => (
               <div>
