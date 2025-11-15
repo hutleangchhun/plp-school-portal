@@ -217,10 +217,10 @@ export const getNavigationItems = (user, t) => {
     //   name: t('QRCodeManangement', 'QR Codes Management'),
     //   href: '/qr-codes',
     // },
-    // {
-    //   name: t('examRecord', 'Exam Records'),
-    //   href: '/exam-records',
-    // },
+    {
+      name: t('examRecords', 'Exam Records'),
+      href: '/exam-records',
+    },
     {
       name: t('reports', 'Reports'),
       href: '/reports',
