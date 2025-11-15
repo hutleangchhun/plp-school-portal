@@ -903,53 +903,96 @@ export default function BulkStudentImport() {
       setImportResults([]);
       setProcessedCount(0);
 
-      // Initialize results array with all students
+      // Initialize results array with all students (all processing initially)
       const initialResults = validStudents.map((student) => ({
         studentName: `${student.firstName} ${student.lastName}`,
         username: student.username,
-        processing: false,
+        processing: true,
         success: false,
         error: null
       }));
       setImportResults(initialResults);
 
-      // Use the new bulk register API
-      const response = await studentService.bulkRegister(transformedData);
+      // Process students one by one in a queue
+      let successCount = 0;
+      let failureCount = 0;
+      const results = [...initialResults];
 
-      // Handle the new response format
-      const { success_count, failed_count, successful_students, errors } = response.data || response;
+      for (let i = 0; i < transformedData.length; i++) {
+        try {
+          const studentData = transformedData[i];
 
-      // Update results based on API response
-      const updatedResults = initialResults.map((result, index) => {
-        const studentData = transformedData[index];
-        const hasError = errors && errors.find(e =>
-          e.username === studentData.username
-        );
+          // Update result to show processing
+          results[i] = {
+            ...results[i],
+            processing: true
+          };
+          setImportResults([...results]);
 
-        return {
-          ...result,
-          processing: false,
-          success: !hasError,
-          error: hasError ? (hasError.message || hasError.error || 'Unknown error') : null
-        };
-      });
+          // Register single student
+          console.log(`Registering student ${i + 1}/${transformedData.length}: ${studentData.username}`);
+          const response = await studentService.bulkRegister([studentData]);
 
-      setImportResults(updatedResults);
-      setProcessedCount(transformedData.length);
-      setIsImporting(false);
+          // Check response for success
+          const { success_count: count, errors } = response.data || response;
 
-      if (success_count > 0) {
-        showSuccess(`🎉 បាននាំចូលសិស្សចំនួន ${success_count} នាក់ដោយជោគជ័យ!`, { duration: 5000 });
+          if (count > 0 && (!errors || errors.length === 0)) {
+            successCount++;
+            results[i] = {
+              ...results[i],
+              processing: false,
+              success: true,
+              error: null
+            };
+            console.log(`✅ Student registered: ${studentData.username}`);
+          } else {
+            failureCount++;
+            const errorMsg = errors && errors[0] ? (errors[0].message || errors[0].error || 'Unknown error') : 'Registration failed';
+            results[i] = {
+              ...results[i],
+              processing: false,
+              success: false,
+              error: errorMsg
+            };
+            console.warn(`❌ Failed to register ${studentData.username}: ${errorMsg}`);
+          }
+
+          // Update progress tracker after each student
+          setImportResults([...results]);
+          setProcessedCount(i + 1);
+
+          // Add a small delay between requests to avoid overwhelming the server
+          if (i < transformedData.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        } catch (err) {
+          failureCount++;
+          const errorMsg = err.message || 'Unknown error';
+          results[i] = {
+            ...results[i],
+            processing: false,
+            success: false,
+            error: errorMsg
+          };
+          console.error(`Error registering student ${i + 1}:`, err);
+          setImportResults([...results]);
+          setProcessedCount(i + 1);
+        }
       }
 
-      if (failed_count > 0) {
-        showError(`⚠️ មានកំហុស ${failed_count} នាក់ក្នុងការនាំចូល។ សូមពិនិត្យទិន្នន័យឡើងវិញ`, { duration: 7000 });
-        // Log errors for debugging
-        console.error('Bulk import errors:', errors);
+      setIsImporting(false);
+
+      // Show summary
+      if (successCount > 0) {
+        showSuccess(`🎉 បាននាំចូលសិស្សចំនួន ${successCount} នាក់ដោយជោគជ័យ!`, { duration: 5000 });
+      }
+
+      if (failureCount > 0) {
+        showError(`⚠️ មានកំហុស ${failureCount} នាក់ក្នុងការនាំចូល។ សូមពិនិត្យលម្អិត`, { duration: 7000 });
       }
 
       // Reset form on complete success
-      if (failed_count === 0) {
+      if (failureCount === 0) {
         setStudents([{
           // Student basic info
           lastName: '',
