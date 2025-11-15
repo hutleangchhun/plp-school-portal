@@ -69,7 +69,7 @@ export const routePermissions = {
     component: 'DirectorExamRecords'
   },
   '/exam-records/:userId': {
-    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR], // Both teachers and directors
     component: 'StudentExamRecordsPage'
   },
   '/my-students-exams': {
@@ -130,10 +130,16 @@ export const hasRouteAccess = (path, user) => {
     );
   }
 
-  // Teacher: roleId = 8 && (isDirector = false OR undefined) can access /attendance, /my-classes, /my-students, /my-attendance, /profile, and /students/qr-codes
+  // Teacher: roleId = 8 && (isDirector = false OR undefined) can access /attendance, /my-classes, /my-students, /my-students-exams, /my-attendance, /profile, /qr-codes, and /exam-records/:userId
   // Teachers CANNOT access /students/bulk-import or /qr-code-admin
   if (user.roleId === ROLES.TEACHER && isNotDirector) {
-    return path === '/attendance' || path === '/my-classes' || path === '/my-students' || path === '/my-attendance' || path === '/profile' || path === '/qr-codes';
+    // Check exact matches first
+    if (path === '/attendance' || path === '/my-classes' || path === '/my-students' || path === '/my-students-exams' || path === '/my-attendance' || path === '/profile' || path === '/qr-codes') {
+      return true;
+    }
+
+    // Check pattern matches (e.g., /exam-records/:userId)
+    return matchRoute('/exam-records/:userId', path);
   }
 
   // Director: roleId = 8 && isDirector = true (already handled above in the first check)
@@ -247,11 +253,10 @@ export const getNavigationItems = (user, t) => {
         },
       ],
     },
-    // Temporarily disabled - will implement later:
-    // {
-    //   name: t('myStudentsExams', 'My Students Exams'),
-    //   href: '/my-students-exams',
-    // },
+    {
+      name: t('myStudentsExams', 'My Students Exams'),
+      href: '/my-students-exams',
+    },
   ];
 
   // Return appropriate items based on user role

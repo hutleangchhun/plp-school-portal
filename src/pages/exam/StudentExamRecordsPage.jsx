@@ -167,8 +167,13 @@ export default function StudentExamRecordsPage({ user }) {
   }, [userId, location.state, statusFilter, subjectFilter, startDate, endDate, exams.length, student]);
 
   const handleClose = () => {
-    // Navigate back to exam records list
-    navigate('/exam-records');
+    // Navigate back to appropriate exam records list based on user role
+    const isDirector = user?.teacher?.isDirector === true || user?.isDirector === true;
+    if (isDirector) {
+      navigate('/exam-records');
+    } else {
+      navigate('/my-students-exams');
+    }
   };
 
   /**

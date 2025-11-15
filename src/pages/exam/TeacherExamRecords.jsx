@@ -1,27 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { examHistoryService } from '../../utils/api/services/examHistoryService';
 import { classService, studentService } from '@/utils/api';
+import { encryptId } from '../../utils/encryption';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import EmptyState from '../../components/ui/EmptyState';
+import Table from '../../components/ui/Table';
 import { Button } from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
-import { Tooltip } from '../../components/ui/Tooltip';
 import Dropdown from '../../components/ui/Dropdown';
 import {
   BookOpen,
-  Calendar,
-  Download,
-  Filter,
-  Search,
-  Users,
-  CheckCircle,
-  XCircle,
-  AlertCircle
+  Eye
 } from 'lucide-react';
 
 /**
@@ -30,17 +25,24 @@ import {
  */
 export default function TeacherExamRecords({ user }) {
   const { t } = useLanguage();
-  const { showError, showSuccess } = useToast();
+  const { showError } = useToast();
   const { startLoading, stopLoading } = useLoading();
+  const navigate = useNavigate();
 
   // State
   const [studentRecords, setStudentRecords] = useState([]);
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageSize: 10,
+    totalStudents: 0,
+    totalPages: 1,
+    allStudents: []
+  });
 
   /**
    * Fetch teacher's assigned classes
@@ -69,20 +71,47 @@ export default function TeacherExamRecords({ user }) {
   }, [user, showError, t]);
 
   /**
-   * Fetch all students from teacher's classes using school API
+   * Fetch all students from teacher's classes using school API with pagination
    */
-  const fetchAllStudents = useCallback(async () => {
+  const fetchAllStudents = useCallback(async (page = 1, pageSize = 10) => {
     try {
       let studentsList = [];
       const schoolId = user?.teacher?.schoolId || user?.schoolId;
 
       if (selectedClass && schoolId) {
-        const response = await studentService.getStudentsBySchoolClasses(schoolId, {
+        const apiParams = {
           classId: selectedClass,
-          limit: 1000
-        });
+          page: page,
+          limit: pageSize
+        };
+
+        console.log('Fetching students with pagination params:', apiParams);
+
+        const response = await studentService.getStudentsBySchoolClasses(schoolId, apiParams);
+
+        console.log('API Response:', response);
+        console.log('Pagination from API:', response.pagination);
+
         if (response.success) {
           studentsList = response.data || [];
+
+          // Update pagination info from API response directly
+          console.log('=== PAGINATION DEBUG ===');
+          console.log('Requested pageSize:', pageSize);
+          console.log('API returned students count:', studentsList.length);
+          console.log('API pagination object:', response.pagination);
+          console.log('=== END DEBUG ===');
+
+          if (response.pagination) {
+            setPagination(prev => ({
+              ...prev,
+              currentPage: response.pagination.page,
+              pageSize: response.pagination.limit,
+              totalStudents: response.pagination.total,
+              totalPages: response.pagination.pages,
+              allStudents: studentsList
+            }));
+          }
         }
       }
 
@@ -94,147 +123,247 @@ export default function TeacherExamRecords({ user }) {
   }, [selectedClass, user]);
 
   /**
-   * Fetch exam records
+   * Fetch exam records for the current page
    */
-  const fetchExamRecords = useCallback(async () => {
+  const fetchExamRecords = useCallback(async (page = 1) => {
     try {
+      // Only proceed if a class is selected
+      if (!selectedClass) {
+        setStudentRecords([]);
+        setLoading(false);
+        stopLoading('fetchExamRecords');
+        return;
+      }
+
       setLoading(true);
       setError(null);
       startLoading('fetchExamRecords', t('loadingExamRecords', 'Loading exam records...'));
 
-      let allRecords = [];
+      // Fetch students for the current page with the current pageSize limit (pagination handled by API)
+      const studentsList = await fetchAllStudents(page, pagination.pageSize);
 
-      if (selectedClass) {
-        const response = await examHistoryService.getClassExamHistory(selectedClass);
-        if (response.success) {
-          allRecords = response.data || [];
+      // Fetch exam records for each student using the new endpoint
+      const studentRecordsMap = new Map();
+
+      for (const student of studentsList) {
+        try {
+          // Extract userId from nested user object or use direct id
+          const userId = student.user?.id || student.userId || student.id;
+
+          if (!userId) {
+            console.warn('Student has no userId:', student);
+            studentRecordsMap.set(student.studentId || student.id, {
+              student: student,
+              exams: [],
+              hasRecords: false
+            });
+            continue;
+          }
+
+          console.log(`Fetching exam history for student userId: ${userId}, studentId: ${student.studentId}`);
+
+          const response = await examHistoryService.getUserExamHistoryFiltered(userId, {
+            examType: 'exam'
+          });
+
+          // API returns array of exam records for the user
+          const exams = Array.isArray(response.data) ? response.data : (response.data ? [response.data] : []);
+
+          console.log(`Found ${exams.length} exam records for userId ${userId}`);
+
+          studentRecordsMap.set(student.studentId || student.id, {
+            student: student,
+            exams: exams,
+            hasRecords: exams.length > 0
+          });
+        } catch (error) {
+          const userId = student.user?.id || student.userId || student.id;
+          console.warn(`Failed to fetch exam history for student ${userId}:`, error);
+          // Continue with other students even if one fails
+          studentRecordsMap.set(student.studentId || student.id, {
+            student: student,
+            exams: [],
+            hasRecords: false
+          });
         }
-      } else if (user?.classIds?.length > 0) {
-        // Fetch from all teacher's classes
-        const classPromises = user.classIds.map(classId =>
-          examHistoryService.getClassExamHistory(classId)
-        );
-        const responses = await Promise.allSettled(classPromises);
-        allRecords = responses
-          .filter(res => res.status === 'fulfilled' && res.value?.success && res.value?.data)
-          .flatMap(res => res.value.data);
       }
 
-      // Fetch all students
-      const studentsList = await fetchAllStudents();
-
-      // Merge students with their exam records
-      const merged = studentsList.map(student => {
-        const studentExams = allRecords.filter(record => record.userId === student.id);
-        return {
+      // Convert map to array, maintaining student order
+      const merged = studentsList.map(student =>
+        studentRecordsMap.get(student.studentId || student.id) || {
           student: student,
-          exams: studentExams,
-          hasRecords: studentExams.length > 0
-        };
-      });
+          exams: [],
+          hasRecords: false
+        }
+      );
 
       setStudentRecords(merged);
     } catch (error) {
       console.error('Error fetching exam records:', error);
       setError(error?.response?.data?.message || t('errorFetchingExamRecords', 'Failed to fetch exam records'));
+      setStudentRecords([]);
     } finally {
       setLoading(false);
       stopLoading('fetchExamRecords');
     }
-  }, [selectedClass, user, startLoading, stopLoading, t, fetchAllStudents]);
+  }, [selectedClass, startLoading, stopLoading, t, fetchAllStudents, pagination.pageSize]);
 
   /**
-   * Initial load
+   * Initial load - fetch classes
    */
   useEffect(() => {
     fetchClasses();
   }, [fetchClasses]);
 
   /**
-   * Load exam records when class is selected
+   * Reset pagination and load exam records when class is selected
    */
   useEffect(() => {
     if (selectedClass) {
-      fetchExamRecords();
+      setPagination(prev => ({
+        ...prev,
+        currentPage: 1
+      }));
+      fetchExamRecords(1);
     }
-  }, [fetchExamRecords, selectedClass]);
+  }, [selectedClass, fetchExamRecords]);
 
   /**
-   * Get status badge
+   * Handle viewing student exam records
+   * Navigate to the student exam records page with encrypted user ID
    */
-  const getStatusBadge = (status, passed) => {
-    switch (status) {
-      case 'COMPLETED':
-        return passed ? (
-          <Badge color="green" variant="solid" size="sm" className="gap-1">
-            <CheckCircle className="w-3 h-3" />
-            {t('completed', 'Completed')}
-          </Badge>
-        ) : (
-          <Badge color="red" variant="solid" size="sm" className="gap-1">
-            <XCircle className="w-3 h-3" />
-            {t('failed', 'Failed')}
-          </Badge>
-        );
-      case 'IN_PROGRESS':
-        return (
-          <Badge color="yellow" variant="solid" size="sm" className="gap-1">
-            <AlertCircle className="w-3 h-3" />
-            {t('inProgress', 'In Progress')}
-          </Badge>
-        );
-      default:
-        return (
-          <Badge color="gray" variant="solid" size="sm">
-            {status}
-          </Badge>
-        );
-    }
-  };
+  const handleViewStudentRecords = (studentRecord) => {
+    const userId = studentRecord.student.user?.id || studentRecord.student.userId || studentRecord.student.id;
+    const encryptedUserId = encryptId(userId);
 
-  /**
-   * Format date
-   */
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    navigate(`/exam-records/${encryptedUserId}`, {
+      state: {
+        student: studentRecord.student,
+        exams: studentRecord.exams || []
+      }
     });
   };
 
   /**
-   * Format time duration
+   * Get table columns configuration - shows only students with records
    */
-  const formatDuration = (seconds) => {
-    if (!seconds) return '-';
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
+  const getTableColumns = () => [
+    {
+      key: 'studentName',
+      header: t('student', 'Student'),
+      accessor: 'studentName',
+      disableSort: false
+    },
+    {
+      key: 'totalExams',
+      header: t('totalExams', 'Total Exams'),
+      accessor: 'totalExams',
+      render: (item) => (
+        <Badge color="blue" variant="outline">
+          {item.totalExams}
+        </Badge>
+      ),
+      disableSort: false
+    },
+    {
+      key: 'passedCount',
+      header: t('passed', 'Passed'),
+      accessor: 'passedCount',
+      render: (item) => (
+        <Badge color="green" variant="solid" size="sm">
+          {item.passedCount}
+        </Badge>
+      ),
+      disableSort: false
+    },
+    {
+      key: 'failedCount',
+      header: t('failed', 'Failed'),
+      accessor: 'failedCount',
+      render: (item) => (
+        <Badge color="red" variant="solid" size="sm">
+          {item.failedCount}
+        </Badge>
+      ),
+      disableSort: false
+    },
+    {
+      key: 'completedCount',
+      header: t('completed', 'Completed'),
+      accessor: 'completedCount',
+      render: (item) => (
+        <Badge color="gray" variant="outline" size="sm">
+          {item.completedCount}
+        </Badge>
+      ),
+      disableSort: false
+    },
+    {
+      key: 'actions',
+      header: t('actions', 'Actions'),
+      disableSort: true,
+      render: (item) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleViewStudentRecords(item.studentRecord)}
+          className="flex items-center gap-1"
+        >
+          <Eye className="w-4 h-4" />
+          {t('viewRecords', 'View Records')}
+        </Button>
+      )
     }
-    return `${minutes}m`;
-  };
+  ];
 
   /**
-   * Download certificate
+   * Get table data - ALL students, but calculate stats only for those with exam records
    */
-  const handleDownloadCertificate = async (record) => {
-    if (!record.certificateFile) {
-      showError(t('noCertificateAvailable', 'No certificate available'));
-      return;
+  const getTableData = useMemo(() => {
+    const rows = [];
+
+    studentRecords.forEach((sr) => {
+      // Handle nested user structure
+      const firstName = sr.student.user?.first_name || sr.student.firstName || '';
+      const lastName = sr.student.user?.last_name || sr.student.lastName || '';
+      const studentName = `${firstName} ${lastName}`.trim() || '-';
+      const studentId = sr.student.studentId || sr.student.user?.id || sr.student.id;
+
+      // Calculate statistics
+      const totalExams = sr.exams?.length || 0;
+      const passedCount = sr.exams?.filter(e => e.status === 'COMPLETED' && e.passed).length || 0;
+      const failedCount = sr.exams?.filter(e => e.status === 'COMPLETED' && !e.passed).length || 0;
+      const completedCount = sr.exams?.filter(e => e.status === 'COMPLETED').length || 0;
+
+      rows.push({
+        id: `student-${studentId}`,
+        studentName,
+        totalExams,
+        passedCount,
+        failedCount,
+        completedCount,
+        studentRecord: sr, // Keep full record for modal
+        hasRecords: sr.hasRecords // Flag to filter in display
+      });
+    });
+
+    return rows;
+  }, [studentRecords, t]);
+
+  /**
+   * Apply search filter to table data (show all students)
+   */
+  const filteredTableData = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return getTableData;
     }
 
-    try {
-      window.open(record.certificateFile, '_blank');
-      showSuccess(t('certificateOpened', 'Certificate opened'));
-    } catch (error) {
-      console.error('Error opening certificate:', error);
-      showError(t('errorOpeningCertificate', 'Failed to open certificate'));
-    }
-  };
+    const search = searchTerm.toLowerCase();
+    return getTableData.filter((row) => {
+      const studentName = (row.studentName || '').toLowerCase();
+      return studentName.includes(search);
+    });
+  }, [getTableData, searchTerm]);
 
   // Loading state
   if (loading && classes.length === 0) {
@@ -253,14 +382,11 @@ export default function TeacherExamRecords({ user }) {
 
   return (
     <PageTransition variant="fade" className="flex-1">
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="p-3 sm:p-6">
         {/* Header */}
         <FadeInSection className="mb-6">
-          <div className="bg-white rounded-xl p-6 shadow-sm">
+          <div className="bg-white rounded-xl p-6">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <BookOpen className="w-6 h-6 text-blue-600" />
-              </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
                   {t('studentExamRecords', 'Student Exam Records')}
@@ -270,249 +396,88 @@ export default function TeacherExamRecords({ user }) {
                 </p>
               </div>
             </div>
-          </div>
-        </FadeInSection>
+            <div className="mt-6">
+              {/* Primary Filters: Class, Search */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                {/* Class Selection - Mandatory */}
+                {classes.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('selectClass', 'Select Class')}
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
+                    <Dropdown
+                      value={selectedClass ? selectedClass.toString() : ''}
+                      onValueChange={(value) => setSelectedClass(value ? parseInt(value) : null)}
+                      options={classes.map(cls => ({
+                        value: (cls.classId || cls.id).toString(),
+                        label: cls.name || `${t('class', 'Class')} ${cls.gradeLevel || ''} ${cls.section || ''}`.trim()
+                      }))}
+                      placeholder={t('chooseOption', 'ជ្រើសរើសជម្រើស')}
+                      className='w-full'
+                    />
+                  </div>
+                )}
 
-        {/* Filters */}
-        <FadeInSection className="mb-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Class Selection - Always show and mandatory for teachers */}
-              {classes.length > 0 && (
-                <div>
+                {/* Search */}
+                <div className="">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Users className="w-4 h-4 inline mr-1" />
-                    {t('selectClass', 'Select Class')}
-                    <span className="text-red-500 ml-1">*</span>
+                    {t('search', 'Search')}
                   </label>
-                  <Dropdown
-                    value={selectedClass ? selectedClass.toString() : ''}
-                    onValueChange={(value) => setSelectedClass(value ? parseInt(value) : null)}
-                    options={classes.map(cls => ({
-                      value: (cls.classId || cls.id).toString(),
-                      label: cls.name || `${t('class', 'Class')} ${cls.gradeLevel || ''} ${cls.section || ''}`.trim()
-                    }))}
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder={t('searchStudents', 'Search by student name...')}
+                    className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  {!selectedClass && (
-                    <p className="text-sm text-red-500 mt-1">
-                      {t('pleaseSelectClass', 'Please select a class to view exam records')}
-                    </p>
-                  )}
                 </div>
-              )}
-
-              {/* Status Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Filter className="w-4 h-4 inline mr-1" />
-                  {t('status', 'Status')}
-                </label>
-                <Dropdown
-                  value={statusFilter}
-                  onValueChange={(value) => setStatusFilter(value)}
-                  options={[
-                    { value: 'ALL', label: t('allStatuses', 'All Statuses') },
-                    { value: 'COMPLETED', label: t('completed', 'Completed') },
-                    { value: 'IN_PROGRESS', label: t('inProgress', 'In Progress') }
-                  ]}
-                />
-              </div>
-
-              {/* Search */}
-              <div className="md:col-span-2 lg:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Search className="w-4 h-4 inline mr-1" />
-                  {t('search', 'Search')}
-                </label>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder={t('searchExams', 'Search by exam, subject, or student...')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
               </div>
             </div>
-          </div>
-        </FadeInSection>
-
-        {/* Records Table */}
-        <FadeInSection>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            {!selectedClass ? (
-              <EmptyState
-                icon={BookOpen}
-                title={t('selectClassFirst', 'Select a Class')}
-                description={t('selectClassFirstDesc', 'Please select a class from the filters above to view exam records')}
-              />
-            ) : filteredRecords.length === 0 ? (
-              <EmptyState
-                icon={BookOpen}
-                title={t('noStudents', 'No Students')}
-                description={t('noStudentsDesc', 'No students found in the selected class')}
-                action={
-                  <Button onClick={() => {
+            <div className="bg-white overflow-hidden mt-4">
+              {!selectedClass ? (
+                <EmptyState
+                  icon={BookOpen}
+                  title={t('selectClassFirst', 'Select a Class')}
+                  description={t('selectClassFirstDesc', 'Please select a class from the filters above to view exam records')}
+                />
+              ) : loading ? (
+                <PageLoader message={t('loadingExamRecords', 'Loading exam records...')} />
+              ) : filteredTableData.length === 0 ? (
+                <EmptyState
+                  icon={BookOpen}
+                  title={t('noStudents', 'No Students')}
+                  description={t('noStudentsInClass', 'No students found in this class')}
+                  actionLabel={t('clearSearch', 'Clear Search')}
+                  onAction={() => {
                     setSearchTerm('');
-                    setStatusFilter('ALL');
-                  }}>
-                    {t('clearFilters', 'Clear Filters')}
-                  </Button>
-                }
-              />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('student', 'Student')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('exam', 'Exam')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('subject', 'Subject')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('grade', 'Grade')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('status', 'Status')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('score', 'Score')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('date', 'Date')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('duration', 'Duration')}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        {t('actions', 'Actions')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {studentRecords
-                      .filter(sr => {
-                        // Apply search filter
-                        if (searchTerm.trim()) {
-                          const search = searchTerm.toLowerCase();
-                          const studentName = `${sr.student.firstName || ''} ${sr.student.lastName || ''}`.toLowerCase();
-                          const hasMatchInStudent = studentName.includes(search);
-                          const hasMatchInExams = sr.exams.some(exam =>
-                            exam.examTitle?.toLowerCase().includes(search) ||
-                            exam.subjectName?.toLowerCase().includes(search) ||
-                            exam.subjectKhmerName?.toLowerCase().includes(search)
-                          );
-                          return hasMatchInStudent || hasMatchInExams;
-                        }
-                        return true;
-                      })
-                      .map((sr, studentIndex) => {
-                        const studentName = `${sr.student.firstName || ''} ${sr.student.lastName || ''}`.trim() || '-';
-
-                        if (!sr.hasRecords) {
-                          // Student with no exam records
-                          return (
-                            <tr key={`student-${sr.student.id}`} className="bg-gray-50 hover:bg-gray-100 transition-colors">
-                              <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                                {studentName}
-                              </td>
-                              <td colSpan="8" className="px-4 py-3 text-sm text-gray-500 italic">
-                                {t('noExamRecordsForStudent', 'No exam records available')}
-                              </td>
-                            </tr>
-                          );
-                        }
-
-                        // Student with exam records - show first exam in student row, then rest below
-                        return sr.exams
-                          .filter(exam => statusFilter === 'ALL' || exam.status === statusFilter)
-                          .map((exam, examIndex) => (
-                            <tr
-                              key={`exam-${sr.student.id}-${exam.id}-${examIndex}`}
-                              className={`${examIndex === 0 ? 'bg-blue-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}
-                            >
-                              {examIndex === 0 && (
-                                <td rowSpan={sr.exams.filter(e => statusFilter === 'ALL' || e.status === statusFilter).length} className="px-4 py-3 text-sm font-semibold text-gray-900 bg-blue-50">
-                                  {studentName}
-                                </td>
-                              )}
-                              {examIndex > 0 && <td className="px-4 py-3"></td>}
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{exam.examTitle || '-'}</span>
-                                  <span className="text-xs text-gray-500">{exam.examType || ''}</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                <div className="flex flex-col">
-                                  <span>{exam.subjectName || '-'}</span>
-                                  <span className="text-xs text-gray-500">{exam.subjectKhmerName || ''}</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                {exam.grade || '-'}
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                {getStatusBadge(exam.status, exam.passed)}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                {exam.status === 'COMPLETED' ? (
-                                  <div className="flex flex-col">
-                                    <span className="font-semibold">
-                                      {exam.score != null ? `${exam.score}%` : '-'}
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                      {exam.letterGrade || ''}
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                      {exam.correctAnswers}/{exam.totalQuestions}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  '-'
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                <div className="flex flex-col">
-                                  <span>{formatDate(exam.completedAt || exam.startedAt)}</span>
-                                  {exam.completedAt && (
-                                    <span className="text-xs text-gray-500">
-                                      {new Date(exam.completedAt).toLocaleTimeString('en-US', {
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                {formatDuration(exam.timeTaken)}
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                {exam.certificateFile && (
-                                  <Tooltip content={t('downloadCertificate', 'Download Certificate')}>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleDownloadCertificate(exam)}
-                                      className="flex items-center gap-1"
-                                    >
-                                      <Download className="w-4 h-4" />
-                                    </Button>
-                                  </Tooltip>
-                                )}
-                              </td>
-                            </tr>
-                          ));
-                      })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  }}
+                />
+              ) : (
+                <>
+                  <Table
+                    columns={getTableColumns()}
+                    data={filteredTableData}
+                    loading={loading}
+                    t={t}
+                    showPagination={pagination.totalPages > 1}
+                    pagination={{
+                      page: pagination.currentPage,
+                      pages: pagination.totalPages,
+                      total: pagination.totalStudents,
+                      limit: pagination.pageSize
+                    }}
+                    onPageChange={(newPage) => {
+                      setPagination(prev => ({
+                        ...prev,
+                        currentPage: newPage
+                      }));
+                      fetchExamRecords(newPage);
+                    }}
+                  />
+                </>
+              )}
+            </div>
           </div>
         </FadeInSection>
       </div>
