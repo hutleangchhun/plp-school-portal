@@ -195,17 +195,69 @@ export default function TeacherQRCodeManagement({ user }) {
     };
   }, [selectedClassId, currentPage, loading, showError, t]);
 
-  // Download QR code
-  const downloadQRCode = (qrCode) => {
-    if (!qrCode.qrCode) {
-      showError(t('noQRCodeAvailable', 'No QR code available for this student'));
-      return;
-    }
+  // Download entire card as image
+  const downloadQRCode = async (qrCode, cardRef) => {
+    try {
+      // Dynamically import html2canvas
+      const { default: html2canvas } = await import('html2canvas');
 
-    const link = document.createElement('a');
-    link.href = qrCode.qrCode;
-    link.download = `${qrCode.name}_QR.png`;
-    link.click();
+      // If cardRef is provided, use it; otherwise, create a temporary card
+      let element = cardRef;
+
+      if (!element) {
+        // Fallback: create a temporary div with card content
+        element = document.createElement('div');
+        element.style.padding = '20px';
+        element.style.backgroundColor = 'white';
+        element.style.borderRadius = '8px';
+        element.style.border = '1px solid #e5e7eb';
+        element.style.width = '320px';
+
+        const content = `
+          <div style="text-align: center; font-family: system-ui, -apple-system, sans-serif;">
+            ${qrCode.qrCode ? `<img src="${qrCode.qrCode}" style="width: 200px; height: 200px; margin-bottom: 12px; border: 1px solid #e5e7eb; border-radius: 4px;" />` : '<div style="width: 200px; height: 200px; margin: 0 auto 12px; border: 2px dashed #e5e7eb; display: flex; align-items: center; justify-content: center; border-radius: 4px;"><p style="color: #a3a3a3; font-size: 12px;">No QR Code</p></div>'}
+            <p style="font-size: 14px; font-weight: 500; margin: 8px 0; color: #111827;">${qrCode.name}</p>
+            <p style="font-size: 12px; color: #6b7280; margin: 4px 0;">Username: ${qrCode.username}</p>
+            ${qrCode.schoolName ? `<p style="font-size: 12px; color: #6b7280; margin: 4px 0;">School: ${qrCode.schoolName}</p>` : ''}
+          </div>
+        `;
+        element.innerHTML = content;
+        document.body.appendChild(element);
+      }
+
+      // Capture the card as canvas
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        logging: false
+      });
+
+      // Remove temporary element if created
+      if (!cardRef) {
+        document.body.removeChild(element);
+      }
+
+      // Convert canvas to blob and download
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${qrCode.name}_QR_Card.png`;
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+    } catch (error) {
+      console.error('Error downloading card:', error);
+      // Fallback: download just the QR code image
+      if (qrCode.qrCode) {
+        const link = document.createElement('a');
+        link.href = qrCode.qrCode;
+        link.download = `${qrCode.name}_QR.png`;
+        link.click();
+      } else {
+        showError(t('noQRCodeAvailable', 'No QR code available for this student'));
+      }
+    }
   };
 
   // Get class options for dropdown
