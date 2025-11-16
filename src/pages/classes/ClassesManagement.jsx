@@ -907,14 +907,16 @@ export default function ClassesManagement() {
                   });
                 }
 
+                // Combine grade level and section into a single subtitle part
+                const gradeAndSection = classItem.section
+                  ? `${t('class') || 'Grade'} ${classItem.grade.replace('Grade ', '')}${classItem.section}`
+                  : `${t('class') || 'Grade'} ${classItem.grade.replace('Grade ', '')}`;
+
                 return (
                   <ClassCard
                     key={classItem.id}
                     title={classItem.name}
-                    subtitleParts={[
-                      `${t('grade') || 'Grade'} ${classItem.grade.replace('Grade ', '')}`,
-                      classItem.section ? `${t('section') || 'Section'} ${classItem.section}` : ''
-                    ]}
+                    subtitleParts={[gradeAndSection]}
                     enrolled={classItem.enrolled}
                     capacity={classItem.capacity}
                     badges={badges}
@@ -1188,7 +1190,7 @@ export default function ClassesManagement() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('section') || 'Section'}
+                  {t('section') || 'Section'} *
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1197,6 +1199,7 @@ export default function ClassesManagement() {
                   <input
                     type="text"
                     name="section"
+                    required
                     placeholder={t('sectionPlaceholder') || 'Enter section'}
                     className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
                     value={formData.section}
