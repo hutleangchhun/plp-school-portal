@@ -1224,6 +1224,7 @@ export const km = {
   accessibilityDistribution: 'បំណែងចែកក្រុមប្រភេទពិការភាព',
   studentEthnicGroupDistribution: 'ស្ថិតិប្រភេទជនជាតិសម្រាប់សិស្ស',
   studentAccessibilityDistribution: 'ស្ថិតិប្រភេទពិការភាពសម្រាប់សិស្ស',
+  loadingChartData: 'កំពុងទាញស្ថិតិ',
   
   // Gender
   male: 'ប្រុស',

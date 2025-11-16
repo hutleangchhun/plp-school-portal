@@ -22,6 +22,7 @@ export const en = {
   studentEthnicGroupDistribution: 'Student Ethnic Group Distribution',
   studentAccessibilityDistribution: 'Student Accessibility Distribution',
   topEthnicGroups: 'Top Ethnic Groups',
+  loadingChartData: 'Loading Chart Data...',
 
 
   
