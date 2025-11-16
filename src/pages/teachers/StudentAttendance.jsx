@@ -77,6 +77,15 @@ export default function TeacherAttendance({ user }) {
     return selected < today;
   };
 
+  // Check if the selected date is in the future (after today)
+  const isFutureDate = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+    const selected = new Date(selectedDate);
+    selected.setHours(0, 0, 0, 0); // Reset time to start of day
+    return selected > today;
+  };
+
   const isReadOnly = isPastDate();
 
   // Load classes on mount
@@ -443,16 +452,35 @@ export default function TeacherAttendance({ user }) {
               {/* Date Selector */}
               <div className="w-full sm:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('date', 'Date')}
+                  {t('date', 'Date')} <span className="text-red-500">*</span>
                 </label>
                 <DatePickerWithDropdowns
                   value={selectedDate}
-                  onChange={(date) => setSelectedDate(date || new Date())}
+                  onChange={(date) => {
+                    if (date) {
+                      // Check if trying to select future date
+                      const tempDate = new Date(date);
+                      tempDate.setHours(0, 0, 0, 0);
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+
+                      if (tempDate > today) {
+                        showError(t('cannotMarkFutureAttendance', 'Cannot mark attendance for future dates. Please select today only.'));
+                        return;
+                      }
+                      setSelectedDate(date);
+                    }
+                  }}
                   placeholder={t('pickDate', 'Pick a date')}
                   className="min-w-[200px] sm:min-w-[250px]"
                   toDate={new Date()} // Limit to today
                   fromYear={new Date().getFullYear() - 1} // Allow selecting dates from last year
                 />
+                {isFutureDate() && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {t('futureDateSelected', 'Future date selected - cannot mark attendance')}
+                  </p>
+                )}
               </div>
 
               {/* Actions */}
@@ -597,12 +625,16 @@ export default function TeacherAttendance({ user }) {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            {(studentAttendance.status === 'ABSENT' || studentAttendance.status === 'LATE') && (
+                            {(studentAttendance.status === 'ABSENT' || studentAttendance.status === 'LATE' || studentAttendance.status === 'LEAVE') && (
                               <input
                                 type="text"
                                 value={studentAttendance.reason}
                                 onChange={(e) => handleReasonChange(studentUserId, e.target.value)}
-                                placeholder={t('enterReason', 'Enter reason...')}
+                                placeholder={
+                                  studentAttendance.status === 'LEAVE'
+                                    ? t('reason', 'Enter reason...')
+                                    : t('reason', 'Enter reason...')
+                                }
                                 disabled={isReadOnly}
                                 readOnly={isReadOnly}
                                 className={`block w-full p-3 border border-none ring-none outline-none rounded-md text-sm focus:outline-none focus:ring-none focus:border-none ${isReadOnly

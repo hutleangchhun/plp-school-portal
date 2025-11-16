@@ -213,10 +213,10 @@ export const getNavigationItems = (user, t) => {
         },
       ],
     },
-    // {
-    //   name: t('QRCodeManangement', 'QR Codes Management'),
-    //   href: '/qr-codes',
-    // },
+    {
+       name: t('QRCodeManangement', 'QR Codes Management'),
+      href: '/qr-codes',
+     },
     // DISABLED: /exam-records removed from director navigation
     // {
     //   name: t('examRecords', 'Exam Records'),
@@ -230,7 +230,7 @@ export const getNavigationItems = (user, t) => {
     // achievements, settings
   ];
 
-  // Teacher gets my-classes, my-students, attendance, and my-attendance
+  // Teacher gets my-classes, my-students, attendance, my-attendance, and qr-codes
   const teacherItems = [
     {
       name: t('myClasses', 'My Classes'),
@@ -253,6 +253,10 @@ export const getNavigationItems = (user, t) => {
           href: '/my-attendance',
         },
       ],
+    },
+    {
+      name: t('QRCodeManangement', 'QR Codes Management'),
+      href: '/qr-codes',
     },
     // DISABLED: /my-students-exams removed from teacher navigation
     // {

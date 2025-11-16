@@ -2,6 +2,7 @@ import TeacherClasses from './pages/teachers/TeacherClasses';
 import TeacherStudentsManagement from './pages/teachers/TeacherStudentsManagement';
 import StudentAttendance from './pages/teachers/StudentAttendance';
 import TeacherDashboard from './pages/teachers/TeacherDashboard';
+import TeacherQRCodeManagement from './pages/teachers/TeacherQRCodeManagement';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -149,7 +150,11 @@ function AppContent() {
               <DashboardLayout user={user} onLogout={handleLogout} />
             </ProtectedRoute>
           }>
-            <Route index element={<QRCodeManagement />} />
+            <Route index element={
+              user && user.roleId === 8 && !user.teacher?.isDirector && !user.isDirector
+                ? <TeacherQRCodeManagement user={user} />
+                : <QRCodeManagement />
+            } />
           </Route>
           
           <Route path="classes" element={

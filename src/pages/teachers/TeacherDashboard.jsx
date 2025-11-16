@@ -7,7 +7,6 @@ import {
   Mail,
   Phone,
   User,
-  TrendingUp,
   Shield,
   Briefcase
 } from 'lucide-react';
@@ -20,9 +19,9 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import DynamicLoader from '../../components/ui/DynamicLoader';
 import StatsCard from '../../components/ui/StatsCard';
 import Badge from '../../components/ui/Badge';
+import Dropdown from '../../components/ui/Dropdown';
 import { Bar, BarChart, XAxis, YAxis, LabelList } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import EmptyState from '@/components/ui/EmptyState';
 
 export default function TeacherDashboard({ user }) {
   const { t } = useLanguage();
@@ -34,9 +33,12 @@ export default function TeacherDashboard({ user }) {
     todayPresent: 0,
     todayAbsent: 0,
     todayLate: 0,
+    todayLeave: 0,
     attendanceRate: 0
   });
   const [classes, setClasses] = useState([]);
+  const [selectedClassId, setSelectedClassId] = useState(null); // Will be set to first class after loading
+  const [classStats, setClassStats] = useState({}); // Store stats for each class
   const [recentActivity, setRecentActivity] = useState([]);
   const [schoolName, setSchoolName] = useState('');
 
@@ -74,10 +76,16 @@ export default function TeacherDashboard({ user }) {
         if (!mounted) return;
         setClasses(teacherClasses);
 
+        // Auto-select first class if available
+        if (teacherClasses.length > 0) {
+          setSelectedClassId(String(teacherClasses[0].id || teacherClasses[0].classId));
+        }
+
         let totalStudents = 0;
         let todayPresent = 0;
         let todayAbsent = 0;
         let todayLate = 0;
+        let todayLeave = 0;
 
         // Only fetch attendance and students if teacher has classes
         if (teacherClasses.length > 0) {
@@ -125,20 +133,55 @@ export default function TeacherDashboard({ user }) {
 
           if (attendanceResponse.success && attendanceResponse.data) {
             // Filter to only include records from teacher's classes
+            // IMPORTANT: Only count STUDENT attendance records (exclude teacher attendance)
             const todayRecords = attendanceResponse.data.filter(record => {
               const recordDate = new Date(record.date).toISOString().split('T')[0];
               const isToday = recordDate === today;
               const isTeacherClass = classIds.includes(record.classId);
-              return isToday && isTeacherClass;
+              // Ensure the record has a classId (student attendance records have classId)
+              // Teacher attendance records may have classId=null or be from different context
+              const isStudentRecord = record.classId && record.classId !== null;
+              return isToday && isTeacherClass && isStudentRecord;
             });
 
-            console.log(`Found ${todayRecords.length} attendance records for teacher's classes today`);
+            console.log(`Found ${todayRecords.length} student attendance records for teacher's classes today`);
+
+            // Calculate stats per class
+            const statsPerClass = {};
+            classIds.forEach(classId => {
+              statsPerClass[classId] = {
+                present: 0,
+                absent: 0,
+                late: 0,
+                leave: 0
+              };
+            });
 
             todayRecords.forEach(record => {
-              if (record.status === 'PRESENT') todayPresent++;
-              else if (record.status === 'ABSENT') todayAbsent++;
-              else if (record.status === 'LATE') todayLate++;
+              const classId = record.classId;
+              if (statsPerClass[classId]) {
+                if (record.status === 'PRESENT') {
+                  todayPresent++;
+                  statsPerClass[classId].present++;
+                }
+                else if (record.status === 'ABSENT') {
+                  todayAbsent++;
+                  statsPerClass[classId].absent++;
+                }
+                else if (record.status === 'LATE') {
+                  todayLate++;
+                  statsPerClass[classId].late++;
+                }
+                else if (record.status === 'LEAVE') {
+                  todayLeave++;
+                  statsPerClass[classId].leave++;
+                }
+              }
             });
+
+            if (mounted) {
+              setClassStats(statsPerClass);
+            }
           }
         }
 
@@ -152,6 +195,7 @@ export default function TeacherDashboard({ user }) {
             todayPresent,
             todayAbsent,
             todayLate,
+            todayLeave,
             attendanceRate
           });
         }
@@ -195,7 +239,8 @@ export default function TeacherDashboard({ user }) {
     return null;
   };
 
-  // Chart data for attendance
+  // Chart data for attendance - only showing student attendance statuses (Present, Absent, Late)
+  // Leave status is excluded as it's a special case and not counted in standard attendance metrics
   const attendanceChartData = [
     {
       status: t('present', 'Present'),
@@ -289,87 +334,101 @@ export default function TeacherDashboard({ user }) {
           {/* Chart and User Info Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
             {/* Attendance Chart */}
-            <div className=" bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <UserCheck className="h-5 w-5 text-white" />
+            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <UserCheck className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="grid gap-2 flex-1 min-w-0">
+                    <h3 className="text-sm sm:text-md font-bold text-gray-900 truncate">
+                      {t('todayAttendanceOverview', "Today's Attendance Overview")}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-500">
+                      {t('attendanceRate', 'Attendance Rate')}: <span className="font-semibold text-green-600">{(() => {
+                        const cls = classStats[selectedClassId];
+                        if (!cls) return 0;
+                        const total = cls.present + cls.absent + cls.late;
+                        return total > 0 ? Math.round((cls.present / total) * 100) : 0;
+                      })()}%</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <h3 className="text-md font-bold text-gray-900">
-                    {t('todayAttendanceOverview', "Today's Attendance Overview")}
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    {t('attendanceRate', 'Attendance Rate')}: <span className="font-semibold text-green-600">{stats.attendanceRate}%</span>
-                  </p>
+                <div className="w-full sm:w-40">
+                  <Dropdown
+                    value={selectedClassId}
+                    onValueChange={setSelectedClassId}
+                    options={classes.map(cls => ({
+                      value: String(cls.id || cls.classId),
+                      label: cls.name
+                    }))}
+                    placeholder={t('selectClass', 'Select class...')}
+                    minWidth="w-full"
+                  />
                 </div>
               </div>
 
-              {stats.totalStudents > 0 || attendanceChartData.some(item => item.students > 0) ? (
-                <>
+              {(() => {
+                const displayStats = classStats[selectedClassId] || { present: 0, absent: 0, late: 0, leave: 0 };
+
+                const chartData = [
+                  { status: t('present', 'Present'), students: displayStats.present, fill: '#10b981' },
+                  { status: t('absent', 'Absent'), students: displayStats.absent, fill: '#ef4444' },
+                  { status: t('late', 'Late'), students: displayStats.late, fill: '#f59e0b' },
+                  { status: t('leave', 'Leave'), students: displayStats.leave, fill: '#a78bfa' }
+                ];
+
+                return (
                   <ChartContainer
-                    config={{
-                      students: {
-                        label: t('students', 'Students'),
-                        color: "hsl(var(--chart-2))",
-                      },
-                    }}
-                    className="h-[350px]"
-                  >
-                    <BarChart data={attendanceChartData}>
-                      <XAxis
-                        dataKey="status"
-                        tickLine={false}
-                        axisLine={false}
-                        className="text-xs"
-                        height={80}
-                      />
-                      <YAxis
-                        tickLine={false}
-                        axisLine={false}
-                        className="text-xs"
-                      />
-                      <ChartTooltip
-                        content={<ChartTooltipContent />}
-                      />
-                      <Bar
-                        dataKey="students"
-                        radius={[4, 4, 0, 0]}
-                        cursor="default"
-                        style={{ cursor: 'default' }}
-                        onMouseEnter={() => { }}
-                        onMouseLeave={() => { }}
-                      >
-                        <LabelList
-                          dataKey="students"
-                          position="top"
-                          offset={5}
-                          style={{
-                            fill: '#374151',
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            textAnchor: 'middle'
-                          }}
+                      config={{
+                        students: {
+                          label: t('students', 'Students'),
+                          color: "hsl(var(--chart-2))",
+                        },
+                      }}
+                      className="h-[250px] sm:h-[350px]"
+                    >
+                      <BarChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 20 }}>
+                        <XAxis
+                          dataKey="status"
+                          tickLine={false}
+                          axisLine={false}
+                          className="text-[10px] sm:text-xs"
+                          height={60}
                         />
-                      </Bar>
-                    </BarChart>
-                  </ChartContainer>
-                  {stats.totalStudents > 0 && !attendanceChartData.some(item => item.students > 0) && (
-                    <EmptyState
-                      icon={TrendingUp}
-                      title={t('noAttendanceData', 'No Attendance Data')}
-                      description={t('noAttendanceDataMessage', 'No attendance data available for today.')}
-                      variant='info'
-                    />
-                  )}
-                </>
-              ) : (
-                <EmptyState
-                  icon={TrendingUp}
-                  title={t('noAttendanceData', 'No Attendance Data')}
-                  description={t('noAttendanceDataMessage', 'No attendance data available for today.')}
-                  variant='info'
-                />
-              )}
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          className="text-[10px] sm:text-xs"
+                          width={30}
+                        />
+                        <ChartTooltip
+                          content={<ChartTooltipContent />}
+                        />
+                        <Bar
+                          dataKey="students"
+                          radius={[4, 4, 0, 0]}
+                          cursor="default"
+                          style={{ cursor: 'default' }}
+                          onMouseEnter={() => { }}
+                          onMouseLeave={() => { }}
+                        >
+                          <LabelList
+                            dataKey="students"
+                            position="top"
+                            offset={5}
+                            style={{
+                              fill: '#374151',
+                              fontSize: window.innerWidth < 640 ? '10px' : '12px',
+                              fontWeight: '600',
+                              textAnchor: 'middle'
+                            }}
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ChartContainer>
+                );
+              })()}
             </div>
 
             {/* User Information */}

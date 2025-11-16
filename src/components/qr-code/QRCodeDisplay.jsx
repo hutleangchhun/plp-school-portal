@@ -116,9 +116,6 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                   {t('username', 'Username')}
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
-                  {t('studentNumber', 'Student Number')}
-                </th>
                 <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">
                   {t('actions', 'Actions')}
                 </th>
@@ -128,10 +125,10 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
               {qrCodes.map((qrCode, index) => {
                 const isSelected = selectedItems.includes(qrCode.userId);
                 const canSelect = !qrCode.hasQrCode && onToggleSelection;
-                
+
                 return (
-                <tr 
-                  key={qrCode.userId || index} 
+                <tr
+                  key={qrCode.userId || index}
                   onClick={() => canSelect && onToggleSelection(qrCode.userId)}
                   className={`${
                     canSelect ? 'cursor-pointer' : ''
@@ -152,7 +149,6 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{qrCode.username}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{qrCode.studentNumber}</td>
                   <td className="px-4 py-3 text-center">
                     {qrCode.qrCode ? (
                       <Button

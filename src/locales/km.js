@@ -398,6 +398,7 @@ export const km = {
   teacherInfo: 'ព័ត៌មានគ្រូបង្រៀន',
   attendanceRate: 'អត្រាវត្តមាន',
   todayAttendanceOverview: 'ទិដ្ឋភាពទូទៅនៃវត្តមានថ្ងៃនេះ',
+  cannotMarkFutureAttendance: 'ការបញ្ជូនវត្តមានសិស្សបានសម្រាប់តែថ្ងៃនេះ',
 
   // Reports & Analytics
   academicPerformance: 'ការអនុវត្តន៍សិក្សា',
@@ -1283,7 +1284,7 @@ export const km = {
   // QR Code Generator
   studentQRCode: 'លេខកូដ QR សិស្ស',
   student: 'ឧបករណ៍បង្កើត QR Code សម្រាប់សិស្ស',
-  generateQRCodesForStudents: 'បង្កើត និងទាញយក QR codes សម្រាប់សិស្សតាមថ្នាក់',
+  generateQRCodesForStudents: 'គ្រប់គ្រង និងទាញយក QR codes សម្រាប់សិស្សតាមថ្នាក់',
   chooseGradeLevel: 'ជ្រើសរើសថ្នាក់...',
   allGradeLevels: 'កម្រិតថ្នាក់ទាំងអស់',
   selectClass: 'ជ្រើសរើសថ្នាក់',
@@ -1315,6 +1316,7 @@ export const km = {
   studentNumber: 'លេខសិស្ស',
   email: 'អ៊ីមែល',
   actions: 'សកម្មភាព',
+  QRCodeManangement: 'គ្រប់គ្រង QR Code',
 
   // QR Code Admin Management
   fetchingUsers: 'កំពុងទាយយកអ្នកប្រើប្រាស់...',

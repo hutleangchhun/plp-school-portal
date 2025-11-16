@@ -725,6 +725,7 @@ export const en = {
   errorFetchingStudentData: 'Error fetching student data',
   attendanceSavedSuccessfully: 'Attendance saved successfully',
   errorSavingAttendance: 'Error saving attendance',
+  cannotMarkFutureAttendance: 'Cannot mark future attendance',
 
   // Additional navigation/action translations that may appear
   'Assign Students': 'Assign Students',
@@ -870,6 +871,7 @@ export const en = {
   examTitle: 'Exam Title',
   filter: 'Filter',
   filters: 'Filters',
+  QRCodeManangement: 'QR Code Management',
   // exam record
   examRecords: 'Exam Records',
 };  
