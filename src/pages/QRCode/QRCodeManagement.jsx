@@ -44,7 +44,7 @@ export default function StudentQRCodeGenerator() {
   const [studentLoading, setStudentLoading] = useState(false);
   const [studentCurrentPage, setStudentCurrentPage] = useState(1);
   const [studentTotalPages, setStudentTotalPages] = useState(1);
-  const studentItemsPerPage = 10;
+  const studentItemsPerPage = 8;
 
   // Teacher tab state
   const [selectedTeacherGradeLevel, setSelectedTeacherGradeLevel] = useState('all');
