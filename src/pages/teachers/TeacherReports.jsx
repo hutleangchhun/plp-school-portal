@@ -711,7 +711,7 @@ export default function TeacherReports({ user }) {
             <div className="flex-shrink-0 min-w-[200px]">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Calendar className="h-4 w-4 inline mr-1" />
-                {t('period', 'Period')}
+                {t('duration', 'Duration')}
               </label>
               <Dropdown
                 value={selectedPeriod}

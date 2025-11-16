@@ -32,6 +32,7 @@ export default function StudentQRCodeGenerator() {
 
   // Common state
   const [schoolId, setSchoolId] = useState(null);
+  const [schoolName, setSchoolName] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
   const [activeTab, setActiveTab] = useState('students');
 
@@ -57,11 +58,13 @@ export default function StudentQRCodeGenerator() {
 
   const cardRefsRef = useRef({});
 
-  // 🔹 Get School ID
+  // 🔹 Get School ID and Name
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const sid = user?.school?.id || user?.schoolId;
+    const sname = user?.school?.name || user?.schoolName;
     if (sid) setSchoolId(sid);
+    if (sname) setSchoolName(sname);
   }, []);
 
   // 🔹 Fetch Classes filtered by grade level
@@ -155,7 +158,9 @@ export default function StudentQRCodeGenerator() {
                 qrCode: userData.qr_code || null, // null if no QR code
                 studentNumber: student.studentNumber,
                 email: enrichedStudent.email,
-                hasQrCode: !!userData.qr_code
+                hasQrCode: !!userData.qr_code,
+                schoolName: schoolName,
+                className: student.class?.name || null
               });
             }
           } catch (err) {
@@ -262,7 +267,8 @@ export default function StudentQRCodeGenerator() {
                 qrCode: userData.qr_code || null, // null if no QR code
                 email: enrichedTeacher.email,
                 teacherNumber: teacher.teacher_number || teacher.teacherNumber,
-                hasQrCode: !!userData.qr_code
+                hasQrCode: !!userData.qr_code,
+                schoolName: schoolName
               });
             }
           } catch (err) {

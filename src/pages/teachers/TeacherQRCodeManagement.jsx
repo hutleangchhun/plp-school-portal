@@ -31,6 +31,7 @@ export default function TeacherQRCodeManagement({ user }) {
   const itemsPerPage = 8;
 
   const cardRefsRef = useRef({});
+  const [schoolName, setSchoolName] = useState(null);
 
   // Load teacher's classes on mount
   useEffect(() => {
@@ -97,13 +98,18 @@ export default function TeacherQRCodeManagement({ user }) {
       try {
         setStudentsLoading(true);
 
-        // Get school ID first
+        // Get school ID and name first
         const accountData = await userService.getMyAccount();
         const schoolId = accountData?.school_id;
+        const schoolNameValue = accountData?.school?.name || accountData?.schoolName;
 
         if (!schoolId) {
           showError(t('failedToFetchSchoolId', 'Failed to get school information'));
           return;
+        }
+
+        if (mounted && schoolNameValue) {
+          setSchoolName(schoolNameValue);
         }
 
         // Fetch students for selected class
@@ -151,7 +157,9 @@ export default function TeacherQRCodeManagement({ user }) {
                   qrCode: userData.qr_code || null,
                   studentNumber: student.studentNumber,
                   email: enrichedStudent.email,
-                  hasQrCode: !!userData.qr_code
+                  hasQrCode: !!userData.qr_code,
+                  schoolName: schoolName,
+                  className: student.class?.name || null
                 });
               }
             } catch (err) {

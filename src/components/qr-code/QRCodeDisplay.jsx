@@ -90,6 +90,12 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-900 truncate">{t('name', 'Name')}: {qrCode.name}</p>
                 <p className="text-xs text-gray-500">{t('username', 'Username')}: {qrCode.username}</p>
+                {qrCode.schoolName && (
+                  <p className="text-xs text-gray-500">{t('school', 'School')}: {qrCode.schoolName}</p>
+                )}
+                {qrCode.className && (
+                  <p className="text-xs text-gray-500">{t('class', 'Class')}: {qrCode.className}</p>
+                )}
                 <Button
                   onClick={() => downloadQRCode(qrCode, cardRefsRef.current[qrCode.userId])}
                   variant="outline"
@@ -116,6 +122,14 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                   {t('username', 'Username')}
                 </th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                  {t('school', 'School')}
+                </th>
+                {qrCodes[0]?.className && (
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    {t('class', 'Class')}
+                  </th>
+                )}
                 <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">
                   {t('actions', 'Actions')}
                 </th>
@@ -149,6 +163,10 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{qrCode.username}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{qrCode.schoolName || '-'}</td>
+                  {qrCodes[0]?.className && (
+                    <td className="px-4 py-3 text-sm text-gray-600">{qrCode.className || '-'}</td>
+                  )}
                   <td className="px-4 py-3 text-center">
                     {qrCode.qrCode ? (
                       <Button
