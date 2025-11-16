@@ -453,7 +453,9 @@ export default function TeacherDashboard({ user }) {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-gray-500 mb-1">{t('name', 'Name')}</p>
                     <p className="text-sm font-medium text-gray-900 break-words">
-                      {user?.name || user?.username || t('notAvailable', 'N/A')}
+                      {user?.first_name && user?.last_name
+                        ? `${user.first_name} ${user.last_name}`
+                        : user?.first_name || user?.last_name || user?.name || user?.username || t('notAvailable', 'N/A')}
                     </p>
                   </div>
                 </div>
