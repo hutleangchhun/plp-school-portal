@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import locationService from '../../utils/api/services/locationService';
@@ -231,7 +231,7 @@ const SchoolLookup = () => {
   };
 
   // Teacher-related functions
-  const loadTeachers = async (schoolId) => {
+  const loadTeachers = useCallback(async (schoolId) => {
     try {
       setTeachersLoading(true);
 
@@ -268,7 +268,7 @@ const SchoolLookup = () => {
     } finally {
       setTeachersLoading(false);
     }
-  };
+  }, [currentPage, limit, selectedRole, t]);
 
 
   const handlePageChange = (page) => {
@@ -280,12 +280,12 @@ const SchoolLookup = () => {
     navigate(`/login?username=${encodeURIComponent(teacher.username)}`);
   };
 
-  // Load teachers when page changes
+  // Load teachers when page changes or school is selected
   useEffect(() => {
     if (selectedSchool && showTeachers) {
       loadTeachers(selectedSchool);
     }
-  }, [currentPage, selectedSchool]);
+  }, [currentPage, selectedSchool, showTeachers, loadTeachers]);
 
   // Filter teachers based on search query
   const filteredTeachers = useMemo(() => {
