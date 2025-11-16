@@ -7,10 +7,10 @@ import Dropdown from '../../components/ui/Dropdown';
 import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
 import { userService } from '../../utils/api/services/userService';
+import { exportStudentsToExcel } from '../../utils/studentExportUtils';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Badge } from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
-import { prepareAndExportExcel, prepareAndExportCSV, prepareAndExportPDF, getTimestampedFilename } from '../../utils/exportUtils';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import EmptyState from '@/components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
@@ -32,6 +32,7 @@ export default function TeacherStudentsManagement({ user }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [schoolId, setSchoolId] = useState(null);
+  const [schoolName, setSchoolName] = useState('');
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -52,6 +53,7 @@ export default function TeacherStudentsManagement({ user }) {
         if (mounted && accountData && accountData.school_id) {
           console.log('✅ School ID fetched:', accountData.school_id);
           setSchoolId(accountData.school_id);
+          setSchoolName(accountData.school?.name || '');
         }
       } catch (error) {
         console.error('Error fetching school ID:', error);
@@ -190,40 +192,23 @@ export default function TeacherStudentsManagement({ user }) {
     setPagination(prev => ({ ...prev, page: newPage }));
   };
 
+  // Export handlers - Export in BulkStudentImport template format
   const handleExportExcel = async () => {
-    try {
-      const filename = getTimestampedFilename('my-students', 'xlsx');
-      await prepareAndExportExcel(students, filename, t);
-      showSuccess(t('exportSuccess', 'Data exported successfully'));
-    } catch (error) {
-      console.error('Export error:', error);
-      showError(t('exportFailed', 'Failed to export data'));
-    }
-    setShowExportDropdown(false);
-  };
+    const selectedClass = selectedClassId !== 'all'
+      ? classes.find(c => c.classId.toString() === selectedClassId)
+      : null;
 
-  const handleExportCSV = async () => {
-    try {
-      const filename = getTimestampedFilename('my-students', 'csv');
-      await prepareAndExportCSV(students, filename, t);
-      showSuccess(t('exportSuccess', 'Data exported successfully'));
-    } catch (error) {
-      console.error('Export error:', error);
-      showError(t('exportFailed', 'Failed to export data'));
-    }
-    setShowExportDropdown(false);
-  };
-
-  const handleExportPDF = async () => {
-    try {
-      const filename = getTimestampedFilename('my-students', 'pdf');
-      await prepareAndExportPDF(students, filename, t);
-      showSuccess(t('exportSuccess', 'Data exported successfully'));
-    } catch (error) {
-      console.error('Export error:', error);
-      showError(t('exportFailed', 'Failed to export data'));
-    }
-    setShowExportDropdown(false);
+    await exportStudentsToExcel(students, {
+      selectedClass,
+      schoolName,
+      onSuccess: () => {
+        showSuccess(t('exportSuccess', 'Data exported successfully'));
+        setShowExportDropdown(false);
+      },
+      onError: () => {
+        showError(t('exportError', 'Failed to export data'));
+      }
+    });
   };
 
   const handleEditStudent = (student) => {
