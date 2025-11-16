@@ -65,7 +65,7 @@ export const routePermissions = {
     component: 'AttendanceApprovalPage'
   },
   '/exam-records': {
-    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    allowedRoles: [], // DISABLED - No roles can access
     component: 'DirectorExamRecords'
   },
   '/exam-records/:userId': {
@@ -73,7 +73,7 @@ export const routePermissions = {
     component: 'StudentExamRecordsPage'
   },
   '/my-students-exams': {
-    allowedRoles: [ROLES.TEACHER],
+    allowedRoles: [], // DISABLED - No roles can access
     component: 'TeacherExamRecords'
   },
   '/reports': {
@@ -217,10 +217,11 @@ export const getNavigationItems = (user, t) => {
     //   name: t('QRCodeManangement', 'QR Codes Management'),
     //   href: '/qr-codes',
     // },
-    {
-      name: t('examRecords', 'Exam Records'),
-      href: '/exam-records',
-    },
+    // DISABLED: /exam-records removed from director navigation
+    // {
+    //   name: t('examRecords', 'Exam Records'),
+    //   href: '/exam-records',
+    // },
     {
       name: t('reports', 'Reports'),
       href: '/reports',
@@ -253,10 +254,11 @@ export const getNavigationItems = (user, t) => {
         },
       ],
     },
-    {
-      name: t('myStudentsExams', 'My Students Exams'),
-      href: '/my-students-exams',
-    },
+    // DISABLED: /my-students-exams removed from teacher navigation
+    // {
+    //   name: t('myStudentsExams', 'My Students Exams'),
+    //   href: '/my-students-exams',
+    // },
   ];
 
   // Return appropriate items based on user role
