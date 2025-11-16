@@ -1,3 +1,5 @@
+import { translations } from '@/locales';
+
 /**
  * QR Code Download Card Component
  * Clean, modern card design for QR code downloads
@@ -14,26 +16,39 @@
  * @param {string} qrCode.studentNumber - Student ID number
  * @param {string} qrCode.qrCode - Base64 encoded QR code image
  * @param {string} cardType - Type of card: 'student' or 'teacher'
+ * @param {Function} t - Translation function with signature (key, fallback) => string
  * @returns {HTMLElement} - Professional card element
  */
-export function createQRCodeDownloadCard(qrCode, cardType = 'student') {
+export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null) {
+  // Translation helper - uses provided translation function or direct translations
+  const translate = (key, defaultText) => {
+    if (t && typeof t === 'function') {
+      return t(key, defaultText);
+    }
+    // Fallback to direct translation lookup (useful for SSR or when t is not available)
+    // Try both km and en, default to provided defaultText
+    return defaultText;
+  };
+
   const element = document.createElement('div');
   element.style.position = 'fixed';
   element.style.left = '-9999px';
   element.style.top = '-9999px';
   element.style.width = '500px';
   element.style.backgroundColor = '#ffffff';
-  element.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+  // Use Hanuman font for proper Khmer rendering (loaded from Google Fonts)
+  element.style.fontFamily = 'Hanuman, "Khmer OS", "Noto Sans Khmer", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
   element.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15)';
   element.style.borderRadius = '24px';
   element.style.overflow = 'hidden';
   element.style.border = '1px solid rgba(255, 255, 255, 0.2)';
 
-  // Color scheme based on card type
-  const accentColor = cardType === 'teacher' ? '#0ea5e9' : '#06b6d4';
-  const bgLight = cardType === 'teacher' ? '#e0f2fe' : '#cffafe';
-  const gradientStart = cardType === 'teacher' ? '#0284c7' : '#0891b2';
-  const gradientEnd = cardType === 'teacher' ? '#0ea5e9' : '#06b6d4';
+  // Color scheme based on card type - More distinct colors
+  const accentColor = cardType === 'teacher' ? '#1e40af' : '#0369a1';
+  const bgLight = cardType === 'teacher' ? '#eff6ff' : '#ecf0f1';
+  const gradientStart = cardType === 'teacher' ? '#1e3a8a' : '#164e63';
+  const gradientEnd = cardType === 'teacher' ? '#2563eb' : '#0891b2';
+  const headerBg = cardType === 'teacher' ? '#dbeafe' : '#cffafe';
 
   // Top decorative bar with gradient
   const topBar = document.createElement('div');
@@ -44,12 +59,12 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student') {
   // Header section with school name - enhanced styling
   const header = document.createElement('div');
   header.style.padding = '28px 32px 20px 32px';
-  header.style.backgroundColor = `linear-gradient(135deg, ${bgLight} 0%, rgba(255, 255, 255, 0.5) 100%)`;
-  header.style.backgroundImage = `linear-gradient(135deg, ${bgLight} 0%, rgba(255, 255, 255, 0.5) 100%)`;
+  header.style.backgroundColor = `linear-gradient(135deg, ${headerBg} 0%, rgba(255, 255, 255, 0.7) 100%)`;
+  header.style.backgroundImage = `linear-gradient(135deg, ${headerBg} 0%, rgba(255, 255, 255, 0.7) 100%)`;
   header.style.borderBottom = 'none';
 
   const schoolNameEl = document.createElement('p');
-  schoolNameEl.textContent = qrCode.schoolName || 'School';
+  schoolNameEl.textContent = qrCode.schoolName || translate('school', 'School');
   schoolNameEl.style.fontSize = '11px';
   schoolNameEl.style.fontWeight = '700';
   schoolNameEl.style.color = accentColor;
@@ -59,7 +74,10 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student') {
   header.appendChild(schoolNameEl);
 
   const headerTitle = document.createElement('p');
-  headerTitle.textContent = cardType === 'teacher' ? 'Teacher Identification' : 'Student Identification';
+  const identificationText = cardType === 'teacher'
+    ? translate('teacherIdentification', 'Teacher Identification')
+    : translate('studentIdentification', 'Student Identification');
+  headerTitle.textContent = identificationText;
   headerTitle.style.fontSize = '13px';
   headerTitle.style.fontWeight = '600';
   headerTitle.style.color = '#1f2937';
@@ -189,17 +207,17 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student') {
 
   // Add school info
   if (qrCode.schoolName) {
-    detailsDiv.appendChild(createDetailItem('School', qrCode.schoolName));
+    detailsDiv.appendChild(createDetailItem(translate('school', 'School'), qrCode.schoolName));
   }
 
   // Add class info if available (students only)
   if (cardType === 'student' && qrCode.className) {
-    detailsDiv.appendChild(createDetailItem('Class', qrCode.className));
+    detailsDiv.appendChild(createDetailItem(translate('class', 'Class'), qrCode.className));
   }
 
   // Add ID number - full width
   if (qrCode.studentNumber) {
-    const idItem = createDetailItem('ID Number', qrCode.studentNumber);
+    const idItem = createDetailItem(translate('idNumber', 'ID Number'), qrCode.studentNumber);
     idItem.style.gridColumn = '1 / -1';
     detailsDiv.appendChild(idItem);
   }
@@ -210,12 +228,12 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student') {
   // Footer section - enhanced styling
   const footer = document.createElement('div');
   footer.style.padding = '20px 32px';
-  footer.style.background = `linear-gradient(135deg, ${bgLight} 0%, rgba(255, 255, 255, 0.3) 100%)`;
-  footer.style.backgroundImage = `linear-gradient(135deg, ${bgLight} 0%, rgba(255, 255, 255, 0.3) 100%)`;
+  footer.style.background = `linear-gradient(135deg, ${headerBg} 0%, rgba(255, 255, 255, 0.4) 100%)`;
+  footer.style.backgroundImage = `linear-gradient(135deg, ${headerBg} 0%, rgba(255, 255, 255, 0.4) 100%)`;
   footer.style.textAlign = 'center';
-  footer.style.borderTop = '1.5px solid #e5e7eb';
+  footer.style.borderTop = `2px solid ${accentColor}`;
   footer.style.fontSize = '12px';
-  footer.style.color = '#475569';
+  footer.style.color = accentColor;
   footer.style.fontWeight = '600';
 
   const date = new Date();
@@ -224,7 +242,8 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student') {
     month: 'short',
     day: 'numeric'
   });
-  footer.textContent = `Generated on ${dateStr}`;
+  const generatedText = translate('generatedOn', 'Generated on');
+  footer.textContent = `${generatedText} ${dateStr}`;
   element.appendChild(footer);
 
   return element;

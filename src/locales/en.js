@@ -875,4 +875,10 @@ export const en = {
   QRCodeManangement: 'QR Code Management',
   // exam record
   examRecords: 'Exam Records',
+
+  // QR Code Card - Translations
+  studentIdentification: 'Student Identification',
+  teacherIdentification: 'Teacher Identification',
+  idNumber: 'ID Number',
+  generatedOn: 'Generated on',
 };  

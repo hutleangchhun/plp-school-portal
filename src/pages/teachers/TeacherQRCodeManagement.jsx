@@ -197,23 +197,18 @@ export default function TeacherQRCodeManagement({ user }) {
   }, [selectedClassId, currentPage, loading, showError, t]);
 
   // Download entire card as image
-  const downloadQRCode = async (qrCode, cardRef) => {
+  const downloadQRCode = async (qrCode, _cardRef, cardType = 'student') => {
     try {
       // Dynamically import html2canvas
       const { default: html2canvas } = await import('html2canvas');
 
-      let element = cardRef;
-      let createdElement = false;
+      // Always create a professional card for download (ignore cardRef from grid view)
+      // This ensures both grid and list views download the same styled card
+      const element = createQRCodeDownloadCard(qrCode, cardType, t); // Use passed cardType for styling
+      document.body.appendChild(element);
 
-      // If no cardRef, create a temporary card using the download card component
-      if (!element) {
-        element = createQRCodeDownloadCard(qrCode, 'student');
-        document.body.appendChild(element);
-        createdElement = true;
-
-        // Wait for images to load
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
+      // Wait for images to load
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Capture the card as canvas
       const canvas = await html2canvas(element, {
@@ -224,10 +219,8 @@ export default function TeacherQRCodeManagement({ user }) {
         useCORS: true
       });
 
-      // Remove temporary element if created
-      if (createdElement) {
-        document.body.removeChild(element);
-      }
+      // Remove temporary element
+      document.body.removeChild(element);
 
       // Convert canvas to blob and download
       canvas.toBlob((blob) => {
@@ -347,6 +340,7 @@ export default function TeacherQRCodeManagement({ user }) {
                 downloadQRCode={downloadQRCode}
                 cardRefsRef={cardRefsRef}
                 t={t}
+                cardType="student"
               />
               {totalPages > 1 && (
                 <Pagination

@@ -1391,4 +1391,10 @@ export const km = {
   // Parents Management - Additional translations
   deleteSelected: 'លុបលម្អិត',
 
+  // QR Code Card - Translations
+  studentIdentification: 'អត្តលេខសិស្ស',
+  teacherIdentification: 'អត្តលេខគ្រូបង្រៀន',
+  idNumber: 'លេខសម្គាល់',
+  generatedOn: 'បង្កើតថ្ងៃ',
+
 };

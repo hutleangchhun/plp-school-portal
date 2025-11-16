@@ -304,23 +304,19 @@ export default function StudentQRCodeGenerator() {
   const getClassOptions = () => classes.map((c) => ({ value: c.id?.toString(), label: c.name }));
 
   // Download entire card as image
-  const downloadQRCode = async (qrCode, cardRef) => {
+  const downloadQRCode = async (qrCode, cardRef, passedCardType) => {
     try {
       // Dynamically import html2canvas
       const { default: html2canvas } = await import('html2canvas');
 
-      let element = cardRef;
-      let createdElement = false;
+      // Always create a professional card for download (ignore cardRef from grid view)
+      // This ensures both grid and list views download the same styled card
+      const cardType = passedCardType || (activeTab === 'teachers' ? 'teacher' : 'student');
+      const element = createQRCodeDownloadCard(qrCode, cardType, t);
+      document.body.appendChild(element);
 
-      // If no cardRef, create a temporary card using the download card component
-      if (!element) {
-        element = createQRCodeDownloadCard(qrCode, 'student');
-        document.body.appendChild(element);
-        createdElement = true;
-
-        // Wait for images to load
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
+      // Wait for images to load
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Capture the card as canvas
       const canvas = await html2canvas(element, {
@@ -331,10 +327,8 @@ export default function StudentQRCodeGenerator() {
         useCORS: true
       });
 
-      // Remove temporary element if created
-      if (createdElement) {
-        document.body.removeChild(element);
-      }
+      // Remove temporary element
+      document.body.removeChild(element);
 
       // Convert canvas to blob and download
       canvas.toBlob((blob) => {
@@ -477,6 +471,7 @@ export default function StudentQRCodeGenerator() {
                     downloadQRCode={downloadQRCode}
                     cardRefsRef={cardRefsRef}
                     t={t}
+                    cardType="student"
                   />
                   {studentTotalPages > 1 && (
                     <Pagination
@@ -554,6 +549,7 @@ export default function StudentQRCodeGenerator() {
                     downloadQRCode={downloadQRCode}
                     cardRefsRef={cardRefsRef}
                     t={t}
+                    cardType="teacher"
                   />
                   {teacherTotalPages > 1 && (
                     <Pagination
