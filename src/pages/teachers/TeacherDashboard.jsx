@@ -278,10 +278,10 @@ export default function TeacherDashboard({ user }) {
           <div className="p-6 bg-white rounded-xl border border-gray-200 mb-4">
             <div className='flex justify-between'>
               <div className='mb-8'>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">
                   {t('welcome', 'Welcome')}, {user?.name || user?.username || t('teacher', 'Teacher')}!
                 </h1>
-                <p className="text-gray-600 mt-2">
+                <p className="text-gray-600 text-sm sm:text-base mt-2">
                   {t('dashboardGreeting', "Here's an overview of your classes and students")}
                 </p>
               </div>
