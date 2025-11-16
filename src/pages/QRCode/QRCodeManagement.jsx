@@ -308,51 +308,123 @@ export default function StudentQRCodeGenerator() {
       // Dynamically import html2canvas
       const { default: html2canvas } = await import('html2canvas');
 
-      // If cardRef is provided, use it; otherwise, create a temporary card
       let element = cardRef;
+      let createdElement = false;
 
+      // If no cardRef, create a temporary card
       if (!element) {
-        // Fallback: create a temporary div with card content
         element = document.createElement('div');
-        element.style.padding = '20px';
+        element.style.position = 'fixed';
+        element.style.left = '-9999px';
+        element.style.top = '-9999px';
+        element.style.padding = '24px';
         element.style.backgroundColor = 'white';
         element.style.borderRadius = '8px';
-        element.style.border = '1px solid #e5e7eb';
+        element.style.border = '2px solid #e5e7eb';
         element.style.width = '320px';
 
-        const content = `
-          <div style="text-align: center; font-family: system-ui, -apple-system, sans-serif;">
-            ${qrCode.qrCode ? `<img src="${qrCode.qrCode}" style="width: 200px; height: 200px; margin-bottom: 12px; border: 1px solid #e5e7eb; border-radius: 4px;" />` : '<div style="width: 200px; height: 200px; margin: 0 auto 12px; border: 2px dashed #e5e7eb; display: flex; align-items: center; justify-content: center; border-radius: 4px;"><p style="color: #a3a3a3; font-size: 12px;">No QR Code</p></div>'}
-            <p style="font-size: 14px; font-weight: 500; margin: 8px 0; color: #111827;">${qrCode.name}</p>
-            <p style="font-size: 12px; color: #6b7280; margin: 4px 0;">Username: ${qrCode.username}</p>
-            ${qrCode.schoolName ? `<p style="font-size: 12px; color: #6b7280; margin: 4px 0;">School: ${qrCode.schoolName}</p>` : ''}
-            ${qrCode.className ? `<p style="font-size: 12px; color: #6b7280; margin: 4px 0;">Class: ${qrCode.className}</p>` : ''}
-          </div>
-        `;
-        element.innerHTML = content;
+        const wrapper = document.createElement('div');
+        wrapper.style.textAlign = 'center';
+        wrapper.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+
+        // Add QR code image or placeholder
+        const qrContainer = document.createElement('div');
+        qrContainer.style.marginBottom = '12px';
+
+        if (qrCode.qrCode) {
+          const img = document.createElement('img');
+          img.src = qrCode.qrCode;
+          img.style.width = '200px';
+          img.style.height = '200px';
+          img.style.border = '1px solid #e5e7eb';
+          img.style.borderRadius = '4px';
+          img.style.display = 'block';
+          img.style.margin = '0 auto';
+          qrContainer.appendChild(img);
+        } else {
+          const placeholder = document.createElement('div');
+          placeholder.style.width = '200px';
+          placeholder.style.height = '200px';
+          placeholder.style.margin = '0 auto';
+          placeholder.style.border = '2px dashed #e5e7eb';
+          placeholder.style.display = 'flex';
+          placeholder.style.alignItems = 'center';
+          placeholder.style.justifyContent = 'center';
+          placeholder.style.borderRadius = '4px';
+          placeholder.style.backgroundColor = '#f9fafb';
+          placeholder.style.color = '#a3a3a3';
+          placeholder.style.fontSize = '12px';
+          placeholder.textContent = 'No QR Code';
+          qrContainer.appendChild(placeholder);
+        }
+        wrapper.appendChild(qrContainer);
+
+        // Add student info
+        const nameEl = document.createElement('p');
+        nameEl.textContent = `${t('name', 'Name')}: ${qrCode.name}`;
+        nameEl.style.fontSize = '14px';
+        nameEl.style.fontWeight = '500';
+        nameEl.style.margin = '8px 0';
+        nameEl.style.color = '#111827';
+        wrapper.appendChild(nameEl);
+
+        const usernameEl = document.createElement('p');
+        usernameEl.textContent = `${t('username', 'Username')}: ${qrCode.username}`;
+        usernameEl.style.fontSize = '12px';
+        usernameEl.style.color = '#6b7280';
+        usernameEl.style.margin = '4px 0';
+        wrapper.appendChild(usernameEl);
+
+        if (qrCode.schoolName) {
+          const schoolEl = document.createElement('p');
+          schoolEl.textContent = `${t('school', 'School')}: ${qrCode.schoolName}`;
+          schoolEl.style.fontSize = '12px';
+          schoolEl.style.color = '#6b7280';
+          schoolEl.style.margin = '4px 0';
+          wrapper.appendChild(schoolEl);
+        }
+
+        if (qrCode.className) {
+          const classEl = document.createElement('p');
+          classEl.textContent = `${t('class', 'Class')}: ${qrCode.className}`;
+          classEl.style.fontSize = '12px';
+          classEl.style.color = '#6b7280';
+          classEl.style.margin = '4px 0';
+          wrapper.appendChild(classEl);
+        }
+
+        element.appendChild(wrapper);
         document.body.appendChild(element);
+        createdElement = true;
+
+        // Wait for images to load
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
       // Capture the card as canvas
       const canvas = await html2canvas(element, {
         backgroundColor: '#ffffff',
         scale: 2,
-        logging: false
+        logging: false,
+        allowTaint: true,
+        useCORS: true
       });
 
       // Remove temporary element if created
-      if (!cardRef) {
+      if (createdElement) {
         document.body.removeChild(element);
       }
 
       // Convert canvas to blob and download
       canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${qrCode.name}_QR_Card.png`;
-        link.click();
-        URL.revokeObjectURL(url);
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${qrCode.name}_QR_Card.png`;
+          link.click();
+          URL.revokeObjectURL(url);
+        }
       });
     } catch (error) {
       console.error('Error downloading card:', error);
