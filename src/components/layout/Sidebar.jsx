@@ -16,7 +16,8 @@ import {
   LayoutDashboard,
   CalendarCheck,
   UserRoundCheck,
-  ListCheck
+  ListCheck,
+  ListChecks
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -47,7 +48,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/teachers': UserStar,
     '/parents': UserCircle,
     '/attendance': ListCheck,
-    '/teacher-attendance': UserCheck,
+    '/teacher-attendance': ListChecks,
     '/teacher-dashboard': LayoutDashboard,
     '/my-students': Users,
     '/my-attendance': UserRoundCheck,
