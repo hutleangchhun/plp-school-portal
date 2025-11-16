@@ -124,8 +124,11 @@ export default function Dashboard({ user: initialUser }) {
             console.log('✅ Dashboard school info:', schoolResponse.data);
           }
 
-          // Get classes count
-          const classesResponse = await classService.getBySchool(accountData.school_id);
+          // Get classes count - fetch all classes without limit
+          const classesResponse = await classService.getBySchool(accountData.school_id, {
+            page: 1,
+            limit: 9999 // No practical limit - fetch all classes
+          });
           const totalClasses = classesResponse?.classes?.length || 0;
 
           // Get total students count - fetch all students without pagination
