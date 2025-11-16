@@ -2,6 +2,9 @@ import axios from 'axios';
 import { API_BASE_URL } from './config';
 // Remove circular dependency - token management is now handled internally
 
+// Flag to prevent multiple simultaneous redirects
+let isRedirecting = false;
+
 // Create axios instance with default config
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -70,13 +73,21 @@ apiClient.interceptors.response.use(
 
         console.log('🔐 401 Unauthorized - Current path:', currentPath, 'Is public page:', isPublicPage);
 
-        if (!isPublicPage) {
+        if (!isPublicPage && !isRedirecting) {
           console.log('Redirecting to login from:', currentPath);
+          isRedirecting = true;
           localStorage.removeItem('authToken');
           localStorage.removeItem('userData');
-          window.location.href = '/login';
-        } else {
+
+          // Use setTimeout to ensure this happens after current promise chain completes
+          // This prevents race conditions in Chrome
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
+        } else if (isPublicPage) {
           console.log('Suppressing redirect on public page:', currentPath);
+        } else if (isRedirecting) {
+          console.log('Redirect already in progress, skipping duplicate redirect');
         }
       } else if (status === 403) {
         // Forbidden - user doesn't have permission
