@@ -1,6 +1,6 @@
 /**
  * QR Code Download Card Component
- * Professional card design for QR code downloads
+ * Clean, modern card design for QR code downloads
  * Used in both QRCodeManagement and TeacherQRCodeManagement pages
  */
 
@@ -24,69 +24,68 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student') {
   element.style.width = '400px';
   element.style.backgroundColor = '#ffffff';
   element.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
-  element.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)';
-  element.style.borderRadius = '12px';
+  element.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+  element.style.borderRadius = '8px';
   element.style.overflow = 'hidden';
+  element.style.border = '1px solid #e5e7eb';
 
-  // Header with gradient
+  // Header section - Clean and minimal
   const header = document.createElement('div');
-  header.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
-  header.style.padding = '20px';
-  header.style.textAlign = 'center';
-  header.style.color = 'white';
-
-  const schoolName = document.createElement('p');
-  schoolName.textContent = qrCode.schoolName || 'School';
-  schoolName.style.fontSize = '11px';
-  schoolName.style.fontWeight = '600';
-  schoolName.style.margin = '0 0 4px 0';
-  schoolName.style.opacity = '0.9';
-  header.appendChild(schoolName);
+  header.style.padding = '16px 20px';
+  header.style.borderBottom = '1px solid #e5e7eb';
+  header.style.backgroundColor = '#f9fafb';
 
   const headerTitle = document.createElement('p');
   headerTitle.textContent = cardType === 'teacher' ? 'Teacher QR Code' : 'Student QR Code';
-  headerTitle.style.fontSize = '13px';
-  headerTitle.style.fontWeight = '500';
-  headerTitle.style.margin = '0';
+  headerTitle.style.fontSize = '14px';
+  headerTitle.style.fontWeight = '600';
+  headerTitle.style.margin = '0 0 4px 0';
+  headerTitle.style.color = '#111827';
   header.appendChild(headerTitle);
+
+  const schoolNameEl = document.createElement('p');
+  schoolNameEl.textContent = qrCode.schoolName || 'School';
+  schoolNameEl.style.fontSize = '12px';
+  schoolNameEl.style.fontWeight = '400';
+  schoolNameEl.style.margin = '0';
+  schoolNameEl.style.color = '#6b7280';
+  header.appendChild(schoolNameEl);
 
   element.appendChild(header);
 
   // Main content
   const content = document.createElement('div');
-  content.style.padding = '28px 20px';
+  content.style.padding = '20px';
   content.style.textAlign = 'center';
 
-  // QR Code section with border
+  // QR Code section
   const qrContainer = document.createElement('div');
   qrContainer.style.marginBottom = '20px';
-  qrContainer.style.padding = '12px';
-  qrContainer.style.backgroundColor = '#f8f9fa';
-  qrContainer.style.borderRadius = '8px';
-  qrContainer.style.border = '1px solid #e9ecef';
+  qrContainer.style.display = 'flex';
+  qrContainer.style.justifyContent = 'center';
+  qrContainer.style.alignItems = 'center';
 
   if (qrCode.qrCode) {
     const img = document.createElement('img');
     img.src = qrCode.qrCode;
-    img.style.width = '180px';
-    img.style.height = '180px';
+    img.style.width = '160px';
+    img.style.height = '160px';
     img.style.display = 'block';
-    img.style.margin = '0 auto';
     img.style.borderRadius = '4px';
+    img.style.border = '1px solid #e5e7eb';
     qrContainer.appendChild(img);
   } else {
     const placeholder = document.createElement('div');
-    placeholder.style.width = '180px';
-    placeholder.style.height = '180px';
-    placeholder.style.margin = '0 auto';
-    placeholder.style.border = '2px dashed #dee2e6';
+    placeholder.style.width = '160px';
+    placeholder.style.height = '160px';
+    placeholder.style.border = '2px dashed #d1d5db';
     placeholder.style.display = 'flex';
     placeholder.style.alignItems = 'center';
     placeholder.style.justifyContent = 'center';
     placeholder.style.borderRadius = '4px';
-    placeholder.style.backgroundColor = '#ffffff';
-    placeholder.style.color = '#adb5bd';
-    placeholder.style.fontSize = '12px';
+    placeholder.style.backgroundColor = '#f3f4f6';
+    placeholder.style.color = '#9ca3af';
+    placeholder.style.fontSize = '13px';
     placeholder.textContent = 'No QR Code';
     qrContainer.appendChild(placeholder);
   }
@@ -94,33 +93,34 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student') {
 
   // Student/Teacher info section
   const infoContainer = document.createElement('div');
-  infoContainer.style.paddingTop = '8px';
-  infoContainer.style.borderTop = '1px solid #e9ecef';
+  infoContainer.style.marginBottom = '16px';
 
   const nameEl = document.createElement('p');
   nameEl.textContent = qrCode.name;
-  nameEl.style.fontSize = '16px';
-  nameEl.style.fontWeight = '700';
-  nameEl.style.color = '#212529';
-  nameEl.style.margin = '12px 0 4px 0';
+  nameEl.style.fontSize = '15px';
+  nameEl.style.fontWeight = '600';
+  nameEl.style.color = '#111827';
+  nameEl.style.margin = '0 0 4px 0';
   infoContainer.appendChild(nameEl);
 
   const usernameEl = document.createElement('p');
   usernameEl.textContent = qrCode.username;
-  usernameEl.style.fontSize = '13px';
-  usernameEl.style.color = '#6c757d';
-  usernameEl.style.margin = '0 0 12px 0';
-  usernameEl.style.fontWeight = '500';
+  usernameEl.style.fontSize = '12px';
+  usernameEl.style.color = '#6b7280';
+  usernameEl.style.margin = '0';
+  usernameEl.style.fontWeight = '400';
   infoContainer.appendChild(usernameEl);
 
-  // Details table
+  content.appendChild(infoContainer);
+
+  // Details section
   const detailsDiv = document.createElement('div');
   detailsDiv.style.fontSize = '12px';
   detailsDiv.style.textAlign = 'left';
-  detailsDiv.style.backgroundColor = '#f8f9fa';
-  detailsDiv.style.padding = '10px';
+  detailsDiv.style.backgroundColor = '#f9fafb';
+  detailsDiv.style.padding = '12px';
   detailsDiv.style.borderRadius = '6px';
-  detailsDiv.style.marginTop = '12px';
+  detailsDiv.style.border = '1px solid #e5e7eb';
 
   // Helper function to create detail rows
   const createDetailRow = (label, value) => {
@@ -128,17 +128,17 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student') {
     row.style.display = 'flex';
     row.style.justifyContent = 'space-between';
     row.style.padding = '6px 0';
-    row.style.color = '#495057';
 
     const labelEl = document.createElement('span');
     labelEl.textContent = label;
-    labelEl.style.fontWeight = '600';
-    labelEl.style.color = '#212529';
+    labelEl.style.fontWeight = '500';
+    labelEl.style.color = '#374151';
     row.appendChild(labelEl);
 
     const valueEl = document.createElement('span');
     valueEl.textContent = value;
-    valueEl.style.color = '#6c757d';
+    valueEl.style.color = '#6b7280';
+    valueEl.style.fontWeight = '400';
     row.appendChild(valueEl);
 
     return row;
@@ -157,24 +157,23 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student') {
   // Add ID number
   detailsDiv.appendChild(createDetailRow('ID:', qrCode.studentNumber || '-'));
 
-  infoContainer.appendChild(detailsDiv);
-  content.appendChild(infoContainer);
+  content.appendChild(detailsDiv);
 
   element.appendChild(content);
 
   // Footer with date
   const footer = document.createElement('div');
   footer.style.padding = '12px 20px';
-  footer.style.backgroundColor = '#f8f9fa';
+  footer.style.backgroundColor = '#f9fafb';
   footer.style.textAlign = 'center';
-  footer.style.borderTop = '1px solid #e9ecef';
-  footer.style.fontSize = '10px';
-  footer.style.color = '#6c757d';
+  footer.style.borderTop = '1px solid #e5e7eb';
+  footer.style.fontSize = '11px';
+  footer.style.color = '#9ca3af';
 
   const date = new Date();
   const dateStr = date.toLocaleDateString('en-US', {
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric'
   });
   footer.textContent = `Generated on ${dateStr}`;
