@@ -66,24 +66,43 @@ export default function TeacherStudentsManagement({ user }) {
     };
   }, [showError, t]);
 
-  // Load classes using school classes endpoint
+  // Load classes assigned to this teacher
+  // Uses user.classIds array to fetch teacher's assigned classes
   useEffect(() => {
     let mounted = true;
 
     async function loadClasses() {
-      if (!schoolId) {
-        console.log('School ID not available, skipping class load');
-        setInitialLoading(false);
-        return;
-      }
-
       try {
-        console.log('Loading classes for school:', schoolId);
-        const response = await classService.getBySchool(schoolId);
+        // Check if teacher has assigned classes
+        if (user?.classIds?.length > 0) {
+          console.log('🎓 Teacher has classIds:', user.classIds);
 
-        if (mounted && response && response.success && response.classes) {
-          console.log('Classes loaded:', response.classes);
-          setClasses(response.classes);
+          // Fetch each assigned class using classIds
+          const classPromises = user.classIds.map(classId =>
+            classService.getClassById(classId)
+          );
+
+          const responses = await Promise.allSettled(classPromises);
+          const teacherClasses = responses
+            .filter(res => res.status === 'fulfilled' && res.value)
+            .map(res => res.value);
+
+          console.log(`✅ Loaded ${teacherClasses.length} classes for teacher:`, teacherClasses);
+
+          if (mounted) {
+            setClasses(teacherClasses);
+
+            // If teacher has only one class, auto-select it
+            if (teacherClasses.length === 1) {
+              setSelectedClassId(teacherClasses[0].classId || teacherClasses[0].id);
+              console.log('Auto-selected single class:', teacherClasses[0].name);
+            }
+          }
+        } else {
+          console.warn('⚠️ Teacher has no classIds assigned');
+          if (mounted) {
+            setClasses([]);
+          }
         }
       } catch (error) {
         console.error('Error loading classes:', error);
@@ -100,7 +119,7 @@ export default function TeacherStudentsManagement({ user }) {
     return () => {
       mounted = false;
     };
-  }, [schoolId, showError, t]);
+  }, [user, showError, t]);
 
   // Load students when filters or page change
   useEffect(() => {
@@ -375,9 +394,9 @@ export default function TeacherStudentsManagement({ user }) {
                 </div>
 
                 {/* Class Filter */}
-                {classes.length > 0 && (
-                  <div>
-                    <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('selectClass', 'Class')}</label>
+                <div>
+                  <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('selectClass', 'Class')}</label>
+                  {classes.length > 0 ? (
                     <Dropdown
                       value={selectedClassId}
                       onValueChange={handleClassFilterChange}
@@ -386,8 +405,12 @@ export default function TeacherStudentsManagement({ user }) {
                       minWidth="w-full"
                       triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
                     />
-                  </div>
-                )}
+                  ) : (
+                    <div className="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-600 text-center">
+                      {t('noClassesAssigned', 'No classes assigned')}
+                    </div>
+                  )}
+                </div>
               </>
             }
             actionsContent={
