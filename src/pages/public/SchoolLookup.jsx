@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import locationService from '../../utils/api/services/locationService';
@@ -6,7 +6,7 @@ import schoolService from '../../utils/api/services/schoolService';
 import { userService } from '../../utils/api/services/userService';
 import Dropdown from '../../components/ui/Dropdown';
 import Table from '../../components/ui/Table';
-import { SquarePen, Building2, Users, Phone, Mail, ExternalLink, User, GraduationCap } from 'lucide-react';
+import { SquarePen, Building2, Users, Phone, Mail, ExternalLink, User, GraduationCap, Search, X } from 'lucide-react';
 
 const SchoolLookup = () => {
   const { t } = useLanguage();
@@ -33,6 +33,7 @@ const SchoolLookup = () => {
   const [totalTeachers, setTotalTeachers] = useState(0);
   const [schoolInfo, setSchoolInfo] = useState(null);
   const [showTeachers, setShowTeachers] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const limit = 10;
 
@@ -286,6 +287,22 @@ const SchoolLookup = () => {
     }
   }, [currentPage, selectedSchool]);
 
+  // Filter teachers based on search query
+  const filteredTeachers = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return teachers;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return teachers.filter(teacher => {
+      const fullName = `${teacher.first_name || ''} ${teacher.last_name || ''}`.toLowerCase();
+      const username = (teacher.username || '').toLowerCase();
+      const email = (teacher.email || '').toLowerCase();
+
+      return fullName.includes(query) || username.includes(query) || email.includes(query);
+    });
+  }, [teachers, searchQuery]);
+
   // Define table columns for teachers
   const teacherColumns = [
     {
@@ -441,6 +458,32 @@ const SchoolLookup = () => {
           {/* Teachers Section */}
           {showTeachers && schoolInfo && (
             <div className="space-y-8 mt-4">
+              {/* Search Bar */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('search', 'Search')}</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-blue-400" />
+                  </div>
+                  <input
+                    type="text"
+                    className="block w-full pl-10 pr-8 py-2.5 border border-gray-200 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm transition-colors"
+                    placeholder={t('search', 'Search ...')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                      title={t('clearSearch', 'Clear search')}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Teachers Table */}
               <div className="bg-white rounded-md overflow-hidden border border-gray-100">
                 <div className=" px-6 py-4 border-b border-gray-200">
@@ -449,15 +492,18 @@ const SchoolLookup = () => {
                       <h3 className="text-base font-semibold text-gray-800">
                         បញ្ជីគ្រូបង្រៀន
                       </h3>
+                      <span className="text-sm text-gray-500">
+                        ({filteredTeachers.length} / {totalTeachers})
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <Table
                   columns={teacherColumns}
-                  data={teachers}
+                  data={filteredTeachers}
                   loading={teachersLoading}
-                  emptyMessage={'មិនមានគ្រូបង្រៀនក្នុងសាលារៀននេះទេ'}
+                  emptyMessage={searchQuery ? t('noTeachersFound', 'No teachers match your search') : 'មិនមានគ្រូបង្រៀនក្នុងសាលារៀននេះទេ'}
                   emptyIcon={Users}
                   emptyVariant="neutral"
                   showPagination={totalPages > 1}
