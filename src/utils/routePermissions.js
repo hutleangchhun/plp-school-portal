@@ -44,7 +44,7 @@ export const routePermissions = {
     allowedRoles: [ROLES.DIRECTOR], // Directors only
     component: 'DirectorTeacherAttendance'
   },
-  '/my-classes': {
+  '/teacher-dashboard': {
     allowedRoles: [ROLES.TEACHER],
     component: 'TeacherClasses'
   },
@@ -55,6 +55,10 @@ export const routePermissions = {
   '/my-attendance': {
     allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR],
     component: 'TeacherSelfAttendance'
+  },
+  '/teacher-reports': {
+    allowedRoles: [ROLES.TEACHER],
+    component: 'TeacherReports'
   },
   '/students/bulk-import': {
     allowedRoles: [ROLES.DIRECTOR], // Directors only
@@ -130,11 +134,11 @@ export const hasRouteAccess = (path, user) => {
     );
   }
 
-  // Teacher: roleId = 8 && (isDirector = false OR undefined) can access /attendance, /my-classes, /my-students, /my-students-exams, /my-attendance, /profile, /qr-codes, and /exam-records/:userId
+  // Teacher: roleId = 8 && (isDirector = false OR undefined) can access /attendance, /teacher-dashboard, /my-students, /my-students-exams, /my-attendance, /profile, /qr-codes, /teacher-reports, and /exam-records/:userId
   // Teachers CANNOT access /students/bulk-import or /qr-code-admin
   if (user.roleId === ROLES.TEACHER && isNotDirector) {
     // Check exact matches first
-    if (path === '/attendance' || path === '/my-classes' || path === '/my-students' || path === '/my-students-exams' || path === '/my-attendance' || path === '/profile' || path === '/qr-codes') {
+    if (path === '/attendance' || path === '/teacher-dashboard' || path === '/my-students' || path === '/my-students-exams' || path === '/my-attendance' || path === '/profile' || path === '/qr-codes' || path === '/teacher-reports') {
       return true;
     }
 
@@ -233,11 +237,10 @@ export const getNavigationItems = (user, t) => {
   // Teacher gets my-classes, my-students, attendance, my-attendance, and qr-codes
   const teacherItems = [
     {
-      name: t('myClasses', 'My Classes'),
-      href: '/my-classes',
+      name: t('dashboard', 'Dashboard'),
+      href: '/teacher-dashboard',
     },
-    {
-      name: t('myStudents', 'My Students'),
+    {      name: t('student', 'Students'),
       href: '/my-students',
     },
     {
@@ -257,6 +260,10 @@ export const getNavigationItems = (user, t) => {
     {
       name: t('QRCodeManangement', 'QR Codes Management'),
       href: '/qr-codes',
+    },
+    {
+      name: t('reports', 'Reports'),
+      href: '/teacher-reports',
     },
     // DISABLED: /my-students-exams removed from teacher navigation
     // {

@@ -3,6 +3,7 @@ import TeacherStudentsManagement from './pages/teachers/TeacherStudentsManagemen
 import StudentAttendance from './pages/teachers/StudentAttendance';
 import TeacherDashboard from './pages/teachers/TeacherDashboard';
 import TeacherQRCodeManagement from './pages/teachers/TeacherQRCodeManagement';
+import TeacherReports from './pages/teachers/TeacherReports';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -91,7 +92,7 @@ function AppContent() {
           path="/login"
           element={
             !user ? <Login setUser={setUser} /> :
-            (user && user.roleId === 8 && user.isDirector !== true ? <Navigate to="/my-classes" replace /> : <Navigate to="/dashboard" replace />)
+            (user && user.roleId === 8 && user.isDirector !== true ? <Navigate to="/teacher-dashboard" replace /> : <Navigate to="/dashboard" replace />)
           }
         />
 
@@ -121,7 +122,7 @@ function AppContent() {
             )
           }
         >
-          <Route index element={user && user.roleId === 8 && user.isDirector !== true ? <Navigate to="/my-classes" replace /> : <Navigate to="/dashboard" replace />} />
+          <Route index element={user && user.roleId === 8 && user.isDirector !== true ? <Navigate to="/teacher-dashboard" replace /> : <Navigate to="/dashboard" replace />} />
           
           {/* Dashboard routes with sidebar */}
           <Route path="dashboard/*" element={
@@ -217,8 +218,8 @@ function AppContent() {
             <Route index element={<DirectorTeacherAttendance />} />
           </Route>
 
-          <Route path="my-classes" element={
-            <ProtectedRoute path="/my-classes" user={user}>
+          <Route path="teacher-dashboard" element={
+            <ProtectedRoute path="/teacher-dashboard" user={user}>
               <DashboardLayout user={user} onLogout={handleLogout} />
             </ProtectedRoute>
           }>
@@ -239,6 +240,14 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<TeacherSelfAttendance />} />
+          </Route>
+
+          <Route path="teacher-reports" element={
+            <ProtectedRoute path="/teacher-reports" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<TeacherReports user={user} />} />
           </Route>
 
           <Route path="attendance/approval" element={

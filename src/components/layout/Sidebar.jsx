@@ -1,7 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import {
-  Home,
   Users,
   ChevronDown,
   BookOpen,
@@ -13,7 +12,11 @@ import {
   UserCircle,
   QrCode,
   Award,
-  BarChart3
+  BarChart3,
+  LayoutDashboard,
+  CalendarCheck,
+  UserRoundCheck,
+  ListCheck
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -38,20 +41,22 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
 
   // Icon mapping for routes
   const iconMap = {
-    '/dashboard': Home,
+    '/dashboard': LayoutDashboard,
     '/students': Users,
     '/classes': BookOpen,
     '/teachers': UserStar,
     '/parents': UserCircle,
-    '/attendance': Calendar,
+    '/attendance': ListCheck,
     '/teacher-attendance': UserCheck,
-    '/my-classes': GraduationCap,
+    '/teacher-dashboard': LayoutDashboard,
     '/my-students': Users,
-    '/my-attendance': Calendar,
+    '/my-attendance': UserRoundCheck,
     '/qr-codes': QrCode,
     '/exam-records': Award,
     '/my-students-exams': Award,
     '/reports': BarChart3,
+    '/teacher-reports': BarChart3,
+    'attendance': Calendar, // Parent item for attendance dropdown
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/achievements': Trophy,
     // '/settings': SettingsIcon,
@@ -68,13 +73,15 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/parents': 'blue',
     '/attendance': 'blue',
     '/teacher-attendance': 'blue',
-    '/my-classes': 'blue',
+    '/teacher-dashboard': 'blue',
     '/my-students': 'blue',
     '/my-attendance': 'blue',
     '/qr-codes': 'blue',
     '/exam-records': 'blue',
     '/my-students-exams': 'blue',
     '/reports': 'blue',
+    '/teacher-reports': 'blue',
+    'attendance': 'blue', // Parent item for attendance dropdown
     // Temporarily removed color mappings (will be re-enabled later):
     // '/achievements': 'blue',
     // '/settings': 'blue',
@@ -83,14 +90,18 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
   };
 
   // Get navigation items based on user role
-  const navigationItems = getNavigationItems(user, t).map(item => ({
-    ...item,
-    icon: iconMap[item.href] || Home,
-    current: location.pathname === item.href,
-    color: colorMap[item.href] || 'blue',
-    // Check if any child is active
-    hasActiveChild: item.children?.some(child => location.pathname === child.href)
-  }));
+  const navigationItems = getNavigationItems(user, t).map(item => {
+    // For parent items (those with children and href='#'), use the item name as key for icon/color lookup
+    const iconKey = item.children ? item.name?.toLowerCase() || item.href : item.href;
+    return {
+      ...item,
+      icon: iconMap[iconKey] || iconMap[item.href] || CalendarCheck,
+      current: location.pathname === item.href,
+      color: colorMap[iconKey] || colorMap[item.href] || 'blue',
+      // Check if any child is active
+      hasActiveChild: item.children?.some(child => location.pathname === child.href)
+    };
+  });
 
   const getColorClasses = (color, isActive) => {
     const colorMap = {
