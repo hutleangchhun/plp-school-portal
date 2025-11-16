@@ -21,164 +21,168 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student') {
   element.style.position = 'fixed';
   element.style.left = '-9999px';
   element.style.top = '-9999px';
-  element.style.width = '420px';
+  element.style.width = '380px';
   element.style.backgroundColor = '#ffffff';
   element.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
-  element.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.12)';
-  element.style.borderRadius = '12px';
+  element.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.15)';
+  element.style.borderRadius = '16px';
   element.style.overflow = 'hidden';
 
-  // Decorative top bar with accent color
-  const accentBar = document.createElement('div');
-  accentBar.style.height = '4px';
-  accentBar.style.background = 'linear-gradient(90deg, #3b82f6 0%, #1e40af 100%)';
-  element.appendChild(accentBar);
+  // Color scheme based on card type
+  const accentColor = cardType === 'teacher' ? '#ec4899' : '#8b5cf6';
+  const accentLight = cardType === 'teacher' ? '#fce7f3' : '#ede9fe';
 
-  // Header section - Modern design
+  // Header with gradient background
   const header = document.createElement('div');
-  header.style.padding = '20px 24px';
-  header.style.backgroundColor = '#ffffff';
-  header.style.borderBottom = '1px solid #f0f1f3';
+  header.style.background = `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`;
+  header.style.padding = '24px 20px';
+  header.style.color = '#ffffff';
+  header.style.textAlign = 'center';
 
   const headerTitle = document.createElement('p');
-  headerTitle.textContent = cardType === 'teacher' ? 'Teacher QR Code' : 'Student QR Code';
-  headerTitle.style.fontSize = '16px';
+  headerTitle.textContent = cardType === 'teacher' ? 'Teacher ID' : 'Student ID';
+  headerTitle.style.fontSize = '12px';
   headerTitle.style.fontWeight = '700';
-  headerTitle.style.margin = '0 0 8px 0';
-  headerTitle.style.color = '#1f2937';
+  headerTitle.style.margin = '0 0 6px 0';
+  headerTitle.style.opacity = '0.95';
+  headerTitle.style.letterSpacing = '0.5px';
   header.appendChild(headerTitle);
 
   const schoolNameEl = document.createElement('p');
   schoolNameEl.textContent = qrCode.schoolName || 'School';
-  schoolNameEl.style.fontSize = '13px';
-  schoolNameEl.style.fontWeight = '500';
+  schoolNameEl.style.fontSize = '14px';
+  schoolNameEl.style.fontWeight = '600';
   schoolNameEl.style.margin = '0';
-  schoolNameEl.style.color = '#3b82f6';
   header.appendChild(schoolNameEl);
 
   element.appendChild(header);
 
-  // Main content
+  // Main content with centered layout
   const content = document.createElement('div');
-  content.style.padding = '24px';
+  content.style.padding = '28px 20px 24px 20px';
   content.style.textAlign = 'center';
+  content.style.backgroundColor = '#ffffff';
 
-  // QR Code section with enhanced styling
+  // QR Code section - Clean and centered
   const qrContainer = document.createElement('div');
   qrContainer.style.marginBottom = '24px';
   qrContainer.style.display = 'flex';
   qrContainer.style.justifyContent = 'center';
   qrContainer.style.alignItems = 'center';
-  qrContainer.style.padding = '16px';
-  qrContainer.style.backgroundColor = '#f8fafc';
-  qrContainer.style.borderRadius = '10px';
-  qrContainer.style.border = '2px solid #e2e8f0';
+  qrContainer.style.padding = '20px';
+  qrContainer.style.backgroundColor = accentLight;
+  qrContainer.style.borderRadius = '12px';
 
   if (qrCode.qrCode) {
     const img = document.createElement('img');
     img.src = qrCode.qrCode;
-    img.style.width = '180px';
-    img.style.height = '180px';
+    img.style.width = '160px';
+    img.style.height = '160px';
     img.style.display = 'block';
-    img.style.borderRadius = '6px';
+    img.style.borderRadius = '8px';
     img.style.backgroundColor = '#ffffff';
-    img.style.padding = '4px';
-    img.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.08)';
+    img.style.padding = '8px';
     qrContainer.appendChild(img);
   } else {
     const placeholder = document.createElement('div');
-    placeholder.style.width = '180px';
-    placeholder.style.height = '180px';
-    placeholder.style.border = '2px dashed #cbd5e1';
+    placeholder.style.width = '160px';
+    placeholder.style.height = '160px';
+    placeholder.style.border = '2px dashed #d4d4d8';
     placeholder.style.display = 'flex';
     placeholder.style.alignItems = 'center';
     placeholder.style.justifyContent = 'center';
-    placeholder.style.borderRadius = '6px';
+    placeholder.style.borderRadius = '8px';
     placeholder.style.backgroundColor = '#ffffff';
-    placeholder.style.color = '#94a3b8';
-    placeholder.style.fontSize = '14px';
-    placeholder.style.fontWeight = '500';
+    placeholder.style.color = '#a1a1a1';
+    placeholder.style.fontSize = '12px';
     placeholder.textContent = 'No QR Code';
     qrContainer.appendChild(placeholder);
   }
   content.appendChild(qrContainer);
 
-  // Student/Teacher info section - Enhanced
-  const infoContainer = document.createElement('div');
-  infoContainer.style.marginBottom = '20px';
-  infoContainer.style.paddingBottom = '20px';
-  infoContainer.style.borderBottom = '1px solid #f0f1f3';
-
+  // Name and username section
   const nameEl = document.createElement('p');
   nameEl.textContent = qrCode.name;
-  nameEl.style.fontSize = '17px';
-  nameEl.style.fontWeight = '700';
-  nameEl.style.color = '#0f172a';
-  nameEl.style.margin = '0 0 6px 0';
-  infoContainer.appendChild(nameEl);
+  nameEl.style.fontSize = '18px';
+  nameEl.style.fontWeight = '800';
+  nameEl.style.color = '#000000';
+  nameEl.style.margin = '0 0 4px 0';
+  content.appendChild(nameEl);
 
   const usernameEl = document.createElement('p');
   usernameEl.textContent = qrCode.username;
-  usernameEl.style.fontSize = '13px';
-  usernameEl.style.color = '#64748b';
-  usernameEl.style.margin = '0';
+  usernameEl.style.fontSize = '12px';
+  usernameEl.style.color = '#666666';
+  usernameEl.style.margin = '0 0 20px 0';
   usernameEl.style.fontWeight = '500';
-  infoContainer.appendChild(usernameEl);
+  content.appendChild(usernameEl);
 
-  content.appendChild(infoContainer);
-
-  // Details section - Grid style
+  // Details section with custom layout
   const detailsDiv = document.createElement('div');
-  detailsDiv.style.fontSize = '12px';
+  detailsDiv.style.display = 'grid';
+  detailsDiv.style.gridTemplateColumns = '1fr 1fr';
+  detailsDiv.style.gap = '12px';
+  detailsDiv.style.marginBottom = '0';
 
-  // Helper function to create detail rows with improved styling
-  const createDetailRow = (label, value) => {
-    const row = document.createElement('div');
-    row.style.display = 'flex';
-    row.style.justifyContent = 'space-between';
-    row.style.padding = '10px 0';
-    row.style.borderBottom = '1px solid #f0f1f3';
+  // Helper function to create detail boxes
+  const createDetailBox = (label, value) => {
+    const box = document.createElement('div');
+    box.style.backgroundColor = '#f5f5f5';
+    box.style.padding = '12px';
+    box.style.borderRadius = '8px';
+    box.style.border = `1px solid #ebebeb`;
 
-    const labelEl = document.createElement('span');
+    const labelEl = document.createElement('p');
     labelEl.textContent = label;
-    labelEl.style.fontWeight = '600';
-    labelEl.style.color = '#475569';
-    row.appendChild(labelEl);
+    labelEl.style.fontSize = '10px';
+    labelEl.style.fontWeight = '700';
+    labelEl.style.color = '#888888';
+    labelEl.style.margin = '0 0 4px 0';
+    labelEl.style.textTransform = 'uppercase';
+    labelEl.style.letterSpacing = '0.3px';
+    box.appendChild(labelEl);
 
-    const valueEl = document.createElement('span');
+    const valueEl = document.createElement('p');
     valueEl.textContent = value;
-    valueEl.style.color = '#0f172a';
-    valueEl.style.fontWeight = '500';
-    row.appendChild(valueEl);
+    valueEl.style.fontSize = '13px';
+    valueEl.style.fontWeight = '700';
+    valueEl.style.color = '#222222';
+    valueEl.style.margin = '0';
+    valueEl.style.wordBreak = 'break-word';
+    box.appendChild(valueEl);
 
-    return row;
+    return box;
   };
 
   // Add school info if available
   if (qrCode.schoolName) {
-    detailsDiv.appendChild(createDetailRow('School', qrCode.schoolName));
+    detailsDiv.appendChild(createDetailBox('School', qrCode.schoolName));
   }
 
   // Add class info if available (students only)
   if (cardType === 'student' && qrCode.className) {
-    detailsDiv.appendChild(createDetailRow('Class', qrCode.className));
+    detailsDiv.appendChild(createDetailBox('Class', qrCode.className));
   }
 
-  // Add ID number
-  detailsDiv.appendChild(createDetailRow('ID', qrCode.studentNumber || '-'));
+  // Add ID number - always full width
+  if (qrCode.studentNumber) {
+    const idBox = createDetailBox('ID Number', qrCode.studentNumber);
+    idBox.style.gridColumn = '1 / -1';
+    detailsDiv.appendChild(idBox);
+  }
 
   content.appendChild(detailsDiv);
-
   element.appendChild(content);
 
-  // Footer with date - Improved style
+  // Footer with date
   const footer = document.createElement('div');
-  footer.style.padding = '14px 24px';
-  footer.style.backgroundColor = '#f8fafc';
+  footer.style.padding = '12px 20px';
+  footer.style.backgroundColor = '#f9f9f9';
   footer.style.textAlign = 'center';
-  footer.style.borderTop = '1px solid #f0f1f3';
-  footer.style.fontSize = '12px';
-  footer.style.color = '#64748b';
+  footer.style.borderTop = '1px solid #e5e5e5';
+  footer.style.fontSize = '10px';
+  footer.style.color = '#999999';
+  footer.style.fontWeight = '500';
 
   const date = new Date();
   const dateStr = date.toLocaleDateString('en-US', {
@@ -186,7 +190,7 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student') {
     month: 'short',
     day: 'numeric'
   });
-  footer.textContent = `Generated on ${dateStr}`;
+  footer.textContent = `Generated: ${dateStr}`;
   element.appendChild(footer);
 
   return element;
