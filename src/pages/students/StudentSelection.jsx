@@ -647,7 +647,7 @@ const StudentSelection = () => {
                     { value: 5, label: t('grade5', 'Grade 5') },
                     { value: 6, label: t('grade6', 'Grade 6') }
                   ]}
-                  placeholder={t('selectGrade', 'Select Grade')}
+                  placeholder={t('selectGradeLevel', 'Select Grade Level')}
                   minWidth="w-full"
                   triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
                 />

@@ -844,7 +844,7 @@ export default function ClassesManagement() {
                     { value: '', label: t('allGrades', 'All Grades') },
                     ...grades
                   ]}
-                  placeholder={t('selectGrade', 'Select Grade')}
+                  placeholder={t('selectGradeLevel', 'Select Grade Level')}
                   className="w-full"
                   icon={Filter}
                 />
@@ -909,8 +909,8 @@ export default function ClassesManagement() {
 
                 // Combine grade level and section into a single subtitle part
                 const gradeAndSection = classItem.section
-                  ? `${t('class') || 'Grade'} ${classItem.grade.replace('Grade ', '')}${classItem.section}`
-                  : `${t('class') || 'Grade'} ${classItem.grade.replace('Grade ', '')}`;
+                  ? `${t('class') || 'Class'} ${classItem.grade.replace('Grade ', '')}${classItem.section}`
+                  : `${t('class') || 'Class'} ${classItem.grade.replace('Grade ', '')}`;
 
                 return (
                   <ClassCard
