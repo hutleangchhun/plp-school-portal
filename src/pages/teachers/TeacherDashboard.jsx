@@ -271,7 +271,7 @@ export default function TeacherDashboard({ user }) {
   }
 
   return (
-    <PageTransition className='p-6 bg-gray-50'>
+    <PageTransition className='p-6 bg-gray-50 overflow-y-auto max-h-screen'>
       <div className="">
         <FadeInSection>
           {/* Welcome Header */}
@@ -334,7 +334,7 @@ export default function TeacherDashboard({ user }) {
           {/* Chart and User Info Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
             {/* Attendance Chart */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 flex flex-col">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
                 <div className="flex items-center gap-3 flex-1">
                   <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -379,28 +379,31 @@ export default function TeacherDashboard({ user }) {
                 ];
 
                 return (
-                  <ChartContainer
+                  <div className="flex justify-center items-center">
+                    <ChartContainer
                       config={{
                         students: {
                           label: t('students', 'Students'),
                           color: "hsl(var(--chart-2))",
                         },
                       }}
-                      className="h-[250px] sm:h-[350px]"
+                      className="h-[200px] sm:h-[250px] lg:h-[350px] w-full"
                     >
-                      <BarChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 20 }}>
+                      <BarChart data={chartData} margin={{ top: 15, right: 5, left: -25, bottom: window.innerWidth < 640 ? 35 : 20 }}>
                         <XAxis
                           dataKey="status"
                           tickLine={false}
                           axisLine={false}
-                          className="text-[10px] sm:text-xs"
-                          height={60}
+                          className="text-[9px] sm:text-[10px] lg:text-xs"
+                          height={window.innerWidth < 640 ? 50 : 60}
+                          angle={window.innerWidth < 640 ? -45 : 0}
+                          textAnchor={window.innerWidth < 640 ? "end" : "middle"}
                         />
                         <YAxis
                           tickLine={false}
                           axisLine={false}
-                          className="text-[10px] sm:text-xs"
-                          width={30}
+                          className="text-[9px] sm:text-[10px] lg:text-xs"
+                          width={window.innerWidth < 640 ? 25 : 30}
                         />
                         <ChartTooltip
                           content={<ChartTooltipContent />}
@@ -413,20 +416,11 @@ export default function TeacherDashboard({ user }) {
                           onMouseEnter={() => { }}
                           onMouseLeave={() => { }}
                         >
-                          <LabelList
-                            dataKey="students"
-                            position="top"
-                            offset={5}
-                            style={{
-                              fill: '#374151',
-                              fontSize: window.innerWidth < 640 ? '10px' : '12px',
-                              fontWeight: '600',
-                              textAnchor: 'middle'
-                            }}
-                          />
+
                         </Bar>
                       </BarChart>
                     </ChartContainer>
+                  </div>
                 );
               })()}
             </div>
