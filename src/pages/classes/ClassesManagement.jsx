@@ -417,7 +417,7 @@ export default function ClassesManagement() {
           id: classData.classId,
           name: classData.name,
           grade: `Grade ${classData.gradeLevel}`,
-          section: classData.section || 'A',
+          section: classData.section || '',
           subject: `Subject ${classData.gradeLevel}`,
           teacher: teacherName,
           teacherId: classData.teacher?.teacherId,
@@ -627,7 +627,7 @@ export default function ClassesManagement() {
       const classData = {
         name: formData.name.trim(),
         gradeLevel: parseInt(formData.gradeLevel),
-        section: formData.section?.trim() || 'A',
+        section: formData.section?.trim() || '',
         schoolId: parseInt(schoolInfo.id) || 0, // Always use schoolId from my-account
         teacherId: parseInt(formData.teacherId) || 0,
         academicYear: formData.academicYear.trim(),
@@ -1188,7 +1188,7 @@ export default function ClassesManagement() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('section') || 'Section'} *
+                  {t('section') || 'Section'}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1197,7 +1197,6 @@ export default function ClassesManagement() {
                   <input
                     type="text"
                     name="section"
-                    required
                     placeholder={t('sectionPlaceholder') || 'Enter section'}
                     className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
                     value={formData.section}
