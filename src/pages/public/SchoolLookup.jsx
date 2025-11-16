@@ -123,10 +123,14 @@ const SchoolLookup = () => {
       console.error('Error loading districts:', error);
       console.error('District error details:', {
         message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
+        status: error.status || error.response?.status,
+        data: error.data || error.response?.data
       });
-      alert('មិនអាចផ្ទុកបញ្ជីស្រុកបាន');
+
+      // Don't show alert for 401/403 as these are handled by the API interceptor
+      if (error.status !== 401 && error.status !== 403) {
+        alert(t('មិនអាចផ្ទុកបញ្ជីស្រុកបាន', 'Unable to load districts'));
+      }
     } finally {
       setLoading(false);
     }
@@ -177,7 +181,11 @@ const SchoolLookup = () => {
       }
     } catch (error) {
       console.error('Error loading schools:', error);
-      alert('មានបញ្ហាក្នុងការផ្ទុកសាលារៀន');
+
+      // Don't show alert for 401/403 as these are handled by the API interceptor
+      if (error.status !== 401 && error.status !== 403) {
+        alert(t('មានបញ្ហាក្នុងការផ្ទុកសាលារៀន', 'Error loading schools'));
+      }
       setSchools([]);
     } finally {
       setSchoolsLoading(false);
