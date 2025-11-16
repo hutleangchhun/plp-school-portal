@@ -337,12 +337,13 @@ export default function Dashboard({ user: initialUser }) {
 
         {/* Charts Grid - Responsive Layout */}
         <FadeInSection delay={300} className="grid grid-cols-1 gap-6 mb-6">
-          {/* School Overview Chart - 1 column on mobile, 1 column on desktop */}
+          {/* School Overview Chart - 1 column on mobile, 1 column on desktop
           <div className="lg:col-span-1">
             <SchoolOverviewChart
               schoolStats={schoolStats}
             />
           </div>
+           */}
           {/* Student Demographics Charts - 2 columns on mobile, 2 columns on desktop */}
           <div className="">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
