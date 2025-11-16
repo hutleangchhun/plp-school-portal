@@ -96,16 +96,17 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                 {qrCode.className && (
                   <p className="text-xs text-gray-500">{t('class', 'Class')}: {qrCode.className}</p>
                 )}
-                <Button
-                  onClick={() => downloadQRCode(qrCode, cardRefsRef.current[qrCode.userId])}
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-3 flex items-center gap-1"
-                  disabled={!qrCode.qrCode}
-                >
-                  <Download className="h-4 w-4" />
-                  {t('download', 'Download')}
-                </Button>
+                {qrCode.qrCode && (
+                  <Button
+                    onClick={() => downloadQRCode(qrCode, cardRefsRef.current[qrCode.userId])}
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-3 flex items-center gap-1"
+                  >
+                    <Download className="h-4 w-4" />
+                    {t('download', 'Download')}
+                  </Button>
+                )}
               </div>
             </div>
             );

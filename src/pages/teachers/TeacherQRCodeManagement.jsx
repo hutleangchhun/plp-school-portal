@@ -13,6 +13,7 @@ import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import { classService } from '../../utils/api/services/classService';
 import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
+import { createQRCodeDownloadCard } from '../../components/qr-code/QRCodeDownloadCard';
 
 export default function TeacherQRCodeManagement({ user }) {
   const { t } = useLanguage();
@@ -204,80 +205,9 @@ export default function TeacherQRCodeManagement({ user }) {
       let element = cardRef;
       let createdElement = false;
 
-      // If no cardRef, create a temporary card
+      // If no cardRef, create a temporary card using the download card component
       if (!element) {
-        element = document.createElement('div');
-        element.style.position = 'fixed';
-        element.style.left = '-9999px';
-        element.style.top = '-9999px';
-        element.style.padding = '24px';
-        element.style.backgroundColor = 'white';
-        element.style.borderRadius = '8px';
-        element.style.border = '2px solid #e5e7eb';
-        element.style.width = '320px';
-
-        const wrapper = document.createElement('div');
-        wrapper.style.textAlign = 'center';
-        wrapper.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-
-        // Add QR code image or placeholder
-        const qrContainer = document.createElement('div');
-        qrContainer.style.marginBottom = '12px';
-
-        if (qrCode.qrCode) {
-          const img = document.createElement('img');
-          img.src = qrCode.qrCode;
-          img.style.width = '200px';
-          img.style.height = '200px';
-          img.style.border = '1px solid #e5e7eb';
-          img.style.borderRadius = '4px';
-          img.style.display = 'block';
-          img.style.margin = '0 auto';
-          qrContainer.appendChild(img);
-        } else {
-          const placeholder = document.createElement('div');
-          placeholder.style.width = '200px';
-          placeholder.style.height = '200px';
-          placeholder.style.margin = '0 auto';
-          placeholder.style.border = '2px dashed #e5e7eb';
-          placeholder.style.display = 'flex';
-          placeholder.style.alignItems = 'center';
-          placeholder.style.justifyContent = 'center';
-          placeholder.style.borderRadius = '4px';
-          placeholder.style.backgroundColor = '#f9fafb';
-          placeholder.style.color = '#a3a3a3';
-          placeholder.style.fontSize = '12px';
-          placeholder.textContent = 'No QR Code';
-          qrContainer.appendChild(placeholder);
-        }
-        wrapper.appendChild(qrContainer);
-
-        // Add student info
-        const nameEl = document.createElement('p');
-        nameEl.textContent = `${t('name', 'Name')}: ${qrCode.name}`;
-        nameEl.style.fontSize = '14px';
-        nameEl.style.fontWeight = '500';
-        nameEl.style.margin = '8px 0';
-        nameEl.style.color = '#111827';
-        wrapper.appendChild(nameEl);
-
-        const usernameEl = document.createElement('p');
-        usernameEl.textContent = `${t('username', 'Username')}: ${qrCode.username}`;
-        usernameEl.style.fontSize = '12px';
-        usernameEl.style.color = '#6b7280';
-        usernameEl.style.margin = '4px 0';
-        wrapper.appendChild(usernameEl);
-
-        if (qrCode.schoolName) {
-          const schoolEl = document.createElement('p');
-          schoolEl.textContent = `${t('school', 'School')}: ${qrCode.schoolName}`;
-          schoolEl.style.fontSize = '12px';
-          schoolEl.style.color = '#6b7280';
-          schoolEl.style.margin = '4px 0';
-          wrapper.appendChild(schoolEl);
-        }
-
-        element.appendChild(wrapper);
+        element = createQRCodeDownloadCard(qrCode, 'student');
         document.body.appendChild(element);
         createdElement = true;
 
