@@ -465,7 +465,7 @@ export const km = {
   selectClass: 'ជ្រើសរើសថ្នាក់',
   selectGradeLevel: 'ជ្រើសរើសកម្រិតថ្នាក់',
   allGradeLevels: 'ថ្នាក់រៀនទាំងអស់',
-  grade: 'ចំណាត់ថ្នាក់',
+  grade: 'កម្រិតថ្នាក់',
   class: 'ថ្នាក់រៀន',
   loadingExamRecords: 'កំពុងផ្ទុកកំណត់ត្រាការប្រលង...',
   selectClassFirst: 'ជ្រើសរើសថ្នាក់ដំបូង',
