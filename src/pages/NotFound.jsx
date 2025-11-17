@@ -1,17 +1,38 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { userUtils } from '../utils/api/services/userService';
 import notFoundImage from '../assets/404.png';
 
 const NotFound = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
+  // Get user data to determine correct dashboard redirect
+  const user = userUtils.getUserData();
+
+  // Determine redirect path based on user role
+  const getRedirectPath = () => {
+    if (!user) {
+      return '/login';
+    }
+
+    // If user is a teacher (roleId === 8) and not a director, go to teacher-dashboard
+    if (user.roleId === 8 && !user.isDirector) {
+      return '/teacher-dashboard';
+    }
+
+    // Otherwise go to director/admin dashboard
+    return '/dashboard';
+  };
+
+  const redirectPath = getRedirectPath();
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
-        <img 
-          src={notFoundImage} 
-          alt="404 Not Found" 
+        <img
+          src={notFoundImage}
+          alt="404 Not Found"
           className="mx-auto mb-8 max-w-full h-auto"
         />
         <h1 className="text-2xl font-bold text-gray-900 mb-4">
@@ -21,7 +42,7 @@ const NotFound = () => {
           {t('thePageYouAreLookingForDoesNotExist', 'ទំព័រដែលអ្នកកំពុងស្វែងរកមិនអាចរកឃើញទេ។')}
         </p>
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate(redirectPath)}
           className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
         >
           {t('goBackToDashboard', 'ត្រលប់ទៅទំព័រផ្ទាំងគ្របគ្រង')}

@@ -66,18 +66,10 @@ export function ProtectedRoute({ children, path, user, fallbackPath }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Determine fallback: teachers (roleId=8, isDirector=false or undefined) go to /my-classes, directors to /dashboard
-  let computedFallback = "/dashboard";
-  if (user && user.roleId === 8 && (user.isDirector === false || user.isDirector === undefined)) {
-    computedFallback = "/my-classes";
-  }
-  if (typeof fallbackPath === 'string') {
-    computedFallback = fallbackPath;
-  }
-
   // Check if user has access to this specific route
   if (!hasRouteAccess(path, user)) {
-    return <Navigate to={computedFallback} replace />;
+    // Show 404 page when user tries to access a route they don't have permission for
+    return <Navigate to="/404" replace />;
   }
 
   return children;

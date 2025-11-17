@@ -6,50 +6,52 @@
 // Role constants
 export const ROLES = {
   TEACHER: 8,
-  DIRECTOR: 8, // Same roleId as teacher, but isDirector = true
+  DIRECTOR: 'DIRECTOR', // Special marker to indicate director-only routes (roleId=8 && isDirector=true)
+  TEACHER_ONLY: 'TEACHER_ONLY', // Special marker for teacher-only routes (roleId=8 && isDirector=false)
 };
 
 // Route permissions configuration
 export const routePermissions = {
-  // Director (role_id = 8 && isDirector = true) can access all routes below
+  // Director (role_id = 8 && isDirector = true) can access director-only routes
+  // Teacher (role_id = 8 && isDirector = false) can access teacher-only and shared routes
   '/dashboard': {
-    allowedRoles: [ROLES.TEACHER],
+    allowedRoles: [ROLES.DIRECTOR],
     component: 'Dashboard'
   },
   '/profile': {
-    allowedRoles: [ROLES.TEACHER],
+    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR],
     component: 'ProfileUpdate'
   },
   '/students': {
-    allowedRoles: [ROLES.TEACHER],
+    allowedRoles: [ROLES.DIRECTOR],
     component: 'StudentsManagement'
   },
   '/classes': {
-    allowedRoles: [ROLES.TEACHER],
+    allowedRoles: [ROLES.DIRECTOR],
     component: 'ClassesManagement'
   },
   '/teachers': {
-    allowedRoles: [ROLES.TEACHER],
+    allowedRoles: [ROLES.DIRECTOR],
     component: 'TeachersManagement'
   },
   '/parents': {
-    allowedRoles: [ROLES.TEACHER],
+    allowedRoles: [ROLES.DIRECTOR],
     component: 'ParentsManagement'
   },
   '/attendance': {
-    allowedRoles: [ROLES.TEACHER],
+    allowedRoles: [ROLES.DIRECTOR],
     component: 'Attendance'
   },
   '/teacher-attendance': {
-    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    allowedRoles: [ROLES.DIRECTOR],
     component: 'DirectorTeacherAttendance'
   },
   '/teacher-dashboard': {
-    allowedRoles: [ROLES.TEACHER],
+    allowedRoles: [ROLES.TEACHER_ONLY],
     component: 'TeacherClasses'
   },
   '/my-students': {
-    allowedRoles: [ROLES.TEACHER],
+    allowedRoles: [ROLES.TEACHER_ONLY],
     component: 'TeacherStudentsManagement'
   },
   '/my-attendance': {
@@ -57,39 +59,39 @@ export const routePermissions = {
     component: 'TeacherSelfAttendance'
   },
   '/teacher-reports': {
-    allowedRoles: [ROLES.TEACHER],
+    allowedRoles: [ROLES.TEACHER_ONLY],
     component: 'TeacherReports'
   },
   '/students/bulk-import': {
-    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    allowedRoles: [ROLES.DIRECTOR],
     component: 'BulkStudentImport'
   },
   '/attendance/approval': {
-    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    allowedRoles: [ROLES.DIRECTOR],
     component: 'AttendanceApprovalPage'
   },
   '/exam-records': {
-    allowedRoles: [], // DISABLED - No roles can access
+    allowedRoles: [],
     component: 'DirectorExamRecords'
   },
   '/exam-records/:userId': {
-    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR], // Both teachers and directors
+    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR],
     component: 'StudentExamRecordsPage'
   },
   '/my-students-exams': {
-    allowedRoles: [], // DISABLED - No roles can access
+    allowedRoles: [],
     component: 'TeacherExamRecords'
   },
   '/reports': {
-    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    allowedRoles: [ROLES.DIRECTOR],
     component: 'Reports'
   },
   '/settings/school': {
-    allowedRoles: [ROLES.DIRECTOR], // Directors only
+    allowedRoles: [ROLES.DIRECTOR],
     component: 'SchoolSettingsPage'
   },
   '/qr-codes': {
-    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR], // Both teachers and directors
+    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR],
     component: 'StudentQRCodeGenerator'
   }
 };
@@ -123,27 +125,52 @@ export const hasRouteAccess = (path, user) => {
     });
   };
 
-  // Director: roleId = 8 && isDirector = true can access all routes
-  if (user.roleId === ROLES.DIRECTOR && isDirector) {
+  // Helper function to find the route config for a path
+  const findRouteConfig = (path) => {
     // Check exact match first
-    if (routePermissions[path]) return true;
+    if (routePermissions[path]) return routePermissions[path];
 
-    // Check pattern match
-    return Object.keys(routePermissions).some(routePath =>
-      matchRoute(routePath, path)
-    );
-  }
+    // Check pattern matches
+    for (const routePath of Object.keys(routePermissions)) {
+      if (matchRoute(routePath, path)) {
+        return routePermissions[routePath];
+      }
+    }
+    return null;
+  };
 
-  // Teacher: roleId = 8 && (isDirector = false OR undefined) can access /attendance, /teacher-dashboard, /my-students, /my-students-exams, /my-attendance, /profile, /qr-codes, /teacher-reports, and /exam-records/:userId
-  // Teachers CANNOT access /students/bulk-import or /qr-code-admin
-  if (user.roleId === ROLES.TEACHER && isNotDirector) {
-    // Check exact matches first
-    if (path === '/attendance' || path === '/teacher-dashboard' || path === '/my-students' || path === '/my-students-exams' || path === '/my-attendance' || path === '/profile' || path === '/qr-codes' || path === '/teacher-reports') {
-      return true;
+  // Director: roleId = 8 && isDirector = true
+  if (user.roleId === ROLES.TEACHER && isDirector) {
+    const routeConfig = findRouteConfig(path);
+
+    // If route doesn't exist, deny access
+    if (!routeConfig) return false;
+
+    // If route specifies allowed roles, check if director is allowed
+    if (routeConfig.allowedRoles && routeConfig.allowedRoles.length > 0) {
+      // Director can access routes that have ROLES.DIRECTOR in allowedRoles
+      return routeConfig.allowedRoles.includes(ROLES.DIRECTOR);
     }
 
-    // Check pattern matches (e.g., /exam-records/:userId)
-    return matchRoute('/exam-records/:userId', path);
+    // If no allowedRoles specified, deny access
+    return false;
+  }
+
+  // Teacher: roleId = 8 && (isDirector = false OR undefined)
+  if (user.roleId === ROLES.TEACHER && isNotDirector) {
+    const routeConfig = findRouteConfig(path);
+
+    // If route doesn't exist, deny access
+    if (!routeConfig) return false;
+
+    // If route specifies allowed roles, check if teacher can access
+    if (routeConfig.allowedRoles && routeConfig.allowedRoles.length > 0) {
+      // Teacher can access routes that have ROLES.TEACHER_ONLY or ROLES.TEACHER in allowedRoles
+      return routeConfig.allowedRoles.includes(ROLES.TEACHER_ONLY) || routeConfig.allowedRoles.includes(ROLES.TEACHER);
+    }
+
+    // If no allowedRoles specified, deny access
+    return false;
   }
 
   // Director: roleId = 8 && isDirector = true (already handled above in the first check)
