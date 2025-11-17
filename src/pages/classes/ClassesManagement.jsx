@@ -14,7 +14,7 @@ import schoolService from '../../utils/api/services/schoolService'; // Import sc
 import { teacherService } from '../../utils/api/services/teacherService'; // Import teacherService for teacher selection
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
-import { gradeLevelOptions } from '../../utils/formOptions';
+import { GRADE_LEVELS } from '../../constants/grades';
 import { formatClassIdentifier } from '../../utils/helpers'; // Import class formatting utility
 import Dropdown from '@/components/ui/Dropdown';
 import { Button } from '../../components/ui/Button';
@@ -140,9 +140,9 @@ export default function ClassesManagement() {
     };
   });
 
-  const grades = gradeLevelOptions.map(option => ({
-    ...option,
-    label: option.translationKey ? t(option.translationKey, option.label) : option.label
+  const grades = GRADE_LEVELS.map(grade => ({
+    value: grade.value,
+    label: t(`grade${grade.value}`, grade.label)
   }));
 
   // Generate academic years dynamically (2 past, current, 3 future for better coverage)
@@ -1092,7 +1092,7 @@ export default function ClassesManagement() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-sm font-medium text-gray-700">
-                    {t('teacher') || 'Teacher'} *
+                    {t('teacher') || 'Teacher'}
                   </label>
                   <label className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer">
                     <input
@@ -1161,7 +1161,6 @@ export default function ClassesManagement() {
                     <input
                       type="text"
                       name="teacherName"
-                      required
                       readOnly
                       value={
                         !schoolInfo?.id ? t('loadingSchool', 'Loading school...') :

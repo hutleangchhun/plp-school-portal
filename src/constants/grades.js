@@ -1,17 +1,17 @@
 // Grade level constants for consistent use across the application
 export const GRADE_LEVELS = [
-  { value: '1', label: 'Grade 1', khmer: 'ថ្នាក់ទី១' },
-  { value: '2', label: 'Grade 2', khmer: 'ថ្នាក់ទី២' },
-  { value: '3', label: 'Grade 3', khmer: 'ថ្នាក់ទី៣' },
-  { value: '4', label: 'Grade 4', khmer: 'ថ្នាក់ទី៤' },
-  { value: '5', label: 'Grade 5', khmer: 'ថ្នាក់ទី៥' },
-  { value: '6', label: 'Grade 6', khmer: 'ថ្នាក់ទី៦' },
-  { value: '7', label: 'Grade 7', khmer: 'ថ្នាក់ទី៧' },
-  { value: '8', label: 'Grade 8', khmer: 'ថ្នាក់ទី៨' },
-  { value: '9', label: 'Grade 9', khmer: 'ថ្នាក់ទី៩' },
-  { value: '10', label: 'Grade 10', khmer: 'ថ្នាក់ទី១០' },
-  { value: '11', label: 'Grade 11', khmer: 'ថ្នាក់ទី១១' },
-  { value: '12', label: 'Grade 12', khmer: 'ថ្នាក់ទី១២' }
+  { value: '1', label: 'Grade 1', khmer: 'ថ្នាក់ទី1' },
+  { value: '2', label: 'Grade 2', khmer: 'ថ្នាក់ទី2' },
+  { value: '3', label: 'Grade 3', khmer: 'ថ្នាក់ទី3' },
+  { value: '4', label: 'Grade 4', khmer: 'ថ្នាក់ទី4' },
+  { value: '5', label: 'Grade 5', khmer: 'ថ្នាក់ទី5' },
+  { value: '6', label: 'Grade 6', khmer: 'ថ្នាក់ទី6' },
+  { value: '7', label: 'Grade 7', khmer: 'ថ្នាក់ទី7' },
+  { value: '8', label: 'Grade 8', khmer: 'ថ្នាក់ទី8' },
+  { value: '9', label: 'Grade 9', khmer: 'ថ្នាក់ទី9' },
+  { value: '10', label: 'Grade 10', khmer: 'ថ្នាក់ទី10' },
+  { value: '11', label: 'Grade 11', khmer: 'ថ្នាក់ទី11' },
+  { value: '12', label: 'Grade 12', khmer: 'ថ្នាក់ទី12' }
 ];
 
 // Grade levels with translation key support
