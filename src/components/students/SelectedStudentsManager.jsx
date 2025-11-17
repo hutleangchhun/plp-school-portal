@@ -9,6 +9,7 @@ import studentService from '../../utils/api/services/studentService';
 import classService from '../../utils/api/services/classService';
 import DynamicLoader from '../ui/DynamicLoader';
 import SelectedCard from '../ui/SelectedCard';
+import { formatClassIdentifier } from '../../utils/helpers';
 
 const SelectedStudentsManager = ({
   selectedStudents = [],
@@ -334,7 +335,7 @@ const SelectedStudentsManager = ({
                                       )}
                                     </div>
                                     <p className="text-xs text-gray-500">
-                                      ថ្នាក់ទី{cls.gradeLevel} • {cls.academicYear}
+                                      {t('class') || 'Class'} {formatClassIdentifier(cls.gradeLevel, cls.section)} • {cls.academicYear}
                                     </p>
                                   </div>
                                 </div>

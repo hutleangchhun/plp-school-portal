@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, ChevronDown, X, Users, Edit2, User, Plus } from 'lucide-react';
+import { Search, Download, ChevronDown, X, Users, Edit2, User, Plus, Filter } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../../components/ui/Button';
@@ -16,6 +16,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import StudentEditModal from '../../components/students/StudentEditModal';
 import SidebarFilter from '../../components/ui/SidebarFilter';
+import { formatClassIdentifier } from '../../utils/helpers';
 
 export default function TeacherStudentsManagement({ user }) {
   const { t } = useLanguage();
@@ -230,7 +231,7 @@ export default function TeacherStudentsManagement({ user }) {
     { value: 'all', label: t('allClasses', 'All Classes') },
     ...classes.map(cls => ({
       value: String(cls.classId || cls.id),
-      label: cls.name
+      label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
     }))
   ];
 
@@ -270,7 +271,13 @@ export default function TeacherStudentsManagement({ user }) {
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (student) => (
-        <p>{student?.class?.name || student?.className || 'N/A'}</p>
+        <p>
+          {student?.class?.gradeLevel || student?.gradeLevel ? (
+            `${t('class') || 'Class'} ${formatClassIdentifier(student?.class?.gradeLevel || student?.gradeLevel, student?.class?.section || student?.section)}`
+          ) : (
+            student?.className || 'N/A'
+          )}
+        </p>
       )
     },
     {
@@ -311,9 +318,9 @@ export default function TeacherStudentsManagement({ user }) {
       <div>
         <FadeInSection className='p-4 sm:p-6'>
           {/* Filters */}
-          <div className="mb-6">
+          <div className="mb-6 flex flex-col space-y-4">
             {/* Header */}
-            <div className="mb-4">
+            <div>
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                 {t('studentsManagement', 'My Students')}
               </h1>
@@ -321,21 +328,48 @@ export default function TeacherStudentsManagement({ user }) {
                 {t('manageYourStudents', 'View and manage students in your classes')}
               </p>
             </div>
-            {/* Filter Button - Responsive (works on all screen sizes) */}
-            <button
-              onClick={() => setShowMobileFilters(true)}
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 sm:py-2 px-4 sm:px-3 rounded-lg shadow-lg flex items-center justify-center sm:justify-start gap-2 transition-all duration-200 active:scale-95 text-sm"
-              title={t('filters', 'Filters & Actions')}
-            >
-              <Search className="h-5 sm:h-4 w-5 sm:w-4" />
-              <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
-              <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
-              {(searchInput || selectedClassId !== 'all') && (
-                <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
-                  {(searchInput ? 1 : 0) + (selectedClassId !== 'all' ? 1 : 0)}
-                </span>
-              )}
-            </button>
+
+            {/* Search Bar and Filter Button */}
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+              {/* Search Input */}
+              <div className="flex-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-blue-400" />
+                </div>
+                <input
+                  type="text"
+                  className="text-sm w-full pl-10 pr-8 py-2 border border-gray-200 rounded-lg leading-5 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
+                  placeholder={t('searchStudents', 'Search students...')}
+                  value={searchInput}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                />
+                {searchInput && (
+                  <button
+                    onClick={() => handleSearchChange('')}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    title={t('clearSearch', 'Clear search')}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Button - Responsive (works on all screen sizes) */}
+              <button
+                onClick={() => setShowMobileFilters(true)}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-2.5 sm:py-2 px-4 sm:px-3 rounded-lg shadow-lg flex items-center justify-center sm:justify-start gap-2 transition-all duration-200 active:scale-95 text-sm whitespace-nowrap"
+                title={t('filters', 'Filters & Actions')}
+              >
+                <Filter className="h-4 w-4" />
+                <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
+                <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
+                {selectedClassId !== 'all' && (
+                  <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
+                    1
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Mobile Filters Sidebar */}
@@ -344,40 +378,13 @@ export default function TeacherStudentsManagement({ user }) {
             onClose={() => setShowMobileFilters(false)}
             title={t('filters', 'Filters & Actions')}
             subtitle={t('manageYourStudents', 'View and manage students in your classes')}
-            hasFilters={searchInput || selectedClassId !== 'all'}
+            hasFilters={selectedClassId !== 'all'}
             onClearFilters={() => {
-              handleSearchChange('');
               handleClassFilterChange('all');
             }}
             onApply={() => {}}
             children={
               <>
-                {/* Search Input */}
-                <div>
-                  <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('search', 'Search')}</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Search className="h-4 w-4 text-blue-400" />
-                    </div>
-                    <input
-                      type="text"
-                      className="block w-full pl-10 pr-8 py-2.5 border border-gray-200 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm transition-colors"
-                      placeholder={t('searchStudents', 'Search students...')}
-                      value={searchInput}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                    />
-                    {searchInput && (
-                      <button
-                        onClick={() => handleSearchChange('')}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                        title={t('clearSearch', 'Clear search')}
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
                 {/* Class Filter */}
                 <div>
                   <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('selectClass', 'Class')}</label>

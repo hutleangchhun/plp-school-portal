@@ -8,7 +8,6 @@ import classService from '../../utils/api/services/classService';
 import { userService } from '../../utils/api/services/userService';
 import { Button } from '../../components/ui/Button';
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
-import Badge from '../../components/ui/Badge';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Pagination as UIPagination } from '../../components/ui/Table';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
@@ -18,6 +17,7 @@ import Dropdown from '../../components/ui/Dropdown';
 import DynamicLoader from '../../components/ui/DynamicLoader';
 import { formatDateKhmer } from '../../utils/formatters';
 import SidebarFilter from '../../components/ui/SidebarFilter';
+import { formatClassIdentifier } from '../../utils/helpers';
 
 const StudentSelection = () => {
   const navigate = useNavigate();
@@ -496,7 +496,7 @@ const StudentSelection = () => {
     <PageTransition variant="slideUp" duration="duration-700">
       <div className="p-3 sm:p-4">
         <FadeInSection delay={100} className=' rounded-lg p-4 sm:p-6 transition-all duration-300'>
-          <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between">
+          <div className="mb-6 flex flex-col space-y-4">
             <div>
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                 {t('studentSelection') || 'ការជ្រើសរើសសិស្ស'}
@@ -505,20 +505,46 @@ const StudentSelection = () => {
                 {t('selectStudentsForAction') || 'ជ្រើសរើសសិស្សដើម្បីអនុវត្តសកម្មភាពជាក្រុម'}
               </p>
             </div>
-            <div className="mt-4 sm:mt-0">
+
+            {/* Search Bar and Filter Button */}
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+              {/* Search Input */}
+              <div className="flex-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-600" />
+                </div>
+                <input
+                  type="text"
+              className="text-sm w-full pl-10 pr-8 py-2 border border-gray-200 rounded-lg leading-5 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
+                  placeholder={t('searchStudents', 'Search students by name or username...')}
+                  value={filters.search}
+                  onChange={(e) => handleFilterChange({ ...filters, search: e.target.value })}
+                />
+                {filters.search && (
+                  <button
+                    onClick={() => handleFilterChange({ ...filters, search: '' })}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    title={t('clearSearch', 'Clear search')}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Button */}
               <Button
                 onClick={() => setShowFilterSidebar(true)}
                 variant="primary"
                 size="sm"
-                className=" flex items-center justify-center sm:justify-start gap-2 shadow-lg"
+                className=" flex items-center justify-center sm:justify-start gap-2 shadow-lg whitespace-nowrap"
                 title={t('filters', 'Filters')}
               >
                 <Filter className="h-4 w-4" />
                 <span className="sm:hidden">{t('filters', 'Filters')}</span>
                 <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
-                {(filters.search || filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel !== '' || filters.classId !== 'any') && (
+                {(filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel !== '' || filters.classId !== 'any') && (
                   <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
-                    {(filters.search ? 1 : 0) + (filters.academicYear ? 1 : 0) + (filters.gender ? 1 : 0) + (filters.dateOfBirth ? 1 : 0) + (filters.gradeLevel !== '' ? 1 : 0) + (filters.classId !== 'any' ? 1 : 0)}
+                    {(filters.academicYear ? 1 : 0) + (filters.gender ? 1 : 0) + (filters.dateOfBirth ? 1 : 0) + (filters.gradeLevel !== '' ? 1 : 0) + (filters.classId !== 'any' ? 1 : 0)}
                   </span>
                 )}
               </Button>
@@ -533,10 +559,10 @@ const StudentSelection = () => {
           onClose={() => setShowFilterSidebar(false)}
           title={t('filters', 'Filters & Search')}
           subtitle={t('selectStudentsForAction') || 'Refine your search and filters'}
-          hasFilters={filters.search || filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel !== '' || filters.classId !== 'any'}
+          hasFilters={filters.academicYear || filters.gender || filters.dateOfBirth || filters.gradeLevel !== '' || filters.classId !== 'any'}
           onClearFilters={() => {
             handleFilterChange({
-              search: '',
+              search: filters.search,
               academicYear: '',
               gender: '',
               dateOfBirth: null,
@@ -547,32 +573,6 @@ const StudentSelection = () => {
           onApply={() => { }}
           children={
             <>
-              {/* Search Input */}
-              <div>
-                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('search', 'Search')}</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-4 w-4 text-blue-400" />
-                  </div>
-                  <input
-                    type="text"
-                    className="block w-full pl-10 pr-8 py-2.5 border border-gray-200 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm transition-colors"
-                    placeholder={t('searchStudents', 'Search students by name or username...')}
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange({ ...filters, search: e.target.value })}
-                  />
-                  {filters.search && (
-                    <button
-                      onClick={() => handleFilterChange({ ...filters, search: '' })}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                      title={t('clearSearch', 'Clear search')}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
               {/* Class Filter */}
               <div>
                 <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('classFilter', 'Class')}</label>
@@ -584,7 +584,7 @@ const StudentSelection = () => {
                     { value: 'null', label: t('studentsWithoutClass', 'Without Class') },
                     ...classes.map(cls => ({
                       value: cls.classId.toString(),
-                      label: cls.name
+                      label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
                     }))
                   ]}
                   placeholder={t('selectClassFilter', 'Select Class')}
@@ -770,16 +770,6 @@ const StudentSelection = () => {
                                   {student.name}
                                 </h3>
                               </div>
-                              {/* Display class information badge */}
-                              {student.class?.name || student.class_name ? (
-                                <Badge color="indigo" size="sm">
-                                  {student.class?.name || student.class_name}
-                                </Badge>
-                              ) : (
-                                <Badge color="gray" size="sm" className="italic">
-                                  {t('noClasses', "Don't have class")}
-                                </Badge>
-                              )}
                             </div>
                             <div className="flex items-center space-x-2 text-xs text-gray-500 flex-wrap">
                               <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
@@ -804,7 +794,7 @@ const StudentSelection = () => {
                               {student.gradeLevel && (
                                 <>
                                   <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium">
-                                    {t('gradeLevel', 'Grade Level')} {student.gradeLevel}
+                                    {`${t('gradeLevel') || 'Grade Level'} ${formatClassIdentifier(student.gradeLevel, student.section)}`}
                                   </span>
                                   <span>•</span>
                                 </>

@@ -4,8 +4,9 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { examHistoryService } from '../../utils/api/services/examHistoryService';
-import { classService, studentService } from '@/utils/api';
+import { classService, studentService, scoreService } from '@/utils/api';
 import { encryptId } from '../../utils/encryption';
+import { formatClassIdentifier } from '../../utils/helpers';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -16,20 +17,62 @@ import Badge from '../../components/ui/Badge';
 import Dropdown from '../../components/ui/Dropdown';
 import {
   BookOpen,
-  Eye
+  Eye,
+  Save,
+  AlertCircle
 } from 'lucide-react';
+
+/**
+ * Subject and Skills Configuration for Score Input
+ * Defines all subjects with their skill categories
+ */
+const SUBJECT_SKILLS = {
+  khmer: {
+    name: 'Khmer',
+    skills: ['Listening', 'Writing', 'Reading', 'Speaking']
+  },
+  math: {
+    name: 'Math',
+    skills: ['Number', 'Geometry', 'Statistics']
+  },
+  science: {
+    name: 'Science',
+    skills: ['Basic Concepts', 'Experiments', 'Analysis']
+  },
+  ethics: {
+    name: 'Ethics-Civic Studies',
+    skills: ['Ethics', 'Civic Studies']
+  },
+  sport: {
+    name: 'Sport',
+    skills: ['Physical Fitness', 'Skills', 'Participation']
+  },
+  health: {
+    name: 'Health - Hygiene',
+    skills: ['Health', 'Hygiene']
+  },
+  life_skills: {
+    name: 'Life Skills Education',
+    skills: ['Problem Solving', 'Communication', 'Creativity']
+  },
+  foreign_lang: {
+    name: 'Foreign Languages',
+    skills: ['Listening', 'Speaking', 'Reading', 'Writing']
+  }
+};
 
 /**
  * TeacherExamRecords Component
  * Teachers can view exam records for students in their assigned classes
+ * and input student scores by subject and skill
  */
 export default function TeacherExamRecords({ user }) {
   const { t } = useLanguage();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
   const { startLoading, stopLoading } = useLoading();
   const navigate = useNavigate();
 
-  // State
+  // State for Exam Records Tab
   const [studentRecords, setStudentRecords] = useState([]);
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
@@ -43,6 +86,13 @@ export default function TeacherExamRecords({ user }) {
     totalPages: 1,
     allStudents: []
   });
+
+  // State for Score Input Tab
+  const [activeTab, setActiveTab] = useState('records'); // 'records' or 'scores'
+  const [classStudents, setClassStudents] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
+  const [scoreData, setScoreData] = useState({}); // { studentId: { subjectKey: { skillName: score } } }
+  const [savingScores, setSavingScores] = useState(false);
 
   /**
    * Fetch teacher's assigned classes
@@ -209,11 +259,252 @@ export default function TeacherExamRecords({ user }) {
   }, [selectedClass, startLoading, stopLoading, t, fetchAllStudents, pagination.pageSize]);
 
   /**
+   * Fetch all students from selected class for score input
+   */
+  const fetchClassStudentsForScores = useCallback(async () => {
+    try {
+      if (!selectedClass) {
+        setClassStudents([]);
+        return;
+      }
+
+      const schoolId = user?.teacher?.schoolId || user?.schoolId;
+      if (!schoolId) return;
+
+      // Fetch all students in the class (no pagination for score input)
+      const response = await studentService.getStudentsBySchoolClasses(schoolId, {
+        classId: selectedClass,
+        limit: 10
+      });
+
+      if (response.success) {
+        const students = response.data || [];
+        setClassStudents(students);
+
+        // Initialize score data structure for all students
+        const initialScores = {};
+        students.forEach(student => {
+          const studentId = student.studentId || student.id;
+          initialScores[studentId] = {};
+          Object.keys(SUBJECT_SKILLS).forEach(subjectKey => {
+            initialScores[studentId][subjectKey] = {};
+            SUBJECT_SKILLS[subjectKey].skills.forEach(skill => {
+              initialScores[studentId][subjectKey][skill] = '';
+            });
+          });
+        });
+        setScoreData(initialScores);
+      }
+    } catch (error) {
+      console.error('Error fetching class students:', error);
+      showError(t('errorFetchingStudents', 'Failed to fetch students'));
+    }
+  }, [selectedClass, user, showError, t]);
+
+  /**
+   * Handle score input change
+   * Accepts float values with max of 10
+   */
+  const handleScoreChange = useCallback((studentId, subjectKey, skill, value) => {
+    // Allow empty value or float numbers 0-10
+    let numValue = value;
+
+    if (value !== '') {
+      const parsed = parseFloat(value);
+      // Only update if it's a valid number
+      if (!isNaN(parsed)) {
+        // Clamp to 0-10 range
+        numValue = Math.min(Math.max(parsed, 0), 10);
+        // Keep only up to 2 decimal places for floats
+        numValue = Math.round(numValue * 100) / 100;
+      } else {
+        // If invalid, keep previous value or empty
+        return;
+      }
+    }
+
+    setScoreData(prev => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        [subjectKey]: {
+          ...prev[studentId]?.[subjectKey],
+          [skill]: numValue
+        }
+      }
+    }));
+  }, []);
+
+  /**
+   * Get all skill cells in order for keyboard navigation
+   */
+  const getAllSkillCells = useMemo(() => {
+    const cells = [];
+    classStudents.forEach((student, rowIndex) => {
+      const studentId = student.studentId || student.id;
+      Object.entries(SUBJECT_SKILLS).forEach(([subjectKey, subject]) => {
+        subject.skills.forEach((skill, skillIndex) => {
+          cells.push({
+            rowIndex,
+            studentId,
+            subjectKey,
+            skill,
+            cellId: `cell-${rowIndex}-${subjectKey}-${skillIndex}`
+          });
+        });
+      });
+    });
+    return cells;
+  }, [classStudents]);
+
+  /**
+   * Handle keyboard navigation in score table
+   */
+  const handleScoreCellKeyDown = useCallback((e, rowIndex, subjectKey, skill, studentId) => {
+    const currentCellIndex = getAllSkillCells.findIndex(
+      cell => cell.rowIndex === rowIndex && cell.studentId === studentId && cell.subjectKey === subjectKey && cell.skill === skill
+    );
+
+    if (currentCellIndex === -1) return;
+
+    let nextCellIndex = -1;
+    const totalCells = getAllSkillCells.length;
+    const cellsPerRow = Object.values(SUBJECT_SKILLS).reduce((sum, subject) => sum + subject.skills.length, 0);
+
+    switch (e.key) {
+      case 'Tab':
+        e.preventDefault();
+        // Tab: move to next cell (right)
+        if (e.shiftKey) {
+          // Shift+Tab: move to previous cell (left)
+          nextCellIndex = currentCellIndex - 1;
+        } else {
+          // Tab: move to next cell (right)
+          nextCellIndex = currentCellIndex + 1;
+        }
+        break;
+
+      case 'ArrowRight':
+        e.preventDefault();
+        // Move to next cell (right)
+        nextCellIndex = currentCellIndex + 1;
+        break;
+
+      case 'ArrowLeft':
+        e.preventDefault();
+        // Move to previous cell (left)
+        nextCellIndex = currentCellIndex - 1;
+        break;
+
+      case 'ArrowDown':
+        e.preventDefault();
+        // Move down to same cell position in next row
+        nextCellIndex = currentCellIndex + cellsPerRow;
+        break;
+
+      case 'ArrowUp':
+        e.preventDefault();
+        // Move up to same cell position in previous row
+        nextCellIndex = currentCellIndex - cellsPerRow;
+        break;
+
+      case 'Enter':
+        e.preventDefault();
+        // Enter: move down to same column in next row (or stay if last row)
+        nextCellIndex = currentCellIndex + cellsPerRow;
+        break;
+
+      default:
+        return;
+    }
+
+    // Wrap around or clamp to valid range
+    if (nextCellIndex < 0) {
+      nextCellIndex = 0;
+    } else if (nextCellIndex >= totalCells) {
+      nextCellIndex = totalCells - 1;
+    }
+
+    // Focus the next cell
+    const nextCell = getAllSkillCells[nextCellIndex];
+    if (nextCell) {
+      const nextInput = document.getElementById(nextCell.cellId)?.querySelector('input');
+      if (nextInput) {
+        setTimeout(() => {
+          nextInput.focus();
+          nextInput.select();
+        }, 0);
+      }
+    }
+  }, [getAllSkillCells]);
+
+  /**
+   * Save all student scores
+   */
+  const handleSaveScores = useCallback(async () => {
+    try {
+      setSavingScores(true);
+      startLoading('saveScores', t('savingScores', 'Saving scores...'));
+
+      // Prepare data for API
+      const scoresToSave = [];
+      Object.entries(scoreData).forEach(([studentId, subjects]) => {
+        Object.entries(subjects).forEach(([subjectKey, skills]) => {
+          Object.entries(skills).forEach(([skill, score]) => {
+            if (score !== '') {
+              scoresToSave.push({
+                studentId: parseInt(studentId),
+                subject: subjectKey,
+                skill,
+                score: parseFloat(score), // Keep as float for API
+                month: selectedMonth
+              });
+            }
+          });
+        });
+      });
+
+      if (scoresToSave.length === 0) {
+        showError(t('noScoresToSave', 'Please enter at least one score'));
+        setSavingScores(false);
+        stopLoading('saveScores');
+        return;
+      }
+
+      // Call API to save scores using batch update
+      const response = await scoreService.submitBatchScores(scoresToSave);
+
+      if (response.success) {
+        showSuccess(t('scoresSaved', 'Scores saved successfully'));
+        // Reset score data after successful save
+        setScoreData({});
+      } else {
+        showError(t('errorSavingScores', 'Failed to save scores'));
+      }
+    } catch (error) {
+      console.error('Error saving scores:', error);
+      showError(error?.response?.data?.message || t('errorSavingScores', 'Failed to save scores'));
+    } finally {
+      setSavingScores(false);
+      stopLoading('saveScores');
+    }
+  }, [scoreData, selectedMonth, startLoading, stopLoading, showError, showSuccess, t]);
+
+  /**
    * Initial load - fetch classes
    */
   useEffect(() => {
     fetchClasses();
   }, [fetchClasses]);
+
+  /**
+   * Fetch class students when switching to score input tab
+   */
+  useEffect(() => {
+    if (activeTab === 'scores') {
+      fetchClassStudentsForScores();
+    }
+  }, [activeTab, fetchClassStudentsForScores]);
 
   /**
    * Reset pagination and load exam records when class is selected
@@ -386,7 +677,7 @@ export default function TeacherExamRecords({ user }) {
         {/* Header */}
         <FadeInSection className="mb-6">
           <div className="bg-white rounded-xl p-6">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
                   {t('studentExamRecords', 'Student Exam Records')}
@@ -396,88 +687,283 @@ export default function TeacherExamRecords({ user }) {
                 </p>
               </div>
             </div>
-            <div className="mt-6">
-              {/* Primary Filters: Class, Search */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                {/* Class Selection - Mandatory */}
-                {classes.length > 0 && (
+
+            {/* Tab Navigation */}
+            <div className="flex gap-2 border-b border-gray-200 mb-6">
+              <button
+                onClick={() => setActiveTab('records')}
+                className={`px-4 py-2 font-medium transition-colors ${
+                  activeTab === 'records'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                {t('examRecords', 'Exam Records')}
+              </button>
+              <button
+                onClick={() => setActiveTab('scores')}
+                className={`px-4 py-2 font-medium transition-colors ${
+                  activeTab === 'scores'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                {t('scoreInput', 'Score Input')}
+              </button>
+            </div>
+
+            {/* Exam Records Tab */}
+            {activeTab === 'records' && (
+              <>
+                <div className="mt-6">
+                  {/* Primary Filters: Class, Search */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    {/* Class Selection - Mandatory */}
+                    {classes.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t('selectClass', 'Select Class')}
+                          <span className="text-red-500 ml-1">*</span>
+                        </label>
+                        <Dropdown
+                          value={selectedClass ? selectedClass.toString() : ''}
+                          onValueChange={(value) => setSelectedClass(value ? parseInt(value) : null)}
+                          options={classes.map(cls => ({
+                            value: (cls.classId || cls.id).toString(),
+                            label: cls.gradeLevel ? `${t('class', 'Class')} ${formatClassIdentifier(cls.gradeLevel, cls.section)}` : (cls.name || `${t('class', 'Class')} ${cls.gradeLevel || ''} ${cls.section || ''}`.trim())
+                          }))}
+                          placeholder={t('chooseOption', 'ជ្រើសរើសជម្រើស')}
+                          className='w-full'
+                        />
+                      </div>
+                    )}
+
+                    {/* Search */}
+                    <div className="">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('search', 'Search')}
+                      </label>
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder={t('searchStudents', 'Search by student name...')}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white overflow-hidden mt-4">
+                  {!selectedClass ? (
+                    <EmptyState
+                      icon={BookOpen}
+                      title={t('selectClassFirst', 'Select a Class')}
+                      description={t('selectClassFirstDesc', 'Please select a class from the filters above to view exam records')}
+                    />
+                  ) : loading ? (
+                    <PageLoader message={t('loadingExamRecords', 'Loading exam records...')} />
+                  ) : filteredTableData.length === 0 ? (
+                    <EmptyState
+                      icon={BookOpen}
+                      title={t('noStudents', 'No Students')}
+                      description={t('noStudentsInClass', 'No students found in this class')}
+                      actionLabel={t('clearSearch', 'Clear Search')}
+                      onAction={() => {
+                        setSearchTerm('');
+                      }}
+                    />
+                  ) : (
+                    <>
+                      <Table
+                        columns={getTableColumns()}
+                        data={filteredTableData}
+                        loading={loading}
+                        t={t}
+                        showPagination={pagination.totalPages > 1}
+                        pagination={{
+                          page: pagination.currentPage,
+                          pages: pagination.totalPages,
+                          total: pagination.totalStudents,
+                          limit: pagination.pageSize
+                        }}
+                        onPageChange={(newPage) => {
+                          setPagination(prev => ({
+                            ...prev,
+                            currentPage: newPage
+                          }));
+                          fetchExamRecords(newPage);
+                        }}
+                      />
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Score Input Tab */}
+            {activeTab === 'scores' && (
+              <div className="mt-6">
+                {/* Class and Month Selection */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                  {/* Class Selection */}
+                  {classes.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('selectClass', 'Select Class')}
+                        <span className="text-red-500 ml-1">*</span>
+                      </label>
+                      <Dropdown
+                        value={selectedClass ? selectedClass.toString() : ''}
+                        onValueChange={(value) => setSelectedClass(value ? parseInt(value) : null)}
+                        options={classes.map(cls => ({
+                          value: (cls.classId || cls.id).toString(),
+                          label: cls.gradeLevel ? `${t('class', 'Class')} ${formatClassIdentifier(cls.gradeLevel, cls.section)}` : (cls.name || `${t('class', 'Class')} ${cls.gradeLevel || ''} ${cls.section || ''}`.trim())
+                        }))}
+                        placeholder={t('chooseOption', 'ជ្រើសរើសជម្រើស')}
+                        className='w-full'
+                      />
+                    </div>
+                  )}
+
+                  {/* Month Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('selectClass', 'Select Class')}
+                      {t('month', 'Month')}
                       <span className="text-red-500 ml-1">*</span>
                     </label>
-                    <Dropdown
-                      value={selectedClass ? selectedClass.toString() : ''}
-                      onValueChange={(value) => setSelectedClass(value ? parseInt(value) : null)}
-                      options={classes.map(cls => ({
-                        value: (cls.classId || cls.id).toString(),
-                        label: cls.name || `${t('class', 'Class')} ${cls.gradeLevel || ''} ${cls.section || ''}`.trim()
-                      }))}
-                      placeholder={t('chooseOption', 'ជ្រើសរើសជម្រើស')}
-                      className='w-full'
+                    <input
+                      type="month"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
-                )}
-
-                {/* Search */}
-                <div className="">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('search', 'Search')}
-                  </label>
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder={t('searchStudents', 'Search by student name...')}
-                    className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
                 </div>
-              </div>
-            </div>
-            <div className="bg-white overflow-hidden mt-4">
-              {!selectedClass ? (
-                <EmptyState
-                  icon={BookOpen}
-                  title={t('selectClassFirst', 'Select a Class')}
-                  description={t('selectClassFirstDesc', 'Please select a class from the filters above to view exam records')}
-                />
-              ) : loading ? (
-                <PageLoader message={t('loadingExamRecords', 'Loading exam records...')} />
-              ) : filteredTableData.length === 0 ? (
-                <EmptyState
-                  icon={BookOpen}
-                  title={t('noStudents', 'No Students')}
-                  description={t('noStudentsInClass', 'No students found in this class')}
-                  actionLabel={t('clearSearch', 'Clear Search')}
-                  onAction={() => {
-                    setSearchTerm('');
-                  }}
-                />
-              ) : (
-                <>
-                  <Table
-                    columns={getTableColumns()}
-                    data={filteredTableData}
-                    loading={loading}
-                    t={t}
-                    showPagination={pagination.totalPages > 1}
-                    pagination={{
-                      page: pagination.currentPage,
-                      pages: pagination.totalPages,
-                      total: pagination.totalStudents,
-                      limit: pagination.pageSize
-                    }}
-                    onPageChange={(newPage) => {
-                      setPagination(prev => ({
-                        ...prev,
-                        currentPage: newPage
-                      }));
-                      fetchExamRecords(newPage);
-                    }}
+
+                {/* Score Input Section */}
+                {!selectedClass ? (
+                  <EmptyState
+                    icon={BookOpen}
+                    title={t('selectClassFirst', 'Select a Class')}
+                    description={t('selectClassFirstDesc', 'Please select a class from the filters above to enter scores')}
                   />
-                </>
-              )}
-            </div>
+                ) : classStudents.length === 0 ? (
+                  <EmptyState
+                    icon={BookOpen}
+                    title={t('noStudents', 'No Students')}
+                    description={t('noStudentsInClass', 'No students found in this class')}
+                  />
+                ) : (
+                  <div className="space-y-6">
+                    {/* Score Table with BulkImportTable styling */}
+                    <div className="shadow-lg rounded-lg overflow-hidden border border-gray-200 bg-transparent">
+                      <div className="bg-white p-6 border-b border-gray-200">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('scoreInput', 'Score Input')}</h2>
+                        <p className="text-sm text-gray-600">{t('enterStudentScores', 'Enter student scores for each skill category')}</p>
+                      </div>
+                      <div className="relative overflow-auto" style={{ position: 'relative', zIndex: 10, height: '600px' }}>
+                        <table className="min-w-full border-collapse bg-white">
+                          <thead className="sticky top-0 z-10 border-b border-gray-200">
+                            {/* Main Header Row */}
+                            <tr className="border-b border-gray-300 bg-gradient-to-r from-blue-600 to-blue-700">
+                              <th rowSpan="2" className="w-12 px-3 py-3 text-center text-xs font-bold text-white border-r border-blue-500 bg-gradient-to-r from-blue-600 to-blue-700 sticky left-0 z-20">
+                                #
+                              </th>
+                              {Object.entries(SUBJECT_SKILLS).map(([subjectKey, subject]) => (
+                                <th
+                                  key={subjectKey}
+                                  colSpan={subject.skills.length}
+                                  className="px-3 py-3 text-center text-xs font-bold text-white border-r border-blue-500"
+                                >
+                                  {t(subjectKey, subject.name)}
+                                </th>
+                              ))}
+                            </tr>
+                            {/* Sub Header Row */}
+                            <tr className="border-b border-gray-200 bg-blue-50">
+                              <th className="w-12 px-3 py-3" />
+                              <th className="px-3 py-3 text-left text-xs font-semibold text-blue-900 border-r border-blue-200 bg-blue-50 sticky left-12 z-20 min-w-40">
+                                {t('studentName', 'Student Name')}
+                              </th>
+                              {Object.entries(SUBJECT_SKILLS).map(([subjectKey, subject]) =>
+                                subject.skills.map(skill => (
+                                  <th
+                                    key={`${subjectKey}-${skill}`}
+                                    className="px-3 py-3 text-center text-xs font-semibold text-blue-900 border-r border-blue-200 bg-blue-50"
+                                  >
+                                    {skill}
+                                  </th>
+                                ))
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white">
+                            {classStudents.map((student, rowIndex) => {
+                              const studentId = student.studentId || student.id;
+                              const firstName = student.user?.first_name || student.firstName || '';
+                              const lastName = student.user?.last_name || student.lastName || '';
+                              const studentName = `${firstName} ${lastName}`.trim() || '-';
+
+                              return (
+                                <tr key={`${rowIndex}-${studentId}`} className="hover:bg-gray-50 border-b border-gray-100">
+                                  <td className="text-center text-xs text-gray-500 border-r border-gray-200 bg-gray-50 px-3 py-3 sticky left-0 z-10">
+                                    {rowIndex + 1}
+                                  </td>
+                                  <td className="text-left text-xs text-gray-800 border-r border-gray-200 bg-gray-50 px-3 py-3 sticky left-12 z-10 min-w-40 font-medium">
+                                    {studentName}
+                                  </td>
+                                  {Object.entries(SUBJECT_SKILLS).map(([subjectKey, subject]) =>
+                                    subject.skills.map((skill, skillIndex) => (
+                                      <td
+                                        key={`${rowIndex}-${subjectKey}-${skillIndex}`}
+                                        id={`cell-${rowIndex}-${subjectKey}-${skillIndex}`}
+                                        className="border-r border-gray-200 relative cursor-pointer bg-white hover:bg-gray-50"
+                                      >
+                                        <input
+                                          type="text"
+                                          value={scoreData[studentId]?.[subjectKey]?.[skill] ?? ''}
+                                          onChange={(e) => {
+                                            e.stopPropagation();
+                                            handleScoreChange(studentId, subjectKey, skill, e.target.value);
+                                          }}
+                                          onClick={(e) => e.stopPropagation()}
+                                          onKeyDown={(e) => handleScoreCellKeyDown(e, rowIndex, subjectKey, skill, studentId)}
+                                          placeholder="-"
+                                          className="w-full px-3 py-2 text-xs border-0 focus:border focus:ring-1 bg-white focus:border-blue-500 focus:ring-blue-500"
+                                        />
+                                      </td>
+                                    ))
+                                  )}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Save Button */}
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setScoreData({})}
+                        disabled={savingScores}
+                      >
+                        {t('clear', 'Clear')}
+                      </Button>
+                      <Button
+                        onClick={handleSaveScores}
+                        disabled={savingScores || !selectedMonth}
+                        className="flex items-center gap-2"
+                      >
+                        <Save className="w-4 h-4" />
+                        {savingScores ? t('saving', 'Saving...') : t('saveScores', 'Save Scores')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </FadeInSection>
       </div>

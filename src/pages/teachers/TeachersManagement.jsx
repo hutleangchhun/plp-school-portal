@@ -11,6 +11,7 @@ import { useStableCallback, useRenderTracker } from '../../utils/reactOptimizati
 import { Badge } from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
 import { exportTeachersToExcel, exportTeachersToCSV, exportTeachersToPDF, getTimestampedFilename } from '../../utils/exportUtils';
+import { formatClassIdentifier } from '../../utils/helpers';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -463,7 +464,7 @@ export default function TeachersManagement() {
 
         // Format classes taught by teacher
         const classesTaught = teacher.classes && teacher.classes.length > 0
-          ? teacher.classes.map(cls => cls.name || `${cls.gradeLevel}${cls.section}`).join(', ')
+          ? teacher.classes.map(cls => `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`).join(', ')
           : '';
 
         const row = [
@@ -778,7 +779,7 @@ export default function TeachersManagement() {
                 size="xs"
                 className='pt-1'
               >
-                {classItem.name || `${classItem.gradeLevel}${classItem.section}`}
+                {`${t('class') || 'Class'} ${formatClassIdentifier(classItem.gradeLevel, classItem.section)}`}
               </Badge>
             ))
           ) : (

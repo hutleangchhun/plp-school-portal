@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import Table from '../../../components/ui/Table';
+import { formatClassIdentifier } from '../../../utils/helpers';
 
 /**
  * Preview component for Report 6
@@ -62,7 +63,9 @@ export const Report6Preview = ({ data }) => {
     {
       key: 'class',
       header: t('class', 'Class'),
-      render: (student) => student.class?.name || student.className || ''
+      render: (student) => student.class?.gradeLevel
+        ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
+        : (student.class?.name || student.className || '')
     },
     {
       key: 'disabilityType',

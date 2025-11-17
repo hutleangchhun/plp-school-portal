@@ -18,6 +18,7 @@ import { DatePicker } from '../../components/ui/date-picker';
 import Badge from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
 import EmptyState from '@/components/ui/EmptyState';
+import { formatClassIdentifier } from '../../utils/helpers';
 import { formatDateKhmer } from '../../utils/formatters';
 
 export default function Attendance() {
@@ -140,7 +141,7 @@ export default function Attendance() {
   const getClassOptions = () => {
     return allClasses.map(cls => ({
       value: cls.id || cls.classId || '',
-      label: cls.name || cls.className || `Grade ${cls.gradeLevel}`
+      label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
     }));
   };
 

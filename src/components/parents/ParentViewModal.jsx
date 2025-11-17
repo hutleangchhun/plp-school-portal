@@ -3,6 +3,7 @@ import Modal from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Badge from '../ui/Badge';
+import { formatClassIdentifier } from '../../utils/helpers';
 
 export default function ParentViewModal({ isOpen, onClose, parent }) {
   const { t } = useLanguage();
@@ -179,7 +180,9 @@ export default function ParentViewModal({ isOpen, onClose, parent }) {
                       {student.class && (
                         <>
                           {' • '}
-                          {t('class', 'Class')}: {student.class.name}
+                          {t('class', 'Class')}: {student.class?.gradeLevel
+                            ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
+                            : student.class.name}
                         </>
                       )}
                       {student.relationship && (

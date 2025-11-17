@@ -6,6 +6,7 @@
 import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import Table from '../../../components/ui/Table';
+import { formatClassIdentifier } from '../../../utils/helpers';
 
 /**
  * Preview component for Report 4
@@ -76,7 +77,9 @@ export const Report4Preview = ({ data, semester, startDate, endDate, onDateRange
     {
       key: 'class',
       header: t('class', 'ថ្នាក់'),
-      render: (student) => student.class?.name || student.className || ''
+      render: (student) => student.class?.gradeLevel
+        ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
+        : (student.class?.name || student.className || '')
     },
     {
       key: 'absent',
@@ -128,7 +131,9 @@ export const Report4Preview = ({ data, semester, startDate, endDate, onDateRange
     {
       key: 'class',
       header: t('class', 'ថ្នាក់រៀន'),
-      render: (student) => student.class?.name || student.className || ''
+      render: (student) => student.class?.gradeLevel
+        ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
+        : (student.class?.name || student.className || '')
     },
     {
       key: 'leave',

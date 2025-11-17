@@ -250,11 +250,108 @@ export const retryWithBackoff = async (fn, retries = 3, delay = 1000) => {
  */
 export const createSlug = (str) => {
   if (!str) return '';
-  
+
   return str
     .toLowerCase()
     .trim()
     .replace(/[^\w\s-]/g, '') // Remove special characters
     .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
     .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+};
+
+/**
+ * Format class identifier combining grade level and section
+ * @param {string|number} gradeLevel - Grade level
+ * @param {string} section - Class section (optional)
+ * @returns {string} Formatted identifier like "1-A" or "1"
+ */
+export const formatClassIdentifier = (gradeLevel, section) => {
+  if (!gradeLevel) return '';
+  return section ? `${gradeLevel}-${section}` : gradeLevel;
+};
+
+/**
+ * Check if student has a class assigned
+ * Handles both nested class object and flattened API fields
+ * @param {Object} student - Student data object
+ * @returns {boolean} True if student has a class assigned
+ */
+export const hasStudentClass = (student) => {
+  if (!student) return false;
+
+  // Check nested class object
+  if (student.class?.id || student.class?.classId || student.class?.name ||
+      student.class?.gradeLevel || student.class_grade_level) {
+    return true;
+  }
+
+  // Check flattened API fields
+  if (student.class_id || student.class_name || student.class_grade_level) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Get formatted class display string for a student's assigned class
+ * Handles both nested class object and flattened API fields
+ * @param {Object} student - Student data object
+ * @returns {string|null} Formatted class identifier or null if no class
+ */
+export const getStudentClassDisplay = (student) => {
+  if (!student) return null;
+
+  // Get gradeLevel from nested or flattened fields
+  const gradeLevel = student.class?.gradeLevel || student.gradeLevel || student.class_grade_level || student.grade_level;
+
+  // Get section from nested or flattened fields
+  const section = student.class?.section || student.section;
+
+  if (!gradeLevel) {
+    // Fallback to class name
+    return student.class?.name || student.class_name || null;
+  }
+
+  return formatClassIdentifier(gradeLevel, section);
+};
+
+/**
+ * Check if student has been assigned to a master class
+ * Master class is the main class a student is enrolled in
+ * @param {Object} student - Student data object
+ * @returns {boolean} True if student has a master class
+ */
+export const hasMasterClass = (student) => {
+  if (!student) return false;
+
+  // Check for master class data
+  if (student.masterclass_id || student.masterClassId ||
+      student.masterclass_name || student.masterClassName) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Get formatted master class display string for a student
+ * Master class is the main class a student is enrolled in
+ * @param {Object} student - Student data object
+ * @returns {string|null} Master class name or identifier, or null if not assigned
+ */
+export const getMasterClassDisplay = (student) => {
+  if (!student) return null;
+
+  // Return master class name if available
+  if (student.masterclass_name) {
+    return student.masterclass_name;
+  }
+
+  if (student.masterClassName) {
+    return student.masterClassName;
+  }
+
+  // If no master class assigned
+  return null;
 };

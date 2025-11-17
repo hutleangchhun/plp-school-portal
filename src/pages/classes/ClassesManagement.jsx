@@ -15,6 +15,7 @@ import { teacherService } from '../../utils/api/services/teacherService'; // Imp
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
 import { gradeLevelOptions } from '../../utils/formOptions';
+import { formatClassIdentifier } from '../../utils/helpers'; // Import class formatting utility
 import Dropdown from '@/components/ui/Dropdown';
 import { Button } from '../../components/ui/Button';
 import React from 'react'; // Added for useMemo
@@ -908,9 +909,7 @@ export default function ClassesManagement() {
                 }
 
                 // Combine grade level and section into a single subtitle part
-                const gradeAndSection = classItem.section
-                  ? `${t('class') || 'Class'} ${classItem.grade.replace('Grade ', '')}${classItem.section}`
-                  : `${t('class') || 'Class'} ${classItem.grade.replace('Grade ', '')}`;
+                const gradeAndSection = `${t('class') || 'Class'} ${formatClassIdentifier(classItem.grade.replace('Grade ', ''), classItem.section)}`;
 
                 return (
                   <ClassCard
@@ -1040,7 +1039,7 @@ export default function ClassesManagement() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('className') || 'Class Name'} *
+                  {t('className') || 'Class Name'}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1049,7 +1048,6 @@ export default function ClassesManagement() {
                   <input
                     type="text"
                     name="name"
-                    required
                     className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
                     value={formData.name}
                     onChange={handleInputChange}

@@ -795,13 +795,22 @@ export const studentService = {
       const user = student.user || student;
       const classInfo = student.class || {};
 
+      // Extract class information from either nested object or flattened fields
+      const classId = classInfo.classId || student.class_id;
+      const className = classInfo.name || student.class_name;
+      const classGradeLevel = classInfo.gradeLevel || student.class_grade_level;
+      const classSection = classInfo.section || student.section;
+      const classAcademicYear = classInfo.academicYear || student.class_academic_year;
+
       // Extract student number from the nested student object if available
       // Try multiple possible locations where studentNumber might be
       const studentNumber =
         student.student?.studentNumber ||      // Nested in student.student.studentNumber
         student.studentNumber ||                // Direct studentNumber field
+        student.student_number ||               // Flattened student_number field
         user.student?.studentNumber ||          // Nested in user.student.studentNumber
         student.studentId ||                    // Fallback to studentId
+        student.student_id ||                   // Flattened student_id
         student.id;                             // Last resort fallback
 
       // Debug logging for first student
@@ -809,18 +818,26 @@ export const studentService = {
         console.log('🔍 formatSchoolClassesStudentData debug:', {
           'student.student?.studentNumber': student.student?.studentNumber,
           'student.studentNumber': student.studentNumber,
+          'student.student_number': student.student_number,
           'user.student?.studentNumber': user.student?.studentNumber,
           'student.studentId': student.studentId,
           'resolved studentNumber': studentNumber,
+          classInfo: {
+            classId,
+            className,
+            classGradeLevel,
+            classSection,
+            classAcademicYear
+          },
           fullStudentObject: { ...student }
         });
         window.__studentFormatLogged = true;
       }
 
       return {
-        id: student.studentId,
-        userId: user.id,
-        studentId: student.studentId,
+        id: student.studentId || student.student_id,
+        userId: user.id || student.user_id,
+        studentId: student.studentId || student.student_id,
         studentNumber: studentNumber,
         name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown Student',
         firstName: user.first_name || '',
@@ -830,17 +847,19 @@ export const studentService = {
         gender: user.gender || '',
         dateOfBirth: user.date_of_birth || user.dateOfBirth,
         date_of_birth: user.date_of_birth || user.dateOfBirth,
-        academicYear: student.academicYear,
-        gradeLevel: student.gradeLevel,
+        academicYear: student.academicYear || student.academic_year,
+        gradeLevel: student.gradeLevel || student.grade_level,
         profilePicture: user.profile_picture || user.profilePicture,
         isActive: true, // Assume active since they're in classes
         username: user.username || '',
-        class: {
-          id: classInfo.classId,
-          name: classInfo.name,
-          gradeLevel: classInfo.gradeLevel,
-          academicYear: student.academicYear
-        },
+        class: classId ? {
+          id: classId,
+          classId: classId,
+          name: className,
+          gradeLevel: classGradeLevel,
+          section: classSection,
+          academicYear: classAcademicYear
+        } : null,
         averageScore: student.averageScore || 0,
         timeSpent: student.timeSpent || 0,
         scores: student.scores || [],
@@ -925,9 +944,11 @@ export const studentService = {
         username: student.username || user.username || '',
         class: {
           id: student.class_id || classInfo.classId || classInfo.id,
+          classId: student.class_id || classInfo.classId || classInfo.id,
           name: student.class_name || classInfo.name,
-          gradeLevel: student.grade_level || classInfo.gradeLevel,
-          academicYear: student.academic_year || classInfo.academicYear
+          gradeLevel: student.class_grade_level || student.grade_level || classInfo.gradeLevel,
+          section: student.section || classInfo.section,
+          academicYear: student.class_academic_year || student.academic_year || classInfo.academicYear
         },
         averageScore: student.averageScore || 0,
         timeSpent: student.timeSpent || 0,

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import Table from '../../../components/ui/Table';
+import { formatClassIdentifier } from '../../../utils/helpers';
 
 /**
  * Report 8 Preview Component - BMI Report
@@ -54,7 +55,9 @@ export function Report8Preview({ data }) {
     {
       key: 'class',
       header: t('class', 'ថ្នាក់'),
-      render: (student) => student.class?.name || ''
+      render: (student) => student.class?.gradeLevel
+        ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
+        : (student.class?.name || '')
     },
     {
       key: 'height',

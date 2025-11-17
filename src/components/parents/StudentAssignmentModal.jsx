@@ -9,6 +9,7 @@ import { userService } from '../../utils/api/services/userService';
 import { Badge } from '../ui/Badge';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import DynamicLoader from '../ui/DynamicLoader';
+import { formatClassIdentifier } from '../../utils/helpers';
 
 const StudentAssignmentModal = ({ isOpen, onClose, onSave, assignedStudents = [], parentName }) => {
   const { t } = useLanguage();
@@ -225,7 +226,9 @@ const StudentAssignmentModal = ({ isOpen, onClose, onSave, assignedStudents = []
                               {student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim()}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {student.studentId} • {student.class?.name || t('noClass', 'No class')}
+                              {student.studentId} • {student.class?.gradeLevel
+                                ? `${t('class') || 'Class'} ${formatClassIdentifier(student.class.gradeLevel, student.class.section)}`
+                                : (student.class?.name || t('noClass', 'No class'))}
                             </p>
                           </div>
                           {isAlreadyAssigned && (

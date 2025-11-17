@@ -15,6 +15,7 @@ import useSelectedStudents from '../../hooks/useSelectedStudents';
 import { Badge } from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
 import { exportStudentsToExcel } from '../../utils/studentExportUtils';
+import { formatClassIdentifier } from '../../utils/helpers';
 import StudentEditModal from '../../components/students/StudentEditModal';
 import StudentActionsModal from '../../components/students/StudentActionsModal';
 import StudentViewModal from '../../components/students/StudentViewModal';
@@ -188,7 +189,7 @@ export default function StudentsManagement() {
       { value: 'all', label: t('allClasses', 'ថ្នាក់ទាំងអស់') },
       ...allClasses.map(cls => ({
         value: String(cls.classId),
-        label: cls.name
+        label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
       }))
     ];
     return options;
@@ -846,7 +847,7 @@ export default function StudentsManagement() {
                 onValueChange={setTransferTargetClassId}
                 options={transferFilteredClasses.map(cls => ({
                   value: cls.classId.toString(),
-                  label: `${cls.name} - ${cls.academicYear}`
+                  label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)} - ${cls.academicYear}`
                 }))}
                 placeholder={transferLoadingClasses ? (t('loadingClasses') || 'Loading classes...') : (transferFilteredClasses.length === 0 ? t('noClassesAvailable', 'No classes available') : t('selectClass', 'Select a class'))}
                 minWidth="w-full"
@@ -1566,7 +1567,13 @@ export default function StudentsManagement() {
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (student) => (
-        <p>{student?.class?.name || student?.className || '-'}</p>
+        <p>
+          {student?.class?.gradeLevel || student?.gradeLevel ? (
+            `${t('class') || 'Class'} ${formatClassIdentifier(student?.class?.gradeLevel || student?.gradeLevel, student?.class?.section || student?.section)}`
+          ) : (
+            student?.className || '-'
+          )}
+        </p>
       )
     },
     {
@@ -1715,8 +1722,33 @@ export default function StudentsManagement() {
             </div>
           </div>
         </div>
-        <div className="flex items-center justify-between gap-2 flex-wrap sm:space-x-2 mb-4">
-          <div className='flex gap-2'>
+        {/* Search Bar and Filter Controls */}
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center mb-4">
+          {/* Search Input */}
+          <div className="flex-1 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-600" />
+            </div>
+            <input
+              type="text"
+              className="text-sm w-full pl-10 pr-8 py-2 border border-gray-200 rounded-lg leading-5 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
+              placeholder={t('searchStudents', 'Search students by name or username...')}
+              value={localSearchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
+            />
+            {localSearchTerm && (
+              <button
+                onClick={() => handleSearchChange('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                title={t('clearSearch', 'Clear search')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Buttons Group */}
+          <div className="flex gap-2 items-stretch sm:items-center">
             {/* Add Student Button */}
             <Button
               onClick={() => {
@@ -1734,15 +1766,15 @@ export default function StudentsManagement() {
               onClick={() => setShowMobileFilters(true)}
               variant="primary"
               size="sm"
-              className=" flex items-center justify-center sm:justify-start gap-2 shadow-lg"
+              className=" flex items-center justify-center sm:justify-start gap-2 shadow-lg whitespace-nowrap"
               title={t('filters', 'Filters & Actions')}
             >
               <Filter className="h-4 w-4" />
               <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
               <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
-              {(localSearchTerm || selectedGradeLevel !== 'all' || selectedClassId !== 'all') && (
+              {(selectedGradeLevel !== 'all' || selectedClassId !== 'all') && (
                 <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
-                  {(localSearchTerm ? 1 : 0) + (selectedGradeLevel !== 'all' ? 1 : 0) + (selectedClassId !== 'all' ? 1 : 0)}
+                  {(selectedGradeLevel !== 'all' ? 1 : 0) + (selectedClassId !== 'all' ? 1 : 0)}
                 </span>
               )}
             </Button>
@@ -1810,9 +1842,8 @@ export default function StudentsManagement() {
           onClose={() => setShowMobileFilters(false)}
           title={t('filters', 'Filters & Actions')}
           subtitle={t('manageStudentRecords', 'Manage your filters and actions')}
-          hasFilters={localSearchTerm || selectedGradeLevel !== 'all' || selectedClassId !== 'all'}
+          hasFilters={selectedGradeLevel !== 'all' || selectedClassId !== 'all'}
           onClearFilters={() => {
-            handleSearchChange('');
             setSelectedGradeLevel('all');
             setSelectedClassId('all');
             setPagination(prev => ({ ...prev, page: 1 }));
@@ -1820,32 +1851,6 @@ export default function StudentsManagement() {
           onApply={() => { }}
           children={
             <>
-              {/* Search Input */}
-              <div>
-                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('search', 'Search')}</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-4 w-4 text-blue-400" />
-                  </div>
-                  <input
-                    type="text"
-                    className="block w-full pl-10 pr-8 py-2.5 border border-gray-200 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm transition-colors"
-                    placeholder={t('searchStudents', 'Search students by name or username...')}
-                    value={localSearchTerm}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                  />
-                  {localSearchTerm && (
-                    <button
-                      onClick={() => handleSearchChange('')}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                      title={t('clearSearch', 'Clear search')}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
               {/* Grade Level Filter */}
               <div>
                 <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('selectGradeLevel', 'Grade Level')}</label>

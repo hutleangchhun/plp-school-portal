@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Download, Loader, CheckSquare, Square } from 'lucide-react';
+import { formatClassIdentifier } from '../../utils/helpers';
 
 function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef, t, selectedItems = [], onToggleSelection, onToggleAll, cardType = 'student' }) {
   // Color scheme based on card type
@@ -112,9 +113,9 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                   {qrCode.schoolName && (
                     <p className="text-xs text-gray-500">{t('school', 'School')}: {qrCode.schoolName}</p>
                   )}
-                  {qrCode.className && (
-                    <p className="text-xs text-gray-500">{t('class', 'Class')}: {qrCode.className}</p>
-                  )}
+                  {qrCode.class?.gradeLevel || qrCode.className ? (
+                    <p className="text-xs text-gray-500">{t('class', 'Class')}: {qrCode.class?.gradeLevel ? formatClassIdentifier(qrCode.class.gradeLevel, qrCode.class.section) : qrCode.className}</p>
+                  ) : null}
                   {qrCode.qrCode && (
                     <Button
                       onClick={() => downloadQRCode(qrCode, cardRefsRef.current[qrCode.userId], cardType)}
@@ -185,9 +186,9 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{qrCode.username}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{qrCode.schoolName || '-'}</td>
-                  {qrCodes[0]?.className && (
-                    <td className="px-4 py-3 text-sm text-gray-600">{qrCode.className || '-'}</td>
-                  )}
+                  {qrCodes[0]?.className || qrCodes[0]?.class?.gradeLevel ? (
+                    <td className="px-4 py-3 text-sm text-gray-600">{qrCode.class?.gradeLevel ? formatClassIdentifier(qrCode.class.gradeLevel, qrCode.class.section) : qrCode.className || '-'}</td>
+                  ) : null}
                   <td className="px-4 py-3 text-center">
                     {qrCode.qrCode ? (
                       <Button

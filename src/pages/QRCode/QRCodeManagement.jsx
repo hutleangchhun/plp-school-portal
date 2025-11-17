@@ -16,6 +16,7 @@ import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
 import { schoolService } from '../../utils/api/services/schoolService';
 import { teacherService } from '../../utils/api/services/teacherService';
+import { formatClassIdentifier } from '../../utils/helpers';
 import QRCodeDisplay from '@/components/qr-code/QRCodeDisplay';
 import { createQRCodeDownloadCard } from '@/components/qr-code/QRCodeDownloadCard';
 
@@ -161,7 +162,13 @@ export default function StudentQRCodeGenerator() {
                 email: enrichedStudent.email,
                 hasQrCode: !!userData.qr_code,
                 schoolName: schoolName,
-                className: student.class?.name || null
+                class: {
+                  classId: student.class?.id || student.class?.classId,
+                  name: student.class?.name || null,
+                  gradeLevel: student.class?.gradeLevel,
+                  section: student.class?.section
+                },
+                className: student.class?.name || null // Legacy field for backward compatibility
               });
             }
           } catch (err) {
@@ -301,7 +308,10 @@ export default function StudentQRCodeGenerator() {
     ...[1, 2, 3, 4, 5, 6].map((lvl) => ({ value: lvl, label: `ថ្នាក់ទី ${lvl}` }))
   ];
 
-  const getClassOptions = () => classes.map((c) => ({ value: c.id?.toString(), label: c.name }));
+  const getClassOptions = () => classes.map((c) => ({
+    value: c.id?.toString(),
+    label: c.id === 'all' ? c.name : `${t('class') || 'Class'} ${formatClassIdentifier(c.gradeLevel, c.section)}`
+  }));
 
   // Download entire card as image
   const downloadQRCode = async (qrCode, cardRef, passedCardType) => {

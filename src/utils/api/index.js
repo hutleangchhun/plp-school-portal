@@ -10,6 +10,7 @@ export { studentService } from './services/studentService.js';
 export { attendanceService } from './services/attendanceService.js';
 export { classService } from './services/classService.js';
 export { subjectService } from './services/subjectService.js';
+export { scoreService } from './services/scoreService.js';
 
 // Import services for convenience objects
 import { authService, authUtils } from './services/authService.js';
@@ -18,6 +19,7 @@ import { studentService } from './services/studentService.js';
 import { attendanceService } from './services/attendanceService.js';
 import { classService } from './services/classService.js';
 import { subjectService } from './services/subjectService.js';
+import { scoreService } from './services/scoreService.js';
 
 // Convenience exports for common operations
 export const api = {
@@ -26,7 +28,8 @@ export const api = {
   student: studentService,
   attendance: attendanceService,
   class: classService,
-  subject: subjectService
+  subject: subjectService,
+  score: scoreService
 };
 
 export const utils = {

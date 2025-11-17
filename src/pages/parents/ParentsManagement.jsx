@@ -17,6 +17,7 @@ import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import SelectedCard from '../../components/ui/SelectedCard';
+import { formatClassIdentifier } from '../../utils/helpers';
 
 
 export default function ParentsManagement() {
@@ -818,7 +819,7 @@ export default function ParentsManagement() {
                         { value: 'all', label: t('allClasses', 'All Classes') },
                         ...classes.map((cls) => ({
                           value: cls.id.toString(),
-                          label: cls.className || cls.name || `Grade ${cls.gradeLevel}`
+                          label: cls.gradeLevel ? `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}` : (cls.className || cls.name || `Grade ${cls.gradeLevel}`)
                         }))
                       ]}
                       placeholder={t('selectClass', 'Select class...')}

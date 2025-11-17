@@ -1,4 +1,5 @@
 import { translations } from '@/locales';
+import { formatClassIdentifier } from '@/utils/helpers';
 
 /**
  * QR Code Download Card Component
@@ -211,8 +212,11 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
   }
 
   // Add class info if available (students only)
-  if (cardType === 'student' && qrCode.className) {
-    detailsDiv.appendChild(createDetailItem(translate('class', 'Class'), qrCode.className));
+  if (cardType === 'student' && (qrCode.class?.gradeLevel || qrCode.className)) {
+    const classDisplay = qrCode.class?.gradeLevel
+      ? formatClassIdentifier(qrCode.class.gradeLevel, qrCode.class.section)
+      : qrCode.className;
+    detailsDiv.appendChild(createDetailItem(translate('class', 'Class'), classDisplay));
   }
 
   // Add ID number - full width

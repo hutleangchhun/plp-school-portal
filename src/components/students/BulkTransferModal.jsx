@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import Modal from '../ui/Modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/Badge';
+import { formatClassIdentifier } from '../../utils/helpers';
 
 const BulkTransferModal = ({
   isOpen,
@@ -75,7 +76,7 @@ const BulkTransferModal = ({
               {classes.map(cls => (
                 <SelectItem key={cls.classId} value={cls.classId.toString()}>
                   <div className="flex items-center justify-between w-full">
-                    <span>{cls.name}</span>
+                    <span>{t('class') || 'Class'} {formatClassIdentifier(cls.gradeLevel, cls.section)}</span>
                     <span className="text-xs text-gray-500 ml-2">{cls.academicYear}</span>
                   </div>
                 </SelectItem>
@@ -136,10 +137,12 @@ const BulkTransferModal = ({
                       </p>
 
                       {/* Current Class Badge */}
-                      {student.class?.name && (
+                      {student.class && (
                         <div className="mt-2">
                           <Badge variant="outline" size="sm" className="text-xs">
-                            {t('currentClass', 'Current')}: {student.class.name}
+                            {t('currentClass', 'Current')}: {student.class?.gradeLevel
+                              ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
+                              : student.class?.name}
                           </Badge>
                         </div>
                       )}
@@ -164,7 +167,10 @@ const BulkTransferModal = ({
                   {studentsArray.length} {studentsArray.length === 1 ? t('student', 'student') : t('students', 'students')} {' '}
                   {t('willBeTransferredTo', 'will be transferred to')}{' '}
                   <span className="font-semibold">
-                    {classes.find(c => c.classId.toString() === targetClassId)?.name}
+                    {t('class') || 'Class'} {(() => {
+                      const targetClass = classes.find(c => c.classId.toString() === targetClassId);
+                      return formatClassIdentifier(targetClass?.gradeLevel, targetClass?.section);
+                    })()}
                   </span>
                 </p>
               </div>

@@ -6,6 +6,7 @@ import { useLoading } from '../../contexts/LoadingContext';
 import { examHistoryService } from '../../utils/api/services/examHistoryService';
 import { classService, studentService } from '@/utils/api';
 import { encryptId } from '../../utils/encryption';
+import { formatClassIdentifier } from '../../utils/helpers';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -556,7 +557,7 @@ export default function DirectorExamRecords({ user }) {
                       onValueChange={(value) => setSelectedClass(value ? parseInt(value) : null)}
                       options={classes.map(cls => ({
                         value: (cls.classId || cls.id).toString(),
-                        label: cls.name || `${t('class', 'Class')} ${cls.gradeLevel || ''} ${cls.section || ''}`.trim()
+                        label: cls.gradeLevel ? `${t('class', 'Class')} ${formatClassIdentifier(cls.gradeLevel, cls.section)}` : (cls.name || `${t('class', 'Class')} ${cls.gradeLevel || ''} ${cls.section || ''}`.trim())
                       }))}
                       placeholder={t('chooseOption', 'ជ្រើសរើសជម្រើស')}
                       className='w-full'

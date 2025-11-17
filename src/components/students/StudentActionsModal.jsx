@@ -7,6 +7,7 @@ import ConfirmDialog from '../ui/ConfirmDialog';
 import SelectedCard from '../ui/SelectedCard';
 import Dropdown from '../ui/Dropdown';
 import classService from '../../utils/api/services/classService';
+import { formatClassIdentifier } from '../../utils/helpers';
 
 const StudentActionsModal = ({
   isOpen,
@@ -236,7 +237,7 @@ const StudentActionsModal = ({
                 onValueChange={setTargetClassId}
                 options={filteredClasses.map(cls => ({
                   value: cls.classId.toString(),
-                  label: `${cls.name} - ${cls.academicYear}`
+                  label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)} - ${cls.academicYear}`
                 }))}
                 placeholder={loadingClasses ? (t('loadingClasses') || 'Loading classes...') : (filteredClasses.length === 0 ? t('noClassesAvailable', 'No classes available') : t('selectTargetClass', 'Select Target Class'))}
                 minWidth="w-full"
@@ -258,7 +259,10 @@ const StudentActionsModal = ({
                       {studentsArray.length} {studentsArray.length === 1 ? t('student', 'student') : t('students', 'students')} {' '}
                       {t('willBeTransferredTo', 'will be transferred to')}{' '}
                       <span className="font-semibold">
-                        {classes.find(c => c.classId.toString() === targetClassId)?.name}
+                        {t('class') || 'Class'} {(() => {
+                          const targetClass = classes.find(c => c.classId.toString() === targetClassId);
+                          return formatClassIdentifier(targetClass?.gradeLevel, targetClass?.section);
+                        })()}
                       </span>
                     </p>
                   </div>
@@ -287,8 +291,11 @@ const StudentActionsModal = ({
             ) : (
               studentsArray.map(student => {
                 const displayName = student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Unknown';
-                const subtitle = student.class?.name
-                  ? `${student.username || student.email || 'N/A'} • ${student.class.name}`
+                const classDisplay = student.class?.gradeLevel
+                  ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
+                  : student.class?.name;
+                const subtitle = classDisplay
+                  ? `${student.username || student.email || 'N/A'} • ${classDisplay}`
                   : (student.username || student.email || 'N/A');
 
                 return (
