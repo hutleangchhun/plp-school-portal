@@ -58,12 +58,12 @@ export const accessibilityOptions = [
 
 // Grade Level options (with translation keys for i18n)
 export const gradeLevelOptions = [
-  { value: '1', label: 'ថ្នាក់ទី១', translationKey: 'grade1' },
-  { value: '2', label: 'ថ្នាក់ទី២', translationKey: 'grade2' },
-  { value: '3', label: 'ថ្នាក់ទី៣', translationKey: 'grade3' },
-  { value: '4', label: 'ថ្នាក់ទី៤', translationKey: 'grade4' },
-  { value: '5', label: 'ថ្នាក់ទី៥', translationKey: 'grade5' },
-  { value: '6', label: 'ថ្នាក់ទី៦', translationKey: 'grade6' }
+  { value: '1', label: 'ថ្នាក់ទី1', translationKey: 'grade1' },
+  { value: '2', label: 'ថ្នាក់ទី2', translationKey: 'grade2' },
+  { value: '3', label: 'ថ្នាក់ទី3', translationKey: 'grade3' },
+  { value: '4', label: 'ថ្នាក់ទី4', translationKey: 'grade4' },
+  { value: '5', label: 'ថ្នាក់ទី5', translationKey: 'grade5' },
+  { value: '6', label: 'ថ្នាក់ទី6', translationKey: 'grade6' }
 ];
 
 // Academic Year options (dynamically generated based on current year)
