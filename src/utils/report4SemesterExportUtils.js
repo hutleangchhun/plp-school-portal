@@ -4,6 +4,7 @@
  */
 
 import { formatDateKhmer } from './formatters';
+import { formatClassIdentifier } from './helpers';
 
 /**
  * Export Report 4 (Absence Report) for Semester to Excel with monthly summaries

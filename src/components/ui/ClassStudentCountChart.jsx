@@ -5,6 +5,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import classService from '../../utils/api/services/classService';
+import { formatClassIdentifier } from '../../utils/helpers';
 
 export default function ClassStudentCountChart({ schoolId, className = "" }) {
   const { t } = useLanguage();
@@ -40,7 +41,7 @@ export default function ClassStudentCountChart({ schoolId, className = "" }) {
             const studentCount = studentsResponse.data ? studentsResponse.data.length : 0;
 
             classesWithCounts.push({
-              className: classItem.name || `${t('gradeLevel', 'Grade Level')} ${classItem.gradeLevel}${classItem.section ? ` ${classItem.section}` : ''}`,
+              className: classItem.name || `${t('gradeLevel', 'Grade Level')} ${formatClassIdentifier(classItem.gradeLevel, classItem.section)}`,
               students: studentCount,
               classId: classItem.id,
               gradeLevel: classItem.gradeLevel
@@ -49,7 +50,7 @@ export default function ClassStudentCountChart({ schoolId, className = "" }) {
             console.warn(`Failed to get students for class ${classItem.id}:`, studentError);
             // Still include the class with 0 students
             classesWithCounts.push({
-              className: classItem.name || `${t('gradeLevel', 'Grade Level')} ${classItem.gradeLevel}${classItem.section ? ` ${classItem.section}` : ''}`,
+              className: classItem.name || `${t('gradeLevel', 'Grade Level')} ${formatClassIdentifier(classItem.gradeLevel, classItem.section)}`,
               students: 0,
               classId: classItem.id,
               gradeLevel: classItem.gradeLevel

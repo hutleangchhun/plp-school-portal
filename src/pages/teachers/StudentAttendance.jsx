@@ -12,6 +12,7 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import EmptyState from '@/components/ui/EmptyState';
 import AttendanceExport from '../../components/attendance/AttendanceExport';
+import { formatClassIdentifier } from '../../utils/helpers';
 
 export default function TeacherAttendance({ user }) {
   const { t } = useLanguage();
@@ -380,7 +381,7 @@ export default function TeacherAttendance({ user }) {
   // Class dropdown options
   const classDropdownOptions = classes.map(cls => ({
     value: String(cls.classId || cls.id),
-    label: cls.name
+    label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
   }));
 
   // Count students by status

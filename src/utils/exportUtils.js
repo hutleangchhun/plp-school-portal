@@ -4,6 +4,7 @@ import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import { userService } from './api/services/userService';
 import { formatDateKhmer } from './formatters';
+import { formatClassIdentifier } from './helpers';
 
 // Resolve a student's class id and name from various possible shapes
 const getStudentClassInfo = (student) => {
@@ -265,6 +266,11 @@ export const exportToExcel = (data, filename = 'students_data.xlsx', t = null, o
       const birthCommune = getLocationName(student, 'birth', 'commune');
       const birthVillage = getLocationName(student, 'birth', 'village');
 
+      // Format class display
+      const classDisplay = student.class?.gradeLevel
+        ? `${t ? t('class') : 'ថ្នាក់'} ${formatClassIdentifier(student.class.gradeLevel, student.class.section)}`
+        : (classInfo.name || (classInfo.id != null ? String(classInfo.id) : ''));
+
       return {
         [headers.firstName]: firstName || '',
         [headers.lastName]: lastName || '',
@@ -283,7 +289,7 @@ export const exportToExcel = (data, filename = 'students_data.xlsx', t = null, o
         [headers.birthDistrict]: birthDistrict || '',
         [headers.birthCommune]: birthCommune || '',
         [headers.birthVillage]: birthVillage || '',
-        [headers.class]: classInfo.name || (classInfo.id != null ? String(classInfo.id) : ''),
+        [headers.class]: classDisplay,
       };
     });
 
@@ -357,6 +363,11 @@ export const exportToCSV = (data, filename = 'students_data.csv', t = null, opti
       const firstName = student.firstName || student.first_name || '';
       const lastName = student.lastName || student.last_name || '';
 
+      // Format class display
+      const classDisplay = student.class?.gradeLevel
+        ? `${t ? t('class') : 'ថ្នាក់'} ${formatClassIdentifier(student.class.gradeLevel, student.class.section)}`
+        : (classInfo.name || (classInfo.id != null ? String(classInfo.id) : ''));
+
       return {
         [headers.firstName]: firstName || '',
         [headers.lastName]: lastName || '',
@@ -375,7 +386,7 @@ export const exportToCSV = (data, filename = 'students_data.csv', t = null, opti
         [headers.birthDistrict]: getLocationName(student, 'birth', 'district') || '',
         [headers.birthCommune]: getLocationName(student, 'birth', 'commune') || '',
         [headers.birthVillage]: getLocationName(student, 'birth', 'village') || '',
-        [headers.class]: classInfo.name || (classInfo.id != null ? String(classInfo.id) : ''),
+        [headers.class]: classDisplay,
       };
     });
 
@@ -476,7 +487,9 @@ export const exportToPDF = async (data, classInfo, filename = 'students_data.pdf
               const fullName = student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '';
               const phone = student.phone || '';
               const classObj = getStudentClassInfo(student);
-              const className = classObj.name || (classObj.id != null ? String(classObj.id) : '');
+              const className = student.class?.gradeLevel
+                ? `${t ? t('class') : 'ថ្នាក់'} ${formatClassIdentifier(student.class.gradeLevel, student.class.section)}`
+                : (classObj.name || (classObj.id != null ? String(classObj.id) : ''));
               const bgColor = index % 2 === 0 ? '#f9fafb' : 'white';
 
               return `
@@ -634,7 +647,12 @@ export const exportTeachersToExcel = async (data, filename = 'teachers_data.xlsx
     // Transform data to include all fields
     const transformedData = enrichedData.map(teacher => {
       const classesList = teacher.classes && teacher.classes.length > 0
-        ? teacher.classes.map(cls => cls.name || `${cls.gradeLevel || ''}${cls.section || ''}`).join(', ')
+        ? teacher.classes.map(cls => {
+            const classDisplay = cls.gradeLevel
+              ? `${t ? t('class') : 'ថ្នាក់'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
+              : (cls.name || '');
+            return classDisplay;
+          }).join(', ')
         : '';
 
       // Helper function to convert 'N/A' to blank
@@ -728,7 +746,12 @@ export const exportTeachersToCSV = async (data, filename = 'teachers_data.csv', 
     // Transform data to include all fields
     const transformedData = enrichedData.map(teacher => {
       const classesList = teacher.classes && teacher.classes.length > 0
-        ? teacher.classes.map(cls => cls.name || `${cls.gradeLevel || ''}${cls.section || ''}`).join(', ')
+        ? teacher.classes.map(cls => {
+            const classDisplay = cls.gradeLevel
+              ? `${t ? t('class') : 'ថ្នាក់'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
+              : (cls.name || '');
+            return classDisplay;
+          }).join(', ')
         : '';
 
       // Helper function to convert 'N/A' to blank
@@ -856,7 +879,12 @@ export const exportTeachersToPDF = async (data, filename = 'teachers_data.pdf', 
               const email = blankIfNA(teacher.email);
               const phone = blankIfNA(teacher.phone);
               const classesList = teacher.classes && teacher.classes.length > 0
-                ? teacher.classes.map(cls => cls.name || `${cls.gradeLevel || ''}${cls.section || ''}`).join(', ')
+                ? teacher.classes.map(cls => {
+                    const classDisplay = cls.gradeLevel
+                      ? `${t ? t('class') : 'ថ្នាក់'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
+                      : (cls.name || '');
+                    return classDisplay;
+                  }).join(', ')
                 : '';
               const status = teacher.status || teacher.isActive ? labels.active : labels.inactive;
               const bgColor = index % 2 === 0 ? '#f9fafb' : 'white';

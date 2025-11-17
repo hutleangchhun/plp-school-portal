@@ -126,7 +126,11 @@ export default function TeacherStudentsManagement({ user }) {
 
   // Load students when filters or page change
   useEffect(() => {
-    if (initialLoading || !schoolId) return;
+    // Only load if schoolId is available
+    // If selectedClassId is 'all', only load if we have classes loaded
+    // If selectedClassId is specific, we can load immediately
+    if (!schoolId) return;
+    if (selectedClassId === 'all' && classes.length === 0) return;
 
     let mounted = true;
 
@@ -134,31 +138,67 @@ export default function TeacherStudentsManagement({ user }) {
       try {
         setStudentsLoading(true);
 
-        const params = {
-          page: pagination.page,
-          limit: 10
-        };
+        let allStudents = [];
+        let totalCount = 0;
 
-        // Add search parameter if provided
-        if (searchInput.trim()) {
-          params.search = searchInput.trim();
+        // Determine if we're loading a specific class or all classes
+        const isSpecificClass = selectedClassId && selectedClassId !== 'all';
+        const isAllClasses = !selectedClassId || selectedClassId === 'all';
+
+        if (isSpecificClass) {
+          // Load students for a specific class
+          const params = {
+            page: pagination.page,
+            limit: 10,
+            classId: parseInt(selectedClassId)
+          };
+
+          // Add search parameter if provided
+          if (searchInput.trim()) {
+            params.search = searchInput.trim();
+          }
+
+          console.log('Loading students for specific class with params:', params);
+          const response = await studentService.getStudentsBySchoolClasses(schoolId, params);
+          console.log('Students response:', response);
+
+          if (mounted && response.success) {
+            allStudents = response.data || [];
+            totalCount = response.pagination?.total || 0;
+          }
+        } else if (isAllClasses && classes.length > 0) {
+          // Load students from all teacher's assigned classes
+          // Fetch all students from each teacher's class and combine them
+          const classPromises = classes.map(cls =>
+            studentService.getStudentsBySchoolClasses(schoolId, {
+              classId: cls.classId || cls.id,
+              search: searchInput.trim() || undefined,
+              limit: 1000 // Get all students from this class
+            })
+          );
+
+          const responses = await Promise.all(classPromises);
+          responses.forEach(response => {
+            if (response.success && response.data) {
+              allStudents.push(...response.data);
+              totalCount += response.pagination?.total || response.data.length;
+            }
+          });
+
+          // Apply pagination on combined results
+          const startIndex = (pagination.page - 1) * 10;
+          const paginatedStudents = allStudents.slice(startIndex, startIndex + 10);
+          allStudents = paginatedStudents;
+
+          console.log(`Loaded ${allStudents.length} students from ${classes.length} teacher classes`);
         }
 
-        // Only add classId filter if a specific class is selected (not 'all')
-        if (selectedClassId && selectedClassId !== 'all') {
-          params.classId = parseInt(selectedClassId);
-        }
-
-        console.log('Loading students with params:', params);
-        const response = await studentService.getStudentsBySchoolClasses(schoolId, params);
-        console.log('Students response:', response);
-
-        if (mounted && response.success) {
-          setStudents(response.data || []);
+        if (mounted) {
+          setStudents(allStudents);
           setPagination(prev => ({
             ...prev,
-            total: response.pagination?.total || 0,
-            pages: response.pagination?.pages || 1
+            total: totalCount,
+            pages: Math.ceil(totalCount / 10)
           }));
         }
       } catch (error) {
@@ -176,7 +216,7 @@ export default function TeacherStudentsManagement({ user }) {
     return () => {
       mounted = false;
     };
-  }, [initialLoading, schoolId, selectedClassId, searchInput, pagination.page, showError, t]);
+  }, [schoolId, selectedClassId, searchInput, pagination.page, classes, showError, t]);
 
   // Handlers
   const handleSearchChange = (value) => {

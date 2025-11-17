@@ -4,6 +4,7 @@
  */
 
 import * as XLSX from 'xlsx-js-style';
+import { formatClassIdentifier } from './helpers';
 
 /**
  * Report 1: Student Name List (បញ្ជីហៅឈ្មោះសិស្ស)
@@ -145,7 +146,10 @@ export const transformStudentByClassReport = (rawData) => {
   if (!Array.isArray(rawData)) return [];
 
   const grouped = rawData.reduce((acc, student) => {
-    const className = student.class?.name || 'Unknown';
+    // Format class display using formatClassIdentifier if gradeLevel available
+    const className = student.class?.gradeLevel
+      ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
+      : (student.class?.name || 'Unknown');
     if (!acc[className]) {
       acc[className] = [];
     }
@@ -156,7 +160,7 @@ export const transformStudentByClassReport = (rawData) => {
   // Flatten the grouped data into a single array for Excel export
   const result = [];
   let globalIndex = 1;
-  
+
   Object.entries(grouped).forEach(([className, students]) => {
     students.forEach((s) => {
       result.push({
@@ -239,7 +243,9 @@ export const transformStudentAbsenceReport = (rawData) => {
         khmerName: khmerName,
         englishName: student.englishName || student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
         gender: gender,
-        class: student.class?.name || student.class?.className || '',
+        class: student.class?.gradeLevel
+          ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
+          : (student.class?.name || student.class?.className || ''),
         totalAbsences: absences.length,
         totalLeave: leaves.length,
         totalAbsenceAndLeave: totalAbsenceAndLeave,

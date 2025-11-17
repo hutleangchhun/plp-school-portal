@@ -4,6 +4,7 @@
  */
 
 import { formatDateKhmer, getKhmerDayShorthand, isWeekend } from './formatters';
+import { formatClassIdentifier } from './helpers';
 
 /**
  * Export Report 4 (Absence Report) to Excel with calendar format
