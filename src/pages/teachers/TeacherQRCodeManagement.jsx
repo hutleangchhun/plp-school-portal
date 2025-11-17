@@ -13,6 +13,7 @@ import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import { classService } from '../../utils/api/services/classService';
 import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
+import { formatClassIdentifier } from '../../utils/helpers';
 import { createQRCodeDownloadCard } from '../../components/qr-code/QRCodeDownloadCard';
 
 export default function TeacherQRCodeManagement({ user }) {
@@ -160,7 +161,13 @@ export default function TeacherQRCodeManagement({ user }) {
                   email: enrichedStudent.email,
                   hasQrCode: !!userData.qr_code,
                   schoolName: schoolName,
-                  className: student.class?.name || null
+                  class: {
+                    classId: student.class?.id || student.class?.classId,
+                    name: student.class?.name || null,
+                    gradeLevel: student.class?.gradeLevel,
+                    section: student.class?.section
+                  },
+                  className: student.class?.name || null // Legacy field for backward compatibility
                 });
               }
             } catch (err) {
@@ -250,7 +257,7 @@ export default function TeacherQRCodeManagement({ user }) {
   // Get class options for dropdown
   const classOptions = classes.map(cls => ({
     value: String(cls.id || cls.classId),
-    label: cls.name
+    label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
   }));
 
   if (loading) {

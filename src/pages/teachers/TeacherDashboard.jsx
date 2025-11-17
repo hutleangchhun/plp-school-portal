@@ -22,6 +22,7 @@ import Badge from '../../components/ui/Badge';
 import Dropdown from '../../components/ui/Dropdown';
 import { Bar, BarChart, XAxis, YAxis, LabelList } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { formatClassIdentifier } from '../../utils/helpers';
 
 export default function TeacherDashboard({ user }) {
   const { t } = useLanguage();
@@ -360,7 +361,7 @@ export default function TeacherDashboard({ user }) {
                     onValueChange={setSelectedClassId}
                     options={classes.map(cls => ({
                       value: String(cls.id || cls.classId),
-                      label: cls.name
+                      label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
                     }))}
                     placeholder={t('selectClass', 'Select class...')}
                     minWidth="w-full"
@@ -513,7 +514,7 @@ export default function TeacherDashboard({ user }) {
                             variant="filled"
                             size="sm"
                           >
-                            {cls.name || t('untitledClass', 'Untitled Class')}
+                            {`${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`}
                           </Badge>
                         ))}
                       </div>

@@ -39,7 +39,7 @@ export const routePermissions = {
     component: 'ParentsManagement'
   },
   '/attendance': {
-    allowedRoles: [ROLES.DIRECTOR],
+    allowedRoles: [ROLES.DIRECTOR, ROLES.TEACHER],
     component: 'Attendance'
   },
   '/teacher-attendance': {

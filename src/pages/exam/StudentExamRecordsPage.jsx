@@ -403,7 +403,7 @@ export default function StudentExamRecordsPage({ user }) {
           <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
             {t('examRecords', 'Exam Records')}
           </h1>
-          <p className="text-sm text-gray-600 mt-2">{studentName}</p>
+          <p className="text-base font-medium text-gray-600 mt-2">{t('studentName', 'Student Name')}: {studentName}</p>
         </div>
       </div>
     </div>

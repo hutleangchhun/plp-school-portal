@@ -14,6 +14,7 @@ import { attendanceService } from '../../utils/api/services/attendanceService';
 import { parentService } from '../../utils/api/services/parentService';
 import { bmiService } from '../../utils/api/services/bmiService';
 import { Button } from '@/components/ui/Button';
+import { formatClassIdentifier } from '../../utils/helpers';
 // Modular report components
 import { useReport1Data, Report1Preview } from '../reports/report1/indexReport1';
 import { useReport4Data, Report4Preview, exportReport4ToExcel } from '../reports/report4/indexReport4';
@@ -163,7 +164,7 @@ export default function Reports() {
   const getClassOptions = () => {
     return teacherClasses.map(cls => ({
       value: (cls.id || cls.classId).toString(),
-      label: cls.name || `Class ${cls.id || cls.classId}`
+      label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
     }));
   };
 

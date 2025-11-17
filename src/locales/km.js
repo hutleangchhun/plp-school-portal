@@ -484,6 +484,7 @@ export const km = {
   incorrect: 'មិនត្រឹមត្រូវ',
   skipped: 'រំលង',
   total: 'សរុប',
+  studentName: 'ឈ្មោះសិស្ស',
 
   // UI Components & Actions
   actions: 'សកម្មភាព',

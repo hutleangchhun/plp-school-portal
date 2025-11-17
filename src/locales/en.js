@@ -875,6 +875,7 @@ export const en = {
   QRCodeManangement: 'QR Code Management',
   // exam record
   examRecords: 'Exam Records',
+  studentName: 'Student Name',
 
   // QR Code Card - Translations
   studentIdentification: 'Student Identification',
