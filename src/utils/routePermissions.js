@@ -71,7 +71,7 @@ export const routePermissions = {
     component: 'AttendanceApprovalPage'
   },
   '/exam-records': {
-    allowedRoles: [],
+    allowedRoles: [ROLES.DIRECTOR],
     component: 'DirectorExamRecords'
   },
   '/exam-records/:userId': {
@@ -79,7 +79,7 @@ export const routePermissions = {
     component: 'StudentExamRecordsPage'
   },
   '/my-students-exams': {
-    allowedRoles: [],
+    allowedRoles: [ROLES.TEACHER],
     component: 'TeacherExamRecords'
   },
   '/reports': {
