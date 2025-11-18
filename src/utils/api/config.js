@@ -165,6 +165,10 @@ const ENDPOINTS = {
     BASE: '/bmi',
     BY_USER: (userId) => `/users/${userId}/bmi-history`,
   },
+  DASHBOARD: {
+    BASE: '/dashboard',
+    SCHOOL_BMI: (schoolId) => `/dashboard/school/${schoolId}/bmi`,
+  },
 };
 
 // HTTP Status codes for consistent error handling

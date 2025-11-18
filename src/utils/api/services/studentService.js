@@ -813,27 +813,6 @@ export const studentService = {
         student.student_id ||                   // Flattened student_id
         student.id;                             // Last resort fallback
 
-      // Debug logging for first student
-      if (!window.__studentFormatLogged) {
-        console.log('🔍 formatSchoolClassesStudentData debug:', {
-          'student.student?.studentNumber': student.student?.studentNumber,
-          'student.studentNumber': student.studentNumber,
-          'student.student_number': student.student_number,
-          'user.student?.studentNumber': user.student?.studentNumber,
-          'student.studentId': student.studentId,
-          'resolved studentNumber': studentNumber,
-          classInfo: {
-            classId,
-            className,
-            classGradeLevel,
-            classSection,
-            classAcademicYear
-          },
-          fullStudentObject: { ...student }
-        });
-        window.__studentFormatLogged = true;
-      }
-
       return {
         id: student.studentId || student.student_id,
         userId: user.id || student.user_id,
@@ -873,6 +852,11 @@ export const studentService = {
         weight_kg: user.weight_kg,
         height_cm: user.height_cm,
         bmi: user.bmi,
+        // Demographics information
+        ethnic_group: student.ethnic_group || user.ethnic_group,
+        ethnicGroup: student.ethnicGroup || student.ethnic_group || user.ethnicGroup || user.ethnic_group,
+        accessibility: student.accessibility || user.accessibility,
+        specialNeeds: student.special_needs || student.specialNeeds || user.special_needs || user.specialNeeds,
         // QR Code data from nested user object
         qrCode: user.qr_code || null,
         qrToken: user.qr_token || null,

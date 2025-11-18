@@ -1,0 +1,190 @@
+import { useState, useEffect, useMemo } from 'react';
+import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
+import { Activity } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useLoading } from '../../contexts/LoadingContext';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../../components/ui/chart';
+import { dashboardService } from '../../utils/api/services/dashboardService';
+import { useStableCallback } from '../../utils/reactOptimization';
+
+export default function BMIPieChart({ schoolId, className = "" }) {
+  const { t } = useLanguage();
+  const { startLoading, stopLoading } = useLoading();
+  const [bmiCategoryData, setBmiCategoryData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [totalStudents, setTotalStudents] = useState(0);
+
+  // BMI Category Colors - Distinct and vibrant
+  // Uses Khmer keys to match bmiService.utils.getBmiCategory() output
+  const BMI_COLORS = useMemo(() => ({
+    'ធាត់': '#dc2626', // Dark Red - Obese
+    'លើសទម្ងន់': '#ea580c', // Deep Orange - Overweight
+    'ធម្មតា': '#16a34a', // Forest Green - Normal (Healthy)
+    'ស្គម': '#0369a1', // Deep Sky Blue - Underweight
+    'មិនបានកំណត់': '#6b7280' // Dark Gray - Unknown
+  }), []);
+
+  // BMI Category Labels in Khmer and English
+  const getBMICategoryLabel = (category) => {
+    const labels = {
+      'ធាត់': 'Obese / ធាត់',
+      'លើសទម្ងន់': 'Overweight / លើសទម្ងន់',
+      'ធម្មតា': 'Normal / ធម្មតា',
+      'ស្គម': 'Underweight / ស្គម',
+      'មិនបានកំណត់': 'Unknown / មិនបានកំណត់'
+    };
+    return labels[category] || category;
+  };
+
+  const fetchBMIData = useStableCallback(async () => {
+    if (!schoolId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      startLoading('fetchBMIData', t('loadingBMIData', 'Loading BMI data...'));
+
+      // Get current academic year (e.g., "2024-2025")
+      const currentYear = new Date().getFullYear();
+      const academicYear = `${currentYear}-${currentYear + 1}`;
+
+      // Fetch BMI distribution from dashboard API endpoint
+      const response = await dashboardService.getBMIDistribution(schoolId, {
+        academicYear: academicYear
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch BMI data');
+      }
+
+      const chartData = response.data;
+      const summary = response.summary;
+
+      console.log(`✅ Fetched BMI data for ${summary.totalStudents} students`);
+      console.log(`📊 Students with BMI data: ${summary.studentsWithBMIData}`);
+      console.log('✅ BMI Category Distribution:', chartData);
+
+      // Add display names to chart data
+      const chartDataWithLabels = chartData.map(item => ({
+        ...item,
+        displayName: getBMICategoryLabel(item.name)
+      }));
+
+      setTotalStudents(summary.totalStudents || 0);
+      setBmiCategoryData(chartDataWithLabels);
+    } catch (err) {
+      console.error('Failed to fetch BMI data:', err);
+      setError(err.message);
+    } finally {
+      stopLoading('fetchBMIData');
+      setLoading(false);
+    }
+  }, [schoolId]);
+
+  useEffect(() => {
+    fetchBMIData();
+  }, [schoolId]);
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="flex items-center justify-center h-80">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">{t('loadingChartData', 'Loading chart data...')}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="text-red-600 text-center">
+          <p>{t('error', 'Error')}: {error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (bmiCategoryData.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="text-gray-600 text-center">
+          <p>{t('noData', 'No data available')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
+      {/* Header with Icon and Title */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-purple-600">
+          <Activity className="h-5 w-5 text-white" />
+        </div>
+        <div className="grid gap-1">
+          <h3 className="text-md font-bold text-gray-900">
+            {t('studentBMIDistribution', 'Student BMI Distribution')}
+          </h3>
+          <p className="text-sm text-gray-500">
+            {t('bmiCategoryBreakdown', `Health status of ${totalStudents} students`)}
+          </p>
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div className="flex flex-col items-center justify-center">
+        <ChartContainer
+          config={{
+            value: {
+              label: t('students', 'Students')
+            },
+          }}
+          className="w-full h-[350px]"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={bmiCategoryData}
+                cx="50%"
+                cy="50%"
+                labelLine={true}
+                label={({ displayName, percentage }) => `${displayName} ${percentage}%`}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {bmiCategoryData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={BMI_COLORS[entry.name] || '#9ca3af'}
+                  />
+                ))}
+              </Pie>
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    formatter={(value) => [value, t('students', 'Students')]}
+                  />
+                }
+              />
+              <Legend
+                verticalAlign="bottom"
+                height={36}
+                formatter={(value) => `${value}`}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </div>
+    </div>
+  );
+}

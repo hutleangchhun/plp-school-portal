@@ -1,6 +1,7 @@
 import { User, Edit, Edit2, Building2, Users, BookOpen, Award, Shield, Briefcase } from 'lucide-react';
 import SchoolOverviewChart from '../../components/ui/SchoolOverviewChart';
 import StudentDemographicsChart from '../../components/ui/StudentDemographicsChart';
+import BMIPieChart from '../../components/ui/BMIPieChart';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -184,12 +185,14 @@ export default function Dashboard({ user: initialUser }) {
       stopLoading('fetchUserData');
       setInitialLoading(false);
     }
-  }, [authUser?.id, t, handleError, clearError]);
+  }, [authUser?.id]);
 
-  // Initial data fetch
+  // Initial data fetch - only run once when component mounts or authUser.id changes
   useEffect(() => {
-    fetchUserData();
-  }, [fetchUserData]);
+    if (authUser?.id) {
+      fetchUserData();
+    }
+  }, [authUser?.id]);
 
   // Profile picture URL is handled by ProfileImage component
 
@@ -347,21 +350,19 @@ export default function Dashboard({ user: initialUser }) {
             />
           </div>
            */}
-          {/* Student Demographics Charts - 2 columns on mobile, 2 columns on desktop */}
+          {/* Student Demographics Charts - Combined into single component to avoid duplicate API calls */}
           <div className="">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {/* Ethnic Groups Demographics */}
-              <StudentDemographicsChart
-                schoolId={user?.teacher?.schoolId || user?.school_id || user?.school?.id || user?.teacher?.school?.id || '76525'}
-                defaultTab="ethnic"
-              />
+            <StudentDemographicsChart
+              schoolId={user?.teacher?.schoolId || user?.school_id || user?.school?.id || user?.teacher?.school?.id || '76525'}
+              showBothTabs={true}
+            />
+          </div>
 
-              {/* Accessibility Needs Demographics */}
-              <StudentDemographicsChart
-                schoolId={user?.teacher?.schoolId || user?.school_id || user?.school?.id || user?.teacher?.school?.id || '76525'}
-                defaultTab="accessibility"
-              />
-            </div>
+          {/* BMI Distribution Pie Chart */}
+          <div className="">
+            <BMIPieChart
+              schoolId={user?.teacher?.schoolId || user?.school_id || user?.school?.id || user?.teacher?.school?.id || '76525'}
+            />
           </div>
         </FadeInSection>
 

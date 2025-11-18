@@ -734,7 +734,7 @@ const StudentEditModal = ({
               <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
                 <div>
                   <label htmlFor="studentNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('studentNumber', 'Student Number')} *
+                    {t('studentNumber', 'Student Number')}
                   </label>
                   <input
                     type="text"
@@ -743,7 +743,6 @@ const StudentEditModal = ({
                     onChange={(e) => handleFormChange('studentNumber', e.target.value)}
                     className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                     placeholder={t('enterStudentNumber', 'Enter student number')}
-                    required
                   />
                 </div>
                 <div>
