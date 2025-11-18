@@ -43,6 +43,9 @@ export const km = {
   bulkStudentImport: 'នាំចូលសិស្សច្រើន',
   logout: 'ចាកចេញ',
   manageParentRecords: 'គ្រប់គ្រងទិន្នន័យអាណាព្យាបាល',
+  loadingBMIData: 'កំពុងទាញយកទិន្នន័យក្នុងការប្រើប្រាស់',
+  studentBMIDistribution: 'ការបែងចែកប្រភេទBMIក្នុងសាលារៀន',
+  bmiCategoryBreakdown: 'ក្រាបប្រភេទBMI',
   
   // Profile
   profileInformation: 'ព័ត៌មានផ្ទាល់ខ្លួន',

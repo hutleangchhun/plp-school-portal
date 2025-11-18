@@ -22,17 +22,19 @@ export default function BMIPieChart({ schoolId, className = "" }) {
     'លើសទម្ងន់': '#ea580c', // Deep Orange - Overweight
     'ធម្មតា': '#16a34a', // Forest Green - Normal (Healthy)
     'ស្គម': '#0369a1', // Deep Sky Blue - Underweight
+    'ស្គមខ្លាំង': '#4D179A', // Dark Gray - Unknown
     'មិនបានកំណត់': '#6b7280' // Dark Gray - Unknown
   }), []);
 
   // BMI Category Labels in Khmer and English
   const getBMICategoryLabel = (category) => {
     const labels = {
-      'ធាត់': 'Obese / ធាត់',
-      'លើសទម្ងន់': 'Overweight / លើសទម្ងន់',
-      'ធម្មតា': 'Normal / ធម្មតា',
-      'ស្គម': 'Underweight / ស្គម',
-      'មិនបានកំណត់': 'Unknown / មិនបានកំណត់'
+      'ធាត់': 'ធាត់',
+      'លើសទម្ងន់': 'លើសទម្ងន់',
+      'ធម្មតា': 'ធម្មតា',
+      'ស្គម': 'ស្គម',
+      'ស្គមខ្លាំង': 'ស្គមខ្លាំង',
+      'មិនបានកំណត់': 'មិនបានកំណត់'
     };
     return labels[category] || category;
   };
@@ -63,6 +65,7 @@ export default function BMIPieChart({ schoolId, className = "" }) {
       }
 
       const chartData = response.data;
+      console.log('chartData', chartData);
       const summary = response.summary;
 
       console.log(`✅ Fetched BMI data for ${summary.totalStudents} students`);
@@ -135,7 +138,7 @@ export default function BMIPieChart({ schoolId, className = "" }) {
             {t('studentBMIDistribution', 'Student BMI Distribution')}
           </h3>
           <p className="text-sm text-gray-500">
-            {t('bmiCategoryBreakdown', `Health status of ${totalStudents} students`)}
+            {t('bmiCategoryBreakdown', `BMI Category Breakdown`)}
           </p>
         </div>
       </div>

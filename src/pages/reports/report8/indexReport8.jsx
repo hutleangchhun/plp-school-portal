@@ -62,18 +62,77 @@ export function Report8Preview({ data }) {
     {
       key: 'height',
       header: t('height', 'កម្ពស់ (cm)'),
-      render: (student) => student.height ? `${student.height} cm` : ''
+      render: (student) => {
+        const height = student.height_cm || student.height;
+        return height ? `${parseFloat(height).toFixed(1)} cm` : '';
+      }
     },
     {
       key: 'weight',
       header: t('weight', 'ទម្ងន់ (kg)'),
-      render: (student) => student.weight ? `${student.weight} kg` : ''
+      render: (student) => {
+        const weight = student.weight_kg || student.weight;
+        return weight ? `${parseFloat(weight).toFixed(2)} kg` : '';
+      }
     },
     {
       key: 'bmi',
       header: t('bmi', 'BMI'),
       render: (student) => student.bmi && typeof student.bmi === 'number' ? student.bmi.toFixed(1) : '',
       cellClassName: 'font-medium'
+    },
+    {
+      key: 'bmiStatus',
+      header: t('bmiStatus', 'ស្ថានភាព BMI'),
+      render: (student) => {
+        // Determine status based on sd_grade
+        let status = 'unknown';
+        let categoryKhmer = 'មិនបានកំណត់';
+
+        if (student.sd_grade && typeof student.sd_grade.grade === 'number') {
+          const currentGrade = student.sd_grade.grade;
+
+          if (currentGrade <= -3) {
+            status = 'thinness_grade_3';
+            categoryKhmer = 'ស្គមខ្លាំង';
+          } else if (currentGrade === -2) {
+            status = 'thinness_grade_2';
+            categoryKhmer = 'ស្គម';
+          } else if (currentGrade === -1 || currentGrade === 0 || currentGrade === 1) {
+            status = 'normal';
+            categoryKhmer = 'ទម្ងន់ធម្មតា';
+          } else if (currentGrade === 2) {
+            status = 'overweight';
+            categoryKhmer = 'លើសទម្ងន់';
+          } else if (currentGrade >= 3) {
+            status = 'obesity';
+            categoryKhmer = 'ធាត់';
+          }
+        }
+
+        const statusColor = {
+          'thinness_grade_3': 'bg-purple-100 text-purple-800',
+          'thinness_grade_2': 'bg-blue-100 text-blue-800',
+          'normal': 'bg-green-100 text-green-800',
+          'overweight': 'bg-yellow-100 text-yellow-800',
+          'obesity': 'bg-red-100 text-red-800'
+        };
+
+        return (
+          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${statusColor[status] || 'bg-gray-100 text-gray-800'}`}>
+            {categoryKhmer}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'sdGrade',
+      header: t('sdGrade', 'មាត្រដ្ឋាន'),
+      render: (student) => {
+        if (!student.sd_grade) return '';
+        const { grade, bmiAtGrade } = student.sd_grade;
+        return `${grade}SD`;
+      }
     },
     {
       key: 'age',
@@ -96,40 +155,28 @@ export function Report8Preview({ data }) {
       accessor: 'ageInMonths'
     },
     {
-      key: 'bmiCategory',
-      header: t('bmiCategory', 'ប្រភេទ BMI'),
-      render: (student) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-          student.bmiCategory === 'ធម្មតា' ? 'bg-green-100 text-green-800' :
-          student.bmiCategory === 'ស្គម' ? 'bg-blue-100 text-blue-800' :
-          student.bmiCategory === 'លើសទម្ងន់' ? 'bg-yellow-100 text-yellow-800' :
-          student.bmiCategory === 'ធាត់' ? 'bg-red-100 text-red-800' :
-          'bg-gray-100 text-gray-800'
-        }`}>
-          {student.bmiCategory || 'មិនបានកំណត់'}
-        </span>
-      )
-    },
-    {
       key: 'recordDate',
       header: t('recordDate', 'កាលបរិច្ឆេទកត់ត្រា'),
-      render: (student) => student.recordDate ? new Date(student.recordDate).toLocaleDateString('km-KH') : ''
+      render: (student) => {
+        const dateField = student.recorded_at || student.recordDate;
+        return dateField ? new Date(dateField).toLocaleDateString('km-KH') : '';
+      }
     }
   ];
 
   // Calculate BMI statistics
-  const bmiStats = data.reduce((acc, student) => {
-    if (student.bmi && typeof student.bmi === 'number' && !isNaN(student.bmi)) {
+  const bmiStats = data.reduce((acc, record) => {
+    if (record.bmi && typeof record.bmi === 'number' && !isNaN(record.bmi)) {
       acc.totalWithBmi++;
-      acc.totalBmi += student.bmi;
-      
+      acc.totalBmi += record.bmi;
+
       // Count by category
-      const category = student.bmiCategory || 'មិនបានកំណត់';
+      const category = record.bmi_category || 'Undefined';
       acc.categories[category] = (acc.categories[category] || 0) + 1;
-      
+
       // Track min/max
-      if (student.bmi < acc.minBmi) acc.minBmi = student.bmi;
-      if (student.bmi > acc.maxBmi) acc.maxBmi = student.bmi;
+      if (record.bmi < acc.minBmi) acc.minBmi = record.bmi;
+      if (record.bmi > acc.maxBmi) acc.maxBmi = record.bmi;
     } else {
       acc.noData++;
     }

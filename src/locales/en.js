@@ -161,6 +161,8 @@ export const en = {
   location: 'Location',
   availableSeats: 'Available Seat',
   totalTeachers: 'Total Teachers',
+  studentBMIDistribution: 'Student BMI Distribution',
+  bmiCategoryBreakdown: 'BMI Category Breakdown',
 
 
     // Student Management

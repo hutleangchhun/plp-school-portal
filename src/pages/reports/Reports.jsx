@@ -543,7 +543,16 @@ export default function Reports() {
                   ageInMonths: ageInMonths,
                   recordDate: bmiData?.recorded_at || bmiData?.createdAt || bmiData?.created_at || null,
                   academicYear: selectedYear || basicStudent.academicYear,
-                  gradeLevel: basicStudent.gradeLevel || basicStudent.class?.gradeLevel
+                  gradeLevel: basicStudent.gradeLevel || basicStudent.class?.gradeLevel,
+
+                  // Additional BMI fields from API
+                  height_cm: bmiData?.height_cm || null,
+                  weight_kg: bmiData?.weight_kg || null,
+                  bmi_status: bmiData?.bmi_status || null,
+                  bmi_category: bmiData?.bmi_category || null,
+                  sd_grade: bmiData?.sd_grade || null,
+                  z_score: bmiData?.z_score || null,
+                  recorded_at: bmiData?.recorded_at || null
                 };
               } catch (error) {
                 console.warn(`❌ Failed to fetch BMI data for student:`, error);
@@ -583,7 +592,16 @@ export default function Reports() {
                   ageInYears: null,
                   ageInYearsAndMonths: '',
                   ageInMonths: null,
-                  recordDate: null
+                  recordDate: null,
+
+                  // Additional BMI fields from API (null when fetch fails)
+                  height_cm: null,
+                  weight_kg: null,
+                  bmi_status: null,
+                  bmi_category: null,
+                  sd_grade: null,
+                  z_score: null,
+                  recorded_at: null
                 };
               }
             })

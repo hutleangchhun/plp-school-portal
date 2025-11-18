@@ -169,9 +169,6 @@ export const dashboardService = {
           params: queryParams
         })
       );
-
-      console.log('📊 School BMI API response:', response);
-
       if (!response || !response.success) {
         throw new Error(response?.error || 'Failed to fetch school BMI data');
       }
@@ -180,13 +177,13 @@ export const dashboardService = {
 
       // Map API bmiDistribution to Khmer category names
       const bmiCategoryCount = {
-        'ស្គម': data.bmiDistribution?.underweight || 0, // Underweight
+        'ស្គមខ្លាំង': data.bmiDistribution?.severeThinness || 0, // Underweight
+        'ស្គម': data.bmiDistribution?.thinness || 0, // Underweight
         'ធម្មតា': data.bmiDistribution?.normal || 0, // Normal
         'លើសទម្ងន់': data.bmiDistribution?.overweight || 0, // Overweight
-        'ធាត់': data.bmiDistribution?.obese || 0, // Obese
+        'ធាត់': data.bmiDistribution?.obesity || 0, // Obese
         'មិនបានកំណត់': (data.totalStudents || 0) - (data.studentsWithBMIData || 0) // Unknown
       };
-
       const totalWithBMI = data.studentsWithBMIData || 0;
 
       // Transform to chart format
@@ -198,10 +195,6 @@ export const dashboardService = {
           percentage: totalWithBMI > 0 ? ((count / totalWithBMI) * 100).toFixed(1) : 0
         }))
         .sort((a, b) => b.value - a.value);
-
-      console.log('📊 BMI Distribution formatted:', chartData);
-      console.log(`📊 Total students: ${data.totalStudents}, With BMI: ${totalWithBMI}, Average BMI: ${data.averageBMI}`);
-
       return {
         success: true,
         data: chartData,
