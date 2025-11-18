@@ -344,11 +344,12 @@ const TeacherEditModal = ({
         // Call user service to create new teacher
         const response = await userService.createTeacher(createPayload);
 
-        if (response && response.data) {
+        // Response is already unwrapped by axios interceptor, so response is the data itself
+        if (response) {
           showSuccess(t('teacherCreatedSuccess', 'Teacher created successfully'));
           handleClose();
           if (onTeacherUpdated) {
-            onTeacherUpdated(response.data);
+            onTeacherUpdated(response);
           }
         } else {
           throw new Error('Failed to create teacher');
