@@ -530,7 +530,7 @@ const StudentEditModal = ({
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div>
                 <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('firstName', 'First Name')}
+                  {t('firstName', 'First Name')} *
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -550,7 +550,7 @@ const StudentEditModal = ({
 
               <div>
                 <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('lastName', 'Last Name')}
+                  {t('lastName', 'Last Name')} *
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -570,7 +570,7 @@ const StudentEditModal = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('gender', 'Gender')}
+                  {t('gender', 'Gender')} *
                 </label>
                 <Dropdown
                   options={[
@@ -584,23 +584,25 @@ const StudentEditModal = ({
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={false}
                   className='w-full'
+                  required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('dateOfBirth', 'Date of Birth')}
+                  {t('dateOfBirth', 'Date of Birth')} *
                 </label>
                 <DatePickerWithDropdowns
                   value={editForm.dateOfBirth}
                   onChange={(date) => handleFormChange('dateOfBirth', date)}
-                  placeholder={t('pickDate', 'Pick a date')}
+                  placeholder={t('pickDate', 'Pick a date')} 
+                  required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('nationality', 'Nationality')}
+                  {t('nationality', 'Nationality')} *
                 </label>
                 <Dropdown
                   options={[
@@ -629,6 +631,7 @@ const StudentEditModal = ({
                   contentClassName="max-h-[200px] overflow-y-auto"
                   disabled={false}
                   className='w-full'
+                  required
                 />
               </div>
             </div>
@@ -731,7 +734,7 @@ const StudentEditModal = ({
               <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
                 <div>
                   <label htmlFor="studentNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('studentNumber', 'Student Number')}
+                    {t('studentNumber', 'Student Number')} *
                   </label>
                   <input
                     type="text"
@@ -740,11 +743,12 @@ const StudentEditModal = ({
                     onChange={(e) => handleFormChange('studentNumber', e.target.value)}
                     className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                     placeholder={t('enterStudentNumber', 'Enter student number')}
+                    required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('academicYear', 'Academic Year')}
+                    {t('academicYear', 'Academic Year')} *
                   </label>
                   <Dropdown
                     options={getAcademicYearOptions()}
@@ -754,12 +758,13 @@ const StudentEditModal = ({
                     contentClassName="max-h-[200px] overflow-y-auto"
                     disabled={false}
                     className='w-full'
+                    required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <BookOpen className="inline w-4 h-4 mr-2" />
-                    {t('gradeLevel', 'Grade Level')}
+                    {t('gradeLevel', 'Grade Level')} *
                   </label>
                   <Dropdown
                     options={[
@@ -775,6 +780,7 @@ const StudentEditModal = ({
                     contentClassName="max-h-[200px] overflow-y-auto"
                     disabled={false}
                     className='w-full'
+                    required
                   />
                 </div>
                 <div className="flex items-end">
@@ -803,7 +809,7 @@ const StudentEditModal = ({
             <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('username', 'Username')}
+                  {t('username', 'Username')} *
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

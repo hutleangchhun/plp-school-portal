@@ -92,7 +92,7 @@ export const km = {
   enterWeight: 'ទម្ងន់ (គីឡូក្រាម)',
   enterHeight: 'បញ្ចូលកម្ពស់ (សង់ទីម៉ែត្រ)',
   height: 'កម្ពស់',
-  ethnicGroup: 'ក្រុមជនជាតិភាគតិច',
+  ethnicGroup: 'ជនជាតិ',
   accessibility: 'លក្ខណ:ពិសេស',
   selectEmploymentType: 'ជ្រើសរើសប្រភេទការងារ',
   employmentType: 'ប្រភេទការងារ',
@@ -235,6 +235,8 @@ export const km = {
   deselectedAllStudents: 'បានលុបការជ្រើសរើសសិស្សទាំងអស់',
   deselectedAllTeachers: 'បានលុបការជ្រើសរើសគ្រូទាំងអស់',
     manageTeacherRecords: 'គ្រប់គ្រងទិន្នន័យគ្រូ',
+    createTeacher: 'បន្ថែមគ្រូ',
+    
 
   // Parent Management
   parents: 'អាណាព្យាបាល',

@@ -202,6 +202,7 @@ export const en = {
   teachersManagement: 'Teachers Management',
   teachers: 'Teachers',
   manageTeacherRecords: 'Manage teacher records for your school',
+  createTeacher: 'Create Teacher',
 
   // Parent Management
   parents: 'Parents',
