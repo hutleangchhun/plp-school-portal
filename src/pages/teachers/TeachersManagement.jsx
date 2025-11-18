@@ -104,6 +104,8 @@ export default function TeachersManagement() {
   const [selectingAll, setSelectingAll] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
+  const [modalMode, setModalMode] = useState('edit'); // 'edit' or 'create'
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
   const searchTimeoutRef = useRef(null);
@@ -675,10 +677,18 @@ export default function TeachersManagement() {
     setShowViewModal(true);
   };
 
+  // Handle add teacher button click
+  const handleAddTeacherClick = () => {
+    setEditingTeacher(null);
+    setModalMode('create');
+    setShowAddTeacherModal(true);
+  };
+
   // Handle edit teacher
   const handleEditTeacher = (teacher) => {
     console.log('Edit button clicked for teacher:', teacher);
     setEditingTeacher(teacher);
+    setModalMode('edit');
     setShowEditModal(true);
   };
 
@@ -686,6 +696,7 @@ export default function TeachersManagement() {
   const handleTeacherUpdated = (updatedTeacher) => {
     console.log('Teacher updated successfully:', updatedTeacher);
     setShowEditModal(false);
+    setShowAddTeacherModal(false);
     setEditingTeacher(null);
     // Refresh the teacher list
     setTimeout(async () => {
@@ -878,7 +889,45 @@ export default function TeachersManagement() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Search Bar - Outside of Sidebar */}
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center mb-4">
+          <div className="flex-1 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-blue-400" />
+            </div>
+            <input
+              type="text"
+              className="block w-full pl-10 pr-8 py-2.5 border border-gray-200 rounded-lg leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm transition-colors"
+              placeholder={t('searchTeachers', 'Search by name or username...')}
+              value={localSearchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
+            />
+            {localSearchTerm && (
+              <button
+                onClick={() => handleSearchChange('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                title={t('clearSearch', 'Clear search')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-2 flex-wrap sm:space-x-2">
+            {/* Add Teacher Button */}
+            <Button
+              onClick={handleAddTeacherClick}
+              variant="success"
+              size="sm"
+              className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 shadow-lg"
+              title={t('addTeacher', 'Add Teacher')}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="sm:hidden">{t('addTeacher', 'Add Teacher')}</span>
+              <span className="hidden sm:inline">{t('addTeacher', 'Add Teacher')}</span>
+            </Button>
+
             {/* Disabled: View Selected Teachers Button */}
             {/* {selectedTeachers.length > 0 && (
               <Button
@@ -928,32 +977,6 @@ export default function TeachersManagement() {
           onApply={() => {}}
           children={
             <>
-              {/* Search Input */}
-              <div>
-                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('search', 'Search')}</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-4 w-4 text-blue-400" />
-                  </div>
-                  <input
-                    type="text"
-                    className="block w-full pl-10 pr-8 py-2.5 border border-gray-200 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm transition-colors"
-                    placeholder={t('searchTeachers', 'Search by name or username...')}
-                    value={localSearchTerm}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                  />
-                  {localSearchTerm && (
-                    <button
-                      onClick={() => handleSearchChange('')}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                      title={t('clearSearch', 'Clear search')}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
               {/* Grade Level Filter */}
               <div>
                 <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('selectGrade', 'Grade Level')}</label>
@@ -1111,6 +1134,19 @@ export default function TeachersManagement() {
         teacher={viewingTeacher}
       />
 
+      {/* Add Teacher Modal */}
+      <TeacherEditModal
+        isOpen={showAddTeacherModal}
+        onClose={() => {
+          setShowAddTeacherModal(false);
+          setEditingTeacher(null);
+        }}
+        teacher={null}
+        onTeacherUpdated={handleTeacherUpdated}
+        mode="create"
+        schoolId={schoolId}
+      />
+
       {/* Edit Teacher Modal */}
       <TeacherEditModal
         isOpen={showEditModal}
@@ -1120,6 +1156,7 @@ export default function TeachersManagement() {
         }}
         teacher={editingTeacher}
         onTeacherUpdated={handleTeacherUpdated}
+        mode="edit"
       />
 
       {/* Disabled: Selected Teachers Modal */}

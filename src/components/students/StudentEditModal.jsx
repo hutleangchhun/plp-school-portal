@@ -24,6 +24,7 @@ const StudentEditModal = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -829,14 +830,22 @@ const StudentEditModal = ({
                     <Lock className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     id="newPassword"
                     value={editForm.newPassword}
                     onChange={(e) => handleFormChange('newPassword', e.target.value)}
-                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    className="mt-1 block w-full pl-10 pr-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
                     placeholder={t('enterNewPassword')}
                     autoComplete="new-password"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                    tabIndex="-1"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
 

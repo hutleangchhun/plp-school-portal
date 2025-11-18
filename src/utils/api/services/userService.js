@@ -423,11 +423,72 @@ const userService = {
       limit: limit.toString(),
       roleId: roleId.toString()
     });
-    
+
     const url = `${ENDPOINTS.USERS.PUBLIC_SCHOOL_USERS(schoolId)}?${queryParams}`;
     console.log('🌐 Loading users from:', url);
-    
+
     return get(url);
+  },
+
+  /**
+   * Create a new teacher user
+   * @param {Object} teacherData - Teacher data to create
+   * @returns {Promise<Object>} Created teacher data
+   */
+  createTeacher: async (teacherData) => {
+    // Helper function to convert location object IDs to numbers while preserving other fields
+    const convertLocationIds = (location) => {
+      if (!location || typeof location !== 'object') return undefined;
+
+      const converted = {};
+      // Convert numeric IDs
+      if (location.provinceId) converted.provinceId = parseInt(location.provinceId);
+      if (location.districtId) converted.districtId = parseInt(location.districtId);
+      if (location.communeId) converted.communeId = parseInt(location.communeId);
+      if (location.villageId) converted.villageId = parseInt(location.villageId);
+      // Preserve other fields like fullAddress
+      if (location.fullAddress) converted.fullAddress = location.fullAddress;
+
+      return Object.keys(converted).length > 0 ? converted : undefined;
+    };
+
+    // Build payload for teacher creation
+    const payload = {
+      username: teacherData.username?.trim(),
+      first_name: teacherData.first_name || teacherData.firstName,
+      last_name: teacherData.last_name || teacherData.lastName,
+      email: teacherData.email?.trim(),
+      password: teacherData.password?.trim(),
+      roleId: teacherData.roleId || 8, // Default to teacher role
+      date_of_birth: teacherData.date_of_birth || teacherData.dateOfBirth,
+      gender: teacherData.gender,
+      phone: teacherData.phone?.trim(),
+      nationality: teacherData.nationality?.trim(),
+      ethnic_group: teacherData.ethnic_group || teacherData.ethnicGroup?.trim(),
+      hire_date: teacherData.hire_date || teacherData.hireDate,
+      employment_type: teacherData.employment_type || teacherData.employmentType,
+      weight_kg: teacherData.weight_kg || (teacherData.weight ? parseFloat(teacherData.weight) : undefined),
+      height_cm: teacherData.height_cm || (teacherData.height ? parseFloat(teacherData.height) : undefined),
+      bmi: teacherData.bmi ? parseFloat(teacherData.bmi) : undefined,
+      profile_picture: teacherData.profile_picture || teacherData.profilePicture,
+      accessibility: teacherData.accessibility && Array.isArray(teacherData.accessibility) && teacherData.accessibility.length > 0 ? teacherData.accessibility : undefined,
+      gradeLevel: teacherData.gradeLevel || teacherData.grade_level,
+      schoolId: teacherData.schoolId,
+      // Include location fields with numeric IDs
+      residence: convertLocationIds(teacherData.residence),
+      placeOfBirth: convertLocationIds(teacherData.placeOfBirth),
+    };
+
+    // Remove undefined/null values to avoid sending empty fields
+    Object.keys(payload).forEach(key => {
+      if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
+        delete payload[key];
+      }
+    });
+
+    console.log('Creating teacher with payload:', payload);
+
+    return post(ENDPOINTS.USERS.CREATE_USER, payload);
   }
 };
 

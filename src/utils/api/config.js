@@ -58,6 +58,7 @@ const ENDPOINTS = {
     UPDATE_USER: (userId) => `/users/${userId}`,
     GENERATE_QR_CODE: '/users/generate-qr-code',
     PUBLIC_SCHOOL_USERS: (schoolId) => `/users/public/school/${schoolId}`,
+    CREATE_USER: '/users',
   },
   SCHOOLS: {
     BASE: '/schools',

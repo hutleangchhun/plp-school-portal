@@ -16,7 +16,9 @@ const TeacherEditModal = ({
   isOpen,
   onClose,
   teacher,
-  onTeacherUpdated
+  onTeacherUpdated,
+  mode = 'edit', // 'edit' or 'create'
+  schoolId = null // School ID for create mode
 }) => {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
@@ -25,6 +27,7 @@ const TeacherEditModal = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -38,7 +41,8 @@ const TeacherEditModal = ({
     dateOfBirth: null,
     nationality: '',
     profilePicture: '',
-    newPassword: '',
+    password: '', // Password for create mode
+    newPassword: '', // Password change for edit mode
     weight: '',
     height: '',
     bmi: '',
@@ -221,6 +225,7 @@ const TeacherEditModal = ({
       dateOfBirth: null,
       nationality: '',
       profilePicture: '',
+      password: '',
       newPassword: '',
       weight: '',
       height: '',
@@ -273,17 +278,9 @@ const TeacherEditModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!teacher) return;
 
     try {
       setLoading(true);
-
-      // Get teacher ID (primary identifier for teacher endpoint)
-      const teacherId = teacher.id || teacher.teacherId || teacher.teacher_id;
-
-      if (!teacherId) {
-        throw new Error('Teacher ID is required to update teacher information');
-      }
 
       // Normalize date to YYYY-MM-DD
       const formatDate = (val) => {
@@ -295,74 +292,136 @@ const TeacherEditModal = ({
         return `${y}-${m}-${day}`;
       };
 
-      // Backend expects snake_case keys for PUT /users/{userId} endpoint
-      // This matches the actual working endpoint from the network logs
-      const payload = {
-        username: editForm.username?.trim(),
-        first_name: editForm.firstName?.trim(),
-        last_name: editForm.lastName?.trim(),
-        email: editForm.email?.trim(),
-        phone: editForm.phone?.trim(),
-        date_of_birth: formatDate(editForm.dateOfBirth),
-        gender: editForm.gender || undefined,
-        nationality: editForm.nationality?.trim() || undefined,
-        profile_picture: editForm.profilePicture || undefined,
-        weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
-        height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
-        bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
-        ethnic_group: editForm.ethnicGroup?.trim() || undefined,
-        gradeLevel: editForm.gradeLevel || undefined,
-        accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
-        employment_type: editForm.employment_type || undefined,
-        teacher_number: editForm.teacher_number || undefined,
-        hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
-        residence: {
-          provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
-          districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
-          communeId: selectedResidenceCommune || editForm.residence.communeId || undefined,
-          villageId: selectedResidenceVillage || editForm.residence.villageId || undefined,
-        },
-        placeOfBirth: {
-          provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId || undefined,
-          districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId || undefined,
-          communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
-          villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
+      if (mode === 'create') {
+        // CREATE MODE: Create a new teacher
+        if (!editForm.username || !editForm.firstName || !editForm.lastName || !editForm.password) {
+          throw new Error('Username, First Name, Last Name, and Password are required');
         }
-      };
 
-      // Add password if provided
-      if (editForm.newPassword && editForm.newPassword.trim()) {
-        payload.newPassword = editForm.newPassword.trim();
-      }
+        const createPayload = {
+          username: editForm.username.trim(),
+          first_name: editForm.firstName.trim(),
+          last_name: editForm.lastName.trim(),
+          email: editForm.email?.trim() || undefined,
+          phone: editForm.phone?.trim() || undefined,
+          password: editForm.password.trim(),
+          roleId: 8, // Teacher role
+          date_of_birth: formatDate(editForm.dateOfBirth),
+          gender: editForm.gender || undefined,
+          nationality: editForm.nationality?.trim() || undefined,
+          profile_picture: editForm.profilePicture || undefined,
+          weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
+          height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
+          bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
+          ethnic_group: editForm.ethnicGroup?.trim() || undefined,
+          gradeLevel: editForm.gradeLevel || undefined,
+          accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
+          employment_type: editForm.employment_type || undefined,
+          teacher_number: editForm.teacher_number || undefined,
+          hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
+          schoolId: schoolId || undefined,
+          residence: {
+            provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
+            districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
+            communeId: selectedResidenceCommune || editForm.residence.communeId || undefined,
+            villageId: selectedResidenceVillage || editForm.residence.villageId || undefined,
+          },
+          placeOfBirth: {
+            provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId || undefined,
+            districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId || undefined,
+            communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
+            villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
+          }
+        };
 
-      // Remove undefined/empty values
-      Object.keys(payload).forEach(k => {
-        if (payload[k] === undefined || payload[k] === null || payload[k] === '') delete payload[k];
-      });
+        // Remove undefined/empty values
+        Object.keys(createPayload).forEach(k => {
+          if (createPayload[k] === undefined || createPayload[k] === null || createPayload[k] === '') delete createPayload[k];
+        });
 
-      // Get user ID (from teacher.userId or teacher.user_id)
-      const userId = teacher.userId || teacher.user_id || teacher.id;
-      if (!userId) {
-        throw new Error('User ID is required to update teacher information');
-      }
+        console.log('Creating teacher with payload:', createPayload);
 
-      // Use user service with PUT /users/{userId} endpoint (the actual working endpoint)
-      const response = await userService.updateUser(userId, payload);
+        // Call user service to create new teacher
+        const response = await userService.createTeacher(createPayload);
 
-      // userService.updateUser returns the updated data directly (wrapped by handleApiResponse)
-      if (response) {
-        showSuccess(t('teacherUpdatedSuccess', 'Teacher updated successfully'));
-        handleClose();
-        if (onTeacherUpdated) {
-          // Pass the response data which contains the updated user information
-          onTeacherUpdated(response);
+        if (response && response.data) {
+          showSuccess(t('teacherCreatedSuccess', 'Teacher created successfully'));
+          handleClose();
+          if (onTeacherUpdated) {
+            onTeacherUpdated(response.data);
+          }
+        } else {
+          throw new Error('Failed to create teacher');
         }
       } else {
-        throw new Error('Failed to update teacher');
+        // EDIT MODE: Update existing teacher
+        if (!teacher) return;
+
+        const userId = teacher.userId || teacher.user_id || teacher.id;
+        if (!userId) {
+          throw new Error('User ID is required to update teacher information');
+        }
+
+        const updatePayload = {
+          username: editForm.username?.trim(),
+          first_name: editForm.firstName?.trim(),
+          last_name: editForm.lastName?.trim(),
+          email: editForm.email?.trim(),
+          phone: editForm.phone?.trim(),
+          date_of_birth: formatDate(editForm.dateOfBirth),
+          gender: editForm.gender || undefined,
+          nationality: editForm.nationality?.trim() || undefined,
+          profile_picture: editForm.profilePicture || undefined,
+          weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
+          height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
+          bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
+          ethnic_group: editForm.ethnicGroup?.trim() || undefined,
+          gradeLevel: editForm.gradeLevel || undefined,
+          accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
+          employment_type: editForm.employment_type || undefined,
+          teacher_number: editForm.teacher_number || undefined,
+          hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
+          residence: {
+            provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
+            districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
+            communeId: selectedResidenceCommune || editForm.residence.communeId || undefined,
+            villageId: selectedResidenceVillage || editForm.residence.villageId || undefined,
+          },
+          placeOfBirth: {
+            provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId || undefined,
+            districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId || undefined,
+            communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
+            villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
+          }
+        };
+
+        // Add password if provided
+        if (editForm.newPassword && editForm.newPassword.trim()) {
+          updatePayload.newPassword = editForm.newPassword.trim();
+        }
+
+        // Remove undefined/empty values
+        Object.keys(updatePayload).forEach(k => {
+          if (updatePayload[k] === undefined || updatePayload[k] === null || updatePayload[k] === '') delete updatePayload[k];
+        });
+
+        // Use user service with PUT /users/{userId} endpoint
+        const response = await userService.updateUser(userId, updatePayload);
+
+        if (response) {
+          showSuccess(t('teacherUpdatedSuccess', 'Teacher updated successfully'));
+          handleClose();
+          if (onTeacherUpdated) {
+            onTeacherUpdated(response);
+          }
+        } else {
+          throw new Error('Failed to update teacher');
+        }
       }
     } catch (error) {
-      console.error('Error updating teacher:', error);
-      showError(t('failedUpdateTeacher', 'Failed to update teacher: ') + (error.message || 'Unknown error'));
+      console.error('Error submitting teacher form:', error);
+      const errorMsg = mode === 'create' ? 'failedCreateTeacher' : 'failedUpdateTeacher';
+      showError(t(errorMsg, `Failed to ${mode === 'create' ? 'create' : 'update'} teacher: `) + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -373,7 +432,7 @@ const TeacherEditModal = ({
       <Modal
         isOpen={isOpen}
         onClose={handleClose}
-        title={t('editTeacher', 'Edit Teacher')}
+        title={mode === 'create' ? t('addTeacher', 'Add Teacher') : t('editTeacher', 'Edit Teacher')}
         size="full"
         height='2xl'
         stickyFooter={true}
@@ -394,7 +453,7 @@ const TeacherEditModal = ({
               disabled={loading}
               className="min-w-[120px]"
             >
-              {loading ? t('updating', 'Updating...') : t('updateTeacher', 'Update Teacher')}
+              {loading ? (mode === 'create' ? t('creating', 'Creating...') : t('updating', 'Updating...')) : (mode === 'create' ? t('createTeacher', 'Create Teacher') : t('updateTeacher', 'Update Teacher'))}
             </Button>
           </div>
         }
@@ -784,22 +843,32 @@ const TeacherEditModal = ({
               </div>
 
               <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('newPassword', 'New Password')}
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  {mode === 'create' ? t('password', 'Password') : t('newPassword', 'New Password')}
+                  {mode === 'create' && <span className="text-red-500">*</span>}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Lock className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
-                    type="password"
-                    id="newPassword"
-                    value={editForm.newPassword}
-                    onChange={(e) => handleFormChange('newPassword', e.target.value)}
-                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                    placeholder={t('enterNewPassword')}
-                    autoComplete="new-password"
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    value={mode === 'create' ? editForm.password : editForm.newPassword}
+                    onChange={(e) => handleFormChange(mode === 'create' ? 'password' : 'newPassword', e.target.value)}
+                    className="mt-1 block w-full pl-10 pr-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    placeholder={mode === 'create' ? t('enterPassword', 'Enter password') : t('enterNewPassword', 'Enter new password (leave empty to keep current)')}
+                    autoComplete={mode === 'create' ? 'new-password' : 'new-password'}
+                    required={mode === 'create'}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                    tabIndex="-1"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
 
