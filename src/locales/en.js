@@ -876,6 +876,17 @@ export const en = {
   // exam record
   examRecords: 'Exam Records',
   studentName: 'Student Name',
+  khmer: 'Khmer',
+  math: 'Math',
+  science: 'Science',
+  ethics: 'Ethics-Civic Studies',
+  sport: 'Sport',
+  health: 'Health - Hygiene',
+  life_skills: 'Life Skills Education',
+  foreign_lang: 'Foreign Languages',
+  totalScore: 'Total Score',
+  average: 'Average',
+  grading: 'Grade',
 
   // QR Code Card - Translations
   studentIdentification: 'Student Identification',

@@ -486,6 +486,30 @@ export const km = {
   total: 'សរុប',
   studentName: 'ឈ្មោះសិស្ស',
 
+  // exam record
+  examRecords: 'កំណត់ត្រាការប្រលង',
+  studentName: 'ឈ្មោះសិស្ស',
+  khmer: 'ខ្មែរ',
+  math: 'គណិតវិទ្យា',
+  science: 'វិទ្យាសាស្ត្រ',
+  ethics: 'សីលធម៌-ពលរដ្ឋវិជ្ជា',
+  sport: 'អប់រំកាយ-កីឡា',
+  health: 'សុខភាព-អនាម័យ',
+  life_skills: 'អប់រំបំណិនជីវិត',
+  foreign_lang: 'ភាសាបរទេស',
+  listening: 'ការស្ដាប់',
+  writing: 'ការសរសេរ',
+  reading: 'ការអាន',
+  speaking: 'ការនិយាយ',
+  number: 'ចំនួន',
+  geometry: 'ធរណីមាត្រ',
+  statistics: 'ស្តិតិ',
+  totalScore: 'ពិន្ទុសរុប',
+  average: 'មធ្យមភាគ',
+  grading: 'ចំណាត់ថ្នាក់',
+
+
+
   // UI Components & Actions
   actions: 'សកម្មភាព',
   addAchievement: 'បន្ថែមសមិទ្ធិផល',
@@ -1397,5 +1421,7 @@ export const km = {
   teacherIdentification: 'អត្តលេខគ្រូបង្រៀន',
   idNumber: 'លេខសម្គាល់',
   generatedOn: 'បង្កើតថ្ងៃ',
+
+
 
 };

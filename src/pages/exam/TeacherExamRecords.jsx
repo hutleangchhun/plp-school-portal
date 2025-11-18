@@ -90,7 +90,8 @@ export default function TeacherExamRecords({ user }) {
   // State for Score Input Tab
   const [activeTab, setActiveTab] = useState('records'); // 'records' or 'scores'
   const [classStudents, setClassStudents] = useState([]);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-12
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState(new Date().getFullYear().toString());
   const [scoreData, setScoreData] = useState({}); // { studentId: { subjectKey: { skillName: score } } }
   const [savingScores, setSavingScores] = useState(false);
 
@@ -306,33 +307,65 @@ export default function TeacherExamRecords({ user }) {
    * Accepts float values with max of 10
    */
   const handleScoreChange = useCallback((studentId, subjectKey, skill, value) => {
-    // Allow empty value or float numbers 0-10
-    let numValue = value;
-
-    if (value !== '') {
-      const parsed = parseFloat(value);
-      // Only update if it's a valid number
-      if (!isNaN(parsed)) {
-        // Clamp to 0-10 range
-        numValue = Math.min(Math.max(parsed, 0), 10);
-        // Keep only up to 2 decimal places for floats
-        numValue = Math.round(numValue * 100) / 100;
-      } else {
-        // If invalid, keep previous value or empty
-        return;
-      }
+    // Allow typing freely, but validate and clamp on complete numbers
+    if (value === '' || value === '.') {
+      // Allow empty or just decimal point
+      setScoreData(prev => ({
+        ...prev,
+        [studentId]: {
+          ...prev[studentId],
+          [subjectKey]: {
+            ...prev[studentId]?.[subjectKey],
+            [skill]: value
+          }
+        }
+      }));
+      return;
     }
 
-    setScoreData(prev => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        [subjectKey]: {
-          ...prev[studentId]?.[subjectKey],
-          [skill]: numValue
-        }
+    const parsed = parseFloat(value);
+
+    // If it's a valid number, clamp to 0-10
+    if (!isNaN(parsed)) {
+      // Don't clamp while still typing (ends with .)
+      if (value.endsWith('.')) {
+        setScoreData(prev => ({
+          ...prev,
+          [studentId]: {
+            ...prev[studentId],
+            [subjectKey]: {
+              ...prev[studentId]?.[subjectKey],
+              [skill]: value
+            }
+          }
+        }));
+      } else {
+        // Complete number - apply max limit of 10
+        const clampedValue = Math.min(parsed, 10);
+        setScoreData(prev => ({
+          ...prev,
+          [studentId]: {
+            ...prev[studentId],
+            [subjectKey]: {
+              ...prev[studentId]?.[subjectKey],
+              [skill]: clampedValue
+            }
+          }
+        }));
       }
-    }));
+    } else {
+      // Invalid number, store as-is for partial typing
+      setScoreData(prev => ({
+        ...prev,
+        [studentId]: {
+          ...prev[studentId],
+          [subjectKey]: {
+            ...prev[studentId]?.[subjectKey],
+            [skill]: value
+          }
+        }
+      }));
+    }
   }, []);
 
   /**
@@ -343,15 +376,29 @@ export default function TeacherExamRecords({ user }) {
     classStudents.forEach((student, rowIndex) => {
       const studentId = student.studentId || student.id;
       Object.entries(SUBJECT_SKILLS).forEach(([subjectKey, subject]) => {
-        subject.skills.forEach((skill, skillIndex) => {
+        const hasSubheader = ['khmer', 'math'].includes(subjectKey);
+        if (hasSubheader) {
+          // For subjects with subheaders, add each skill separately
+          subject.skills.forEach((skill, skillIndex) => {
+            cells.push({
+              rowIndex,
+              studentId,
+              subjectKey,
+              skill,
+              cellId: `cell-${rowIndex}-${subjectKey}-${skillIndex}`
+            });
+          });
+        } else {
+          // For subjects without subheaders, add first skill as representative (spans all skills)
+          const firstSkill = subject.skills[0];
           cells.push({
             rowIndex,
             studentId,
             subjectKey,
-            skill,
-            cellId: `cell-${rowIndex}-${subjectKey}-${skillIndex}`
+            skill: firstSkill,
+            cellId: `cell-${rowIndex}-${subjectKey}-0`
           });
-        });
+        }
       });
     });
     return cells;
@@ -446,6 +493,9 @@ export default function TeacherExamRecords({ user }) {
       setSavingScores(true);
       startLoading('saveScores', t('savingScores', 'Saving scores...'));
 
+      // Format month as YYYY-MM for API
+      const monthFormatted = `${selectedAcademicYear}-${String(selectedMonth).padStart(2, '0')}`;
+
       // Prepare data for API
       const scoresToSave = [];
       Object.entries(scoreData).forEach(([studentId, subjects]) => {
@@ -457,7 +507,7 @@ export default function TeacherExamRecords({ user }) {
                 subject: subjectKey,
                 skill,
                 score: parseFloat(score), // Keep as float for API
-                month: selectedMonth
+                month: monthFormatted
               });
             }
           });
@@ -692,21 +742,19 @@ export default function TeacherExamRecords({ user }) {
             <div className="flex gap-2 border-b border-gray-200 mb-6">
               <button
                 onClick={() => setActiveTab('records')}
-                className={`px-4 py-2 font-medium transition-colors ${
-                  activeTab === 'records'
+                className={`px-4 py-2 font-medium transition-colors ${activeTab === 'records'
                     ? 'text-blue-600 border-b-2 border-blue-600'
                     : 'text-gray-600 hover:text-gray-800'
-                }`}
+                  }`}
               >
                 {t('examRecords', 'Exam Records')}
               </button>
               <button
                 onClick={() => setActiveTab('scores')}
-                className={`px-4 py-2 font-medium transition-colors ${
-                  activeTab === 'scores'
+                className={`px-4 py-2 font-medium transition-colors ${activeTab === 'scores'
                     ? 'text-blue-600 border-b-2 border-blue-600'
                     : 'text-gray-600 hover:text-gray-800'
-                }`}
+                  }`}
               >
                 {t('scoreInput', 'Score Input')}
               </button>
@@ -803,8 +851,8 @@ export default function TeacherExamRecords({ user }) {
             {/* Score Input Tab */}
             {activeTab === 'scores' && (
               <div className="mt-6">
-                {/* Class and Month Selection */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                {/* Class, Academic Year, and Month Selection */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                   {/* Class Selection */}
                   {classes.length > 0 && (
                     <div>
@@ -825,17 +873,52 @@ export default function TeacherExamRecords({ user }) {
                     </div>
                   )}
 
+                  {/* Academic Year Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('academicYear', 'Academic Year')}
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
+                    <Dropdown
+                      value={selectedAcademicYear}
+                      onValueChange={(value) => setSelectedAcademicYear(value)}
+                      options={Array.from({ length: 10 }, (_, i) => {
+                        const year = new Date().getFullYear() - i;
+                        return {
+                          value: year.toString(),
+                          label: `${year} - ${year + 1}`
+                        };
+                      })}
+                      placeholder={t('chooseOption', 'ជ្រើសរើសជម្រើស')}
+                      className='w-full'
+                    />
+                  </div>
+
                   {/* Month Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {t('month', 'Month')}
                       <span className="text-red-500 ml-1">*</span>
                     </label>
-                    <input
-                      type="month"
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    <Dropdown
+                      value={selectedMonth.toString()}
+                      onValueChange={(value) => setSelectedMonth(parseInt(value))}
+                      options={[
+                        { value: '1', label: t('january', 'January') },
+                        { value: '2', label: t('february', 'February') },
+                        { value: '3', label: t('march', 'March') },
+                        { value: '4', label: t('april', 'April') },
+                        { value: '5', label: t('may', 'May') },
+                        { value: '6', label: t('june', 'June') },
+                        { value: '7', label: t('july', 'July') },
+                        { value: '8', label: t('august', 'August') },
+                        { value: '9', label: t('september', 'September') },
+                        { value: '10', label: t('october', 'October') },
+                        { value: '11', label: t('november', 'November') },
+                        { value: '12', label: t('december', 'December') }
+                      ]}
+                      placeholder={t('chooseOption', 'Choose an option')}
+                      className='w-full'
                     />
                   </div>
                 </div>
@@ -855,7 +938,7 @@ export default function TeacherExamRecords({ user }) {
                   />
                 ) : (
                   <div className="space-y-6">
-                    {/* Score Table with BulkImportTable styling */}
+                    {/* Score Table */}
                     <div className="shadow-lg rounded-lg overflow-hidden border border-gray-200 bg-transparent">
                       <div className="bg-white p-6 border-b border-gray-200">
                         <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('scoreInput', 'Score Input')}</h2>
@@ -866,35 +949,46 @@ export default function TeacherExamRecords({ user }) {
                           <thead className="sticky top-0 z-10 border-b border-gray-200">
                             {/* Main Header Row */}
                             <tr className="border-b border-gray-300 bg-gradient-to-r from-blue-600 to-blue-700">
-                              <th rowSpan="2" className="w-12 px-3 py-3 text-center text-xs font-bold text-white border-r border-blue-500 bg-gradient-to-r from-blue-600 to-blue-700 sticky left-0 z-20">
-                                #
+                              <th rowSpan="2" className="px-6 py-3 text-left text-sm font-bold text-white border-r border-blue-500 min-w-80 bg-gradient-to-r from-blue-600 to-blue-700 sticky left-0 z-20">
+                                {t('studentName', 'Student Name')}
                               </th>
-                              {Object.entries(SUBJECT_SKILLS).map(([subjectKey, subject]) => (
-                                <th
-                                  key={subjectKey}
-                                  colSpan={subject.skills.length}
-                                  className="px-3 py-3 text-center text-xs font-bold text-white border-r border-blue-500"
-                                >
-                                  {t(subjectKey, subject.name)}
-                                </th>
-                              ))}
+                              {Object.entries(SUBJECT_SKILLS).map(([subjectKey, subject]) => {
+                                const hasSubheader = ['khmer', 'math'].includes(subjectKey);
+                                return (
+                                  <th
+                                    key={subjectKey}
+                                    colSpan={subject.skills.length}
+                                    rowSpan={hasSubheader ? 1 : 2}
+                                    className="px-3 py-3 text-center text-xs font-bold text-white border-r border-blue-500"
+                                  >
+                                    {t(subjectKey, subject.name)}
+                                  </th>
+                                );
+                              })}
+                              <th rowSpan="2" className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-green-600 to-green-700">
+                                {t('totalScore', 'Total Score')}
+                              </th>
+                              <th rowSpan="2" className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-purple-600 to-purple-700">
+                                {t('average', 'Average')}
+                              </th>
+                              <th rowSpan="2" className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-orange-600 to-orange-700">
+                                {t('grading', 'Grade')}
+                              </th>
                             </tr>
                             {/* Sub Header Row */}
                             <tr className="border-b border-gray-200 bg-blue-50">
-                              <th className="w-12 px-3 py-3" />
-                              <th className="px-3 py-3 text-left text-xs font-semibold text-blue-900 border-r border-blue-200 bg-blue-50 sticky left-12 z-20 min-w-40">
-                                {t('studentName', 'Student Name')}
-                              </th>
-                              {Object.entries(SUBJECT_SKILLS).map(([subjectKey, subject]) =>
-                                subject.skills.map(skill => (
+                              {Object.entries(SUBJECT_SKILLS).map(([subjectKey, subject]) => {
+                                const hasSubheader = ['khmer', 'math'].includes(subjectKey);
+                                if (!hasSubheader) return null;
+                                return subject.skills.map(skill => (
                                   <th
                                     key={`${subjectKey}-${skill}`}
                                     className="px-3 py-3 text-center text-xs font-semibold text-blue-900 border-r border-blue-200 bg-blue-50"
                                   >
-                                    {skill}
+                                    {t(skill.toLowerCase().replace(/\s+/g, '_'), skill)}
                                   </th>
-                                ))
-                              )}
+                                ));
+                              })}
                             </tr>
                           </thead>
                           <tbody className="bg-white">
@@ -902,38 +996,187 @@ export default function TeacherExamRecords({ user }) {
                               const studentId = student.studentId || student.id;
                               const firstName = student.user?.first_name || student.firstName || '';
                               const lastName = student.user?.last_name || student.lastName || '';
-                              const studentName = `${firstName} ${lastName}`.trim() || '-';
+                              const studentName = `${firstName} ${lastName}`.trim() || '';
 
                               return (
                                 <tr key={`${rowIndex}-${studentId}`} className="hover:bg-gray-50 border-b border-gray-100">
-                                  <td className="text-center text-xs text-gray-500 border-r border-gray-200 bg-gray-50 px-3 py-3 sticky left-0 z-10">
-                                    {rowIndex + 1}
+                                  <td className="text-left sticky left-0 z-10 min-w-80 bg-gray-50 border-r border-gray-200">
+                                    <div className="flex items-center gap-3">
+                                      <div className='p-3'>
+                                        <p className="text-sm font-semibold text-gray-900">{studentName}</p>
+                                        <p className="text-xs text-gray-500">ID: {studentId}</p>
+                                      </div>
+                                    </div>
                                   </td>
-                                  <td className="text-left text-xs text-gray-800 border-r border-gray-200 bg-gray-50 px-3 py-3 sticky left-12 z-10 min-w-40 font-medium">
-                                    {studentName}
+                                  {Object.entries(SUBJECT_SKILLS).map(([subjectKey, subject]) => {
+                                    const hasSubheader = ['khmer', 'math'].includes(subjectKey);
+
+                                    if (hasSubheader) {
+                                      // For subjects with subheaders (khmer, math), show one cell per skill
+                                      return subject.skills.map((skill, skillIndex) => (
+                                        <td
+                                          key={`${rowIndex}-${subjectKey}-${skillIndex}`}
+                                          id={`cell-${rowIndex}-${subjectKey}-${skillIndex}`}
+                                          className="border-r border-gray-200 relative cursor-pointer bg-white hover:bg-blue-50"
+                                        >
+                                          <input
+                                            type="text"
+                                            inputMode="decimal"
+                                            value={scoreData[studentId]?.[subjectKey]?.[skill] ?? ''}
+                                            onChange={(e) => {
+                                              e.stopPropagation();
+                                              let val = e.target.value;
+                                              // Allow: "", digits, digit., .digit, digit.digit
+                                              if (/^\d*\.?\d*$/.test(val)) {
+                                                // If starts with ".", prefix zero
+                                                if (val.startsWith(".")) {
+                                                  val = "0" + val;
+                                                }
+                                                handleScoreChange(studentId, subjectKey, skill, val);
+                                              }
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            onKeyDown={(e) => handleScoreCellKeyDown(e, rowIndex, subjectKey, skill, studentId)}
+                                            className="w-full h-full p-4 text-sm border-0 focus:border focus:ring-1 bg-white focus:border-blue-500 focus:ring-blue-500 text-center p-0"
+                                          />
+                                        </td>
+                                      ));
+                                    } else {
+                                      // For subjects without subheaders, apply value to all skills
+                                      const firstSkill = subject.skills[0];
+                                      return (
+                                        <td
+                                          key={`${rowIndex}-${subjectKey}`}
+                                          id={`cell-${rowIndex}-${subjectKey}-0`}
+                                          colSpan={subject.skills.length}
+                                          className="border-r border-gray-200 relative cursor-pointer bg-white hover:bg-blue-50"
+                                        >
+                                          <input
+                                            type="text"
+                                            inputMode="decimal"
+                                            value={scoreData[studentId]?.[subjectKey]?.[firstSkill] ?? ''}
+                                            onChange={(e) => {
+                                              e.stopPropagation();
+                                              // Only allow numbers and one decimal point
+                                              let filtered = e.target.value.replace(/[^\d.]/g, '');
+                                              // Prevent multiple decimal points - keep only the first one
+                                              const parts = filtered.split('.');
+                                              if (parts.length > 2) {
+                                                filtered = parts[0] + '.' + parts.slice(1).join('');
+                                              }
+                                              // Update all skills with the same value
+                                              subject.skills.forEach(skill => {
+                                                handleScoreChange(studentId, subjectKey, skill, filtered);
+                                              });
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            onKeyDown={(e) => handleScoreCellKeyDown(e, rowIndex, subjectKey, firstSkill, studentId)}
+                                            className="w-full h-full p-4 text-sm border-0 focus:border focus:ring-1 bg-white focus:border-blue-500 focus:ring-blue-500 text-center p-0"
+                                          />
+                                        </td>
+                                      );
+                                    }
+                                  })}
+
+                                  {/* Total Score Column */}
+                                  <td className="px-4 py-4 text-center text-sm font-bold text-gray-900 border-r border-gray-200 bg-green-50">
+                                    {(() => {
+                                      let total = 0;
+                                      Object.entries(SUBJECT_SKILLS).forEach(([subjectKey, subject]) => {
+                                        const hasSubheader = ['khmer', 'math'].includes(subjectKey);
+                                        if (hasSubheader) {
+                                          subject.skills.forEach(skill => {
+                                            const score = parseFloat(scoreData[studentId]?.[subjectKey]?.[skill] || 0);
+                                            total += score;
+                                          });
+                                        } else {
+                                          const firstSkill = subject.skills[0];
+                                          const score = parseFloat(scoreData[studentId]?.[subjectKey]?.[firstSkill] || 0);
+                                          total += score;
+                                        }
+                                      });
+                                      return total.toFixed(2);
+                                    })()}
                                   </td>
-                                  {Object.entries(SUBJECT_SKILLS).map(([subjectKey, subject]) =>
-                                    subject.skills.map((skill, skillIndex) => (
-                                      <td
-                                        key={`${rowIndex}-${subjectKey}-${skillIndex}`}
-                                        id={`cell-${rowIndex}-${subjectKey}-${skillIndex}`}
-                                        className="border-r border-gray-200 relative cursor-pointer bg-white hover:bg-gray-50"
-                                      >
-                                        <input
-                                          type="text"
-                                          value={scoreData[studentId]?.[subjectKey]?.[skill] ?? ''}
-                                          onChange={(e) => {
-                                            e.stopPropagation();
-                                            handleScoreChange(studentId, subjectKey, skill, e.target.value);
-                                          }}
-                                          onClick={(e) => e.stopPropagation()}
-                                          onKeyDown={(e) => handleScoreCellKeyDown(e, rowIndex, subjectKey, skill, studentId)}
-                                          placeholder="-"
-                                          className="w-full px-3 py-2 text-xs border-0 focus:border focus:ring-1 bg-white focus:border-blue-500 focus:ring-blue-500"
-                                        />
-                                      </td>
-                                    ))
-                                  )}
+
+                                  {/* Average Column */}
+                                  <td className="px-4 py-4 text-center text-sm font-bold text-gray-900 border-r border-gray-200 bg-purple-50">
+                                    {(() => {
+                                      let total = 0;
+                                      let count = 0;
+                                      Object.entries(SUBJECT_SKILLS).forEach(([subjectKey, subject]) => {
+                                        const hasSubheader = ['khmer', 'math'].includes(subjectKey);
+                                        if (hasSubheader) {
+                                          subject.skills.forEach(skill => {
+                                            const score = parseFloat(scoreData[studentId]?.[subjectKey]?.[skill] || 0);
+                                            if (score > 0) {
+                                              total += score;
+                                              count++;
+                                            }
+                                          });
+                                        } else {
+                                          const firstSkill = subject.skills[0];
+                                          const score = parseFloat(scoreData[studentId]?.[subjectKey]?.[firstSkill] || 0);
+                                          if (score > 0) {
+                                            total += score;
+                                            count++;
+                                          }
+                                        }
+                                      });
+                                      return count > 0 ? (total / count).toFixed(2) : '0.00';
+                                    })()}
+                                  </td>
+
+                                  {/* Grade Column */}
+                                  <td className="px-4 py-4 text-center text-sm font-bold border-r border-gray-200 bg-orange-50">
+                                    {(() => {
+                                      let total = 0;
+                                      let count = 0;
+                                      Object.entries(SUBJECT_SKILLS).forEach(([subjectKey, subject]) => {
+                                        const hasSubheader = ['khmer', 'math'].includes(subjectKey);
+                                        if (hasSubheader) {
+                                          subject.skills.forEach(skill => {
+                                            const score = parseFloat(scoreData[studentId]?.[subjectKey]?.[skill] || 0);
+                                            if (score > 0) {
+                                              total += score;
+                                              count++;
+                                            }
+                                          });
+                                        } else {
+                                          const firstSkill = subject.skills[0];
+                                          const score = parseFloat(scoreData[studentId]?.[subjectKey]?.[firstSkill] || 0);
+                                          if (score > 0) {
+                                            total += score;
+                                            count++;
+                                          }
+                                        }
+                                      });
+                                      const average = count > 0 ? (total / count) : 0;
+
+                                      // Determine grade based on average
+                                      let grade = '-';
+                                      let gradeColor = 'text-gray-500';
+
+                                      if (average >= 8.5) {
+                                        grade = 'A';
+                                        gradeColor = 'text-green-700';
+                                      } else if (average >= 7) {
+                                        grade = 'B';
+                                        gradeColor = 'text-blue-700';
+                                      } else if (average >= 5.5) {
+                                        grade = 'C';
+                                        gradeColor = 'text-yellow-700';
+                                      } else if (average >= 4) {
+                                        grade = 'D';
+                                        gradeColor = 'text-orange-700';
+                                      } else if (average > 0) {
+                                        grade = 'F';
+                                        gradeColor = 'text-red-700';
+                                      }
+
+                                      return <span className={gradeColor}>{grade}</span>;
+                                    })()}
+                                  </td>
                                 </tr>
                               );
                             })}
