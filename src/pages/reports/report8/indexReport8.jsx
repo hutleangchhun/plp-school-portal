@@ -42,8 +42,8 @@ export function Report8Preview({ data }) {
       cellClassName: 'font-medium'
     },
     {
-      key: 'khmerName',
-      header: t('khmerName', 'ឈ្មោះខ្មែរ'),
+      key: 'Name',
+      header: t('name', 'ឈ្មោះ'),
       render: (student) => student.khmerName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
       cellClassName: 'font-medium'
     },

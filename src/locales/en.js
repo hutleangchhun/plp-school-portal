@@ -316,6 +316,17 @@ export const en = {
   reportType: 'Report Type',
   reports: 'Reports',
   viewAnalytics: 'View comprehensive reports and analytics',
+  sdGrade: 'SD Grade',
+  weight: 'Weight',
+  height: 'Height',
+  bmi: 'BMI',
+  age: 'Age',
+  bmiStatus: 'BMI Status',
+  ageInYears: 'Age in Years',
+  ageInYearsAndMonths: 'Age in Years and Months',
+  ageInMonths: 'Age in Months',
+  recordDate: 'Record Date',
+
 
   // UI Components & Actions
   actions: 'Actions',
