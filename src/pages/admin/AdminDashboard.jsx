@@ -9,7 +9,7 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import { Building2, Users, BookOpen, User } from 'lucide-react';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 
 const AdminDashboard = ({ user: initialUser }) => {
   const { t } = useLanguage();
