@@ -58,6 +58,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/reports': BarChart3,
     '/teacher-reports': BarChart3,
     'attendance': Calendar, // Parent item for attendance dropdown
+    'admin-dashboard': LayoutDashboard,
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/achievements': Trophy,
     // '/settings': SettingsIcon,
@@ -83,6 +84,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/reports': 'blue',
     '/teacher-reports': 'blue',
     'attendance': 'blue', // Parent item for attendance dropdown
+    'admin-dashboard': 'blue',
     // Temporarily removed color mappings (will be re-enabled later):
     // '/achievements': 'blue',
     // '/settings': 'blue',

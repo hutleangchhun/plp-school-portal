@@ -328,24 +328,8 @@ export const getNavigationItems = (user, t) => {
   // Role 1 (Admin) navigation items
   const role1Items = [
     {
-      name: t('adminDashboard') || 'Admin Dashboard',
+      name: t('dashboard') || 'Dashboard',
       href: '/admin-dashboard',
-    },
-    {
-      name: t('reports') || 'Reports',
-      href: '/reports',
-    },
-    {
-      name: t('teachers') || 'Teachers',
-      href: '/teachers',
-    },
-    {
-      name: t('students') || 'Students',
-      href: '/students',
-    },
-    {
-      name: t('classes') || 'Classes',
-      href: '/classes',
     },
   ];
 
