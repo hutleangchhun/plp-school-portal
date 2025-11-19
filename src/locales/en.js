@@ -763,8 +763,35 @@ export const en = {
 
   // Export utilities
   notAvailable: 'N/A',
+  role1User: 'Role 1 User',
+  userID: 'User ID',
+  accountStatus: 'Account Status',
+  joinDate: 'Join Date',
+  lastLogin: 'Last Login',
+  active: 'Active',
+  settings: 'Settings',
+  sortBy: 'Sort by',
+  sort: 'Sort',
+  ascending: 'Ascending',
+  descending: 'Descending',
+  selectSortOrder: 'Select Sort Order',
+  permission1: 'View dashboard analytics',
+  permission2: 'Access specific reports',
+  permission3: 'Update personal profile',
+  permission4: 'View attendance',
+  systemOverview: 'System Overview',
+  systemOverviewDesc: 'Overview of the entire school system',
+  adminUser: 'Admin User',
+  totalSchools: 'Total Schools',
+  schoolDistribution: 'School Distribution',
+  schoolDistributionDesc: 'Distribution of schools by various metrics',
+  adminDashboard: 'Admin Dashboard',
+  allProvinces: 'All Provinces',
+  selectProvince: 'Select Province',
+  allDistricts: 'All Districts',
+  selectDistrict: 'Select District',
 
- //report 
+ //report
    totalRecords: 'Total Records',
    totalStudents: 'Total Students',
   unknownEthnicGroup: 'Khmer', // Unknown ethnic group defaults to Khmer (majority)

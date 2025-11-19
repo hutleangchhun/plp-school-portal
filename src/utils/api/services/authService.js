@@ -23,13 +23,13 @@ export const authService = {
     if (response.success) {
       const { accessToken, user } = response.data;
 
-      // Allow only users with roleId = 8 (both teachers and directors) to access this portal
+      // Allow users with roleId = 8 (teachers and directors) and roleId = 1 to access this portal
       // Teacher: roleId = 8 && isDirector = false
       // Director: roleId = 8 && isDirector = true
-      if (user.roleId !== 8) {
+      if (user.roleId !== 8 && user.roleId !== 1) {
         return {
           success: false,
-          error: 'Only teachers or directors can access this portal. Please contact your administrator.'
+          error: 'Only authorized users can access this portal. Please contact your administrator.'
         };
       }
 
@@ -152,14 +152,14 @@ export const authService = {
   },
 
   /**
-   * Check if user is authenticated (teacher or director)
+   * Check if user is authenticated (teacher, director, or role ID 1)
    * @returns {boolean} Authentication status
    */
   isAuthenticated: () => {
     const hasToken = tokenManager.hasToken();
     const userData = userUtils.getUserData();
-    // User must have token, valid user data, and roleId = 8 (teacher or director)
-    return hasToken && userData !== null && userData.roleId === 8;
+    // User must have token, valid user data, and roleId = 8 (teacher or director) or roleId = 1
+    return hasToken && userData !== null && (userData.roleId === 8 || userData.roleId === 1);
   },
 
   /**
@@ -220,6 +220,15 @@ export const authUtils = {
   },
 
   /**
+   * Validate role ID 1
+   * @param {Object} user - User object
+   * @returns {boolean} Whether user has role ID 1
+   */
+  isRole1: (user) => {
+    return user && user.roleId === 1;
+  },
+
+  /**
    * Check if user has access to route based on role
    * @param {Object} user - User object
    * @param {Array} allowedRoles - Array of allowed role IDs
@@ -233,10 +242,11 @@ export const authUtils = {
   /**
    * Get user role type
    * @param {Object} user - User object
-   * @returns {string} Role type (teacher, student, unknown)
+   * @returns {string} Role type (teacher, student, role1, unknown)
    */
   getUserRole: (user) => {
     if (!user) return 'unknown';
+    if (user.roleId === 1) return 'admin';
     if (user.roleId === 8) return 'teacher';
     if (user.roleId === 9) return 'student';
     return 'unknown';

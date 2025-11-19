@@ -49,6 +49,21 @@ const locationService = {
       throw error;
     }
   },
+
+  /**
+   * Get all zones with their provinces
+   * @returns {Promise<Object>} Response with zones data
+   */
+  getAllZones: async () => {
+    try {
+      const response = await get(ENDPOINTS.LOCATION.ZONES);
+      console.log('Zones response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error fetching zones:', error);
+      throw error;
+    }
+  },
 };
 
 export default locationService;

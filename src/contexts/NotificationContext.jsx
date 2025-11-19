@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { notificationService } from '../utils/api/services/notificationService';
+import { authService } from '../utils/api/services/authService';
 
 /**
  * NotificationContext
@@ -19,6 +20,13 @@ export function NotificationProvider({ children }) {
    */
   const fetchNotifications = useCallback(async (params = {}) => {
     try {
+      // Only fetch notifications if user is authenticated
+      if (!authService.isAuthenticated()) {
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
@@ -52,6 +60,12 @@ export function NotificationProvider({ children }) {
    */
   const fetchUnreadCount = useCallback(async () => {
     try {
+      // Only fetch unread count if user is authenticated
+      if (!authService.isAuthenticated()) {
+        setUnreadCount(0);
+        return;
+      }
+
       const count = await notificationService.getUnreadCount();
       setUnreadCount(count);
     } catch (err) {
@@ -155,6 +169,13 @@ export function NotificationProvider({ children }) {
    * Refresh notifications (polling)
    */
   const refreshNotifications = useCallback(async () => {
+    // Skip refreshing if user is not authenticated
+    if (!authService.isAuthenticated()) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
     await Promise.all([
       fetchNotifications(),
       fetchUnreadCount()
@@ -179,13 +200,27 @@ export function NotificationProvider({ children }) {
    * Initial fetch and setup polling
    */
   useEffect(() => {
-    // Fetch notifications and unread count on mount
-    refreshNotifications();
+    // Fetch notifications and unread count on mount if authenticated
+    if (authService.isAuthenticated()) {
+      refreshNotifications();
 
-    // Set up polling interval (check every 30 seconds)
-    const pollInterval = setInterval(refreshNotifications, 30 * 1000);
+      // Set up polling interval (check every 30 seconds)
+      const pollInterval = setInterval(() => {
+        // Re-check auth on each poll to avoid calling API after logout
+        if (authService.isAuthenticated()) {
+          refreshNotifications();
+        } else {
+          setNotifications([]);
+          setUnreadCount(0);
+        }
+      }, 30 * 1000);
 
-    return () => clearInterval(pollInterval);
+      return () => clearInterval(pollInterval);
+    } else {
+      // Ensure state is clean when not authenticated
+      setNotifications([]);
+      setUnreadCount(0);
+    }
   }, [refreshNotifications]);
 
   const value = {

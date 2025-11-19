@@ -4,6 +4,7 @@ import StudentAttendance from './pages/teachers/StudentAttendance';
 import TeacherDashboard from './pages/teachers/TeacherDashboard';
 import TeacherQRCodeManagement from './pages/teachers/TeacherQRCodeManagement';
 import TeacherReports from './pages/teachers/TeacherReports';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -58,9 +59,9 @@ function AppContent() {
     if (isAuth) {
       const userData = utils.user.getUserData();
 
-      // IMPORTANT: Only teachers (roleId=8) and directors (roleId=8, isDirector=true) can access this portal
-      if (userData && userData.roleId !== 8) {
-        console.warn('Non-teacher/director user detected. Logging out.');
+      // Allow teachers (roleId=8), directors (roleId=8, isDirector=true), and role ID 1 users
+      if (userData && userData.roleId !== 8 && userData.roleId !== 1) {
+        console.warn('Non-authorized user detected. Logging out.');
         utils.user.removeUserData();
         setUser(null);
         setLoading(false);
@@ -92,7 +93,9 @@ function AppContent() {
           path="/login"
           element={
             !user ? <Login setUser={setUser} /> :
-            (user && user.roleId === 8 && user.isDirector !== true ? <Navigate to="/teacher-dashboard" replace /> : <Navigate to="/dashboard" replace />)
+            (user && user.roleId === 8 && user.isDirector !== true ? <Navigate to="/teacher-dashboard" replace /> :
+             user && user.roleId === 1 ? <Navigate to="/admin-dashboard" replace /> :
+             <Navigate to="/dashboard" replace />)
           }
         />
 
@@ -122,7 +125,11 @@ function AppContent() {
             )
           }
         >
-          <Route index element={user && user.roleId === 8 && user.isDirector !== true ? <Navigate to="/teacher-dashboard" replace /> : <Navigate to="/dashboard" replace />} />
+          <Route index element={
+            user && user.roleId === 8 && user.isDirector !== true ? <Navigate to="/teacher-dashboard" replace /> :
+            user && user.roleId === 1 ? <Navigate to="/admin-dashboard" replace /> :
+            <Navigate to="/dashboard" replace />
+          } />
           
           {/* Dashboard routes with sidebar */}
           <Route path="dashboard/*" element={
@@ -132,7 +139,16 @@ function AppContent() {
           }>
             <Route index element={<Dashboard user={user} setUser={setUser} />} />
           </Route>
-          
+
+          {/* Admin dashboard route - accessible to role ID 1 users */}
+          <Route path="admin-dashboard" element={
+            <ProtectedRoute path="/admin-dashboard" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AdminDashboard user={user} setUser={setUser} />} />
+          </Route>
+
           <Route path="students" element={
             <ProtectedRoute path="/students" user={user}>
               <DashboardLayout user={user} onLogout={handleLogout} />

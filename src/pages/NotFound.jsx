@@ -21,6 +21,11 @@ const NotFound = () => {
       return '/teacher-dashboard';
     }
 
+    // If user has role ID 1, go to admin dashboard
+    if (user.roleId === 1) {
+      return '/admin-dashboard';
+    }
+
     // Otherwise go to director/admin dashboard
     return '/dashboard';
   };

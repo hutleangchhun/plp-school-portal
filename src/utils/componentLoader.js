@@ -22,6 +22,7 @@ export const DynamicComponents = {
   StudentsManagement: lazy(() => import('../pages/students/StudentsManagement')),
   StudentGradeManagement: lazy(() => import('../pages/students/StudentGradeManagement')),
   ClassesManagement: lazy(() => import('../pages/classes/ClassesManagement')),
+  AdminDashboard: lazy(() => import('../pages/admin/AdminDashboard')),
   // Temporarily removed components (will be re-enabled later):
   // Reports: lazy(() => import('../pages/reports/Reports')),
   // Attendance: lazy(() => import('../pages/attendance/Attendance')),
@@ -40,6 +41,7 @@ export const ComponentRegistry = {
   'StudentsManagement': DynamicComponents.StudentsManagement,
   'StudentGradeManagement': DynamicComponents.StudentGradeManagement,
   'ClassesManagement': DynamicComponents.ClassesManagement,
+  'AdminDashboard': DynamicComponents.AdminDashboard,
   // Temporarily removed component registry entries (will be re-enabled later):
   // 'Reports': DynamicComponents.Reports,
   // 'Attendance': DynamicComponents.Attendance,
@@ -95,6 +97,13 @@ export const RouteConfig = [
     path: '/classes',
     component: 'ClassesManagement',
     title: 'classesManagement',
+    requiresAuth: true,
+    layout: 'dashboard'
+  },
+  {
+    path: '/admin-dashboard',
+    component: 'AdminDashboard',
+    title: 'adminDashboard',
     requiresAuth: true,
     layout: 'dashboard'
   },

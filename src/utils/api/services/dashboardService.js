@@ -222,5 +222,120 @@ export const dashboardService = {
         }
       };
     }
+  },
+
+  /**
+   * Get school distribution data for admin dashboard
+   * Fetches data from /api/v1/dashboard/distribution/schools endpoint
+   * @param {Object} params - Filter parameters
+   * @param {number} [params.zoneId] - Zone ID to filter by
+   * @param {number} [params.provinceId] - Province ID to filter by
+   * @param {number} [params.districtId] - District ID to filter by
+   * @param {string} [params.sortBy] - Field to sort by: studentCount, teacherCount, classCount, schoolName
+   * @param {string} [params.sortOrder] - Sort order: ASC, DESC
+   * @returns {Promise<Object>} Response with school distribution data
+   */
+  async getSchoolDistribution(params = {}) {
+    try {
+      console.log('📊 Fetching school distribution data...', params);
+
+      let url = `${ENDPOINTS.DASHBOARD.BASE}/distribution/schools`;
+
+      // Add query parameters for filtering and sorting
+      const queryParams = [];
+
+      if (params.zoneId) {
+        queryParams.push(`zoneId=${params.zoneId}`);
+      }
+
+      if (params.provinceId) {
+        queryParams.push(`provinceId=${params.provinceId}`);
+      }
+
+      if (params.districtId) {
+        queryParams.push(`districtId=${params.districtId}`);
+      }
+
+      if (params.sortBy) {
+        queryParams.push(`sortBy=${params.sortBy}`);
+      }
+
+      if (params.sortOrder) {
+        queryParams.push(`sortOrder=${params.sortOrder}`);
+      }
+
+      if (queryParams.length > 0) {
+        url += '?' + queryParams.join('&');
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(url)
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch school distribution data');
+      }
+
+      // handleApiResponse wraps the backend payload in response.data
+      // Backend payload shape:
+      // {
+      //   data: [...],
+      //   totalSchools,
+      //   totalStudents,
+      //   totalTeachers,
+      //   totalClasses
+      // }
+      const payload = response.data || {};
+
+      // The payload includes a data array and totals at the top level
+      const data = Array.isArray(payload.data) ? payload.data : [];
+      const totalSchools = payload.totalSchools || payload.total_schools || 0;
+      const totalStudents = payload.totalStudents || payload.total_students || 0;
+      const totalTeachers = payload.totalTeachers || payload.total_teachers || 0;
+      const totalClasses = payload.totalClasses || payload.total_classes || 0;
+
+      // Transform data for chart usage if needed
+      // Make sure data is an array before calling .map()
+      const chartData = Array.isArray(data) ?
+        data.map(school => ({
+          name: school.schoolName || school.school_name || school.name || 'Unknown School',
+          studentCount: school.studentCount || 0,
+          teacherCount: school.teacherCount || 0,
+          classCount: school.classCount || 0,
+          value: school.studentCount || 0, // Default value when activeMetric is studentCount
+          provinceId: school.provinceId,
+          districtId: school.districtId
+        })) : [];
+
+      // Calculate summary statistics
+      const summary = {
+        totalSchools: totalSchools,
+        totalStudents: totalStudents,
+        totalTeachers: totalTeachers,
+        totalClasses: totalClasses
+      };
+
+      return {
+        success: true,
+        data: chartData,
+        raw: data,
+        summary
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getSchoolDistribution:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get school distribution',
+        data: [],
+        raw: [],
+        summary: {
+          totalSchools: 0,
+          totalStudents: 0,
+          totalTeachers: 0,
+          totalClasses: 0
+        }
+      };
+    }
   }
 };

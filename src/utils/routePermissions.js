@@ -6,8 +6,10 @@
 // Role constants
 export const ROLES = {
   TEACHER: 8,
+  ROLE1: 1,
   DIRECTOR: 'DIRECTOR', // Special marker to indicate director-only routes (roleId=8 && isDirector=true)
   TEACHER_ONLY: 'TEACHER_ONLY', // Special marker for teacher-only routes (roleId=8 && isDirector=false)
+  ROLE1_ONLY: 'ROLE1_ONLY', // Special marker for role1-only routes (roleId=1)
 };
 
 // Route permissions configuration
@@ -93,6 +95,10 @@ export const routePermissions = {
   '/qr-codes': {
     allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR],
     component: 'StudentQRCodeGenerator'
+  },
+  '/admin-dashboard': {
+    allowedRoles: [ROLES.ROLE1_ONLY, ROLES.DIRECTOR],
+    component: 'AdminDashboard'
   }
 };
 
@@ -167,6 +173,26 @@ export const hasRouteAccess = (path, user) => {
     if (routeConfig.allowedRoles && routeConfig.allowedRoles.length > 0) {
       // Teacher can access routes that have ROLES.TEACHER_ONLY or ROLES.TEACHER in allowedRoles
       return routeConfig.allowedRoles.includes(ROLES.TEACHER_ONLY) || routeConfig.allowedRoles.includes(ROLES.TEACHER);
+    }
+
+    // If no allowedRoles specified, deny access
+    return false;
+  }
+
+  // Role 1: roleId = 1 (can access role1-specific routes and shared routes)
+  if (user.roleId === ROLES.ROLE1) {
+    const routeConfig = findRouteConfig(path);
+
+    // If route doesn't exist, deny access
+    if (!routeConfig) return false;
+
+    // If route specifies allowed roles, check if role1 can access
+    if (routeConfig.allowedRoles && routeConfig.allowedRoles.length > 0) {
+      // Role1 can access routes that have ROLE1_ONLY or any role that TEACHER or DIRECTOR can access
+      return routeConfig.allowedRoles.includes(ROLES.ROLE1_ONLY) ||
+             routeConfig.allowedRoles.includes(ROLES.ROLE1) ||
+             routeConfig.allowedRoles.includes(ROLES.TEACHER) ||
+             routeConfig.allowedRoles.includes(ROLES.DIRECTOR);
     }
 
     // If no allowedRoles specified, deny access
@@ -299,7 +325,35 @@ export const getNavigationItems = (user, t) => {
     // },
   ];
 
+  // Role 1 (Admin) navigation items
+  const role1Items = [
+    {
+      name: t('adminDashboard') || 'Admin Dashboard',
+      href: '/admin-dashboard',
+    },
+    {
+      name: t('reports') || 'Reports',
+      href: '/reports',
+    },
+    {
+      name: t('teachers') || 'Teachers',
+      href: '/teachers',
+    },
+    {
+      name: t('students') || 'Students',
+      href: '/students',
+    },
+    {
+      name: t('classes') || 'Classes',
+      href: '/classes',
+    },
+  ];
+
   // Return appropriate items based on user role
+  if (user.roleId === 1) {
+    return role1Items;
+  }
+
   // Check isDirector FIRST since both roles have roleId = 8
   if (user.roleId === 8 && isDirector) {
     return directorItems;
