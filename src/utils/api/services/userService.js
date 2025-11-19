@@ -16,6 +16,18 @@ const userService = {
     return response;
   },
 
+  /**
+   * Generate a username suggestion from the backend
+   * @param {string} baseUsername - The desired base username
+   * @returns {Promise<Object>} Response from /users/generate-username
+   */
+  generateUsername: async (baseUsername) => {
+    const safeBase = (baseUsername || '').trim();
+    const query = encodeURIComponent(safeBase || 'student');
+    const url = `${ENDPOINTS.USERS.GENERATE_USERNAME}?username=${query}`;
+    return get(url);
+  },
+
 
   getUserByID: async (userId) => {
     // UPDATE_USER is a function that builds the URL, so call it with userId

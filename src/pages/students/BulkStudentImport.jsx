@@ -141,7 +141,12 @@ export default function BulkStudentImport() {
     // Username validation (only English letters and numbers, 3-50 chars)
     if (columnKey === 'username') {
       const usernameRegex = /^[a-zA-Z0-9]{3,50}$/;
-      return !usernameRegex.test(value);
+      const formatInvalid = !usernameRegex.test(value);
+
+      // If backend says this username is not available, treat as invalid
+      const notAvailable = student.usernameAvailable === false;
+
+      return formatInvalid || notAvailable;
     }
 
     // Gender validation
@@ -156,7 +161,7 @@ export default function BulkStudentImport() {
     // Student Basic Info
     { key: 'lastName', header: 'គោត្តនាម', width: 'min-w-[100px]' },
     { key: 'firstName', header: 'នាម', width: 'min-w-[200px]' },
-    { key: 'username', header: 'ឈ្មោះអ្នកប្រើ', width: 'min-w-[150px]' },
+    { key: 'username', header: 'ឈ្មោះអ្នកប្រើ', width: 'min-w-[280px]' },
     { key: 'password', header: 'ពាក្យសម្ងាត់', width: 'min-w-[150px]' },
     { key: 'dateOfBirth', header: 'ថ្ងៃខែឆ្នាំកំណើត (dd/mm/yyyy)', width: 'min-w-[300px]', type: 'custom-date' },
     { key: 'gender', header: 'ភេទ', width: 'min-w-[80px]', type: 'select', options: genderOptions },
@@ -525,7 +530,32 @@ export default function BulkStudentImport() {
     );
 
     if (mappedStudents && mappedStudents.length > 0) {
-      setStudents(mappedStudents);
+      // After importing from Excel, proactively check username availability
+      const studentsWithAvailability = await Promise.all(
+        mappedStudents.map(async (student) => {
+          const username = (student.username || '').trim();
+          if (!username) return student;
+
+          // Reuse the same username format rule used in isCellInvalid
+          const usernameRegex = /^[a-zA-Z0-9]{3,50}$/;
+          if (!usernameRegex.test(username)) {
+            return { ...student, usernameAvailable: false };
+          }
+
+          try {
+            const response = await userService.generateUsername(username);
+            if (typeof response?.available === 'boolean') {
+              return { ...student, usernameAvailable: response.available };
+            }
+          } catch (err) {
+            console.error('Error checking username availability for imported student:', err);
+          }
+
+          return student;
+        })
+      );
+
+      setStudents(studentsWithAvailability);
     }
 
     // Reset file input
@@ -646,6 +676,16 @@ export default function BulkStudentImport() {
     });
   };
 
+  const isValidDate = (dateStr) => {
+    if (!dateStr || dateStr.trim() === '') return true; // Empty is valid (optional field)
+    const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!match) return false;
+    const [, day, month, year] = match;
+    const d = parseInt(day);
+    const m = parseInt(month);
+    const y = parseInt(year);
+    return d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100;
+  };
 
   const handleSubmit = async () => {
     try {
@@ -671,18 +711,6 @@ export default function BulkStudentImport() {
 
       // Show initial toast notification
       showSuccess('កំពុងចាប់ផ្តើមនាំចូលសិស្ស...');
-
-      // Validate date format function
-      const isValidDate = (dateStr) => {
-        if (!dateStr || dateStr.trim() === '') return true; // Empty is valid (optional field)
-        const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-        if (!match) return false;
-        const [, day, month, year] = match;
-        const d = parseInt(day);
-        const m = parseInt(month);
-        const y = parseInt(year);
-        return d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100;
-      };
 
       // Check for invalid dates
       const invalidDates = students.filter(student =>
@@ -1012,6 +1040,40 @@ export default function BulkStudentImport() {
     }
   };
 
+  const MAX_STUDENTS = 70;
+
+  const hasInvalidDates = students.some(student =>
+    student.dateOfBirth && !isValidDate(student.dateOfBirth)
+  );
+
+  const hasInvalidCells = students.some(student =>
+    columns.some(column =>
+      column.key !== 'actions' && isCellInvalid(student, column.key)
+    )
+  );
+
+  const hasAtLeastOneValidStudent = students.some(student => {
+    const hasRequiredFields =
+      student.firstName && student.firstName.trim() &&
+      student.lastName && student.lastName.trim() &&
+      student.username && student.username.trim() &&
+      student.dateOfBirth && student.dateOfBirth.trim() &&
+      student.gender &&
+      (student.schoolId || student.schoolId === 0);
+
+    return hasRequiredFields;
+  });
+
+  const canSubmit =
+    !!schoolId &&
+    !loading &&
+    !isImporting &&
+    students.length > 0 &&
+    students.length <= MAX_STUDENTS &&
+    hasAtLeastOneValidStudent &&
+    !hasInvalidDates &&
+    !hasInvalidCells;
+
   if (initialLoading) {
     return (
       <PageLoader
@@ -1044,6 +1106,9 @@ export default function BulkStudentImport() {
             onSubmit={handleSubmit}
             loading={loading}
             schoolId={schoolId}
+            schoolName={schoolName}
+            studentsCount={students.length}
+            canSubmit={canSubmit}
           />
         </FadeInSection>
 

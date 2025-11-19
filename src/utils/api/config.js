@@ -57,6 +57,7 @@ const ENDPOINTS = {
     RESEND_VERIFICATION: '/users/resend-verification',
     UPDATE_USER: (userId) => `/users/${userId}`,
     GENERATE_QR_CODE: '/users/generate-qr-code',
+    GENERATE_USERNAME: '/users/generate-username',
     PUBLIC_SCHOOL_USERS: (schoolId) => `/users/public/school/${schoolId}`,
     CREATE_USER: '/users',
   },

@@ -8,7 +8,8 @@ const BulkImportHeader = ({
   onAddRow, 
   onSubmit, 
   loading, 
-  schoolId 
+  schoolId,
+  canSubmit
 }) => {
   const fileInputRef = useRef(null);
 
@@ -67,7 +68,7 @@ const BulkImportHeader = ({
             onClick={onSubmit}
             variant="primary"
             size="sm"
-            disabled={loading || !schoolId}
+            disabled={loading || !schoolId || !canSubmit}
           >
             <Save className="h-5 w-5 mr-2" />
             {loading ? 'កំពុងនាំចូល...' : 'នាំចូល'}

@@ -1065,6 +1065,7 @@ export const km = {
   
   // Bulk operations and selections
   moveSelectedToMaster: 'ផ្លាស់ទីអ្នកដែលបានជ្រើសរើសទៅថ្នាក់មេ',
+  suggestion: 'ការផ្ដល់យោបល់',
   
   // Profile picture related
   profilePictureUrl: 'URL រូបភាពប្រូហ្វាល់',

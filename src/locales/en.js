@@ -408,6 +408,8 @@ export const en = {
   confirmRemoveStudents: 'Are you sure you want to remove',
   studentsFromClass: 'students from your class? This action cannot be undone.',
   clearSelection: 'Clear Selection',
+  suggestion: 'Suggestion',
+  
   
   // Export functionality
   export: 'Export',

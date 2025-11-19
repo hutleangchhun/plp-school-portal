@@ -1,7 +1,10 @@
+import { useState, useRef } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import MultiSelectDropdown from '../ui/MultiSelectDropdown';
+import { userService } from '../../utils/api/services/userService';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const StudentTableRow = ({
   student,
@@ -19,6 +22,12 @@ const StudentTableRow = ({
   selectedRange,
   studentsLength
 }) => {
+  const [usernameSuggestions, setUsernameSuggestions] = useState([]);
+  const [showUsernameSuggestions, setShowUsernameSuggestions] = useState(false);
+  const hideSuggestionsTimeoutRef = useRef(null);
+  const usernameDebounceRef = useRef(null);
+  const { t } = useLanguage();
+
   const handleInputFocus = (colKey) => {
     if (colKey !== 'actions') {
       handleCellClick(rowIndex, colKey, {});
@@ -33,6 +42,61 @@ const StudentTableRow = ({
       e.preventDefault();
       // Let the event bubble to document listener - don't stop propagation
     }
+  };
+
+  const handleGenerateUsernameSuggestions = async (baseFromInput = null) => {
+    try {
+      const baseUsername = (baseFromInput && baseFromInput.trim()) ||
+        (student.username && student.username.trim()) ||
+        'student';
+
+      const response = await userService.generateUsername(baseUsername);
+
+      let suggestions = [];
+
+      if (Array.isArray(response?.suggestions)) {
+        suggestions = response.suggestions;
+      } else if (Array.isArray(response?.data)) {
+        suggestions = response.data;
+      } else if (response?.username) {
+        suggestions = [response.username];
+      }
+
+      // Allow up to 20 suggestions from backend
+      suggestions = suggestions.filter(Boolean).slice(0, 20);
+
+      // Persist availability flag on the row so validation can use it
+      if (typeof response?.available === 'boolean') {
+        updateCell(rowIndex, 'usernameAvailable', response.available);
+      }
+
+      setUsernameSuggestions(suggestions);
+      setShowUsernameSuggestions(suggestions.length > 0);
+    } catch (error) {
+      console.error('Error generating username suggestions:', error);
+      setUsernameSuggestions([]);
+      setShowUsernameSuggestions(false);
+    }
+  };
+
+  const handleChooseUsernameSuggestion = (suggestion) => {
+    updateCell(rowIndex, 'username', suggestion);
+    // Chosen suggestion is expected to be available
+    updateCell(rowIndex, 'usernameAvailable', true);
+    setShowUsernameSuggestions(false);
+  };
+
+  const handleUsernameBlur = () => {
+    if (usernameDebounceRef.current) {
+      clearTimeout(usernameDebounceRef.current);
+      usernameDebounceRef.current = null;
+    }
+    if (hideSuggestionsTimeoutRef.current) {
+      clearTimeout(hideSuggestionsTimeoutRef.current);
+    }
+    hideSuggestionsTimeoutRef.current = setTimeout(() => {
+      setShowUsernameSuggestions(false);
+    }, 150);
   };
 
   return (
@@ -55,8 +119,7 @@ const StudentTableRow = ({
             key={column.key}
             data-row={rowIndex}
             data-col={colIndex}
-            className={`border-r border-gray-200 relative cursor-pointer ${
-              column.key === 'actions'
+            className={`border-r border-gray-200 relative cursor-pointer ${column.key === 'actions'
                 ? 'sticky right-0 bg-white border-l border-gray-300 shadow-lg z-10'
                 : isSelected ? '' :
                   isInRange ? 'bg-blue-50' :
@@ -88,11 +151,11 @@ const StudentTableRow = ({
                   updateCell(rowIndex, column.key, value);
                 }}
               >
-                <SelectTrigger 
+                <SelectTrigger
                   className={`w-full h-8 text-xs ${isCellInvalid(student, column.key)
                     ? 'border-red-500 focus:ring-red-500'
                     : 'focus:ring-blue-500'
-                  }`}
+                    }`}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <SelectValue placeholder="ជ្រើសរើស..." />
@@ -163,6 +226,67 @@ const StudentTableRow = ({
                   : 'focus:ring-blue-500'
                   }`}
               />
+            ) : column.key === 'username' ? (
+              <div className="relative">
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={student.username || ''}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      const newValue = e.target.value;
+                      updateCell(rowIndex, 'username', newValue);
+
+                      // Debounced realtime suggestions based on username text only
+                      if (usernameDebounceRef.current) {
+                        clearTimeout(usernameDebounceRef.current);
+                      }
+                      usernameDebounceRef.current = setTimeout(() => {
+                        handleGenerateUsernameSuggestions(newValue);
+                      }, 400);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onFocus={() => handleInputFocus('username')}
+                    onKeyDown={handleInputKeyDown}
+                    onBlur={handleUsernameBlur}
+                    className={`w-full px-3 py-2 text-xs border-0 focus:border focus:ring-1 ${isCellInvalid(student, 'username')
+                      ? 'bg-white border-2 border-red-500 focus:border-red-500 focus:ring-red-500'
+                      : 'bg-white focus:border-blue-500 focus:ring-blue-500'
+                      }`}
+                    placeholder=""
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (hideSuggestionsTimeoutRef.current) {
+                        clearTimeout(hideSuggestionsTimeoutRef.current);
+                      }
+                      handleGenerateUsernameSuggestions(student.username || '');
+                    }}
+                    className="px-1.5 py-1 text-[10px] border border-gray-300 rounded bg-white hover:bg-blue-50 text-gray-700"
+                  >
+                    {t('suggestion', 'Suggestion')}
+                  </button>
+                </div>
+                {showUsernameSuggestions && usernameSuggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-20 text-xs max-h-60 overflow-auto">
+                    {usernameSuggestions.map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="w-full text-left px-3 py-1 hover:bg-blue-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleChooseUsernameSuggestion(suggestion);
+                        }}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <input
                 type="text"
