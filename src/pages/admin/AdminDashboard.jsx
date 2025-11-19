@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
@@ -25,8 +25,8 @@ const AdminDashboard = ({ user: initialUser }) => {
   });
 
   // Fetch system-wide statistics
-  const fetchSystemStats = async () => {
-    console.log('🔄 Admin Dashboard: fetchSystemStats called');
+  const fetchSystemStats = useCallback(async ({ isRetry = false } = {}) => {
+    console.log('🔄 Admin Dashboard: fetchSystemStats called', { isRetry });
     clearError();
 
     try {
@@ -49,6 +49,19 @@ const AdminDashboard = ({ user: initialUser }) => {
 
     } catch (error) {
       console.error('Error in fetchSystemStats:', error);
+
+      // One-time automatic retry for transient network errors
+      const isNetworkError =
+        error?.status === 0 ||
+        typeof error?.message === 'string' && error.message.includes('No response received from server');
+
+      if (!isRetry && isNetworkError) {
+        setTimeout(() => {
+          fetchSystemStats({ isRetry: true });
+        }, 1000);
+        return;
+      }
+
       handleError(error, {
         toastMessage: t('failedToLoadDashboard', 'Failed to load dashboard data')
       });
@@ -56,12 +69,12 @@ const AdminDashboard = ({ user: initialUser }) => {
       stopLoading('fetchSystemStats');
       setInitialLoading(false);
     }
-  };
+  }, [clearError, startLoading, stopLoading, t, handleError]);
 
   // Initial data fetch
   useEffect(() => {
     fetchSystemStats();
-  }, []);
+  }, [fetchSystemStats]);
 
   // Initial loading state
   if (initialLoading) {
