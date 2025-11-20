@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X, Weight, Ruler, CircleUserRound, BookOpen } from 'lucide-react';
+import { sanitizeUsername } from '../../utils/usernameUtils';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../ui/Button';
@@ -28,8 +29,10 @@ const StudentEditModal = ({
   const [usernameSuggestions, setUsernameSuggestions] = useState([]);
   const [showUsernameSuggestions, setShowUsernameSuggestions] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
+  const [originalUsername, setOriginalUsername] = useState('');
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
+  const usernameContainerRef = useRef(null);
   const usernameDebounceRef = useRef(null);
   const hideUsernameSuggestionsTimeoutRef = useRef(null);
 
@@ -116,6 +119,13 @@ const StudentEditModal = ({
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
+      // Close username suggestions when clicking outside the username area
+      if (
+        usernameContainerRef.current &&
+        !usernameContainerRef.current.contains(event.target)
+      ) {
+        setShowUsernameSuggestions(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -160,10 +170,12 @@ const StudentEditModal = ({
         fullStudentObj: studentObj
       });
 
+      const initialUsername = fullData.username || '';
+
       setEditForm({
         firstName: fullData.firstName || fullData.first_name || '',
         lastName: fullData.lastName || fullData.last_name || '',
-        username: fullData.username || '',
+        username: initialUsername,
         email: fullData.email || '',
         phone: fullData.phone || '',
         gender: fullData.gender || '',
@@ -194,6 +206,7 @@ const StudentEditModal = ({
           villageId: fullData.placeOfBirth?.villageId || fullData.residence?.villageId || fullData.village_id || ''
         }
       });
+      setOriginalUsername(initialUsername || '');
       setUsernameAvailable(null);
 
       // Initialize dropdown selections
@@ -279,7 +292,12 @@ const StudentEditModal = ({
       [field]: value
     }));
     if (field === 'username') {
-      setUsernameAvailable(null);
+      // If username is unchanged from the original, treat it as available
+      if ((value || '') === (originalUsername || '')) {
+        setUsernameAvailable(true);
+      } else {
+        setUsernameAvailable(null);
+      }
     }
   };
 
@@ -322,11 +340,19 @@ const StudentEditModal = ({
 
       suggestions = suggestions.filter(Boolean).slice(0, 20);
 
-      if (typeof response?.available === 'boolean') {
-        setUsernameAvailable(response.available);
-      } else {
-        setUsernameAvailable(null);
-      }
+      const availableFlag = typeof response?.available === 'boolean'
+        ? response.available
+        : null;
+
+      const sameAsOriginal = (baseUsername || '') === (originalUsername || '');
+
+      // If this is the student's own original username, always treat it as available
+      // but still show suggestions as optional alternatives.
+      const effectiveAvailable = sameAsOriginal ? true : availableFlag;
+
+      // Do not auto-apply any suggestion; just reflect availability
+      // and show the list so the user can choose manually.
+      setUsernameAvailable(effectiveAvailable);
 
       setUsernameSuggestions(suggestions);
       setShowUsernameSuggestions(suggestions.length > 0);
@@ -352,12 +378,6 @@ const StudentEditModal = ({
       clearTimeout(usernameDebounceRef.current);
       usernameDebounceRef.current = null;
     }
-    if (hideUsernameSuggestionsTimeoutRef.current) {
-      clearTimeout(hideUsernameSuggestionsTimeoutRef.current);
-    }
-    hideUsernameSuggestionsTimeoutRef.current = setTimeout(() => {
-      setShowUsernameSuggestions(false);
-    }, 150);
   };
 
   const handleSubmit = async (e) => {
@@ -671,7 +691,7 @@ const StudentEditModal = ({
                 <DatePickerWithDropdowns
                   value={editForm.dateOfBirth}
                   onChange={(date) => handleFormChange('dateOfBirth', date)}
-                  placeholder={t('pickDate', 'Pick a date')} 
+                  placeholder={t('pickDate', 'Pick a date')}
                   required
                 />
               </div>
@@ -716,7 +736,7 @@ const StudentEditModal = ({
               <div className="grid grid-rows-3 gap-4">
                 <div>
                   <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('weight', 'Weight')} ({t('kg', 'kg')}) 
+                    {t('weight', 'Weight')} ({t('kg', 'kg')})
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -737,7 +757,7 @@ const StudentEditModal = ({
 
                 <div>
                   <label htmlFor="height" className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('height', 'Height')} ({t('cm', 'cm')}) 
+                    {t('height', 'Height')} ({t('cm', 'cm')})
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -882,35 +902,38 @@ const StudentEditModal = ({
             </h3>
             {/* Contact Information */}
             <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
-              <div>
+              <div ref={usernameContainerRef}>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                   {t('username', 'Username')} *
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <input
-                      type="text"
-                      id="username"
-                      value={editForm.username}
-                      onChange={(e) => {
-                        const newValue = e.target.value;
-                        handleFormChange('username', newValue);
+                  <div className="flex items-center gap-2">
+                    <div className='relative'>
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        id="username"
+                        value={editForm.username}
+                        onChange={(e) => {
+                          const rawValue = e.target.value;
+                          const newValue = sanitizeUsername(rawValue);
+                          handleFormChange('username', newValue);
 
-                        if (usernameDebounceRef.current) {
-                          clearTimeout(usernameDebounceRef.current);
-                        }
-                        usernameDebounceRef.current = setTimeout(() => {
-                          handleGenerateUsernameSuggestions(newValue);
-                        }, 400);
-                      }}
-                      onBlur={handleUsernameBlur}
-                      className="block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                      placeholder={t('enterUsername', 'Enter username')}
-                      required
-                    />
+                          if (usernameDebounceRef.current) {
+                            clearTimeout(usernameDebounceRef.current);
+                          }
+                          usernameDebounceRef.current = setTimeout(() => {
+                            handleGenerateUsernameSuggestions(newValue);
+                          }, 400);
+                        }}
+                        onBlur={handleUsernameBlur}
+                        className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                        placeholder={t('enterUsername', 'Enter username')}
+                        required
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => {
@@ -945,12 +968,12 @@ const StudentEditModal = ({
                   )}
                   {usernameAvailable === false && (
                     <p className="mt-1 text-xs text-red-600">
-                      {t('usernameNotAvailable', 'This username is already taken. Try another or use Suggestion.')}
+                      {t('usernameNotAvailable', 'This username is already taken')}
                     </p>
                   )}
                   {usernameAvailable === null && editForm.username && editForm.username.trim() && (
                     <p className="mt-1 text-xs text-gray-500">
-                      {t('usernameSuggestionHint', 'Use Suggestion to check availability and avoid duplicates.')}
+                      {t('usernameSuggestionHint', 'Use Suggestion to check available username.')}
                     </p>
                   )}
                 </div>

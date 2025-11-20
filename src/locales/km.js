@@ -224,6 +224,9 @@ export const km = {
   noClassesForGrade: 'មិនមានថ្នាក់សម្រាប់កម្រិតថ្នាក់ដែលបានជ្រើសរើស',
   selectGradeLevel: 'ជ្រើសរើសកម្រិតថ្នាក់',
   scrollToSeeMoreStudents: 'អូសទៅក្រោមដើម្បីបង្ហាញសិស្សទៀត',
+  usernameNotAvailable: 'ឈ្មោះអ្នកប្រើប្រាស់មិនអាចប្រើប្រាស់បានទេ',
+  usernameAvailable: 'ឈ្មោះអ្នកប្រើប្រាស់អាចប្រើប្រាស់បាន',
+  usernameSuggestionHint: 'ចុច​ការផ្ដល់យោបល់ដើម្បីបង្កើតឈ្មោះអ្នកប្រើប្រាស់ស្វ័យប្រវត្តិ',
 
   // Teacher Management
   addTeacher: 'បន្ថែមគ្រូ',
@@ -911,6 +914,17 @@ export const km = {
   loadingAttendance: 'កំពុងទាញយកវត្តមាន...',
   noAttendanceData: 'មិនមានទិន្នន័យវត្តមាន',
   noAttendanceDataMessage: 'មិនមានទិន្នន័យវត្តមានសម្រាប់ថ្នាក់របស់អ្នកនៅពេលនេះ។',
+  sortByMetric: 'ជ្រើសរើសការបង្ហាញ',
+  sortOrder: 'តម្រៀនតាមលំដាប់',
+  ascending: 'តម្រៀនតាមលំដាប់តូចទៅធំ',
+  descending: 'តម្រៀនតាមលំដាប់ធំទៅតូច',
+  schoolFilters: 'តម្រងសាលា',
+  schoolFiltersDesc: 'តម្រងទិន្នន័យ​ស្ថិតិ​ គ្រូបង្រៀន​ សិស្ស ថ្នាក់',
+  schoolDistribution: 'បំណែងចែកស្ថិតិទិន្នន័យសាលារៀនទូទាំងប្រទេស',
+  schoolDistributionDesc: 'ស្ថិតិសាលារៀន​ បែងចែកតាមតម្រងច្រើនប្រភេទ',
+  systemOverview: 'ទិន្នន័យសរុបរបស់ប្រព័ន្ធគ្រប់គ្រងសាលារៀន',
+  systemOverviewDesc: 'ទិដ្ឋភាពទូទៅនៃទិន្នន័យរបស់ប្រព័ន្ធគ្រប់គ្រងសាលារៀន',
+  
   
   // Student management with master-class endpoint
   noSchoolIdFound: 'រកមិនឃើញលេខសម្គាល់សាលារៀនសម្រាប់គណនីរបស់អ្នក',
@@ -1160,6 +1174,7 @@ export const km = {
   selectedFilters: 'កម្រងបានជ្រើសរើស',
   totalRecords: 'ទិន្នន័យដែលមានទាំងអស់',
   totalStudents: 'ចំនួនសិស្សទាំងអស់',
+  totalSchools: 'ចំនួនសាលារៀនទាំងអស់',
   startDate: 'ចាប់ផ្តើមកាលបរិច្ឆេទ',
   endDate: 'បញ្ចប់កាលបរិច្ឆេទ',
   selectStartDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',

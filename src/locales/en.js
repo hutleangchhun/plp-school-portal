@@ -163,6 +163,8 @@ export const en = {
   totalTeachers: 'Total Teachers',
   studentBMIDistribution: 'Student BMI Distribution',
   bmiCategoryBreakdown: 'BMI Category Breakdown',
+  systemOverview: 'System Overview',
+  systemOverviewDesc: 'Overview of the entire school system',
 
 
     // Student Management
@@ -421,6 +423,7 @@ export const en = {
   academicYear: 'Academic Year',
   generated: 'Generated',
   totalStudents: 'Total Students',
+  totalSchool: 'Total Schools',
   
   // Login page
   signInToAccount: 'Sign in to your account',
@@ -627,6 +630,13 @@ export const en = {
   awaitingAssignment: 'Awaiting Assignment',
   avgEnrollment: 'Avg Enrollment',
   studentsPerClass: 'Students Per Class',
+  sortByMetric: 'Sort by metric',
+  sortOrder: 'Sort order',
+  ascending: 'Sort ascending',
+  descending: 'Sort descending',
+  schoolFilters: 'School filters',
+  schoolFiltersDesc: 'Filter and sort schools for the chart',
+  
   
   // User data validation
   noValidUserData: 'No valid user data received from API',
