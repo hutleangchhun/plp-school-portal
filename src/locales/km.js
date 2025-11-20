@@ -1327,6 +1327,8 @@ export const km = {
   clickToTryAgain: 'ចុចដើម្បីព្យាយាមម្តងទៀត',
   errorReadingImage: 'កំហុសក្នុងការអានឯកសារូបភាព',
   basicInformation: 'ព័ត៌មានទូទៅ',
+  mapPickerHint: 'ចុចលើផែនទីនេះដើម្បីផ្លាស់ប្ដូរ​ និងបំពេញទិន្នន័យ Latitude និងLongitude',
+  mapPicker: 'ចុចលើផែនទីនេះដើម្បីកំណត់ GPS ទីតាំងសាលារៀន',
 
   // QR Code Generator
   studentQRCode: 'លេខកូដ QR សិស្ស',

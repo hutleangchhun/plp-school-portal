@@ -843,6 +843,8 @@ export const en = {
   clickToTryAgain: 'Click to retry',
   errorReadingImage: 'Error reading image file',
   basicInformation: 'Basic Information',
+  mapPickerHint: 'Click on the map to update the school location and fill in the latitude and longitude',
+  mapPicker: 'Click on the map to update the school location',
 
   // QR Code Generator
   studentQRCode: 'Student QR Codes',

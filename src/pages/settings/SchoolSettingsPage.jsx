@@ -12,6 +12,7 @@ import Dropdown from '../../components/ui/Dropdown';
 import { schoolService } from '../../utils/api/services/schoolService';
 import locationService from '../../utils/api/services/locationService';
 import { getStaticAssetBaseUrl } from '../../utils/api/config';
+import SchoolLocationMap from '../../components/ui/SchoolLocationMap';
 
 /**
  * SchoolSettingsPage Component
@@ -25,6 +26,7 @@ export default function SchoolSettingsPage({ user }) {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [schoolData, setSchoolData] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -39,7 +41,9 @@ export default function SchoolSettingsPage({ user }) {
     commune_code: '',
     commune_id: '', // Store numeric ID for API submission
     village_code: '',
-    village_id: '' // Store numeric ID for API submission
+    village_id: '', // Store numeric ID for API submission
+    gpsLatitude: '',
+    gpsLongitude: ''
   });
   const [profileImage, setProfileImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -100,7 +104,9 @@ export default function SchoolSettingsPage({ user }) {
             commune_code: (placeData.commune_code || placeData.communeCode) ? String(placeData.commune_code || placeData.communeCode) : '',
             commune_id: placeData.communeId ? String(placeData.communeId) : '',
             village_code: (placeData.village_code || placeData.villageCode) ? String(placeData.village_code || placeData.villageCode) : '',
-            village_id: placeData.villageId ? String(placeData.villageId) : ''
+            village_id: placeData.villageId ? String(placeData.villageId) : '',
+            gpsLatitude: placeData.gpsLatitude !== undefined && placeData.gpsLatitude !== null ? String(placeData.gpsLatitude) : '',
+            gpsLongitude: placeData.gpsLongitude !== undefined && placeData.gpsLongitude !== null ? String(placeData.gpsLongitude) : ''
           };
           console.log('📍 School location data from place object:', placeData);
           console.log('📍 Form data set:', newFormData);
@@ -206,6 +212,41 @@ export default function SchoolSettingsPage({ user }) {
     };
     fetchProjectTypes();
   }, []);
+
+  // Try to get user's current location once to prefill GPS if school has no GPS yet
+  useEffect(() => {
+    if (formData.gpsLatitude || formData.gpsLongitude) {
+      // Already have GPS (from backend or user input), don't overwrite
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      console.warn('Geolocation is not supported by this browser');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords || {};
+        if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+          return;
+        }
+        setFormData(prev => ({
+          ...prev,
+          gpsLatitude: prev.gpsLatitude || String(latitude),
+          gpsLongitude: prev.gpsLongitude || String(longitude)
+        }));
+      },
+      (error) => {
+        console.warn('Geolocation error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
+  }, [formData.gpsLatitude, formData.gpsLongitude]);
 
   // Fetch districts when province changes (only when user manually changes it, not on initial load)
   useEffect(() => {
@@ -316,15 +357,17 @@ export default function SchoolSettingsPage({ user }) {
 
   // Handle form input changes
   const handleInputChange = useCallback((e) => {
+    if (!isEditMode || submitting) return;
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-  }, []);
+  }, [isEditMode, submitting]);
 
   // Handle province selection
   const handleProvinceChange = useCallback((value) => {
+    if (!isEditMode || submitting) return;
     console.log('📍 Province selected:', value);
     setFormData(prev => ({
       ...prev,
@@ -335,10 +378,11 @@ export default function SchoolSettingsPage({ user }) {
       commune_code: '',
       commune_id: ''
     }));
-  }, []);
+  }, [isEditMode, submitting]);
 
   // Handle district selection - capture both code and ID
   const handleDistrictChange = useCallback((value) => {
+    if (!isEditMode || submitting) return;
     const selectedDistrict = districts.find(d => String(d.district_code || d.code) === value);
     console.log('📍 District selected:', value, selectedDistrict);
     setFormData(prev => ({
@@ -350,10 +394,11 @@ export default function SchoolSettingsPage({ user }) {
       commune_code: '',
       commune_id: ''
     }));
-  }, [districts]);
+  }, [districts, isEditMode, submitting]);
 
   // Handle commune selection - capture both code and ID
   const handleCommuneChange = useCallback((value) => {
+    if (!isEditMode || submitting) return;
     const selectedCommune = communes.find(c => String(c.commune_code || c.code) === value);
     console.log('📍 Commune selected:', value, selectedCommune);
     setFormData(prev => ({
@@ -365,10 +410,11 @@ export default function SchoolSettingsPage({ user }) {
       village_code: '',
       village_id: ''
     }));
-  }, [communes]);
+  }, [communes, isEditMode, submitting]);
 
   // Handle village selection - capture both code and ID
   const handleVillageChange = useCallback((value) => {
+    if (!isEditMode || submitting) return;
     const selectedVillage = villages.find(v => String(v.village_code || v.code) === value);
     console.log('📍 Village selected:', value, selectedVillage);
     setFormData(prev => ({
@@ -377,29 +423,36 @@ export default function SchoolSettingsPage({ user }) {
       // Use villageId from API response, fallback to id
       village_id: selectedVillage ? String(selectedVillage.villageId || selectedVillage.id) : ''
     }));
-  }, [villages]);
+  }, [villages, isEditMode, submitting]);
 
   // Handle school type selection
   const handleSchoolTypeChange = useCallback((value) => {
+    if (!isEditMode || submitting) return;
     console.log('🏢 School type selected:', value);
     setFormData(prev => ({
       ...prev,
       schoolType: value
     }));
-  }, []);
+  }, [isEditMode, submitting]);
 
   // Handle project type selection
   const handleProjectTypeChange = useCallback((value) => {
+    if (!isEditMode || submitting) return;
     console.log('🏫 Project type selected:', value);
     setFormData(prev => ({
       ...prev,
       projectTypeId: value
     }));
-  }, []);
+  }, [isEditMode, submitting]);
 
   // Handle form submission
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
+
+    // Do not submit if not in edit mode
+    if (!isEditMode) {
+      return;
+    }
 
     if (!formData.name.trim()) {
       showError(t('schoolNameRequired') || 'School name is required');
@@ -444,6 +497,19 @@ export default function SchoolSettingsPage({ user }) {
       }
       if (formData.village_id) {
         placeData.villageId = parseInt(formData.village_id);
+      }
+
+      if (formData.gpsLatitude) {
+        const lat = parseFloat(formData.gpsLatitude);
+        if (!Number.isNaN(lat)) {
+          placeData.gpsLatitude = lat;
+        }
+      }
+      if (formData.gpsLongitude) {
+        const lng = parseFloat(formData.gpsLongitude);
+        if (!Number.isNaN(lng)) {
+          placeData.gpsLongitude = lng;
+        }
       }
 
       if (Object.keys(placeData).length > 0) {
@@ -491,7 +557,7 @@ export default function SchoolSettingsPage({ user }) {
     } finally {
       setSubmitting(false);
     }
-  }, [formData, profileImage, schoolId, showSuccess, showError, t]);
+  }, [formData, profileImage, schoolId, showSuccess, showError, t, isEditMode]);
 
   if (loading && !schoolData) {
     return <PageLoader />;
@@ -525,7 +591,7 @@ export default function SchoolSettingsPage({ user }) {
         {error && (
           <FadeInSection className="mb-6">
             <ErrorDisplay
-              error={error} 
+              error={error}
               onRetry={retry}
               onDismiss={clearError}
             />
@@ -546,8 +612,11 @@ export default function SchoolSettingsPage({ user }) {
                   {/* Preview - Clickable */}
                   <div>
                     <div
-                      className="cursor-pointer group relative"
-                      onClick={() => document.getElementById('profileImageInput')?.click()}
+                      className="group relative"
+                      onClick={() => {
+                        if (!isEditMode || submitting) return;
+                        document.getElementById('profileImageInput')?.click();
+                      }}
                     >
                       {imageError ? (
                         <div className="w-full aspect-square rounded-lg bg-red-50 border-2 border-red-300 flex items-center justify-center group-hover:bg-red-100 transition-colors">
@@ -592,7 +661,7 @@ export default function SchoolSettingsPage({ user }) {
                     accept=".jpg,.jpeg,.png"
                     onChange={handleImageChange}
                     className="hidden"
-                    disabled={submitting}
+                    disabled={!isEditMode || submitting}
                   />
 
                   {/* File Info */}
@@ -631,7 +700,7 @@ export default function SchoolSettingsPage({ user }) {
                         name="name"
                         value={formData.name}
                         onChange={handleInputChange}
-                        disabled={submitting}
+                        disabled={!isEditMode || submitting}
                         className="w-full px-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                         placeholder={t('enterSchoolName') || 'Enter school name'}
                       />
@@ -648,7 +717,7 @@ export default function SchoolSettingsPage({ user }) {
                         name="code"
                         value={formData.code}
                         onChange={handleInputChange}
-                        disabled={submitting}
+                        disabled={!isEditMode || submitting}
                         className="w-full px-4 py-2 border text-sm border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                         placeholder={t('enterSchoolCode') || 'Enter school code'}
                       />
@@ -669,7 +738,7 @@ export default function SchoolSettingsPage({ user }) {
                         ]}
                         placeholder={t('selectSchoolType') || 'Select School Type'}
                         disabled={submitting}
-                        className="w-full"
+                        className={`w-full ${!isEditMode ? 'pointer-events-none opacity-80' : ''}`}
                         maxHeight="max-h-60"
                       />
                     </div>
@@ -688,7 +757,7 @@ export default function SchoolSettingsPage({ user }) {
                         }))}
                         placeholder={t('selectProjectType') || 'Select Project Type'}
                         disabled={submitting}
-                        className="w-full"
+                        className={`w-full ${!isEditMode ? 'pointer-events-none opacity-80' : ''}`}
                         maxHeight="max-h-60"
                       />
                     </div>
@@ -715,7 +784,7 @@ export default function SchoolSettingsPage({ user }) {
                         }))}
                         placeholder={t('selectProvince') || 'Select Province'}
                         disabled={submitting}
-                        className="w-full"
+                        className={`w-full ${!isEditMode ? 'pointer-events-none opacity-80' : ''}`}
                         maxHeight="max-h-60"
                       />
                     </div>
@@ -733,8 +802,8 @@ export default function SchoolSettingsPage({ user }) {
                           label: dist.district_name_kh || dist.district_name_en || dist.name_kh || dist.name_en || dist.name
                         }))}
                         placeholder={t('selectDistrict') || 'Select District'}
-                        disabled={submitting || !formData.province_id}
-                        className="w-full"
+                        disabled={!isEditMode || submitting || !formData.province_id}
+                        className={`w-full ${!isEditMode ? 'pointer-events-none opacity-80' : ''}`}
                         maxHeight="max-h-60"
                       />
                     </div>
@@ -752,64 +821,114 @@ export default function SchoolSettingsPage({ user }) {
                           label: comm.commune_name_kh || comm.commune_name_en || comm.name_kh || comm.name_en || comm.name
                         }))}
                         placeholder={t('selectCommune') || 'Select Commune'}
-                        disabled={submitting || !formData.district_code}
-                        className="w-full"
+                        disabled={!isEditMode || submitting || !formData.district_code}
+                        className={`w-full ${!isEditMode ? 'pointer-events-none opacity-80' : ''}`}
                         maxHeight="max-h-60"
+                      />
+                    </div>
+                    {/* GPS Latitude */}
+                    <div>
+                      <label htmlFor="gpsLatitude" className="block text-sm font-medium text-gray-900 mb-2">
+                        {t('gpsLatitude', 'GPS Latitude')}
+                      </label>
+                      <input
+                        type="text"
+                        id="gpsLatitude"
+                        name="gpsLatitude"
+                        value={formData.gpsLatitude}
+                        onChange={handleInputChange}
+                        disabled={!isEditMode || submitting}
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                        placeholder="11.5678901"
                       />
                     </div>
 
-                    {/* Village */}
+                    {/* GPS Longitude */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-2">
-                        {t('village') || 'Village'}
+                      <label htmlFor="gpsLongitude" className="block text-sm font-medium text-gray-900 mb-2">
+                        {t('gpsLongitude', 'GPS Longitude')}
                       </label>
-                      <Dropdown
-                        value={formData.village_code}
-                        onValueChange={handleVillageChange}
-                        options={villages.map(vill => ({
-                          value: String(vill.village_code || vill.code),
-                          label: vill.village_name_kh || vill.village_name_en || vill.name_kh || vill.name_en || vill.name
-                        }))}
-                        placeholder={t('selectVillage') || 'Select Village'}
-                        disabled={submitting || !formData.commune_code}
-                        className="w-full"
-                        maxHeight="max-h-60"
+                      <input
+                        type="text"
+                        id="gpsLongitude"
+                        name="gpsLongitude"
+                        value={formData.gpsLongitude}
+                        onChange={handleInputChange}
+                        disabled={!isEditMode || submitting}
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                        placeholder="104.9123456"
                       />
                     </div>
+                  </div>
+                  {/* Interactive Map Picker */}
+                  <div className="mt-4">
+                    <h4 className="text-xs font-medium text-gray-700 mb-2">
+                      {t('mapPicker', 'Click on the map to set GPS coordinates')}
+                    </h4>
+                    <SchoolLocationMap
+                      latitude={formData.gpsLatitude ? parseFloat(formData.gpsLatitude) : undefined}
+                      longitude={formData.gpsLongitude ? parseFloat(formData.gpsLongitude) : undefined}
+                      onChange={(!isEditMode || submitting)
+                        ? undefined
+                        : (lat, lng) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            gpsLatitude: String(lat),
+                            gpsLongitude: String(lng)
+                          }));
+                        }}
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                      {t('mapPickerHint', 'Click anywhere on the map to update the GPS latitude and longitude fields above.')}
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Submit Button */}
+            {/* Footer actions: Edit in view mode, Cancel + Save in edit mode */}
             <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate(-1)}
-                disabled={submitting}
-                size="sm"
-              >
-                {t('cancel') || 'Cancel'}
-              </Button>
-              <Button
-                type="submit"
-                disabled={submitting}
-                variant="primary"
-                size="sm"
-              >
-                {submitting ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    {t('saving') || 'Saving...'}
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-1" />
-                    {t('save') || 'Save Changes'}
-                  </>
-                )}
-              </Button>
+              {!isEditMode ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditMode(true)}
+                  disabled={submitting}
+                  size="sm"
+                >
+                  {t('edit', 'Edit')}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditMode(false)}
+                    disabled={submitting}
+                    size="sm"
+                  >
+                    {t('cancel', 'Cancel')}
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={submitting}
+                    variant="primary"
+                    size="sm"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin" />
+                        {t('saving') || 'Saving...'}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-1" />
+                        {t('save') || 'Save Changes'}
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
             </div>
           </form>
         </FadeInSection>
