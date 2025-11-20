@@ -6,6 +6,7 @@ import { useLoading } from '../../contexts/LoadingContext';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
+import transliterate from '../../utils/transliterator';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { PageLoader } from '../../components/ui/DynamicLoader';
@@ -533,25 +534,142 @@ export default function BulkStudentImport() {
       // After importing from Excel, proactively check username availability
       const studentsWithAvailability = await Promise.all(
         mappedStudents.map(async (student) => {
-          const username = (student.username || '').trim();
-          if (!username) return student;
+          const originalUsername = (student.username || '').trim();
+
+          // If no username in Excel, we'll try to build one from names later
+          const hasExcelUsername = !!originalUsername;
 
           // Reuse the same username format rule used in isCellInvalid
           const usernameRegex = /^[a-zA-Z0-9]{3,50}$/;
-          if (!usernameRegex.test(username)) {
-            return { ...student, usernameAvailable: false };
-          }
 
-          try {
-            const response = await userService.generateUsername(username);
-            if (typeof response?.available === 'boolean') {
-              return { ...student, usernameAvailable: response.available };
+          const checkAvailability = async (candidate) => {
+            const base = (candidate || '').trim();
+            if (!base) return { available: null, username: null };
+            if (!usernameRegex.test(base)) {
+              return { available: false, username: base };
             }
-          } catch (err) {
-            console.error('Error checking username availability for imported student:', err);
+
+            try {
+              const response = await userService.generateUsername(base);
+
+              let suggestions = [];
+              if (Array.isArray(response?.suggestions)) {
+                suggestions = response.suggestions;
+              } else if (Array.isArray(response?.data)) {
+                suggestions = response.data;
+              } else if (response?.username) {
+                suggestions = [response.username];
+              }
+
+              const firstSuggestion = suggestions.filter(Boolean)[0] || base;
+              const available = typeof response?.available === 'boolean'
+                ? response.available
+                : null;
+
+              return { available, username: firstSuggestion };
+            } catch (err) {
+              console.error('Error checking username availability for imported student:', err);
+              return { available: null, username: base };
+            }
+          };
+
+          // 1) If Excel provided a username, check that first
+          if (hasExcelUsername) {
+            const firstCheck = await checkAvailability(originalUsername);
+
+            if (firstCheck.available === true) {
+              // Excel username (or backend suggestion) is available - keep it
+              return {
+                ...student,
+                username: firstCheck.username || originalUsername,
+                usernameAvailable: true
+              };
+            }
+
+            if (firstCheck.available === false) {
+              // 2) Excel username is not available -> build new base from transliterated name
+              const rawFirst = (student.firstName || '').trim();
+              const rawLast = (student.lastName || '').trim();
+
+              const transliteratedFirst = rawFirst ? transliterate(rawFirst).toLowerCase() : '';
+              const transliteratedLast = rawLast ? transliterate(rawLast).toLowerCase() : '';
+              // Combine without separators and strip any non-alphanumeric characters
+              let combinedBase = (transliteratedFirst + transliteratedLast) || transliteratedFirst || transliteratedLast;
+              combinedBase = combinedBase.replace(/[^a-z0-9]/g, '');
+
+              if (!combinedBase) {
+                // No usable name info, keep row flagged as conflict
+                return {
+                  ...student,
+                  usernameAvailable: false
+                };
+              }
+
+              // Generate a new username from the transliterated base
+              try {
+                const response = await userService.generateUsername(combinedBase);
+
+                let suggestions = [];
+                if (Array.isArray(response?.suggestions)) {
+                  suggestions = response.suggestions;
+                } else if (Array.isArray(response?.data)) {
+                  suggestions = response.data;
+                } else if (response?.username) {
+                  suggestions = [response.username];
+                }
+
+                const firstSuggestion = suggestions.filter(Boolean)[0] || combinedBase;
+
+                return {
+                  ...student,
+                  username: firstSuggestion,
+                  // We assume backend generated a unique suggestion
+                  usernameAvailable: true
+                };
+              } catch (err) {
+                console.error('Error generating fallback username from transliterated name:', err);
+                return {
+                  ...student,
+                  usernameAvailable: false
+                };
+              }
+            }
+
+            // Unknown availability result, just return student with whatever we know
+            return {
+              ...student,
+              usernameAvailable: firstCheck.available
+            };
           }
 
-          return student;
+          // 3) No Excel username at all -> try building one directly from names
+          const rawFirst = (student.firstName || '').trim();
+          const rawLast = (student.lastName || '').trim();
+
+          const transliteratedFirst = rawFirst ? transliterate(rawFirst).toLowerCase() : '';
+          const transliteratedLast = rawLast ? transliterate(rawLast).toLowerCase() : '';
+          // Combine without separators and strip any non-alphanumeric characters
+          let combinedBase = (transliteratedFirst + transliteratedLast) || transliteratedFirst || transliteratedLast;
+          combinedBase = combinedBase.replace(/[^a-z0-9]/g, '');
+
+          if (!combinedBase) {
+            return student;
+          }
+
+          const nameCheck = await checkAvailability(combinedBase);
+
+          if (nameCheck.available === true) {
+            return {
+              ...student,
+              username: nameCheck.username || combinedBase,
+              usernameAvailable: true
+            };
+          }
+
+          return {
+            ...student,
+            usernameAvailable: nameCheck.available === false ? false : null
+          };
         })
       );
 

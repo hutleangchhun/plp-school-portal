@@ -25,8 +25,13 @@ const StudentEditModal = ({
   const [showImageModal, setShowImageModal] = useState(false);
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [usernameSuggestions, setUsernameSuggestions] = useState([]);
+  const [showUsernameSuggestions, setShowUsernameSuggestions] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(null);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
+  const usernameDebounceRef = useRef(null);
+  const hideUsernameSuggestionsTimeoutRef = useRef(null);
 
   const [editForm, setEditForm] = useState({
     firstName: '',
@@ -189,6 +194,7 @@ const StudentEditModal = ({
           villageId: fullData.placeOfBirth?.villageId || fullData.residence?.villageId || fullData.village_id || ''
         }
       });
+      setUsernameAvailable(null);
 
       // Initialize dropdown selections
       const res = fullData.residence || {};
@@ -242,6 +248,7 @@ const StudentEditModal = ({
     resetBirthSelections();
     setProfilePictureFile(null);
     setShowDropdown(false);
+    setUsernameAvailable(null);
   };
 
   const getAcademicYearOptions = () => {
@@ -271,6 +278,9 @@ const StudentEditModal = ({
       ...prev,
       [field]: value
     }));
+    if (field === 'username') {
+      setUsernameAvailable(null);
+    }
   };
 
   const handleViewPicture = () => {
@@ -292,6 +302,64 @@ const StudentEditModal = ({
     }
   };
 
+  const handleGenerateUsernameSuggestions = async (baseFromInput = null) => {
+    try {
+      const baseUsername = (baseFromInput && baseFromInput.trim()) ||
+        (editForm.username && editForm.username.trim()) ||
+        'student';
+
+      const response = await userService.generateUsername(baseUsername);
+
+      let suggestions = [];
+
+      if (Array.isArray(response?.suggestions)) {
+        suggestions = response.suggestions;
+      } else if (Array.isArray(response?.data)) {
+        suggestions = response.data;
+      } else if (response?.username) {
+        suggestions = [response.username];
+      }
+
+      suggestions = suggestions.filter(Boolean).slice(0, 20);
+
+      if (typeof response?.available === 'boolean') {
+        setUsernameAvailable(response.available);
+      } else {
+        setUsernameAvailable(null);
+      }
+
+      setUsernameSuggestions(suggestions);
+      setShowUsernameSuggestions(suggestions.length > 0);
+    } catch (error) {
+      console.error('Error generating username suggestions:', error);
+      setUsernameSuggestions([]);
+      setShowUsernameSuggestions(false);
+      showError(t('failedGenerateUsername', 'Failed to generate username suggestions'));
+    }
+  };
+
+  const handleChooseUsernameSuggestion = (suggestion) => {
+    setEditForm(prev => ({
+      ...prev,
+      username: suggestion
+    }));
+    setUsernameAvailable(true);
+    setShowUsernameSuggestions(false);
+  };
+
+  const handleUsernameBlur = () => {
+    if (usernameDebounceRef.current) {
+      clearTimeout(usernameDebounceRef.current);
+      usernameDebounceRef.current = null;
+    }
+    if (hideUsernameSuggestionsTimeoutRef.current) {
+      clearTimeout(hideUsernameSuggestionsTimeoutRef.current);
+    }
+    hideUsernameSuggestionsTimeoutRef.current = setTimeout(() => {
+      setShowUsernameSuggestions(false);
+    }, 150);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!student) return;
@@ -301,7 +369,6 @@ const StudentEditModal = ({
 
       const userId = student.userId || student.user_id || student.id;
 
-      // Normalize date to YYYY-MM-DD
       const formatDate = (val) => {
         if (!val) return undefined;
         const d = val instanceof Date ? val : new Date(val);
@@ -311,7 +378,6 @@ const StudentEditModal = ({
         return `${y}-${m}-${day}`;
       };
 
-      // Backend expects snake_case keys on updateUser, but student fields in nested camelCase object
       const payload = {
         username: editForm.username?.trim(),
         first_name: editForm.firstName?.trim(),
@@ -409,6 +475,16 @@ const StudentEditModal = ({
     }
   };
 
+  const isUpdateDisabled =
+    loading ||
+    !editForm.firstName?.trim() ||
+    !editForm.lastName?.trim() ||
+    !editForm.gender ||
+    !editForm.dateOfBirth ||
+    !editForm.nationality ||
+    !editForm.username?.trim() ||
+    usernameAvailable === false;
+
   return (
     <>
       <Modal
@@ -432,7 +508,7 @@ const StudentEditModal = ({
               type="submit"
               form="edit-student-form"
               variant="primary"
-              disabled={loading}
+              disabled={isUpdateDisabled}
               className="min-w-[120px]"
             >
               {loading ? t('updating', 'Updating...') : t('updateStudent', 'Update Student')}
@@ -814,15 +890,69 @@ const StudentEditModal = ({
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <User className="h-4 w-4 text-gray-400" />
                   </div>
-                  <input
-                    type="text"
-                    id="username"
-                    value={editForm.username}
-                    onChange={(e) => handleFormChange('username', e.target.value)}
-                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                    placeholder={t('enterUsername', 'Enter username')}
-                    required
-                  />
+                  <div className="mt-1 flex items-center gap-2">
+                    <input
+                      type="text"
+                      id="username"
+                      value={editForm.username}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        handleFormChange('username', newValue);
+
+                        if (usernameDebounceRef.current) {
+                          clearTimeout(usernameDebounceRef.current);
+                        }
+                        usernameDebounceRef.current = setTimeout(() => {
+                          handleGenerateUsernameSuggestions(newValue);
+                        }, 400);
+                      }}
+                      onBlur={handleUsernameBlur}
+                      className="block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                      placeholder={t('enterUsername', 'Enter username')}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (hideUsernameSuggestionsTimeoutRef.current) {
+                          clearTimeout(hideUsernameSuggestionsTimeoutRef.current);
+                        }
+                        handleGenerateUsernameSuggestions(editForm.username || '');
+                      }}
+                      className="px-2 py-1 text-xs border border-gray-300 rounded bg-white hover:bg-blue-50 text-gray-700"
+                    >
+                      {t('suggestion', 'Suggestion')}
+                    </button>
+                  </div>
+                  {showUsernameSuggestions && usernameSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-20 text-xs max-h-60 overflow-auto">
+                      {usernameSuggestions.map((suggestion, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className="w-full text-left px-3 py-1 hover:bg-blue-50"
+                          onClick={() => handleChooseUsernameSuggestion(suggestion)}
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {usernameAvailable === true && (
+                    <p className="mt-1 text-xs text-green-600">
+                      {t('usernameAvailable', 'This username is available.')}
+                    </p>
+                  )}
+                  {usernameAvailable === false && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {t('usernameNotAvailable', 'This username is already taken. Try another or use Suggestion.')}
+                    </p>
+                  )}
+                  {usernameAvailable === null && editForm.username && editForm.username.trim() && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      {t('usernameSuggestionHint', 'Use Suggestion to check availability and avoid duplicates.')}
+                    </p>
+                  )}
                 </div>
               </div>
 
