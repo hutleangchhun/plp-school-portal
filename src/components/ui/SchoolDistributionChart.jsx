@@ -245,19 +245,15 @@ const SchoolDistributionChart = ({
             disabled={!selectedProvince}
           />
 
-          {/* Sorting controls */}
+          {/* Sorting controls - use Dropdown instead of buttons */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">{t('sortBy', 'Sort by')}:</span>
-            {metricOptions.map((option) => (
-              <Button
-                key={option.value}
-                variant={activeMetric === option.value ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setActiveMetric(option.value)}
-              >
-                {option.label}
-              </Button>
-            ))}
+            <Dropdown
+              value={activeMetric}
+              onValueChange={setActiveMetric}
+              options={metricOptions}
+              className="min-w-[140px]"
+            />
           </div>
 
           {/* Sort order control */}
@@ -285,20 +281,25 @@ const SchoolDistributionChart = ({
             margin={{
               top: 20,
               right: 30,
-              left: 0, // Increased left margin to accommodate longer school names
+              // Extra left margin so school names sit clearly to the left of bars
+              left: 120,
               bottom: 20,
             }}
           >
             <CartesianGrid strokeDasharray="3 3" />
+            {/* Numeric values along the bottom */}
             <XAxis type="number" />
             <YAxis
               type="category"
+              // Use school name field from API (fallback to other possible keys)
               dataKey="name"
               tick={{
-                fontSize: 11, // Slightly smaller font to fit longer names
-                textAnchor: 'start' // Align text to the start
+                fontSize: 11,
+                // Keep labels on the left of the bar, not under it
+                textAnchor: 'end'
               }}
-              width={170} // Set width to accommodate school names
+              // Wider axis area to fully show school names on the left
+              width={180}
             />
             <Tooltip
               formatter={(value, name) => [value, t(name, name)]}
