@@ -8,6 +8,8 @@ import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dr
 import ProfileImage from '../../components/ui/ProfileImage';
 import ProfileInfoDisplay from '../../components/ui/ProfileInfoDisplay';
 import { api, utils } from '../../utils/api';
+import { userService } from '../../utils/api/services/userService';
+import { sanitizeUsername } from '../../utils/usernameUtils';
 import Dropdown from '../../components/ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { useStableCallback } from '../../utils/reactOptimization';
@@ -80,6 +82,12 @@ export default function ProfileUpdate({ user, setUser }) {
   const [isEditMode, setIsEditMode] = useState(false);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
+  const [usernameSuggestions, setUsernameSuggestions] = useState([]);
+  const [showUsernameSuggestions, setShowUsernameSuggestions] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(null);
+  const [originalUsername, setOriginalUsername] = useState('');
+  const usernameContainerRef = useRef(null);
+  const usernameDebounceRef = useRef(null);
 
   // Store pending location data for setting initial values
   const [pendingResidenceData, setPendingResidenceData] = useState(null);
@@ -127,6 +135,14 @@ export default function ProfileUpdate({ user, setUser }) {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(false);
+      }
+
+      // Close username suggestions when clicking outside the username area
+      if (
+        usernameContainerRef.current &&
+        !usernameContainerRef.current.contains(event.target)
+      ) {
+        setShowUsernameSuggestions(false);
       }
     };
 
@@ -582,6 +598,56 @@ export default function ProfileUpdate({ user, setUser }) {
     }
   };
 
+  const handleGenerateUsernameSuggestions = async (baseFromInput = null) => {
+    try {
+      const baseUsername = (baseFromInput && baseFromInput.trim()) ||
+        (formData.username && formData.username.trim()) ||
+        'user';
+
+      const response = await userService.generateUsername(baseUsername);
+
+      let suggestions = [];
+
+      if (Array.isArray(response?.suggestions)) {
+        suggestions = response.suggestions;
+      } else if (Array.isArray(response?.data)) {
+        suggestions = response.data;
+      } else if (response?.username) {
+        suggestions = [response.username];
+      }
+
+      suggestions = suggestions.filter(Boolean).slice(0, 20);
+
+      const availableFlag = typeof response?.available === 'boolean'
+        ? response.available
+        : null;
+
+      const sameAsOriginal = (baseUsername || '') === (originalUsername || '');
+
+      // If this is the user's original username, always treat it as available
+      // but still show suggestions as optional alternatives.
+      const effectiveAvailable = sameAsOriginal ? true : availableFlag;
+
+      setUsernameAvailable(effectiveAvailable);
+      setUsernameSuggestions(suggestions);
+      setShowUsernameSuggestions(suggestions.length > 0);
+    } catch (error) {
+      console.error('Error generating username suggestions (profile):', error);
+      setUsernameSuggestions([]);
+      setShowUsernameSuggestions(false);
+      showError(t('failedGenerateUsername', 'Failed to generate username suggestions'));
+    }
+  };
+
+  const handleChooseUsernameSuggestion = (suggestion) => {
+    setFormData(prev => ({
+      ...prev,
+      username: suggestion
+    }));
+    setUsernameAvailable(true);
+    setShowUsernameSuggestions(false);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -591,6 +657,16 @@ export default function ProfileUpdate({ user, setUser }) {
 
     setShowConfirmDialog(true);
   };
+
+  const isProfileSubmitDisabled =
+    loading ||
+    !formData.first_name?.trim() ||
+    !formData.last_name?.trim() ||
+    !formData.gender ||
+    !formData.date_of_birth ||
+    !formData.nationality ||
+    !formData.username?.trim() ||
+    usernameAvailable === false;
 
   const handleConfirmUpdate = async () => {
     setLoading(true);
@@ -1017,7 +1093,7 @@ export default function ProfileUpdate({ user, setUser }) {
                   <button
                     type="submit"
                     form="profile-form"
-                    disabled={loading}
+                    disabled={isProfileSubmitDisabled}
                     className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
                     <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1223,24 +1299,85 @@ export default function ProfileUpdate({ user, setUser }) {
               <form id="profile-form" onSubmit={handleSubmit} className="flex-1 space-y-4 lg:space-y-6 p-3 lg:p-4 border border-gray-100 rounded-lg bg-white max-h-[600px] overflow-y-auto">
                 <h4 className="text-base lg:text-lg font-medium text-gray-900 mb-4">{t('personalInformation') || 'Additional Information'}</h4>
                 <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
-                  <div>
+                  <div ref={usernameContainerRef}>
                     <label htmlFor="username" className="block text-xs sm:text-sm font-medium text-gray-700">
                       {t('username')}
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                        <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+                            <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+                          </div>
+                          <input
+                            type="text"
+                            name="username"
+                            id="username"
+                            required
+                            readOnly={!isEditMode}
+                            className={`mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
+                            value={formData.username}
+                            onChange={(e) => {
+                              if (!isEditMode) return;
+                              const rawValue = e.target.value;
+                              const newValue = sanitizeUsername(rawValue);
+                              setFormData(prev => ({
+                                ...prev,
+                                username: newValue
+                              }));
+
+                              if (usernameDebounceRef.current) {
+                                clearTimeout(usernameDebounceRef.current);
+                              }
+                              usernameDebounceRef.current = setTimeout(() => {
+                                handleGenerateUsernameSuggestions(newValue);
+                              }, 400);
+                            }}
+                          />
+                        </div>
+                        {isEditMode && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleGenerateUsernameSuggestions(formData.username || '');
+                            }}
+                            className="mt-1 px-2 py-1 text-[10px] sm:text-xs border border-gray-300 rounded bg-white hover:bg-blue-50 text-gray-700 whitespace-nowrap"
+                          >
+                            {t('suggestion', 'Suggestion')}
+                          </button>
+                        )}
                       </div>
-                      <input
-                        type="text"
-                        name="username"
-                        id="username"
-                        required
-                        readOnly={!isEditMode}
-                        className={`mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                        value={formData.username}
-                        onChange={handleInputChange}
-                      />
+
+                      {showUsernameSuggestions && usernameSuggestions.length > 0 && (
+                        <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-20 text-xs max-h-60 overflow-auto">
+                          {usernameSuggestions.map((suggestion, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              className="w-full text-left px-3 py-1 hover:bg-blue-50"
+                              onClick={() => handleChooseUsernameSuggestion(suggestion)}
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {usernameAvailable === true && formData.username && (
+                        <p className="mt-1 text-[10px] sm:text-xs text-green-600">
+                          {t('usernameAvailable', 'This username is available.')}
+                        </p>
+                      )}
+                      {usernameAvailable === false && formData.username && (
+                        <p className="mt-1 text-[10px] sm:text-xs text-red-600">
+                          {t('usernameNotAvailable', 'This username is already taken')}
+                        </p>
+                      )}
+                      {usernameAvailable === null && formData.username && formData.username.trim() && (
+                        <p className="mt-1 text-[10px] sm:text-xs text-gray-500">
+                          {t('usernameSuggestionHint', 'Use Suggestion to check available username.')}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div>
@@ -1377,7 +1514,7 @@ export default function ProfileUpdate({ user, setUser }) {
                 <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      {t('emailRequired')}
+                      {t('email')}
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1387,7 +1524,6 @@ export default function ProfileUpdate({ user, setUser }) {
                         type="email"
                         name="email"
                         id="email"
-                        required
                         readOnly={!isEditMode}
                         className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
                         value={formData.email}
