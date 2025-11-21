@@ -133,10 +133,10 @@ export default function BulkStudentImport() {
       return !(d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100);
     }
 
-    // Grade level validation (should be a number between 1-6)
+    // Grade level validation (should be a number between 0-6, allowing 0 for Kindergarten)
     if (columnKey === 'gradeLevel') {
       const grade = parseInt(value);
-      return isNaN(grade) || grade < 1 || grade > 6;
+      return isNaN(grade) || grade < 0 || grade > 6;
     }
 
     // Username validation (only English letters and numbers, 3-50 chars)

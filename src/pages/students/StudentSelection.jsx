@@ -17,7 +17,7 @@ import Dropdown from '../../components/ui/Dropdown';
 import DynamicLoader from '../../components/ui/DynamicLoader';
 import { formatDateKhmer } from '../../utils/formatters';
 import SidebarFilter from '../../components/ui/SidebarFilter';
-import { formatClassIdentifier } from '../../utils/helpers';
+import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
 
 const StudentSelection = () => {
   const navigate = useNavigate();
@@ -582,10 +582,22 @@ const StudentSelection = () => {
                   options={[
                     { value: 'any', label: t('allStudents', 'All Students') },
                     { value: 'null', label: t('studentsWithoutClass', 'Without Class') },
-                    ...classes.map(cls => ({
-                      value: cls.classId.toString(),
-                      label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
-                    }))
+                    ...classes.map(cls => {
+                      const rawGradeLevel =
+                        typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+                          ? String(cls.gradeLevel)
+                          : '';
+
+                      const displayGradeLevel =
+                        rawGradeLevel === '0'
+                          ? t('grade0', 'Kindergarten')
+                          : rawGradeLevel;
+
+                      return {
+                        value: cls.classId.toString(),
+                        label: `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`
+                      };
+                    })
                   ]}
                   placeholder={t('selectClassFilter', 'Select Class')}
                   minWidth="w-full"
@@ -638,15 +650,7 @@ const StudentSelection = () => {
                 <Dropdown
                   value={filters.gradeLevel}
                   onValueChange={(value) => handleFilterChange({ ...filters, gradeLevel: value })}
-                  options={[
-                    { value: '', label: t('allGrades', 'All Grades') },
-                    { value: 1, label: t('grade1', 'Grade 1') },
-                    { value: 2, label: t('grade2', 'Grade 2') },
-                    { value: 3, label: t('grade3', 'Grade 3') },
-                    { value: 4, label: t('grade4', 'Grade 4') },
-                    { value: 5, label: t('grade5', 'Grade 5') },
-                    { value: 6, label: t('grade6', 'Grade 6') }
-                  ]}
+                  options={getSharedGradeLevelOptions(t, true)}
                   placeholder={t('selectGradeLevel', 'Select Grade Level')}
                   minWidth="w-full"
                   triggerClassName="text-sm w-full bg-gray-50 border-gray-200"

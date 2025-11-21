@@ -95,7 +95,8 @@ const userService = {
     if (userData.ethnic_group) {
       formattedData.ethnic_group = userData.ethnic_group;
     }
-    if (userData.gradeLevel) {
+    // Allow gradeLevel = 0 by checking explicitly for undefined/null/empty
+    if (userData.gradeLevel !== undefined && userData.gradeLevel !== null && userData.gradeLevel !== '') {
       formattedData.gradeLevel = userData.gradeLevel;
     }
     if (userData.hire_date) {
@@ -484,7 +485,8 @@ const userService = {
       bmi: teacherData.bmi ? parseFloat(teacherData.bmi) : undefined,
       profile_picture: teacherData.profile_picture || teacherData.profilePicture,
       accessibility: teacherData.accessibility && Array.isArray(teacherData.accessibility) && teacherData.accessibility.length > 0 ? teacherData.accessibility : undefined,
-      gradeLevel: teacherData.gradeLevel || teacherData.grade_level,
+      // Preserve gradeLevel = 0 by using nullish coalescing instead of ||
+      gradeLevel: teacherData.gradeLevel ?? teacherData.grade_level,
       schoolId: teacherData.schoolId,
       // Include location fields with numeric IDs
       residence: convertLocationIds(teacherData.residence),
