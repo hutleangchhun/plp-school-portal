@@ -173,7 +173,7 @@ export default function TeacherStudentsManagement({ user }) {
             studentService.getStudentsBySchoolClasses(schoolId, {
               classId: cls.classId || cls.id,
               search: searchInput.trim() || undefined,
-              limit: 1000 // Get all students from this class
+              limit: 100 // Get all students from this class
             })
           );
 
@@ -266,13 +266,25 @@ export default function TeacherStudentsManagement({ user }) {
     }, 500);
   };
 
-  // Dropdown options
+  // Dropdown options (Kindergarten-aware class formatting)
   const classDropdownOptions = [
     { value: 'all', label: t('allClasses', 'All Classes') },
-    ...classes.map(cls => ({
-      value: String(cls.classId || cls.id),
-      label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
-    }))
+    ...classes.map(cls => {
+      const rawGradeLevel =
+        typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+          ? String(cls.gradeLevel)
+          : '';
+
+      const displayGradeLevel =
+        rawGradeLevel === '0'
+          ? t('grade0', 'Kindergarten')
+          : rawGradeLevel;
+
+      return {
+        value: String(cls.classId || cls.id),
+        label: `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`
+      };
+    })
   ];
 
   // Table columns
@@ -310,15 +322,32 @@ export default function TeacherStudentsManagement({ user }) {
       header: t('class', 'Class'),
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
-      render: (student) => (
-        <p>
-          {student?.class?.gradeLevel || student?.gradeLevel ? (
-            `${t('class') || 'Class'} ${formatClassIdentifier(student?.class?.gradeLevel || student?.gradeLevel, student?.class?.section || student?.section)}`
-          ) : (
-            student?.className || 'N/A'
-          )}
-        </p>
-      )
+      render: (student) => {
+        const rawGradeLevel =
+          typeof (student?.class?.gradeLevel ?? student?.gradeLevel) !== 'undefined' &&
+          (student?.class?.gradeLevel ?? student?.gradeLevel) !== null
+            ? String(student?.class?.gradeLevel ?? student?.gradeLevel)
+            : '';
+
+        const displayGradeLevel =
+          rawGradeLevel === '0'
+            ? t('grade0', 'Kindergarten')
+            : rawGradeLevel;
+
+        const hasClassInfo = !!rawGradeLevel || !!student?.className;
+
+        return (
+          <p>
+            {hasClassInfo ? (
+              rawGradeLevel
+                ? `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, student?.class?.section || student?.section)}`
+                : student?.className || 'N/A'
+            ) : (
+              'N/A'
+            )}
+          </p>
+        );
+      }
     },
     {
       key: 'status',

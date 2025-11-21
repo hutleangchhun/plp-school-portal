@@ -16,7 +16,7 @@ import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
 import { schoolService } from '../../utils/api/services/schoolService';
 import { teacherService } from '../../utils/api/services/teacherService';
-import { formatClassIdentifier } from '../../utils/helpers';
+import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
 import QRCodeDisplay from '@/components/qr-code/QRCodeDisplay';
 import { createQRCodeDownloadCard } from '@/components/qr-code/QRCodeDownloadCard';
 
@@ -303,15 +303,34 @@ export default function StudentQRCodeGenerator() {
     }
   };
 
-  const getGradeLevelOptions = () => [
-    { value: 'all', label: t('allGradeLevels', 'កម្រិតទាំងអស់') },
-    ...[1, 2, 3, 4, 5, 6].map((lvl) => ({ value: lvl, label: `ថ្នាក់ទី ${lvl}` }))
-  ];
+  const getGradeLevelOptions = () => {
+    // Shared helper uses global grade config (including Kindergarten) and translations
+    return getSharedGradeLevelOptions(t, true);
+  };
 
-  const getClassOptions = () => classes.map((c) => ({
-    value: c.id?.toString(),
-    label: c.id === 'all' ? c.name : `${t('class') || 'Class'} ${formatClassIdentifier(c.gradeLevel, c.section)}`
-  }));
+  const getClassOptions = () => classes.map((c) => {
+    if (c.id === 'all') {
+      return {
+        value: c.id?.toString(),
+        label: c.name
+      };
+    }
+
+    const rawGradeLevel =
+      typeof c.gradeLevel !== 'undefined' && c.gradeLevel !== null
+        ? String(c.gradeLevel)
+        : '';
+
+    const displayGradeLevel =
+      rawGradeLevel === '0'
+        ? t('grade0', 'Kindergarten')
+        : rawGradeLevel;
+
+    return {
+      value: c.id?.toString(),
+      label: `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, c.section)}`
+    };
+  });
 
   // Download entire card as image
   const downloadQRCode = async (qrCode, cardRef, passedCardType) => {

@@ -1,6 +1,7 @@
 // General helper functions
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { GRADE_LEVELS, getGradeLevels } from '../constants/grades';
 
 /**
  * Combine CSS classes with proper handling of Tailwind conflicts
@@ -257,6 +258,30 @@ export const createSlug = (str) => {
     .replace(/[^\w\s-]/g, '') // Remove special characters
     .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
     .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+};
+
+/**
+ * Get grade-level dropdown options using shared grade constants
+ * @param {function} t - Translation function
+ * @param {boolean} includeAllOption - Whether to include an "all" option
+ * @returns {Array<{value: string, label: string}>} Grade level options
+ */
+export const getGradeLevelOptions = (t, includeAllOption = true) => {
+  const gradesWithTranslation = getGradeLevels(t);
+
+  const gradeOptions = gradesWithTranslation.map(grade => ({
+    value: grade.value,
+    label: grade.translatedLabel || grade.label
+  }));
+
+  if (!includeAllOption) {
+    return gradeOptions;
+  }
+
+  return [
+    { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
+    ...gradeOptions
+  ];
 };
 
 /**

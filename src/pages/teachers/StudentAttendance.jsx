@@ -378,11 +378,23 @@ export default function TeacherAttendance({ user }) {
     }
   };
 
-  // Class dropdown options
-  const classDropdownOptions = classes.map(cls => ({
-    value: String(cls.classId || cls.id),
-    label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
-  }));
+  // Class dropdown options (Kindergarten-aware formatting)
+  const classDropdownOptions = classes.map(cls => {
+    const rawGradeLevel =
+      typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+        ? String(cls.gradeLevel)
+        : '';
+
+    const displayGradeLevel =
+      rawGradeLevel === '0'
+        ? t('grade0', 'Kindergarten')
+        : rawGradeLevel;
+
+    return {
+      value: String(cls.classId || cls.id),
+      label: `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`
+    };
+  });
 
   // Count students by status
   const getStatusCounts = () => {

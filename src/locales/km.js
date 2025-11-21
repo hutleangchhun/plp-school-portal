@@ -214,6 +214,7 @@ export const km = {
   bmiCategory: 'ប្រភេទ BMI',
   bmiStatus: 'ស្ថានភាព BMI',
   isKindergartener: 'បានឆ្លងមត្តេយ្យសិក្សា',
+  kindergarten: 'ថ្នាក់មត្តេយ្យ',
   age: 'អាយុ',
   healthInformation: 'ព័ត៌មានសុខភាព',
   willBeTransferredTo: 'នឹងត្រូវបានផ្ទេរទៅ',
@@ -223,6 +224,7 @@ export const km = {
   allGrades: 'កម្រិតថ្នាក់ទាំងអស់',
   noClassesForGrade: 'មិនមានថ្នាក់សម្រាប់កម្រិតថ្នាក់ដែលបានជ្រើសរើស',
   selectGradeLevel: 'ជ្រើសរើសកម្រិតថ្នាក់',
+  grade0: 'មត្តេយ្យ',
   scrollToSeeMoreStudents: 'អូសទៅក្រោមដើម្បីបង្ហាញសិស្សទៀត',
   usernameNotAvailable: 'ឈ្មោះអ្នកប្រើប្រាស់មិនអាចប្រើប្រាស់បានទេ',
   usernameAvailable: 'ឈ្មោះអ្នកប្រើប្រាស់អាចប្រើប្រាស់បាន',
@@ -1102,7 +1104,7 @@ export const km = {
   errorDeletingClass: 'កំហុសក្នុងការលុបថ្នាក់រៀន',
   enterClassName: 'បញ្ចូលឈ្មោះថ្នាក់រៀន',
   selectAcademicYear: 'ជ្រើសរើសឆ្នាំសិក្សា',
-  maxStudents: 'ចំនួនសិស្សអតិបរមាក្នុងថ្នាក់',
+  maxStudents: 'ចំនួនសិស្សក្នុងថ្នាក់',
   
   // ProfileUpdate specific translations
   selectDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',

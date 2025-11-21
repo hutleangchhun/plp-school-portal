@@ -55,9 +55,19 @@ export function Report8Preview({ data }) {
     {
       key: 'class',
       header: t('class', 'ថ្នាក់'),
-      render: (student) => student.class?.gradeLevel
-        ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
-        : (student.class?.name || '')
+      render: (student) => {
+        if (student.class?.gradeLevel !== undefined && student.class?.gradeLevel !== null) {
+          const rawGradeLevel = String(student.class.gradeLevel);
+          const displayGradeLevel =
+            rawGradeLevel === '0'
+              ? t('grade0', 'Kindergarten')
+              : rawGradeLevel;
+
+          return `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, student.class.section)}`;
+        }
+
+        return student.class?.name || '';
+      }
     },
     {
       key: 'height',

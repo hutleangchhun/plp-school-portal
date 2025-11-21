@@ -254,11 +254,23 @@ export default function TeacherQRCodeManagement({ user }) {
     }
   };
 
-  // Get class options for dropdown
-  const classOptions = classes.map(cls => ({
-    value: String(cls.id || cls.classId),
-    label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
-  }));
+  // Get class options for dropdown (Kindergarten-aware formatting)
+  const classOptions = classes.map(cls => {
+    const rawGradeLevel =
+      typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+        ? String(cls.gradeLevel)
+        : '';
+
+    const displayGradeLevel =
+      rawGradeLevel === '0'
+        ? t('grade0', 'Kindergarten')
+        : rawGradeLevel;
+
+    return {
+      value: String(cls.id || cls.classId),
+      label: `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`
+    };
+  });
 
   if (loading) {
     return <PageLoader message={t('loadingClasses', 'Loading classes...')} />;

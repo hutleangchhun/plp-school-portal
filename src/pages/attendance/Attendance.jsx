@@ -18,7 +18,7 @@ import { DatePicker } from '../../components/ui/date-picker';
 import Badge from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
 import EmptyState from '@/components/ui/EmptyState';
-import { formatClassIdentifier } from '../../utils/helpers';
+import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
 import { formatDateKhmer } from '../../utils/formatters';
 
 export default function Attendance() {
@@ -124,25 +124,30 @@ export default function Attendance() {
     }
   }, [user]);
 
-  // Get unique grade levels from all classes
+  // Get grade level options from shared helper (uses GRADE_LEVELS, including Kindergarten)
   const getGradeLevelOptions = () => {
-    const options = [
-      { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
-      ...Array.from([1, 2, 3, 4, 5, 6]).map(level => ({
-        value: level,
-        label: t(`Grade ${level}`, `Grade ${level}`)
-      }))
-    ];
-
-    return options;
+    // Shared helper already adds an 'all' option with value 'all'
+    return getSharedGradeLevelOptions(t, true);
   };
 
   // Build class dropdown options from classes returned by API (already filtered by gradeLevel)
   const getClassOptions = () => {
-    return allClasses.map(cls => ({
-      value: cls.id || cls.classId || '',
-      label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
-    }));
+    return allClasses.map(cls => {
+      const rawGradeLevel =
+        typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+          ? String(cls.gradeLevel)
+          : '';
+
+      const displayGradeLevel =
+        rawGradeLevel === '0'
+          ? t('grade0', 'Kindergarten')
+          : rawGradeLevel;
+
+      return {
+        value: cls.id || cls.classId || '',
+        label: `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`
+      };
+    });
   };
 
   // Reset selectedClass when grade level changes

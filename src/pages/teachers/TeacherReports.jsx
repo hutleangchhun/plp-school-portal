@@ -162,10 +162,22 @@ export default function Reports() {
 
   // Build class dropdown options from teacher's classes
   const getClassOptions = () => {
-    return teacherClasses.map(cls => ({
-      value: (cls.id || cls.classId).toString(),
-      label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
-    }));
+    return teacherClasses.map(cls => {
+      const rawGradeLevel =
+        typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+          ? String(cls.gradeLevel)
+          : '';
+
+      const displayGradeLevel =
+        rawGradeLevel === '0'
+          ? t('grade0', 'Kindergarten')
+          : rawGradeLevel;
+
+      return {
+        value: (cls.id || cls.classId).toString(),
+        label: `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`
+      };
+    });
   };
 
   // Handle class selection change

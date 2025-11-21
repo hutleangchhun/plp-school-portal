@@ -15,7 +15,7 @@ import useSelectedStudents from '../../hooks/useSelectedStudents';
 import { Badge } from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
 import { exportStudentsToExcel } from '../../utils/studentExportUtils';
-import { formatClassIdentifier } from '../../utils/helpers';
+import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
 import StudentEditModal from '../../components/students/StudentEditModal';
 import StudentActionsModal from '../../components/students/StudentActionsModal';
 import StudentViewModal from '../../components/students/StudentViewModal';
@@ -170,17 +170,9 @@ export default function StudentsManagement() {
   const [allStudents, setAllStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
 
-  // Get unique grade levels from all classes
+  // Get grade level options from shared helper (uses GRADE_LEVELS)
   const getGradeLevelOptions = () => {
-    const options = [
-      { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
-      ...Array.from([1, 2, 3, 4, 5, 6]).map(level => ({
-        value: level,
-        label: t(`Grade ${level}`, `Grade ${level}`)
-      }))
-    ];
-
-    return options;
+    return getSharedGradeLevelOptions(t, true);
   };
 
   // Memoize class dropdown options from classes returned by API (already filtered by gradeLevel)
@@ -189,7 +181,22 @@ export default function StudentsManagement() {
       { value: 'all', label: t('allClasses', 'ថ្នាក់ទាំងអស់') },
       ...allClasses.map(cls => ({
         value: String(cls.classId),
-        label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
+        // Match ClassesManagement formatting: numeric grade for 1–12, localized label for grade 0
+        ...(() => {
+          const rawGradeLevel =
+            typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+              ? String(cls.gradeLevel)
+              : '';
+
+          const displayGradeLevel =
+            rawGradeLevel === '0'
+              ? t('grade0', 'Kindergarten')
+              : rawGradeLevel;
+
+          return {
+            label: `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`
+          };
+        })()
       }))
     ];
     return options;
@@ -778,24 +785,9 @@ export default function StudentsManagement() {
     }
   }, [showTransferDialog, selectedStudent?.class?.id, classes]);
 
-  // Get unique grade levels for transfer dialog
+  // Get grade levels for transfer dialog using shared helper (includes Kindergarten)
   const getTransferGradeLevelOptions = () => {
-    const uniqueLevels = new Set();
-    allClasses.forEach(cls => {
-      if (cls.gradeLevel) {
-        uniqueLevels.add(cls.gradeLevel);
-      }
-    });
-
-    return [
-      { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
-      ...Array.from(uniqueLevels)
-        .sort((a, b) => Number(a) - Number(b))
-        .map(level => ({
-          value: level,
-          label: t(`Grade ${level}`, `Grade ${level}`)
-        }))
-    ];
+    return getSharedGradeLevelOptions(t, true);
   };
 
   const TransferDialog = () => (
@@ -845,10 +837,22 @@ export default function StudentsManagement() {
               <Dropdown
                 value={transferTargetClassId}
                 onValueChange={setTransferTargetClassId}
-                options={transferFilteredClasses.map(cls => ({
-                  value: cls.classId.toString(),
-                  label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)} - ${cls.academicYear}`
-                }))}
+                options={transferFilteredClasses.map(cls => {
+                  const rawGradeLevel =
+                    typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+                      ? String(cls.gradeLevel)
+                      : '';
+
+                  const displayGradeLevel =
+                    rawGradeLevel === '0'
+                      ? t('grade0', 'Kindergarten')
+                      : rawGradeLevel;
+
+                  return {
+                    value: cls.classId.toString(),
+                    label: `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)} - ${cls.academicYear}`
+                  };
+                })}
                 placeholder={transferLoadingClasses ? (t('loadingClasses') || 'Loading classes...') : (transferFilteredClasses.length === 0 ? t('noClassesAvailable', 'No classes available') : t('selectClass', 'Select a class'))}
                 minWidth="w-full"
                 triggerClassName="text-sm"
@@ -1566,15 +1570,26 @@ export default function StudentsManagement() {
       header: t('class', 'Class'),
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
-      render: (student) => (
-        <p>
-          {student?.class?.gradeLevel || student?.gradeLevel ? (
-            `${t('class') || 'Class'} ${formatClassIdentifier(student?.class?.gradeLevel || student?.gradeLevel, student?.class?.section || student?.section)}`
-          ) : (
-            student?.className || '-'
-          )}
-        </p>
-      )
+      render: (student) => {
+        const rawGradeLevelValue =
+          student?.class?.gradeLevel ?? student?.gradeLevel;
+
+        if (rawGradeLevelValue !== undefined && rawGradeLevelValue !== null && rawGradeLevelValue !== '') {
+          const rawGradeLevel = String(rawGradeLevelValue);
+          const displayGradeLevel =
+            rawGradeLevel === '0'
+              ? t('grade0', 'Kindergarten')
+              : rawGradeLevel;
+
+          return (
+            <p>
+              {`${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, student?.class?.section || student?.section)}`}
+            </p>
+          );
+        }
+
+        return <p>{student?.className || '-'}</p>;
+      }
     },
     {
       key: 'academicYear',

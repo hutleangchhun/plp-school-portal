@@ -359,10 +359,22 @@ export default function TeacherDashboard({ user }) {
                   <Dropdown
                     value={selectedClassId}
                     onValueChange={setSelectedClassId}
-                    options={classes.map(cls => ({
-                      value: String(cls.id || cls.classId),
-                      label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
-                    }))}
+                    options={classes.map(cls => {
+                      const rawGradeLevel =
+                        typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+                          ? String(cls.gradeLevel)
+                          : '';
+
+                      const displayGradeLevel =
+                        rawGradeLevel === '0'
+                          ? t('grade0', 'Kindergarten')
+                          : rawGradeLevel;
+
+                      return {
+                        value: String(cls.id || cls.classId),
+                        label: `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`
+                      };
+                    })}
                     placeholder={t('selectClass', 'Select class...')}
                     minWidth="w-full"
                   />
@@ -507,16 +519,28 @@ export default function TeacherDashboard({ user }) {
                     <p className="text-xs text-gray-500 mb-2">{t('myClasses', 'My Classes')}</p>
                     {classes.length > 0 ? (
                       <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto">
-                        {classes.map((cls) => (
-                          <Badge
-                            key={cls.id || cls.classId}
-                            color="blue"
-                            variant="filled"
-                            size="sm"
-                          >
-                            {`${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`}
-                          </Badge>
-                        ))}
+                        {classes.map((cls) => {
+                          const rawGradeLevel =
+                            typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+                              ? String(cls.gradeLevel)
+                              : '';
+
+                          const displayGradeLevel =
+                            rawGradeLevel === '0'
+                              ? t('grade0', 'Kindergarten')
+                              : rawGradeLevel;
+
+                          return (
+                            <Badge
+                              key={cls.id || cls.classId}
+                              color="blue"
+                              variant="filled"
+                              size="sm"
+                            >
+                              {`${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     ) : (
                       <p className="text-sm text-gray-500">

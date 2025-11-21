@@ -665,6 +665,7 @@ export const en = {
   allClassesFilter: 'All Classes',
   
   // Grade levels for dropdown
+  grade0: 'Kindergarten',
   grade1: 'Grade 1',
   grade2: 'Grade 2',
   grade3: 'Grade 3',

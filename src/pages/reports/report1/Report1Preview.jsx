@@ -63,9 +63,19 @@ export const Report1Preview = ({ data }) => {
     {
       key: 'class',
       header: t('class', 'Class'),
-      render: (student) => student.class?.gradeLevel
-        ? `${t('class') || 'Class'} ${formatClassIdentifier(student.class.gradeLevel, student.class.section)}`
-        : (student.class?.name || student.className || '-')
+      render: (student) => {
+        if (student.class?.gradeLevel !== undefined && student.class?.gradeLevel !== null) {
+          const rawGradeLevel = String(student.class.gradeLevel);
+          const displayGradeLevel =
+            rawGradeLevel === '0'
+              ? t('grade0', 'Kindergarten')
+              : rawGradeLevel;
+
+          return `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, student.class.section)}`;
+        }
+
+        return student.class?.name || student.className || '-';
+      }
     }
   ];
 

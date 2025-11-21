@@ -14,7 +14,7 @@ import schoolService from '../../utils/api/services/schoolService'; // Import sc
 import { teacherService } from '../../utils/api/services/teacherService'; // Import teacherService for teacher selection
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
-import { GRADE_LEVELS } from '../../constants/grades';
+import { GRADE_LEVELS, getGradeLabel } from '../../constants/grades';
 import { formatClassIdentifier } from '../../utils/helpers'; // Import class formatting utility
 import Dropdown from '@/components/ui/Dropdown';
 import { Button } from '../../components/ui/Button';
@@ -417,7 +417,8 @@ export default function ClassesManagement() {
         return {
           id: classData.classId,
           name: classData.name,
-          grade: `Grade ${classData.gradeLevel}`,
+          grade: getGradeLabel(String(classData.gradeLevel), t),
+          gradeLevel: classData.gradeLevel,
           section: classData.section || '',
           subject: `Subject ${classData.gradeLevel}`,
           teacher: teacherName,
@@ -636,8 +637,8 @@ export default function ClassesManagement() {
       };
 
       // Additional validation
-      if (isNaN(classData.gradeLevel) || classData.gradeLevel < 1 || classData.gradeLevel > 12) {
-        showError(t('invalidGradeLevel') || 'Grade level must be between 1 and 12');
+      if (isNaN(classData.gradeLevel) || classData.gradeLevel < 0 || classData.gradeLevel > 12) {
+        showError(t('invalidGradeLevel') || 'Grade level must be between 0 and 12');
         return;
       }
 
@@ -909,7 +910,18 @@ export default function ClassesManagement() {
                 }
 
                 // Combine grade level and section into a single subtitle part
-                const gradeAndSection = `${t('class') || 'Class'} ${formatClassIdentifier(classItem.grade.replace('Grade ', ''), classItem.section)}`;
+                const rawGradeLevel =
+                  typeof classItem.gradeLevel !== 'undefined' && classItem.gradeLevel !== null
+                    ? String(classItem.gradeLevel)
+                    : classItem.grade.replace('Grade ', '');
+
+                // For grade level 0, use localized Kindergarten label (e.g., មត្តេយ្យ in Khmer)
+                const displayGradeLevel =
+                  rawGradeLevel === '0'
+                    ? t('grade0', 'Kindergarten')
+                    : rawGradeLevel;
+
+                const gradeAndSection = `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, classItem.section)}`;
 
                 return (
                   <ClassCard

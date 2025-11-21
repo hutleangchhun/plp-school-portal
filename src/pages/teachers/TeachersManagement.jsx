@@ -11,7 +11,8 @@ import { useStableCallback, useRenderTracker } from '../../utils/reactOptimizati
 import { Badge } from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
 import { exportTeachersToExcel, exportTeachersToCSV, exportTeachersToPDF, getTimestampedFilename } from '../../utils/exportUtils';
-import { formatClassIdentifier } from '../../utils/helpers';
+import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
+import { getGradeLabel } from '../../constants/grades';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -113,6 +114,15 @@ export default function TeachersManagement() {
   // State for all teachers (unfiltered) and filtered teachers
   const [allTeachers, setAllTeachers] = useState([]);
   const [filteredTeachers, setFilteredTeachers] = useState([]);
+
+  // Grade level filter options using shared helper (keep '' as "all" for API semantics)
+  const getGradeLevelOptions = () => {
+    const gradeOptions = getSharedGradeLevelOptions(t, false); // no 'all' value
+    return [
+      { value: '', label: t('allGrades', 'All Grades') },
+      ...gradeOptions
+    ];
+  };
 
   // Enhanced client-side search function
   const performClientSideSearch = useCallback((teachersData, searchQuery) => {
@@ -466,7 +476,19 @@ export default function TeachersManagement() {
 
         // Format classes taught by teacher
         const classesTaught = teacher.classes && teacher.classes.length > 0
-          ? teacher.classes.map(cls => `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`).join(', ')
+          ? teacher.classes.map(cls => {
+              const rawGradeLevel =
+                typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+                  ? String(cls.gradeLevel)
+                  : '';
+
+              const displayGradeLevel =
+                rawGradeLevel === '0'
+                  ? t('grade0', 'Kindergarten')
+                  : rawGradeLevel;
+
+              return `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`;
+            }).join(', ')
           : '';
 
         const row = [
@@ -759,8 +781,8 @@ export default function TeachersManagement() {
       responsive: 'hidden xl:table-cell',
       render: (teacher) => (
         <p>
-          {teacher.gradeLevel 
-            ? `${t('gradeLevel', 'Grade Level')} ${teacher.gradeLevel}` 
+          {teacher.gradeLevel !== null && teacher.gradeLevel !== undefined && teacher.gradeLevel !== ''
+            ? `${t('gradeLevel', 'Grade Level')} ${getGradeLabel(String(teacher.gradeLevel), t)}`
             : '-'}
         </p>
       )
@@ -790,7 +812,19 @@ export default function TeachersManagement() {
                 size="xs"
                 className='pt-1'
               >
-                {`${t('class') || 'Class'} ${formatClassIdentifier(classItem.gradeLevel, classItem.section)}`}
+                {(() => {
+                  const rawGradeLevel =
+                    typeof classItem.gradeLevel !== 'undefined' && classItem.gradeLevel !== null
+                      ? String(classItem.gradeLevel)
+                      : '';
+
+                  const displayGradeLevel =
+                    rawGradeLevel === '0'
+                      ? t('grade0', 'Kindergarten')
+                      : rawGradeLevel;
+
+                  return `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, classItem.section)}`;
+                })()}
               </Badge>
             ))
           ) : (
@@ -986,15 +1020,7 @@ export default function TeachersManagement() {
                     setSelectedGradeLevel(value);
                     setPagination(prev => ({ ...prev, page: 1 }));
                   }}
-                  options={[
-                    { value: '', label: t('allGrades', 'All Grades') },
-                    { value: '1', label: t('grade1', 'Grade 1') },
-                    { value: '2', label: t('grade2', 'Grade 2') },
-                    { value: '3', label: t('grade3', 'Grade 3') },
-                    { value: '4', label: t('grade4', 'Grade 4') },
-                    { value: '5', label: t('grade5', 'Grade 5') },
-                    { value: '6', label: t('grade6', 'Grade 6') }
-                  ]}
+                  options={getGradeLevelOptions()}
                   placeholder={t('selectGradeLevel', 'Select Grade Level')}
                   minWidth="w-full"
                   triggerClassName="text-sm w-full bg-gray-50 border-gray-200"

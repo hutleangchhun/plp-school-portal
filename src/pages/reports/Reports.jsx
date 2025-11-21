@@ -14,7 +14,7 @@ import { attendanceService } from '../../utils/api/services/attendanceService';
 import { parentService } from '../../utils/api/services/parentService';
 import { bmiService } from '../../utils/api/services/bmiService';
 import { Button } from '@/components/ui/Button';
-import { formatClassIdentifier } from '../../utils/helpers';
+import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
 // Modular report components
 import { useReport1Data, Report1Preview } from './report1/indexReport1';
 import { useReport4Data, Report4Preview, exportReport4ToExcel } from './report4/indexReport4';
@@ -169,25 +169,30 @@ export default function Reports() {
       { value: 'all', label: t('allClasses', 'All Classes') }
     ];
 
-    classOptions.push(...allClasses.map(cls => ({
-      value: cls.id.toString(),
-      label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)}`
-    })));
+    classOptions.push(...allClasses.map(cls => {
+      const rawGradeLevel =
+        typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+          ? String(cls.gradeLevel)
+          : '';
+
+      const displayGradeLevel =
+        rawGradeLevel === '0'
+          ? t('grade0', 'Kindergarten')
+          : rawGradeLevel;
+
+      return {
+        value: cls.id.toString(),
+        label: `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`
+      };
+    }));
 
     return classOptions;
   };
 
   // Get unique grade levels from all classes
   const getGradeLevelOptions = () => {
-    const options = [
-      { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
-      ...Array.from([1, 2, 3, 4, 5, 6]).map(level => ({
-        value: level.toString(), // Ensure value is string for consistency
-        label: t(`Grade ${level}`, `Grade ${level}`)
-      }))
-    ];
-
-    return options;
+    // Shared helper uses global grade config (including Kindergarten) and translations
+    return getSharedGradeLevelOptions(t, true);
   };
 
   const fetchReportData = async () => {

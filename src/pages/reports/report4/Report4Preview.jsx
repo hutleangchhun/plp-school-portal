@@ -77,9 +77,19 @@ export const Report4Preview = ({ data, semester, startDate, endDate, onDateRange
     {
       key: 'class',
       header: t('class', 'ថ្នាក់'),
-      render: (student) => student.class?.gradeLevel
-        ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
-        : (student.class?.name || student.className || '')
+      render: (student) => {
+        if (student.class?.gradeLevel !== undefined && student.class?.gradeLevel !== null) {
+          const rawGradeLevel = String(student.class.gradeLevel);
+          const displayGradeLevel =
+            rawGradeLevel === '0'
+              ? t('grade0', 'Kindergarten')
+              : rawGradeLevel;
+
+          return formatClassIdentifier(displayGradeLevel, student.class.section);
+        }
+
+        return student.class?.name || student.className || '';
+      }
     },
     {
       key: 'absent',
@@ -131,9 +141,19 @@ export const Report4Preview = ({ data, semester, startDate, endDate, onDateRange
     {
       key: 'class',
       header: t('class', 'ថ្នាក់រៀន'),
-      render: (student) => student.class?.gradeLevel
-        ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
-        : (student.class?.name || student.className || '')
+      render: (student) => {
+        if (student.class?.gradeLevel !== undefined && student.class?.gradeLevel !== null) {
+          const rawGradeLevel = String(student.class.gradeLevel);
+          const displayGradeLevel =
+            rawGradeLevel === '0'
+              ? t('grade0', 'Kindergarten')
+              : rawGradeLevel;
+
+          return formatClassIdentifier(displayGradeLevel, student.class.section);
+        }
+
+        return student.class?.name || student.className || '';
+      }
     },
     {
       key: 'leave',

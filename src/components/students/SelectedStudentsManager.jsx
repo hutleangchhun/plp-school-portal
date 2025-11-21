@@ -9,7 +9,7 @@ import studentService from '../../utils/api/services/studentService';
 import classService from '../../utils/api/services/classService';
 import DynamicLoader from '../ui/DynamicLoader';
 import SelectedCard from '../ui/SelectedCard';
-import { formatClassIdentifier } from '../../utils/helpers';
+import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
 
 const SelectedStudentsManager = ({
   selectedStudents = [],
@@ -105,17 +105,9 @@ const SelectedStudentsManager = ({
     fetchClasses();
   }, [schoolId, selectedGradeLevel, showError, t]);
 
-  // Create dropdown options for grade levels 1-6 (always show all grades)
+  // Grade level options using shared helper (includes Kindergarten/grade 0)
   const gradeLevelOptions = useMemo(() => {
-    const allGradeLevels = [1, 2, 3, 4, 5, 6];
-    
-    return [
-      { value: 'all', label: t('allGrades') || 'All Grades' },
-      ...allGradeLevels.map(level => ({
-        value: level,
-        label: t(`grade${level}`) || `Grade ${level}`
-      }))
-    ];
+    return getSharedGradeLevelOptions(t, true);
   }, [t]);
 
   // No need for client-side filtering since we're doing server-side filtering
@@ -335,7 +327,19 @@ const SelectedStudentsManager = ({
                                       )}
                                     </div>
                                     <p className="text-xs text-gray-500">
-                                      {t('class') || 'Class'} {formatClassIdentifier(cls.gradeLevel, cls.section)} • {cls.academicYear}
+                                      {(() => {
+                                        const rawGradeLevel =
+                                          typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
+                                            ? String(cls.gradeLevel)
+                                            : '';
+
+                                        const displayGradeLevel =
+                                          rawGradeLevel === '0'
+                                            ? t('grade0', 'Kindergarten')
+                                            : rawGradeLevel;
+
+                                        return `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)} • ${cls.academicYear}`;
+                                      })()}
                                     </p>
                                   </div>
                                 </div>
