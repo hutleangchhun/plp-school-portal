@@ -1060,7 +1060,7 @@ const TeacherEditModal = () => {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-red-700 mb-1">
                   {mode === 'create' ? t('password', 'Password') : t('newPassword', 'New Password')}
                   {mode === 'create' && <span>*</span>}
                 </label>
