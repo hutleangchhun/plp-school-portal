@@ -13,6 +13,7 @@ import Dropdown from '../ui/Dropdown';
 import ErrorDisplay from '../ui/ErrorDisplay';
 import { PageLoader } from '../ui/DynamicLoader';
 import Modal from '../ui/Modal';
+import BookCard from '../books/BookCard';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
 import { bookService } from '../../utils/api/services/bookService';
@@ -1331,22 +1332,8 @@ const StudentEditModal = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
             </div>
           ) : availableBooks.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {availableBooks.map((book) => {
-                const getStaticAssetBaseUrl = () => {
-                  if (import.meta.env.VITE_STATIC_BASE_URL) {
-                    return import.meta.env.VITE_STATIC_BASE_URL;
-                  }
-                  if (import.meta.env.MODE === 'development') {
-                    return 'http://localhost:8080';
-                  }
-                  return 'https://plp-api.moeys.gov.kh';
-                };
-
-                const bookCoverUrl = book.coverBook
-                  ? `${getStaticAssetBaseUrl()}/uploads/books/${book.coverBook}`
-                  : null;
-
                 const isSelected = editForm.bookIds.includes(book.id);
 
                 return (
@@ -1359,64 +1346,34 @@ const StudentEditModal = () => {
                         : [...editForm.bookIds, book.id];
                       handleFormChange('bookIds', newBookIds);
                     }}
-                    className={`flex flex-row border-2 rounded-xl transition-all duration-200 text-left group overflow-hidden ${
+                    className={`relative transition-all duration-200 text-left ${
                       isSelected
-                        ? 'border-blue-500 bg-gradient-to-l from-blue-50 to-white hover:bg-blue-100 shadow-md'
-                        : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-md'
+                        ? 'ring-2 ring-blue-500'
+                        : ''
                     }`}
                   >
-                    {/* Book Info - Left Section */}
-                    <div className="flex-1 flex flex-col p-4 min-w-0">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-base font-semibold text-gray-900 line-clamp-2">{book.title}</p>
-                        <p className="text-sm text-gray-600 mt-1 line-clamp-1">
-                          <span className="font-medium">{t('subject', 'Subject')}:</span> {book.subjectKhmer || book.subject}
-                        </p>
-                        {book.bookCategory && (
-                          <p className="text-sm text-gray-600 mt-0.5 line-clamp-1">
-                            <span className="font-medium">{t('category', 'Category')}:</span> {book.bookCategory}
-                          </p>
-                        )}
+                    <BookCard
+                      book={book}
+                      t={t}
+                      getEmptyDisplay={() => 'N/A'}
+                      layout="horizontal"
+                      imageSize="md"
+                      showCategory={true}
+                      hoverable={true}
+                      className={`${
+                        isSelected
+                          ? 'border-blue-500 bg-gradient-to-l from-blue-50 to-white shadow-md'
+                          : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
+                      }`}
+                    />
+                    {/* Selection Checkmark Badge */}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 bg-blue-600 rounded-full p-1.5 shadow-lg">
+                        <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
                       </div>
-                    </div>
-
-                    {/* Book Cover Image - Right Side */}
-                    <div className="relative flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 w-32 h-32 overflow-hidden">
-                      {bookCoverUrl ? (
-                        <img
-                          src={bookCoverUrl}
-                          alt={book.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            const fallback = e.target.parentElement.querySelector('[data-book-fallback]');
-                            if (fallback) {
-                              fallback.style.display = 'flex';
-                            }
-                          }}
-                        />
-                      ) : null}
-                      {/* Fallback when no image or image fails */}
-                      <div
-                        data-book-fallback
-                        className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-50 px-2"
-                        style={{
-                          display: !bookCoverUrl ? 'flex' : 'none'
-                        }}
-                      >
-                        <div className="flex flex-col items-center gap-1">
-                          <BookOpen className="h-7 w-7 text-blue-400" />
-                        </div>
-                      </div>
-                      {/* Selection Checkmark Badge */}
-                      {isSelected && (
-                        <div className="absolute top-1 right-1 bg-blue-600 rounded-full p-1.5 shadow-lg">
-                          <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </button>
                 );
               })}
