@@ -79,15 +79,15 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
   const checkIncompleteFields = () => {
     const missingFields = [];
 
-    // Required personal information
-    if (!student.first_name) missingFields.push(t('firstName', 'First Name'));
-    if (!student.last_name) missingFields.push(t('lastName', 'Last Name'));
-    if (!student.date_of_birth) missingFields.push(t('dateOfBirth', 'Date of Birth'));
+    // Required personal information (support both snake_case and camelCase)
+    if (!student.first_name && !student.firstName) missingFields.push(t('firstName', 'First Name'));
+    if (!student.last_name && !student.lastName) missingFields.push(t('lastName', 'Last Name'));
+    if (!student.date_of_birth && !student.dateOfBirth) missingFields.push(t('dateOfBirth', 'Date of Birth'));
     if (!student.gender) missingFields.push(t('gender', 'Gender'));
     if (!student.email) missingFields.push(t('email', 'Email'));
     if (!student.phone) missingFields.push(t('phone', 'Phone'));
     if (!student.nationality) missingFields.push(t('nationality', 'Nationality'));
-    if (!student.ethnic_group) missingFields.push(t('ethnicGroup', 'Ethnic Group'));
+    if (!student.ethnic_group && !student.ethnicGroup) missingFields.push(t('ethnicGroup', 'Ethnic Group'));
 
     // Health information
     if (!student.weight_kg) missingFields.push(t('weight', 'Weight'));
@@ -101,6 +101,23 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
   };
 
   const incompleteFields = checkIncompleteFields();
+
+  // Helper function to check if personal information exists
+  const hasPersonalInfo = () => {
+    return !!(
+      student.first_name || student.firstName ||
+      student.last_name || student.lastName ||
+      student.date_of_birth || student.dateOfBirth ||
+      student.gender ||
+      student.nationality ||
+      student.ethnic_group || student.ethnicGroup
+    );
+  };
+
+  // Helper function to check if account information exists
+  const hasAccountInfo = () => {
+    return !!(student.username || student.email || student.phone);
+  };
 
   return (
     <Modal
@@ -147,77 +164,81 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         )}
 
         {/* Personal Information */}
-        <div className="border-t pt-4">
-          <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
-            <div className='bg-blue-500 p-2 rounded-sm'>
-              <User2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        {hasPersonalInfo() && (
+          <div className="border-t pt-4">
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <User2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('personalInformation', 'Personal Information')}
+              </div>
             </div>
-            <div className="ml-2">
-              {t('personalInformation', 'Personal Information')}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <InfoItem
+                icon={User}
+                label={t('firstName', 'First Name')}
+                value={student.first_name || student.firstName || getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={User}
+                label={t('lastName', 'Last Name')}
+                value={student.last_name || student.lastName || getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={Calendar}
+                label={t('dateOfBirth', 'Date of Birth')}
+                value={formatDate(student.date_of_birth || student.dateOfBirth)}
+              />
+              <InfoItem
+                icon={User}
+                label={t('gender', 'Gender')}
+                value={genderToKhmer(student.gender) || getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={MapPin}
+                label={t('nationality', 'Nationality')}
+                value={student.nationality || getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={User}
+                label={t('ethnicGroup', 'Ethnic Group')}
+                value={student.ethnic_group || student.ethnicGroup || getEmptyDisplay()}
+              />
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <InfoItem
-              icon={User}
-              label={t('firstName', 'First Name')}
-              value={student.first_name || getEmptyDisplay()}
-            />
-            <InfoItem
-              icon={User}
-              label={t('lastName', 'Last Name')}
-              value={student.last_name || getEmptyDisplay()}
-            />
-            <InfoItem
-              icon={Calendar}
-              label={t('dateOfBirth', 'Date of Birth')}
-              value={formatDate(student.date_of_birth)}
-            />
-            <InfoItem
-              icon={User}
-              label={t('gender', 'Gender')}
-              value={genderToKhmer(student.gender) || getEmptyDisplay()}
-            />
-            <InfoItem
-              icon={MapPin}
-              label={t('nationality', 'Nationality')}
-              value={student.nationality || getEmptyDisplay()}
-            />
-            <InfoItem
-              icon={User}
-              label={t('ethnicGroup', 'Ethnic Group')}
-              value={student.ethnic_group || getEmptyDisplay()}
-            />
-          </div>
-        </div>
+        )}
 
         {/* Account Information */}
-        <div className="border-t pt-4">
-          <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
-            <div className='bg-blue-500 p-2 rounded-sm'>
-              <Key className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        {hasAccountInfo() && (
+          <div className="border-t pt-4">
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <Key className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('accountInformation', 'Account Information')}
+              </div>
             </div>
-            <div className="ml-2">
-              {t('accountInformation', 'Account Information')}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <InfoItem
+                icon={User}
+                label={t('username', 'Username')}
+                value={student.username || getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={Mail}
+                label={t('email', 'Email')}
+                value={student.email || getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={Phone}
+                label={t('phone', 'Phone')}
+                value={student.phone || getEmptyDisplay()}
+              />
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <InfoItem
-              icon={User}
-              label={t('username', 'Username')}
-              value={student.username || getEmptyDisplay()}
-            />
-            <InfoItem
-              icon={Mail}
-              label={t('email', 'Email')}
-              value={student.email || getEmptyDisplay()}
-            />
-            <InfoItem
-              icon={Phone}
-              label={t('phone', 'Phone')}
-              value={student.phone || getEmptyDisplay()}
-            />
-          </div>
-        </div>
+        )}
 
         {/* Academic Information */}
         {student.student && (
@@ -425,10 +446,14 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* Place of Birth */}
         {student.placeOfBirth && (
           <div className="border-t pt-4">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
-              <MapPin className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              {t('placeOfBirth', 'Place of Birth')}
-            </h3>
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('placeOfBirth', 'Place of Birth')}
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <InfoItem
                 label={t('province', 'Province')}
