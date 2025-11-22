@@ -1,18 +1,94 @@
 import { X, User, Mail, Phone, Calendar, MapPin, Heart, Ruler, Weight, Activity, Shield, Clock, Key, Hash, User2, BookOpen, Building, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
 import Modal from '../ui/Modal';
 import { Badge } from '../ui/Badge';
 import ProfileImage from '../ui/ProfileImage';
 import { Button } from '../ui/Button';
 import { formatDateKhmer, genderToKhmer } from '../../utils/formatters';
+import { userService } from '../../utils/api/services/userService';
+import { useState, useEffect } from 'react';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 /**
  * TeacherViewModal - Read-only modal to display teacher details
  */
 export default function TeacherViewModal({ isOpen, onClose, teacher }) {
   const { t } = useLanguage();
+  const { showError } = useToast();
+  const [fullTeacherData, setFullTeacherData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  if (!teacher) return null;
+  // Fetch full teacher data when modal opens
+  useEffect(() => {
+    if (!isOpen || !teacher) {
+      setFullTeacherData(null);
+      return;
+    }
+
+    const fetchTeacherData = async () => {
+      try {
+        setLoading(true);
+        const userId = teacher.userId || teacher.id;
+
+        if (!userId) {
+          console.warn('No user ID found for teacher:', teacher);
+          setFullTeacherData(teacher);
+          return;
+        }
+
+        console.log('Fetching full teacher data for userId:', userId);
+        const response = await userService.getUserByID(userId);
+        console.log('Full teacher data fetched:', response);
+
+        // Handle different response formats
+        if (response) {
+          // If response has a data property, use it
+          if (response.data) {
+            console.log('Using response.data');
+            setFullTeacherData(response.data);
+          }
+          // If response is the user object directly (no data wrapper)
+          else if (response.id || response.username || response.first_name) {
+            console.log('Using response directly as user data');
+            setFullTeacherData(response);
+          }
+          // Fallback to provided data
+          else {
+            console.warn('Unexpected response format, using provided data');
+            setFullTeacherData(teacher);
+          }
+        } else {
+          console.warn('Empty response, using provided data');
+          setFullTeacherData(teacher);
+        }
+      } catch (error) {
+        console.error('Error fetching teacher data:', error);
+        showError(t('failedToLoadTeacherDetails', 'Failed to load complete teacher details'));
+        setFullTeacherData(teacher);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeacherData();
+  }, [isOpen, teacher, showError, t]);
+
+  if (!isOpen) return null;
+
+  // Use fullTeacherData if it's been loaded, otherwise use the provided teacher data
+  const displayTeacher = fullTeacherData || teacher;
+  if (!displayTeacher) return null;
+
+  // Log the displayTeacher for debugging
+  console.log('TeacherViewModal displayTeacher:', displayTeacher);
+  console.log('displayTeacher.date_of_birth:', displayTeacher.date_of_birth);
+  console.log('displayTeacher.gender:', displayTeacher.gender);
+  console.log('displayTeacher.email:', displayTeacher.email);
+
+  // Extract nested teacher data if it exists
+  const teacherData = displayTeacher.teacher || displayTeacher;
+  const schoolData = teacherData.school || displayTeacher.school;
 
   // Helper function to display N/A in Khmer
   const getEmptyDisplay = () => 'មិនមាន';
@@ -39,16 +115,16 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
     const missingFields = [];
 
     // Required personal information
-    if (!teacher.dateOfBirth && !teacher.date_of_birth) missingFields.push(t('dateOfBirth', 'Date of Birth'));
-    if (!teacher.gender) missingFields.push(t('gender', 'Gender'));
-    if (!teacher.email) missingFields.push(t('email', 'Email'));
-    if (!teacher.phone) missingFields.push(t('phone', 'Phone'));
-    if (!teacher.nationality) missingFields.push(t('nationality', 'Nationality'));
-    if (!teacher.ethnic_group && !teacher.ethnicGroup) missingFields.push(t('ethnicGroup', 'Ethnic Group'));
+    if (!displayTeacher.dateOfBirth && !displayTeacher.date_of_birth) missingFields.push(t('dateOfBirth', 'Date of Birth'));
+    if (!displayTeacher.gender) missingFields.push(t('gender', 'Gender'));
+    if (!displayTeacher.email) missingFields.push(t('email', 'Email'));
+    if (!displayTeacher.phone) missingFields.push(t('phone', 'Phone'));
+    if (!displayTeacher.nationality) missingFields.push(t('nationality', 'Nationality'));
+    if (!displayTeacher.ethnic_group && !displayTeacher.ethnicGroup) missingFields.push(t('ethnicGroup', 'Ethnic Group'));
 
     // Employment information
-    if (!teacher.employment_type && !teacher.employmentType) missingFields.push(t('employmentType', 'Employment Type'));
-    if (!teacher.hire_date && !teacher.hireDate) missingFields.push(t('hireDate', 'Hire Date'));
+    if (!teacherData.employment_type && !teacherData.employmentType) missingFields.push(t('employmentType', 'Employment Type'));
+    if (!teacherData.hire_date && !teacherData.hireDate) missingFields.push(t('hireDate', 'Hire Date'));
 
     return missingFields;
   };
@@ -76,6 +152,13 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
         </div>
       }
     >
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <LoadingSpinner size="lg" variant="primary">
+            {t('loadingTeacherDetails', 'Loading teacher details...')}
+          </LoadingSpinner>
+        </div>
+      ) : (
       <div className="space-y-4 sm:space-y-6">
         {/* Incomplete Information Warning */}
         {incompleteFields.length > 0 && (
@@ -109,47 +192,47 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             <InfoItem
               icon={User}
               label={t('firstName', 'First Name')}
-              value={(teacher.firstName || teacher.first_name) || getEmptyDisplay()}
+              value={(displayTeacher.firstName || displayTeacher.first_name) || getEmptyDisplay()}
             />
             <InfoItem
               icon={User}
               label={t('lastName', 'Last Name')}
-              value={(teacher.lastName || teacher.last_name) || getEmptyDisplay()}
+              value={(displayTeacher.lastName || displayTeacher.last_name) || getEmptyDisplay()}
             />
             <InfoItem
               icon={User}
               label={t('username', 'Username')}
-              value={teacher.username || getEmptyDisplay()}
+              value={displayTeacher.username || getEmptyDisplay()}
             />
             <InfoItem
               icon={Calendar}
               label={t('dateOfBirth', 'Date of Birth')}
-              value={formatDate(teacher.dateOfBirth || teacher.date_of_birth)}
+              value={formatDate(displayTeacher.date_of_birth)}
             />
             <InfoItem
               icon={User}
               label={t('gender', 'Gender')}
-              value={genderToKhmer(teacher.gender) || getEmptyDisplay()}
+              value={displayTeacher.gender ? genderToKhmer(displayTeacher.gender) : getEmptyDisplay()}
             />
             <InfoItem
               icon={Mail}
               label={t('email', 'Email')}
-              value={teacher.email || getEmptyDisplay()}
+              value={displayTeacher.email || getEmptyDisplay()}
             />
             <InfoItem
               icon={Phone}
               label={t('phone', 'Phone')}
-              value={teacher.phone || getEmptyDisplay()}
+              value={displayTeacher.phone || getEmptyDisplay()}
             />
             <InfoItem
               icon={MapPin}
               label={t('nationality', 'Nationality')}
-              value={teacher.nationality || getEmptyDisplay()}
+              value={displayTeacher.nationality || getEmptyDisplay()}
             />
             <InfoItem
               icon={User}
               label={t('ethnicGroup', 'Ethnic Group')}
-              value={(teacher.ethnic_group || teacher.ethnicGroup) || getEmptyDisplay()}
+              value={displayTeacher.ethnic_group || getEmptyDisplay()}
             />
           </div>
         </div>
@@ -163,46 +246,41 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <InfoItem
               icon={Hash}
-              label={t('teacherId', 'Teacher ID')}
-              value={(teacher.teacherId || teacher.teacher_id || teacher.id) || getEmptyDisplay()}
+              label={t('teacherNumber', 'Teacher Number')}
+              value={(teacherData.teacher_number || teacherData.teacherNumber) || getEmptyDisplay()}
             />
             <InfoItem
               icon={BookOpen}
               label={t('gradeLevel', 'Grade Level')}
-              value={teacher.gradeLevel ? `${t('gradeLevel', 'GradeLevel')} ${teacher.gradeLevel}` : getEmptyDisplay()}
+              value={teacherData.gradeLevel ? `${t('gradeLevel', 'GradeLevel')} ${teacherData.gradeLevel}` : getEmptyDisplay()}
             />
             <InfoItem
               icon={Building}
               label={t('employmentType', 'Employment Type')}
-              value={(teacher.employment_type || teacher.employmentType) || getEmptyDisplay()}
+              value={(teacherData.employment_type || teacherData.employmentType) || getEmptyDisplay()}
             />
             <InfoItem
               icon={Calendar}
               label={t('hireDate', 'Hire Date')}
-              value={formatDate(teacher.hire_date || teacher.hireDate)}
+              value={formatDate(teacherData.hire_date || teacherData.hireDate)}
             />
             <InfoItem
               icon={Shield}
               label={t('status', 'Status')}
               value={
-                <Badge 
-                  color={teacher.status === 'ACTIVE' ? 'green' : 'red'} 
+                <Badge
+                  color={teacherData.status === 'ACTIVE' ? 'green' : 'red'}
                   variant="filled"
                 >
-                  {teacher.status || 'Unknown'}
+                  {teacherData.status || 'Unknown'}
                 </Badge>
               }
-            />
-            <InfoItem
-              icon={Shield}
-              label={t('isDirector', 'Is Director')}
-              value={teacher.roleId === 14 ? t('yes', 'Yes') : t('no', 'No')}
             />
           </div>
         </div>
 
         {/* Health Information */}
-        {(teacher.weight_kg || teacher.weight || teacher.height_cm || teacher.height) && (
+        {(displayTeacher.weight_kg || displayTeacher.weight || displayTeacher.height_cm || displayTeacher.height) && (
           <div className="border-t pt-4">
             <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
               <Heart className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
@@ -212,31 +290,31 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
               <InfoItem
                 icon={Weight}
                 label={t('weight', 'Weight (kg)')}
-                value={(teacher.weight_kg || teacher.weight) ? `${teacher.weight_kg || teacher.weight} kg` : getEmptyDisplay()}
+                value={(displayTeacher.weight_kg || displayTeacher.weight) ? `${displayTeacher.weight_kg || displayTeacher.weight} kg` : getEmptyDisplay()}
               />
               <InfoItem
                 icon={Ruler}
                 label={t('height', 'Height (cm)')}
-                value={(teacher.height_cm || teacher.height) ? `${teacher.height_cm || teacher.height} cm` : getEmptyDisplay()}
+                value={(displayTeacher.height_cm || displayTeacher.height) ? `${displayTeacher.height_cm || displayTeacher.height} cm` : getEmptyDisplay()}
               />
               <InfoItem
                 icon={Activity}
                 label={t('bmi', 'BMI')}
-                value={teacher.bmi ? teacher.bmi.toFixed(1) : getEmptyDisplay()}
+                value={displayTeacher.bmi ? displayTeacher.bmi.toFixed(1) : getEmptyDisplay()}
               />
             </div>
           </div>
         )}
 
         {/* Classes Information */}
-        {teacher.classes && teacher.classes.length > 0 && (
+        {displayTeacher.classes && displayTeacher.classes.length > 0 && (
           <div className="border-t pt-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
               <BookOpen className="inline w-5 h-5 mr-2" />
               {t('classesTeaching', 'Classes Teaching')}
             </h3>
             <div className="flex flex-wrap gap-2">
-              {teacher.classes.map((classItem, index) => (
+              {displayTeacher.classes.map((classItem, index) => (
                 <Badge
                   key={classItem.classId || index}
                   color="blue"
@@ -251,14 +329,14 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
         )}
 
         {/* Accessibility Information */}
-        {teacher.accessibility && teacher.accessibility.length > 0 && (
+        {displayTeacher.accessibility && displayTeacher.accessibility.length > 0 && (
           <div className="border-t pt-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
               <Shield className="inline w-5 h-5 mr-2" />
               {t('accessibility', 'Accessibility Needs')}
             </h3>
             <div className="flex flex-wrap gap-2">
-              {teacher.accessibility.map((item, index) => (
+              {displayTeacher.accessibility.map((item, index) => (
                 <Badge key={index} color="orange" variant="outline">
                   {item}
                 </Badge>
@@ -268,7 +346,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
         )}
 
         {/* School Information */}
-        {(teacher.schoolName || teacher.school?.name) && (
+        {(teacherData.schoolName || schoolData?.name) && (
           <div className="border-t pt-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
               <Building className="inline w-5 h-5 mr-2" />
@@ -277,12 +355,13 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             <InfoItem
               icon={Building}
               label={t('school', 'School')}
-              value={teacher.schoolName || teacher.school?.name || getEmptyDisplay()}
+              value={teacherData.schoolName || schoolData?.name || getEmptyDisplay()}
             />
           </div>
         )}
 
       </div>
+      )}
     </Modal>
   );
 }
