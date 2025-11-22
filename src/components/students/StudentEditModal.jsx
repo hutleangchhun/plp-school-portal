@@ -18,6 +18,7 @@ import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
 import { bookService } from '../../utils/api/services/bookService';
 import { gradeLevelOptions, ethnicGroupOptions, accessibilityOptions, getAcademicYearOptions } from '../../utils/formOptions';
+import { utils } from '../../utils/api';
 
 const StudentEditModal = () => {
   const { t } = useLanguage();
@@ -365,7 +366,10 @@ const StudentEditModal = () => {
 
   const handleClose = () => {
     resetForm();
-    navigate('/students', { replace: true });
+    // Redirect based on user role
+    const currentUser = utils.user.getUserData();
+    const redirectPath = currentUser?.roleId === 8 ? '/my-students' : '/students';
+    navigate(redirectPath, { replace: true });
   };
 
   const handleFormChange = (field, value) => {
@@ -563,9 +567,11 @@ const StudentEditModal = () => {
 
       if (response) {
         showSuccess(t('studentUpdatedSuccess', 'Student updated successfully'));
-        // Redirect back to students list after a short delay
+        // Redirect back to appropriate students list based on user role
         setTimeout(() => {
-          navigate('/students', { replace: true });
+          const currentUser = utils.user.getUserData();
+          const redirectPath = currentUser?.roleId === 8 ? '/my-students' : '/students';
+          navigate(redirectPath, { replace: true });
         }, 1500);
       } else {
         throw new Error('Failed to update student');

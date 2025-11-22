@@ -29,6 +29,10 @@ export const routePermissions = {
     allowedRoles: [ROLES.DIRECTOR],
     component: 'StudentsManagement'
   },
+  '/students/edit': {
+    allowedRoles: [ROLES.DIRECTOR],
+    component: 'StudentEditModal'
+  },
   '/classes': {
     allowedRoles: [ROLES.DIRECTOR],
     component: 'ClassesManagement'
@@ -56,6 +60,10 @@ export const routePermissions = {
   '/my-students': {
     allowedRoles: [ROLES.TEACHER_ONLY],
     component: 'TeacherStudentsManagement'
+  },
+  '/my-students/edit': {
+    allowedRoles: [ROLES.TEACHER_ONLY],
+    component: 'StudentEditModal'
   },
   '/my-attendance': {
     allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR],

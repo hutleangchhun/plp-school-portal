@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, ChevronDown, X, Users, Edit2, User, Plus, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Download, ChevronDown, X, Users, Edit2, User, Plus, Filter, Eye } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../../components/ui/Button';
@@ -14,11 +15,13 @@ import { Table } from '../../components/ui/Table';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import EmptyState from '@/components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
-import StudentEditModal from '../../components/students/StudentEditModal';
 import SidebarFilter from '../../components/ui/SidebarFilter';
+import StudentViewModal from '../../components/students/StudentViewModal';
 import { formatClassIdentifier } from '../../utils/helpers';
+import { encryptId } from '../../utils/encryption';
 
 export default function TeacherStudentsManagement({ user }) {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
 
@@ -30,8 +33,9 @@ export default function TeacherStudentsManagement({ user }) {
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingStudent, setEditingStudent] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingStudent, setViewingStudent] = useState(null);
+  const [loadingStudentDetails, setLoadingStudentDetails] = useState(false);
   const [schoolId, setSchoolId] = useState(null);
   const [schoolName, setSchoolName] = useState('');
   const [pagination, setPagination] = useState({
@@ -253,17 +257,41 @@ export default function TeacherStudentsManagement({ user }) {
   };
 
   const handleEditStudent = (student) => {
-    setEditingStudent(student);
-    setShowEditModal(true);
+    console.log('Edit button clicked for student:', student);
+    const studentId = student.userId || student.user_id || student.id;
+    const encryptedId = encryptId(studentId);
+    navigate(`/my-students/edit?id=${encryptedId}`);
   };
 
-  const handleStudentUpdated = (updatedStudent) => {
-    setShowEditModal(false);
-    setEditingStudent(null);
-    // Refresh the student list
-    setTimeout(async () => {
-      await loadStudents();
-    }, 500);
+  const handleViewStudent = async (student) => {
+    try {
+      setLoadingStudentDetails(true);
+
+      // Get user ID from student object (try multiple possible fields)
+      const userId = student.userId || student.user_id || student.id;
+      console.log('Fetching student details for user ID:', userId);
+
+      if (!userId) {
+        throw new Error('No valid user ID found for student');
+      }
+
+      // Fetch full student details by user ID
+      const response = await studentService.getStudentById(userId);
+      console.log('Student details response:', response);
+      console.log('Student bookIds:', response?.data?.bookIds);
+
+      if (response && response.success && response.data) {
+        setViewingStudent(response.data);
+        setShowViewModal(true);
+      } else {
+        throw new Error(response?.error || 'Failed to fetch student details');
+      }
+    } catch (error) {
+      console.error('Error fetching student details:', error);
+      showError(t('failedToFetchStudentDetails', 'Failed to fetch student details'));
+    } finally {
+      setLoadingStudentDetails(false);
+    }
   };
 
   // Dropdown options (Kindergarten-aware class formatting)
@@ -366,6 +394,21 @@ export default function TeacherStudentsManagement({ user }) {
       header: t('actions', 'Actions'),
       render: (student) => (
         <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewStudent(student);
+            }}
+            disabled={loadingStudentDetails}
+            className="p-2 text-gray-500 hover:text-gray-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={t('viewDetails', 'View Details')}
+          >
+            {loadingStudentDetails ? (
+              <DynamicLoader type="spinner" size="sm" variant="primary" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
           <button
             onClick={() => handleEditStudent(student)}
             className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
@@ -516,16 +559,15 @@ export default function TeacherStudentsManagement({ user }) {
             />
           )}
 
-
-          {/* Edit Student Modal */}
-          <StudentEditModal
-            isOpen={showEditModal}
+          {/* View Student Modal */}
+          <StudentViewModal
+            isOpen={showViewModal}
             onClose={() => {
-              setShowEditModal(false);
-              setEditingStudent(null);
+              setShowViewModal(false);
+              setViewingStudent(null);
             }}
-            student={editingStudent}
-            onStudentUpdated={handleStudentUpdated}
+            student={viewingStudent}
+            className="full"
           />
         </FadeInSection>
       </div>

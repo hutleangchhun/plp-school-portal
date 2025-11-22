@@ -254,6 +254,7 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<TeacherStudentsManagement user={user} />} />
+            <Route path="edit" element={<StudentEditModal />} />
           </Route>
 
           <Route path="my-attendance" element={
