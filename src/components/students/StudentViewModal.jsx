@@ -1,4 +1,4 @@
-import { X, User, Mail, Phone, Calendar, MapPin, Heart, Ruler, Weight, Activity, Shield, Clock, Key, Hash, User2, BookOpen, QrCode, AlertCircle } from 'lucide-react';
+import { X, User, Mail, Phone, Calendar, MapPin, Heart, Ruler, Weight, Activity, Shield, Clock, Key, Hash, User2, BookOpen, LibraryBig, AlertCircle, Accessibility, CircleUserRound } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useState, useEffect } from 'react';
 import Modal from '../ui/Modal';
@@ -214,7 +214,7 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
           <div className="border-t pt-4">
             <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
               <div className='bg-blue-500 p-2 rounded-sm'>
-                <Key className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                <CircleUserRound className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div className="ml-2">
                 {t('accountInformation', 'Account Information')}
@@ -245,7 +245,7 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
           <div className="border-t pt-4">
             <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
               <div className='bg-blue-500 p-2 rounded-sm'>
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                <LibraryBig className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div className="ml-2">
                 {t('academicInformation', 'Academic Information')}
@@ -309,66 +309,58 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
           </div>
         )}
 
-        {/* Health Information */}
-        {(student.weight_kg || student.height_cm) && (
+        {/* Health & BMI Information */}
+        {((student.weight_kg || student.height_cm) || (student.bmi && typeof student.bmi === 'object')) && (
           <div className="border-t pt-4">
             <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
               <div className='bg-blue-500 p-2 rounded-sm'>
                 <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div className="ml-2">
-                {t('healthInformation', 'Health Information')}
+                {t('healthAndBmiInformation', 'Health & BMI Information')}
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <InfoItem
-                icon={Weight}
-                label={t('weight', 'Weight (kg)')}
-                value={student.weight_kg ? `${student.weight_kg} kg` : getEmptyDisplay()}
-              />
-              <InfoItem
-                icon={Ruler}
-                label={t('height', 'Height (cm)')}
-                value={student.height_cm ? `${student.height_cm} cm` : getEmptyDisplay()}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* BMI Information */}
-        {student.bmi && typeof student.bmi === 'object' && (
-          <div className="border-t pt-4">
-            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
-              <div className='bg-blue-500 p-2 rounded-sm'>
-                <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              <div className="ml-2">
-                {t('bmiInformation', 'BMI Information')}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <InfoItem
-                icon={Activity}
-                label={t('bmiValue', 'BMI Value')}
-                value={student.bmi.value !== undefined && student.bmi.value !== null ? student.bmi.value : getEmptyDisplay()}
-              />
-              <InfoItem
-                label={t('bmiCategory', 'BMI Category')}
-                value={student.bmi.category_km || student.bmi.category || getEmptyDisplay()}
-              />
-              <InfoItem
-                label={t('bmiStatus', 'BMI Status')}
-                value={bmiStatusToKhmer(student.bmi.status) || getEmptyDisplay()}
-              />
-              {student.bmi.age !== undefined && student.bmi.age !== null && (
-                <InfoItem
-                  label={t('age', 'Age')}
-                  value={student.bmi.age}
-                />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {(student.weight_kg || student.height_cm) && (
+                <>
+                  <InfoItem
+                    icon={Weight}
+                    label={t('weight', 'Weight (kg)')}
+                    value={student.weight_kg ? `${student.weight_kg} kg` : getEmptyDisplay()}
+                  />
+                  <InfoItem
+                    icon={Ruler}
+                    label={t('height', 'Height (cm)')}
+                    value={student.height_cm ? `${student.height_cm} cm` : getEmptyDisplay()}
+                  />
+                </>
+              )}
+              {student.bmi && typeof student.bmi === 'object' && (
+                <>
+                  <InfoItem
+                    icon={Activity}
+                    label={t('bmiValue', 'BMI Value')}
+                    value={student.bmi.value !== undefined && student.bmi.value !== null ? student.bmi.value : getEmptyDisplay()}
+                  />
+                  <InfoItem
+                    label={t('bmiCategory', 'BMI Category')}
+                    value={student.bmi.category_km || student.bmi.category || getEmptyDisplay()}
+                  />
+                  <InfoItem
+                    label={t('bmiStatus', 'BMI Status')}
+                    value={bmiStatusToKhmer(student.bmi.status) || getEmptyDisplay()}
+                  />
+                  {student.bmi.age !== undefined && student.bmi.age !== null && (
+                    <InfoItem
+                      label={t('age', 'Age')}
+                      value={student.bmi.age}
+                    />
+                  )}
+                </>
               )}
             </div>
-            {student.bmi.recommendations && Array.isArray(student.bmi.recommendations) && student.bmi.recommendations.length > 0 && (
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            {student.bmi && student.bmi.recommendations && Array.isArray(student.bmi.recommendations) && student.bmi.recommendations.length > 0 && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-md">
                 <h5 className="font-semibold text-blue-900 mb-2">
                   {t('healthRecommendations', 'Health Recommendations')}
                 </h5>
@@ -387,7 +379,7 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
           <div className="border-t pt-4">
             <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
               <div className='bg-blue-500 p-2 rounded-sm'>
-                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                <Accessibility className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div className="ml-2">
                 {t('accessibility', 'Accessibility Needs')}
@@ -482,33 +474,6 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
             </div>
           </div>
         )}
-
-        {/* QR Code */}
-        {student.qr_code && (
-          <div className="border-t pt-4">
-            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
-              <div className='bg-blue-500 p-2 rounded-sm'>
-                <QrCode className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              <div className="ml-2">
-                {t('qrCode', 'QR Code')}
-              </div>
-            </div>
-            <div className="flex justify-center">
-              <img
-                src={student.qr_code}
-                alt="Student QR Code"
-                className="w-48 h-48 border-2 border-gray-300 rounded-lg"
-              />
-            </div>
-            {student.qr_generated_at && (
-              <p className="text-xs text-gray-500 text-center mt-2">
-                {t('qrGeneratedAt', 'Generated at')}: {formatDate(student.qr_generated_at)}
-              </p>
-            )}
-          </div>
-        )}
-
       </div>
     </Modal>
   );
@@ -523,7 +488,7 @@ function InfoItem({ icon: Icon, label, value }) {
 
   return (
     <div className="flex items-start space-x-2">
-      <div className="flex-1 min-w-0 bg-gray-50 border-gray-100 border-2 p-4 rounded-lg">
+      <div className="flex-1 min-w-0 bg-gray-50 border-gray-100 border-2 p-4 rounded-md">
         <p className="text-sm font-medium text-gray-500">{label}</p>
         <p className="text-sm text-gray-900 break-words">{displayValue}</p>
       </div>

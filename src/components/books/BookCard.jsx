@@ -53,7 +53,7 @@ function BookCard({
   const imageSizeClass = imageSizeClasses[imageSize] || imageSizeClasses.sm;
 
   // Common styles
-  const cardBaseClasses = `border-2 border-${borderColor} rounded-xl overflow-hidden bg-white transition-shadow duration-200 ${hoverable ? 'hover:shadow-md' : ''}`;
+  const cardBaseClasses = `border-2 border-${borderColor} rounded-md overflow-hidden bg-white transition-shadow duration-200 ${hoverable ? 'hover:shadow-md' : ''}`;
 
   // Horizontal layout (image on right)
   if (layout === 'horizontal') {
@@ -62,7 +62,7 @@ function BookCard({
         {/* Book Info - Left Section */}
         <div className="flex-1 flex flex-col p-4   min-w-0">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-gray-900 line-clamp-2">
+            <p className="text-sm font-semibold text-gray-900 line-clamp-2">
               {book?.title || getEmptyDisplay()}
             </p>
             <p className="text-xs text-gray-600 mt-1 line-clamp-1">

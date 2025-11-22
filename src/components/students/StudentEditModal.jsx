@@ -633,11 +633,8 @@ const StudentEditModal = () => {
   const formContent = (
     <form id="edit-student-form" onSubmit={handleSubmit} className="space-y-6">
       {/* Personal Information Card */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="bg-white rounded-md border border-gray-200 p-6">
         <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
-          <div className="bg-blue-100 rounded-lg p-2 mr-3">
-            <User2 className="w-5 h-5 text-blue-600" />
-          </div>
           <h3 className="text-lg font-semibold text-gray-900">
             {t('personalInformation', 'Personal Information')}
           </h3>
@@ -827,12 +824,9 @@ const StudentEditModal = () => {
         </div>
       </div>
       {/* Academic Information Card */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="bg-white rounded-md border border-gray-200 p-6">
         <div className='flex justify-between items-start border-b border-gray-100'>
           <div className="flex items-center mb-6">
-            <div className="bg-purple-100 rounded-lg p-2 mr-3">
-              <BookOpen className="w-5 h-5 text-purple-600" />
-            </div>
             <h3 className="text-lg font-semibold text-gray-900">
               {t('academicInformation', 'Academic Information')}
             </h3>
@@ -925,11 +919,8 @@ const StudentEditModal = () => {
       </div>
 
       {/* Account Information Card */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="bg-white rounded-md border border-gray-200 p-6">
         <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
-          <div className="bg-orange-100 rounded-lg p-2 mr-3">
-            <CircleUserRound className="w-5 h-5 text-orange-600" />
-          </div>
           <h3 className="text-lg font-semibold text-gray-900">
             {t('account', 'Account')}
           </h3>
@@ -1082,11 +1073,8 @@ const StudentEditModal = () => {
       </div>
 
       {/* Current Residence Card */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="bg-white rounded-md border border-gray-200 p-6">
         <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
-          <div className="bg-red-100 rounded-lg p-2 mr-3">
-            <Building className="w-5 h-5 text-red-600" />
-          </div>
           <h3 className="text-lg font-semibold text-gray-900">
             {t('currentResidence', 'Current Residence')}
           </h3>
@@ -1152,11 +1140,8 @@ const StudentEditModal = () => {
       </div>
 
       {/* Place of Birth Card */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="bg-white rounded-md border border-gray-200 p-6">
         <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
-          <div className="bg-indigo-100 rounded-lg p-2 mr-3">
-            <Building className="w-5 h-5 text-indigo-600" />
-          </div>
           <h3 className="text-lg font-semibold text-gray-900">
             {t('placeOfBirth', 'Place of Birth')}
           </h3>
