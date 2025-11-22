@@ -1,16 +1,57 @@
 import { X, User, Mail, Phone, Calendar, MapPin, Heart, Ruler, Weight, Activity, Shield, Clock, Key, Hash, User2, BookOpen, QrCode, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useState, useEffect } from 'react';
 import Modal from '../ui/Modal';
 import { Badge } from '../ui/Badge';
 import ProfileImage from '../ui/ProfileImage';
 import { Button } from '../ui/Button';
 import { formatDateKhmer, genderToKhmer, bmiStatusToKhmer } from '../../utils/formatters';
+import { bookService } from '../../utils/api/services/bookService';
+import BookCard from '../books/BookCard';
 
 /**
  * StudentViewModal - Read-only modal to display student details
  */
 export default function StudentViewModal({ isOpen, onClose, student }) {
   const { t } = useLanguage();
+  const [books, setBooks] = useState([]);
+  const [loadingBooks, setLoadingBooks] = useState(false);
+
+  // Fetch books by IDs when modal opens and student has bookIds
+  useEffect(() => {
+    console.log('StudentViewModal - student object:', student);
+    console.log('StudentViewModal - bookIds:', student?.bookIds);
+    if (isOpen && student?.bookIds && Array.isArray(student.bookIds) && student.bookIds.length > 0) {
+      console.log('Fetching books for IDs:', student.bookIds);
+      fetchBooksByIds(student.bookIds);
+    }
+  }, [isOpen, student?.bookIds]);
+
+  const fetchBooksByIds = async (bookIds) => {
+    setLoadingBooks(true);
+    try {
+      // Fetch books by grade level to get all available books
+      // Then filter by the bookIds we need
+      const gradeLevel = student?.student?.gradeLevel || '1';
+      console.log('Fetching books for grade level:', gradeLevel);
+      const response = await bookService.getBooksByGradeLevel(gradeLevel, 1, 100);
+      console.log('Books API response:', response);
+
+      if (response.success && response.data) {
+        // Filter books to only include those in bookIds array
+        const filteredBooks = response.data.filter(book => bookIds.includes(book.id));
+        console.log('Filtered books:', filteredBooks);
+        setBooks(filteredBooks);
+      } else {
+        console.error('Books API returned no data:', response);
+      }
+    } catch (error) {
+      console.error('Error fetching books:', error);
+      setBooks([]);
+    } finally {
+      setLoadingBooks(false);
+    }
+  };
 
   if (!student) return null;
 
@@ -180,6 +221,39 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
                 value={student.student.isKidgardener ? t('yes', 'Yes') : t('no', 'No')}
               />
             </div>
+          </div>
+        )}
+
+        {/* Selected Books */}
+        {student.bookIds && Array.isArray(student.bookIds) && student.bookIds.length > 0 && (
+          <div className="border-t pt-4">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+              <BookOpen className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+              {t('selectedBooks', 'Selected Books')}
+            </h3>
+            {loadingBooks ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-sm text-gray-500">{t('loading', 'Loading...')}</div>
+              </div>
+            ) : books.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4">
+                {books.map((book) => (
+                  <BookCard
+                    key={book.id}
+                    book={book}
+                    t={t}
+                    getEmptyDisplay={getEmptyDisplay}
+                    layout="horizontal"
+                    imageSize="sm"
+                    showCategory={true}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+                {t('noBooks', 'No books found')}
+              </div>
+            )}
           </div>
         )}
 
@@ -381,3 +455,4 @@ function InfoItem({ icon: Icon, label, value }) {
     </div>
   );
 }
+

@@ -1327,6 +1327,7 @@ export default function StudentsManagement() {
       // Fetch full student details by user ID
       const response = await studentService.getStudentById(userId);
       console.log('Student details response:', response);
+      console.log('Student bookIds:', response?.data?.bookIds);
 
       if (response && response.success && response.data) {
         setViewingStudent(response.data);

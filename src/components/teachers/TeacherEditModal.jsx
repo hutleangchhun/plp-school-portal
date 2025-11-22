@@ -15,6 +15,7 @@ import { PageLoader } from '../ui/DynamicLoader';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
 import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions } from '../../utils/formOptions';
+import BookCard from '../books/BookCard';
 
 const TeacherEditModal = () => {
   const { t } = useLanguage();

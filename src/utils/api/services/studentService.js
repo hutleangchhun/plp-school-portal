@@ -857,6 +857,8 @@ export const studentService = {
         ethnicGroup: student.ethnicGroup || student.ethnic_group || user.ethnicGroup || user.ethnic_group,
         accessibility: student.accessibility || user.accessibility,
         specialNeeds: student.special_needs || student.specialNeeds || user.special_needs || user.specialNeeds,
+        // Books information
+        bookIds: student.bookIds || student.book_ids || user.bookIds || user.book_ids || [],
         // QR Code data from nested user object
         qrCode: user.qr_code || null,
         qrToken: user.qr_token || null,
@@ -873,7 +875,9 @@ export const studentService = {
      */
     formatStudentData(student) {
       if (!student) return null;
-      
+
+      console.log('formatStudentData - Raw student input:', student);
+
       // Handle different API response structures
       const user = student.user || student;
       const classInfo = student.class || {};
@@ -963,6 +967,8 @@ export const studentService = {
         weight_kg: student.weight_kg || user.weight_kg,
         height_cm: student.height_cm || user.height_cm,
         bmi: student.bmi || user.bmi,
+        // Books information
+        bookIds: student.bookIds || student.book_ids || user.bookIds || user.book_ids || [],
         // QR Code data from nested user object
         qrCode: user.qr_code || null,
         qrToken: user.qr_token || null,
