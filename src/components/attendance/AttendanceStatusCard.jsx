@@ -60,8 +60,8 @@ export default function AttendanceStatusCard({ user, onStatusChange }) {
     return () => clearInterval(interval);
   }, [user?.id]);
 
-  // Determine user role (isDirector is nested inside user.teacher object)
-  const isDirector = user?.teacher?.isDirector === true || user?.isDirector === true;
+  // Determine user role (roleId = 14 for director, roleId = 8 for teacher)
+  const isDirector = user?.roleId === 14;
   const roleLabel = isDirector ? t('director', 'Director') : t('teacher', 'Teacher');
   const roleIcon = isDirector ? Award : User;
   const roleColor = isDirector ? 'text-orange-600' : 'text-blue-600';

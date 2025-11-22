@@ -1,30 +1,36 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X, Weight, Ruler, CircleUserRound, BookOpen } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { User, User2, Building, Mail, Phone, Eye, Upload, Lock, X, Weight, Ruler, CircleUserRound, BookOpen, ArrowLeft } from 'lucide-react';
 import { sanitizeUsername } from '../../utils/usernameUtils';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useErrorHandler } from '../../hooks/useErrorHandler';
+import { decryptId, isValidEncryptedId } from '../../utils/encryption';
 import { Button } from '../ui/Button';
-import Modal from '../ui/Modal';
 import { DatePickerWithDropdowns } from '../ui/date-picker-with-dropdowns';
 import ProfileImage from '../ui/ProfileImage';
 import Dropdown from '../ui/Dropdown';
+import ErrorDisplay from '../ui/ErrorDisplay';
+import { PageLoader } from '../ui/DynamicLoader';
 import { useLocationData } from '../../hooks/useLocationData';
-import { teacherService } from '../../utils/api/services/teacherService';
 import { userService } from '../../utils/api/services/userService';
 import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions } from '../../utils/formOptions';
 
-const TeacherEditModal = ({
-  isOpen,
-  onClose,
-  teacher,
-  onTeacherUpdated,
-  mode = 'edit', // 'edit' or 'create'
-  schoolId = null // School ID for create mode
-}) => {
+const TeacherEditModal = () => {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { error, handleError, clearError, retry } = useErrorHandler();
 
-  const [loading, setLoading] = useState(false);
+  // Get encrypted teacher ID from URL
+  const encryptedTeacherId = searchParams.get('id');
+  const mode = searchParams.get('mode') || 'edit'; // 'create' or 'edit'
+
+  const [teacher, setTeacher] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
+  const [schoolId, setSchoolId] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [profilePictureFile, setProfilePictureFile] = useState(null);
@@ -54,7 +60,7 @@ const TeacherEditModal = ({
     height: '',
     bmi: '',
     ethnicGroup: '',
-    gradeLevel: '',
+    gradeLevels: [], // Changed to array to support multiple grade levels
     accessibility: [],
     employment_type: '',
     teacher_number: '',
@@ -109,12 +115,67 @@ const TeacherEditModal = ({
     resetSelections: resetBirthSelections
   } = useLocationData();
 
+  // Fetch teacher data if editing
+  useEffect(() => {
+    const fetchTeacherData = async () => {
+      try {
+        if (mode === 'create') {
+          // For create mode, we don't need to fetch data
+          setLoading(false);
+          return;
+        }
+
+        // For edit mode, validate and decrypt the teacher ID
+        if (!encryptedTeacherId || !isValidEncryptedId(encryptedTeacherId)) {
+          throw new Error(t('invalidTeacherId', 'Invalid teacher ID'));
+        }
+
+        const decryptedId = decryptId(encryptedTeacherId);
+        if (!decryptedId) {
+          throw new Error(t('failedToDecryptTeacherId', 'Failed to decrypt teacher ID'));
+        }
+
+        console.log('Fetching teacher with ID:', decryptedId);
+
+        // Fetch teacher data
+        const response = await userService.getUserByID(decryptedId);
+        if (response && response.data) {
+          setTeacher(response.data);
+        } else if (response) {
+          setTeacher(response);
+        } else {
+          throw new Error(t('failedToLoadTeacher', 'Failed to load teacher data'));
+        }
+      } catch (err) {
+        console.error('Error fetching teacher:', err);
+        handleError(err, {
+          toastMessage: t('errorLoadingTeacher', 'Error loading teacher data')
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Get school ID from localStorage
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setSchoolId(parsedUser.schoolId || parsedUser.school_id);
+      }
+    } catch (err) {
+      console.error('Error getting school ID:', err);
+    }
+
+    fetchTeacherData();
+  }, [mode, encryptedTeacherId, t, handleError]);
+
   // Initialize form data when teacher changes
   useEffect(() => {
-    if (teacher && isOpen) {
+    if (teacher) {
       initializeFormData();
     }
-  }, [teacher, isOpen]);
+  }, [teacher]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -186,7 +247,7 @@ const TeacherEditModal = ({
         height: height,
         bmi: bmi,
         ethnicGroup: fullData.ethnic_group || fullData.ethnicGroup || '',
-        gradeLevel: teacherData.gradeLevel || teacherData.grade_level || '',
+        gradeLevels: Array.isArray(teacherData.gradeLevels) ? teacherData.gradeLevels : (teacherData.gradeLevel ? [teacherData.gradeLevel] : []),
         accessibility: Array.isArray(fullData.accessibility) ? fullData.accessibility : [],
         employment_type: teacherData.employment_type || '',
         teacher_number: teacherData.teacher_number || teacherData.teacherNumber || '',
@@ -207,6 +268,13 @@ const TeacherEditModal = ({
 
       setOriginalUsername(fullData.username || '');
       setUsernameAvailable(null);
+
+      // Log gradeLevels from API response for debugging
+      console.log('Teacher data received from API:', {
+        gradeLevels: teacherData.gradeLevels,
+        gradeLevel: teacherData.gradeLevel,
+        fullData: fullData
+      });
 
       // Initialize dropdown selections
       const res = fullData.residence || {};
@@ -298,7 +366,7 @@ const TeacherEditModal = ({
       height: '',
       bmi: '',
       ethnicGroup: '',
-      gradeLevel: '',
+      gradeLevels: [],
       accessibility: [],
       employment_type: '',
       teacher_number: '',
@@ -314,7 +382,7 @@ const TeacherEditModal = ({
 
   const handleClose = () => {
     resetForm();
-    onClose();
+    navigate('/teachers', { replace: true });
   };
 
   const handleFormChange = (field, value) => {
@@ -356,7 +424,7 @@ const TeacherEditModal = ({
     e.preventDefault();
 
     try {
-      setLoading(true);
+      setPageLoading(true);
 
       // Normalize date to YYYY-MM-DD
       const formatDate = (val) => {
@@ -390,7 +458,7 @@ const TeacherEditModal = ({
           height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
           bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
           ethnic_group: editForm.ethnicGroup?.trim() || undefined,
-          gradeLevel: editForm.gradeLevel || undefined,
+          gradeLevels: editForm.gradeLevels.length > 0 ? editForm.gradeLevels : undefined,
           accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
           employment_type: editForm.employment_type || undefined,
           teacher_number: editForm.teacher_number || undefined,
@@ -416,6 +484,7 @@ const TeacherEditModal = ({
         });
 
         console.log('Creating teacher with payload:', createPayload);
+        console.log('gradeLevels being sent (CREATE):', createPayload.gradeLevels);
 
         // Call user service to create new teacher
         const response = await userService.createTeacher(createPayload);
@@ -423,10 +492,10 @@ const TeacherEditModal = ({
         // Response is already unwrapped by axios interceptor, so response is the data itself
         if (response) {
           showSuccess(t('teacherCreatedSuccess', 'Teacher created successfully'));
-          handleClose();
-          if (onTeacherUpdated) {
-            onTeacherUpdated(response);
-          }
+          // Redirect back to teachers list after a short delay
+          setTimeout(() => {
+            navigate('/teachers', { replace: true });
+          }, 1500);
         } else {
           throw new Error('Failed to create teacher');
         }
@@ -453,7 +522,7 @@ const TeacherEditModal = ({
           height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
           bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
           ethnic_group: editForm.ethnicGroup?.trim() || undefined,
-          gradeLevel: editForm.gradeLevel || undefined,
+          gradeLevels: editForm.gradeLevels.length > 0 ? editForm.gradeLevels : undefined,
           accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
           employment_type: editForm.employment_type || undefined,
           teacher_number: editForm.teacher_number || undefined,
@@ -482,15 +551,18 @@ const TeacherEditModal = ({
           if (updatePayload[k] === undefined || updatePayload[k] === null || updatePayload[k] === '') delete updatePayload[k];
         });
 
+        console.log('Updating teacher with payload:', updatePayload);
+        console.log('gradeLevels being sent (UPDATE):', updatePayload.gradeLevels);
+
         // Use user service with PUT /users/{userId} endpoint
         const response = await userService.updateUser(userId, updatePayload);
 
         if (response) {
           showSuccess(t('teacherUpdatedSuccess', 'Teacher updated successfully'));
-          handleClose();
-          if (onTeacherUpdated) {
-            onTeacherUpdated(response);
-          }
+          // Redirect back to teachers list after a short delay
+          setTimeout(() => {
+            navigate('/teachers', { replace: true });
+          }, 1500);
         } else {
           throw new Error('Failed to update teacher');
         }
@@ -500,12 +572,12 @@ const TeacherEditModal = ({
       const errorMsg = mode === 'create' ? 'failedCreateTeacher' : 'failedUpdateTeacher';
       showError(t(errorMsg, `Failed to ${mode === 'create' ? 'create' : 'update'} teacher: `) + (error.message || 'Unknown error'));
     } finally {
-      setLoading(false);
+      setPageLoading(false);
     }
   };
 
   const isSubmitDisabled =
-    loading ||
+    pageLoading ||
     !editForm.firstName?.trim() ||
     !editForm.lastName?.trim() ||
     !editForm.gender ||
@@ -518,44 +590,50 @@ const TeacherEditModal = ({
     (mode === 'create' && !editForm.password?.trim()) ||
     usernameAvailable === false;
 
-  return (
-    <>
-      <Modal
-        isOpen={isOpen}
-        onClose={handleClose}
-        title={mode === 'create' ? t('addTeacher', 'Add Teacher') : t('editTeacher', 'Edit Teacher')}
-        size="full"
-        height='2xl'
-        stickyFooter={true}
-        footer={
-          <div className="flex items-center justify-end space-x-3">
-            <Button
-              type="button"
-              onClick={handleClose}
-              variant="outline"
-              disabled={loading}
-            >
-              {t('cancel', 'Cancel')}
-            </Button>
-            <Button
-              type="submit"
-              form="edit-teacher-form"
-              variant="primary"
-              disabled={isSubmitDisabled}
-              className="min-w-[120px]"
-            >
-              {loading
-                ? (mode === 'create'
-                  ? t('creating', 'Creating...')
-                  : t('updating', 'Updating...'))
-                : (mode === 'create'
-                  ? t('createTeacher', 'Create Teacher')
-                  : t('updateTeacher', 'Update Teacher'))}
-            </Button>
-          </div>
-        }
-      >
-        <form id="edit-teacher-form" onSubmit={handleSubmit} className="space-y-6">
+  // Show error state
+  if (error && mode === 'edit') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="p-4 sm:p-6">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClose}
+            className="mb-6 flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t('back', 'Back')}
+          </Button>
+
+          <ErrorDisplay
+            error={error}
+            onRetry={() => {
+              clearError();
+              window.location.reload();
+            }}
+            size="lg"
+            className="min-h-[400px]"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <PageLoader
+          message={t('loadingTeacher', 'Loading teacher...')}
+          className="min-h-screen"
+        />
+      </div>
+    );
+  }
+
+  // Form content JSX
+  const formContent = (
+    <form id="edit-teacher-form" onSubmit={handleSubmit} className="space-y-6">
           {/* Profile Picture Section */}
           <div className="">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -726,19 +804,6 @@ const TeacherEditModal = ({
                     { value: 'ថៃ', label: 'ថៃ (Thai)' },
                     { value: 'វៀតណាម', label: 'វៀតណាម (Vietnamese)' },
                     { value: 'ឡាវ', label: 'ឡាវ (Laotian)' },
-                    { value: 'អាមេរីក', label: 'អាមេរីក (American)' },
-                    { value: 'អង់គ្លេស', label: 'អង់គ្លេស (British)' },
-                    { value: 'ចិន', label: 'ចិន (Chinese)' },
-                    { value: 'ឥណ្ឌា', label: 'ឥណ្ឌា (Indian)' },
-                    { value: 'ជប៉ុន', label: 'ជប៉ុន (Japanese)' },
-                    { value: 'កូរេ', label: 'កូរេ (Korean)' },
-                    { value: 'បារាំង', label: 'បារាំង (French)' },
-                    { value: 'ឺម៉ង់', label: 'ឺម៉ង់ (German)' },
-                    { value: 'អេស្ប៉ាញ', label: 'អេស្ប៉ាញ (Spanish)' },
-                    { value: 'អ៊ីតាលី', label: 'អ៊ីតាលី (Italian)' },
-                    { value: 'កាណាដា', label: 'កាណាដា (Canadian)' },
-                    { value: 'អូស្ត្រាលី', label: 'អូស្ត្រាលី (Australian)' },
-                    { value: 'ផ្សេងទៀត', label: 'ផ្សេងទៀត (Other)' }
                   ]}
                   value={editForm.nationality}
                   onValueChange={(value) => handleFormChange('nationality', value)}
@@ -752,27 +817,32 @@ const TeacherEditModal = ({
             </div>
             {/* Teacher Employment & Status Information */}
             <div className='grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4'>
-              {/* Grade Level */}
-              <div className="mb-4">
+              {/* Grade Level - Multiple Selection */}
+              <div className="mb-4 sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <BookOpen className="inline w-4 h-4 mr-2" />
                   {t('gradeLevel', 'Grade Level')}
                 </label>
-                <Dropdown
-                  options={[
-                    { value: '', label: t('selectGradeLevel', 'Select Grade Level') },
-                    ...gradeLevelOptions.map(option => ({
-                      ...option,
-                      label: option.translationKey ? t(option.translationKey, option.label) : option.label
-                    }))
-                  ]}
-                  value={editForm.gradeLevel}
-                  onValueChange={(value) => handleFormChange('gradeLevel', value)}
-                  placeholder={t('selectGradeLevel', 'Select Grade Level')}
-                  contentClassName="max-h-[200px] overflow-y-auto"
-                  disabled={false}
-                  className='w-full'
-                />
+                <div className="mt-1 space-y-2 p-3 border border-gray-300 rounded-md bg-white max-h-48 overflow-y-auto">
+                  {gradeLevelOptions.map((option) => (
+                    <label key={option.value} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={editForm.gradeLevels.includes(option.value)}
+                        onChange={(e) => {
+                          const newGradeLevels = e.target.checked
+                            ? [...editForm.gradeLevels, option.value]
+                            : editForm.gradeLevels.filter(item => item !== option.value);
+                          handleFormChange('gradeLevels', newGradeLevels);
+                        }}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">
+                        {option.translationKey ? t(option.translationKey, option.label) : option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Employment Type */}
@@ -1199,30 +1269,77 @@ const TeacherEditModal = ({
             </div>
           </div>
         </form>
-      </Modal>
+      );
 
-      {/* Image Modal */}
-      {showImageModal && editForm.profilePicture && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowImageModal(false)}>
-          <div className="relative max-w-4xl max-h-full p-4">
-            <Button
-              onClick={() => setShowImageModal(false)}
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 text-white hover:text-gray-300 hover:bg-white/10 z-10"
-            >
-              <X className="w-6 h-6" />
-            </Button>
-            <img
-              src={editForm.profilePicture}
-              alt="Profile"
-              className="max-w-full max-h-full object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
+  // Render as page
+  return (
+    <div className="p-3 sm:p-6 pb-32">
+      <div className="min-h-screen">
+        {/* Back Button */}
+        <Button
+          variant="link"
+          onClick={handleClose}
+          className="flex items-center gap-2 mb-4"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t('goBack', 'Go Back')}
+        </Button>
+
+        {/* Teacher Edit Form */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          {formContent}
         </div>
-      )}
-    </>
+
+        {/* Action Buttons for Page Mode */}
+        <div className="left-0 right-0 p-4 sm:p-6 flex items-center justify-end space-x-3">
+          <Button
+            type="button"
+            onClick={handleClose}
+            variant="outline"
+            disabled={pageLoading}
+          >
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button
+            type="submit"
+            form="edit-teacher-form"
+            variant="primary"
+            disabled={isSubmitDisabled || pageLoading}
+            className="min-w-[120px]"
+          >
+            {pageLoading
+              ? (mode === 'create'
+                ? t('creating', 'Creating...')
+                : t('updating', 'Updating...'))
+              : (mode === 'create'
+                ? t('createTeacher', 'Create Teacher')
+                : t('updateTeacher', 'Update Teacher'))}
+          </Button>
+        </div>
+
+        {/* Image Modal */}
+        {showImageModal && editForm.profilePicture && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowImageModal(false)}>
+            <div className="relative max-w-4xl max-h-full p-4">
+              <Button
+                onClick={() => setShowImageModal(false)}
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 text-white hover:text-gray-300 hover:bg-white/10 z-10"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+              <img
+                src={editForm.profilePicture}
+                alt="Profile"
+                className="max-w-full max-h-full object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

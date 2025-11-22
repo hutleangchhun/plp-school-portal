@@ -168,7 +168,8 @@ export default function StudentExamRecordsPage({ user }) {
 
   const handleClose = () => {
     // Navigate back to appropriate exam records list based on user role
-    const isDirector = user?.teacher?.isDirector === true || user?.isDirector === true;
+    // Director: roleId = 14, Teacher: roleId = 8
+    const isDirector = user?.roleId === 14;
     if (isDirector) {
       navigate('/exam-records');
     } else {

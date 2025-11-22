@@ -16,8 +16,8 @@ const NotFound = () => {
       return '/login';
     }
 
-    // If user is a teacher (roleId === 8) and not a director, go to teacher-dashboard
-    if (user.roleId === 8 && !user.isDirector) {
+    // If user is a teacher (roleId === 8), go to teacher-dashboard
+    if (user.roleId === 8) {
       return '/teacher-dashboard';
     }
 
@@ -26,8 +26,13 @@ const NotFound = () => {
       return '/admin-dashboard';
     }
 
-    // Otherwise go to director/admin dashboard
-    return '/dashboard';
+    // If user is a director (roleId === 14), go to director dashboard
+    if (user.roleId === 14) {
+      return '/dashboard';
+    }
+
+    // Default fallback
+    return '/login';
   };
 
   const redirectPath = getRedirectPath();

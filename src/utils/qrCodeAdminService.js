@@ -22,7 +22,7 @@ const generateAuthQRCode = async (userData, size = 300) => {
       username: userData.username,
       email: userData.email,
       timestamp: new Date().toISOString(),
-      role: userData.roleId === 8 ? (userData.isDirector ? 'Director' : 'Teacher') : 'Student'
+      role: userData.roleId === 14 ? 'Director' : (userData.roleId === 8 ? 'Teacher' : 'Student')
     };
 
     const qrDataUrl = await QRCode.toDataURL(JSON.stringify(qrData), {
@@ -64,7 +64,7 @@ export const generateBulkQRCodes = async (users, qrSize = 300) => {
             username: user.username,
             fullName: user.fullName || user.full_name || `${user.first_name} ${user.last_name}`,
             email: user.email,
-            role: user.roleId === 8 ? (user.isDirector ? 'Director' : 'Teacher') : 'Student',
+            role: user.roleId === 14 ? 'Director' : (user.roleId === 8 ? 'Teacher' : 'Student'),
             qrCode: qrDataUrl,
             generatedAt: new Date().toISOString(),
             size: qrSize,
@@ -76,7 +76,7 @@ export const generateBulkQRCodes = async (users, qrSize = 300) => {
             username: user.username,
             fullName: user.fullName || user.full_name || `${user.first_name} ${user.last_name}`,
             email: user.email,
-            role: user.roleId === 8 ? (user.isDirector ? 'Director' : 'Teacher') : 'Student',
+            role: user.roleId === 14 ? 'Director' : (user.roleId === 8 ? 'Teacher' : 'Student'),
             qrCode: null,
             generatedAt: new Date().toISOString(),
             size: qrSize,
@@ -105,11 +105,11 @@ export const filterUsersByRole = (users, role) => {
 
   return users.filter(user => {
     if (role === 'teacher') {
-      return user.roleId === 8 && user.isDirector === false;
+      return user.roleId === 8;
     } else if (role === 'director') {
-      return user.roleId === 8 && user.isDirector === true;
+      return user.roleId === 14;
     } else if (role === 'student') {
-      return user.roleId !== 8;
+      return user.roleId !== 8 && user.roleId !== 14;
     }
     return true;
   });

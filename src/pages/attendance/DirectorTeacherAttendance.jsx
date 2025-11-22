@@ -105,7 +105,7 @@ export default function TeacherAttendance() {
   });
 
   const [schoolId] = useState(user?.teacher?.schoolId || user?.school_id || user?.schoolId || null);
-  const isDirector = user?.teacher?.isDirector === true || user?.isDirector === true;
+  const isDirector = user?.roleId === 14;
 
   // Function to toggle teacher selection
   const toggleTeacherSelection = useCallback((userId) => {

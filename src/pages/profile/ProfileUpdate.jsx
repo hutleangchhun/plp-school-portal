@@ -37,7 +37,6 @@ export default function ProfileUpdate({ user, setUser }) {
     nationality: 'ខ្មែរ',
     roleNameEn: '',
     roleNameKh: '',
-    is_director: false,
     school_name: '',
     weight_kg: '',
     height_cm: '',
@@ -229,7 +228,6 @@ export default function ProfileUpdate({ user, setUser }) {
           nationality: normalizedData.nationality || 'ខ្មែរ',
           roleNameEn: normalizedData.roleNameEn || '',
           roleNameKh: normalizedData.roleNameKh || '',
-          is_director: normalizedData.isDirector || teacher.isDirector || false,
           school_name: teacher.school?.name || normalizedData.school_name || '',
           weight_kg: normalizedData.weight_kg || '',
           height_cm: normalizedData.height_cm || '',
@@ -296,14 +294,10 @@ export default function ProfileUpdate({ user, setUser }) {
         setBirthInitialized(false);
 
         // Also update the user context if needed
-        // IMPORTANT: Preserve isDirector from original user object if not in API response
         if (setUser) {
           const updatedUser = {
-            ...userData,
-            // Preserve isDirector from original user if it's not in the API response
-            isDirector: userData.isDirector !== undefined ? userData.isDirector : user?.isDirector
+            ...userData
           };
-          console.log('ProfileUpdate - Preserving isDirector:', user?.isDirector, '→', updatedUser.isDirector);
           setUser(updatedUser);
         }
       } catch (error) {
@@ -804,9 +798,7 @@ export default function ProfileUpdate({ user, setUser }) {
 
       const updatedUser = {
         ...user,
-        ...response,
-        // Explicitly preserve isDirector to ensure it's not lost
-        isDirector: response.isDirector !== undefined ? response.isDirector : user?.isDirector
+        ...response
       };
       utils.user.saveUserData(updatedUser);
       setUser(updatedUser);

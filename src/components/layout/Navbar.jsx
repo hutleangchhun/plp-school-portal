@@ -105,8 +105,8 @@ const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1
                     </Link>
                   </DropdownMenu.Item>
 
-                  {/* Bulk Import - Directors only */}
-                  {user && user.isDirector === true && (
+                  {/* Bulk Import - Directors only (roleId = 14) */}
+                  {user && user.roleId === 14 && (
                     <DropdownMenu.Item asChild>
                       <Link
                         to="/students/bulk-import"
@@ -118,8 +118,8 @@ const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1
                     </DropdownMenu.Item>
                   )}
 
-                  {/* School Settings - Directors only */}
-                  {user && user.isDirector === true && (
+                  {/* School Settings - Directors only (roleId = 14) */}
+                  {user && user.roleId === 14 && (
                     <DropdownMenu.Item asChild>
                       <Link
                         to="/settings/school"

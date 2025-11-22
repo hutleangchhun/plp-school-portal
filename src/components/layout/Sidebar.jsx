@@ -35,9 +35,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     }));
   };
 
-  // Debug: Log user object to check isDirector value
+  // Debug: Log user object to check roleId
   console.log('Sidebar - User object:', user);
-  console.log('Sidebar - isDirector:', user?.isDirector);
   console.log('Sidebar - roleId:', user?.roleId);
 
   // Icon mapping for routes

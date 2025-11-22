@@ -307,8 +307,8 @@ export default function TeacherSelfAttendance() {
     return date > today;
   };
 
-  // Check if user is teacher or director
-  const isDirector = user?.isDirector === true;
+  // Check if user is teacher or director (roleId = 8 for teacher, roleId = 14 for director)
+  const isDirector = user?.roleId === 14;
   const isTeacherOrDirector = isTeacher || isDirector;
 
   // Helper function to translate attendance status to Khmer

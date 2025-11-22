@@ -196,7 +196,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             <InfoItem
               icon={Shield}
               label={t('isDirector', 'Is Director')}
-              value={teacher.isDirector ? t('yes', 'Yes') : t('no', 'No')}
+              value={teacher.roleId === 14 ? t('yes', 'Yes') : t('no', 'No')}
             />
           </div>
         </div>

@@ -6,16 +6,17 @@
 // Role constants
 export const ROLES = {
   TEACHER: 8,
+  DIRECTOR_ROLE: 14, // Director role ID
   ROLE1: 1,
-  DIRECTOR: 'DIRECTOR', // Special marker to indicate director-only routes (roleId=8 && isDirector=true)
-  TEACHER_ONLY: 'TEACHER_ONLY', // Special marker for teacher-only routes (roleId=8 && isDirector=false)
+  DIRECTOR: 'DIRECTOR', // Special marker to indicate director-only routes (roleId=14)
+  TEACHER_ONLY: 'TEACHER_ONLY', // Special marker for teacher-only routes (roleId=8)
   ROLE1_ONLY: 'ROLE1_ONLY', // Special marker for role1-only routes (roleId=1)
 };
 
 // Route permissions configuration
 export const routePermissions = {
-  // Director (role_id = 8 && isDirector = true) can access director-only routes
-  // Teacher (role_id = 8 && isDirector = false) can access teacher-only and shared routes
+  // Director (roleId = 14) can access director-only routes
+  // Teacher (roleId = 8) can access teacher-only and shared routes
   '/dashboard': {
     allowedRoles: [ROLES.DIRECTOR],
     component: 'Dashboard'
@@ -105,15 +106,11 @@ export const routePermissions = {
 /**
  * Check if user has access to a route
  * @param {string} path - Route path
- * @param {Object} user - User object with roleId and isDirector
+ * @param {Object} user - User object with roleId
  * @returns {boolean} Whether user has access
  */
 export const hasRouteAccess = (path, user) => {
   if (!user || !path) return false;
-
-  // Get isDirector value - it can be at top level or nested in teacher object
-  const isDirector = user.teacher?.isDirector === true || user.isDirector === true;
-  const isNotDirector = !isDirector;
 
   // Helper function to check if a path matches a route pattern
   const matchRoute = (pattern, pathname) => {
@@ -145,8 +142,8 @@ export const hasRouteAccess = (path, user) => {
     return null;
   };
 
-  // Director: roleId = 8 && isDirector = true
-  if (user.roleId === ROLES.TEACHER && isDirector) {
+  // Director: roleId = 14
+  if (user.roleId === ROLES.DIRECTOR_ROLE) {
     const routeConfig = findRouteConfig(path);
 
     // If route doesn't exist, deny access
@@ -162,8 +159,8 @@ export const hasRouteAccess = (path, user) => {
     return false;
   }
 
-  // Teacher: roleId = 8 && (isDirector = false OR undefined)
-  if (user.roleId === ROLES.TEACHER && isNotDirector) {
+  // Teacher: roleId = 8
+  if (user.roleId === ROLES.TEACHER) {
     const routeConfig = findRouteConfig(path);
 
     // If route doesn't exist, deny access
@@ -199,9 +196,6 @@ export const hasRouteAccess = (path, user) => {
     return false;
   }
 
-  // Director: roleId = 8 && isDirector = true (already handled above in the first check)
-  // This is a fallback for any director routes not explicitly checked above
-
   return false;
 };
 
@@ -220,15 +214,12 @@ export const getAccessibleRoutes = (user) => {
 
 /**
  * Get navigation items based on user role
- * @param {Object} user - User object with roleId and isDirector
+ * @param {Object} user - User object with roleId
  * @param {Function} t - Translation function
  * @returns {Array} Array of navigation items
  */
 export const getNavigationItems = (user, t) => {
   if (!user) return [];
-
-  // Get isDirector value - it can be at top level or nested in teacher object
-  const isDirector = user.teacher?.isDirector === true || user.isDirector === true;
 
   // Director gets all navigation items
   const directorItems = [
@@ -338,12 +329,13 @@ export const getNavigationItems = (user, t) => {
     return role1Items;
   }
 
-  // Check isDirector FIRST since both roles have roleId = 8
-  if (user.roleId === 8 && isDirector) {
+  // Director: roleId = 14
+  if (user.roleId === 14) {
     return directorItems;
   }
 
-  if (user.roleId === 8 && !isDirector) {
+  // Teacher: roleId = 8
+  if (user.roleId === 8) {
     return teacherItems;
   }
 

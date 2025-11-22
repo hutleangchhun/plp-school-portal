@@ -150,8 +150,8 @@ const Table = ({
                     {column.render
                       ? column.render(item, rowIndex)
                       : column.accessor
-                      ? getNestedValue(item, column.accessor) ?? '-'
-                      : item[column.key] ?? '-'
+                      ? renderCellValue(getNestedValue(item, column.accessor))
+                      : renderCellValue(item[column.key])
                     }
                   </td>
                 ))}
@@ -175,6 +175,36 @@ const Table = ({
 // Helper function to get nested object values
 const getNestedValue = (obj, path) => {
   return path.split('.').reduce((current, key) => current?.[key], obj);
+};
+
+// Helper function to render cell values with special handling for arrays
+const renderCellValue = (value) => {
+  // Handle null/undefined
+  if (value == null) {
+    return '-';
+  }
+
+  // Handle arrays - render as badges/chips
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return '-';
+    }
+    return (
+      <div className="flex flex-wrap gap-1">
+        {value.map((item, index) => (
+          <span
+            key={index}
+            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 whitespace-nowrap"
+          >
+            {item}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  // Handle strings/numbers - return as is
+  return value;
 };
 
 // Advanced Pagination component

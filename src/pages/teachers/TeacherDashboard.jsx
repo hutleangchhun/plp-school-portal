@@ -220,17 +220,16 @@ export default function TeacherDashboard({ user }) {
   const getUserRole = () => {
     if (!user) return null;
 
-    // isDirector is nested inside user.teacher object
-    const isDirector = user.teacher?.isDirector === true || user.isDirector === true;
-
-    if (user.roleId === 8 && isDirector) {
+    // Director: roleId = 14
+    if (user.roleId === 14) {
       return {
         label: t('director') || 'Director',
         color: 'purple',
         Icon: Shield
       };
     }
-    if (user.roleId === 8 && !isDirector) {
+    // Teacher: roleId = 8
+    if (user.roleId === 8) {
       return {
         label: t('teacher') || 'Teacher',
         color: 'blue',

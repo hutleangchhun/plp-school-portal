@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, MinusCircle, Edit2, Users, Download, X, Filter, User, Eye } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
+import { encryptId } from '../../utils/encryption';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
 import { teacherService } from '../../utils/api/services/teacherService';
@@ -16,7 +18,6 @@ import { getGradeLabel } from '../../constants/grades';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import TeacherEditModal from '../../components/teachers/TeacherEditModal';
 import TeacherViewModal from '../../components/teachers/TeacherViewModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
@@ -29,6 +30,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 export default function TeachersManagement() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
   const { error, handleError, clearError, retry } = useErrorHandler();
   const { startLoading, stopLoading, isLoading } = useLoading();
@@ -91,13 +93,10 @@ export default function TeachersManagement() {
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [editingTeacher, setEditingTeacher] = useState(null);
   const [viewingTeacher, setViewingTeacher] = useState(null);
   const [selectedTeachers, setSelectedTeachers] = useState([]);
-  const [showTeachersManagerOpen, setShowTeachersManagerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [dataFetched, setDataFetched] = useState(false);
@@ -105,8 +104,6 @@ export default function TeachersManagement() {
   const [selectingAll, setSelectingAll] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
-  const [modalMode, setModalMode] = useState('edit'); // 'edit' or 'create'
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
   const searchTimeoutRef = useRef(null);
@@ -273,8 +270,9 @@ export default function TeachersManagement() {
         schoolName: teacher.school?.name || '',
         hireDate: teacher.hire_date,
         gradeLevel: teacher.gradeLevel || null,
+        gradeLevels: teacher.gradeLevels || [], // Include gradeLevels array from API
         employmentType: teacher.employment_type || '',
-        isDirector: teacher.isDirector,
+        roleId: teacher.roleId,
         status: teacher.status,
         isActive: teacher.status === 'ACTIVE',
         classes: teacher.classes || []
@@ -463,8 +461,8 @@ export default function TeachersManagement() {
         const gender = teacher.gender === 'MALE' || teacher.gender === 'male' ? 'ប្រុស' :
           teacher.gender === 'FEMALE' || teacher.gender === 'female' ? 'ស្រី' : '';
 
-        // Format role (position)
-        const role = teacher.isDirector ? 'នាយក' : 'គ្រូបង្រៀន'; // Director or Teacher
+        // Format role (position) - roleId 14 = Director, roleId 8 = Teacher
+        const role = teacher.roleId === 14 ? 'នាយក' : 'គ្រូបង្រៀន';
 
         // Format full address for teacher
         const teacherAddress = [
@@ -699,31 +697,27 @@ export default function TeachersManagement() {
     setShowViewModal(true);
   };
 
-  // Handle add teacher button click
+  // Handle add teacher button click - navigate to create page
   const handleAddTeacherClick = () => {
-    setEditingTeacher(null);
-    setModalMode('create');
-    setShowAddTeacherModal(true);
+    navigate('/teachers/edit?mode=create');
   };
 
-  // Handle edit teacher
+  // Handle edit teacher - navigate to edit page with encrypted teacher ID
   const handleEditTeacher = (teacher) => {
     console.log('Edit button clicked for teacher:', teacher);
-    setEditingTeacher(teacher);
-    setModalMode('edit');
-    setShowEditModal(true);
-  };
+    const teacherId = teacher.userId || teacher.id;
+    if (!teacherId) {
+      showError(t('invalidTeacherId', 'Invalid teacher ID'));
+      return;
+    }
 
-  // Handle successful teacher update from modal
-  const handleTeacherUpdated = (updatedTeacher) => {
-    console.log('Teacher updated successfully:', updatedTeacher);
-    setShowEditModal(false);
-    setShowAddTeacherModal(false);
-    setEditingTeacher(null);
-    // Refresh the teacher list
-    setTimeout(async () => {
-      await fetchTeachers(true);
-    }, 500);
+    const encryptedId = encryptId(teacherId);
+    if (!encryptedId) {
+      showError(t('failedToEncryptId', 'Failed to encrypt teacher ID'));
+      return;
+    }
+
+    navigate(`/teachers/edit?id=${encryptedId}&mode=edit`);
   };
 
   // Define table columns
@@ -774,18 +768,32 @@ export default function TeachersManagement() {
       )
     },
     {
-      key: 'gradeLevel',
+      key: 'gradeLevels',
       header: t('gradeLevel', 'Grade Level'),
-      accessor: 'gradeLevel',
+      accessor: 'gradeLevels',
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden xl:table-cell',
-      render: (teacher) => (
-        <p>
-          {teacher.gradeLevel !== null && teacher.gradeLevel !== undefined && teacher.gradeLevel !== ''
-            ? `${t('gradeLevel', 'Grade Level')} ${getGradeLabel(String(teacher.gradeLevel), t)}`
-            : '-'}
-        </p>
-      )
+      render: (teacher) => {
+        // Handle both gradeLevels array (new format) and gradeLevel string (old format)
+        const levels = teacher.gradeLevels || (teacher.gradeLevel ? [teacher.gradeLevel] : []);
+
+        if (!Array.isArray(levels) || levels.length === 0) {
+          return <p>-</p>;
+        }
+
+        return (
+          <div className="flex flex-wrap gap-1">
+            {levels.map((level, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap"
+              >
+                {getGradeLabel(String(level), t)}
+              </span>
+            ))}
+          </div>
+        );
+      }
     },
     {
       key: 'employmentType',
@@ -1160,30 +1168,6 @@ export default function TeachersManagement() {
         teacher={viewingTeacher}
       />
 
-      {/* Add Teacher Modal */}
-      <TeacherEditModal
-        isOpen={showAddTeacherModal}
-        onClose={() => {
-          setShowAddTeacherModal(false);
-          setEditingTeacher(null);
-        }}
-        teacher={null}
-        onTeacherUpdated={handleTeacherUpdated}
-        mode="create"
-        schoolId={schoolId}
-      />
-
-      {/* Edit Teacher Modal */}
-      <TeacherEditModal
-        isOpen={showEditModal}
-        onClose={() => {
-          setShowEditModal(false);
-          setEditingTeacher(null);
-        }}
-        teacher={editingTeacher}
-        onTeacherUpdated={handleTeacherUpdated}
-        mode="edit"
-      />
 
       {/* Disabled: Selected Teachers Modal */}
       {/* <Modal

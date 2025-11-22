@@ -338,7 +338,7 @@ const SchoolLookup = () => {
       header: t('role', 'Role'),
       accessor: 'roleNameKh',
       render: (teacher) => {
-        const isDirector = teacher.roleId === 8 && teacher.is_director === true;
+        const isDirector = teacher.roleId === 14;
         const roleText = isDirector ? 'នាយក' : 'គ្រូបង្រៀន';
         const bgColor = isDirector ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
 

@@ -22,6 +22,7 @@ import BulkStudentImport from './pages/students/BulkStudentImport';
 import QRCodeManagement from './pages/QRCode/QRCodeManagement';
 import ClassesManagement from './pages/classes/ClassesManagement';
 import TeachersManagement from './pages/teachers/TeachersManagement';
+import TeacherEditModal from './components/teachers/TeacherEditModal';
 import ParentsManagement from './pages/parents/ParentsManagement';
 import Reports from './pages/reports/Reports';
 import Attendance from './pages/attendance/Attendance';
@@ -59,8 +60,8 @@ function AppContent() {
     if (isAuth) {
       const userData = utils.user.getUserData();
 
-      // Allow teachers (roleId=8), directors (roleId=8, isDirector=true), and role ID 1 users
-      if (userData && userData.roleId !== 8 && userData.roleId !== 1) {
+      // Allow teachers (roleId=8), directors (roleId=14), and role ID 1 users
+      if (userData && ![8, 14, 1].includes(userData.roleId)) {
         console.warn('Non-authorized user detected. Logging out.');
         utils.user.removeUserData();
         setUser(null);
@@ -93,9 +94,10 @@ function AppContent() {
           path="/login"
           element={
             !user ? <Login setUser={setUser} /> :
-            (user && user.roleId === 8 && user.isDirector !== true ? <Navigate to="/teacher-dashboard" replace /> :
+            (user && user.roleId === 8 ? <Navigate to="/teacher-dashboard" replace /> :
              user && user.roleId === 1 ? <Navigate to="/admin-dashboard" replace /> :
-             <Navigate to="/dashboard" replace />)
+             user && user.roleId === 14 ? <Navigate to="/dashboard" replace /> :
+             <Navigate to="/login" replace />)
           }
         />
 
@@ -126,9 +128,10 @@ function AppContent() {
           }
         >
           <Route index element={
-            user && user.roleId === 8 && user.isDirector !== true ? <Navigate to="/teacher-dashboard" replace /> :
+            user && user.roleId === 8 ? <Navigate to="/teacher-dashboard" replace /> :
             user && user.roleId === 1 ? <Navigate to="/admin-dashboard" replace /> :
-            <Navigate to="/dashboard" replace />
+            user && user.roleId === 14 ? <Navigate to="/dashboard" replace /> :
+            <Navigate to="/login" replace />
           } />
           
           {/* Dashboard routes with sidebar */}
@@ -168,7 +171,7 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={
-              user && user.roleId === 8 && !user.teacher?.isDirector && !user.isDirector
+              user && user.roleId === 8
                 ? <TeacherQRCodeManagement user={user} />
                 : <QRCodeManagement />
             } />
@@ -188,6 +191,7 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<TeachersManagement />} />
+            <Route path="edit" element={<TeacherEditModal />} />
           </Route>
 
           <Route path="parents" element={
@@ -220,7 +224,7 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={
-              user && user.roleId === 8 && !user.isDirector
+              user && user.roleId === 8
                 ? <StudentAttendance user={user} />
                 : <Attendance />
             } />

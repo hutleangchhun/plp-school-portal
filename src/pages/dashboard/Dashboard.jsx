@@ -146,10 +146,10 @@ export default function Dashboard({ user: initialUser }) {
             limit: 100 // API max limit is 100
           });
 
-          // Count based on isDirector field
+          // Count based on roleId: directors are roleId = 14
           const allTeachers = teachersResponse?.data || [];
-          const regularTeachers = allTeachers.filter(teacher => !teacher.isDirector);
-          const directors = allTeachers.filter(teacher => teacher.isDirector === true);
+          const regularTeachers = allTeachers.filter(teacher => teacher.roleId !== 14);
+          const directors = allTeachers.filter(teacher => teacher.roleId === 14);
 
           const totalTeachers = regularTeachers.length;
           const totalDirectors = directors.length;
@@ -223,17 +223,16 @@ export default function Dashboard({ user: initialUser }) {
   const getUserRole = () => {
     if (!user) return null;
 
-    // isDirector is nested inside user.teacher object
-    const isDirector = user.teacher?.isDirector === true || user.isDirector === true;
-
-    if (user.roleId === 8 && isDirector) {
+    // Director: roleId = 14
+    if (user.roleId === 14) {
       return {
         label: t('director') || 'Director',
         color: 'purple',
         Icon: Shield
       };
     }
-    if (user.roleId === 8 && !isDirector) {
+    // Teacher: roleId = 8
+    if (user.roleId === 8) {
       return {
         label: t('teacher') || 'Teacher',
         color: 'blue',

@@ -23,10 +23,18 @@ export const authService = {
     if (response.success) {
       const { accessToken, user } = response.data;
 
-      // Allow users with roleId = 8 (teachers and directors) and roleId = 1 to access this portal
-      // Teacher: roleId = 8 && isDirector = false
-      // Director: roleId = 8 && isDirector = true
-      if (user.roleId !== 8 && user.roleId !== 1) {
+      // Normalize user data: roleId = 14 is the primary director role
+      const normalizedUser = {
+        ...user,
+        isDirector: user.roleId === 14,
+        is_director: user.roleId === 14
+      };
+
+      // Allow users with roleId = 8 (teachers), roleId = 14 (directors), and roleId = 1 to access this portal
+      // Teacher: roleId = 8
+      // Director: roleId = 14
+      // Admin: roleId = 1
+      if (![8, 14, 1].includes(normalizedUser.roleId)) {
         return {
           success: false,
           error: 'Only authorized users can access this portal. Please contact your administrator.'
@@ -52,20 +60,16 @@ export const authService = {
           console.log('   - id:', accountResponse.data.id);
 
           const freshUserData = {
-            ...user,
+            ...normalizedUser,
             ...accountResponse.data,
             // Ensure we keep the original user properties that might not be in account response
-            id: accountResponse.data.id || user.id,
-            schoolId: accountResponse.data.school_id || user.schoolId,
-            school_id: accountResponse.data.school_id || user.school_id,
-            // Ensure isDirector is properly set (handle both snake_case and camelCase)
-            isDirector: accountResponse.data.isDirector !== undefined
-              ? accountResponse.data.isDirector
-              : (accountResponse.data.is_director !== undefined ? accountResponse.data.is_director : user.isDirector),
+            id: accountResponse.data.id || normalizedUser.id,
+            schoolId: accountResponse.data.school_id || normalizedUser.schoolId,
+            school_id: accountResponse.data.school_id || normalizedUser.school_id,
+            // roleId = 14 is the primary director role
+            isDirector: accountResponse.data.roleId === 14 || accountResponse.data.role_id === 14,
             // Also keep snake_case for backwards compatibility
-            is_director: accountResponse.data.is_director !== undefined
-              ? accountResponse.data.is_director
-              : (accountResponse.data.isDirector !== undefined ? accountResponse.data.isDirector : user.is_director)
+            is_director: accountResponse.data.roleId === 14 || accountResponse.data.role_id === 14
           };
 
           console.log('✅ Merged user data being saved to localStorage:');
@@ -89,19 +93,19 @@ export const authService = {
       } catch (accountError) {
         console.error('❌ Failed to fetch fresh account data:', accountError);
         // Fallback to login data if my-account fails
-        userUtils.saveUserData(user);
+        userUtils.saveUserData(normalizedUser);
       }
 
       // Fallback: save login user data
       console.log('⚠️ Using fallback login data');
       console.log('🔍 Login user data being saved:');
-      console.log('   - isDirector:', user.isDirector, 'Type:', typeof user.isDirector);
-      console.log('   - is_director:', user.is_director, 'Type:', typeof user.is_director);
-      userUtils.saveUserData(user);
+      console.log('   - isDirector:', normalizedUser.isDirector, 'Type:', typeof normalizedUser.isDirector);
+      console.log('   - is_director:', normalizedUser.is_director, 'Type:', typeof normalizedUser.is_director);
+      userUtils.saveUserData(normalizedUser);
 
       return {
         success: true,
-        data: { accessToken, user }
+        data: { accessToken, user: normalizedUser }
       };
     }
 
@@ -158,8 +162,8 @@ export const authService = {
   isAuthenticated: () => {
     const hasToken = tokenManager.hasToken();
     const userData = userUtils.getUserData();
-    // User must have token, valid user data, and roleId = 8 (teacher or director) or roleId = 1
-    return hasToken && userData !== null && (userData.roleId === 8 || userData.roleId === 1);
+    // User must have token, valid user data, and roleId = 8 (teacher), 14 (director), or 1 (admin)
+    return hasToken && userData !== null && ([8, 14, 1].includes(userData.roleId));
   },
 
   /**
@@ -193,21 +197,23 @@ export const authService = {
  */
 export const authUtils = {
   /**
-   * Check if user is a director (roleId = 8 && isDirector = true)
+   * Check if user is a director (roleId = 14)
    * @param {Object} user - User object
    * @returns {boolean} Whether user is a director
    */
   isDirector: (user) => {
-    return user && user.roleId === 8 && user.isDirector === true;
+    if (!user) return false;
+    // Director role ID is 14
+    return user.roleId === 14;
   },
 
   /**
-   * Validate teacher role (roleId = 8 && isDirector = false)
+   * Validate teacher role (roleId = 8)
    * @param {Object} user - User object
-   * @returns {boolean} Whether user is a teacher (not a director)
+   * @returns {boolean} Whether user is a teacher
    */
   isTeacher: (user) => {
-    return user && user.roleId === 8 && user.isDirector === false;
+    return user && user.roleId === 8;
   },
 
   /**
@@ -242,11 +248,12 @@ export const authUtils = {
   /**
    * Get user role type
    * @param {Object} user - User object
-   * @returns {string} Role type (teacher, student, role1, unknown)
+   * @returns {string} Role type (admin, director, teacher, student, unknown)
    */
   getUserRole: (user) => {
     if (!user) return 'unknown';
     if (user.roleId === 1) return 'admin';
+    if (user.roleId === 14) return 'director';
     if (user.roleId === 8) return 'teacher';
     if (user.roleId === 9) return 'student';
     return 'unknown';
