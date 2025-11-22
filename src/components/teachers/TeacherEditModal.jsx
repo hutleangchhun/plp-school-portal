@@ -60,7 +60,7 @@ const TeacherEditModal = () => {
     height: '',
     bmi: '',
     ethnicGroup: '',
-    gradeLevels: [], // Changed to array to support multiple grade levels
+    gradeLevel: '', // Single grade level as string
     accessibility: [],
     employment_type: '',
     teacher_number: '',
@@ -247,7 +247,7 @@ const TeacherEditModal = () => {
         height: height,
         bmi: bmi,
         ethnicGroup: fullData.ethnic_group || fullData.ethnicGroup || '',
-        gradeLevels: Array.isArray(teacherData.gradeLevels) ? teacherData.gradeLevels : (teacherData.gradeLevel ? [teacherData.gradeLevel] : []),
+        gradeLevel: teacherData.gradeLevel || '',
         accessibility: Array.isArray(fullData.accessibility) ? fullData.accessibility : [],
         employment_type: teacherData.employment_type || '',
         teacher_number: teacherData.teacher_number || teacherData.teacherNumber || '',
@@ -366,7 +366,7 @@ const TeacherEditModal = () => {
       height: '',
       bmi: '',
       ethnicGroup: '',
-      gradeLevels: [],
+      gradeLevel: '',
       accessibility: [],
       employment_type: '',
       teacher_number: '',
@@ -458,7 +458,7 @@ const TeacherEditModal = () => {
           height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
           bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
           ethnic_group: editForm.ethnicGroup?.trim() || undefined,
-          gradeLevels: editForm.gradeLevels.length > 0 ? editForm.gradeLevels : undefined,
+          gradeLevel: editForm.gradeLevel?.trim() || undefined,
           accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
           employment_type: editForm.employment_type || undefined,
           teacher_number: editForm.teacher_number || undefined,
@@ -484,7 +484,7 @@ const TeacherEditModal = () => {
         });
 
         console.log('Creating teacher with payload:', createPayload);
-        console.log('gradeLevels being sent (CREATE):', createPayload.gradeLevels);
+        console.log('gradeLevel being sent (CREATE):', createPayload.gradeLevel);
 
         // Call user service to create new teacher
         const response = await userService.createTeacher(createPayload);
@@ -522,7 +522,7 @@ const TeacherEditModal = () => {
           height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
           bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
           ethnic_group: editForm.ethnicGroup?.trim() || undefined,
-          gradeLevels: editForm.gradeLevels.length > 0 ? editForm.gradeLevels : undefined,
+          gradeLevel: editForm.gradeLevel?.trim() || undefined,
           accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
           employment_type: editForm.employment_type || undefined,
           teacher_number: editForm.teacher_number || undefined,
@@ -552,7 +552,7 @@ const TeacherEditModal = () => {
         });
 
         console.log('Updating teacher with payload:', updatePayload);
-        console.log('gradeLevels being sent (UPDATE):', updatePayload.gradeLevels);
+        console.log('gradeLevel being sent (UPDATE):', updatePayload.gradeLevel);
 
         // Use user service with PUT /users/{userId} endpoint
         const response = await userService.updateUser(userId, updatePayload);
@@ -817,32 +817,24 @@ const TeacherEditModal = () => {
             </div>
             {/* Teacher Employment & Status Information */}
             <div className='grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4'>
-              {/* Grade Level - Multiple Selection */}
-              <div className="mb-4 sm:col-span-2">
+              {/* Grade Level - Single Selection */}
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <BookOpen className="inline w-4 h-4 mr-2" />
                   {t('gradeLevel', 'Grade Level')}
                 </label>
-                <div className="mt-1 space-y-2 p-3 border border-gray-300 rounded-md bg-white max-h-48 overflow-y-auto">
-                  {gradeLevelOptions.map((option) => (
-                    <label key={option.value} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                      <input
-                        type="checkbox"
-                        checked={editForm.gradeLevels.includes(option.value)}
-                        onChange={(e) => {
-                          const newGradeLevels = e.target.checked
-                            ? [...editForm.gradeLevels, option.value]
-                            : editForm.gradeLevels.filter(item => item !== option.value);
-                          handleFormChange('gradeLevels', newGradeLevels);
-                        }}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">
-                        {option.translationKey ? t(option.translationKey, option.label) : option.label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                <Dropdown
+                  options={[
+                    { value: '', label: t('selectGradeLevel', 'Select Grade Level') },
+                    ...gradeLevelOptions
+                  ]}
+                  value={editForm.gradeLevel}
+                  onValueChange={(value) => handleFormChange('gradeLevel', value)}
+                  placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                  contentClassName="max-h-[200px] overflow-y-auto"
+                  disabled={false}
+                  className='w-full'
+                />
               </div>
 
               {/* Employment Type */}

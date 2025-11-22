@@ -270,7 +270,6 @@ export default function TeachersManagement() {
         schoolName: teacher.school?.name || '',
         hireDate: teacher.hire_date,
         gradeLevel: teacher.gradeLevel || null,
-        gradeLevels: teacher.gradeLevels || [], // Include gradeLevels array from API
         employmentType: teacher.employment_type || '',
         roleId: teacher.roleId,
         status: teacher.status,
@@ -768,30 +767,21 @@ export default function TeachersManagement() {
       )
     },
     {
-      key: 'gradeLevels',
+      key: 'gradeLevel',
       header: t('gradeLevel', 'Grade Level'),
-      accessor: 'gradeLevels',
+      accessor: 'gradeLevel',
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden xl:table-cell',
       render: (teacher) => {
-        // Handle both gradeLevels array (new format) and gradeLevel string (old format)
-        const levels = teacher.gradeLevels || (teacher.gradeLevel ? [teacher.gradeLevel] : []);
+        const level = teacher.gradeLevel;
 
-        if (!Array.isArray(levels) || levels.length === 0) {
+        if (!level) {
           return <p>-</p>;
         }
 
         return (
-          <div className="flex flex-wrap gap-1">
-            {levels.map((level, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap"
-              >
-                {getGradeLabel(String(level), t)}
-              </span>
-            ))}
-          </div>
+          <p> {getGradeLabel(String(level), t)}</p>
+
         );
       }
     },
