@@ -25,14 +25,14 @@ const SchoolLookup = () => {
   const [schoolsLoading, setSchoolsLoading] = useState(false);
 
   // Teacher states
-  const [teachers, setTeachers] = useState([]);
-  const [teachersLoading, setTeachersLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('8'); // Default to teachers
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('8'); // Default to teachers (8 = teacher, 14 = director)
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalTeachers, setTotalTeachers] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [schoolInfo, setSchoolInfo] = useState(null);
-  const [showTeachers, setShowTeachers] = useState(false);
+  const [showUsers, setShowUsers] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const limit = 10;
@@ -196,8 +196,8 @@ const SchoolLookup = () => {
     setSelectedProvince(provinceId);
     setSelectedDistrict('');
     setSelectedSchool('');
-    setShowTeachers(false);
-    setTeachers([]);
+    setShowUsers(false);
+    setUsers([]);
 
     if (provinceId) {
       loadDistricts(provinceId);
@@ -210,8 +210,8 @@ const SchoolLookup = () => {
   const handleDistrictChange = (districtCode) => {
     setSelectedDistrict(districtCode);
     setSelectedSchool('');
-    setShowTeachers(false);
-    setTeachers([]);
+    setShowUsers(false);
+    setUsers([]);
 
     if (districtCode) {
       loadSchools(districtCode);
@@ -227,35 +227,43 @@ const SchoolLookup = () => {
       const selectedSchoolObj = schools.find(s => s.id.toString() === schoolId);
       if (selectedSchoolObj) {
         setSchoolInfo(selectedSchoolObj);
-        setShowTeachers(true);
+        setShowUsers(true);
         setCurrentPage(1);
-        loadTeachers(schoolId);
+        loadUsers(schoolId);
       }
     } else {
-      setShowTeachers(false);
-      setTeachers([]);
+      setShowUsers(false);
+      setUsers([]);
       setSchoolInfo(null);
     }
   };
 
-  // Teacher-related functions
-  const loadTeachers = useCallback(async (schoolId) => {
+  const handleRoleChange = (roleId) => {
+    setSelectedRole(roleId);
+    setCurrentPage(1);
+    if (selectedSchool) {
+      loadUsers(selectedSchool, roleId);
+    }
+  };
+
+  // User-related functions (Teachers and Directors)
+  const loadUsers = useCallback(async (schoolId, roleId = selectedRole) => {
     try {
-      setTeachersLoading(true);
+      setUsersLoading(true);
 
       const params = {
         page: currentPage,
         limit: limit,
-        roleId: selectedRole
+        roleId: roleId || selectedRole
       };
 
       const response = await userService.getPublicSchoolUsers(schoolId, params);
-      console.log('Teachers response:', response);
+      console.log('Users response:', response);
 
       if (response && response.data) {
-        setTeachers(response.data);
+        setUsers(response.data);
         setTotalPages(response.totalPages || 1);
-        setTotalTeachers(response.total || 0);
+        setTotalUsers(response.total || 0);
 
         // Update school info if available
         if (response.schoolInfo) {
@@ -265,16 +273,16 @@ const SchoolLookup = () => {
           });
         }
       } else {
-        setTeachers([]);
+        setUsers([]);
         setTotalPages(1);
-        setTotalTeachers(0);
+        setTotalUsers(0);
       }
     } catch (error) {
-      console.error('Error loading teachers:', error);
-      setTeachers([]);
-      alert(t('មានបញ្ហាក្នុងការផ្ទុកបញ្ជីគ្រូបង្រៀន', 'Error loading teachers'));
+      console.error('Error loading users:', error);
+      setUsers([]);
+      alert(t('មានបញ្ហាក្នុងការផ្ទុកបញ្ជីប្រើប្រាស់', 'Error loading users'));
     } finally {
-      setTeachersLoading(false);
+      setUsersLoading(false);
     }
   }, [currentPage, limit, selectedRole, t]);
 
@@ -288,28 +296,28 @@ const SchoolLookup = () => {
     navigate(`/login?username=${encodeURIComponent(teacher.username)}`);
   };
 
-  // Load teachers when page changes or school is selected
+  // Load users when page changes or school is selected
   useEffect(() => {
-    if (selectedSchool && showTeachers) {
-      loadTeachers(selectedSchool);
+    if (selectedSchool && showUsers) {
+      loadUsers(selectedSchool);
     }
-  }, [currentPage, selectedSchool, showTeachers, loadTeachers]);
+  }, [currentPage, selectedSchool, showUsers, loadUsers]);
 
-  // Filter teachers based on search query
-  const filteredTeachers = useMemo(() => {
+  // Filter users based on search query
+  const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) {
-      return teachers;
+      return users;
     }
 
     const query = searchQuery.toLowerCase().trim();
-    return teachers.filter(teacher => {
-      const fullName = `${teacher.first_name || ''} ${teacher.last_name || ''}`.toLowerCase();
-      const username = (teacher.username || '').toLowerCase();
-      const email = (teacher.email || '').toLowerCase();
+    return users.filter(user => {
+      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
+      const username = (user.username || '').toLowerCase();
+      const email = (user.email || '').toLowerCase();
 
       return fullName.includes(query) || username.includes(query) || email.includes(query);
     });
-  }, [teachers, searchQuery]);
+  }, [users, searchQuery]);
 
   // Define table columns for teachers
   const teacherColumns = [
@@ -355,7 +363,7 @@ const SchoolLookup = () => {
   const pagination = {
     page: currentPage,
     pages: totalPages,
-    total: totalTeachers,
+    total: totalUsers,
     limit: limit
   };
 
@@ -380,7 +388,7 @@ const SchoolLookup = () => {
 
         {/* Filter Form */}
         <div className=" p-8 mb-12 border border-gray-100 bg-white rounded-lg">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Province Selection */}
             <div className="space-y-3">
               <label className="flex items-center text-sm font-semibold text-gray-700">
@@ -437,9 +445,28 @@ const SchoolLookup = () => {
                 minWidth="w-full"
               />
             </div>
+
+            {/* Role Selection */}
+            <div className="space-y-3">
+              <label className="flex items-center text-sm font-semibold text-gray-700">
+                {t('role', 'Role')}
+              </label>
+              <Dropdown
+                value={selectedRole}
+                onValueChange={handleRoleChange}
+                options={[
+                  { value: '8', label: 'គ្រូបង្រៀន (Teachers)' },
+                  { value: '14', label: 'នាយក (Directors)' }
+                ]}
+                placeholder={t('selectRole', 'Select Role')}
+                disabled={!selectedSchool}
+                className="w-full h-12 text-base"
+                minWidth="w-full"
+              />
+            </div>
           </div>
           {/* Instructions Card */}
-          {!showTeachers && (
+          {!showUsers && (
             <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-md p-8 border border-blue-100 mt-4">
               <div className="">
                 <div className='flex justify-start gap-2 items-center '>
@@ -457,14 +484,14 @@ const SchoolLookup = () => {
                     <li>ជ្រើសរើសខេត្ត</li>
                     <li>ជ្រើសរើសស្រុក</li>
                     <li>ជ្រើសរើសសាលារៀន</li>
-                    <li>មើលបញ្ជីគ្រូបង្រៀន</li>
+                    <li>មើលបញ្ជីប្រើប្រាស់</li>
                   </ul>
                 </div>
               </div>
             </div>
           )}
-          {/* Teachers Section */}
-          {showTeachers && schoolInfo && (
+          {/* Users Section */}
+          {showUsers && schoolInfo && (
             <div className="space-y-8 mt-4">
               {/* Search Bar */}
               <div>
@@ -492,16 +519,16 @@ const SchoolLookup = () => {
                 </div>
               </div>
 
-              {/* Teachers Table */}
+              {/* Users Table */}
               <div className="bg-white rounded-md overflow-hidden border border-gray-100">
                 <div className=" px-6 py-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <h3 className="text-base font-semibold text-gray-800">
-                        បញ្ជីគ្រូបង្រៀន
+                        {selectedRole === '14' ? 'បញ្ជីនាយក' : 'បញ្ជីគ្រូបង្រៀន'}
                       </h3>
                       <span className="text-sm text-gray-500">
-                        ({filteredTeachers.length} / {totalTeachers})
+                        ({filteredUsers.length} / {totalUsers})
                       </span>
                     </div>
                   </div>
@@ -509,9 +536,9 @@ const SchoolLookup = () => {
 
                 <Table
                   columns={teacherColumns}
-                  data={filteredTeachers}
-                  loading={teachersLoading}
-                  emptyMessage={searchQuery ? t('noTeachersFound', 'No teachers match your search') : 'មិនមានគ្រូបង្រៀនក្នុងសាលារៀននេះទេ'}
+                  data={filteredUsers}
+                  loading={usersLoading}
+                  emptyMessage={searchQuery ? t('noUsersFound', 'No users match your search') : 'មិនមានប្រើប្រាស់ក្នុងសាលារៀននេះទេ'}
                   emptyIcon={Users}
                   emptyVariant="neutral"
                   showPagination={totalPages > 1}

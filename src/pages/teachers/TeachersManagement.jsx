@@ -781,7 +781,6 @@ export default function TeachersManagement() {
 
         return (
           <p> {getGradeLabel(String(level), t)}</p>
-
         );
       }
     },
