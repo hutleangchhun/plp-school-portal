@@ -23,6 +23,7 @@ import QRCodeManagement from './pages/QRCode/QRCodeManagement';
 import ClassesManagement from './pages/classes/ClassesManagement';
 import TeachersManagement from './pages/teachers/TeachersManagement';
 import TeacherEditModal from './components/teachers/TeacherEditModal';
+import StudentEditModal from './components/students/StudentEditModal';
 import ParentsManagement from './pages/parents/ParentsManagement';
 import Reports from './pages/reports/Reports';
 import Attendance from './pages/attendance/Attendance';
@@ -159,6 +160,7 @@ function AppContent() {
           }>
             <Route index element={<StudentsManagement />} />
             <Route path="select" element={<StudentSelection />} />
+            <Route path="edit" element={<StudentEditModal />} />
             <Route path="bulk-import" element={
               <ProtectedRoute path="/students/bulk-import" user={user}>
                 <BulkStudentImport />

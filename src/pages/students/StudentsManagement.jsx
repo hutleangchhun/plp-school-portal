@@ -16,7 +16,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
 import { exportStudentsToExcel } from '../../utils/studentExportUtils';
 import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
-import StudentEditModal from '../../components/students/StudentEditModal';
+import { encryptId } from '../../utils/encryption';
 import StudentActionsModal from '../../components/students/StudentActionsModal';
 import StudentViewModal from '../../components/students/StudentViewModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -136,12 +136,10 @@ export default function StudentsManagement() {
   const [debouncedAcademicYear, setDebouncedAcademicYear] = useState(''); // Debounced academic year
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [showStudentActionsModal, setShowStudentActionsModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [editingStudent, setEditingStudent] = useState(null);
   const [viewingStudent, setViewingStudent] = useState(null);
   const [loadingStudentDetails, setLoadingStudentDetails] = useState(false);
   const [transferTargetClassId, setTransferTargetClassId] = useState('');
@@ -1344,22 +1342,12 @@ export default function StudentsManagement() {
     }
   };
 
-  // Handle edit student
+  // Handle edit student - navigate to edit page
   const handleEditStudent = (student) => {
     console.log('Edit button clicked for student:', student);
-    setEditingStudent(student);
-    setShowEditModal(true);
-  };
-
-  // Handle successful student update from modal
-  const handleStudentUpdated = (updatedStudent) => {
-    console.log('Student updated successfully:', updatedStudent);
-    setShowEditModal(false);
-    setEditingStudent(null);
-    // Refresh the student list
-    setTimeout(async () => {
-      await fetchStudents(undefined, true, true);
-    }, 500);
+    const studentId = student.userId || student.user_id || student.id;
+    const encryptedId = encryptId(studentId);
+    navigate(`/students/edit?id=${encryptedId}`);
   };
 
 
@@ -1992,17 +1980,6 @@ export default function StudentsManagement() {
         className="full"
       />
 
-      {/* Edit Student Modal */}
-      <StudentEditModal
-        isOpen={showEditModal}
-        onClose={() => {
-          setShowEditModal(false);
-          setEditingStudent(null);
-        }}
-        className="full"
-        student={editingStudent}
-        onStudentUpdated={handleStudentUpdated}
-      />
     </div>
   );
 }

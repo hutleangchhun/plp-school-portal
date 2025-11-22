@@ -171,6 +171,10 @@ const ENDPOINTS = {
     BASE: '/dashboard',
     SCHOOL_BMI: (schoolId) => `/dashboard/school/${schoolId}/bmi`,
   },
+  BOOKS: {
+    BASE: '/books',
+    BY_GRADE_LEVEL: (gradeLevel, page = 1, limit = 10) => `/books?gradeLevel=${gradeLevel}&page=${page}&limit=${limit}`,
+  },
 };
 
 // HTTP Status codes for consistent error handling

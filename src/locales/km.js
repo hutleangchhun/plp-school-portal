@@ -79,7 +79,7 @@ export const km = {
   emailRequired: 'អ៊ីមែល *',
   phone: 'លេខទូរស័ព្ទ',
   password: 'ពាក្យសម្ងាត់',
-  newPassword: 'ពាក្យសម្ងាត់ថ្មី (ទុកចន្កោះប្រសិនបើមិនចង់ផ្លាស់ប្ដូរ)',
+  newPassword: 'ពាក្យសម្ងាត់ថ្មី (ទុកចន្លោះប្រសិនបើមិនចង់ផ្លាស់ប្ដូរ)',
   dateOfBirth: 'ថ្ងៃកំណើត',
   gender: 'ភេទ',
   genderRequired: 'ភេទ *',
@@ -229,6 +229,13 @@ export const km = {
   usernameNotAvailable: 'ឈ្មោះអ្នកប្រើប្រាស់មិនអាចប្រើប្រាស់បានទេ',
   usernameAvailable: 'ឈ្មោះអ្នកប្រើប្រាស់អាចប្រើប្រាស់បាន',
   usernameSuggestionHint: 'ចុច​ការផ្ដល់យោបល់ដើម្បីបង្កើតឈ្មោះអ្នកប្រើប្រាស់ស្វ័យប្រវត្តិ',
+  selectBooks: 'ជ្រើសរើសសៀវភៅ',
+  booksSelected: 'សៀវភៅបានជ្រើសរើស',
+  chooseBooks: 'ជ្រើសរើសសៀវភៅ',
+  noBooksSelected: 'គ្មានសៀវភៅដែលត្រូវបានជ្រើសរើស',
+  category: 'ប្រភេទសៀវភៅ',
+  done: 'ជ្រើសរើស',
+  bookSelected: 'សៀវភៅបានជ្រើសរើស',
 
   // Teacher Management
   addTeacher: 'បន្ថែមគ្រូ',
