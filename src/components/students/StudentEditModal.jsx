@@ -631,107 +631,6 @@ const StudentEditModal = () => {
   // Form content JSX - shared between page and modal rendering
   const formContent = (
     <form id="edit-student-form" onSubmit={handleSubmit} className="space-y-6">
-      {/* Header Section with Profile Picture */}
-      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
-        <div className="flex items-start gap-6">
-          {/* Profile Picture */}
-          <div className="flex-shrink-0">
-            <div className="relative inline-block cursor-pointer" ref={dropdownRef}>
-              <div onClick={() => setShowDropdown(!showDropdown)}>
-                {profilePictureFile ? (
-                  <img
-                    src={URL.createObjectURL(profilePictureFile)}
-                    alt="Profile Preview"
-                    className="h-24 w-24 sm:h-28 sm:w-28 rounded-lg object-cover border-3 border-white shadow-lg hover:shadow-xl transition-all"
-                  />
-                ) : (
-                  <ProfileImage
-                    user={{ profile_picture: editForm.profilePicture, firstName: editForm.firstName, lastName: editForm.lastName }}
-                    size="lg"
-                    alt="Profile"
-                    className="rounded-lg border-3 border-white shadow-lg hover:shadow-xl transition-all"
-                    borderColor="border-white"
-                    fallbackType="image"
-                    clickable={true}
-                  />
-                )}
-              </div>
-
-              {/* Dropdown Menu */}
-              {showDropdown && (
-                <div className="absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200">
-                  <div className="py-1">
-                    {editForm.profilePicture && (
-                      <Button
-                        type="button"
-                        onClick={handleViewPicture}
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        className="justify-start rounded-none"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        {t('viewPicture') || 'View Picture'}
-                      </Button>
-                    )}
-                    <Button
-                      type="button"
-                      onClick={handleUploadClick}
-                      variant="ghost"
-                      size="sm"
-                      fullWidth
-                      className="justify-start rounded-none"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      {t('uploadNewPicture') || 'Upload New Picture'}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Hidden File Input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleProfilePictureChange}
-              className="hidden"
-            />
-
-            {profilePictureFile && (
-              <p className="mt-2 text-xs text-green-600 font-medium">
-                ✓ {t('newPictureSelected') || 'New picture selected'}
-              </p>
-            )}
-          </div>
-
-          {/* Quick Info */}
-          <div className="flex-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-              {editForm.firstName || editForm.lastName
-                ? `${editForm.firstName} ${editForm.lastName}`
-                : t('newStudent', 'New Student')}
-            </h2>
-            <p className="text-sm text-gray-600 mb-4">
-              {editForm.studentNumber ? `${t('studentNumber', 'Student Number')}: ${editForm.studentNumber}` : t('editStudentProfile', 'Edit student profile')}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {editForm.academicYear && (
-                <span className="inline-block bg-white px-3 py-1 rounded-full text-xs font-medium text-gray-700 border border-gray-300">
-                  {t('academicYear', 'Academic Year')}: {editForm.academicYear}
-                </span>
-              )}
-              {editForm.gradeLevel && (
-                <span className="inline-block bg-white px-3 py-1 rounded-full text-xs font-medium text-blue-700 border border-blue-300">
-                  {t('gradeLevel', 'Grade Level')}: {gradeLevelOptions.find(opt => opt.value === editForm.gradeLevel)?.label}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Personal Information Card */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
@@ -953,89 +852,6 @@ const StudentEditModal = () => {
                   ? `${t('booksSelected', 'Books Selected')} (${editForm.bookIds.length})`
                   : t('chooseBooks', 'Choose Books')}
               </Button>
-
-              {/* Selected Books Display */}
-              {editForm.bookIds.length > 0 && availableBooks.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm font-semibold text-gray-700 mb-3">{t('selectedBooks', 'Selected Books')}</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {editForm.bookIds.map((bookId) => {
-                      const book = availableBooks.find(b => b.id === bookId);
-                      if (!book) return null;
-
-                      const getStaticAssetBaseUrl = () => {
-                        if (import.meta.env.VITE_STATIC_BASE_URL) {
-                          return import.meta.env.VITE_STATIC_BASE_URL;
-                        }
-                        if (import.meta.env.MODE === 'development') {
-                          return 'http://localhost:8080';
-                        }
-                        return 'https://plp-api.moeys.gov.kh';
-                      };
-
-                      const bookCoverUrl = book.coverBook
-                        ? `${getStaticAssetBaseUrl()}/uploads/books/${book.coverBook}`
-                        : null;
-
-                      return (
-                        <div
-                          key={book.id}
-                          className="relative group rounded-lg overflow-hidden border border-purple-200 bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
-                        >
-                          {/* Book Cover Image */}
-                          <div className="relative w-full bg-gradient-to-br from-gray-100 to-gray-200 h-28 overflow-hidden">
-                            {bookCoverUrl ? (
-                              <img
-                                src={bookCoverUrl}
-                                alt={book.title}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  const fallback = e.target.parentElement.querySelector('[data-selected-fallback]');
-                                  if (fallback) {
-                                    fallback.style.display = 'flex';
-                                  }
-                                }}
-                              />
-                            ) : null}
-                            {/* Fallback when no image */}
-                            <div
-                              data-selected-fallback
-                              className="w-full h-28 flex items-center justify-center bg-gradient-to-br from-purple-100 to-purple-50 px-1"
-                              style={{
-                                display: !bookCoverUrl ? 'flex' : 'none'
-                              }}
-                            >
-                              <div className="flex flex-col items-center gap-0.5">
-                                <BookOpen className="h-5 w-5 text-purple-400" />
-                                <span className="text-xs text-purple-600 font-medium text-center">No Image</span>
-                              </div>
-                            </div>
-
-                            {/* Remove Button */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                const newBookIds = editForm.bookIds.filter(id => id !== book.id);
-                                handleFormChange('bookIds', newBookIds);
-                              }}
-                              className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-
-                          {/* Book Title */}
-                          <div className="p-2 min-h-[40px] flex items-center">
-                            <p className="text-xs font-semibold text-gray-800 line-clamp-2">{book.title}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -1543,14 +1359,29 @@ const StudentEditModal = () => {
                         : [...editForm.bookIds, book.id];
                       handleFormChange('bookIds', newBookIds);
                     }}
-                    className={`flex flex-col border-2 rounded-xl transition-all duration-200 text-left group overflow-hidden ${
+                    className={`flex flex-row border-2 rounded-xl transition-all duration-200 text-left group overflow-hidden ${
                       isSelected
-                        ? 'border-purple-500 bg-gradient-to-b from-purple-50 to-white hover:bg-purple-100 shadow-md'
-                        : 'border-gray-200 bg-white hover:border-purple-300 hover:shadow-md'
+                        ? 'border-blue-500 bg-gradient-to-l from-blue-50 to-white hover:bg-blue-100 shadow-md'
+                        : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-md'
                     }`}
                   >
-                    {/* Book Cover Image - Full Width */}
-                    <div className="relative w-full flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 h-40 overflow-hidden">
+                    {/* Book Info - Left Section */}
+                    <div className="flex-1 flex flex-col p-4 min-w-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-semibold text-gray-900 line-clamp-2">{book.title}</p>
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-1">
+                          <span className="font-medium">{t('subject', 'Subject')}:</span> {book.subjectKhmer || book.subject}
+                        </p>
+                        {book.bookCategory && (
+                          <p className="text-sm text-gray-600 mt-0.5 line-clamp-1">
+                            <span className="font-medium">{t('category', 'Category')}:</span> {book.bookCategory}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Book Cover Image - Right Side */}
+                    <div className="relative flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 w-32 h-32 overflow-hidden">
                       {bookCoverUrl ? (
                         <img
                           src={bookCoverUrl}
@@ -1568,44 +1399,23 @@ const StudentEditModal = () => {
                       {/* Fallback when no image or image fails */}
                       <div
                         data-book-fallback
-                        className="w-full h-40 flex items-center justify-center bg-gradient-to-br from-purple-100 to-purple-50 px-2"
+                        className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-50 px-2"
                         style={{
                           display: !bookCoverUrl ? 'flex' : 'none'
                         }}
                       >
                         <div className="flex flex-col items-center gap-1">
-                          <BookOpen className="h-10 w-10 text-purple-400" />
-                          <span className="text-xs text-purple-600 font-medium text-center">
-                            {!bookCoverUrl ? 'No Cover Image' : 'Failed to Load'}
-                          </span>
-                          <span className="text-xs text-purple-500 text-center">
-                            {!bookCoverUrl ? 'Not available in system' : 'Please check your connection'}
-                          </span>
+                          <BookOpen className="h-7 w-7 text-blue-400" />
                         </div>
                       </div>
                       {/* Selection Checkmark Badge */}
                       {isSelected && (
-                        <div className="absolute top-2 right-2 bg-purple-600 rounded-full p-2 shadow-lg">
-                          <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="absolute top-1 right-1 bg-blue-600 rounded-full p-1.5 shadow-lg">
+                          <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
                       )}
-                    </div>
-
-                    {/* Book Info - Bottom Section */}
-                    <div className="flex-1 flex flex-col p-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-gray-900 line-clamp-2">{book.title}</p>
-                        <p className="text-xs text-gray-600 mt-1.5 line-clamp-1">
-                          <span className="font-medium">{t('subject', 'Subject')}:</span> {book.subjectKhmer || book.subject}
-                        </p>
-                        {book.bookCategory && (
-                          <p className="text-xs text-gray-600 mt-1 line-clamp-1">
-                            <span className="font-medium">{t('category', 'Category')}:</span> {book.bookCategory}
-                          </p>
-                        )}
-                      </div>
                     </div>
                   </button>
                 );
