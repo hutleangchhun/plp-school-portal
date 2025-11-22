@@ -236,6 +236,7 @@ export const km = {
   category: 'ប្រភេទសៀវភៅ',
   done: 'ជ្រើសរើស',
   bookSelected: 'សៀវភៅបានជ្រើសរើស',
+  selectedBooks: 'សៀវភៅដែលបានជ្រើសរើស',
 
   // Teacher Management
   addTeacher: 'បន្ថែមគ្រូ',

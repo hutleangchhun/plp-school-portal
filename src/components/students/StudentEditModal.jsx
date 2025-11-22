@@ -1238,9 +1238,7 @@ const StudentEditModal = () => {
         </Button>
 
         {/* Student Edit Form */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
           {formContent}
-        </div>
 
         {/* Action Buttons for Page Mode */}
         <div className="left-0 right-0 p-4 sm:p-6 flex items-center justify-end space-x-3">
@@ -1346,11 +1344,7 @@ const StudentEditModal = () => {
                         : [...editForm.bookIds, book.id];
                       handleFormChange('bookIds', newBookIds);
                     }}
-                    className={`relative transition-all duration-200 text-left ${
-                      isSelected
-                        ? 'ring-2 ring-blue-500'
-                        : ''
-                    }`}
+                    className="relative transition-all duration-200 text-left"
                   >
                     <BookCard
                       book={book}
@@ -1360,10 +1354,12 @@ const StudentEditModal = () => {
                       imageSize="md"
                       showCategory={true}
                       hoverable={true}
+                      borderColor={isSelected ? 'blue-500' : 'gray-200'}
+                      isSelected={isSelected}
                       className={`${
                         isSelected
-                          ? 'border-blue-500 bg-gradient-to-l from-blue-50 to-white shadow-md'
-                          : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
+                          ? 'bg-gradient-to-l from-blue-50 to-white shadow-md'
+                          : 'hover:border-blue-300 hover:shadow-md'
                       }`}
                     />
                     {/* Selection Checkmark Badge */}

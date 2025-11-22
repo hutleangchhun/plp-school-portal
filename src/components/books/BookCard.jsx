@@ -11,6 +11,8 @@ import { BookOpen } from 'lucide-react';
  * @param {string} [props.imageSize='sm'] - Image size: 'sm' (w-28 h-28), 'md' (w-32 h-32), 'lg' (w-40 h-40)
  * @param {boolean} [props.showCategory=true] - Whether to display book category
  * @param {boolean} [props.hoverable=true] - Whether to show hover effects
+ * @param {string} [props.borderColor='gray-200'] - Border color (e.g., 'blue-500', 'gray-200')
+ * @param {boolean} [props.isSelected=false] - Whether the card is selected
  * @param {string} [props.className=''] - Additional CSS classes
  */
 function BookCard({
@@ -21,6 +23,8 @@ function BookCard({
   imageSize = 'sm',
   showCategory = true,
   hoverable = true,
+  borderColor = 'gray-200',
+  isSelected = false,
   className = ''
 }) {
   // Helper function to get static asset base URL
@@ -49,14 +53,14 @@ function BookCard({
   const imageSizeClass = imageSizeClasses[imageSize] || imageSizeClasses.sm;
 
   // Common styles
-  const cardBaseClasses = `border-2 border-gray-200 rounded-xl overflow-hidden bg-white transition-shadow duration-200 ${hoverable ? 'hover:shadow-md' : ''}`;
+  const cardBaseClasses = `border-2 border-${borderColor} rounded-xl overflow-hidden bg-white transition-shadow duration-200 ${hoverable ? 'hover:shadow-md' : ''}`;
 
   // Horizontal layout (image on right)
   if (layout === 'horizontal') {
     return (
       <div className={`flex flex-row ${cardBaseClasses} ${className}`}>
         {/* Book Info - Left Section */}
-        <div className="flex-1 flex flex-col p-3 min-w-0">
+        <div className="flex-1 flex flex-col p-4   min-w-0">
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-gray-900 line-clamp-2">
               {book?.title || getEmptyDisplay()}
@@ -92,12 +96,16 @@ function BookCard({
           {/* Fallback when no image or image fails */}
           <div
             data-book-fallback
-            className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-purple-50 px-1"
+            className={`w-full h-full flex items-center justify-center px-1 ${
+              isSelected
+                ? 'bg-gradient-to-br from-blue-100 to-blue-50'
+                : 'bg-gradient-to-br from-gray-100 to-gray-50'
+            }`}
             style={{ display: !bookCoverUrl ? 'flex' : 'none' }}
           >
             <div className="flex flex-col items-center gap-0.5">
-              <BookOpen className="h-4 w-4 text-purple-400" />
-              <span className="text-xs text-purple-600 font-medium text-center">No Image</span>
+              <BookOpen className={`h-4 w-4 ${isSelected ? 'text-blue-400' : 'text-gray-400'}`} />
+              <span className={`text-xs font-medium text-center ${isSelected ? 'text-blue-600' : 'text-gray-600'}`}>No Image</span>
             </div>
           </div>
         </div>
@@ -128,12 +136,16 @@ function BookCard({
         {/* Fallback when no image or image fails */}
         <div
           data-book-fallback
-          className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-purple-50"
+          className={`w-full h-full flex items-center justify-center ${
+            isSelected
+              ? 'bg-gradient-to-br from-blue-100 to-blue-50'
+              : 'bg-gradient-to-br from-purple-100 to-purple-50'
+          }`}
           style={{ display: !bookCoverUrl ? 'flex' : 'none' }}
         >
           <div className="flex flex-col items-center gap-1">
-            <BookOpen className="h-6 w-6 text-purple-400" />
-            <span className="text-xs text-purple-600 font-medium text-center">No Image</span>
+            <BookOpen className={`h-6 w-6 ${isSelected ? 'text-blue-400' : 'text-purple-400'}`} />
+            <span className={`text-xs font-medium text-center ${isSelected ? 'text-blue-600' : 'text-purple-600'}`}>No Image</span>
           </div>
         </div>
       </div>

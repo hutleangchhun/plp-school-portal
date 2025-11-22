@@ -80,6 +80,8 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
     const missingFields = [];
 
     // Required personal information
+    if (!student.first_name) missingFields.push(t('firstName', 'First Name'));
+    if (!student.last_name) missingFields.push(t('lastName', 'Last Name'));
     if (!student.date_of_birth) missingFields.push(t('dateOfBirth', 'Date of Birth'));
     if (!student.gender) missingFields.push(t('gender', 'Gender'));
     if (!student.email) missingFields.push(t('email', 'Email'));
@@ -146,15 +148,24 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
 
         {/* Personal Information */}
         <div className="border-t pt-4">
-          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
-            <User2 className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            {t('personalInformation', 'Personal Information')}
-          </h3>
+          <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+            <div className='bg-blue-500 p-2 rounded-sm'>
+              <User2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            <div className="ml-2">
+              {t('personalInformation', 'Personal Information')}
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <InfoItem
               icon={User}
-              label={t('username', 'Username')}
-              value={student.username || getEmptyDisplay()}
+              label={t('firstName', 'First Name')}
+              value={student.first_name || getEmptyDisplay()}
+            />
+            <InfoItem
+              icon={User}
+              label={t('lastName', 'Last Name')}
+              value={student.last_name || getEmptyDisplay()}
             />
             <InfoItem
               icon={Calendar}
@@ -165,16 +176,6 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
               icon={User}
               label={t('gender', 'Gender')}
               value={genderToKhmer(student.gender) || getEmptyDisplay()}
-            />
-            <InfoItem
-              icon={Mail}
-              label={t('email', 'Email')}
-              value={student.email || getEmptyDisplay()}
-            />
-            <InfoItem
-              icon={Phone}
-              label={t('phone', 'Phone')}
-              value={student.phone || getEmptyDisplay()}
             />
             <InfoItem
               icon={MapPin}
@@ -191,18 +192,44 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
 
         {/* Account Information */}
         <div className="border-t pt-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            {t('accountInformation', 'Account Information')}
-          </h3>
+          <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+            <div className='bg-blue-500 p-2 rounded-sm'>
+              <Key className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            <div className="ml-2">
+              {t('accountInformation', 'Account Information')}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <InfoItem
+              icon={User}
+              label={t('username', 'Username')}
+              value={student.username || getEmptyDisplay()}
+            />
+            <InfoItem
+              icon={Mail}
+              label={t('email', 'Email')}
+              value={student.email || getEmptyDisplay()}
+            />
+            <InfoItem
+              icon={Phone}
+              label={t('phone', 'Phone')}
+              value={student.phone || getEmptyDisplay()}
+            />
+          </div>
         </div>
 
         {/* Academic Information */}
         {student.student && (
           <div className="border-t pt-4">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
-              <BookOpen className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              {t('academicInformation', 'Academic Information')}
-            </h3>
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('academicInformation', 'Academic Information')}
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <InfoItem
                 label={t('studentNumber', 'Student Number')}
@@ -227,10 +254,14 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* Selected Books */}
         {student.bookIds && Array.isArray(student.bookIds) && student.bookIds.length > 0 && (
           <div className="border-t pt-4">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
-              <BookOpen className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              {t('selectedBooks', 'Selected Books')}
-            </h3>
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('selectedBooks', 'Selected Books')}
+              </div>
+            </div>
             {loadingBooks ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-sm text-gray-500">{t('loading', 'Loading...')}</div>
@@ -260,10 +291,14 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* Health Information */}
         {(student.weight_kg || student.height_cm) && (
           <div className="border-t pt-4">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
-              <Heart className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              {t('healthInformation', 'Health Information')}
-            </h3>
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('healthInformation', 'Health Information')}
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <InfoItem
                 icon={Weight}
@@ -282,10 +317,14 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* BMI Information */}
         {student.bmi && typeof student.bmi === 'object' && (
           <div className="border-t pt-4">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
-              <Activity className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              {t('bmiInformation', 'BMI Information')}
-            </h3>
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('bmiInformation', 'BMI Information')}
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <InfoItem
                 icon={Activity}
@@ -325,10 +364,14 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* Accessibility Information */}
         {student.accessibility && student.accessibility.length > 0 && (
           <div className="border-t pt-4">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
-              <Shield className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              {t('accessibility', 'Accessibility Needs')}
-            </h3>
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('accessibility', 'Accessibility Needs')}
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2">
               {student.accessibility.map((item, index) => (
                 <Badge key={index} color="orange" variant="outline">
@@ -342,10 +385,14 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* Residence Information */}
         {student.residence && (
           <div className="border-t pt-4">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
-              <MapPin className="inline w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              {t('currentResidence', 'Residence Information')}
-            </h3>
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('currentResidence', 'Residence Information')}
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <InfoItem
                 label={t('province', 'Province')}
@@ -414,10 +461,14 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         {/* QR Code */}
         {student.qr_code && (
           <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              <QrCode className="inline w-5 h-5 mr-2" />
-              {t('qrCode', 'QR Code')}
-            </h3>
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <QrCode className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('qrCode', 'QR Code')}
+              </div>
+            </div>
             <div className="flex justify-center">
               <img
                 src={student.qr_code}
@@ -447,8 +498,7 @@ function InfoItem({ icon: Icon, label, value }) {
 
   return (
     <div className="flex items-start space-x-2">
-      {Icon && <Icon className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 bg-gray-50 border-gray-100 border-2 p-4 rounded-lg">
         <p className="text-sm font-medium text-gray-500">{label}</p>
         <p className="text-sm text-gray-900 break-words">{displayValue}</p>
       </div>
