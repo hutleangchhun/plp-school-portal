@@ -72,7 +72,7 @@ export const employmentTypeOptions = [
   { value: 'បឋម', label: 'បឋម' },
   { value: 'កិច្ចសន្យា', label: 'កិច្ចសន្យា' },
   { value: 'កិច្ចព្រមព្រៀង', label: 'កិច្ចព្រមព្រៀង' },
-  { value: 'ឧត្តម', label: 'ឧត្ដម' },
+  { value: 'ឧត្ដម', label: 'ឧត្ដម' },
   { value: 'មូលដ្ឋាន', label: 'មូលដ្ឋាន' },
   { value: 'មត្តេយ្យ', label: 'មត្តេយ្យ' }
 ];
