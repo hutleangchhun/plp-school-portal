@@ -252,6 +252,10 @@ export const km = {
   deselectedAllTeachers: 'បានលុបការជ្រើសរើសគ្រូទាំងអស់',
     manageTeacherRecords: 'គ្រប់គ្រងទិន្នន័យគ្រូ',
     createTeacher: 'បន្ថែមគ្រូ',
+    salaryType: 'កាំប្រាក់',
+    selectSalaryType: 'ជ្រើសរើសកាំប្រាក់',
+    educationLevel: 'ប្រភេទកម្រិតសញ្ញាបត្រចុងក្រោយ',
+    selectEducationLevel: 'ជ្រើសរើសកម្រិតសញ្ញាបត្រចុងក្រោយ',
     
 
   // Parent Management

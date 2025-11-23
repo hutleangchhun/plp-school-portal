@@ -175,6 +175,10 @@ const ENDPOINTS = {
     BASE: '/books',
     BY_GRADE_LEVEL: (gradeLevel, page = 1, limit = 10) => `/books?gradeLevel=${gradeLevel}&page=${page}&limit=${limit}`,
   },
+  SALARY_TYPES: {
+    BASE: '/salary-types',
+    BY_EMPLOYMENT_TYPE: (employmentType) => `/salary-types/employment-type/${encodeURIComponent(employmentType)}`,
+  },
 };
 
 // HTTP Status codes for consistent error handling

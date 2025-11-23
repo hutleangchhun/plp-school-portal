@@ -50,10 +50,12 @@ export default function Dropdown({
             <DropdownMenu.Item
               key={option.value}
               onSelect={() => onValueChange(option.value)}
-              className={`flex items-center px-3 py-2 text-sm rounded-sm cursor-pointer transition-colors focus:outline-none ${
-                value === option.value
-                  ? 'bg-blue-100 text-blue-900'
-                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+              className={`flex items-center px-3 py-2 text-sm rounded-sm transition-colors focus:outline-none ${
+                option.disabled
+                  ? 'opacity-50 cursor-not-allowed text-gray-400'
+                  : value === option.value
+                    ? 'bg-blue-100 text-blue-900 cursor-pointer hover:bg-blue-100'
+                    : 'text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-gray-900'
               } data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900 data-[highlighted]:outline-none`}
               disabled={option.disabled}
             >

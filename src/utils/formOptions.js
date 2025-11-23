@@ -67,6 +67,26 @@ export const gradeLevelOptions = [
   { value: '6', label: 'ថ្នាក់ទី6', translationKey: 'grade6' }
 ];
 
+// Employment Type options
+export const employmentTypeOptions = [
+  { value: 'បឋម', label: 'បឋម' },
+  { value: 'កិច្ចសន្យា', label: 'កិច្ចសន្យា' },
+  { value: 'កិច្ចព្រមព្រៀង', label: 'កិច្ចព្រមព្រៀង' },
+  { value: 'ឧត្តម', label: 'ឧត្ដម' },
+  { value: 'មូលដ្ឋាន', label: 'មូលដ្ឋាន' },
+  { value: 'មត្តេយ្យ', label: 'មត្តេយ្យ' }
+];
+
+// Education Level options for teachers
+export const educationLevelOptions = [
+  { value: 'បណ្ឌិត', label: 'បណ្ឌិត (Doctorate)' },
+  { value: 'អនុបណ្ឌិត', label: 'អនុបណ្ឌិត (Master)' },
+  { value: 'បរិញ្ញាបត្រ', label: 'បរិញ្ញាបត្រ (Bachelor)' },
+  { value: 'មធ្យមសិក្សាទុតិយភូមិ', label: 'មធ្យមសិក្សាទុតិយភូមិ (Upper Secondary)' },
+  { value: 'មធ្យមសិក្សាបឋមភូមិ', label: 'មធ្យមសិក្សាបឋមភូមិ (Lower Secondary)' },
+  { value: 'ក្រោមបឋមភូមិ', label: 'ក្រោមបឋមភូមិ (Below Secondary)' }
+];
+
 // Academic Year options (dynamically generated based on current year)
 export const getAcademicYearOptions = () => {
   const currentYear = new Date().getFullYear();

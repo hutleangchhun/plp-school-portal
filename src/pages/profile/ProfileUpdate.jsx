@@ -14,7 +14,7 @@ import Dropdown from '../../components/ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { useStableCallback } from '../../utils/reactOptimization';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
-import { ethnicGroupOptions as baseEthnicGroupOptions } from '../../utils/formOptions';
+import { ethnicGroupOptions as baseEthnicGroupOptions, employmentTypeOptions } from '../../utils/formOptions';
 
 export default function ProfileUpdate({ user, setUser }) {
   const { t } = useLanguage();
@@ -1765,9 +1765,7 @@ export default function ProfileUpdate({ user, setUser }) {
                         <Dropdown
                           options={[
                             { value: '', label: t('selectEmploymentType', 'Select Type') },
-                            { value: 'ក្របខ័ណ្ឌ', label: t('framework', 'Framework/Permanent') },
-                            { value: 'កិច្ចសន្យា', label: t('contract', 'Contract') },
-                            { value: 'កិច្ចព្រមព្រៀង', label: t('agreement', 'Agreement') }
+                            ...employmentTypeOptions
                           ]}
                           value={formData.employment_type}
                           onValueChange={(value) => {
