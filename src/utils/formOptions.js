@@ -14,6 +14,19 @@ export const nationalityOptions = [
   { value: 'ខ្មែរ', label: 'ខ្មែរ' }
 ];
 
+// Role options (filtered for school management roles only)
+export const roleOptions = [
+  { value: '8', label: 'គ្រូបង្រៀន' }, // TEACHER
+  { value: '14', label: 'នាយកសាលារៀន' }, // PRINCIPAL
+  { value: '15', label: 'នាយករងសាលារៀន' }, // DEPUTYPRINCIPAL
+  { value: '16', label: 'លេខាធិការសាលារៀន' }, // SCHOOLSECRETARY
+  { value: '17', label: 'ហេរញ្ញិកសាលារៀន' }, // SCHOOLTREASURER
+  { value: '18', label: 'បណ្ណារក្សសាលារៀន' }, // SCHOOLLIBRARIAN
+  { value: '19', label: 'រោងជាងសាលារៀន' }, // SCHOOLWORKSHOP
+  { value: '20', label: 'ឆ្មាំសាលារៀន' }, // SCHOOLSECURITY
+  { value: '21', label: 'គ្រូICT' } // TEACHERICT
+];
+
 // Ethnic Group options (25 groups)
 export const ethnicGroupOptions = [
   { value: 'ខ្មែរ', label: 'ជនជាតិខ្មែរ' },

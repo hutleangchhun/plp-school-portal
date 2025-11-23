@@ -27,13 +27,20 @@ import SelectedCard from '../../components/ui/SelectedCard';
 import Dropdown from '../../components/ui/Dropdown';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { roleOptions } from '../../utils/formOptions';
+
+// Helper function to get role name by roleId
+const getRoleName = (roleId) => {
+  const role = roleOptions.find(r => r.value === String(roleId));
+  return role ? role.label : '-';
+};
 
 export default function TeachersManagement() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
   const { error, handleError, clearError, retry } = useErrorHandler();
-  const { startLoading, stopLoading, isLoading } = useLoading();
+  const { stopLoading, isLoading } = useLoading();
 
   // Track renders to detect infinite loops (development only)
   useRenderTracker('TeachersManagement');
@@ -791,6 +798,15 @@ export default function TeachersManagement() {
       responsive: 'hidden lg:table-cell',
       render: (teacher) => (
         <p>{teacher.employmentType}</p>
+      )
+    },
+    {
+      key: 'role',
+      header: t('role', 'Role'),
+      cellClassName: 'text-xs sm:text-sm text-gray-700',
+      responsive: 'hidden lg:table-cell',
+      render: (teacher) => (
+        <p>{getRoleName(teacher.roleId)}</p>
       )
     },
     {
