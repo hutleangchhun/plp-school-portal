@@ -15,7 +15,7 @@ import ErrorDisplay from '../ui/ErrorDisplay';
 import { PageLoader } from '../ui/DynamicLoader';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
-import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, employmentTypeOptions, educationLevelOptions } from '../../utils/formOptions';
+import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, employmentTypeOptions, educationLevelOptions, trainingTypeOptions } from '../../utils/formOptions';
 import { utils } from '../../utils/api';
 
 const TeacherEditModal = () => {
@@ -67,6 +67,7 @@ const TeacherEditModal = () => {
     employment_type: '',
     salary_type: '',
     education_level: '',
+    training_type: '',
     teacher_number: '',
     hire_date: null,
     residence: {
@@ -256,6 +257,7 @@ const TeacherEditModal = () => {
         employment_type: teacherData.employment_type || '',
         salary_type: teacherData.salaryTypeId ? String(teacherData.salaryTypeId) : '',
         education_level: teacherData.educationLevel || '',
+        training_type: teacherData.trainingType || '',
         teacher_number: teacherData.teacher_number || teacherData.teacherNumber || '',
         hire_date: teacherData.hire_date ? new Date(teacherData.hire_date) : null,
         residence: {
@@ -377,6 +379,7 @@ const TeacherEditModal = () => {
       employment_type: '',
       salary_type: '',
       education_level: '',
+      training_type: '',
       teacher_number: '',
       hire_date: null,
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
@@ -474,6 +477,7 @@ const TeacherEditModal = () => {
           employment_type: editForm.employment_type || undefined,
           salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
           educationLevel: editForm.education_level || undefined,
+          trainingType: editForm.training_type || undefined,
           teacher_number: editForm.teacher_number || undefined,
           hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
           schoolId: schoolId || undefined,
@@ -542,6 +546,7 @@ const TeacherEditModal = () => {
           employment_type: editForm.employment_type || undefined,
           salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
           educationLevel: editForm.education_level || undefined,
+          trainingType: editForm.training_type || undefined,
           teacher_number: editForm.teacher_number || undefined,
           hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
           schoolId: schoolId || undefined,
@@ -996,6 +1001,24 @@ const TeacherEditModal = () => {
               value={editForm.education_level}
               onValueChange={(value) => handleFormChange('education_level', value)}
               placeholder={t('selectEducationLevel', 'Select Education Level')}
+              contentClassName="max-h-[200px] overflow-y-auto"
+              disabled={false}
+              className='w-full'
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('trainingType', 'Training Type')}
+            </label>
+            <Dropdown
+              options={[
+                { value: '', label: t('selectTrainingType', 'Select Training Type') },
+                ...trainingTypeOptions
+              ]}
+              value={editForm.training_type}
+              onValueChange={(value) => handleFormChange('training_type', value)}
+              placeholder={t('selectTrainingType', 'Select Training Type')}
               contentClassName="max-h-[200px] overflow-y-auto"
               disabled={false}
               className='w-full'

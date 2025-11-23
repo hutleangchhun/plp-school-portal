@@ -87,6 +87,18 @@ export const educationLevelOptions = [
   { value: 'ក្រោមបឋមភូមិ', label: 'ក្រោមបឋមភូមិ (Below Secondary)' }
 ];
 
+// Training Type options for teachers
+export const trainingTypeOptions = [
+  { value: '8.1', label: '8.1' },
+  { value: '8.2', label: '8.2' },
+  { value: '9+2', label: '9+2' },
+  { value: '11+2', label: '11+2' },
+  { value: '12+2', label: '12+2' },
+  { value: '12+4', label: '12+4' },
+  { value: 'បរិញ្ញាបត្រ+1', label: 'បរិញ្ញាបត្រ+1' },
+  { value: 'បរិញ្ញាបត្រ+2', label: 'បរិញ្ញាបត្រ+2' }
+];
+
 // Academic Year options (dynamically generated based on current year)
 export const getAcademicYearOptions = () => {
   const currentYear = new Date().getFullYear();

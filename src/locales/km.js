@@ -256,6 +256,8 @@ export const km = {
     selectSalaryType: 'ជ្រើសរើសកាំប្រាក់',
     educationLevel: 'ប្រភេទកម្រិតសញ្ញាបត្រចុងក្រោយ',
     selectEducationLevel: 'ជ្រើសរើសកម្រិតសញ្ញាបត្រចុងក្រោយ',
+    trainingType: 'ប្រភេទកម្រិតបណ្ដុះបណ្ដាលចុងក្រោយ',
+    selectTrainingType: 'ជ្រើសរើសម្រិតបណ្ដុះបណ្ដាល',
     
 
   // Parent Management
