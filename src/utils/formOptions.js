@@ -79,12 +79,12 @@ export const employmentTypeOptions = [
 
 // Education Level options for teachers
 export const educationLevelOptions = [
-  { value: 'បណ្ឌិត', label: 'បណ្ឌិត (Doctorate)' },
-  { value: 'អនុបណ្ឌិត', label: 'អនុបណ្ឌិត (Master)' },
-  { value: 'បរិញ្ញាបត្រ', label: 'បរិញ្ញាបត្រ (Bachelor)' },
-  { value: 'មធ្យមសិក្សាទុតិយភូមិ', label: 'មធ្យមសិក្សាទុតិយភូមិ (Upper Secondary)' },
-  { value: 'មធ្យមសិក្សាបឋមភូមិ', label: 'មធ្យមសិក្សាបឋមភូមិ (Lower Secondary)' },
-  { value: 'ក្រោមបឋមភូមិ', label: 'ក្រោមបឋមភូមិ (Below Secondary)' }
+  { value: 'បណ្ឌិត', label: 'បណ្ឌិត' },
+  { value: 'អនុបណ្ឌិត', label: 'អនុបណ្ឌិត' },
+  { value: 'បរិញ្ញាបត្រ', label: 'បរិញ្ញាបត្រ' },
+  { value: 'មធ្យមសិក្សាទុតិយភូមិ', label: 'មធ្យមសិក្សាទុតិយភូមិ' },
+  { value: 'មធ្យមសិក្សាបឋមភូមិ', label: 'មធ្យមសិក្សាបឋមភូមិ' },
+  { value: 'ក្រោមបឋមភូមិ', label: 'ក្រោមបឋមភូមិ' }
 ];
 
 // Training Type options for teachers
@@ -97,6 +97,52 @@ export const trainingTypeOptions = [
   { value: '12+4', label: '12+4' },
   { value: 'បរិញ្ញាបត្រ+1', label: 'បរិញ្ញាបត្រ+1' },
   { value: 'បរិញ្ញាបត្រ+2', label: 'បរិញ្ញាបត្រ+2' }
+];
+
+// Teacher Status options for teachers
+export const teacherStatusOptions = [
+  { value: 'បង្រៀនអង់គ្លេស', label: 'បង្រៀនអង់គ្លេស' },
+  { value: 'បង្រៀនសិល្បៈ', label: 'បង្រៀនសិល្បៈ' },
+  { value: 'បម្រើការនៅអង្គការ', label: 'បម្រើការនៅអង្គការ' },
+  { value: 'បន្តការសិក្សា', label: 'បន្តការសិក្សា' },
+  { value: 'កំពុងស្នើលុបឈ្មោះ', label: 'កំពុងស្នើលុបឈ្មោះ' },
+  { value: 'សុំចូលនិវត្ដន៍មុនអាយុ', label: 'សុំចូលនិវត្ដន៍មុនអាយុ' },
+  { value: 'ទំនេរគ្មានបៀវត្ស', label: 'ទំនេរគ្មានបៀវត្ស' },
+  { value: 'ក្រៅក្របខណ្ឌដើម', label: 'ក្រៅក្របខណ្ឌដើម' },
+  { value: 'បាត់បង់សម្បទាវិជ្ជាជីវៈ', label: 'បាត់បង់សម្បទាវិជ្ជាជីវៈ' },
+  { value: 'មានជំងឺរ៉ាំរ៉ៃ', label: 'មានជំងឺរ៉ាំរ៉ៃ' },
+  { value: 'លំហែមាតុភាព', label: 'លំហែមាតុភាព' },
+  { value: 'ផ្សេងៗ', label: 'ផ្សេងៗ' }
+];
+
+// Subject options for teachers
+export const subjectOptions = [
+  { value: 'ភាសាខ្មែរ', label: 'ភាសាខ្មែរ' },
+  { value: 'គណិតវិទ្យា', label: 'គណិតវិទ្យា' },
+  { value: 'ភាសាអង់គ្លេស', label: 'ភាសាអង់គ្លេស' },
+  { value: 'ភាសាបារាំង', label: 'ភាសាបារាំង' },
+  { value: 'កីឡា', label: 'កីឡា' },
+  { value: 'រូបវិទ្យា', label: 'រូបវិទ្យា' },
+  { value: 'គីមីវិទ្យា', label: 'គីមីវិទ្យា' },
+  { value: 'ជីစီលវិទ្យា', label: 'ជីစီលវិទ្យា' },
+  { value: 'ផែនដីវិទ្យា', label: 'ផែនដីវិទ្យា' },
+  { value: 'ប្រវត្តិវិទ្យា', label: 'ប្រវត្តិវិទ្យា' },
+  { value: 'ភូមិវិទ្យា', label: 'ភូមិវិទ្យា' },
+  { value: 'សីលធម៌-ពលរដ្ឋ', label: 'សីលធម៌-ពលរដ្ឋ' },
+  { value: 'គេហវិទ្យា', label: 'គេហវិទ្យា' },
+  { value: 'សេដ្ឋកិច្ច', label: 'សេដ្ឋកិច្ច' },
+  { value: 'ព័ត៌មានវិទ្យា', label: 'ព័ត៌មានវិទ្យា' },
+  { value: 'កសិកម្ម', label: 'កសិកម្ម' },
+  { value: 'សិល្បៈ', label: 'សិល្បៈ' },
+  { value: 'ដូរ្យតន្រ្តី', label: 'ដូរ្យតន្រ្តី' },
+  { value: 'នាដសាស្រ្ត', label: 'នាដសាស្រ្ត' },
+  { value: 'រោងជាង', label: 'រោងជាង' },
+  { value: 'គ្រប់គ្រងទូទៅ', label: 'គ្រប់គ្រងទូទៅ' },
+  { value: 'គ្រប់គ្រងអប់រំ', label: 'គ្រប់គ្រងអប់រំ' },
+  { value: 'អេឡិចត្រនិច', label: 'អេឡិចត្រនិច' },
+  { value: 'អគ្គិសនី', label: 'អគ្គិសនី' },
+  { value: 'មេកានិច', label: 'មេកានិច' },
+  { value: 'ភាសារុស្សី', label: 'ភាសារុស្សី' }
 ];
 
 // Academic Year options (dynamically generated based on current year)

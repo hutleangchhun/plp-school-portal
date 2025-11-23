@@ -10,12 +10,13 @@ import { Button } from '../ui/Button';
 import { DatePickerWithDropdowns } from '../ui/date-picker-with-dropdowns';
 import ProfileImage from '../ui/ProfileImage';
 import Dropdown from '../ui/Dropdown';
+import MultiSelectDropdown from '../ui/MultiSelectDropdown';
 import SalaryTypeDropdown from '../ui/SalaryTypeDropdown';
 import ErrorDisplay from '../ui/ErrorDisplay';
 import { PageLoader } from '../ui/DynamicLoader';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
-import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, employmentTypeOptions, educationLevelOptions, trainingTypeOptions } from '../../utils/formOptions';
+import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, employmentTypeOptions, educationLevelOptions, trainingTypeOptions, teacherStatusOptions, subjectOptions } from '../../utils/formOptions';
 import { utils } from '../../utils/api';
 
 const TeacherEditModal = () => {
@@ -68,6 +69,8 @@ const TeacherEditModal = () => {
     salary_type: '',
     education_level: '',
     training_type: '',
+    teacher_status: '',
+    subject: [],
     teacher_number: '',
     hire_date: null,
     residence: {
@@ -258,6 +261,8 @@ const TeacherEditModal = () => {
         salary_type: teacherData.salaryTypeId ? String(teacherData.salaryTypeId) : '',
         education_level: teacherData.educationLevel || '',
         training_type: teacherData.trainingType || '',
+        teacher_status: teacherData.teacherStatus || '',
+        subject: Array.isArray(teacherData.subject) ? teacherData.subject : [],
         teacher_number: teacherData.teacher_number || teacherData.teacherNumber || '',
         hire_date: teacherData.hire_date ? new Date(teacherData.hire_date) : null,
         residence: {
@@ -380,6 +385,8 @@ const TeacherEditModal = () => {
       salary_type: '',
       education_level: '',
       training_type: '',
+      teacher_status: '',
+      subject: [],
       teacher_number: '',
       hire_date: null,
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
@@ -478,6 +485,8 @@ const TeacherEditModal = () => {
           salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
           educationLevel: editForm.education_level || undefined,
           trainingType: editForm.training_type || undefined,
+          teacherStatus: editForm.teacher_status || undefined,
+          subject: editForm.subject.length > 0 ? editForm.subject : undefined,
           teacher_number: editForm.teacher_number || undefined,
           hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
           schoolId: schoolId || undefined,
@@ -547,6 +556,8 @@ const TeacherEditModal = () => {
           salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
           educationLevel: editForm.education_level || undefined,
           trainingType: editForm.training_type || undefined,
+          teacherStatus: editForm.teacher_status || undefined,
+          subject: editForm.subject.length > 0 ? editForm.subject : undefined,
           teacher_number: editForm.teacher_number || undefined,
           hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
           schoolId: schoolId || undefined,
@@ -1020,6 +1031,39 @@ const TeacherEditModal = () => {
               onValueChange={(value) => handleFormChange('training_type', value)}
               placeholder={t('selectTrainingType', 'Select Training Type')}
               contentClassName="max-h-[200px] overflow-y-auto"
+              disabled={false}
+              className='w-full'
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('teacherStatus', 'Teacher Status')}
+            </label>
+            <Dropdown
+              options={[
+                { value: '', label: t('selectTeacherStatus', 'Select Teacher Status') },
+                ...teacherStatusOptions
+              ]}
+              value={editForm.teacher_status}
+              onValueChange={(value) => handleFormChange('teacher_status', value)}
+              placeholder={t('selectTeacherStatus', 'Select Teacher Status')}
+              contentClassName="max-h-[200px] overflow-y-auto"
+              disabled={false}
+              className='w-full'
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('subjects', 'Subjects')}
+            </label>
+            <MultiSelectDropdown
+              options={subjectOptions}
+              value={editForm.subject}
+              onValueChange={(value) => handleFormChange('subject', value)}
+              placeholder={t('selectSubjects', 'Select Subjects')}
+              maxHeight='max-h-[200px]'
               disabled={false}
               className='w-full'
             />
