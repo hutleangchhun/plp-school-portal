@@ -33,8 +33,8 @@ export const km = {
 
 
   //chart
-   classStudentCounts: 'ចំនួនសិស្សតាមថ្នាក់និមួយៗ',
-  
+  classStudentCounts: 'ចំនួនសិស្សតាមថ្នាក់និមួយៗ',
+
   // Navigation
   dashboard: 'ផ្ទាំងគ្រប់គ្រង',
   schoolManagement: 'ប្រព័ន្ធគ្រប់គ្រងសាលារៀន',
@@ -46,7 +46,7 @@ export const km = {
   loadingBMIData: 'កំពុងទាញយកទិន្នន័យក្នុងការប្រើប្រាស់',
   studentBMIDistribution: 'ការបែងចែកប្រភេទBMIក្នុងសាលារៀន',
   bmiCategoryBreakdown: 'ក្រាបប្រភេទBMI',
-  
+
   // Profile
   profileInformation: 'ព័ត៌មានផ្ទាល់ខ្លួន',
   personalInformation: 'ព័ត៌មានផ្ទាល់ខ្លួន',
@@ -67,7 +67,7 @@ export const km = {
   loadingVillages: 'កំពុងទាញយកភូមិ...',
   currentResidence: 'ទីកន្លែងស្នាក់នៅបច្ចុប្បន្ន',
 
-  
+
   // Form fields
   username: 'ឈ្មោះអ្នកប្រើ',
   usernameRequired: 'ឈ្មោះអ្នកប្រើ *',
@@ -107,13 +107,13 @@ export const km = {
   allGradeLevels: 'កម្រិតថ្នាក់ទាំងអស់',
   teacherInformation: 'ព័ត៌មានគ្រូបង្រៀន',
   updateYourPersionalDetails: 'ធ្វើបច្ចុប្បន្នភាពនៃព័ត៌មានរបស់លោកអ្នក',
-  
+
   // Location fields
   provinceId: 'លេខកំណត់ខេត្ត',
   districtId: 'លេខកំណត់ស្រុក',
   communeId: 'លេខកំណត់ក្រុម',
   villageId: 'លេខកំណត់ភូមិ',
-  
+
   // User info display
   fullName: 'នាមពេញ',
   role: 'តួនាទី',
@@ -130,7 +130,7 @@ export const km = {
   gradeLevels: 'កម្រិតថ្នាក់',
   teacher: 'គ្រូបង្រៀន',
   director: 'នាយក',
-  
+
   // Validation messages
   usernameRequiredMsg: 'ឈ្មោះអ្នកប្រើត្រូវបានទាមទារ',
   firstNameRequiredMsg: 'នាមខ្លួនត្រូវបានទាមទារ',
@@ -139,24 +139,24 @@ export const km = {
   validEmailRequired: 'សូមបញ្ចូលអាសយដ្ឋានអ៊ីមែលត្រឹមត្រូវ',
   passwordMinLength: 'ពាក្យសម្ងាត់ថ្មីត្រូវតែមានយ៉ាងតិច៦តួអក្សរ',
   validPhoneRequired: 'សូមបញ្ចូលលេខទូរស័ព្ទត្រឹមត្រូវ',
-  
+
   // Messages
   profileUpdatedSuccess: 'បានកែប្រែព័ត៌មានដោយជោគជ័យ!',
   updateFailed: 'បរាជ័យក្នុងការកែប្រែ',
   requestTimeout: 'សំណើរបានអស់ពេល សូមព្យាយាមម្តងទៀត',
   loadingUserData: 'កំពុងទាញយកព័ត៌មាន...',
   updating: 'កំពុងកែប្រែ...',
-  
+
   // Dialogs
   confirmUpdate: 'បញ្ជាក់ការកែប្រែ',
   confirmUpdateMessage: 'តើអ្នកប្រាកដថាចង់កែប្រែព័ត៌មានផ្ទាល់ខ្លួនទេ?',
   confirmLogout: 'បញ្ជាក់ការចាកចេញ',
   confirmLogoutMessage: 'តើអ្នកប្រាកដថាចង់ចាកចេញទេ?',
-  
+
   // Gender display
   genderMale: 'ប្រុស',
   genderFemale: 'ស្រី',
-  
+
   // Profile picture
   currentPicture: 'រូបភាពបច្ចុប្បន្ន:',
   newPicturePreview: 'មើលរូបភាពថ្មី:',
@@ -167,7 +167,7 @@ export const km = {
   uploadNewPicture: 'ប្ដូររូបភាពថ្មី',
   newPictureSelected: 'រូបភាពថ្មីត្រូវបានជ្រើសរើស',
   generatedAt: 'បង្កើតថ្ងៃ',
-    view: 'មើល',
+  view: 'មើល',
 
   // Dashboard & Welcome
   assigned: 'បានកំណត់',
@@ -237,6 +237,7 @@ export const km = {
   done: 'ជ្រើសរើស',
   bookSelected: 'សៀវភៅបានជ្រើសរើស',
   selectedBooks: 'សៀវភៅដែលបានជ្រើសរើស',
+  poorCardNumber: 'បណ្ណសមធម៌',
 
   // Teacher Management
   addTeacher: 'បន្ថែមគ្រូ',
@@ -250,26 +251,27 @@ export const km = {
   selectedAllTeachers: 'បានជ្រើសរើសគ្រូទាំងអស់',
   deselectedAllStudents: 'បានលុបការជ្រើសរើសសិស្សទាំងអស់',
   deselectedAllTeachers: 'បានលុបការជ្រើសរើសគ្រូទាំងអស់',
-    manageTeacherRecords: 'គ្រប់គ្រងទិន្នន័យគ្រូ',
-    createTeacher: 'បន្ថែមគ្រូ',
-    salaryType: 'កាំប្រាក់',
-    selectSalaryType: 'ជ្រើសរើសកាំប្រាក់',
-    educationLevel: 'ប្រភេទកម្រិតសញ្ញាបត្រចុងក្រោយ',
-    selectEducationLevel: 'ជ្រើសរើសកម្រិតសញ្ញាបត្រចុងក្រោយ',
-    trainingType: 'ប្រភេទកម្រិតបណ្ដុះបណ្ដាលចុងក្រោយ',
-    selectTrainingType: 'ជ្រើសរើសម្រិតបណ្ដុះបណ្ដាល',
-    teachingType: 'ប្រភេទនៃការបង្រៀន',
-    selectTeachingType: 'ជ្រើសរើសប្រភេទនៃការបង្រៀន',
-    teacherStatus: 'ស្ថានភាពគ្រូបង្រៀន',
-    selectTeacherStatus: 'ជ្រើសរើសស្ថានភាពគ្រូបង្រៀន',
-    teacherType: 'ប្រភេទគ្រូ',
-    selectTeacherType: 'ជ្រើសរើសប្រភេទគ្រូ',
-    selectRole: 'ជ្រើសរើសតួនាទី និងមុខតំណែង',
-    subjects: 'មុខវិជ្ជាឯកទេសបណ្តុះបណ្តាល',
-    selectSubjects: 'ជ្រើសរើសមុខវិជ្ជា',
-    
-    
-    
+  manageTeacherRecords: 'គ្រប់គ្រងទិន្នន័យគ្រូ',
+  createTeacher: 'បន្ថែមគ្រូ',
+  salaryType: 'កាំប្រាក់',
+  selectSalaryType: 'ជ្រើសរើសកាំប្រាក់',
+  educationLevel: 'ប្រភេទកម្រិតសញ្ញាបត្រចុងក្រោយ',
+  selectEducationLevel: 'ជ្រើសរើសកម្រិតសញ្ញាបត្រចុងក្រោយ',
+  trainingType: 'ប្រភេទកម្រិតបណ្ដុះបណ្ដាលចុងក្រោយ',
+  selectTrainingType: 'ជ្រើសរើសម្រិតបណ្ដុះបណ្ដាល',
+  teachingType: 'ប្រភេទនៃការបង្រៀន',
+  selectTeachingType: 'ជ្រើសរើសប្រភេទនៃការបង្រៀន',
+  teacherStatus: 'ស្ថានភាពគ្រូបង្រៀន',
+  selectTeacherStatus: 'ជ្រើសរើសស្ថានភាពគ្រូបង្រៀន',
+  teacherType: 'ប្រភេទគ្រូ',
+  selectTeacherType: 'ជ្រើសរើសប្រភេទគ្រូ',
+  selectRole: 'ជ្រើសរើសតួនាទី និងមុខតំណែង',
+  subjects: 'មុខវិជ្ជាឯកទេសបណ្តុះបណ្តាល',
+  selectSubjects: 'ជ្រើសរើសមុខវិជ្ជា',
+  employmentInformation: 'ព័ត៌មានមន្ត្រីរាជការ',
+
+
+
 
   // Parent Management
   parents: 'អាណាព្យាបាល',
@@ -559,7 +561,7 @@ export const km = {
   selectAll: 'ជ្រើសរើសទាំងអស់',
   selectGrade: 'ជ្រើសរើសថ្នាក់',
   teacherAttendance: 'វត្តមានគ្រូបង្រៀន',
-  
+
   // Advanced filtering
   advancedFilters: 'ការរើសចេញកម្រិតខ្ពស់',
   sortBy: 'តម្រៀបតាម',
@@ -595,7 +597,7 @@ export const km = {
   // Other
   address: 'អាសយដ្ឋាន',
   contact: 'លេខទំនាក់ទំនង',
-  
+
   // StudentsManagement component
   failedLoadAvailableStudents: 'បរាជ័យក្នុងការទាញយកសិស្សដែលអាចប្រើបាន',
   studentsAddedSuccess: 'បានបន្ថែមសិស្សដោយជោគជ័យ',
@@ -605,7 +607,7 @@ export const km = {
   noStudentsAvailableAdd: 'មិនមានសិស្សដែលអាចបន្ថែមបាន។',
   noStudentsFound: 'រកមិនឃើញសិស្ស',
   addStudentsToClass: 'បន្ថែមសិស្សទៅថ្នាក់',
-  
+
   // Table and UI elements
   name: 'ឈ្មោះ',
   noName: 'គ្មានឈ្មោះ',
@@ -621,7 +623,7 @@ export const km = {
   failedRemoveStudent: 'បរាជ័យក្នុងការដកសិស្សចេញ',
   filterByGrade: 'តម្រោងតាមថ្នាក់',
   allGrades: 'ថ្នាក់ទាំងអស់',
-  
+
   // Pagination
   showing: 'បង្ហាញ',
   to: 'ដល់',
@@ -634,14 +636,14 @@ export const km = {
   lastPage: 'ទំព័រចុងក្រោយ',
   previousPage: 'ទំព័រមុន',
   nextPage: 'ទំព័របន្ទាប់',
-  
+
   // Bulk operations
   studentsRemovedSuccess: 'បានដកសិស្សចេញដោយជោគជ័យ',
   failedRemoveStudents: 'បរាជ័យក្នុងការដកសិស្សចេញ',
   removeStudents: 'ដកសិស្សចេញ',
   confirmRemoveStudents: 'តើអ្នកប្រាកដថាចង់ដកសិស្ស',
   studentsFromClass: 'សិស្សពីថ្នាក់របស់អ្នកមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
-  
+
   // Export functionality
   export: 'នាំចេញ',
   exportSuccess: 'បាននាំចេញទិន្នន័យដោយជោគជ័យ',
@@ -652,14 +654,14 @@ export const km = {
   academicYear: 'ឆ្នាំសិក្សា',
   generated: 'បានបង្កើត',
   totalStudents: 'សិស្សសរុប',
-  
+
   // Login page
   signInToAccount: 'ចូលទៅកាន់គណនីរបស់អ្នក',
   enterUsername: 'បញ្ចូលឈ្មោះអ្នកប្រើរបស់អ្នក',
   enterPassword: 'បញ្ចូលពាក្យសម្ងាត់របស់អ្នក',
   signingIn: 'កំពុងចូល...',
   signIn: 'ចូលប្រព័ន្ធ',
-  
+
   // Student Selection
   studentSelection: 'ការជ្រើសរើសសិស្ស',
   selectStudentsForAction: 'ជ្រើសរើសសិស្សដើម្បីបន្ថែមទៅថ្នាក់',
@@ -690,14 +692,14 @@ export const km = {
   clearSelection: 'លុបការជ្រើសរើស',
   noOptionsFound: 'មិនមានជម្រើសដែលបានរកឃើញ',
   noOptionsAvailable: 'មិនមានជម្រើសដែលអាចប្រើបាន',
-  
+
   // General UI
   errorFetchingData: 'កំហុសក្នុងការទាញយកទិន្នន័យ',
   noDataFound: 'រកមិនឃើញទិន្នន័យ',
   errorPerformingAction: 'កំហុសក្នុងការអនុវត្តសកម្មភាព',
   withSelected: 'ជាមួយអ្នកដែលបានជ្រើសរើស...',
   updateStatus: 'ធ្វើបច្ចុប្បន្នភាពស្ថានភាព',
-  
+
   // Additional missing translations
   selectAllClasses: 'ជ្រើសរើសថ្នាក់ទាំងអស់',
   manageClasses: 'គ្រប់គ្រងថ្នាក់រៀន',
@@ -708,7 +710,7 @@ export const km = {
   noClassesAvailable: 'មិនមានថ្នាក់ដែលអាចប្រើបាន',
   selectedGradeLevelNoClasses: 'កម្រិតថ្នាក់ដែលបានជ្រើសរើសមិនមានថ្នាក់ដែលអាចប្រើបាន។',
   searchStudentsByNameOrEmail: 'ស្វែងរកសិស្សតាមឈ្មោះ ឬអ៊ីមែល...',
-  
+
   // Toast and action messages  
   studentAssignmentSuccess: 'បានកំណត់សិស្សទៅថ្នាក់ដោយជោគជ័យ',
   studentsAssignmentSuccess: 'បានកំណត់សិស្សទៅថ្នាក់ដោយជោគជ័យ',
@@ -717,7 +719,7 @@ export const km = {
   operationFailed: 'ប្រតិបត្តិការបរាជ័យ',
   pleaseSelectClass: 'សូមជ្រើសរើសថ្នាក់ជាមុនសិន',
   pleaseSelectStudents: 'សូមជ្រើសរើសសិស្ស',
-  
+
   // Additional UI elements
   showingResults: 'បង្ហាញលទ្ធផល',
   fromTotal: 'ពីសរុប',
@@ -727,7 +729,7 @@ export const km = {
   performAction: 'អនុវត្តសកម្មភាព',
   confirmAction: 'បញ្ជាក់សកម្មភាព',
   actionCompleted: 'សកម្មភាពបានបញ្ចប់',
-  
+
   // Dashboard specific  
   loadingDashboard: 'កំពុងទាញយកផ្ទាំងគ្រប់គ្រង...',
   error: 'កំហុស',
@@ -735,15 +737,15 @@ export const km = {
   notAssigned: 'មិនបានកំណត់',
   placeOfBirth: 'ទីកន្លែងកំណើត',
   residence: 'ទីលំនៅ',
-  
+
   // Navigation items that might be missing  
   myGrades: 'ពិន្ទុរបស់ខ្ញុំ',
   myAttendance: 'វត្តមានរបស់ខ្ញុំ',
   myAssignments: 'កិច្ចការរបស់ខ្ញុំ',
-  
+
   // Additional fallback text that might appear
   Dashboard: 'ផ្ទាំងគ្រប់គ្រង',
-  Students: 'សិស្ស', 
+  Students: 'សិស្ស',
   Classes: 'ថ្នាក់',
   'Loading dashboard...': 'កំពុងទាញយកផ្ទាំងគ្រប់គ្រង...',
   'Not assigned': 'មិនបានកំណត់',
@@ -753,23 +755,23 @@ export const km = {
   Refresh: 'ធ្វើឱ្យទាន់សម័យ',
   availableSeats: 'ចំនួនសិស្សដែលអាចបញ្ចូលបាន',
 
-  
+
   // Stats cards
   'Total Classes': 'ថ្នាក់រៀនសរុប',
-  'Total Students': 'សិស្សសរុប', 
+  'Total Students': 'សិស្សសរុប',
   'Active Today': 'សកម្មថ្ងៃនេះ',
   'Average Load': 'ការទាក់ទញជាមធ្យម',
   totalClasses: 'ថ្នាក់រៀនសរុប',
   activeToday: 'សកម្មថ្ងៃនេះ',
   mostEnrolledClass: 'ថ្នាក់ដែលមានសិស្សច្រើនបំផុត',
-  
+
   // Common alt texts and titles
   Remove: 'ដកចេញ',
   'Profile Preview': 'មុខរូបភាពបណ្ដាលុខ',
   'MoEYS Logo': 'រូបសញ្ញាក្រសួងអប់រំ',
   'PLP Logo': 'រូបសញ្ញា PLP',
   Profile: 'ប្រវត្តិរូប',
-  
+
   // Classes Management specific
   Teacher: 'គ្រូ',
   'Teacher:': 'គ្រូ:',
@@ -782,7 +784,7 @@ export const km = {
   searchTeachers: 'ស្វែងរកគ្រូ...',
   hireDate: 'ថ្ងៃចូលបម្រើការ',
   updateTeacher: 'កែប្រែគ្រូ',
-  
+
   // Days of the week
   Monday: 'ថ្ងៃច័ន្ទ',
   Tuesday: 'ថ្ងៃអង្គារ',
@@ -826,7 +828,7 @@ export const km = {
   Oct: 'តុលា',
   Nov: 'វិច្ឆិកា',
   Dec: 'ធ្នូ',
-  
+
   // Grade levels
   'Grade': 'ថ្នាក់ទី',
   'Grade 1': 'ថ្នាក់ទី1',
@@ -841,7 +843,7 @@ export const km = {
   'Grade 10': 'ថ្នាក់ទី10',
   'Grade 11': 'ថ្នាក់ទី11',
   'Grade 12': 'ថ្នាក់ទី12',
-  
+
   // Subject names (common ones)
   'Subject 1': 'មុខវិជ្ជាទី១',
   'Subject 2': 'មុខវិជ្ជាទី២',
@@ -851,7 +853,7 @@ export const km = {
   Khmer: 'ភាសាខ្មែរ',
   History: 'ប្រវត្តិសាស្ត្រ',
   Geography: 'ភូមិវិទ្យា',
-  
+
   // Class sections
   'Section A': 'វគ្គ ក',
   'Section B': 'វគ្គ ខ',
@@ -859,11 +861,11 @@ export const km = {
   '(A)': '(ក)',
   '(B)': '(ខ)',
   '(C)': '(គ)',
-  
+
   // Room numbers
   'Room 21': 'បន្ទប់ ២១',
   'Room ': 'បន្ទប់ ',
-  
+
   // Additional missing translations
   'Settings saved successfully': 'បានរក្សាទុកការកំណត់ដោយជោគជ័យ',
   'Display Name': 'ឈ្មោះបង្ហាញ',
@@ -890,17 +892,17 @@ export const km = {
   selectDateOfBirth: 'ជ្រើសរើសថ្ងៃកំណើត',
   noValidUserData: 'មិនមានទិន្នន័យអ្នកប្រើត្រឹមត្រូវពី API',
   failedToLoadDashboard: 'បរាជ័យក្នុងការទាញយកទិន្នន័យផ្ទាំងគ្រប់គ្រង',
-  
+
   // Cambodian nationality
   'Cambodian': 'ខ្មែរ',
-  
+
   // Settings page specific
   profileSettings: 'ការកំណត់ប្រូហ្វាល់',
   notifications: 'ការជូនដំណឹង',
   language: 'ភាសា',
   interfaceLanguage: 'ភាសាចំណុចប្រទាក់',
   noNotifications: 'មិនមានការជូនដំណឹងនោះទេ',
-  
+
   // Achievement page specific
   'Bob Smith': 'សិស្សប្រុសគំរូ',
   'Sports Champion': 'ជើងឯកកីឡា',
@@ -912,7 +914,7 @@ export const km = {
   'Student Achievements': 'សមិទ្ធិផលសិស្ស',
   'Track and celebrate student achievements': 'តាមដាននិងអបអរសាទរសមិទ្ធិផលសិស្ស',
   'សិស្សស្រីគំរូ': 'សិស្សស្រីគំរូ',
-  
+
   // Dashboard specific translations
   lastUpdated: 'បានធ្វើបច្ចុប្បន្នភាពចុងក្រោយ',
   liveUpdates: 'បច្ចុប្បន្នភាពបន្តផ្ទាល់',
@@ -951,13 +953,13 @@ export const km = {
   schoolDistributionDesc: 'ស្ថិតិសាលារៀន​ បែងចែកតាមតម្រងច្រើនប្រភេទ',
   systemOverview: 'ទិន្នន័យសរុបរបស់ប្រព័ន្ធគ្រប់គ្រងសាលារៀន',
   systemOverviewDesc: 'ទិដ្ឋភាពទូទៅនៃទិន្នន័យរបស់ប្រព័ន្ធគ្រប់គ្រងសាលារៀន',
-  
-  
+
+
   // Student management with master-class endpoint
   noSchoolIdFound: 'រកមិនឃើញលេខសម្គាល់សាលារៀនសម្រាប់គណនីរបស់អ្នក',
   failedToFetchSchoolId: 'បរាជ័យក្នុងការទាញយកព័ត៌មានសាលារៀន',
   noStudents: 'មិនមានសិស្ស',
-  
+
   // Export functionality
   exportToExcel: 'ទាញទិន្នន័យជា Excel',
   exportToCSV: 'ទាញទិន្នន័យជា CSV',
@@ -967,7 +969,7 @@ export const km = {
   month: 'ខែ',
   year: 'ឆ្នាំ',
   allClassesFilter: 'ថ្នាក់ទាំងអស់',
-  
+
   // Grade levels for dropdown
   grade1: 'ថ្នាក់ទី1',
   grade2: 'ថ្នាក់ទី2',
@@ -981,19 +983,19 @@ export const km = {
   grade10: 'ថ្នាក់ទី10',
   grade11: 'ថ្នាក់ទី11',
   grade12: 'ថ្នាក់ទី12',
-  
+
   // Achievement categories
   academic: 'សិក្សា',
   sports: 'កីឡា',
   arts: 'សិល្បៈ',
   leadership: 'ភាពជាអ្នកដឹកនាំ',
   adding: 'កំពុងបន្ថែម...',
-  
+
   // Accessibility and UI
   closeNotification: 'បិទការជូនដំណឹង',
   closeWelcomeMessage: 'បិទសារស្វាគមន៍',
   pagination: 'ការបែងចែកទំព័រ',
-  
+
   // Additional organization info
   organizationSchoolPortal: 'ប្រព័ន្ធរដ្ឋបាលសម្រាប់សាលារៀន',
   primaryEducationDepartment: 'នាយកដ្ឋានបឋមសិក្សា',
@@ -1016,7 +1018,7 @@ export const km = {
   // Form placeholders
   sectionPlaceholder: 'ឧ. ក, ខ, គ',
   capacityPlaceholder: 'អតិបរមា ២០០ សិស្ស',
-  
+
   // Loading states
   loadingText: 'កំពុងទាញ...',
   loadingClasses: 'កំពុងទាញថ្នាក់រៀន...',
@@ -1024,7 +1026,7 @@ export const km = {
   loadingStudentSelection: 'កំពុងទាញការជ្រើសរើសសិស្ស...',
   loadingProfile: 'កំពុងទាញព័ត៌មានផ្ទាល់ខ្លួន...',
   loadingPage: 'កំពុងទាញទំព័រ...',
-  
+
   // Alert dialogs and confirmation messages
   moveStudentToMaster: 'ដកសិស្សចេញពីថ្នាក់',
   confirmMoveStudentToMaster: 'តើអ្នកប្រាកដថាចង់ដកសិស្ស',
@@ -1099,19 +1101,19 @@ export const km = {
   enterPhone: 'បញ្ចូលលេខទូរស័ព្ទ',
   other: 'ផ្សេងទៀត',
   pickDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
-  
+
   // Search and filter
   clearSearch: 'សម្អាតការស្វែងរក',
   filteredFrom: 'បានត្រងចេញពី',
-  
+
   // Bulk operations and selections
   moveSelectedToMaster: 'ផ្លាស់ទីអ្នកដែលបានជ្រើសរើសទៅថ្នាក់មេ',
   suggestion: 'ការផ្ដល់យោបល់',
-  
+
   // Profile picture related
   profilePictureUrl: 'URL រូបភាពប្រូហ្វាល់',
   enterProfilePictureUrl: 'បញ្ចូល URL រូបភាពប្រូហ្វាល់',
-  
+
   // Classes Management specific translations
   noSchoolIdInAccount: 'រកមិនឃើញលេខសម្គាល់សាលារៀនក្នុងគណនីរបស់អ្នក។ សូមទាក់ទងអ្នកគ្រប់គ្រង។',
   failedToFetchAccountInfo: 'បរាជ័យក្នុងការទាញយកព័ត៌មានគណនី',
@@ -1130,7 +1132,7 @@ export const km = {
   enterClassName: 'បញ្ចូលឈ្មោះថ្នាក់រៀន',
   selectAcademicYear: 'ជ្រើសរើសឆ្នាំសិក្សា',
   maxStudents: 'ចំនួនសិស្សក្នុងថ្នាក់',
-  
+
   // ProfileUpdate specific translations
   selectDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
   selectMonth: 'ជ្រើសរើសខែ',
@@ -1138,7 +1140,7 @@ export const km = {
   schoolCode: 'លេខកូដសាលារៀន',
   schoolDetails: 'ព័ត៌មានសាលារៀន',
   place: 'ទីកន្លែង',
-  
+
   // Common UI Components translations
   close: 'បិទ',
   'បិទ': 'បិទ',
@@ -1152,7 +1154,7 @@ export const km = {
   'Welcome': 'ស្វាគមន៍',
   'សារនេះនឹងបាត់បង់ក្នុងរយៈពេល ១០ វិនាទី': 'សារនេះនឹងបាត់បង់ក្នុងរយៈពេល ១០ វិនាទី',
   'This message will disappear in 10 seconds': 'សារនេះនឹងបាត់បង់ក្នុងរយៈពេល ១០ វិនាទី',
-  
+
   // Additional common translations
   // 404 page
   thePageYouAreLookingForDoesNotExist: 'ទំព័រដែលអ្នកកំពុងស្វែងរកមិនមានទេ',
@@ -1207,8 +1209,8 @@ export const km = {
   selectStartDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
   selectEndDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',
   studentList: 'បញ្ជីឈ្មោះសិស្ស',
-  
-  
+
+
   // Report Types
   reportStudentNameInfo: 'បញ្ជីហៅឈ្មោះសិស្ស',
   report2: 'បញ្ជីហៅឈ្មោះសិស្សតាមថ្នាក់',
@@ -1223,14 +1225,14 @@ export const km = {
   report11: 'បញ្ជីឈ្មោះសិស្សបោះបង់ការសិក្សារ',
   report12: 'សៀវភៅតាមដាន',
   report13: 'សៀវភៅសិក្ខាគារិក',
-  
+
   // Time Period
   timePeriod: 'រយៈពេល',
   selectTimePeriod: 'ជ្រើសរើសរយៈពេល',
   selectMonth: 'ជ្រើសរើសខែ',
   selectAcademicYear: 'ជ្រើសរើសឆ្នាំសិក្សា',
   chooseYear: 'ជ្រើសរើសឆ្នាំ',
-  
+
   // Months
   january: 'មករា',
   february: 'កុម្ភៈ',
@@ -1244,12 +1246,12 @@ export const km = {
   october: 'តុលា',
   november: 'វិច្ឆិកា',
   december: 'ធ្នូ',
-  
+
   // Class Filter
   allClasses: 'ថ្នាក់ទាំងអស់',
   selectClass: 'ជ្រើសរើសថ្នាក់',
   chooseClass: 'ជ្រើសរើសថ្នាក់',
-  
+
   // Data Display
   noDataAvailable: 'មិនមានទិន្នន័យ',
   noDataMessage: 'សូមជ្រើសរើសកម្រងហើយរង់ចាំទិន្នន័យដែលមាន',
@@ -1257,7 +1259,7 @@ export const km = {
   noDataToExport: 'មិនមានទិន្នន័យសម្រាប់នាំចេញ។ សូមរង់ចាំទិន្នន័យផ្ទុក។',
   note: 'ចំណាំ',
   reportReadyToExport: 'កំណត់ត្រា {count} ត្រៀមរួចសម្រាប់នាំចេញ។ ចុចប៊ូតុង "នាំចេញរបាយការណ៍" ខាងលើដើម្បីទាញយកជា Excel។',
-  
+
   // Report 4 - Absence Report
   selectClassRequired: 'ត្រូវការជ្រើសរើសថ្នាក់',
   selectClassForReport4: 'សូមជ្រើសរើសថ្នាក់ជាក់លាក់សម្រាប់របាយការណ៍អវត្តមាន',
@@ -1280,7 +1282,7 @@ export const km = {
   exportToSeeAll: 'នាំចេញដើម្បីមើលទិន្នន័យទាំងអស់',
   noAbsences: 'មិនមានអវត្តមាន',
   noLeaves: 'មិនមានច្ប',
-  
+
   // Chart Titles
   studentsWithDisabilities: 'សិស្សមានពិការភាព',
   ethnicMinorityStudents: 'សិស្សជនជាតិដើមភាគតិច',
@@ -1298,12 +1300,12 @@ export const km = {
   studentEthnicGroupDistribution: 'ស្ថិតិប្រភេទជនជាតិសម្រាប់សិស្ស',
   studentAccessibilityDistribution: 'ស្ថិតិប្រភេទពិការភាពសម្រាប់សិស្ស',
   loadingChartData: 'កំពុងទាញស្ថិតិ',
-  
+
   // Gender
   male: 'ប្រុស',
   female: 'ស្រី',
   genderDistribution: 'ការចែកចាយតាមភេទ',
-  
+
   // Accessibility Types
   visualImpairment: 'ពិការភ្នែក',
   hearingImpairment: 'ពិការត្រចៀក',
@@ -1314,13 +1316,13 @@ export const km = {
   otherDisability: 'ពិការផ្សេងៗ',
   notSpecified: 'មិនបានបញ្ជាក់',
   unknownEthnicGroup: 'ខ្មែរ', // Unknown ethnic group defaults to Khmer (majority)
-  
+
   // Chart Labels
   count: 'ចំនួន',
   percentage: 'ភាគរយ',
   students: 'សិស្ស',
   total: 'សរុប',
-  
+
   // Messages
   noSchoolIdFound: 'រកមិនឃើញលេខសម្គាល់សាលារៀន។ សូមប្រាកដថាអ្នកបានចូលប្រើប្រាស់។',
 
