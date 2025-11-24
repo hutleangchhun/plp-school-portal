@@ -194,8 +194,13 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     <div className={`flex flex-col bg-white shadow-lg border-r border-slate-200 transition-all duration-200 ease-in-out overflow-hidden ${isCollapsed ? 'w-0 border-0' : 'w-60'
       }`}>
       {/* Header */}
-      <div className="flex items-center justify-center px-3 py-5 border-b border-slate-200">
-        <div className="">
+      <div className="flex items-center justify-center gap-3 px-3 py-5 border-b border-slate-200">
+        <img
+          src={MinistryLogo}
+          alt="MoEYS Logo"
+          className="h-10 w-auto flex-shrink-0"
+        />
+        <div>
           <span className="text-base font-bold text-gray-700">{t('schoolManagement')}</span>
         </div>
       </div>
@@ -279,21 +284,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
         })}
 
       </nav>
-
-      {/* Bottom Logo Section */}
-      <div className="p-4 border-t border-slate-200">
-        <div className="flex items-center space-x-3">
-          <img
-            src={MinistryLogo}
-            alt="Moeys Logo"
-            className="h-8 w-8 flex-shrink-0"
-          />
-          <div className="flex flex-col">
-            <span className="text-xs font-medium text-gray-700">{t('primaryEducationDepartment')}</span>
-            <span className="text-xs text-gray-500">{t('moeysOfCambodia')}</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

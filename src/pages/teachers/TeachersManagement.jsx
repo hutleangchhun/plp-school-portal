@@ -802,7 +802,7 @@ export default function TeachersManagement() {
     },
     {
       key: 'role',
-      header: t('role', 'Role'),
+      header: t('roles', 'Role'),
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (teacher) => (

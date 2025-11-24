@@ -117,6 +117,7 @@ export const km = {
   // User info display
   fullName: 'នាមពេញ',
   role: 'តួនាទី',
+  roles: 'តួនាទី​​/មុខតំណែង',
   status: 'ស្ថានភាព',
   classes: 'ថ្នាក់',
   myClasses: 'ថ្នាក់របស់ខ្ញុំ',
