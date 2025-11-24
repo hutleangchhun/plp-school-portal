@@ -1,4 +1,5 @@
 import { BookOpen } from 'lucide-react';
+import { getStaticAssetBaseUrl } from '../../utils/api/config';
 
 /**
  * BookCard Component - Reusable book card for displaying book information with cover image
@@ -27,17 +28,6 @@ function BookCard({
   isSelected = false,
   className = ''
 }) {
-  // Helper function to get static asset base URL
-  const getStaticAssetBaseUrl = () => {
-    if (import.meta.env.VITE_STATIC_BASE_URL) {
-      return import.meta.env.VITE_STATIC_BASE_URL;
-    }
-    if (import.meta.env.MODE === 'development') {
-      return 'http://localhost:8080';
-    }
-    return 'https://plp-api.moeys.gov.kh';
-  };
-
   // Construct book cover image URL
   const bookCoverUrl = book?.coverBook
     ? `${getStaticAssetBaseUrl()}/uploads/books/${book.coverBook}`

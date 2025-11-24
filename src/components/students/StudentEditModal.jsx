@@ -517,7 +517,8 @@ const StudentEditModal = () => {
         isKindergarten: editForm.isKindergarten || undefined,
         studentNumber: editForm.studentNumber?.trim() || undefined,
         poorCardNumber: editForm.poorCardNumber?.trim() || undefined,
-        bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : undefined,
+        // Always include bookIds: array when there are items, null when none
+        bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
         residence: {
           provinceId: selectedResidenceProvince ? Number(selectedResidenceProvince) : (editForm.residence.provinceId ? Number(editForm.residence.provinceId) : undefined),
           districtId: selectedResidenceDistrict ? Number(selectedResidenceDistrict) : (editForm.residence.districtId ? Number(editForm.residence.districtId) : undefined),
@@ -543,6 +544,12 @@ const StudentEditModal = () => {
       const cleanPayload = {};
       Object.keys(payload).forEach(k => {
         const value = payload[k];
+
+        // Special case: keep bookIds even when null so backend sees explicit null
+        if (k === 'bookIds') {
+          cleanPayload[k] = value;
+          return;
+        }
 
         // Handle nested objects (residence, placeOfBirth, student)
         if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
@@ -839,7 +846,7 @@ const StudentEditModal = () => {
       </div>
       {/* Academic Information Card */}
       <div className="bg-white rounded-md border border-gray-200 p-6">
-        <div className='flex justify-between items-start border-b border-gray-100'>
+        <div className='flex sm:flex-row flex-col justify-between items-start border-b border-gray-100'>
           <div className="flex items-center mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
               {t('academicInformation', 'Academic Information')}
@@ -848,7 +855,7 @@ const StudentEditModal = () => {
 
           {/* Book Selection Button */}
           {editForm.gradeLevel && (
-            <div className=''>
+            <div className='mb-6'>
               <Button
                 type="button"
                 onClick={() => setShowBookModal(true)}
@@ -865,7 +872,7 @@ const StudentEditModal = () => {
           )}
         </div>
 
-        <div className='grid grid-cols-1 sm:grid-cols-4 gap-4 mt-6'>
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6'>
           <div>
             <label htmlFor="studentNumber" className="block text-sm font-medium text-gray-700 mb-1">
               {t('studentNumber', 'Student Number')}

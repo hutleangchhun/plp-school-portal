@@ -237,8 +237,9 @@ export const km = {
   category: 'ប្រភេទសៀវភៅ',
   done: 'ជ្រើសរើស',
   bookSelected: 'សៀវភៅបានជ្រើសរើស',
-  selectedBooks: 'សៀវភៅដែលបានជ្រើសរើស',
+  selectedBooks: 'សៀវភៅសិក្សាសិស្សដែលបានជ្រើសរើស',
   poorCardNumber: 'បណ្ណសមធម៌',
+  healthAndBmiInformation: 'ព័ត៌មានសុខភាព និង BMI',
 
   // Teacher Management
   addTeacher: 'បន្ថែមគ្រូ',
@@ -269,7 +270,7 @@ export const km = {
   selectRole: 'ជ្រើសរើសតួនាទី និងមុខតំណែង',
   subjects: 'មុខវិជ្ជាឯកទេសបណ្តុះបណ្តាល',
   selectSubjects: 'ជ្រើសរើសមុខវិជ្ជា',
-  employmentInformation: 'ព័ត៌មានមន្ត្រីរាជការ',
+  employmentInformation: 'ព័ត៌មានការងារ',
   maritalStatus: 'ស្ថានភាពគ្រួសារ',
   selectMaritalStatus: 'ជ្រើសរើសស្ថានភាពគ្រួសារ',
   familyInformation: 'ព័ត៌មានគ្រួសារ',
@@ -283,6 +284,7 @@ export const km = {
   appointmentStatus: 'ការតែងតាំង / បន្ទុក',
   appointed: 'តែងតាំង',
   burden: 'បន្ទុក',
+  trainingInformation: 'ព័ត៌មានការបណ្ដុះបណ្ដាល',
   
 
 
@@ -1026,7 +1028,7 @@ export const km = {
   studentNumber: 'លេខសិស្ស',
   enterStudentNumber: 'បញ្ចូលលេខសិស្ស',
   enterGradeLevel: 'ឧ. ១, ២, ៣...',
-  isKindergarten: 'ថ្នាក់មត្តេយ្យសិក្សា',
+  isKindergarten: 'បានឆ្លងកាត់ថ្នាក់មត្តេយ្យសិក្សា',
   yes: 'បាទ/ចាស',
   no: 'ទេ',
 

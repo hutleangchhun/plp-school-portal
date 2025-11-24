@@ -329,10 +329,11 @@ export const bmiStatusToKhmer = (status) => {
   if (!status) return 'មិនមាន';
 
   const statusMap = {
-    'underweight': 'មិនពេញលេញ',
+    'thinness_grade_2': 'ស្គម',
+    'thinness_grade_1': 'ស្គមខ្លាំង',
     'normal': 'ធម្មតា',
-    'overweight': 'ធ្វើឱ្យលើស',
-    'obese': 'មានលើស'
+    'overweight': 'លើសទម្ងន់',
+    'obese': 'ធាត់'
   };
 
   return statusMap[status.toLowerCase()] || status;

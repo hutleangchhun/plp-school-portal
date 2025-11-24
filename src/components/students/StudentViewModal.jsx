@@ -490,7 +490,7 @@ function InfoItem({ icon: Icon, label, value }) {
     <div className="flex items-start space-x-2">
       <div className="flex-1 min-w-0 bg-gray-50 border-gray-100 border-2 p-4 rounded-md">
         <p className="text-sm font-medium text-gray-500">{label}</p>
-        <p className="text-sm text-gray-900 break-words">{displayValue}</p>
+        <p className="text-sm text-gray-900 break-words mt-1">{displayValue}</p>
       </div>
     </div>
   );

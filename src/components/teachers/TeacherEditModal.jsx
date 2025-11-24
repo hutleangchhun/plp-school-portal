@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { User, Mail, Phone, Eye, Upload, Lock, X, Weight, Ruler, BookOpen, ArrowLeft } from 'lucide-react';
+import { User, Mail, Phone, Eye, Lock, X, Weight, Ruler, BookOpen, ArrowLeft } from 'lucide-react';
 import { sanitizeUsername } from '../../utils/usernameUtils';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -8,7 +8,6 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { decryptId, isValidEncryptedId } from '../../utils/encryption';
 import { Button } from '../ui/Button';
 import { DatePickerWithDropdowns } from '../ui/date-picker-with-dropdowns';
-import ProfileImage from '../ui/ProfileImage';
 import Dropdown from '../ui/Dropdown';
 import MultiSelectDropdown from '../ui/MultiSelectDropdown';
 import SalaryTypeDropdown from '../ui/SalaryTypeDropdown';
@@ -34,16 +33,11 @@ const TeacherEditModal = () => {
   const [loading, setLoading] = useState(true);
   const [pageLoading, setPageLoading] = useState(false);
   const [schoolId, setSchoolId] = useState(null);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [usernameSuggestions, setUsernameSuggestions] = useState([]);
   const [showUsernameSuggestions, setShowUsernameSuggestions] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [originalUsername, setOriginalUsername] = useState('');
-  const fileInputRef = useRef(null);
-  const dropdownRef = useRef(null);
   const usernameContainerRef = useRef(null);
   const usernameDebounceRef = useRef(null);
 
@@ -116,8 +110,7 @@ const TeacherEditModal = () => {
     getDistrictOptions: getResidenceDistrictOptions,
     getCommuneOptions: getResidenceCommuneOptions,
     getVillageOptions: getResidenceVillageOptions,
-    setInitialValues: setResidenceInitialValues,
-    resetSelections: resetResidenceSelections
+    setInitialValues: setResidenceInitialValues
   } = useLocationData();
 
   // Location data hooks for place of birth
@@ -134,8 +127,7 @@ const TeacherEditModal = () => {
     getDistrictOptions: getBirthDistrictOptions,
     getCommuneOptions: getBirthCommuneOptions,
     getVillageOptions: getBirthVillageOptions,
-    setInitialValues: setBirthInitialValues,
-    resetSelections: resetBirthSelections
+    setInitialValues: setBirthInitialValues
   } = useLocationData();
 
   // Fetch teacher data if editing
@@ -200,13 +192,9 @@ const TeacherEditModal = () => {
     }
   }, [teacher]);
 
-  // Close dropdowns when clicking outside
+  // Close username suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-
       // Close username suggestions when clicking outside the username area
       if (
         usernameContainerRef.current &&
@@ -401,59 +389,7 @@ const TeacherEditModal = () => {
     setShowUsernameSuggestions(false);
   };
 
-  const resetForm = () => {
-    setEditForm({
-      firstName: '',
-      lastName: '',
-      username: '',
-      email: '',
-      phone: '',
-      gender: '',
-      dateOfBirth: null,
-      nationality: '',
-      profilePicture: '',
-      password: '',
-      newPassword: '',
-      weight: '',
-      height: '',
-      bmi: '',
-      ethnicGroup: '',
-      gradeLevel: '',
-      accessibility: [],
-      employment_type: '',
-      salary_type: '',
-      education_level: '',
-      training_type: '',
-      teaching_type: '',
-      teacher_status: '',
-      subject: [],
-      role: '',
-      teacher_number: '',
-      appointed: false,
-      burden: false,
-      hire_date: null,
-      residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
-      placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
-      teacher_family: {
-        living_status: '',
-        spouse_info: {
-          spouse_name: '',
-          spouse_occupation: '',
-          spouse_place_of_birth: '',
-          spouse_phone: ''
-        },
-        number_of_children: '',
-        children: []
-      }
-    });
-    resetResidenceSelections();
-    resetBirthSelections();
-    setProfilePictureFile(null);
-    setShowDropdown(false);
-  };
-
   const handleClose = () => {
-    resetForm();
     // Redirect based on user role
     const currentUser = utils.user.getUserData();
     const redirectPath = currentUser?.roleId === 14 ? '/teachers' : '/teachers';
@@ -473,25 +409,6 @@ const TeacherEditModal = () => {
       } else {
         setUsernameAvailable(null);
       }
-    }
-  };
-
-  const handleViewPicture = () => {
-    setShowImageModal(true);
-    setShowDropdown(false);
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-    setShowDropdown(false);
-  };
-
-  const handleProfilePictureChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfilePictureFile(file);
-      const fileURL = URL.createObjectURL(file);
-      handleFormChange('profilePicture', fileURL);
     }
   };
 
@@ -777,86 +694,6 @@ const TeacherEditModal = () => {
   // Form content JSX
   const formContent = (
     <form id="edit-teacher-form" onSubmit={handleSubmit} className="space-y-6">
-      {/* Profile Picture Section */}
-      <div className="">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {t('profilePicture', 'Profile Picture')}
-        </label>
-
-        {/* Profile Picture with Dropdown */}
-        <div className="relative mb-4" ref={dropdownRef}>
-          <div
-            className="relative inline-block cursor-pointer"
-            onClick={() => setShowDropdown(!showDropdown)}
-          >
-            {profilePictureFile ? (
-              <img
-                src={URL.createObjectURL(profilePictureFile)}
-                alt="Profile Preview"
-                className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-gray-300 hover:border-blue-500 transition-colors"
-              />
-            ) : (
-              <ProfileImage
-                user={{ profile_picture: editForm.profilePicture, firstName: editForm.firstName, lastName: editForm.lastName }}
-                size="lg"
-                alt="Profile"
-                className="hover:border-blue-500 transition-colors"
-                borderColor="border-gray-300"
-                fallbackType="image"
-                clickable={true}
-              />
-            )}
-          </div>
-
-          {/* Dropdown Menu */}
-          {showDropdown && (
-            <div className="absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200">
-              <div className="py-1">
-                {editForm.profilePicture && (
-                  <Button
-                    type="button"
-                    onClick={handleViewPicture}
-                    variant="ghost"
-                    size="sm"
-                    fullWidth
-                    className="justify-start rounded-none"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    {t('viewPicture') || 'View Picture'}
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  onClick={handleUploadClick}
-                  variant="ghost"
-                  size="sm"
-                  fullWidth
-                  className="justify-start rounded-none"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {t('uploadNewPicture') || 'Upload New Picture'}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Hidden File Input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleProfilePictureChange}
-          className="hidden"
-        />
-
-        {profilePictureFile && (
-          <p className="mt-2 text-sm text-green-600 mb-4">
-            {t('newPictureSelected') || 'New picture selected'}: {profilePictureFile.name}
-          </p>
-        )}
-      </div>
-
       {/* Personal Information Card */}
       <div className="bg-white rounded-md border border-gray-200 p-6">
         <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
@@ -1057,7 +894,7 @@ const TeacherEditModal = () => {
             {t('employmentInformation', 'Employment Information')}
           </h3>
         </div>
-        <div className='grid grid-cols-1 sm:grid-cols-4 gap-4'>
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               <BookOpen className="inline w-4 h-4 mr-2" />
@@ -1104,42 +941,6 @@ const TeacherEditModal = () => {
               onValueChange={(value) => handleFormChange('salary_type', value)}
               placeholder={t('selectSalaryType', 'Select Salary Type')}
               disabled={!editForm.employment_type}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('educationLevel', 'Education Level')}
-            </label>
-            <Dropdown
-              options={[
-                { value: '', label: t('selectEducationLevel', 'Select Education Level') },
-                ...educationLevelOptions
-              ]}
-              value={editForm.education_level}
-              onValueChange={(value) => handleFormChange('education_level', value)}
-              placeholder={t('selectEducationLevel', 'Select Education Level')}
-              contentClassName="max-h-[200px] overflow-y-auto"
-              disabled={false}
-              className='w-full'
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('trainingType', 'Training Type')}
-            </label>
-            <Dropdown
-              options={[
-                { value: '', label: t('selectTrainingType', 'Select Training Type') },
-                ...trainingTypeOptions
-              ]}
-              value={editForm.training_type}
-              onValueChange={(value) => handleFormChange('training_type', value)}
-              placeholder={t('selectTrainingType', 'Select Training Type')}
-              contentClassName="max-h-[200px] overflow-y-auto"
-              disabled={false}
-              className='w-full'
             />
           </div>
 
@@ -1237,13 +1038,93 @@ const TeacherEditModal = () => {
               placeholder={t('pickDate', 'Pick a date')}
             />
           </div>
+          {/* Appointment and burden status - only for specific roles (14, 15) */}
+          {['14', '15'].includes(editForm.role) && (
+            <div className="flex flex-col gap-3 mt-6 md:mt-0">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('appointmentStatus', 'Appointment / Burden')}
+              </label>
+              <div className="flex items-center gap-4">
+                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    checked={!!editForm.appointed}
+                    onChange={(e) =>
+                      setEditForm(prev => ({
+                        ...prev,
+                        appointed: e.target.checked
+                      }))
+                    }
+                  />
+                  <span>{t('appointed', 'Appointed')}</span>
+                </label>
+
+                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    checked={!!editForm.burden}
+                    onChange={(e) =>
+                      setEditForm(prev => ({
+                        ...prev,
+                        burden: e.target.checked
+                      }))
+                    }
+                  />
+                  <span>{t('burden', 'Burden')}</span>
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="mt-8 border-t border-gray-200 pt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('trainingInformation', 'Training Information')}</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('educationLevel', 'Education Level')}
+              </label>
+              <Dropdown
+                options={[
+                  { value: '', label: t('selectEducationLevel', 'Select Education Level') },
+                  ...educationLevelOptions
+                ]}
+                value={editForm.education_level}
+                onValueChange={(value) => handleFormChange('education_level', value)}
+                placeholder={t('selectEducationLevel', 'Select Education Level')}
+                contentClassName="max-h-[200px] overflow-y-auto"
+                disabled={false}
+                className='w-full'
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('trainingType', 'Training Type')}
+              </label>
+              <Dropdown
+                options={[
+                  { value: '', label: t('selectTrainingType', 'Select Training Type') },
+                  ...trainingTypeOptions
+                ]}
+                value={editForm.training_type}
+                onValueChange={(value) => handleFormChange('training_type', value)}
+                placeholder={t('selectTrainingType', 'Select Training Type')}
+                contentClassName="max-h-[200px] overflow-y-auto"
+                disabled={false}
+                className='w-full'
+              />
+            </div>
+          </div>
         </div>
 
         {/* Family Information Section */}
         <div className="mt-8 border-t border-gray-200 pt-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('familyInformation', 'Family Information')}</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('maritalStatus', 'Marital Status')}
@@ -1312,47 +1193,6 @@ const TeacherEditModal = () => {
                 className='w-full'
               />
             </div>
-
-            {/* Appointment and burden status - only for specific roles (14, 15) */}
-            {['14', '15'].includes(editForm.role) && (
-              <div className="flex flex-col gap-3 mt-6 md:mt-0">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('appointmentStatus', 'Appointment / Burden')}
-                </label>
-                <div className="flex items-center gap-4">
-                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      checked={!!editForm.appointed}
-                      onChange={(e) =>
-                        setEditForm(prev => ({
-                          ...prev,
-                          appointed: e.target.checked
-                        }))
-                      }
-                    />
-                    <span>{t('appointed', 'Appointed')}</span>
-                  </label>
-
-                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      checked={!!editForm.burden}
-                      onChange={(e) =>
-                        setEditForm(prev => ({
-                          ...prev,
-                          burden: e.target.checked
-                        }))
-                      }
-                    />
-                    <span>{t('burden', 'Burden')}</span>
-                  </label>
-                </div>
-              </div>
-            )}
-
             {/* Spouse Information - Show only if living_status is Married (រៀបការ) */}
             {editForm.teacher_family.living_status === 'រៀបការ' && (
               <>
@@ -1493,7 +1333,7 @@ const TeacherEditModal = () => {
           {editForm.teacher_family.number_of_children && parseInt(editForm.teacher_family.number_of_children) > 0 && (
             <div className="mt-6 border-t pt-6">
               <h4 className="text-md font-semibold text-gray-900 mb-4">{t('childrenInformation', 'Children Information')}</h4>
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Array.from({ length: parseInt(editForm.teacher_family.number_of_children) || 0 }).map((_, index) => (
                   <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-md">
                     <div className="flex items-start justify-between gap-3">
@@ -1527,7 +1367,7 @@ const TeacherEditModal = () => {
                       </div>
                       <button
                         type="button"
-                        className="mt-6 inline-flex items-center px-2 py-1 border border-red-300 text-xs font-medium rounded text-red-700 bg-red-50 hover:bg-red-100"
+                        className="mt-6 inline-flex items-center justify-center h-10 w-10 border border-red-300 text-xs font-medium rounded text-red-700 bg-red-50 hover:bg-red-100"
                         onClick={() => {
                           setEditForm(prev => {
                             const prevCount = parseInt(prev.teacher_family.number_of_children) || 0;
@@ -1544,7 +1384,8 @@ const TeacherEditModal = () => {
                           });
                         }}
                       >
-                        {t('remove', 'Remove')}
+                        <X className="h-4 w-4" aria-hidden="true" />
+                        <span className="sr-only">{t('remove', 'Remove')}</span>
                       </button>
                     </div>
                   </div>
@@ -1839,12 +1680,12 @@ const TeacherEditModal = () => {
         </div>
       </div>
     </form>
-      );
+  );
 
   // Render as page
   return (
-    <div className="p-3 sm:p-6 pb-32">
-      <div className="min-h-screen">
+    <div className="relative">
+      <div className="p-3 sm:p-6">
         {/* Back Button */}
         <Button
           variant="link"
@@ -1856,58 +1697,34 @@ const TeacherEditModal = () => {
         </Button>
 
         {/* Teacher Edit Form */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          {formContent}
-        </div>
+        {formContent}
+      </div>
 
-        {/* Action Buttons for Page Mode */}
-        <div className="left-0 right-0 p-4 sm:p-6 flex items-center justify-end space-x-3">
-          <Button
-            type="button"
-            onClick={handleClose}
-            variant="outline"
-            disabled={pageLoading}
-          >
-            {t('cancel', 'Cancel')}
-          </Button>
-          <Button
-            type="submit"
-            form="edit-teacher-form"
-            variant="primary"
-            disabled={isSubmitDisabled || pageLoading}
-            className="min-w-[120px]"
-          >
-            {pageLoading
-              ? (mode === 'create'
-                ? t('creating', 'Creating...')
-                : t('updating', 'Updating...'))
-              : (mode === 'create'
-                ? t('createTeacher', 'Create Teacher')
-                : t('updateTeacher', 'Update Teacher'))}
-          </Button>
-        </div>
-
-        {/* Image Modal */}
-        {showImageModal && editForm.profilePicture && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowImageModal(false)}>
-            <div className="relative max-w-4xl max-h-full p-4">
-              <Button
-                onClick={() => setShowImageModal(false)}
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 text-white hover:text-gray-300 hover:bg-white/10 z-10"
-              >
-                <X className="w-6 h-6" />
-              </Button>
-              <img
-                src={editForm.profilePicture}
-                alt="Profile"
-                className="max-w-full max-h-full object-contain"
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-          </div>
-        )}
+      {/* Action Buttons for Page Mode - Sticky */}
+      <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 sm:p-6 flex items-center justify-end space-x-3 shadow-lg z-10">
+        <Button
+          type="button"
+          onClick={handleClose}
+          variant="outline"
+          disabled={pageLoading}
+        >
+          {t('cancel', 'Cancel')}
+        </Button>
+        <Button
+          type="submit"
+          form="edit-teacher-form"
+          variant="primary"
+          disabled={isSubmitDisabled || pageLoading}
+          className="min-w-[120px]"
+        >
+          {pageLoading
+            ? (mode === 'create'
+              ? t('creating', 'Creating...')
+              : t('updating', 'Updating...'))
+            : (mode === 'create'
+              ? t('createTeacher', 'Create Teacher')
+              : t('updateTeacher', 'Update Teacher'))}
+        </Button>
       </div>
     </div>
   );
