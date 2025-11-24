@@ -260,10 +260,10 @@ const StudentEditModal = () => {
         // Extract academic fields from nested student object (camelCase)
         academicYear: (studentObj.academicYear || fullData.academicYear || ''),
         gradeLevel: (studentObj.gradeLevel || fullData.gradeLevel || ''),
-        isKindergarten: studentObj.isKidgardener !== undefined ? studentObj.isKidgardener : (studentObj.is_kidgardener || fullData.isKindergarten || false),
+        isKindergarten: studentObj.isKidgardener !== undefined ? studentObj.isKidgardener : (studentObj.is_kidgardener || fullData.is_kidgardener || fullData.isKindergarten || false),
         studentNumber: (studentObj.studentNumber || fullData.studentNumber || ''),
-        poorCardNumber: studentObj.poorCardNumber || fullData.poorCardNumber || studentObj.poor_card_number || '',
-        bookIds: Array.isArray(fullData.bookIds) ? fullData.bookIds : (Array.isArray(studentObj.bookIds) ? studentObj.bookIds : []),
+        poorCardNumber: (studentObj.poorCardNumber || fullData.poorCardNumber || ''),
+        bookIds: Array.isArray(fullData.bookIds) ? fullData.bookIds : [],
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
           districtId: fullData.residence?.districtId || fullData.district_id || '',
