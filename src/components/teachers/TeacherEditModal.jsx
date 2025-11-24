@@ -645,10 +645,8 @@ const TeacherEditModal = () => {
     !editForm.nationality ||
     !editForm.username?.trim() ||
     !editForm.employment_type ||
-    !editForm.teacher_number?.trim() ||
     !editForm.hire_date ||
-    (mode === 'create' && !editForm.password?.trim()) ||
-    usernameAvailable === false;
+    (mode === 'create' && !editForm.password?.trim());
 
   // Show error state
   if (error && mode === 'edit') {
@@ -982,7 +980,7 @@ const TeacherEditModal = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('role', 'Role')} *
+              {t('role', 'Role')}
             </label>
             <Dropdown
               options={[
@@ -1015,7 +1013,7 @@ const TeacherEditModal = () => {
 
           <div>
             <label htmlFor="teacher_number" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('teacherNumber', 'Teacher Number')} *
+              {t('teacherNumber', 'Teacher Number')}
             </label>
             <input
               type="text"
@@ -1479,8 +1477,8 @@ const TeacherEditModal = () => {
           </div>
 
           <div>
-            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('newPassword', 'New Password')}
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              {mode === 'create' ? t('password', 'Password') : t('newPassword', 'New Password')} {mode === 'create' && '*'}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1488,12 +1486,13 @@ const TeacherEditModal = () => {
               </div>
               <input
                 type={showPassword ? 'text' : 'password'}
-                id="newPassword"
-                value={editForm.newPassword}
-                onChange={(e) => handleFormChange('newPassword', e.target.value)}
+                id="password"
+                value={mode === 'create' ? editForm.password : editForm.newPassword}
+                onChange={(e) => handleFormChange(mode === 'create' ? 'password' : 'newPassword', e.target.value)}
                 className="mt-1 block w-full pl-10 pr-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                placeholder={t('enterNewPassword')}
+                placeholder={mode === 'create' ? t('enterPassword', 'Enter password') : t('enterNewPassword')}
                 autoComplete="new-password"
+                required={mode === 'create'}
               />
               <button
                 type="button"
