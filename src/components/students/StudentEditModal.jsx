@@ -51,6 +51,7 @@ const StudentEditModal = () => {
   const dropdownRef = useRef(null);
   const usernameContainerRef = useRef(null);
   const usernameDebounceRef = useRef(null);
+  const hideUsernameSuggestionsTimeoutRef = useRef(null);
 
   const [editForm, setEditForm] = useState({
     firstName: '',
@@ -72,6 +73,7 @@ const StudentEditModal = () => {
     gradeLevel: '',
     isKindergarten: false,
     studentNumber: '',
+    poorCardNumber: '',
     bookIds: [],
     residence: {
       provinceId: '',
@@ -256,10 +258,11 @@ const StudentEditModal = () => {
         ethnicGroup: fullData.ethnic_group || fullData.ethnicGroup || '',
         accessibility: Array.isArray(fullData.accessibility) ? fullData.accessibility : [],
         // Extract academic fields from nested student object (camelCase)
-        academicYear: (studentObj.academicYear || '').toString(),
-        gradeLevel: (studentObj.gradeLevel || '').toString(),
-        isKindergarten: studentObj.isKidgardener !== undefined ? studentObj.isKidgardener : (studentObj.is_kidgardener || false),
-        studentNumber: (studentObj.studentNumber || '').toString(),
+        academicYear: (studentObj.academicYear || fullData.academicYear || ''),
+        gradeLevel: (studentObj.gradeLevel || fullData.gradeLevel || ''),
+        isKindergarten: studentObj.isKidgardener !== undefined ? studentObj.isKidgardener : (studentObj.is_kidgardener || fullData.isKindergarten || false),
+        studentNumber: (studentObj.studentNumber || fullData.studentNumber || ''),
+        poorCardNumber: studentObj.poorCardNumber || fullData.poorCardNumber || studentObj.poor_card_number || '',
         bookIds: Array.isArray(fullData.bookIds) ? fullData.bookIds : (Array.isArray(studentObj.bookIds) ? studentObj.bookIds : []),
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
@@ -322,6 +325,7 @@ const StudentEditModal = () => {
       gradeLevel: '',
       isKindergarten: false,
       studentNumber: '',
+      poorCardNumber: '',
       bookIds: [],
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
       placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
@@ -485,7 +489,6 @@ const StudentEditModal = () => {
       };
 
       const payload = {
-        username: editForm.username?.trim(),
         first_name: editForm.firstName?.trim(),
         last_name: editForm.lastName?.trim(),
         email: editForm.email?.trim(),
@@ -499,14 +502,12 @@ const StudentEditModal = () => {
         bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
         ethnic_group: editForm.ethnicGroup?.trim() || undefined,
         accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
+        academicYear: editForm.academicYear || undefined,
+        gradeLevel: editForm.gradeLevel || undefined,
+        isKindergarten: editForm.isKindergarten || undefined,
+        studentNumber: editForm.studentNumber?.trim() || undefined,
+        poorCardNumber: editForm.poorCardNumber?.trim() || undefined,
         bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : undefined,
-        // Student fields sent in nested object with camelCase names
-        student: {
-          academicYear: editForm.academicYear && editForm.academicYear.trim() ? editForm.academicYear.trim() : undefined,
-          gradeLevel: editForm.gradeLevel && editForm.gradeLevel.trim() ? editForm.gradeLevel.trim() : undefined,
-          isKidgardener: Boolean(editForm.isKindergarten),  // Always send boolean, even if false
-          studentNumber: editForm.studentNumber && editForm.studentNumber.trim() ? editForm.studentNumber.trim() : undefined,
-        },
         residence: {
           provinceId: selectedResidenceProvince ? Number(selectedResidenceProvince) : (editForm.residence.provinceId ? Number(editForm.residence.provinceId) : undefined),
           districtId: selectedResidenceDistrict ? Number(selectedResidenceDistrict) : (editForm.residence.districtId ? Number(editForm.residence.districtId) : undefined),
@@ -527,12 +528,6 @@ const StudentEditModal = () => {
       }
 
       console.log('StudentEditModal: Payload before cleanup:', payload);
-      console.log('StudentEditModal: Form data:', {
-        academicYear: editForm.academicYear,
-        gradeLevel: editForm.gradeLevel,
-        studentNumber: editForm.studentNumber,
-        isKindergarten: editForm.isKindergarten
-      });
 
       // Remove undefined/empty values - but keep empty strings and false booleans
       const cleanPayload = {};
@@ -553,15 +548,18 @@ const StudentEditModal = () => {
           if (Object.keys(cleanedObj).length > 0) {
             cleanPayload[k] = cleanedObj;
           }
-        } else if (value !== undefined && value !== null) {
-          // Add non-null/undefined values (includes false, 0, empty string, etc.)
+        } else if (Array.isArray(value)) {
+          // Keep arrays only if they have items
+          if (value.length > 0) {
+            cleanPayload[k] = value;
+          }
+        } else if (value !== undefined && value !== null && value !== '') {
+          // Add non-null/undefined/empty values
           cleanPayload[k] = value;
         }
       });
 
       console.log('StudentEditModal: Payload after cleanup:', cleanPayload);
-      console.log('StudentEditModal: Student object in payload:', cleanPayload.student);
-      console.log('StudentEditModal: isKidgardener value:', cleanPayload.student?.isKidgardener, 'type:', typeof cleanPayload.student?.isKidgardener);
 
       const response = await userService.updateUser(userId, cleanPayload);
 
@@ -869,6 +867,19 @@ const StudentEditModal = () => {
               onChange={(e) => handleFormChange('studentNumber', e.target.value)}
               className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
               placeholder={t('enterStudentNumber', 'Enter student number')}
+            />
+          </div>
+          <div>
+            <label htmlFor="poorCardNumber" className="block text-sm font-medium text-gray-700 mb-1">
+              {t('poorCardNumber', 'Poor Card Number')}
+            </label>
+            <input
+              type="text"
+              id="poorCardNumber"
+              value={editForm.poorCardNumber}
+              onChange={(e) => handleFormChange('poorCardNumber', e.target.value)}
+              className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+              placeholder={t('enterPoorCardNumber', 'Enter poor card number')}
             />
           </div>
           <div>
