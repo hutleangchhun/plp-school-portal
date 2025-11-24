@@ -234,9 +234,11 @@ const StudentEditModal = () => {
         gradeLevel: studentObj.gradeLevel,
         academicYear: studentObj.academicYear,
         studentNumber: studentObj.studentNumber,
+        poorCardNumber: studentObj.poorCardNumber,
         isKidgardener: studentObj.isKidgardener,
         is_kidgardener: studentObj.is_kidgardener,
-        fullStudentObj: studentObj
+        fullStudentObj: studentObj,
+        fullData: fullData
       });
 
       const initialUsername = fullData.username || '';
@@ -279,6 +281,14 @@ const StudentEditModal = () => {
       });
       setOriginalUsername(initialUsername || '');
       setUsernameAvailable(null);
+
+      console.log('StudentEditModal: Form initialized with:', {
+        poorCardNumber: studentObj.poorCardNumber,
+        academicYear: studentObj.academicYear,
+        gradeLevel: studentObj.gradeLevel,
+        studentNumber: studentObj.studentNumber,
+        isKindergarten: studentObj.isKidgardener
+      });
 
       // Initialize dropdown selections
       const res = fullData.residence || {};
