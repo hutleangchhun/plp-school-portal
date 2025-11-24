@@ -98,7 +98,7 @@ export const km = {
   ethnicGroup: 'ជនជាតិ',
   accessibility: 'លក្ខណ:ពិសេស',
   selectEmploymentType: 'ជ្រើសរើសប្រភេទការងារ',
-  employmentType: 'ប្រភេទការងារ',
+  employmentType: 'ប្រភេទក្របខ័ណ្ឌ',
   framework: 'ក្របខ័ណ្ឌ',
   contract: 'កិច្ចសន្យា',
   agreement: 'កិច្ចព្រមព្រៀង',
@@ -258,6 +258,17 @@ export const km = {
     selectEducationLevel: 'ជ្រើសរើសកម្រិតសញ្ញាបត្រចុងក្រោយ',
     trainingType: 'ប្រភេទកម្រិតបណ្ដុះបណ្ដាលចុងក្រោយ',
     selectTrainingType: 'ជ្រើសរើសម្រិតបណ្ដុះបណ្ដាល',
+    teachingType: 'ប្រភេទនៃការបង្រៀន',
+    selectTeachingType: 'ជ្រើសរើសប្រភេទនៃការបង្រៀន',
+    teacherStatus: 'ស្ថានភាពគ្រូបង្រៀន',
+    selectTeacherStatus: 'ជ្រើសរើសស្ថានភាពគ្រូបង្រៀន',
+    teacherType: 'ប្រភេទគ្រូ',
+    selectTeacherType: 'ជ្រើសរើសប្រភេទគ្រូ',
+    selectRole: 'ជ្រើសរើសតួនាទី និងមុខតំណែង',
+    subjects: 'មុខវិជ្ជាឯកទេសបណ្តុះបណ្តាល',
+    selectSubjects: 'ជ្រើសរើសមុខវិជ្ជា',
+    
+    
     
 
   // Parent Management
@@ -1414,7 +1425,7 @@ export const km = {
   error: 'កំហុស',
   noUsersFound: 'រកមិនឃើញអ្នកប្រើប្រាស់',
   fullName: 'ឈ្មោះពេញលេញ',
-  role: 'តួនាទី',
+  role: 'ជ្រើសរើសតួនាទី និងមុខតំណែង',
   qrCode: 'QR Code',
   status: 'ស្ថានភាព',
   director: 'នាយក',
