@@ -112,6 +112,14 @@ export const trainingTypeOptions = [
   { value: 'បរិញ្ញាបត្រ+2', label: 'បរិញ្ញាបត្រ+2' }
 ];
 
+// Teaching Type options for teachers
+export const teachingTypeOptions = [
+  { value: '1 វេន', label: '1 វេន' },
+  { value: '2 វេន', label: '2 វេន' },
+  { value: 'គួប', label: 'គួប' },
+  { value: 'គួប + 2 វេន', label: 'គួប + 2 វេន' }
+];
+
 // Teacher Status options for teachers
 export const teacherStatusOptions = [
   { value: 'បង្រៀនអង់គ្លេស', label: 'បង្រៀនអង់គ្លេស' },
@@ -137,7 +145,7 @@ export const subjectOptions = [
   { value: 'កីឡា', label: 'កីឡា' },
   { value: 'រូបវិទ្យា', label: 'រូបវិទ្យា' },
   { value: 'គីមីវិទ្យា', label: 'គីមីវិទ្យា' },
-  { value: 'ជីစီលវិទ្យា', label: 'ជីစီលវិទ្យា' },
+  { value: 'ជីវវិទ្យា', label: 'ជីវវិទ្យា' },
   { value: 'ផែនដីវិទ្យា', label: 'ផែនដីវិទ្យា' },
   { value: 'ប្រវត្តិវិទ្យា', label: 'ប្រវត្តិវិទ្យា' },
   { value: 'ភូមិវិទ្យា', label: 'ភូមិវិទ្យា' },
@@ -156,6 +164,13 @@ export const subjectOptions = [
   { value: 'អគ្គិសនី', label: 'អគ្គិសនី' },
   { value: 'មេកានិច', label: 'មេកានិច' },
   { value: 'ភាសារុស្សី', label: 'ភាសារុស្សី' }
+];
+
+// Marital Status options
+export const maritalStatusOptions = [
+  { value: 'នៅលីវ', label: 'នៅលីវ' }, // Single
+  { value: 'រៀបការ', label: 'រៀបការ' }, // Married
+  { value: 'មេម៉ាយ/ពោះម៉ាយ', label: 'មេម៉ាយ/ពោះម៉ាយ' } // Single Parent/Widow
 ];
 
 // Academic Year options (dynamically generated based on current year)

@@ -16,7 +16,7 @@ import ErrorDisplay from '../ui/ErrorDisplay';
 import { PageLoader } from '../ui/DynamicLoader';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
-import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, employmentTypeOptions, educationLevelOptions, trainingTypeOptions, teacherStatusOptions, subjectOptions, roleOptions } from '../../utils/formOptions';
+import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, employmentTypeOptions, educationLevelOptions, trainingTypeOptions, teacherStatusOptions, subjectOptions, roleOptions, maritalStatusOptions, teachingTypeOptions } from '../../utils/formOptions';
 import { utils } from '../../utils/api';
 
 const TeacherEditModal = () => {
@@ -69,6 +69,7 @@ const TeacherEditModal = () => {
     salary_type: '',
     education_level: '',
     training_type: '',
+    teaching_type: '',
     teacher_status: '',
     subject: [],
     role: '',
@@ -85,7 +86,13 @@ const TeacherEditModal = () => {
       districtId: '',
       communeId: '',
       villageId: ''
-    }
+    },
+    maritalStatus: '',
+    partnerName: '',
+    partnerJobPlace: '',
+    partnerDateOfBirth: null,
+    partnerPhone: '',
+    numberOfChildren: ''
   });
 
   // Location data hooks for residence
@@ -262,6 +269,7 @@ const TeacherEditModal = () => {
         salary_type: teacherData.salaryTypeId ? String(teacherData.salaryTypeId) : '',
         education_level: teacherData.educationLevel || '',
         training_type: teacherData.trainingType || '',
+        teaching_type: teacherData.teachingType || '',
         teacher_status: teacherData.teacherStatus || '',
         subject: Array.isArray(teacherData.subject) ? teacherData.subject : [],
         role: fullData.roleId ? String(fullData.roleId) : '',
@@ -278,7 +286,13 @@ const TeacherEditModal = () => {
           districtId: fullData.placeOfBirth?.districtId || fullData.residence?.districtId || fullData.district_id || '',
           communeId: fullData.placeOfBirth?.communeId || fullData.residence?.communeId || fullData.commune_id || '',
           villageId: fullData.placeOfBirth?.villageId || fullData.residence?.villageId || fullData.village_id || ''
-        }
+        },
+        maritalStatus: fullData.maritalStatus || fullData.marital_status || '',
+        partnerName: fullData.partnerName || fullData.partner_name || '',
+        partnerJobPlace: fullData.partnerJobPlace || fullData.partner_job_place || '',
+        partnerDateOfBirth: fullData.partnerDateOfBirth ? new Date(fullData.partnerDateOfBirth) : (fullData.partner_date_of_birth ? new Date(fullData.partner_date_of_birth) : null),
+        partnerPhone: fullData.partnerPhone || fullData.partner_phone || '',
+        numberOfChildren: fullData.numberOfChildren || fullData.number_of_children || ''
       });
 
       setOriginalUsername(fullData.username || '');
@@ -387,6 +401,7 @@ const TeacherEditModal = () => {
       salary_type: '',
       education_level: '',
       training_type: '',
+      teaching_type: '',
       teacher_status: '',
       subject: [],
       role: '',
@@ -394,6 +409,12 @@ const TeacherEditModal = () => {
       hire_date: null,
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
       placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
+      maritalStatus: '',
+      partnerName: '',
+      partnerJobPlace: '',
+      partnerDateOfBirth: null,
+      partnerPhone: '',
+      numberOfChildren: ''
     });
     resetResidenceSelections();
     resetBirthSelections();
@@ -488,10 +509,17 @@ const TeacherEditModal = () => {
           salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
           educationLevel: editForm.education_level || undefined,
           trainingType: editForm.training_type || undefined,
+          teachingType: editForm.teaching_type || undefined,
           teacherStatus: editForm.teacher_status || undefined,
           subject: editForm.subject.length > 0 ? editForm.subject : undefined,
           teacher_number: editForm.teacher_number || undefined,
           hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
+          maritalStatus: editForm.maritalStatus || undefined,
+          partnerName: editForm.maritalStatus === 'រៀបការ' && editForm.partnerName ? editForm.partnerName.trim() : undefined,
+          partnerJobPlace: editForm.maritalStatus === 'រៀបការ' && editForm.partnerJobPlace ? editForm.partnerJobPlace.trim() : undefined,
+          partnerDateOfBirth: editForm.maritalStatus === 'រៀបការ' && editForm.partnerDateOfBirth ? formatDate(editForm.partnerDateOfBirth) : undefined,
+          partnerPhone: editForm.maritalStatus === 'រៀបការ' && editForm.partnerPhone ? editForm.partnerPhone.trim() : undefined,
+          numberOfChildren: editForm.numberOfChildren ? parseInt(editForm.numberOfChildren) : undefined,
           schoolId: schoolId || undefined,
           residence: {
             provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
@@ -559,11 +587,18 @@ const TeacherEditModal = () => {
           salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
           educationLevel: editForm.education_level || undefined,
           trainingType: editForm.training_type || undefined,
+          teachingType: editForm.teaching_type || undefined,
           teacherStatus: editForm.teacher_status || undefined,
           subject: editForm.subject.length > 0 ? editForm.subject : undefined,
           roleId: editForm.role ? parseInt(editForm.role) : undefined,
           teacher_number: editForm.teacher_number || undefined,
           hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
+          maritalStatus: editForm.maritalStatus || undefined,
+          partnerName: editForm.maritalStatus === 'រៀបការ' && editForm.partnerName ? editForm.partnerName.trim() : undefined,
+          partnerJobPlace: editForm.maritalStatus === 'រៀបការ' && editForm.partnerJobPlace ? editForm.partnerJobPlace.trim() : undefined,
+          partnerDateOfBirth: editForm.maritalStatus === 'រៀបការ' && editForm.partnerDateOfBirth ? formatDate(editForm.partnerDateOfBirth) : undefined,
+          partnerPhone: editForm.maritalStatus === 'រៀបការ' && editForm.partnerPhone ? editForm.partnerPhone.trim() : undefined,
+          numberOfChildren: editForm.numberOfChildren ? parseInt(editForm.numberOfChildren) : undefined,
           schoolId: schoolId || undefined,
           residence: {
             provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
@@ -1042,6 +1077,24 @@ const TeacherEditModal = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('teachingType', 'Teaching Type')}
+            </label>
+            <Dropdown
+              options={[
+                { value: '', label: t('selectTeachingType', 'Select Teaching Type') },
+                ...teachingTypeOptions
+              ]}
+              value={editForm.teaching_type}
+              onValueChange={(value) => handleFormChange('teaching_type', value)}
+              placeholder={t('selectTeachingType', 'Select Teaching Type')}
+              contentClassName="max-h-[200px] overflow-y-auto"
+              disabled={false}
+              className='w-full'
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               {t('teacherStatus', 'Teacher Status')}
             </label>
             <Dropdown
@@ -1115,6 +1168,107 @@ const TeacherEditModal = () => {
               required
               placeholder={t('pickDate', 'Pick a date')}
             />
+          </div>
+        </div>
+
+        {/* Family Information Section */}
+        <div className="mt-8 border-t border-gray-200 pt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('familyInformation', 'Family Information')}</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('maritalStatus', 'Marital Status')}
+              </label>
+              <Dropdown
+                options={[
+                  { value: '', label: t('selectMaritalStatus', 'Select Marital Status') },
+                  ...maritalStatusOptions
+                ]}
+                value={editForm.maritalStatus}
+                onValueChange={(value) => handleFormChange('maritalStatus', value)}
+                placeholder={t('selectMaritalStatus', 'Select Marital Status')}
+                contentClassName="max-h-[200px] overflow-y-auto"
+                disabled={false}
+                className='w-full'
+              />
+            </div>
+
+            {/* Number of Children - Show for all marital statuses except Single */}
+            {editForm.maritalStatus && editForm.maritalStatus !== 'នៅលីវ' && (
+              <div>
+                <label htmlFor="numberOfChildren" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('numberOfChildren', 'Number of Children')}
+                </label>
+                <input
+                  type="number"
+                  id="numberOfChildren"
+                  min="0"
+                  value={editForm.numberOfChildren}
+                  onChange={(e) => handleFormChange('numberOfChildren', e.target.value)}
+                  className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={t('enterNumber', 'e.g., 2')}
+                />
+              </div>
+            )}
+
+            {/* Married Partner Details - Show only if Married */}
+            {editForm.maritalStatus === 'រៀបការ' && (
+              <>
+                <div>
+                  <label htmlFor="partnerName" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('partnerName', 'Partner Name')}
+                  </label>
+                  <input
+                    type="text"
+                    id="partnerName"
+                    value={editForm.partnerName}
+                    onChange={(e) => handleFormChange('partnerName', e.target.value)}
+                    className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder={t('enterPartnerName', 'e.g., Jane Doe')}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="partnerPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('partnerPhone', 'Partner Phone')}
+                  </label>
+                  <input
+                    type="tel"
+                    id="partnerPhone"
+                    value={editForm.partnerPhone}
+                    onChange={(e) => handleFormChange('partnerPhone', e.target.value)}
+                    className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder={t('enterPhone', 'e.g., 0123456789')}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="partnerJobPlace" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('partnerJobPlace', 'Partner Job Place')}
+                  </label>
+                  <input
+                    type="text"
+                    id="partnerJobPlace"
+                    value={editForm.partnerJobPlace}
+                    onChange={(e) => handleFormChange('partnerJobPlace', e.target.value)}
+                    className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder={t('enterJobPlace', 'e.g., NGO Name, Company')}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="partnerDateOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('partnerDateOfBirth', 'Partner Date of Birth')}
+                  </label>
+                  <DatePickerWithDropdowns
+                    date={editForm.partnerDateOfBirth}
+                    onChange={(date) => handleFormChange('partnerDateOfBirth', date)}
+                    placeholder={t('pickDate', 'Pick a date')}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

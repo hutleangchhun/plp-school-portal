@@ -132,6 +132,7 @@ export default function StudentsManagement() {
   // Other state variables
   const [searchTerm, setSearchTerm] = useState('');
   const [localSearchTerm, setLocalSearchTerm] = useState(''); // For immediate UI feedback
+  const [poorCardIdFilter, setPoorCardIdFilter] = useState(''); // Poor card ID filter
   const [academicYearFilter, setAcademicYearFilter] = useState(''); // Academic year filter
   const [debouncedAcademicYear, setDebouncedAcademicYear] = useState(''); // Debounced academic year
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -206,31 +207,42 @@ export default function StudentsManagement() {
   }, [selectedGradeLevel]);
 
   // Enhanced client-side search function for class-filtered results
-  const performClientSideSearch = useCallback((studentsData, searchQuery) => {
-    if (!searchQuery || searchQuery.trim() === '') {
-      return studentsData;
+  const performClientSideSearch = useCallback((studentsData, searchQuery, poorCardId) => {
+    let filtered = studentsData;
+
+    // Filter by search query (name, username, email, phone)
+    if (searchQuery && searchQuery.trim() !== '') {
+      const query = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(student => {
+        // Search in multiple fields
+        const searchFields = [
+          student.firstName || '',
+          student.lastName || '',
+          student.username || '',
+          student.email || '',
+          student.phone || '',
+          (student.name || ''),
+          (student.firstName && student.lastName ? `${student.firstName} ${student.lastName}` : ''),
+          (student.class?.name || ''),
+          (student.className || '')
+        ];
+
+        return searchFields.some(field =>
+          field.toLowerCase().includes(query)
+        );
+      });
     }
 
-    const query = searchQuery.trim().toLowerCase();
+    // Filter by poor card ID
+    if (poorCardId && poorCardId.trim() !== '') {
+      const cardId = poorCardId.trim();
+      filtered = filtered.filter(student => {
+        const studentCardId = student.poorCardId || student.poor_card_id || '';
+        return String(studentCardId).includes(cardId);
+      });
+    }
 
-    return studentsData.filter(student => {
-      // Search in multiple fields
-      const searchFields = [
-        student.firstName || '',
-        student.lastName || '',
-        student.username || '',
-        student.email || '',
-        student.phone || '',
-        (student.name || ''),
-        (student.firstName && student.lastName ? `${student.firstName} ${student.lastName}` : ''),
-        (student.class?.name || ''),
-        (student.className || '')
-      ];
-
-      return searchFields.some(field =>
-        field.toLowerCase().includes(query)
-      );
-    });
+    return filtered;
   }, []);
 
   // Debounced search handler - now triggers server-side search
@@ -574,10 +586,11 @@ export default function StudentsManagement() {
   // Memoized fetch parameters to avoid unnecessary re-renders
   const fetchParams = useMemo(() => ({
     searchTerm,
+    poorCardId: poorCardIdFilter,
     page: pagination.page,
     limit: pagination.limit,
     classId: selectedClassId
-  }), [searchTerm, pagination.page, pagination.limit, selectedClassId]);
+  }), [searchTerm, poorCardIdFilter, pagination.page, pagination.limit, selectedClassId]);
 
   // Separate useEffect for class ID validation to avoid infinite loops
   useEffect(() => {
@@ -677,10 +690,11 @@ export default function StudentsManagement() {
   };
 
   // Reset pagination to page 1 when filters change
-  const prevFiltersRef = useRef({ selectedClassId, academicYearFilter: debouncedAcademicYear });
+  const prevFiltersRef = useRef({ selectedClassId, academicYearFilter: debouncedAcademicYear, poorCardId: poorCardIdFilter });
   useEffect(() => {
     const filtersChanged = prevFiltersRef.current.selectedClassId !== selectedClassId ||
-      prevFiltersRef.current.academicYearFilter !== debouncedAcademicYear;
+      prevFiltersRef.current.academicYearFilter !== debouncedAcademicYear ||
+      prevFiltersRef.current.poorCardId !== poorCardIdFilter;
 
     if (filtersChanged) {
       // Clear last fetch params to allow new fetch with new filters
@@ -689,9 +703,9 @@ export default function StudentsManagement() {
         setPagination(prev => ({ ...prev, page: 1 }));
       }
       // If already on page 1, the main useEffect will handle the fetch automatically
-      prevFiltersRef.current = { selectedClassId, academicYearFilter: debouncedAcademicYear };
+      prevFiltersRef.current = { selectedClassId, academicYearFilter: debouncedAcademicYear, poorCardId: poorCardIdFilter };
     }
-  }, [selectedClassId, debouncedAcademicYear, pagination.page, schoolId, searchTerm, fetchStudents]); // Reset page when filters change
+  }, [selectedClassId, debouncedAcademicYear, poorCardIdFilter, pagination.page, schoolId, searchTerm, fetchStudents]); // Reset page when filters change
 
   // Get class information for the selected class
   const classInfo = selectedClassId !== 'all'
@@ -1846,10 +1860,11 @@ export default function StudentsManagement() {
           onClose={() => setShowMobileFilters(false)}
           title={t('filters', 'Filters & Actions')}
           subtitle={t('manageStudentRecords', 'Manage your filters and actions')}
-          hasFilters={selectedGradeLevel !== 'all' || selectedClassId !== 'all'}
+          hasFilters={selectedGradeLevel !== 'all' || selectedClassId !== 'all' || poorCardIdFilter !== ''}
           onClearFilters={() => {
             setSelectedGradeLevel('all');
             setSelectedClassId('all');
+            setPoorCardIdFilter('');
             setPagination(prev => ({ ...prev, page: 1 }));
           }}
           onApply={() => { }}
@@ -1884,6 +1899,21 @@ export default function StudentsManagement() {
                   placeholder={t('selectClass', 'Select class...')}
                   minWidth="w-full"
                   triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
+                />
+              </div>
+
+              {/* Poor Card ID Filter */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('poorCardId', 'Poor Card ID')}</label>
+                <input
+                  type="text"
+                  className="text-sm w-full px-3 py-2 border border-gray-200 rounded-lg leading-5 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
+                  placeholder={t('searchPoorCardId', 'Search by Poor Card ID...')}
+                  value={poorCardIdFilter}
+                  onChange={(e) => {
+                    setPoorCardIdFilter(e.target.value);
+                    setPagination(prev => ({ ...prev, page: 1 }));
+                  }}
                 />
               </div>
             </>
