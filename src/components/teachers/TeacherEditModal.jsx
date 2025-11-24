@@ -74,6 +74,8 @@ const TeacherEditModal = () => {
     subject: [],
     role: '',
     teacher_number: '',
+    appointed: false,
+    burden: false,
     hire_date: null,
     residence: {
       provinceId: '',
@@ -288,6 +290,8 @@ const TeacherEditModal = () => {
         subject: Array.isArray(teacherData.subject) ? teacherData.subject : [],
         role: fullData.roleId ? String(fullData.roleId) : '',
         teacher_number: teacherData.teacher_number || teacherData.teacherNumber || '',
+        appointed: typeof teacherData.appointed === 'boolean' ? teacherData.appointed : false,
+        burden: typeof teacherData.burden === 'boolean' ? teacherData.burden : false,
         hire_date: teacherData.hire_date ? new Date(teacherData.hire_date) : null,
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
@@ -425,6 +429,8 @@ const TeacherEditModal = () => {
       subject: [],
       role: '',
       teacher_number: '',
+      appointed: false,
+      burden: false,
       hire_date: null,
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
       placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
@@ -567,6 +573,8 @@ const TeacherEditModal = () => {
           teacherStatus: editForm.teacher_status || undefined,
           subject: editForm.subject.length > 0 ? editForm.subject : undefined,
           teacher_number: editForm.teacher_number || undefined,
+          appointed: editForm.appointed,
+          burden: editForm.burden,
           hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
           schoolId: schoolId || undefined,
           residence: {
@@ -641,6 +649,8 @@ const TeacherEditModal = () => {
           subject: editForm.subject.length > 0 ? editForm.subject : undefined,
           roleId: editForm.role ? parseInt(editForm.role) : undefined,
           teacher_number: editForm.teacher_number || undefined,
+          appointed: typeof editForm.appointed === 'boolean' ? editForm.appointed : undefined,
+          burden: typeof editForm.burden === 'boolean' ? editForm.burden : undefined,
           hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
           schoolId: schoolId || undefined,
           residence: {
@@ -1288,6 +1298,46 @@ const TeacherEditModal = () => {
                 className='w-full'
               />
             </div>
+
+            {/* Appointment and burden status - only for specific roles (14, 15) */}
+            {['14', '15'].includes(editForm.role) && (
+              <div className="flex flex-col gap-3 mt-6 md:mt-0">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('appointmentStatus', 'Appointment / Burden')}
+                </label>
+                <div className="flex items-center gap-4">
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      checked={!!editForm.appointed}
+                      onChange={(e) =>
+                        setEditForm(prev => ({
+                          ...prev,
+                          appointed: e.target.checked
+                        }))
+                      }
+                    />
+                    <span>{t('appointed', 'Appointed')}</span>
+                  </label>
+
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      checked={!!editForm.burden}
+                      onChange={(e) =>
+                        setEditForm(prev => ({
+                          ...prev,
+                          burden: e.target.checked
+                        }))
+                      }
+                    />
+                    <span>{t('burden', 'Burden')}</span>
+                  </label>
+                </div>
+              </div>
+            )}
 
             {/* Spouse Information - Show only if living_status is Married (រៀបការ) */}
             {editForm.teacher_family.living_status === 'រៀបការ' && (
