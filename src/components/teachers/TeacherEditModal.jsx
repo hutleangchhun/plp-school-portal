@@ -509,6 +509,20 @@ const TeacherEditModal = () => {
       .map(child => ({ child_name: (child?.child_name || '').trim() }))
       .filter(child => child.child_name);
 
+    // Align children array with number_of_children to avoid sending
+    // an outdated longer children list when the count has been reduced.
+    let effectiveChildren = cleanedChildren;
+
+    if (typeof parsedNumber === 'number' && !Number.isNaN(parsedNumber)) {
+      if (parsedNumber <= 0) {
+        // No children expected -> do not send any children array
+        effectiveChildren = [];
+      } else if (effectiveChildren.length > parsedNumber) {
+        // Trim extra children so length matches the new count
+        effectiveChildren = effectiveChildren.slice(0, parsedNumber);
+      }
+    }
+
     const payload = {
       living_status: tf.living_status || undefined,
       spouse_info: {
@@ -519,7 +533,7 @@ const TeacherEditModal = () => {
       },
       number_of_children:
         typeof parsedNumber === 'number' && !Number.isNaN(parsedNumber) ? parsedNumber : undefined,
-      children: cleanedChildren.length > 0 ? cleanedChildren : undefined
+      children: effectiveChildren.length > 0 ? effectiveChildren : undefined
     };
 
     return payload;
@@ -1482,32 +1496,57 @@ const TeacherEditModal = () => {
               <div className="space-y-4">
                 {Array.from({ length: parseInt(editForm.teacher_family.number_of_children) || 0 }).map((_, index) => (
                   <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-md">
-                    <label htmlFor={`child_name_${index}`} className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('childName', 'Child Name')} {index + 1}
-                    </label>
-                    <input
-                      type="text"
-                      id={`child_name_${index}`}
-                      value={editForm.teacher_family.children[index]?.child_name || ''}
-                      onChange={(e) => {
-                        setEditForm(prev => {
-                          const newChildren = [...prev.teacher_family.children];
-                          if (!newChildren[index]) {
-                            newChildren[index] = { child_name: '' };
-                          }
-                          newChildren[index].child_name = e.target.value;
-                          return {
-                            ...prev,
-                            teacher_family: {
-                              ...prev.teacher_family,
-                              children: newChildren
-                            }
-                          };
-                        });
-                      }}
-                      className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder={t('enterChildName', 'e.g., សូថា')}
-                    />
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <label htmlFor={`child_name_${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                          {t('childName', 'Child Name')} {index + 1}
+                        </label>
+                        <input
+                          type="text"
+                          id={`child_name_${index}`}
+                          value={editForm.teacher_family.children[index]?.child_name || ''}
+                          onChange={(e) => {
+                            setEditForm(prev => {
+                              const newChildren = [...prev.teacher_family.children];
+                              if (!newChildren[index]) {
+                                newChildren[index] = { child_name: '' };
+                              }
+                              newChildren[index].child_name = e.target.value;
+                              return {
+                                ...prev,
+                                teacher_family: {
+                                  ...prev.teacher_family,
+                                  children: newChildren
+                                }
+                              };
+                            });
+                          }}
+                          className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder={t('enterChildName', 'e.g., សូថា')}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="mt-6 inline-flex items-center px-2 py-1 border border-red-300 text-xs font-medium rounded text-red-700 bg-red-50 hover:bg-red-100"
+                        onClick={() => {
+                          setEditForm(prev => {
+                            const prevCount = parseInt(prev.teacher_family.number_of_children) || 0;
+                            const newChildren = (prev.teacher_family.children || []).filter((_, i) => i !== index);
+                            const newCount = Math.max(0, prevCount - 1);
+                            return {
+                              ...prev,
+                              teacher_family: {
+                                ...prev.teacher_family,
+                                number_of_children: newCount ? String(newCount) : '',
+                                children: newChildren
+                              }
+                            };
+                          });
+                        }}
+                      >
+                        {t('remove', 'Remove')}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

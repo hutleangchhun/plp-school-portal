@@ -8,6 +8,7 @@ import { Button } from '../ui/Button';
 import { formatDateKhmer, genderToKhmer, calculateExperience } from '../../utils/formatters';
 import { userService } from '../../utils/api/services/userService';
 import salaryTypeService from '../../utils/api/services/salaryTypeService';
+import { getGradeLabel } from '../../constants/grades';
 import { useState, useEffect } from 'react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
@@ -325,7 +326,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             <InfoItem
               icon={BookOpen}
               label={t('gradeLevel', 'Grade Level')}
-              value={teacherData.gradeLevel ? `${t('gradeLevel', 'GradeLevel')} ${teacherData.gradeLevel}` : getEmptyDisplay()}
+              value={teacherData.gradeLevel ? getGradeLabel(String(teacherData.gradeLevel), t) : getEmptyDisplay()}
             />
             <InfoItem
               icon={Key}
@@ -432,28 +433,28 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
                 label={t('maritalStatus', 'Marital Status')}
                 value={familyData.living_status || getEmptyDisplay()}
               />
-              {familyData.living_status !== 'នៅលីវ' && familyData.spouse_info && (
+              {familyData.living_status === 'រៀបការ' && familyData.spouse_info && (
                 <InfoItem
                   icon={User}
                   label={t('partnerName', 'Spouse Name')}
                   value={familyData.spouse_info.spouse_name || getEmptyDisplay()}
                 />
               )}
-              {familyData.living_status !== 'នៅលីវ' && familyData.spouse_info && (
+              {familyData.living_status === 'រៀបការ' && familyData.spouse_info && (
                 <InfoItem
                   icon={Building}
                   label={t('partnerJobPlace', 'Spouse Occupation')}
                   value={familyData.spouse_info.spouse_occupation || getEmptyDisplay()}
                 />
               )}
-              {familyData.living_status !== 'នៅលីវ' && familyData.spouse_info && (
+              {familyData.living_status === 'រៀបការ' && familyData.spouse_info && (
                 <InfoItem
                   icon={MapPin}
                   label={t('partnerPlaceOfBirth', 'Spouse Place of Birth')}
                   value={familyData.spouse_info.spouse_place_of_birth || getEmptyDisplay()}
                 />
               )}
-              {familyData.living_status !== 'នៅលីវ' && familyData.spouse_info && (
+              {familyData.living_status === 'រៀបការ' && familyData.spouse_info && (
                 <InfoItem
                   icon={Phone}
                   label={t('partnerPhone', 'Spouse Phone')}
@@ -470,15 +471,15 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             </div>
 
             {familyData.living_status !== 'នៅលីវ' && Array.isArray(familyData.children) && familyData.children.length > 0 && (
-              <div className="mt-4">
-                <div className="text-sm font-medium text-gray-900 mb-2">
-                  {t('childrenInformation', 'Children Information')}
-                </div>
-                <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
-                  {familyData.children.map((child, index) => (
-                    <li key={index}>{child.child_name || t('childName', 'Child Name')}</li>
-                  ))}
-                </ul>
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {familyData.children.map((child, index) => (
+                  <InfoItem
+                    key={index}
+                    icon={User}
+                    label={`${t('childName', 'Child Name')} ${index + 1}`}
+                    value={child.child_name || ''}
+                  />
+                ))}
               </div>
             )}
           </div>
@@ -680,7 +681,7 @@ function InfoItem({ icon: Icon, label, value }) {
 
   return (
     <div className="flex items-start space-x-2">
-      <div className="flex-1 min-w-0 bg-gray-50 border-gray-100 border-2 p-4 rounded-md">
+      <div className="flex-1 space-y-1 min-w-0 bg-gray-50 border-gray-100 border-2 p-4 rounded-md">
         <p className="text-sm font-medium text-gray-500">{label}</p>
         <p className="text-sm text-gray-900 break-words">{displayValue}</p>
       </div>
