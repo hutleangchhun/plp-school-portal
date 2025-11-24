@@ -5,8 +5,9 @@ import Modal from '../ui/Modal';
 import { Badge } from '../ui/Badge';
 import ProfileImage from '../ui/ProfileImage';
 import { Button } from '../ui/Button';
-import { formatDateKhmer, genderToKhmer } from '../../utils/formatters';
+import { formatDateKhmer, genderToKhmer, calculateExperience } from '../../utils/formatters';
 import { userService } from '../../utils/api/services/userService';
+import salaryTypeService from '../../utils/api/services/salaryTypeService';
 import { useState, useEffect } from 'react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
@@ -18,6 +19,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
   const { showError } = useToast();
   const [fullTeacherData, setFullTeacherData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [salaryTypeName, setSalaryTypeName] = useState(null);
 
   // Fetch full teacher data when modal opens
   useEffect(() => {
@@ -74,6 +76,32 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
     fetchTeacherData();
   }, [isOpen, teacher, showError, t]);
 
+  // Fetch salary type name when data is available
+  useEffect(() => {
+    const loadSalaryType = async () => {
+      try {
+        const src = fullTeacherData || teacher;
+        if (!src) return;
+        const tData = src.teacher || src;
+        const id = tData.salaryTypeId;
+        if (!id) {
+          setSalaryTypeName(null);
+          return;
+        }
+
+        const detail = await salaryTypeService.getSalaryTypeById(id);
+        setSalaryTypeName(detail?.name || null);
+      } catch (e) {
+        console.error('Error loading salary type for view:', e);
+        setSalaryTypeName(null);
+      }
+    };
+
+    if (isOpen) {
+      loadSalaryType();
+    }
+  }, [isOpen, fullTeacherData, teacher]);
+
   if (!isOpen) return null;
 
   // Use fullTeacherData if it's been loaded, otherwise use the provided teacher data
@@ -89,6 +117,9 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
   // Extract nested teacher data if it exists
   const teacherData = displayTeacher.teacher || displayTeacher;
   const schoolData = teacherData.school || displayTeacher.school;
+  const familyData = teacherData.teacher_family || displayTeacher.teacher_family || {};
+  const residence = displayTeacher.residence || {};
+  const birthPlace = displayTeacher.placeOfBirth || {};
 
   // Helper function to display N/A in Khmer
   const getEmptyDisplay = () => 'មិនមាន';
@@ -297,14 +328,77 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
               value={teacherData.gradeLevel ? `${t('gradeLevel', 'GradeLevel')} ${teacherData.gradeLevel}` : getEmptyDisplay()}
             />
             <InfoItem
+              icon={Key}
+              label={t('role', 'Role')}
+              value={displayTeacher.roleNameKh || displayTeacher.roleNameEn || teacherData.roleId || getEmptyDisplay()}
+            />
+            <InfoItem
               icon={Building}
               label={t('employmentType', 'Employment Type')}
               value={(teacherData.employment_type || teacherData.employmentType) || getEmptyDisplay()}
             />
             <InfoItem
+              icon={BookOpen}
+              label={t('educationLevel', 'Education Level')}
+              value={teacherData.educationLevel || getEmptyDisplay()}
+            />
+            <InfoItem
+              icon={BookOpen}
+              label={t('trainingType', 'Training Type')}
+              value={teacherData.trainingType || getEmptyDisplay()}
+            />
+            <InfoItem
+              icon={Shield}
+              label={t('teacherStatus', 'Teacher Status')}
+              value={teacherData.teacherStatus || getEmptyDisplay()}
+            />
+            <InfoItem
+              icon={Clock}
+              label={t('teachingType', 'Teaching Type')}
+              value={teacherData.teachingType || getEmptyDisplay()}
+            />
+            <InfoItem
+              icon={BookOpen}
+              label={t('subjects', 'Subjects')}
+              value={Array.isArray(teacherData.subject) && teacherData.subject.length > 0 ? teacherData.subject.join(', ') : getEmptyDisplay()}
+            />
+            <InfoItem
               icon={Calendar}
               label={t('hireDate', 'Hire Date')}
               value={formatDate(teacherData.hire_date || teacherData.hireDate)}
+            />
+            <InfoItem
+              icon={Hash}
+              label={t('salaryType', 'Salary Type')}
+              value={salaryTypeName || (teacherData.salaryTypeId ? String(teacherData.salaryTypeId) : getEmptyDisplay())}
+            />
+            {(() => {
+              const rawHireDate = teacherData.hire_date || teacherData.hireDate;
+              const expText = calculateExperience(rawHireDate, {
+                years: t('years', 'years'),
+                months: t('months', 'months'),
+                lessThanOneMonth: t('lessThanOneMonth', 'Less than 1 month')
+              });
+
+              const value = expText || getEmptyDisplay();
+
+              return (
+                <InfoItem
+                  icon={Clock}
+                  label={t('experience', 'Experience')}
+                  value={value}
+                />
+              );
+            })()}
+            <InfoItem
+              icon={Clock}
+              label={t('appointed', 'Appointed')}
+              value={teacherData.appointed === true ? t('yes', 'Yes') : t('no', 'No')}
+            />
+            <InfoItem
+              icon={Clock}
+              label={t('burden', 'Burden')}
+              value={teacherData.burden === true ? t('yes', 'Yes') : t('no', 'No')}
             />
             <InfoItem
               icon={Shield}
@@ -320,6 +414,147 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             />
           </div>
         </div>
+
+        {/* Family Information */}
+        {(familyData && (familyData.living_status || familyData.spouse_info || familyData.number_of_children || (Array.isArray(familyData.children) && familyData.children.length > 0))) && (
+          <div className="border-t pt-4">
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <User2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('familyInformation', 'Family Information')}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <InfoItem
+                icon={User}
+                label={t('maritalStatus', 'Marital Status')}
+                value={familyData.living_status || getEmptyDisplay()}
+              />
+              {familyData.living_status !== 'នៅលីវ' && familyData.spouse_info && (
+                <InfoItem
+                  icon={User}
+                  label={t('partnerName', 'Spouse Name')}
+                  value={familyData.spouse_info.spouse_name || getEmptyDisplay()}
+                />
+              )}
+              {familyData.living_status !== 'នៅលីវ' && familyData.spouse_info && (
+                <InfoItem
+                  icon={Building}
+                  label={t('partnerJobPlace', 'Spouse Occupation')}
+                  value={familyData.spouse_info.spouse_occupation || getEmptyDisplay()}
+                />
+              )}
+              {familyData.living_status !== 'នៅលីវ' && familyData.spouse_info && (
+                <InfoItem
+                  icon={MapPin}
+                  label={t('partnerPlaceOfBirth', 'Spouse Place of Birth')}
+                  value={familyData.spouse_info.spouse_place_of_birth || getEmptyDisplay()}
+                />
+              )}
+              {familyData.living_status !== 'នៅលីវ' && familyData.spouse_info && (
+                <InfoItem
+                  icon={Phone}
+                  label={t('partnerPhone', 'Spouse Phone')}
+                  value={familyData.spouse_info.spouse_phone || getEmptyDisplay()}
+                />
+              )}
+              {familyData.living_status !== 'នៅលីវ' && familyData.number_of_children !== undefined && familyData.number_of_children !== null && familyData.number_of_children !== '' && (
+                <InfoItem
+                  icon={User}
+                  label={t('numberOfChildren', 'Number of Children')}
+                  value={String(familyData.number_of_children)}
+                />
+              )}
+            </div>
+
+            {familyData.living_status !== 'នៅលីវ' && Array.isArray(familyData.children) && familyData.children.length > 0 && (
+              <div className="mt-4">
+                <div className="text-sm font-medium text-gray-900 mb-2">
+                  {t('childrenInformation', 'Children Information')}
+                </div>
+                <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
+                  {familyData.children.map((child, index) => (
+                    <li key={index}>{child.child_name || t('childName', 'Child Name')}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Residence Information */}
+        {(residence && (residence.province || residence.district || residence.commune || residence.village)) && (
+          <div className="border-t pt-4">
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('residence', 'Residence')}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <InfoItem
+                icon={MapPin}
+                label={t('province', 'Province')}
+                value={residence.province?.province_name_kh || residence.province?.province_name_en || getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={MapPin}
+                label={t('district', 'District')}
+                value={residence.district?.district_name_kh || residence.district?.district_name_en || getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={MapPin}
+                label={t('commune', 'Commune')}
+                value={residence.commune?.commune_name_kh || residence.commune?.commune_name_en || getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={MapPin}
+                label={t('village', 'Village')}
+                value={residence.village?.village_name_kh || residence.village?.village_name_en || getEmptyDisplay()}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Place of Birth Information */}
+        {(birthPlace && (birthPlace.province || birthPlace.district || birthPlace.commune || birthPlace.village)) && (
+          <div className="border-t pt-4">
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('placeOfBirth', 'Place of Birth')}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <InfoItem
+                icon={MapPin}
+                label={t('province', 'Province')}
+                value={birthPlace.province?.province_name_kh || birthPlace.province?.province_name_en || getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={MapPin}
+                label={t('district', 'District')}
+                value={birthPlace.district?.district_name_kh || birthPlace.district?.district_name_en || getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={MapPin}
+                label={t('commune', 'Commune')}
+                value={birthPlace.commune?.commune_name_kh || birthPlace.commune?.commune_name_en || getEmptyDisplay()}
+              />
+              <InfoItem
+                icon={MapPin}
+                label={t('village', 'Village')}
+                value={birthPlace.village?.village_name_kh || birthPlace.village?.village_name_en || getEmptyDisplay()}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Health Information */}
         {(displayTeacher.weight_kg || displayTeacher.weight || displayTeacher.height_cm || displayTeacher.height) && (

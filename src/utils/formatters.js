@@ -337,3 +337,53 @@ export const bmiStatusToKhmer = (status) => {
 
   return statusMap[status.toLowerCase()] || status;
 };
+
+/**
+ * Calculate experience between a start date and now, as years/months text.
+ * Example outputs: "3 years", "2 years 4 months", "5 months", "Less than 1 month".
+ * @param {string|Date|null} startDate - Hire date or other start date
+ * @param {Object} labels - Optional labels for i18n: { years, months, lessThanOneMonth }
+ * @returns {string} Human readable experience string, or empty string if invalid
+ */
+export const calculateExperience = (startDate, labels = {}) => {
+  if (!startDate) return '';
+
+  const {
+    years: yearsLabel = 'years',
+    months: monthsLabel = 'months',
+    lessThanOneMonth: lessThanOneMonthLabel = 'Less than 1 month'
+  } = labels;
+
+  try {
+    const start = typeof startDate === 'string' ? new Date(startDate) : new Date(startDate);
+    if (!(start instanceof Date) || Number.isNaN(start.getTime())) {
+      return '';
+    }
+
+    const now = new Date();
+    const diffMs = now.getTime() - start.getTime();
+    const diffYears = diffMs / (1000 * 60 * 60 * 24 * 365.25);
+
+    if (Number.isNaN(diffYears) || diffYears < 0) {
+      return '';
+    }
+
+    const years = Math.floor(diffYears);
+    const months = Math.floor((diffYears - years) * 12);
+
+    if (years > 0 && months > 0) {
+      return `${years} ${yearsLabel} ${months} ${monthsLabel}`;
+    }
+    if (years > 0) {
+      return `${years} ${yearsLabel}`;
+    }
+    if (months > 0) {
+      return `${months} ${monthsLabel}`;
+    }
+
+    return lessThanOneMonthLabel;
+  } catch (e) {
+    console.warn('Error calculating experience:', e, startDate);
+    return '';
+  }
+};

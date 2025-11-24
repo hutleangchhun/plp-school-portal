@@ -36,6 +36,24 @@ const salaryTypeService = {
       return [];
     }
   },
+
+  /**
+   * Get a single salary type by its ID
+   * @param {number|string} id - Salary type ID
+   * @returns {Promise<Object|null>} Salary type object or null if not found
+   */
+  getSalaryTypeById: async (id) => {
+    try {
+      if (!id && id !== 0) return null;
+      const url = `${ENDPOINTS.SALARY_TYPES.BASE}/${id}`;
+      const response = await get(url);
+      console.log(`Salary type detail for id ${id}:`, response);
+      return response || null;
+    } catch (error) {
+      console.error(`Error fetching salary type with id ${id}:`, error);
+      return null;
+    }
+  },
 };
 
 export default salaryTypeService;
