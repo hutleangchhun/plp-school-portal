@@ -88,7 +88,7 @@ export const km = {
   nationality: 'សញ្ជាតិ',
   selectNationality: 'ជ្រើសរើសសញ្ជាតិ',
   profilePicture: 'រូបភាពរបស់អ្នក (ឈ្មោះឯកសារ)',
-  teacherNumber: 'អត្តលេខគ្រូ',
+  teacherNumber: 'អត្តលេខមន្ត្រីរាជការ',
   teacherId: 'លេខសម្គាល់គ្រូ',
   enterNewPassword: 'បញ្ចូលពាក្យសម្ងាត់ថ្មី',
   weight: 'ទម្ងន់',
