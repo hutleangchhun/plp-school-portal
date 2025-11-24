@@ -16,7 +16,7 @@ import ErrorDisplay from '../ui/ErrorDisplay';
 import { PageLoader } from '../ui/DynamicLoader';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
-import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, employmentTypeOptions, educationLevelOptions, trainingTypeOptions, teacherStatusOptions, subjectOptions, roleOptions, maritalStatusOptions, teachingTypeOptions } from '../../utils/formOptions';
+import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, employmentTypeOptions, educationLevelOptions, trainingTypeOptions, teacherStatusOptions, subjectOptions, roleOptions, maritalStatusOptions, teachingTypeOptions, spouseJobOptions } from '../../utils/formOptions';
 import { utils } from '../../utils/api';
 
 const TeacherEditModal = () => {
@@ -87,12 +87,17 @@ const TeacherEditModal = () => {
       communeId: '',
       villageId: ''
     },
-    maritalStatus: '',
-    partnerName: '',
-    partnerJobPlace: '',
-    partnerDateOfBirth: null,
-    partnerPhone: '',
-    numberOfChildren: ''
+    teacher_family: {
+      living_status: '',
+      spouse_info: {
+        spouse_name: '',
+        spouse_occupation: '',
+        spouse_place_of_birth: '',
+        spouse_phone: ''
+      },
+      number_of_children: '',
+      children: []
+    }
   });
 
   // Location data hooks for residence
@@ -243,10 +248,19 @@ const TeacherEditModal = () => {
 
       const weight = fullData.weight_kg || fullData.weight || '';
       const height = fullData.height_cm || fullData.height || '';
-      const bmi = fullData.bmi || calcBMI(weight, height);
+      const bmiSource = fullData.bmi;
+      const bmiValue =
+        bmiSource && typeof bmiSource === 'object'
+          ? bmiSource.value
+          : bmiSource;
+      const bmi = bmiValue || calcBMI(weight, height);
 
       // Extract teacher-specific fields from nested teacher object if available
       const teacherData = fullData.teacher || fullData;
+
+      // Initialize family data from API response (prefer nested teacher.teacher_family)
+      const familyData = teacherData.teacher_family || fullData.teacher_family || {};
+      const childrenArray = Array.isArray(familyData.children) ? familyData.children : [];
 
       setEditForm({
         firstName: fullData.firstName || fullData.first_name || '',
@@ -287,12 +301,17 @@ const TeacherEditModal = () => {
           communeId: fullData.placeOfBirth?.communeId || fullData.residence?.communeId || fullData.commune_id || '',
           villageId: fullData.placeOfBirth?.villageId || fullData.residence?.villageId || fullData.village_id || ''
         },
-        maritalStatus: fullData.maritalStatus || fullData.marital_status || '',
-        partnerName: fullData.partnerName || fullData.partner_name || '',
-        partnerJobPlace: fullData.partnerJobPlace || fullData.partner_job_place || '',
-        partnerDateOfBirth: fullData.partnerDateOfBirth ? new Date(fullData.partnerDateOfBirth) : (fullData.partner_date_of_birth ? new Date(fullData.partner_date_of_birth) : null),
-        partnerPhone: fullData.partnerPhone || fullData.partner_phone || '',
-        numberOfChildren: fullData.numberOfChildren || fullData.number_of_children || ''
+        teacher_family: {
+          living_status: familyData.living_status || '',
+          spouse_info: {
+            spouse_name: familyData.spouse_info?.spouse_name || '',
+            spouse_occupation: familyData.spouse_info?.spouse_occupation || '',
+            spouse_place_of_birth: familyData.spouse_info?.spouse_place_of_birth || '',
+            spouse_phone: familyData.spouse_info?.spouse_phone || ''
+          },
+          number_of_children: familyData.number_of_children || '',
+          children: childrenArray
+        }
       });
 
       setOriginalUsername(fullData.username || '');
@@ -409,12 +428,17 @@ const TeacherEditModal = () => {
       hire_date: null,
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
       placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
-      maritalStatus: '',
-      partnerName: '',
-      partnerJobPlace: '',
-      partnerDateOfBirth: null,
-      partnerPhone: '',
-      numberOfChildren: ''
+      teacher_family: {
+        living_status: '',
+        spouse_info: {
+          spouse_name: '',
+          spouse_occupation: '',
+          spouse_place_of_birth: '',
+          spouse_phone: ''
+        },
+        number_of_children: '',
+        children: []
+      }
     });
     resetResidenceSelections();
     resetBirthSelections();
@@ -463,6 +487,36 @@ const TeacherEditModal = () => {
       const fileURL = URL.createObjectURL(file);
       handleFormChange('profilePicture', fileURL);
     }
+  };
+
+  const buildTeacherFamilyPayload = () => {
+    const tf = editForm.teacher_family || {};
+    const rawChildren = Array.isArray(tf.children) ? tf.children : [];
+
+    const numberOfChildrenRaw = tf.number_of_children;
+    const parsedNumber =
+      numberOfChildrenRaw === '' || numberOfChildrenRaw === null || numberOfChildrenRaw === undefined
+        ? undefined
+        : parseInt(numberOfChildrenRaw, 10);
+
+    const cleanedChildren = rawChildren
+      .map(child => ({ child_name: (child?.child_name || '').trim() }))
+      .filter(child => child.child_name);
+
+    const payload = {
+      living_status: tf.living_status || undefined,
+      spouse_info: {
+        spouse_name: tf.spouse_info?.spouse_name || undefined,
+        spouse_occupation: tf.spouse_info?.spouse_occupation || undefined,
+        spouse_place_of_birth: tf.spouse_info?.spouse_place_of_birth || undefined,
+        spouse_phone: tf.spouse_info?.spouse_phone || undefined
+      },
+      number_of_children:
+        typeof parsedNumber === 'number' && !Number.isNaN(parsedNumber) ? parsedNumber : undefined,
+      children: cleanedChildren.length > 0 ? cleanedChildren : undefined
+    };
+
+    return payload;
   };
 
   const handleSubmit = async (e) => {
@@ -514,12 +568,6 @@ const TeacherEditModal = () => {
           subject: editForm.subject.length > 0 ? editForm.subject : undefined,
           teacher_number: editForm.teacher_number || undefined,
           hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
-          maritalStatus: editForm.maritalStatus || undefined,
-          partnerName: editForm.maritalStatus === 'រៀបការ' && editForm.partnerName ? editForm.partnerName.trim() : undefined,
-          partnerJobPlace: editForm.maritalStatus === 'រៀបការ' && editForm.partnerJobPlace ? editForm.partnerJobPlace.trim() : undefined,
-          partnerDateOfBirth: editForm.maritalStatus === 'រៀបការ' && editForm.partnerDateOfBirth ? formatDate(editForm.partnerDateOfBirth) : undefined,
-          partnerPhone: editForm.maritalStatus === 'រៀបការ' && editForm.partnerPhone ? editForm.partnerPhone.trim() : undefined,
-          numberOfChildren: editForm.numberOfChildren ? parseInt(editForm.numberOfChildren) : undefined,
           schoolId: schoolId || undefined,
           residence: {
             provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
@@ -532,7 +580,8 @@ const TeacherEditModal = () => {
             districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId || undefined,
             communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
             villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
-          }
+          },
+          teacher_family: buildTeacherFamilyPayload()
         };
 
         // Remove undefined/empty values
@@ -593,12 +642,6 @@ const TeacherEditModal = () => {
           roleId: editForm.role ? parseInt(editForm.role) : undefined,
           teacher_number: editForm.teacher_number || undefined,
           hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
-          maritalStatus: editForm.maritalStatus || undefined,
-          partnerName: editForm.maritalStatus === 'រៀបការ' && editForm.partnerName ? editForm.partnerName.trim() : undefined,
-          partnerJobPlace: editForm.maritalStatus === 'រៀបការ' && editForm.partnerJobPlace ? editForm.partnerJobPlace.trim() : undefined,
-          partnerDateOfBirth: editForm.maritalStatus === 'រៀបការ' && editForm.partnerDateOfBirth ? formatDate(editForm.partnerDateOfBirth) : undefined,
-          partnerPhone: editForm.maritalStatus === 'រៀបការ' && editForm.partnerPhone ? editForm.partnerPhone.trim() : undefined,
-          numberOfChildren: editForm.numberOfChildren ? parseInt(editForm.numberOfChildren) : undefined,
           schoolId: schoolId || undefined,
           residence: {
             provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
@@ -611,7 +654,8 @@ const TeacherEditModal = () => {
             districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId || undefined,
             communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
             villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
-          }
+          },
+          teacher_family: buildTeacherFamilyPayload()
         };
 
         // Add password if provided
@@ -1185,8 +1229,59 @@ const TeacherEditModal = () => {
                   { value: '', label: t('selectMaritalStatus', 'Select Marital Status') },
                   ...maritalStatusOptions
                 ]}
-                value={editForm.maritalStatus}
-                onValueChange={(value) => handleFormChange('maritalStatus', value)}
+                value={editForm.teacher_family.living_status}
+                onValueChange={(value) => {
+                  // Update teacher_family based on selected living_status
+                  setEditForm(prev => {
+                    let nextTeacherFamily = {
+                      ...prev.teacher_family,
+                      living_status: value
+                    };
+
+                    // Single: clear spouse info and children
+                    if (value === 'នៅលីវ') {
+                      nextTeacherFamily = {
+                        living_status: value,
+                        spouse_info: {
+                          spouse_name: '',
+                          spouse_occupation: '',
+                          spouse_place_of_birth: '',
+                          spouse_phone: ''
+                        },
+                        number_of_children: '',
+                        children: []
+                      };
+                    }
+
+                    // Widow/Divorced (ពោះម៉ាយ): no spouse info, but allow children
+                    if (value === 'ពោះម៉ាយ') {
+                      nextTeacherFamily = {
+                        living_status: value,
+                        spouse_info: {
+                          spouse_name: '',
+                          spouse_occupation: '',
+                          spouse_place_of_birth: '',
+                          spouse_phone: ''
+                        },
+                        number_of_children: prev.teacher_family?.number_of_children || '',
+                        children: Array.isArray(prev.teacher_family?.children) ? prev.teacher_family.children : []
+                      };
+                    }
+
+                    // Married (រៀបការ): keep spouse/children data but ensure living_status syncs
+                    if (value === 'រៀបការ') {
+                      nextTeacherFamily = {
+                        ...prev.teacher_family,
+                        living_status: value
+                      };
+                    }
+
+                    return {
+                      ...prev,
+                      teacher_family: nextTeacherFamily
+                    };
+                  });
+                }}
                 placeholder={t('selectMaritalStatus', 'Select Marital Status')}
                 contentClassName="max-h-[200px] overflow-y-auto"
                 disabled={false}
@@ -1194,82 +1289,180 @@ const TeacherEditModal = () => {
               />
             </div>
 
-            {/* Number of Children - Show for all marital statuses except Single */}
-            {editForm.maritalStatus && editForm.maritalStatus !== 'នៅលីវ' && (
-              <div>
-                <label htmlFor="numberOfChildren" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('numberOfChildren', 'Number of Children')}
-                </label>
-                <input
-                  type="number"
-                  id="numberOfChildren"
-                  min="0"
-                  value={editForm.numberOfChildren}
-                  onChange={(e) => handleFormChange('numberOfChildren', e.target.value)}
-                  className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder={t('enterNumber', 'e.g., 2')}
-                />
-              </div>
-            )}
-
-            {/* Married Partner Details - Show only if Married */}
-            {editForm.maritalStatus === 'រៀបការ' && (
+            {/* Spouse Information - Show only if living_status is Married (រៀបការ) */}
+            {editForm.teacher_family.living_status === 'រៀបការ' && (
               <>
                 <div>
-                  <label htmlFor="partnerName" className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('partnerName', 'Partner Name')}
+                  <label htmlFor="spouse_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('partnerName', 'Spouse Name')}
                   </label>
                   <input
                     type="text"
-                    id="partnerName"
-                    value={editForm.partnerName}
-                    onChange={(e) => handleFormChange('partnerName', e.target.value)}
+                    id="spouse_name"
+                    value={editForm.teacher_family.spouse_info.spouse_name}
+                    onChange={(e) => {
+                      setEditForm(prev => ({
+                        ...prev,
+                        teacher_family: {
+                          ...prev.teacher_family,
+                          spouse_info: {
+                            ...prev.teacher_family.spouse_info,
+                            spouse_name: e.target.value
+                          }
+                        }
+                      }));
+                    }}
                     className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                     placeholder={t('enterPartnerName', 'e.g., Jane Doe')}
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="partnerPhone" className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('partnerPhone', 'Partner Phone')}
+                  <label htmlFor="spouse_occupation" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('partnerJobPlace', 'Spouse Occupation')}
+                  </label>
+                  <Dropdown
+                    options={[
+                      { value: '', label: t('selectSpouseJob', 'ជ្រើសរើសមុខរបររបស់ដៃគូរស្វាមីភរិយា') },
+                      ...spouseJobOptions
+                    ]}
+                    value={editForm.teacher_family.spouse_info.spouse_occupation}
+                    onValueChange={(value) => {
+                      setEditForm(prev => ({
+                        ...prev,
+                        teacher_family: {
+                          ...prev.teacher_family,
+                          spouse_info: {
+                            ...prev.teacher_family.spouse_info,
+                            spouse_occupation: value
+                          }
+                        }
+                      }));
+                    }}
+                    placeholder={t('selectSpouseJob', 'ជ្រើសរើសមុខរបររបស់ដៃគូរស្វាមីភរិយា')}
+                    contentClassName="max-h-[200px] overflow-y-auto"
+                    disabled={false}
+                    className='w-full'
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="spouse_phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('partnerPhone', 'Spouse Phone')}
                   </label>
                   <input
                     type="tel"
-                    id="partnerPhone"
-                    value={editForm.partnerPhone}
-                    onChange={(e) => handleFormChange('partnerPhone', e.target.value)}
+                    id="spouse_phone"
+                    value={editForm.teacher_family.spouse_info.spouse_phone}
+                    onChange={(e) => {
+                      setEditForm(prev => ({
+                        ...prev,
+                        teacher_family: {
+                          ...prev.teacher_family,
+                          spouse_info: {
+                            ...prev.teacher_family.spouse_info,
+                            spouse_phone: e.target.value
+                          }
+                        }
+                      }));
+                    }}
                     className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                     placeholder={t('enterPhone', 'e.g., 0123456789')}
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="partnerJobPlace" className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('partnerJobPlace', 'Partner Job Place')}
+                  <label htmlFor="spouse_place_of_birth" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('placeOfBirth', 'Spouse Place of Birth')}
                   </label>
                   <input
                     type="text"
-                    id="partnerJobPlace"
-                    value={editForm.partnerJobPlace}
-                    onChange={(e) => handleFormChange('partnerJobPlace', e.target.value)}
+                    id="spouse_place_of_birth"
+                    value={editForm.teacher_family.spouse_info.spouse_place_of_birth}
+                    onChange={(e) => {
+                      setEditForm(prev => ({
+                        ...prev,
+                        teacher_family: {
+                          ...prev.teacher_family,
+                          spouse_info: {
+                            ...prev.teacher_family.spouse_info,
+                            spouse_place_of_birth: e.target.value
+                          }
+                        }
+                      }));
+                    }}
                     className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={t('enterJobPlace', 'e.g., NGO Name, Company')}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="partnerDateOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('partnerDateOfBirth', 'Partner Date of Birth')}
-                  </label>
-                  <DatePickerWithDropdowns
-                    date={editForm.partnerDateOfBirth}
-                    onChange={(date) => handleFormChange('partnerDateOfBirth', date)}
-                    placeholder={t('pickDate', 'Pick a date')}
+                    placeholder={t('enterPlaceOfBirth', 'e.g., Phnom Penh')}
                   />
                 </div>
               </>
             )}
+
+            {/* Number of Children - Show when living_status is not Single (នៅលីវ) */}
+            {editForm.teacher_family.living_status && editForm.teacher_family.living_status !== 'នៅលីវ' && (
+              <div>
+                <label htmlFor="number_of_children" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('numberOfChildren', 'Number of Children')}
+                </label>
+                <input
+                  type="number"
+                  id="number_of_children"
+                  min="0"
+                  value={editForm.teacher_family.number_of_children}
+                  onChange={(e) => {
+                    setEditForm(prev => ({
+                      ...prev,
+                      teacher_family: {
+                        ...prev.teacher_family,
+                        number_of_children: e.target.value
+                      }
+                    }));
+                  }}
+                  className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={t('enterNumber', 'e.g., 2')}
+                />
+              </div>
+            )}
           </div>
+
+          {/* Children List - Show when number_of_children > 0 */}
+          {editForm.teacher_family.number_of_children && parseInt(editForm.teacher_family.number_of_children) > 0 && (
+            <div className="mt-6 border-t pt-6">
+              <h4 className="text-md font-semibold text-gray-900 mb-4">{t('childrenInformation', 'Children Information')}</h4>
+              <div className="space-y-4">
+                {Array.from({ length: parseInt(editForm.teacher_family.number_of_children) || 0 }).map((_, index) => (
+                  <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-md">
+                    <label htmlFor={`child_name_${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('childName', 'Child Name')} {index + 1}
+                    </label>
+                    <input
+                      type="text"
+                      id={`child_name_${index}`}
+                      value={editForm.teacher_family.children[index]?.child_name || ''}
+                      onChange={(e) => {
+                        setEditForm(prev => {
+                          const newChildren = [...prev.teacher_family.children];
+                          if (!newChildren[index]) {
+                            newChildren[index] = { child_name: '' };
+                          }
+                          newChildren[index].child_name = e.target.value;
+                          return {
+                            ...prev,
+                            teacher_family: {
+                              ...prev.teacher_family,
+                              children: newChildren
+                            }
+                          };
+                        });
+                      }}
+                      className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder={t('enterChildName', 'e.g., សូថា')}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

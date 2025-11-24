@@ -173,6 +173,18 @@ export const maritalStatusOptions = [
   { value: 'មេម៉ាយ/ពោះម៉ាយ', label: 'មេម៉ាយ/ពោះម៉ាយ' } // Single Parent/Widow
 ];
 
+// Spouse job options
+export const spouseJobOptions = [
+  { value: '', label: 'មិនមានការងារ' },
+  { value: 'គ្រូបង្រៀន', label: 'គ្រូបង្រៀន' }, // Teacher
+  { value: 'កសិករ', label: 'កសិករ' }, // Farmer
+  { value: 'ពាណិជ្ជករ', label: 'ពាណិជ្ជករ' }, // Business
+  { value: 'មន្ត្រីរាជការ', label: 'មន្ត្រីរាជការ' }, // Government Staff
+  { value: 'កម្មករ', label: 'កម្មករ' }, // Worker
+  { value: 'អង្គការមិនមែនរដ្ឋាភិបាល', label: 'អង្គការមិនមែនរដ្ឋាភិបាល' }, // Other NGO
+  { value: 'កម្មសិទ្ធិផ្ទាល់ខ្លួន', label: 'កម្មសិទ្ធិផ្ទាល់ខ្លួន' } // Self-employed
+];
+
 // Academic Year options (dynamically generated based on current year)
 export const getAcademicYearOptions = () => {
   const currentYear = new Date().getFullYear();

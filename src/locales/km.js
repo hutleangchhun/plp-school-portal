@@ -269,6 +269,17 @@ export const km = {
   subjects: 'មុខវិជ្ជាឯកទេសបណ្តុះបណ្តាល',
   selectSubjects: 'ជ្រើសរើសមុខវិជ្ជា',
   employmentInformation: 'ព័ត៌មានមន្ត្រីរាជការ',
+  maritalStatus: 'ស្ថានភាពគ្រួសារ',
+  selectMaritalStatus: 'ជ្រើសរើសស្ថានភាពគ្រួសារ',
+  familyInformation: 'ព័ត៌មានគ្រួសារ',
+  partnerName: 'ឈ្មោះប្ដី/ប្រពន្ធ',
+  partnerJobPlace: 'មុខរបររបស់ប្ដី/ប្រពន្ធ',
+  partnerPlaceOfBirth: 'ទីកន្លែងកំណើតប្ដី/ប្រពន្ធ',
+  partnerPhone: 'លេខទូរស័ព្ទប្ដី/ប្រពន្ធ',
+  numberOfChildren: 'ចំនួនកូន',
+  childName: 'ឈ្មោះកូន',
+  childrenInformation: 'ព័ត៌មានកូន',
+  
 
 
 

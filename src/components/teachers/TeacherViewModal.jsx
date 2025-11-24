@@ -343,11 +343,23 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
                 label={t('height', 'Height (cm)')}
                 value={(displayTeacher.height_cm || displayTeacher.height) ? `${displayTeacher.height_cm || displayTeacher.height} cm` : getEmptyDisplay()}
               />
-              <InfoItem
-                icon={Activity}
-                label={t('bmi', 'BMI')}
-                value={displayTeacher.bmi ? displayTeacher.bmi.toFixed(1) : getEmptyDisplay()}
-              />
+              {(() => {
+                const bmiSource = displayTeacher.bmi;
+                const rawBmi =
+                  bmiSource && typeof bmiSource === 'object'
+                    ? bmiSource.value
+                    : bmiSource;
+                const parsedBmi = rawBmi !== undefined && rawBmi !== null ? parseFloat(rawBmi) : NaN;
+                const hasValidBmi = !Number.isNaN(parsedBmi);
+
+                return (
+                  <InfoItem
+                    icon={Activity}
+                    label={t('bmi', 'BMI')}
+                    value={hasValidBmi ? parsedBmi.toFixed(1) : getEmptyDisplay()}
+                  />
+                );
+              })()}
             </div>
           </div>
         )}
