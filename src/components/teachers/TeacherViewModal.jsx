@@ -121,23 +121,37 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
   const fetchBooksByIds = async (bookIds) => {
     setLoadingBooks(true);
     try {
-      // Fetch books by grade level to get all available books
-      // Then filter by the bookIds we need
-      const src = fullTeacherData || teacher;
-      const tData = src?.teacher || src;
-      const gradeLevel = tData?.gradeLevel || '1';
-      console.log('Fetching books for grade level:', gradeLevel);
-      const response = await bookService.getBooksByGradeLevel(gradeLevel, 1, 100);
-      console.log('Books API response:', response);
+      // Fetch books from all available grade levels and filter by the bookIds we need
+      console.log('Fetching all books from all grade levels');
+      const allBooks = [];
+      const seenIds = new Set();
+      const gradeLevels = ['0', '1', '2', '3', '4', '5', '6'];
 
-      if (response.success && response.data) {
-        // Filter books to only include those in bookIds array
-        const filteredBooks = response.data.filter(book => bookIds.includes(book.id));
-        console.log('Filtered books:', filteredBooks);
-        setBooks(filteredBooks);
-      } else {
-        console.error('Books API returned no data:', response);
+      // Fetch books from each grade level
+      for (const gradeLevel of gradeLevels) {
+        try {
+          const response = await bookService.getBooksByGradeLevel(gradeLevel, 1, 100);
+          if (response.success && response.data) {
+            for (const book of response.data) {
+              // Only add book if we haven't seen this ID before
+              if (!seenIds.has(book.id)) {
+                allBooks.push(book);
+                seenIds.add(book.id);
+              }
+            }
+          }
+        } catch (error) {
+          // Skip grade levels that have errors
+          console.warn(`Error fetching books for grade level ${gradeLevel}:`, error);
+        }
       }
+
+      console.log('All books fetched (deduplicated):', allBooks);
+
+      // Filter books to only include those in bookIds array
+      const filteredBooks = allBooks.filter(book => bookIds.includes(book.id));
+      console.log('Filtered books:', filteredBooks);
+      setBooks(filteredBooks);
     } catch (error) {
       console.error('Error fetching books:', error);
       setBooks([]);
