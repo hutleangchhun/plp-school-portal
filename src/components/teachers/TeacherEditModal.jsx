@@ -747,7 +747,7 @@ const TeacherEditModal = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <PageLoader
-          message={t('loadingTeacher', 'Loading teacher...')}
+          message={t('loadingTeachers', 'Loading teacher...')}
           className="min-h-screen"
         />
       </div>
@@ -1210,7 +1210,7 @@ const TeacherEditModal = () => {
         <div className="mt-8 border-t border-gray-200 pt-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('extraLearningTool', 'Extra Learning Tool')}</h3>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {Object.entries(editForm.teacherExtraLearningTool).map(([key, value]) => (
               <div key={key}>
                 <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
@@ -1230,9 +1230,6 @@ const TeacherEditModal = () => {
                   />
                   <span className="text-sm font-medium text-gray-700">{key}</span>
                 </label>
-                <p className="mt-1 text-xs text-gray-600 ml-8">
-                  {t('currentStatus', 'Current status')}: <span className="font-medium text-gray-900">{value === true ? t('yes', 'Yes') : t('no', 'No')}</span>
-                </p>
               </div>
             ))}
           </div>

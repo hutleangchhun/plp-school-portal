@@ -489,7 +489,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
                 <InfoItem
                   key={key}
                   label={key}
-                  value={value === true ? t('yes', 'Yes') : t('no', 'No')}
+                  value={value === true ? t('have', 'Yes') : t('notHave', 'No')}
                 />
               ))}
             </div>

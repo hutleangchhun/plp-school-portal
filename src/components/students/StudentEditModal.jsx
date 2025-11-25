@@ -657,7 +657,7 @@ const StudentEditModal = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <PageLoader
-          message={t('loadingStudent', 'Loading student...')}
+          message={t('loadingStudents', 'Loading student...')}
           className="min-h-screen"
         />
       </div>
@@ -967,10 +967,10 @@ const StudentEditModal = () => {
 
         {/* Extra Learning Tool Section */}
         <div className="mt-6 pt-6 border-t border-gray-100">
-          <h4 className="text-sm font-semibold text-gray-900 mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
             {t('extraLearningTool', 'Extra Learning Tool')}
-          </h4>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          </h3>
+          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('learningPackage', 'កញ្ចប់សម្ភារៈអំណាន')}
@@ -993,9 +993,6 @@ const StudentEditModal = () => {
                 disabled={false}
                 className='w-full'
               />
-              <p className="mt-2 text-xs text-gray-600">
-                {t('currentValue', 'Current value')}: <span className="font-medium text-gray-900">{editForm.extraLearningTool['កញ្ចប់សម្ភារៈអំណាន'] || t('notSelected', 'Not selected')}</span>
-              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1019,9 +1016,6 @@ const StudentEditModal = () => {
                 disabled={false}
                 className='w-full'
               />
-              <p className="mt-2 text-xs text-gray-600">
-                {t('currentValue', 'Current value')}: <span className="font-medium text-gray-900">{editForm.extraLearningTool['គណិតវិទ្យាថ្នាក់ដំបូង'] || t('notSelected', 'Not selected')}</span>
-              </p>
             </div>
           </div>
         </div>

@@ -311,7 +311,10 @@ export const km = {
   appointed: 'តែងតាំង',
   burden: 'បន្ទុក',
   trainingInformation: 'ព័ត៌មានការបណ្ដុះបណ្ដាល',
-  
+  extraLearningTool: 'កញ្ចប់សម្ភារៈសម្រាប់ជួយសិស្ស',
+  selectOption: 'ជ្រើសរើស',
+  have: 'មាន',
+  notHave: 'មិនមាន',
 
 
 
