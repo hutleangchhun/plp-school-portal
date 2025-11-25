@@ -440,14 +440,14 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
         fatherFirstName: columnIndices.fatherFirstName >= 0 ? getValue(columnIndices.fatherFirstName) : '',
         fatherLastName: columnIndices.fatherLastName >= 0 ? getValue(columnIndices.fatherLastName) : '',
         fatherPhone: columnIndices.fatherPhone >= 0 ? getValue(columnIndices.fatherPhone) : '',
-        fatherGender: columnIndices.fatherGender >= 0 ? mapGender(getValue(columnIndices.fatherGender)) : '',
+        fatherGender: 'MALE',
         fatherOccupation: columnIndices.fatherOccupation >= 0 ? getValue(columnIndices.fatherOccupation) : '',
         fatherResidenceFullAddress: columnIndices.fatherResidenceFullAddress >= 0 ? getValue(columnIndices.fatherResidenceFullAddress) : '',
 
         motherFirstName: columnIndices.motherFirstName >= 0 ? getValue(columnIndices.motherFirstName) : '',
         motherLastName: columnIndices.motherLastName >= 0 ? getValue(columnIndices.motherLastName) : '',
         motherPhone: columnIndices.motherPhone >= 0 ? getValue(columnIndices.motherPhone) : '',
-        motherGender: columnIndices.motherGender >= 0 ? mapGender(getValue(columnIndices.motherGender)) : '',
+        motherGender: 'FEMALE',
         motherOccupation: columnIndices.motherOccupation >= 0 ? getValue(columnIndices.motherOccupation) : '',
         motherResidenceFullAddress: columnIndices.motherResidenceFullAddress >= 0 ? getValue(columnIndices.motherResidenceFullAddress) : '',
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { dashboardService } from '../../utils/api/services/dashboardService';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
@@ -7,15 +7,10 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Button } from '../ui/Button';
 import Dropdown from '../ui/Dropdown';
 import SidebarFilter from '../ui/SidebarFilter';
-import { RefreshCcw, SlidersHorizontal, Users, CheckCircle, AlertCircle } from 'lucide-react';
+import { RefreshCcw, SlidersHorizontal, TrendingUp } from 'lucide-react';
 import CustomTooltip from '../ui/TooltipChart';
 
-const COLORS = {
-  complete: '#10b981', // green-500
-  incomplete: '#ef4444', // red-500
-};
-
-const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersChange = null }) => {
+const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersChange = null }) => {
   const { t } = useLanguage();
   const { error, handleError, clearError, retry } = useErrorHandler();
   const [chartData, setChartData] = useState([]);
@@ -26,82 +21,64 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
     incomplete: 0,
     completionRate: 0
   });
-  const [userData, setUserData] = useState([]);
-  const [pagination, setPagination] = useState({});
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Applied filters that actually drive the query
   const [appliedRole, setAppliedRole] = useState(sharedFilters.selectedRole || '8');
   const [appliedSchool, setAppliedSchool] = useState(sharedFilters.selectedSchool || '');
-  const [appliedIncompleteOnly, setAppliedIncompleteOnly] = useState(false);
 
   // Pending filters edited in the sidebar (only applied when user clicks Apply)
   const [selectedRole, setSelectedRole] = useState(appliedRole);
   const [selectedSchool, setSelectedSchool] = useState(appliedSchool);
-  const [incompleteOnly, setIncompleteOnly] = useState(appliedIncompleteOnly);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageLimit] = useState(10);
+  const [dataType, setDataType] = useState('filled'); // 'filled' or 'missing'
 
-  // Fetch data completeness
+  // Fetch field completeness data
   useEffect(() => {
-    const fetchDataCompleteness = async () => {
+    const fetchFieldCompleteness = async () => {
       try {
         setLoading(true);
         clearError();
 
-        const params = {
-          page: currentPage,
-          limit: pageLimit
-        };
+        const params = {};
 
         if (appliedRole) params.roleId = parseInt(appliedRole, 10);
         if (appliedSchool) params.schoolId = parseInt(appliedSchool, 10);
-        if (appliedIncompleteOnly) params.incompleteOnly = true;
 
-        console.log('📊 Fetching data completeness with params:', params);
+        console.log('📊 Fetching field completeness with params:', params);
 
-        const response = await dashboardService.getDataCompleteness(params);
+        const response = await dashboardService.getDataCompletenessSummary(params);
 
-        console.log('📊 Data completeness response:', response);
+        console.log('📊 Field completeness response:', response);
 
         if (response.success) {
-          setUserData(response.data || []);
-          setPagination(response.pagination || {});
-
-          const summaryData = response.summary || {};
-          setSummary({
-            total: summaryData.total || 0,
-            complete: summaryData.complete || 0,
-            incomplete: summaryData.incomplete || 0,
-            completionRate: summaryData.completionRate || 0
+          // Set summary data
+          setSummary(response.summary || {
+            total: 0,
+            complete: 0,
+            incomplete: 0,
+            completionRate: 0
           });
 
-          // Transform data for pie chart
-          const chartDataArray = [
-            {
-              name: t('complete', 'Complete'),
-              value: summaryData.complete || 0,
-              percentage: summaryData.completionRate || 0
-            },
-            {
-              name: t('incomplete', 'Incomplete'),
-              value: summaryData.incomplete || 0,
-              percentage: 100 - (summaryData.completionRate || 0)
-            }
-          ];
+          // Transform field stats for bar chart
+          const fieldStats = (response.fieldStats || []).map(field => ({
+            name: field.fieldName,
+            filled: field.filled || 0,
+            missing: field.missing || 0,
+            fillRate: field.fillRate || 0
+          }));
 
-          setChartData(chartDataArray);
+          setChartData(fieldStats);
 
-          console.log('✅ Data completeness loaded:', summaryData);
+          console.log('✅ Field completeness loaded:', fieldStats);
         } else {
-          console.error('Failed to fetch data completeness:', response.error);
-          handleError(new Error(response.error || 'Failed to fetch data completeness'), {
+          console.error('Failed to fetch field completeness:', response.error);
+          handleError(new Error(response.error || 'Failed to fetch field completeness'), {
             toastMessage: t('errorFetchingData', 'Error fetching data'),
             setError: true
           });
         }
       } catch (error) {
-        console.error('❌ Error fetching data completeness:', error);
+        console.error('❌ Error fetching field completeness:', error);
         handleError(error, {
           toastMessage: t('errorFetchingData', 'Error fetching data'),
           setError: true
@@ -111,25 +88,24 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
       }
     };
 
-    fetchDataCompleteness();
-  }, [currentPage, appliedRole, appliedSchool, appliedIncompleteOnly, pageLimit, clearError, t, handleError]);
+    fetchFieldCompleteness();
+  }, [appliedRole, appliedSchool, clearError, t, handleError]);
 
   const handleRefresh = async () => {
-    setCurrentPage(1);
-    // The useEffect will trigger automatically when currentPage or applied filters change
+    // Trigger re-fetch by clearing error
+    clearError();
+    setLoading(true);
   };
 
   const handleClearFilters = () => {
     // Reset pending filters
     setSelectedRole('');
     setSelectedSchool('');
-    setIncompleteOnly(false);
 
     // Reset applied filters that actually drive the query
     setAppliedRole('');
     setAppliedSchool('');
-    setAppliedIncompleteOnly(false);
-    setCurrentPage(1);
+
     // Update shared filters if callback provided
     if (onFiltersChange) {
       onFiltersChange({
@@ -148,16 +124,10 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
     setSelectedSchool(value);
   };
 
-  const handleIncompleteOnlyChange = (checked) => {
-    setIncompleteOnly(checked);
-  };
-
-  // Apply filters: copy pending -> applied, update shared filters, and refresh data
+  // Apply filters: copy pending -> applied and update shared filters
   const handleApplyFilters = () => {
     setAppliedRole(selectedRole);
     setAppliedSchool(selectedSchool);
-    setAppliedIncompleteOnly(incompleteOnly);
-    setCurrentPage(1);
 
     if (onFiltersChange) {
       onFiltersChange({
@@ -167,7 +137,7 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
     }
   };
 
-  const hasFilters = !!(appliedRole || appliedSchool || appliedIncompleteOnly);
+  const hasFilters = !!(appliedRole || appliedSchool);
 
   if (loading) {
     return (
@@ -200,10 +170,11 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
       <SidebarFilter
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
-        title={t('dataCompletenessFilters', 'Data Completeness Filters')}
-        subtitle={t('dataCompletenessFiltersDesc', 'Filter users by role, school, and completion status')}
+        title={t('fieldCompletenessFilters', 'Field Completeness Filters')}
+        subtitle={t('fieldCompletenessFiltersDesc', 'Filter fields by role and school')}
         onApply={() => {
           handleApplyFilters();
+          handleRefresh();
           setIsFilterOpen(false);
         }}
         onClearFilters={handleClearFilters}
@@ -235,30 +206,15 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
             className='w-full'
           />
         </div>
-
-        {/* Show incomplete only toggle */}
-        <div className="space-y-2">
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={incompleteOnly}
-              onChange={(e) => handleIncompleteOnlyChange(e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-            />
-            <span className="ml-2 text-sm font-medium text-gray-700">
-              {t('incompleteOnly', 'Show incomplete only')}
-            </span>
-          </label>
-        </div>
       </SidebarFilter>
 
       <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-6">
         <div>
           <h3 className="text-lg font-bold text-gray-900">
-            {t('dataCompleteness', 'Data Completeness')}
+            {t('fieldCompleteness', 'Field Completeness')}
           </h3>
           <p className="text-sm text-gray-500">
-            {t('dataCompletenessDesc', 'Track user profile completion status')}
+            {t('fieldCompletenessDesc', 'Track completion rate for each profile field')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -279,44 +235,60 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
         </div>
       </div>
 
-      <div className="flex flex-col justify-center space-y-4">
-        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-          <div className="p-3 bg-blue-100 rounded-lg">
-            <Users className="h-6 w-6 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{summary.total}</p>
-            <p className="text-sm text-gray-500">{t('totalUsers', 'Total Users')}</p>
-          </div>
-        </div>
+      {/* Data Type Toggle */}
+      <div className="mb-6 flex gap-2">
+        <Button
+          onClick={() => setDataType('filled')}
+          variant={dataType === 'filled' ? 'primary' : 'outline'}
+          size="sm"
+        >
+          {t('filled', 'Filled')}
+        </Button>
+        <Button
+          onClick={() => setDataType('missing')}
+          variant={dataType === 'missing' ? 'primary' : 'outline'}
+          size="sm"
+        >
+          {t('missing', 'Missing')}
+        </Button>
+      </div>
 
-        <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
-          <div className="p-3 bg-green-100 rounded-lg">
-            <CheckCircle className="h-6 w-6 text-green-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-green-600">{summary.complete}</p>
-            <p className="text-sm text-gray-500">{t('completeProfiles', 'Complete Profiles')}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg">
-          <div className="p-3 bg-red-100 rounded-lg">
-            <AlertCircle className="h-6 w-6 text-red-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-red-600">{summary.incomplete}</p>
-            <p className="text-sm text-gray-500">{t('incompleteProfiles', 'Incomplete Profiles')}</p>
-          </div>
-        </div>
-
-        <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-          <p className="text-sm text-gray-600 mb-1">{t('completionRate', 'Completion Rate')}</p>
-          <p className="text-3xl font-bold text-blue-600">{summary.completionRate.toFixed(1)}%</p>
-        </div>
+      {/* Bar Chart */}
+      <div className="h-[600px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chartData}
+            margin={{
+              top: 20,
+              right: 30,
+              left: 20,
+              bottom: 100,
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="name"
+              angle={-45}
+              textAnchor="end"
+              height={120}
+              tick={{ fontSize: 11 }}
+            />
+            <YAxis />
+            <Tooltip
+              content={<CustomTooltip />}
+              formatter={(value) => value}
+            />
+            <Bar
+              dataKey={dataType}
+              name={dataType === 'filled' ? t('filled', 'Filled') : t('missing', 'Missing')}
+              fill={dataType === 'filled' ? '#10b981' : '#ef4444'}
+              radius={[4, 4, 0, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
 };
 
-export default DataCompletenessChart;
+export default FieldCompletenessChart;

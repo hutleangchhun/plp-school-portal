@@ -5,6 +5,7 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import StatsCard from '../../components/ui/StatsCard';
 import SchoolDistributionChart from '../../components/ui/SchoolDistributionChart';
 import DataCompletenessChart from '../../components/ui/DataCompletenessChart';
+import FieldCompletenessChart from '../../components/ui/FieldCompletenessChart';
 import { dashboardService } from '../../utils/api/services/dashboardService';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
@@ -23,6 +24,12 @@ const AdminDashboard = ({ user: initialUser }) => {
     totalStudents: 0,
     totalTeachers: 0,
     totalClasses: 0
+  });
+
+  // Shared filter state for both completeness charts
+  const [sharedFilters, setSharedFilters] = useState({
+    selectedRole: '8',
+    selectedSchool: ''
   });
 
   // Fetch system-wide statistics
@@ -193,7 +200,10 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           {/* Data Completeness Chart */}
           <div className="">
-            <DataCompletenessChart />
+            <DataCompletenessChart
+              sharedFilters={sharedFilters}
+              onFiltersChange={setSharedFilters}
+            />
           </div>
         </FadeInSection>
       </div>

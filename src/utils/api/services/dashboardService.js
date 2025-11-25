@@ -390,5 +390,49 @@ export const dashboardService = {
         summary: {}
       };
     }
+  },
+
+  /**
+   * Get field completion statistics for tracking which profile fields are incomplete
+   * @param {Object} params - Query parameters
+   * @param {number} [params.roleId] - Filter by role ID
+   * @param {number} [params.schoolId] - Filter by school ID
+   * @returns {Promise<Object>} Response with field statistics
+   */
+  async getDataCompletenessSummary(params = {}) {
+    try {
+      console.log('📊 Fetching data completeness summary...', params);
+
+      const queryParams = { ...params };
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(`${ENDPOINTS.USERS.BASE}/dashboard/data-completeness-summary`, {
+          params: queryParams
+        })
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch data completeness summary');
+      }
+
+      // handleApiResponse wraps the API response in { success: true, data: response }
+      // The API response has structure: { summary: {...}, fieldStats: [...] }
+      const apiData = response.data || {};
+
+      return {
+        success: true,
+        summary: apiData.summary || {},
+        fieldStats: apiData.fieldStats || []
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getDataCompletenessSummary:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get data completeness summary',
+        summary: {},
+        fieldStats: []
+      };
+    }
   }
 };

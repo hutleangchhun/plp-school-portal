@@ -51,6 +51,15 @@ export const km = {
   userDetails: 'ព័ត៌មានលម្អិតអ្នកប្រើប្រាស់',
   incompleteOnly: 'បង្ហាញតែមិនពេញលេញ',
   allRoles: 'តួនាទីទាំងអស់',
+  fieldCompleteness: 'ភាពពេញលេញនៃវាល',
+  fieldCompletenessDesc: 'តាមដានអត្រាពេញលេញសម្រាប់វាលប្រវត្តិរូបនីមួយៗ',
+  fieldCompletenessFilters: 'តម្រងភាពពេញលេញនៃវាល',
+  fieldCompletenessFiltersDesc: 'ត្រងវាលដោយតួនាទីនិងសាលារៀន',
+  fieldName: 'ឈ្មោះវាល',
+  filled: 'បានបំពេញ',
+  missing: 'បាត់ខ្លួន',
+  fillRate: 'អត្រាបំពេញ',
+  summaryInfo: 'ព័ត៌មានសង្ខេប',
 
   // Navigation
   dashboard: 'ផ្ទាំងគ្រប់គ្រង',

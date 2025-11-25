@@ -62,7 +62,7 @@ export default function BulkStudentImport() {
       fatherLastName: '',
       fatherPhone: '',
       fatherDateOfBirth: '',
-      fatherGender: '',
+      fatherGender: 'MALE',
       fatherOccupation: '',
       fatherResidenceFullAddress: '',
 
@@ -70,7 +70,7 @@ export default function BulkStudentImport() {
       motherLastName: '',
       motherPhone: '',
       motherDateOfBirth: '',
-      motherGender: '',
+      motherGender: 'FEMALE',
       motherOccupation: '',
       motherResidenceFullAddress: '',
 
@@ -150,8 +150,8 @@ export default function BulkStudentImport() {
       return formatInvalid || notAvailable;
     }
 
-    // Gender validation
-    if (columnKey === 'gender' || columnKey === 'fatherGender' || columnKey === 'motherGender') {
+    // Gender validation (only for student gender - parent genders are auto-set)
+    if (columnKey === 'gender') {
       return !['MALE', 'FEMALE', 'ប្រុស', 'ស្រី'].includes(value.toUpperCase());
     }
 
@@ -179,7 +179,6 @@ export default function BulkStudentImport() {
     { key: 'fatherFirstName', header: 'នាមឪពុក', width: 'min-w-[250px]' },
     { key: 'fatherLastName', header: 'គោត្តនាមឪពុក', width: 'min-w-[250px]' },
     { key: 'fatherPhone', header: 'ទូរស័ព្ទឪពុក', width: 'min-w-[250px]' },
-    { key: 'fatherGender', header: 'ភេទឪពុក', width: 'min-w-[200px]', type: 'select', options: genderOptions },
     { key: 'fatherOccupation', header: 'មុខរបរ​ឪពុក', width: 'min-w-[250px]' },
     { key: 'fatherResidenceFullAddress', header: 'អាសយដ្ឋានពេញឪពុក', width: 'min-w-[320px]' },
 
@@ -187,7 +186,6 @@ export default function BulkStudentImport() {
     { key: 'motherFirstName', header: 'នាមម្តាយ', width: 'min-w-[250px]' },
     { key: 'motherLastName', header: 'គោត្តនាមម្តាយ', width: 'min-w-[250px]' },
     { key: 'motherPhone', header: 'ទូរស័ព្ទម្តាយ', width: 'min-w-[250px]' },
-    { key: 'motherGender', header: 'ភេទម្តាយ', width: 'min-w-[200px]', type: 'select', options: genderOptions },
     { key: 'motherOccupation', header: 'មុខរបរ​ម្តាយ', width: 'min-w-[250px]' },
     { key: 'motherResidenceFullAddress', header: 'អាសយដ្ឋានពេញម្តាយ', width: 'min-w-[320px]' },
 
@@ -726,7 +724,7 @@ export default function BulkStudentImport() {
       fatherLastName: '',
       fatherPhone: '',
       fatherDateOfBirth: '',
-      fatherGender: '',
+      fatherGender: 'MALE',
       fatherOccupation: '',
       fatherResidenceFullAddress: '',
 
@@ -734,7 +732,7 @@ export default function BulkStudentImport() {
       motherLastName: '',
       motherPhone: '',
       motherDateOfBirth: '',
-      motherGender: '',
+      motherGender: 'FEMALE',
       motherOccupation: '',
       motherResidenceFullAddress: '',
 
@@ -772,7 +770,7 @@ export default function BulkStudentImport() {
           fatherLastName: '',
           fatherPhone: '',
           fatherDateOfBirth: '',
-          fatherGender: '',
+          fatherGender: 'MALE',
           fatherOccupation: '',
           fatherResidenceFullAddress: '',
 
@@ -780,7 +778,7 @@ export default function BulkStudentImport() {
           motherLastName: '',
           motherPhone: '',
           motherDateOfBirth: '',
-          motherGender: '',
+          motherGender: 'FEMALE',
           motherOccupation: '',
           motherResidenceFullAddress: '',
 
@@ -956,7 +954,7 @@ export default function BulkStudentImport() {
             first_name: student.fatherFirstName.trim(),
             last_name: student.fatherLastName.trim() || '',
             phone: student.fatherPhone.trim() || undefined,
-            gender: student.fatherGender ? student.fatherGender.toUpperCase() : undefined,
+            gender: 'MALE',
             occupation: student.fatherOccupation.trim() || undefined,
             residence: student.fatherResidenceFullAddress && student.fatherResidenceFullAddress.trim() ? {
               full_address: student.fatherResidenceFullAddress.trim()
@@ -971,7 +969,7 @@ export default function BulkStudentImport() {
             first_name: student.motherFirstName.trim(),
             last_name: student.motherLastName.trim() || '',
             phone: student.motherPhone.trim() || undefined,
-            gender: student.motherGender ? student.motherGender.toUpperCase() : undefined,
+            gender: 'FEMALE',
             occupation: student.motherOccupation.trim() || undefined,
             residence: student.motherResidenceFullAddress && student.motherResidenceFullAddress.trim() ? {
               full_address: student.motherResidenceFullAddress.trim()
@@ -1105,7 +1103,7 @@ export default function BulkStudentImport() {
           fatherFirstName: '',
           fatherLastName: '',
           fatherPhone: '',
-          fatherGender: '',
+          fatherGender: 'MALE',
           fatherOccupation: '',
           fatherResidenceFullAddress: '',
 
@@ -1113,7 +1111,7 @@ export default function BulkStudentImport() {
           motherLastName: '',
           motherPhone: '',
           motherDateOfBirth: '',
-          motherGender: '',
+          motherGender: 'FEMALE',
           motherOccupation: '',
           motherResidenceFullAddress: '',
 
