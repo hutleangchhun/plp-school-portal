@@ -272,6 +272,34 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
           </div>
         )}
 
+        {/* Extra Learning Tool */}
+        {student.student?.extraLearningTool && Object.keys(student.student.extraLearningTool).length > 0 && (
+          <div className="border-t pt-4">
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('extraLearningTool', 'Extra Learning Tool')}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              {student.student.extraLearningTool['កញ្ចប់សម្ភារៈអំណាន'] && (
+                <InfoItem
+                  label={t('learningPackage', 'កញ្ចប់សម្ភារៈអំណាន')}
+                  value={student.student.extraLearningTool['កញ្ចប់សម្ភារៈអំណាន'] || getEmptyDisplay()}
+                />
+              )}
+              {student.student.extraLearningTool['គណិតវិទ្យាថ្នាក់ដំបូង'] && (
+                <InfoItem
+                  label={t('mathGrade1', 'គណិតវិទ្យាថ្នាក់ដំបូង')}
+                  value={student.student.extraLearningTool['គណិតវិទ្យាថ្នាក់ដំបូង'] || getEmptyDisplay()}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Selected Books */}
         {student.bookIds && Array.isArray(student.bookIds) && student.bookIds.length > 0 && (
           <div className="border-t pt-4">

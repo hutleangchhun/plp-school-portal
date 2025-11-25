@@ -75,6 +75,10 @@ const StudentEditModal = () => {
     studentNumber: '',
     poorCardNumber: '',
     bookIds: [],
+    extraLearningTool: {
+      'កញ្ចប់សម្ភារៈអំណាន': '',
+      'គណិតវិទ្យាថ្នាក់ដំបូង': ''
+    },
     residence: {
       provinceId: '',
       districtId: '',
@@ -266,6 +270,10 @@ const StudentEditModal = () => {
         studentNumber: (studentObj.studentNumber || fullData.studentNumber || ''),
         poorCardNumber: (studentObj.poorCardNumber || fullData.poorCardNumber || ''),
         bookIds: Array.isArray(fullData.bookIds) ? fullData.bookIds : [],
+        extraLearningTool: (studentObj.extraLearningTool && typeof studentObj.extraLearningTool === 'object') ? studentObj.extraLearningTool : (fullData.extraLearningTool && typeof fullData.extraLearningTool === 'object') ? fullData.extraLearningTool : {
+          'កញ្ចប់សម្ភារៈអំណាន': '',
+          'គណិតវិទ្យាថ្នាក់ដំបូង': ''
+        },
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
           districtId: fullData.residence?.districtId || fullData.district_id || '',
@@ -337,6 +345,10 @@ const StudentEditModal = () => {
       studentNumber: '',
       poorCardNumber: '',
       bookIds: [],
+      extraLearningTool: {
+        'កញ្ចប់សម្ភារៈអំណាន': '',
+        'គណិតវិទ្យាថ្នាក់ដំបូង': ''
+      },
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
       placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
     });
@@ -519,6 +531,8 @@ const StudentEditModal = () => {
         poorCardNumber: editForm.poorCardNumber?.trim() || undefined,
         // Always include bookIds: array when there are items, null when none
         bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
+        // Include extraLearningTool with values
+        extraLearningTool: editForm.extraLearningTool || undefined,
         residence: {
           provinceId: selectedResidenceProvince ? Number(selectedResidenceProvince) : (editForm.residence.provinceId ? Number(editForm.residence.provinceId) : undefined),
           districtId: selectedResidenceDistrict ? Number(selectedResidenceDistrict) : (editForm.residence.districtId ? Number(editForm.residence.districtId) : undefined),
@@ -948,6 +962,67 @@ const StudentEditModal = () => {
                 {t('isKindergarten', 'Is Kindergarten')}
               </span>
             </label>
+          </div>
+        </div>
+
+        {/* Extra Learning Tool Section */}
+        <div className="mt-6 pt-6 border-t border-gray-100">
+          <h4 className="text-sm font-semibold text-gray-900 mb-4">
+            {t('extraLearningTool', 'Extra Learning Tool')}
+          </h4>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('learningPackage', 'កញ្ចប់សម្ភារៈអំណាន')}
+              </label>
+              <Dropdown
+                options={[
+                  { value: '', label: t('selectOption', 'Select option') },
+                  { value: 'មាតាបិតា​ទិញឱ្យ', label: 'មាតាបិតា​ទិញឱ្យ' },
+                  { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
+                ]}
+                value={editForm.extraLearningTool['កញ្ចប់សម្ភារៈអំណាន'] || ''}
+                onValueChange={(value) =>
+                  handleFormChange('extraLearningTool', {
+                    ...editForm.extraLearningTool,
+                    'កញ្ចប់សម្ភារៈអំណាន': value
+                  })
+                }
+                placeholder={t('selectOption', 'Select option')}
+                contentClassName="max-h-[200px] overflow-y-auto"
+                disabled={false}
+                className='w-full'
+              />
+              <p className="mt-2 text-xs text-gray-600">
+                {t('currentValue', 'Current value')}: <span className="font-medium text-gray-900">{editForm.extraLearningTool['កញ្ចប់សម្ភារៈអំណាន'] || t('notSelected', 'Not selected')}</span>
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('mathGrade1', 'គណិតវិទ្យាថ្នាក់ដំបូង')}
+              </label>
+              <Dropdown
+                options={[
+                  { value: '', label: t('selectOption', 'Select option') },
+                  { value: 'មាតាបិតា​ទិញឱ្យ', label: 'មាតាបិតា​ទិញឱ្យ' },
+                  { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
+                ]}
+                value={editForm.extraLearningTool['គណិតវិទ្យាថ្នាក់ដំបូង'] || ''}
+                onValueChange={(value) =>
+                  handleFormChange('extraLearningTool', {
+                    ...editForm.extraLearningTool,
+                    'គណិតវិទ្យាថ្នាក់ដំបូង': value
+                  })
+                }
+                placeholder={t('selectOption', 'Select option')}
+                contentClassName="max-h-[200px] overflow-y-auto"
+                disabled={false}
+                className='w-full'
+              />
+              <p className="mt-2 text-xs text-gray-600">
+                {t('currentValue', 'Current value')}: <span className="font-medium text-gray-900">{editForm.extraLearningTool['គណិតវិទ្យាថ្នាក់ដំបូង'] || t('notSelected', 'Not selected')}</span>
+              </p>
+            </div>
           </div>
         </div>
       </div>

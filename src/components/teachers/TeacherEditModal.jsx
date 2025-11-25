@@ -80,6 +80,10 @@ const TeacherEditModal = () => {
     burden: false,
     hire_date: null,
     bookIds: [],
+    teacherExtraLearningTool: {
+      'កញ្ចប់សម្ភារៈអំណាន': false,
+      'គណិតវិទ្យាថ្នាក់ដំបូង': false
+    },
     residence: {
       provinceId: '',
       districtId: '',
@@ -290,6 +294,13 @@ const TeacherEditModal = () => {
       const familyData = teacherData.teacher_family || fullData.teacher_family || {};
       const childrenArray = Array.isArray(familyData.children) ? familyData.children : [];
 
+      // Initialize extraLearningTool from nested teacher object
+      const extraLearningToolData = teacherData.extraLearningTool || {};
+      const teacherExtraLearningTool = {
+        'កញ្ចប់សម្ភារៈអំណាន': extraLearningToolData['កញ្ចប់សម្ភារៈអំណាន'] === true,
+        'គណិតវិទ្យាថ្នាក់ដំបូង': extraLearningToolData['គណិតវិទ្យាថ្នាក់ដំបូង'] === true
+      };
+
       setEditForm({
         firstName: fullData.firstName || fullData.first_name || '',
         lastName: fullData.lastName || fullData.last_name || '',
@@ -320,6 +331,7 @@ const TeacherEditModal = () => {
         burden: typeof teacherData.burden === 'boolean' ? teacherData.burden : false,
         hire_date: teacherData.hire_date ? new Date(teacherData.hire_date) : null,
         bookIds: Array.isArray(fullData.bookIds) ? fullData.bookIds : [],
+        teacherExtraLearningTool,
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
           districtId: fullData.residence?.districtId || fullData.district_id || '',
@@ -548,6 +560,7 @@ const TeacherEditModal = () => {
           hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
           // Always include bookIds: array when there are items, null when none
           bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
+          teacherExtraLearningTool: editForm.teacherExtraLearningTool || undefined,
           schoolId: schoolId || undefined,
           residence: {
             provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
@@ -564,10 +577,10 @@ const TeacherEditModal = () => {
           teacher_family: buildTeacherFamilyPayload()
         };
 
-        // Remove undefined/empty values - but keep bookIds even when null
+        // Remove undefined/empty values - but keep bookIds and teacherExtraLearningTool even when null
         Object.keys(createPayload).forEach(k => {
-          // Special case: keep bookIds even when null so backend sees explicit null
-          if (k === 'bookIds') {
+          // Special cases: keep bookIds and teacherExtraLearningTool even when null/false so backend sees explicit values
+          if (k === 'bookIds' || k === 'teacherExtraLearningTool') {
             return;
           }
           if (createPayload[k] === undefined || createPayload[k] === null || createPayload[k] === '') delete createPayload[k];
@@ -630,6 +643,7 @@ const TeacherEditModal = () => {
           hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
           // Always include bookIds: array when there are items, null when none
           bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
+          teacherExtraLearningTool: editForm.teacherExtraLearningTool || undefined,
           schoolId: schoolId || undefined,
           residence: {
             provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
@@ -651,10 +665,10 @@ const TeacherEditModal = () => {
           updatePayload.newPassword = editForm.newPassword.trim();
         }
 
-        // Remove undefined/empty values - but keep bookIds even when null
+        // Remove undefined/empty values - but keep bookIds and teacherExtraLearningTool even when null
         Object.keys(updatePayload).forEach(k => {
-          // Special case: keep bookIds even when null so backend sees explicit null
-          if (k === 'bookIds') {
+          // Special cases: keep bookIds and teacherExtraLearningTool even when null/false so backend sees explicit values
+          if (k === 'bookIds' || k === 'teacherExtraLearningTool') {
             return;
           }
           if (updatePayload[k] === undefined || updatePayload[k] === null || updatePayload[k] === '') delete updatePayload[k];
@@ -1189,6 +1203,38 @@ const TeacherEditModal = () => {
                 className='w-full'
               />
             </div>
+          </div>
+        </div>
+
+        {/* Extra Learning Tool Section */}
+        <div className="mt-8 border-t border-gray-200 pt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('extraLearningTool', 'Extra Learning Tool')}</h3>
+
+          <div className="space-y-4">
+            {Object.entries(editForm.teacherExtraLearningTool).map(([key, value]) => (
+              <div key={key}>
+                <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={value === true}
+                    onChange={(e) => {
+                      setEditForm(prev => ({
+                        ...prev,
+                        teacherExtraLearningTool: {
+                          ...prev.teacherExtraLearningTool,
+                          [key]: e.target.checked
+                        }
+                      }));
+                    }}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">{key}</span>
+                </label>
+                <p className="mt-1 text-xs text-gray-600 ml-8">
+                  {t('currentStatus', 'Current status')}: <span className="font-medium text-gray-900">{value === true ? t('yes', 'Yes') : t('no', 'No')}</span>
+                </p>
+              </div>
+            ))}
           </div>
         </div>
 

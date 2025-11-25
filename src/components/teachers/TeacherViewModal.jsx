@@ -473,6 +473,29 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
           </div>
         </div>
 
+        {/* Extra Learning Tool */}
+        {(teacherData.extraLearningTool && Object.keys(teacherData.extraLearningTool).length > 0) && (
+          <div className="border-t pt-4">
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('extraLearningTool', 'Extra Learning Tool')}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              {Object.entries(teacherData.extraLearningTool).map(([key, value]) => (
+                <InfoItem
+                  key={key}
+                  label={key}
+                  value={value === true ? t('yes', 'Yes') : t('no', 'No')}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Selected Books */}
         {displayTeacher.bookIds && Array.isArray(displayTeacher.bookIds) && displayTeacher.bookIds.length > 0 && (
           <div className="border-t pt-4">
