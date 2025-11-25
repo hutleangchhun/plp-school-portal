@@ -494,7 +494,9 @@ export default function TeacherStudentsManagement({ user }) {
             onClearFilters={() => {
               handleClassFilterChange('all');
             }}
-            onApply={() => {}}
+            onApply={() => {
+              setShowMobileFilters(false);
+            }}
             children={
               <>
                 {/* Class Filter */}

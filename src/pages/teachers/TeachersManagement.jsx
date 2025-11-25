@@ -1021,7 +1021,9 @@ export default function TeachersManagement() {
             setSelectedGradeLevel('');
             setPagination(prev => ({ ...prev, page: 1 }));
           }}
-          onApply={() => {}}
+          onApply={() => {
+            setShowMobileFilters(false);
+          }}
           children={
             <>
               {/* Grade Level Filter */}

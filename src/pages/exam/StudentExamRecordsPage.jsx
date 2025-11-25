@@ -690,7 +690,9 @@ export default function StudentExamRecordsPage({ user }) {
         subtitle={t('filterByActionBelow', 'Filter By Action Below')}
         hasFilters={hasActiveFilters}
         onClearFilters={handleClearFilters}
-        onApply={() => { }}
+        onApply={() => {
+          setSidebarOpen(false);
+        }}
         children={sidebarFilterContent}
       />
 

@@ -570,7 +570,9 @@ const StudentSelection = () => {
               classId: 'any'
             });
           }}
-          onApply={() => { }}
+          onApply={() => {
+            setShowFilterSidebar(false);
+          }}
           children={
             <>
               {/* Class Filter */}
