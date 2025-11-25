@@ -8,9 +8,11 @@ import { Button } from '../ui/Button';
 import { formatDateKhmer, genderToKhmer, calculateExperience } from '../../utils/formatters';
 import { userService } from '../../utils/api/services/userService';
 import salaryTypeService from '../../utils/api/services/salaryTypeService';
+import { bookService } from '../../utils/api/services/bookService';
 import { getGradeLabel } from '../../constants/grades';
 import { useState, useEffect } from 'react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import BookCard from '../books/BookCard';
 
 /**
  * TeacherViewModal - Read-only modal to display teacher details
@@ -21,6 +23,8 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
   const [fullTeacherData, setFullTeacherData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [salaryTypeName, setSalaryTypeName] = useState(null);
+  const [books, setBooks] = useState([]);
+  const [loadingBooks, setLoadingBooks] = useState(false);
 
   // Fetch full teacher data when modal opens
   useEffect(() => {
@@ -102,6 +106,45 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
       loadSalaryType();
     }
   }, [isOpen, fullTeacherData, teacher]);
+
+  // Fetch books by IDs when modal opens and teacher has bookIds
+  useEffect(() => {
+    const src = fullTeacherData || teacher;
+    console.log('TeacherViewModal - teacher object:', src);
+    console.log('TeacherViewModal - bookIds:', src?.bookIds);
+    if (isOpen && src?.bookIds && Array.isArray(src.bookIds) && src.bookIds.length > 0) {
+      console.log('Fetching books for IDs:', src.bookIds);
+      fetchBooksByIds(src.bookIds);
+    }
+  }, [isOpen, fullTeacherData, teacher?.bookIds]);
+
+  const fetchBooksByIds = async (bookIds) => {
+    setLoadingBooks(true);
+    try {
+      // Fetch books by grade level to get all available books
+      // Then filter by the bookIds we need
+      const src = fullTeacherData || teacher;
+      const tData = src?.teacher || src;
+      const gradeLevel = tData?.gradeLevel || '1';
+      console.log('Fetching books for grade level:', gradeLevel);
+      const response = await bookService.getBooksByGradeLevel(gradeLevel, 1, 100);
+      console.log('Books API response:', response);
+
+      if (response.success && response.data) {
+        // Filter books to only include those in bookIds array
+        const filteredBooks = response.data.filter(book => bookIds.includes(book.id));
+        console.log('Filtered books:', filteredBooks);
+        setBooks(filteredBooks);
+      } else {
+        console.error('Books API returned no data:', response);
+      }
+    } catch (error) {
+      console.error('Error fetching books:', error);
+      setBooks([]);
+    } finally {
+      setLoadingBooks(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -415,6 +458,43 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             />
           </div>
         </div>
+
+        {/* Selected Books */}
+        {displayTeacher.bookIds && Array.isArray(displayTeacher.bookIds) && displayTeacher.bookIds.length > 0 && (
+          <div className="border-t pt-4">
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('selectedBooks', 'Selected Books')}
+              </div>
+            </div>
+            {loadingBooks ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-sm text-gray-500">{t('loading', 'Loading...')}</div>
+              </div>
+            ) : books.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4">
+                {books.map((book) => (
+                  <BookCard
+                    key={book.id}
+                    book={book}
+                    t={t}
+                    getEmptyDisplay={getEmptyDisplay}
+                    layout="horizontal"
+                    imageSize="sm"
+                    showCategory={true}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+                {t('noBooks', 'No books found')}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Family Information */}
         {(familyData && (familyData.living_status || familyData.spouse_info || familyData.number_of_children || (Array.isArray(familyData.children) && familyData.children.length > 0))) && (

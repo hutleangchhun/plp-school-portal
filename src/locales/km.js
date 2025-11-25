@@ -263,7 +263,7 @@ export const km = {
   category: 'ប្រភេទសៀវភៅ',
   done: 'ជ្រើសរើស',
   bookSelected: 'សៀវភៅបានជ្រើសរើស',
-  selectedBooks: 'សៀវភៅសិក្សាសិស្សដែលបានជ្រើសរើស',
+  selectedBooks: 'សៀវភៅសិក្សាដែលបានជ្រើសរើស',
   poorCardNumber: 'បណ្ណសមធម៌',
   healthAndBmiInformation: 'ព័ត៌មានសុខភាព និង BMI',
 
