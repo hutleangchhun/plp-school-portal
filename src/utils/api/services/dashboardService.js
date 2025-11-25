@@ -337,5 +337,58 @@ export const dashboardService = {
         }
       };
     }
+  },
+
+  /**
+   * Get user data completeness for tracking profile completion
+   * @param {Object} params - Query parameters
+   * @param {number} [params.page=1] - Page number
+   * @param {number} [params.limit=30] - Items per page
+   * @param {number} [params.roleId] - Filter by role ID
+   * @param {number} [params.schoolId] - Filter by school ID
+   * @param {boolean} [params.incompleteOnly] - Show only incomplete profiles
+   * @returns {Promise<Object>} Response with data completeness information
+   */
+  async getDataCompleteness(params = {}) {
+    try {
+      console.log('📊 Fetching data completeness...', params);
+
+      const queryParams = {
+        page: params.page || 1,
+        limit: params.limit || 30,
+        ...params
+      };
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(`${ENDPOINTS.USERS.BASE}/dashboard/data-completeness`, {
+          params: queryParams
+        })
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch data completeness');
+      }
+
+      // handleApiResponse wraps the API response in { success: true, data: response }
+      // The API response has structure: { data: [...], pagination: {...}, summary: {...} }
+      const apiData = response.data || {};
+
+      return {
+        success: true,
+        data: apiData.data || [],
+        pagination: apiData.pagination || {},
+        summary: apiData.summary || {}
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getDataCompleteness:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get data completeness',
+        data: [],
+        pagination: {},
+        summary: {}
+      };
+    }
   }
 };

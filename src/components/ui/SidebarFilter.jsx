@@ -111,7 +111,6 @@ export default function SidebarFilter({
           <Button
             onClick={() => {
               if (onApply) onApply();
-              onClose();
             }}
             variant="primary"
             size="sm"

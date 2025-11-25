@@ -4,6 +4,7 @@ import { useLoading } from '../../contexts/LoadingContext';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import StatsCard from '../../components/ui/StatsCard';
 import SchoolDistributionChart from '../../components/ui/SchoolDistributionChart';
+import DataCompletenessChart from '../../components/ui/DataCompletenessChart';
 import { dashboardService } from '../../utils/api/services/dashboardService';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
@@ -188,6 +189,11 @@ const AdminDashboard = ({ user: initialUser }) => {
           {/* School Distribution Chart */}
           <div className="">
             <SchoolDistributionChart />
+          </div>
+
+          {/* Data Completeness Chart */}
+          <div className="">
+            <DataCompletenessChart />
           </div>
         </FadeInSection>
       </div>

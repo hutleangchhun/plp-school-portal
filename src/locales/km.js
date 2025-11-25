@@ -34,6 +34,23 @@ export const km = {
 
   //chart
   classStudentCounts: 'ចំនួនសិស្សតាមថ្នាក់និមួយៗ',
+  dataCompleteness: 'ភាពពេញលេញនៃទិន្នន័យ',
+  dataCompletenessDesc: 'តាមដានស្ថានភាពពេញលេញនៃព័ត៌មានអ្នកប្រើប្រាស់',
+  dataCompletenessFilters: 'តម្រងភាពពេញលេញទិន្នន័យ',
+  dataCompletenessFiltersDesc: 'ត្រងអ្នកប្រើប្រាស់តាមតួនាទី សាលា និងស្ថានភាពពេញលេញ',
+  complete: 'ពេញលេញ',
+  incomplete: 'មិនពេញលេញ',
+  completeProfiles: 'ព័ត៌មានពេញលេញ',
+  incompleteProfiles: 'ព័ត៌មានមិនពេញលេញ',
+  completionRate: 'អត្រាពេញលេញ',
+  completionPercentage: 'ភាគរយពេញលេញ',
+  missingFields: 'វាលខ្វះខាត',
+  allComplete: 'ពេញលេញទាំងអស់',
+  fields: 'វាល',
+  totalUsers: 'អ្នកប្រើប្រាស់សរុប',
+  userDetails: 'ព័ត៌មានលម្អិតអ្នកប្រើប្រាស់',
+  incompleteOnly: 'បង្ហាញតែមិនពេញលេញ',
+  allRoles: 'តួនាទីទាំងអស់',
 
   // Navigation
   dashboard: 'ផ្ទាំងគ្រប់គ្រង',
@@ -508,6 +525,7 @@ export const km = {
   of: 'នៃ',
   records: 'កំណត់ត្រា',
   page: 'ទំព័រ',
+  pages: 'ទំព័រ',
   previous: 'ផ្នែកមុន',
   next: 'ផ្នែកបន្ទាប់',
   close: 'បិទ',
