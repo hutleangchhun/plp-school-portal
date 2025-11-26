@@ -97,7 +97,7 @@ const SelectedBooksDisplay = ({
         </div>
       ) : books.length > 0 ? (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-8 gap-3">
             {displayedBooks.map((book) => {
               // Get book cover URL from filename using helper function
               const bookCoverUrl = getBookCoverUrl(book?.coverBook);
