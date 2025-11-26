@@ -174,6 +174,15 @@ const ENDPOINTS = {
   BOOKS: {
     BASE: '/books',
     BY_GRADE_LEVEL: (gradeLevel, page = 1, limit = 10) => `/books?gradeLevel=${gradeLevel}&page=${page}&limit=${limit}`,
+    BY_FILTERS: (bookCategoryId = null, gradeLevel = null, subjectId = null, page = 1, limit = 10) => {
+      const params = new URLSearchParams();
+      if (bookCategoryId) params.append('bookCategoryId', bookCategoryId);
+      if (gradeLevel) params.append('gradeLevel', gradeLevel);
+      if (subjectId) params.append('subjectId', subjectId);
+      params.append('page', page);
+      params.append('limit', limit);
+      return `/books?${params.toString()}`;
+    },
   },
   SALARY_TYPES: {
     BASE: '/salary-types',

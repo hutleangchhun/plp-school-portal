@@ -113,28 +113,18 @@ export const bookService = {
   },
 
   /**
-   * Get books with combined filters (category and/or grade level)
+   * Get books with combined filters (category, grade level, and/or subject)
    * @param {number} bookCategoryId - Book category ID (optional)
    * @param {number} gradeLevel - Grade level (optional)
+   * @param {number} subjectId - Subject ID (optional)
    * @param {number} page - Page number (default: 1)
    * @param {number} limit - Items per page (default: 10)
    * @returns {Promise<Object>} Books data with pagination info
    */
-  getBooks: async (bookCategoryId = null, gradeLevel = null, page = 1, limit = 10) => {
+  getBooks: async (bookCategoryId = null, gradeLevel = null, subjectId = null, page = 1, limit = 10) => {
     try {
-      // Build query string with optional filters
-      const params = new URLSearchParams();
-      if (bookCategoryId) {
-        params.append('bookCategoryId', bookCategoryId);
-      }
-      if (gradeLevel) {
-        params.append('gradeLevel', gradeLevel);
-      }
-      params.append('page', page);
-      params.append('limit', limit);
-
-      const queryString = params.toString();
-      const endpoint = queryString ? `books?${queryString}` : 'books';
+      // Use the BY_FILTERS endpoint from config
+      const endpoint = ENDPOINTS.BOOKS.BY_FILTERS(bookCategoryId, gradeLevel, subjectId, page, limit);
 
       const response = await handleApiResponse(() =>
         apiClient_.get(endpoint)

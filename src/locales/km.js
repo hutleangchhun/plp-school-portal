@@ -315,6 +315,8 @@ export const km = {
   selectOption: 'ជ្រើសរើស',
   have: 'មាន',
   notHave: 'មិនមាន',
+  filterByCategory: 'ជ្រើសរើសប្រភេទសៀវភៅ',
+  allCategories: 'ប្រភេទសៀវភៅទាំងអស់',
 
 
 

@@ -5,6 +5,7 @@ import BookCard from '../books/BookCard';
 import Dropdown from '../ui/Dropdown';
 import { Button } from '../ui/Button';
 import { bookService } from '../../utils/api/services/bookService';
+import { subjectService } from '../../utils/api/services/subjectService';
 import { apiClient_, handleApiResponse } from '../../utils/api/client.js';
 import { gradeLevelOptions } from '../../utils/formOptions';
 
@@ -19,24 +20,28 @@ const BookSelectionModal = ({
   const [booksLoading, setBooksLoading] = useState(false);
   const [bookCategories, setBookCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [subjects, setSubjects] = useState([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
   const [selectedGradeFilter, setSelectedGradeFilter] = useState('');
+  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('');
 
-  // Fetch book categories on mount
+  // Fetch book categories and subjects on mount
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchCategoriesAndSubjects = async () => {
       try {
+        // Fetch categories
         setCategoriesLoading(true);
-        const response = await handleApiResponse(() =>
+        const categoriesResponse = await handleApiResponse(() =>
           apiClient_.get('book-categories?status=ACTIVE')
         );
 
-        if (response.success && response.data) {
-          const categoriesData = Array.isArray(response.data) ? response.data :
-                                 Array.isArray(response.data.data) ? response.data.data : [];
+        if (categoriesResponse.success && categoriesResponse.data) {
+          const categoriesData = Array.isArray(categoriesResponse.data) ? categoriesResponse.data :
+                                 Array.isArray(categoriesResponse.data.data) ? categoriesResponse.data.data : [];
           setBookCategories(categoriesData);
         } else {
-          console.warn('Failed to fetch book categories:', response.error);
+          console.warn('Failed to fetch book categories:', categoriesResponse.error);
           setBookCategories([]);
         }
       } catch (error) {
@@ -45,16 +50,34 @@ const BookSelectionModal = ({
       } finally {
         setCategoriesLoading(false);
       }
+
+      try {
+        // Fetch subjects
+        setSubjectsLoading(true);
+        const subjectsResponse = await subjectService.getAll({ limit: 100 });
+
+        if (subjectsResponse.success && subjectsResponse.data) {
+          setSubjects(subjectsResponse.data);
+        } else {
+          console.warn('Failed to fetch subjects:', subjectsResponse.error);
+          setSubjects([]);
+        }
+      } catch (error) {
+        console.error('Error fetching subjects:', error);
+        setSubjects([]);
+      } finally {
+        setSubjectsLoading(false);
+      }
     };
 
-    fetchCategories();
+    fetchCategoriesAndSubjects();
   }, []);
 
   // Fetch books when filters change
   useEffect(() => {
     const fetchBooks = async () => {
       // Require at least one filter to be selected
-      if (!selectedGradeFilter && !selectedCategoryFilter) {
+      if (!selectedGradeFilter && !selectedCategoryFilter && !selectedSubjectFilter) {
         setAvailableBooks([]);
         return;
       }
@@ -62,10 +85,11 @@ const BookSelectionModal = ({
       try {
         setBooksLoading(true);
 
-        // Use combined filter method - pass both category and grade level
+        // Use combined filter method - pass category, grade level, and subject
         const response = await bookService.getBooks(
           selectedCategoryFilter || null,
           selectedGradeFilter || null,
+          selectedSubjectFilter || null,
           1,
           100
         );
@@ -85,11 +109,12 @@ const BookSelectionModal = ({
     };
 
     fetchBooks();
-  }, [selectedGradeFilter, selectedCategoryFilter]);
+  }, [selectedGradeFilter, selectedCategoryFilter, selectedSubjectFilter]);
 
   const handleClose = () => {
     setSelectedCategoryFilter('');
     setSelectedGradeFilter('');
+    setSelectedSubjectFilter('');
     onClose();
   };
 
@@ -136,7 +161,7 @@ const BookSelectionModal = ({
     >
       {/* Filters Section */}
       <div className="mb-6 pb-4 border-b border-gray-200">
-        <div className="flex flex-col gap-4">
+        <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Grade Level Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -190,6 +215,38 @@ const BookSelectionModal = ({
                 {bookCategories.length === 0 && categoriesLoading === false && (
                   <div className="text-xs mt-1">({bookCategories.length} categories loaded)</div>
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* Subject Filter */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-2">
+              {t('subject', 'Subject')}
+            </label>
+            {subjectsLoading ? (
+              <div className="text-xs text-gray-500 p-2 border border-gray-300 rounded bg-gray-50">
+                {t('loadingSubjects', 'Loading subjects...')}
+              </div>
+            ) : subjects.length > 0 ? (
+              <Dropdown
+                options={[
+                  { value: '', label: t('selectSubject', 'Select Subject') },
+                  ...subjects.map(subject => ({
+                    value: String(subject.id),
+                    label: subject.khmer_name || subject.name
+                  }))
+                ]}
+                value={selectedSubjectFilter}
+                onValueChange={(value) => setSelectedSubjectFilter(value)}
+                placeholder={t('selectSubject', 'Select Subject')}
+                contentClassName="max-h-[200px] overflow-y-auto"
+                disabled={false}
+                className='w-full'
+              />
+            ) : (
+              <div className="text-xs text-gray-500 p-2 border border-gray-300 rounded bg-gray-50">
+                {t('noSubjects', 'No subjects available')}
               </div>
             )}
           </div>
