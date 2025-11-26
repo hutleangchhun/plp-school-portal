@@ -61,30 +61,21 @@ const BookSelectionModal = ({
 
       try {
         setBooksLoading(true);
-        let books = [];
 
-        // If category is selected, fetch by category
-        if (selectedCategoryFilter) {
-          const response = await bookService.getBooksByCategory(selectedCategoryFilter, 1, 100);
-          if (response.success && response.data) {
-            books = response.data;
-          } else {
-            console.warn('Failed to fetch books by category:', response.error);
-            books = [];
-          }
-        }
-        // Otherwise fetch by grade level
-        else if (selectedGradeFilter) {
-          const response = await bookService.getBooksByGradeLevel(selectedGradeFilter, 1, 100);
-          if (response.success && response.data) {
-            books = response.data;
-          } else {
-            console.warn('Failed to fetch books by grade level:', response.error);
-            books = [];
-          }
-        }
+        // Use combined filter method - pass both category and grade level
+        const response = await bookService.getBooks(
+          selectedCategoryFilter || null,
+          selectedGradeFilter || null,
+          1,
+          100
+        );
 
-        setAvailableBooks(books);
+        if (response.success && response.data) {
+          setAvailableBooks(response.data);
+        } else {
+          console.warn('Failed to fetch books:', response.error);
+          setAvailableBooks([]);
+        }
       } catch (error) {
         console.error('Error fetching books:', error);
         setAvailableBooks([]);
