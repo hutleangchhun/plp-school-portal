@@ -1,5 +1,4 @@
 import { BookOpen } from 'lucide-react';
-import { getStaticAssetBaseUrl } from '../../utils/api/config';
 
 /**
  * BookCard Component - Reusable book card for displaying book information with cover image
@@ -28,10 +27,8 @@ function BookCard({
   isSelected = false,
   className = ''
 }) {
-  // Construct book cover image URL
-  const bookCoverUrl = book?.coverBook
-    ? `${getStaticAssetBaseUrl()}/uploads/books/${book.coverBook}`
-    : null;
+  // Get book cover URL - API provides complete URL in coverBookUrl
+  const bookCoverUrl = book?.coverBookUrl || null;
 
   // Image size classes
   const imageSizeClasses = {
