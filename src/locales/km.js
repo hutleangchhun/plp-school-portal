@@ -318,6 +318,7 @@ export const km = {
   filterByCategory: 'ជ្រើសរើសប្រភេទសៀវភៅ',
   allCategories: 'ប្រភេទសៀវភៅទាំងអស់',
   noBooksAvailable: 'មិនមានសៀវភៅដែលអ្នកជ្រើសរើស, សូមជ្រើសរើសតម្រងផ្សេង',
+  cannotChange: 'មិនអាចប្តូរបានទេ',
 
 
 

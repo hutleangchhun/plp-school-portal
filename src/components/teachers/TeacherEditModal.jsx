@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { User, Mail, Phone, Eye, Lock, X, Weight, Ruler, ArrowLeft } from 'lucide-react';
+import { User, Mail, Phone, Eye, Lock, X, Weight, Ruler, ArrowLeft, BookOpen } from 'lucide-react';
 import BookSelectionModal from '../modals/BookSelectionModal';
 import SelectedBooksDisplay from '../modals/SelectedBooksDisplay';
 import { sanitizeUsername } from '../../utils/usernameUtils';
@@ -1034,18 +1034,25 @@ const TeacherEditModal = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t('role', 'Role')}
             </label>
-            <Dropdown
-              options={[
-                { value: '', label: t('selectRole', 'Select Role') },
-                ...roleOptions
-              ]}
-              value={editForm.role}
-              onValueChange={(value) => handleFormChange('role', value)}
-              placeholder={t('selectRole', 'Select Role')}
-              contentClassName="max-h-[200px] overflow-y-auto"
-              disabled={false}
-              className='w-full'
-            />
+            {editForm.role === '14' ? (
+              <div className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-700">
+                {roleOptions.find(role => role.value === '14')?.label || 'នាយកសាលារៀន'}
+                <span className="ml-2 text-xs text-gray-500">({t('cannotChange', 'Cannot change')})</span>
+              </div>
+            ) : (
+              <Dropdown
+                options={[
+                  { value: '', label: t('selectRole', 'Select Role') },
+                  ...roleOptions.filter(role => role.value !== '14')
+                ]}
+                value={editForm.role}
+                onValueChange={(value) => handleFormChange('role', value)}
+                placeholder={t('selectRole', 'Select Role')}
+                contentClassName="max-h-[200px] overflow-y-auto"
+                disabled={false}
+                className='w-full'
+              />
+            )}
           </div>
 
           <div>
