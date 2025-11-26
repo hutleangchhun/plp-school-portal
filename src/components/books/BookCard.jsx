@@ -1,4 +1,5 @@
 import { BookOpen } from 'lucide-react';
+import { getBookCoverUrl } from '../../utils/api/config';
 
 /**
  * BookCard Component - Reusable book card for displaying book information with cover image
@@ -27,8 +28,8 @@ function BookCard({
   isSelected = false,
   className = ''
 }) {
-  // Get book cover URL - API provides complete URL in coverBookUrl
-  const bookCoverUrl = book?.coverBookUrl || null;
+  // Get book cover URL from filename using helper function
+  const bookCoverUrl = getBookCoverUrl(book?.coverBook);
 
   // Image size classes
   const imageSizeClasses = {

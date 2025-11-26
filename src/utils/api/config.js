@@ -210,6 +210,14 @@ export const getStaticAssetBaseUrl = () => {
   return 'https://plp-api.moeys.gov.kh';
 };
 
+// Function to get book cover URL from filename
+export const getBookCoverUrl = (coverBookFilename) => {
+  if (!coverBookFilename) {
+    return null;
+  }
+  return `${getStaticAssetBaseUrl()}/uploads/books/${coverBookFilename}`;
+};
+
 // Function to test API availability
 export const testApiConnection = async (baseUrl) => {
   try {

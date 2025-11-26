@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, X, ChevronDown } from 'lucide-react';
 import { bookService } from '../../utils/api/services/bookService';
+import { getBookCoverUrl } from '../../utils/api/config';
 import { Button } from '../ui/Button';
 
 const SelectedBooksDisplay = ({
@@ -98,8 +99,8 @@ const SelectedBooksDisplay = ({
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
             {displayedBooks.map((book) => {
-              // Get book cover URL - API provides complete URL in coverBookUrl
-              const bookCoverUrl = book?.coverBookUrl || null;
+              // Get book cover URL from filename using helper function
+              const bookCoverUrl = getBookCoverUrl(book?.coverBook);
 
               return (
                 <div key={book.id} className="relative group flex flex-col h-full">
