@@ -931,10 +931,7 @@ const TeacherEditModal = () => {
             <div className='mb-6'>
               <Button
                 type="button"
-                onClick={() => {
-                  setModalGradeLevel('');
-                  setShowBookModal(true);
-                }}
+                onClick={() => setShowBookModal(true)}
                 variant="success"
                 size="sm"
                 className="w-full flex items-center justify-center gap-2 h-11"
