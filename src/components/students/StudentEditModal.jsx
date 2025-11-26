@@ -1356,6 +1356,7 @@ const StudentEditModal = () => {
           selectedBookIds={editForm.bookIds}
           onBookIdsChange={(newBookIds) => handleFormChange('bookIds', newBookIds)}
           t={t}
+          allowedCategoryIds={[32, 33, 40, 52]}
         />
 
       </div>
