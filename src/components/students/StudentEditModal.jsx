@@ -12,11 +12,10 @@ import ProfileImage from '../ui/ProfileImage';
 import Dropdown from '../ui/Dropdown';
 import ErrorDisplay from '../ui/ErrorDisplay';
 import { PageLoader } from '../ui/DynamicLoader';
-import Modal from '../ui/Modal';
-import BookCard from '../books/BookCard';
+import BookSelectionModal from '../modals/BookSelectionModal';
+import SelectedBooksDisplay from '../modals/SelectedBooksDisplay';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
-import { bookService } from '../../utils/api/services/bookService';
 import { gradeLevelOptions, ethnicGroupOptions, accessibilityOptions, getAcademicYearOptions } from '../../utils/formOptions';
 import { utils } from '../../utils/api';
 
@@ -43,9 +42,6 @@ const StudentEditModal = () => {
   const [showUsernameSuggestions, setShowUsernameSuggestions] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [originalUsername, setOriginalUsername] = useState('');
-  const [availableBooks, setAvailableBooks] = useState([]);
-  const [booksLoading, setBooksLoading] = useState(false);
-  const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
   const [showBookModal, setShowBookModal] = useState(false);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -359,36 +355,6 @@ const StudentEditModal = () => {
     setUsernameAvailable(null);
   };
 
-  // Fetch books when grade level changes
-  useEffect(() => {
-    const fetchBooks = async () => {
-      if (!editForm.gradeLevel) {
-        setAvailableBooks([]);
-        setSelectedGradeLevel('');
-        return;
-      }
-
-      try {
-        setBooksLoading(true);
-        setSelectedGradeLevel(editForm.gradeLevel);
-        const response = await bookService.getBooksByGradeLevel(editForm.gradeLevel, 1, 100);
-
-        if (response.success && response.data) {
-          setAvailableBooks(response.data);
-        } else {
-          console.warn('Failed to fetch books:', response.error);
-          setAvailableBooks([]);
-        }
-      } catch (error) {
-        console.error('Error fetching books:', error);
-        setAvailableBooks([]);
-      } finally {
-        setBooksLoading(false);
-      }
-    };
-
-    fetchBooks();
-  }, [editForm.gradeLevel]);
 
   const handleClose = () => {
     resetForm();
@@ -1326,7 +1292,17 @@ const StudentEditModal = () => {
         </Button>
 
         {/* Student Edit Form */}
-          {formContent}
+        {formContent}
+
+        {/* Selected Books Display */}
+        <SelectedBooksDisplay
+          selectedBookIds={editForm.bookIds}
+          onRemoveBook={(bookId) => {
+            const newBookIds = editForm.bookIds.filter(id => id !== bookId);
+            handleFormChange('bookIds', newBookIds);
+          }}
+          t={t}
+        />
 
         {/* Action Buttons for Page Mode */}
         <div className="left-0 right-0 p-4 sm:p-6 flex items-center justify-end space-x-3">
@@ -1374,103 +1350,13 @@ const StudentEditModal = () => {
         )}
 
         {/* Book Selection Modal */}
-        <Modal
+        <BookSelectionModal
           isOpen={showBookModal}
           onClose={() => setShowBookModal(false)}
-          title={
-            <div className="flex items-center">
-              <BookOpen className="w-5 h-5 mr-2 text-purple-600" />
-              {t('selectBooks', 'Select Books')}
-            </div>
-          }
-          size="full"
-          height="lg"
-          stickyFooter={true}
-          footer={
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                {editForm.bookIds.length > 0 ? (
-                  <span className="font-semibold">
-                    {editForm.bookIds.length} {editForm.bookIds.length === 1 ? t('bookSelected', 'book selected') : t('booksSelected', 'books selected')}
-                  </span>
-                ) : (
-                  <span>{t('noBooksSelected', 'No books selected')}</span>
-                )}
-              </div>
-              <Button
-                type="button"
-                onClick={() => setShowBookModal(false)}
-                variant="primary"
-              >
-                {t('done', 'Done')}
-              </Button>
-            </div>
-          }
-        >
-          {/* Grade Level Info */}
-          <p className="text-sm text-gray-500 mb-6 pb-4 border-b border-gray-200">
-            {t('gradeLevel', 'Grade Level')}: <span className="font-semibold">{gradeLevelOptions.find(opt => opt.value === editForm.gradeLevel)?.label}</span>
-          </p>
-
-          {/* Modal Content */}
-          {booksLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
-            </div>
-          ) : availableBooks.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {availableBooks.map((book) => {
-                const isSelected = editForm.bookIds.includes(book.id);
-
-                return (
-                  <button
-                    key={book.id}
-                    type="button"
-                    onClick={() => {
-                      const newBookIds = isSelected
-                        ? editForm.bookIds.filter(id => id !== book.id)
-                        : [...editForm.bookIds, book.id];
-                      handleFormChange('bookIds', newBookIds);
-                    }}
-                    className="relative transition-all duration-200 text-left"
-                  >
-                    <BookCard
-                      book={book}
-                      t={t}
-                      getEmptyDisplay={() => 'N/A'}
-                      layout="horizontal"
-                      imageSize="md"
-                      showCategory={true}
-                      hoverable={true}
-                      borderColor={isSelected ? 'blue-500' : 'gray-200'}
-                      isSelected={isSelected}
-                      className={`${
-                        isSelected
-                          ? 'bg-gradient-to-l from-blue-50 to-white shadow-md'
-                          : 'hover:border-blue-300 hover:shadow-md'
-                      }`}
-                    />
-                    {/* Selection Checkmark Badge */}
-                    {isSelected && (
-                      <div className="absolute top-2 right-2 bg-blue-600 rounded-full p-1.5 shadow-lg">
-                        <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-64">
-              <BookOpen className="h-16 w-16 text-gray-300 mb-4" />
-              <p className="text-gray-500 text-center">
-                {t('noBooksAvailable', 'No books available for this grade level')}
-              </p>
-            </div>
-          )}
-        </Modal>
+          selectedBookIds={editForm.bookIds}
+          onBookIdsChange={(newBookIds) => handleFormChange('bookIds', newBookIds)}
+          t={t}
+        />
 
       </div>
     </div>
