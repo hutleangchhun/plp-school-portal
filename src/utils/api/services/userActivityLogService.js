@@ -41,4 +41,27 @@ export const userActivityLogService = {
       pagination: apiData.pagination || null,
     };
   },
+
+  /**
+   * Get a single user activity log by ID
+   * @param {string} logId
+   */
+  async getLogById(logId) {
+    const url = `${ENDPOINTS.USER_ACTIVITY_LOGS.BASE}/${logId}`;
+
+    const response = await handleApiResponse(() => apiClient_.get(url));
+
+    if (!response || !response.success) {
+      return {
+        success: false,
+        error: response?.error || 'Failed to fetch activity log details',
+        data: null,
+      };
+    }
+
+    return {
+      success: true,
+      data: response.data || null,
+    };
+  },
 };

@@ -19,6 +19,8 @@ const UserActivityLogs = () => {
   const [pagination, setPagination] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const fetchLogs = async (pageToLoad = 1, { silent = false } = {}) => {
     try {
@@ -48,6 +50,25 @@ const UserActivityLogs = () => {
       }
       setRefreshing(false);
       setInitialLoading(false);
+    }
+  };
+
+  const fetchLogById = async (logId) => {
+    try {
+      setDetailLoading(true);
+      const response = await api.userActivityLog.getLogById(logId);
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to load log details');
+      }
+
+      setSelectedLog(response.data);
+    } catch (err) {
+      handleError(err, {
+        toastMessage: t('failedToLoadLogDetails', 'Failed to load log details'),
+      });
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -169,7 +190,11 @@ const UserActivityLogs = () => {
                       }
 
                       return (
-                        <tr key={log.id} className="hover:bg-gray-50">
+                        <tr
+                          key={log.id}
+                          className="hover:bg-gray-50 cursor-pointer"
+                          onClick={() => fetchLogById(log.id)}
+                        >
                           <td className="px-3 py-2 whitespace-nowrap text-gray-700">
                             {(pagination?.page || page) * limit - limit + index + 1}
                           </td>
@@ -229,6 +254,149 @@ const UserActivityLogs = () => {
           </Card>
         </FadeInSection>
       </div>
+
+      {/* Detail Modal */}
+      {selectedLog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {t('activityLogDetails', 'Activity Log Details')}
+              </h2>
+              <button
+                onClick={() => setSelectedLog(null)}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {detailLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <PageLoader message={t('loadingDetails', 'Loading details...')} />
+                </div>
+              ) : (
+                <>
+                  {/* Log Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        {t('actor', 'Actor')}
+                      </label>
+                      <p className="text-gray-900">
+                        {selectedLog.actor
+                          ? `${selectedLog.actor.lastName || selectedLog.actor.last_name || ''} ${selectedLog.actor.firstName || selectedLog.actor.first_name || ''}`.trim()
+                          : '-'}
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        {t('target', 'Target')}
+                      </label>
+                      <p className="text-gray-900">
+                        {selectedLog.target
+                          ? `${selectedLog.target.lastName || selectedLog.target.last_name || ''} ${selectedLog.target.firstName || selectedLog.target.first_name || ''}`.trim()
+                          : '-'}
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        {t('activityType', 'Activity Type')}
+                      </label>
+                      <p className="text-gray-900">{selectedLog.activity_type || '-'}</p>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        {t('timestamp', 'Timestamp')}
+                      </label>
+                      <p className="text-gray-900 text-sm">
+                        {selectedLog.activity_details?.timestamp
+                          ? new Date(selectedLog.activity_details.timestamp).toLocaleString()
+                          : '-'}
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        {t('endpoint', 'Endpoint')}
+                      </label>
+                      <p className="text-gray-900 text-sm font-mono break-all">
+                        {selectedLog.activity_details?.endpoint || '-'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Changed Fields */}
+                  {selectedLog.activity_details?.changedFields &&
+                    selectedLog.activity_details.changedFields.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                          {t('changedFields', 'Changed Fields')}
+                        </h3>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <ul className="space-y-2">
+                            {selectedLog.activity_details.changedFields.map((field, idx) => (
+                              <li key={idx} className="text-sm text-gray-700">
+                                • <span className="font-medium">{field}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Request Body */}
+                  {selectedLog.activity_details?.requestBody && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        {t('requestBody', 'Request Details')}
+                      </h3>
+                      <div className="bg-gray-50 p-4 rounded-lg overflow-x-auto">
+                        <pre className="text-xs text-gray-700 whitespace-pre-wrap break-words">
+                          {JSON.stringify(selectedLog.activity_details.requestBody, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* IP Address & User Agent */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        {t('ipAddress', 'IP Address')}
+                      </label>
+                      <p className="text-gray-900 font-mono text-sm">{selectedLog.ip_address || '-'}</p>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        {t('userAgent', 'User Agent')}
+                      </label>
+                      <p className="text-gray-900 text-xs break-all">{selectedLog.user_agent || '-'}</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setSelectedLog(null)}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+              >
+                {t('close', 'Close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageTransition>
   );
 };
