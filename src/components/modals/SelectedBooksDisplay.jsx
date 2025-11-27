@@ -131,7 +131,7 @@ const SelectedBooksDisplay = ({
         </div>
       ) : filteredBooks.length > 0 ? (
         <>
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-3">
+          <div className="grid grid-cols-8 gap-3">
             {displayedBooks.map((book) => {
               // Get book cover URL from filename using helper function
               const bookCoverUrl = getBookCoverUrl(book?.coverBook);
@@ -185,15 +185,15 @@ const SelectedBooksDisplay = ({
                   </div>
 
                   {/* Book Title - Below image */}
-                  <div className="line-clamp-1 font-medium text-gray-700 p-2 rounded-md">
-                    <h3 className='text-sm'>{book?.title || 'N/A'}</h3>
-                    <div className="text-xs text-gray-600 space-y-0.5 mt-2">
-                      <div className="truncate">
-                        <span className="font-semibold">{t('category', 'Category')}:</span> {categoryName}
-                      </div>
-                      <div className="truncate">
-                        <span className="font-semibold">{t('subject', 'Subject')}:</span> {subjectName}
-                      </div>
+                  <div className="text-xs line-clamp-2 font-medium text-gray-700 bg-blue-50 p-4 rounded-md">
+                    {book?.title || 'N/A'}
+                  </div>
+                  <div className="text-xs text-gray-600 space-y-0.5 mt-2">
+                    <div className="truncate">
+                      <span className="font-semibold">{t('category', 'Category')}:</span> {categoryName}
+                    </div>
+                    <div className="truncate">
+                      <span className="font-semibold">{t('subject', 'Subject')}:</span> {subjectName}
                     </div>
                   </div>
                 </div>
