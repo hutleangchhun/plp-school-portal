@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, X, ChevronDown } from 'lucide-react';
 import { bookService } from '../../utils/api/services/bookService';
+import { subjectService } from '../../utils/api/services/subjectService';
+import { apiClient_, handleApiResponse } from '../../utils/api/client.js';
 import { getBookCoverUrl } from '../../utils/api/config';
 import { Button } from '../ui/Button';
 
@@ -14,8 +16,38 @@ const SelectedBooksDisplay = ({
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [bookCategories, setBookCategories] = useState([]);
+  const [subjects, setSubjects] = useState([]);
 
-  // Fetch full book details for selected books
+  // Fetch categories and subjects on mount
+  useEffect(() => {
+    const fetchCategoriesAndSubjects = async () => {
+      try {
+        // Fetch categories
+        const categoriesResponse = await handleApiResponse(() =>
+          apiClient_.get('book-categories?status=ACTIVE')
+        );
+
+        if (categoriesResponse.success && categoriesResponse.data) {
+          const categoriesData = Array.isArray(categoriesResponse.data) ? categoriesResponse.data :
+            Array.isArray(categoriesResponse.data.data) ? categoriesResponse.data.data : [];
+          setBookCategories(categoriesData);
+        }
+
+        // Fetch subjects
+        const subjectsResponse = await subjectService.getAll({ limit: 100 });
+        if (subjectsResponse.success && subjectsResponse.data) {
+          setSubjects(subjectsResponse.data);
+        }
+      } catch (error) {
+        console.error('Error fetching categories and subjects:', error);
+      }
+    };
+
+    fetchCategoriesAndSubjects();
+  }, []);
+
+  // Fetch full book details for selected books (only on mount)
   useEffect(() => {
     const fetchBookDetails = async () => {
       if (!selectedBookIds || selectedBookIds.length === 0) {
@@ -43,11 +75,8 @@ const SelectedBooksDisplay = ({
           new Map(allBooks.map(book => [book.id, book])).values()
         );
 
-        // Filter to only selected books
-        const filteredBooks = uniqueBooks.filter(book =>
-          selectedBookIds.includes(book.id)
-        );
-        setBooks(filteredBooks);
+        // Store all books (don't filter yet - filtering happens in render)
+        setBooks(uniqueBooks);
       } catch (error) {
         console.error('Error fetching book details:', error);
         setBooks([]);
@@ -56,8 +85,11 @@ const SelectedBooksDisplay = ({
       }
     };
 
-    fetchBookDetails();
-  }, [selectedBookIds]);
+    // Only fetch if books array is empty
+    if (books.length === 0 && selectedBookIds && selectedBookIds.length > 0) {
+      fetchBookDetails();
+    }
+  }, []);
 
   if (!selectedBookIds || selectedBookIds.length === 0) {
     return (
@@ -77,8 +109,10 @@ const SelectedBooksDisplay = ({
     );
   }
 
-  const displayedBooks = showAll ? books : books.slice(0, maxDisplay);
-  const hasMoreBooks = books.length > maxDisplay;
+  // Filter books to only show those in selectedBookIds
+  const filteredBooks = books.filter(book => selectedBookIds.includes(book.id));
+  const displayedBooks = showAll ? filteredBooks : filteredBooks.slice(0, maxDisplay);
+  const hasMoreBooks = filteredBooks.length > maxDisplay;
 
   return (
     <div className="bg-white rounded-md border border-gray-200 p-6 mt-6">
@@ -95,12 +129,15 @@ const SelectedBooksDisplay = ({
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
-      ) : books.length > 0 ? (
+      ) : filteredBooks.length > 0 ? (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-8 gap-3">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-3">
             {displayedBooks.map((book) => {
               // Get book cover URL from filename using helper function
               const bookCoverUrl = getBookCoverUrl(book?.coverBook);
+              // Find category and subject names
+              const categoryName = bookCategories.find(cat => cat.id === book.bookCategoryId)?.name || 'N/A';
+              const subjectName = subjects.find(subj => subj.id === book.subjectId)?.khmer_name || subjects.find(subj => subj.id === book.subjectId)?.name || 'N/A';
 
               return (
                 <div key={book.id} className="relative group flex flex-col h-full">
@@ -148,8 +185,16 @@ const SelectedBooksDisplay = ({
                   </div>
 
                   {/* Book Title - Below image */}
-                  <div className="text-xs line-clamp-2 font-medium text-gray-700">
-                    {book?.title || 'N/A'}
+                  <div className="line-clamp-1 font-medium text-gray-700 p-2 rounded-md">
+                    <h3 className='text-sm'>{book?.title || 'N/A'}</h3>
+                    <div className="text-xs text-gray-600 space-y-0.5 mt-2">
+                      <div className="truncate">
+                        <span className="font-semibold">{t('category', 'Category')}:</span> {categoryName}
+                      </div>
+                      <div className="truncate">
+                        <span className="font-semibold">{t('subject', 'Subject')}:</span> {subjectName}
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -178,13 +223,6 @@ const SelectedBooksDisplay = ({
             </div>
           )}
         </>
-      ) : selectedBookIds.length > 0 ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <BookOpen className="h-12 w-12 text-gray-300 mb-4" />
-          <p className="text-gray-500 text-center">
-            {t('bookDetailsNotAvailable', 'Book details not available')}
-          </p>
-        </div>
       ) : null}
     </div>
   );
