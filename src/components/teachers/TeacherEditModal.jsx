@@ -497,6 +497,7 @@ const TeacherEditModal = () => {
         }
 
         const createPayload = {
+          // Basic Personal Information
           username: editForm.username.trim(),
           first_name: editForm.firstName.trim(),
           last_name: editForm.lastName.trim(),
@@ -504,31 +505,20 @@ const TeacherEditModal = () => {
           phone: editForm.phone?.trim() || undefined,
           password: editForm.password.trim(),
           roleId: editForm.role ? parseInt(editForm.role) : 8,
+
+          // Date & Identity
           date_of_birth: formatDate(editForm.dateOfBirth),
           gender: editForm.gender || undefined,
           nationality: editForm.nationality?.trim() || undefined,
           profile_picture: editForm.profilePicture || undefined,
+
+          // Physical Information
           weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
           height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
           bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
+
+          // Location Information
           ethnic_group: editForm.ethnicGroup?.trim() || undefined,
-          gradeLevel: editForm.gradeLevel?.trim() || undefined,
-          accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
-          employment_type: editForm.employment_type || undefined,
-          salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
-          educationLevel: editForm.education_level || undefined,
-          trainingType: editForm.training_type || undefined,
-          teachingType: editForm.teaching_type || undefined,
-          teacherStatus: editForm.teacher_status || undefined,
-          subject: editForm.subject.length > 0 ? editForm.subject : undefined,
-          teacher_number: editForm.teacher_number || undefined,
-          appointed: editForm.appointed,
-          burden: editForm.burden,
-          hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
-          // Always include bookIds: array when there are items, null when none
-          bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
-          teacherExtraLearningTool: editForm.teacherExtraLearningTool || undefined,
-          schoolId: schoolId || undefined,
           residence: {
             provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
             districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
@@ -541,17 +531,60 @@ const TeacherEditModal = () => {
             communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
             villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
           },
+
+          // Health & Accessibility
+          accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
+
+          // Teacher-Specific Fields
+          teacher_number: editForm.teacher_number || undefined,
+          schoolId: schoolId || undefined,
+          gradeLevel: editForm.gradeLevel?.trim() || undefined,
+          employment_type: editForm.employment_type || undefined,
+          salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
+          educationLevel: editForm.education_level || undefined,
+          trainingType: editForm.training_type || undefined,
+          teachingType: editForm.teaching_type || undefined,
+          teacherStatus: editForm.teacher_status || undefined,
+          subject: editForm.subject.length > 0 ? editForm.subject : undefined,
+          hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
+          appointed: editForm.appointed,
+          burden: editForm.burden,
+
+          // Teacher Learning Tools
+          teacherExtraLearningTool: editForm.teacherExtraLearningTool || undefined,
+
+          // Books Assignment
+          bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
+
+          // Family Information
           teacher_family: buildTeacherFamilyPayload()
         };
 
         // Remove undefined/empty values - but keep bookIds and teacherExtraLearningTool even when null
-        Object.keys(createPayload).forEach(k => {
+        const cleanPayload = Object.keys(createPayload).reduce((acc, k) => {
           // Special cases: keep bookIds and teacherExtraLearningTool even when null/false so backend sees explicit values
           if (k === 'bookIds' || k === 'teacherExtraLearningTool') {
-            return;
+            acc[k] = createPayload[k];
+            return acc;
           }
-          if (createPayload[k] === undefined || createPayload[k] === null || createPayload[k] === '') delete createPayload[k];
-        });
+
+          // For objects (residence, placeOfBirth, teacher_family), only keep if they have at least one defined value
+          if (typeof createPayload[k] === 'object' && createPayload[k] !== null) {
+            const hasDefinedValue = Object.values(createPayload[k]).some(v => v !== undefined && v !== null && v !== '');
+            if (hasDefinedValue) {
+              acc[k] = createPayload[k];
+            }
+            return acc;
+          }
+
+          // For other values, only keep if defined, not null, and not empty string
+          if (createPayload[k] !== undefined && createPayload[k] !== null && createPayload[k] !== '') {
+            acc[k] = createPayload[k];
+          }
+          return acc;
+        }, {});
+
+        Object.assign(createPayload, cleanPayload);
 
         console.log('Creating teacher with payload:', createPayload);
         console.log('gradeLevel being sent (CREATE):', createPayload.gradeLevel);
@@ -581,37 +614,27 @@ const TeacherEditModal = () => {
         }
 
         const updatePayload = {
+          // Basic Personal Information
           username: editForm.username?.trim(),
           first_name: editForm.firstName?.trim(),
           last_name: editForm.lastName?.trim(),
           email: editForm.email?.trim(),
           phone: editForm.phone?.trim(),
+          roleId: editForm.role ? parseInt(editForm.role) : undefined,
+
+          // Date & Identity
           date_of_birth: formatDate(editForm.dateOfBirth),
           gender: editForm.gender || undefined,
           nationality: editForm.nationality?.trim() || undefined,
           profile_picture: editForm.profilePicture || undefined,
+
+          // Physical Information
           weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
           height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
           bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
+
+          // Location Information
           ethnic_group: editForm.ethnicGroup?.trim() || undefined,
-          gradeLevel: editForm.gradeLevel?.trim() || undefined,
-          accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
-          employment_type: editForm.employment_type || undefined,
-          salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
-          educationLevel: editForm.education_level || undefined,
-          trainingType: editForm.training_type || undefined,
-          teachingType: editForm.teaching_type || undefined,
-          teacherStatus: editForm.teacher_status || undefined,
-          subject: editForm.subject.length > 0 ? editForm.subject : undefined,
-          roleId: editForm.role ? parseInt(editForm.role) : undefined,
-          teacher_number: editForm.teacher_number || undefined,
-          appointed: typeof editForm.appointed === 'boolean' ? editForm.appointed : undefined,
-          burden: typeof editForm.burden === 'boolean' ? editForm.burden : undefined,
-          hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
-          // Always include bookIds: array when there are items, null when none
-          bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
-          teacherExtraLearningTool: editForm.teacherExtraLearningTool || undefined,
-          schoolId: schoolId || undefined,
           residence: {
             provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
             districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
@@ -624,6 +647,32 @@ const TeacherEditModal = () => {
             communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
             villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
           },
+
+          // Health & Accessibility
+          accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
+
+          // Teacher-Specific Fields
+          teacher_number: editForm.teacher_number || undefined,
+          schoolId: schoolId || undefined,
+          gradeLevel: editForm.gradeLevel?.trim() || undefined,
+          employment_type: editForm.employment_type || undefined,
+          salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
+          educationLevel: editForm.education_level || undefined,
+          trainingType: editForm.training_type || undefined,
+          teachingType: editForm.teaching_type || undefined,
+          teacherStatus: editForm.teacher_status || undefined,
+          subject: editForm.subject.length > 0 ? editForm.subject : undefined,
+          hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
+          appointed: typeof editForm.appointed === 'boolean' ? editForm.appointed : undefined,
+          burden: typeof editForm.burden === 'boolean' ? editForm.burden : undefined,
+
+          // Teacher Learning Tools
+          teacherExtraLearningTool: editForm.teacherExtraLearningTool || undefined,
+
+          // Books Assignment
+          bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
+
+          // Family Information
           teacher_family: buildTeacherFamilyPayload()
         };
 
@@ -633,13 +682,30 @@ const TeacherEditModal = () => {
         }
 
         // Remove undefined/empty values - but keep bookIds and teacherExtraLearningTool even when null
-        Object.keys(updatePayload).forEach(k => {
+        const cleanUpdatePayload = Object.keys(updatePayload).reduce((acc, k) => {
           // Special cases: keep bookIds and teacherExtraLearningTool even when null/false so backend sees explicit values
           if (k === 'bookIds' || k === 'teacherExtraLearningTool') {
-            return;
+            acc[k] = updatePayload[k];
+            return acc;
           }
-          if (updatePayload[k] === undefined || updatePayload[k] === null || updatePayload[k] === '') delete updatePayload[k];
-        });
+
+          // For objects (residence, placeOfBirth, teacher_family), only keep if they have at least one defined value
+          if (typeof updatePayload[k] === 'object' && updatePayload[k] !== null) {
+            const hasDefinedValue = Object.values(updatePayload[k]).some(v => v !== undefined && v !== null && v !== '');
+            if (hasDefinedValue) {
+              acc[k] = updatePayload[k];
+            }
+            return acc;
+          }
+
+          // For other values, only keep if defined, not null, and not empty string
+          if (updatePayload[k] !== undefined && updatePayload[k] !== null && updatePayload[k] !== '') {
+            acc[k] = updatePayload[k];
+          }
+          return acc;
+        }, {});
+
+        Object.assign(updatePayload, cleanUpdatePayload);
 
         console.log('Updating teacher with payload:', updatePayload);
         console.log('gradeLevel being sent (UPDATE):', updatePayload.gradeLevel);

@@ -465,36 +465,71 @@ const userService = {
       return Object.keys(converted).length > 0 ? converted : undefined;
     };
 
-    // Build payload for teacher creation
+    // Build payload for teacher creation.
+    // This is designed to mirror the rich createPayload from TeacherEditModal (create mode)
+    // so that all teacher fields are sent on create, not just a subset.
     const payload = {
+      // Basic Personal Information
       username: teacherData.username?.trim(),
       first_name: teacherData.first_name || teacherData.firstName,
       last_name: teacherData.last_name || teacherData.lastName,
       email: teacherData.email?.trim(),
       password: teacherData.password?.trim(),
       roleId: teacherData.roleId || 8, // Default to teacher role
+
+      // Date & Identity
       date_of_birth: teacherData.date_of_birth || teacherData.dateOfBirth,
       gender: teacherData.gender,
-      phone: teacherData.phone?.trim(),
       nationality: teacherData.nationality?.trim(),
-      ethnic_group: teacherData.ethnic_group || teacherData.ethnicGroup?.trim(),
-      hire_date: teacherData.hire_date || teacherData.hireDate,
-      employment_type: teacherData.employment_type || teacherData.employmentType,
+      profile_picture: teacherData.profile_picture || teacherData.profilePicture,
+
+      // Physical Information
       weight_kg: teacherData.weight_kg || (teacherData.weight ? parseFloat(teacherData.weight) : undefined),
       height_cm: teacherData.height_cm || (teacherData.height ? parseFloat(teacherData.height) : undefined),
       bmi: teacherData.bmi ? parseFloat(teacherData.bmi) : undefined,
-      profile_picture: teacherData.profile_picture || teacherData.profilePicture,
-      accessibility: teacherData.accessibility && Array.isArray(teacherData.accessibility) && teacherData.accessibility.length > 0 ? teacherData.accessibility : undefined,
-      // Preserve gradeLevel = 0 by using nullish coalescing instead of ||
-      gradeLevel: teacherData.gradeLevel ?? teacherData.grade_level,
-      schoolId: teacherData.schoolId,
+
+      // Location & Ethnicity
+      ethnic_group: teacherData.ethnic_group || teacherData.ethnicGroup?.trim(),
       // Include location fields with numeric IDs
       residence: convertLocationIds(teacherData.residence),
       placeOfBirth: convertLocationIds(teacherData.placeOfBirth),
+
+      // Health & Accessibility
+      accessibility: teacherData.accessibility && Array.isArray(teacherData.accessibility) && teacherData.accessibility.length > 0 ? teacherData.accessibility : undefined,
+
+      // Teacher-Specific Fields
+      // Preserve gradeLevel = 0 by using nullish coalescing instead of ||
+      gradeLevel: teacherData.gradeLevel ?? teacherData.grade_level,
+      teacher_number: teacherData.teacher_number,
+      schoolId: teacherData.schoolId,
+      employment_type: teacherData.employment_type || teacherData.employmentType,
+      salaryTypeId: teacherData.salaryTypeId || (teacherData.salary_type ? parseInt(teacherData.salary_type) : undefined),
+      educationLevel: teacherData.educationLevel || teacherData.education_level,
+      trainingType: teacherData.trainingType || teacherData.training_type,
+      teachingType: teacherData.teachingType || teacherData.teaching_type,
+      teacherStatus: teacherData.teacherStatus || teacherData.teacher_status,
+      subject: Array.isArray(teacherData.subject) && teacherData.subject.length > 0 ? teacherData.subject : undefined,
+      hire_date: teacherData.hire_date || teacherData.hireDate,
+      appointed: typeof teacherData.appointed === 'boolean' ? teacherData.appointed : undefined,
+      burden: typeof teacherData.burden === 'boolean' ? teacherData.burden : undefined,
+
+      // Teacher Learning Tools
+      teacherExtraLearningTool: teacherData.teacherExtraLearningTool,
+
+      // Books Assignment
+      bookIds: Array.isArray(teacherData.bookIds) ? (teacherData.bookIds.length > 0 ? teacherData.bookIds : null) : undefined,
+
+      // Family Information
+      teacher_family: teacherData.teacher_family,
     };
 
     // Remove undefined/null values to avoid sending empty fields
     Object.keys(payload).forEach(key => {
+      // Keep bookIds and teacherExtraLearningTool even when null so backend sees explicit values
+      if (key === 'bookIds' || key === 'teacherExtraLearningTool') {
+        return;
+      }
+
       if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
         delete payload[key];
       }
