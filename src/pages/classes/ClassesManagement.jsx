@@ -17,6 +17,7 @@ import { useStableCallback, useRenderTracker } from '../../utils/reactOptimizati
 import { GRADE_LEVELS, getGradeLabel } from '../../constants/grades';
 import { formatClassIdentifier } from '../../utils/helpers'; // Import class formatting utility
 import Dropdown from '@/components/ui/Dropdown';
+import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import { Button } from '../../components/ui/Button';
 import React from 'react'; // Added for useMemo
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -154,12 +155,12 @@ export default function ClassesManagement() {
       if (!schoolId) {
         setAvailableTeachers([]);
         setFilteredTeachers([]);
-        return;
+        return [];
       }
 
       // Build request parameters with proper limits
       const params = {
-        limit: 50 // Set a reasonable limit for dropdown
+        limit: 150 // Set a reasonable limit for dropdown
       };
       if (gradeLevel) {
         params.grade_level = gradeLevel;
@@ -184,6 +185,9 @@ export default function ClassesManagement() {
           setAvailableTeachers(formattedTeachers);
           setFilteredTeachers(formattedTeachers);
         }
+
+        // Return the formatted teachers for immediate use
+        return formattedTeachers;
       } else {
         if (gradeLevel) {
           setFilteredTeachers([]);
@@ -191,6 +195,7 @@ export default function ClassesManagement() {
           setAvailableTeachers([]);
           setFilteredTeachers([]);
         }
+        return [];
       }
     } catch (error) {
       console.error('Error fetching teachers:', error);
@@ -578,13 +583,103 @@ export default function ClassesManagement() {
       };
 
       // Fetch teachers for the grade level when editing
-      // If showAllTeachers is enabled, fetch all, otherwise filter by grade
-      if (gradeLevel && schoolInfo.id && !showAllTeachers) {
-        await fetchTeachers(schoolInfo.id, gradeLevel);
-      } else if (schoolInfo.id) {
-        await fetchTeachers(schoolInfo.id);
+      // Always fetch all teachers first to ensure we have the current teacher in the list
+      // The current teacher might not match the class grade level, but we still need to show it
+      let allTeachers = [];
+      let gradeTeachers = [];
+
+      if (schoolInfo.id) {
+        // First, fetch all teachers to populate availableTeachers
+        allTeachers = await fetchTeachers(schoolInfo.id);
+
+        // If not showing all teachers and we have a grade level, also fetch grade-filtered teachers
+        // This gives us both the full list and the filtered list
+        if (gradeLevel && !showAllTeachers) {
+          gradeTeachers = await fetchTeachers(schoolInfo.id, gradeLevel);
+        } else if (!showAllTeachers) {
+          // If not showing all but no grade level, use all teachers (fallback)
+          gradeTeachers = allTeachers;
+        }
       }
 
+      // Ensure current teacher is always in the list
+      // This is critical - the current teacher must be displayed in the dropdown
+      if (classData.teacherId && formDataToSet.teacherId) {
+        const currentTeacherId = formDataToSet.teacherId.toString();
+
+        // Check if current teacher is already in allTeachers
+        const inAllTeachers = allTeachers.find(t => t.value === currentTeacherId);
+
+        // Only add if not already present
+        if (!inAllTeachers) {
+          // Format teacher name the same way as in fetchTeachers for consistency
+          let formattedTeacherName = teacherName; // default fallback
+
+          if (classData.teacher?.user) {
+            const firstName = classData.teacher.user.first_name || '';
+            const lastName = classData.teacher.user.last_name || '';
+            const fullName = `${firstName}${firstName && lastName ? ' ' : ''}${lastName}`.trim();
+            formattedTeacherName = fullName || classData.teacher.user.username || teacherName;
+          } else if (classData.teacher?.username) {
+            formattedTeacherName = classData.teacher.username;
+          }
+
+          const teacherToAdd = {
+            value: currentTeacherId,
+            label: formattedTeacherName || teacherName,
+            gradeLevel: classData.gradeLevel,
+            teacherData: classData.teacher
+          };
+
+          // Add to allTeachers
+          allTeachers = [teacherToAdd, ...allTeachers];
+        }
+
+        // Ensure current teacher is in gradeTeachers when filtering by grade
+        if (!showAllTeachers) {
+          const inGradeTeachers = gradeTeachers.find(t => t.value === currentTeacherId);
+          if (!inGradeTeachers) {
+            // Get the teacher object from allTeachers if it exists there
+            const teacherFromAll = allTeachers.find(t => t.value === currentTeacherId);
+
+            if (teacherFromAll) {
+              // Reuse the teacher object from allTeachers
+              gradeTeachers = [teacherFromAll, ...gradeTeachers];
+            } else {
+              // Create a new teacher object with consistent formatting
+              let formattedTeacherName = teacherName;
+              if (classData.teacher?.user) {
+                const firstName = classData.teacher.user.first_name || '';
+                const lastName = classData.teacher.user.last_name || '';
+                const fullName = `${firstName}${firstName && lastName ? ' ' : ''}${lastName}`.trim();
+                formattedTeacherName = fullName || classData.teacher.user.username || teacherName;
+              } else if (classData.teacher?.username) {
+                formattedTeacherName = classData.teacher.username;
+              }
+
+              const teacherToAdd = {
+                value: currentTeacherId,
+                label: formattedTeacherName || teacherName,
+                gradeLevel: classData.gradeLevel,
+                teacherData: classData.teacher
+              };
+              gradeTeachers = [teacherToAdd, ...gradeTeachers];
+            }
+          }
+        }
+      }
+
+      // Always update state with the fetched teachers
+      // This ensures the dropdown can render with data when modal opens
+      if (showAllTeachers) {
+        setAvailableTeachers(allTeachers);
+        setFilteredTeachers(allTeachers); // For consistency when showAll is true
+      } else {
+        setAvailableTeachers(allTeachers);
+        setFilteredTeachers(gradeTeachers);
+      }
+
+      // Now set form data AFTER teachers are loaded
       setSelectedClass(classData);
       setFormData(formDataToSet);
       setShowEditModal(true);
@@ -1132,7 +1227,7 @@ export default function ClassesManagement() {
                 </div>
                 {(showAllTeachers ? availableTeachers : filteredTeachers).length > 0 ? (
                   <>
-                    <Dropdown
+                    <SearchableDropdown
                       value={formData.teacherId}
                       onValueChange={(value) => {
                         const teacherList = showAllTeachers ? availableTeachers : filteredTeachers;
@@ -1146,8 +1241,9 @@ export default function ClassesManagement() {
                       }}
                       options={showAllTeachers ? availableTeachers : filteredTeachers}
                       placeholder={t('selectTeacher', 'Select Teacher')}
-                      width="w-full"
-                      icon={User}
+                      searchPlaceholder={t('searchTeacher', 'Search teachers...')}
+                      className="w-full"
+                      emptyMessage={t('noTeachersFound', 'No teachers found')}
                     />
                     {formData.gradeLevel && formData.teacherId && (
                       (() => {

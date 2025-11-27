@@ -25,10 +25,15 @@ export default function SearchableDropdown({
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredOptions, setFilteredOptions] = useState(options);
   const searchInputRef = useRef(null);
-  const dropdownRef = useRef(null);
 
   const selectedOption = options.find(option => option.value === value);
+  // Use label if found, otherwise use placeholder
   const displayValue = selectedOption?.label || placeholder;
+
+  // Update filtered options when options change
+  useEffect(() => {
+    setFilteredOptions(options);
+  }, [options]);
 
   // Filter options based on search term
   useEffect(() => {
@@ -51,24 +56,6 @@ export default function SearchableDropdown({
         searchInputRef.current?.focus();
       }, 100);
     }
-  }, [isOpen]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-        setSearchTerm('');
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
   }, [isOpen]);
 
   const handleSelect = useCallback((optionValue) => {
@@ -95,56 +82,54 @@ export default function SearchableDropdown({
   }, []);
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <DropdownMenu.Root open={isOpen} onOpenChange={setIsOpen} modal={false}>
-        <DropdownMenu.Trigger asChild>
-          <button
-            className={`inline-flex items-center justify-between rounded px-4 py-2 text-sm bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 ${minWidth} w-auto ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${triggerClassName}`}
-            disabled={disabled}
-          >
-            <span className="truncate flex-1 text-left">{displayValue}</span>
-            <div className="flex items-center ml-2 flex-shrink-0">
-              {value && showClearButton && (
+    <DropdownMenu.Root open={isOpen} onOpenChange={setIsOpen} modal={false}>
+      <DropdownMenu.Trigger asChild>
+        <button
+          onMouseDown={(e) => e.preventDefault()}
+          className={`flex items-center justify-between gap-2 rounded px-4 py-2 text-sm bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left ${minWidth} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${triggerClassName}`}
+          disabled={disabled}
+        >
+          <span className="truncate min-w-0 text-left">{displayValue}</span>
+          <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+      </DropdownMenu.Trigger>
+
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          onClick={(e) => e.stopPropagation()}
+          onWheel={(e) => e.stopPropagation()}
+          className={`bg-white rounded-md shadow-lg border border-gray-200 p-1 z-[9999] ${minWidth} flex flex-col ${contentClassName}`}
+          sideOffset={4}
+        >
+          {/* Search Input */}
+          <div className="px-3 py-2 border-b border-gray-200 flex-shrink-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                onKeyDown={handleKeyDown}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                placeholder={searchPlaceholder}
+                className="w-full pl-10 pr-8 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {searchTerm && (
                 <X
-                  className="h-4 w-4 text-gray-400 hover:text-gray-600 mr-1"
-                  onClick={handleClear}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  onClick={() => setSearchTerm('')}
                 />
               )}
-              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </div>
-          </button>
-        </DropdownMenu.Trigger>
+          </div>
 
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            className={`${minWidth} bg-white rounded-md shadow-lg border border-gray-200 p-0 z-[9999] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 ${maxHeight ? maxHeight + ' overflow-hidden' : ''} ${contentClassName}`}
-            align={align}
-            sideOffset={sideOffset}
+          {/* Options List */}
+          <div
+            className={`overflow-y-auto min-h-0 flex flex-col ${maxHeight || 'max-h-[300px]'}`}
+            onWheel={(e) => e.stopPropagation()}
           >
-            {/* Search Input */}
-            <div className="p-3 border-b border-gray-200">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder={searchPlaceholder}
-                  className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                {searchTerm && (
-                  <X
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 hover:text-gray-600 cursor-pointer"
-                    onClick={() => setSearchTerm('')}
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Options List */}
-            <div className={`${maxHeight} overflow-y-auto`}>
               {isLoading ? (
                 <div className="px-3 py-4 text-center text-sm text-gray-500">
                   <div className="flex items-center justify-center">
@@ -153,35 +138,42 @@ export default function SearchableDropdown({
                   </div>
                 </div>
               ) : filteredOptions.length === 0 ? (
-                <div className="px-3 py-4 text-center text-sm text-gray-500">
+                <div className="px-3 py-2 text-sm text-gray-500 text-center">
                   {emptyMessage}
                 </div>
               ) : (
-                filteredOptions.map((option) => (
-                  <DropdownMenu.Item
-                    key={option.value}
-                    onSelect={() => handleSelect(option.value)}
-                    className={`flex items-center px-3 py-2 text-sm cursor-pointer transition-colors focus:outline-none ${
-                      value === option.value
-                        ? 'bg-blue-100 text-blue-900'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                    } data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900 data-[highlighted]:outline-none`}
-                    disabled={option.disabled}
-                  >
-                    <span className="flex-1 truncate">{option.label}</span>
-                    {value === option.value && (
-                      <span className="ml-auto text-blue-600 flex-shrink-0">
-                        <Check className="h-4 w-4" />
-                      </span>
-                    )}
-                  </DropdownMenu.Item>
-                ))
+                <div className="flex flex-col">
+                  {filteredOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelect(option.value);
+                      }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      disabled={option.disabled}
+                      className={`w-full flex items-center text-start px-3 py-2 text-sm rounded-sm transition-colors focus:outline-none ${
+                        option.disabled
+                          ? 'opacity-50 cursor-not-allowed text-gray-400'
+                          : value === option.value
+                            ? 'bg-blue-100 text-blue-900 cursor-pointer hover:bg-blue-100'
+                            : 'text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      <span className="flex-1 truncate">{option.label}</span>
+                      {value === option.value && (
+                        <span className="ml-auto text-blue-600 flex-shrink-0">
+                          <Check className="h-4 w-4" />
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
               )}
-            </div>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
-    </div>
+          </div>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }
 

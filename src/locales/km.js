@@ -1409,6 +1409,8 @@ export const km = {
   basicInformation: 'ព័ត៌មានទូទៅ',
   mapPickerHint: 'ចុចលើផែនទីនេះដើម្បីផ្លាស់ប្ដូរ​ និងបំពេញទិន្នន័យ Latitude និងLongitude',
   mapPicker: 'ចុចលើផែនទីនេះដើម្បីកំណត់ GPS ទីតាំងសាលារៀន',
+  searchSchool: 'ស្វែងរកសាលា...',
+  searchTeacher: 'ស្វែងរកគ្រូ',
 
   // QR Code Generator
   studentQRCode: 'លេខកូដ QR សិស្ស',

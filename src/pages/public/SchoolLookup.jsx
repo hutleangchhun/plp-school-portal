@@ -5,6 +5,7 @@ import locationService from '../../utils/api/services/locationService';
 import schoolService from '../../utils/api/services/schoolService';
 import { userService } from '../../utils/api/services/userService';
 import Dropdown from '../../components/ui/Dropdown';
+import SearchableDropdown from '../../components/ui/SearchableDropdown';
 import Table from '../../components/ui/Table';
 import { SquarePen, Building2, Users, Phone, Mail, ExternalLink, User, GraduationCap, Search, X } from 'lucide-react';
 
@@ -432,7 +433,7 @@ const SchoolLookup = () => {
               <label className="flex items-center text-sm font-semibold text-gray-700">
                 {t('school', 'School')} *
               </label>
-              <Dropdown
+              <SearchableDropdown
                 value={selectedSchool}
                 onValueChange={handleSchoolChange}
                 options={schools.map((school) => ({
@@ -440,9 +441,12 @@ const SchoolLookup = () => {
                   label: school.name
                 }))}
                 placeholder={t('selectSchool', 'Select School')}
+                searchPlaceholder={t('searchSchool', 'Search schools...')}
                 disabled={schoolsLoading || !selectedDistrict}
+                isLoading={schoolsLoading}
                 className="w-full h-12 text-base"
                 minWidth="w-full"
+                emptyMessage={t('noSchoolsFound', 'No schools found')}
               />
             </div>
 
