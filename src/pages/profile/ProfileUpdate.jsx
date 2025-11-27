@@ -1023,11 +1023,7 @@ export default function ProfileUpdate({ user, setUser }) {
       showError(t('lastNameRequired'));
       return false;
     }
-    if (!formData.email.trim()) {
-      showError(t('emailRequiredMsg'));
-      return false;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       showError(t('validEmailRequired'));
       return false;
     }
