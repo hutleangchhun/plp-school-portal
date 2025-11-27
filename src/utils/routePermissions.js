@@ -108,6 +108,10 @@ export const routePermissions = {
   '/admin-dashboard': {
     allowedRoles: [ROLES.ROLE1_ONLY, ROLES.DIRECTOR],
     component: 'AdminDashboard'
+  },
+  '/admin-logs': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'UserActivityLogs'
   }
 };
 
@@ -329,6 +333,10 @@ export const getNavigationItems = (user, t) => {
     {
       name: t('dashboard') || 'Dashboard',
       href: '/admin-dashboard',
+    },
+    {
+      name: t('userActivityLogs', 'User Activity Logs'),
+      href: '/admin-logs',
     },
   ];
 

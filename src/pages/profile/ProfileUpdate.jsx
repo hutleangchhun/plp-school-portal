@@ -880,7 +880,7 @@ export default function ProfileUpdate({ user, setUser }) {
   const handleDateChange = useStableCallback((date) => {
     setFormData(prev => ({
       ...prev,
-      date_of_birth: date ? date.toISOString().split('T')[0] : ''
+      date_of_birth: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : ''
     }));
   }, []);
 

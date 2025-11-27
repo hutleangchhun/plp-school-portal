@@ -5,6 +5,7 @@ import TeacherDashboard from './pages/teachers/TeacherDashboard';
 import TeacherQRCodeManagement from './pages/teachers/TeacherQRCodeManagement';
 import TeacherReports from './pages/teachers/TeacherReports';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import UserActivityLogs from './pages/admin/UserActivityLogs';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -151,6 +152,15 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<AdminDashboard user={user} setUser={setUser} />} />
+          </Route>
+
+          {/* Admin user activity logs route - role ID 1 only (enforced by routePermissions) */}
+          <Route path="admin-logs" element={
+            <ProtectedRoute path="/admin-logs" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<UserActivityLogs />} />
           </Route>
 
           <Route path="students" element={
