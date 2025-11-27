@@ -9,6 +9,8 @@ import { formatDateKhmer, genderToKhmer, calculateExperience } from '../../utils
 import { userService } from '../../utils/api/services/userService';
 import salaryTypeService from '../../utils/api/services/salaryTypeService';
 import { bookService } from '../../utils/api/services/bookService';
+import { subjectService } from '../../utils/api/services/subjectService';
+import { apiClient_, handleApiResponse } from '../../utils/api/client.js';
 import { getGradeLabel } from '../../constants/grades';
 import { useState, useEffect } from 'react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -25,6 +27,36 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
   const [salaryTypeName, setSalaryTypeName] = useState(null);
   const [books, setBooks] = useState([]);
   const [loadingBooks, setLoadingBooks] = useState(false);
+  const [bookCategories, setBookCategories] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+
+  // Fetch categories and subjects on mount
+  useEffect(() => {
+    const fetchCategoriesAndSubjects = async () => {
+      try {
+        // Fetch categories
+        const categoriesResponse = await handleApiResponse(() =>
+          apiClient_.get('book-categories?status=ACTIVE')
+        );
+
+        if (categoriesResponse.success && categoriesResponse.data) {
+          const categoriesData = Array.isArray(categoriesResponse.data) ? categoriesResponse.data :
+                                 Array.isArray(categoriesResponse.data.data) ? categoriesResponse.data.data : [];
+          setBookCategories(categoriesData);
+        }
+
+        // Fetch subjects
+        const subjectsResponse = await subjectService.getAll({ limit: 100 });
+        if (subjectsResponse.success && subjectsResponse.data) {
+          setSubjects(subjectsResponse.data);
+        }
+      } catch (error) {
+        console.error('Error fetching categories and subjects:', error);
+      }
+    };
+
+    fetchCategoriesAndSubjects();
+  }, []);
 
   // Fetch full teacher data when modal opens
   useEffect(() => {
@@ -512,18 +544,23 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
                 <div className="text-sm text-gray-500">{t('loading', 'Loading...')}</div>
               </div>
             ) : books.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4">
-                {books.map((book) => (
-                  <BookCard
-                    key={book.id}
-                    book={book}
-                    t={t}
-                    getEmptyDisplay={getEmptyDisplay}
-                    layout="horizontal"
-                    imageSize="sm"
-                    showCategory={true}
-                  />
-                ))}
+              <div className="grid sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {books.map((book) => {
+                  const categoryName = bookCategories.find(cat => cat.id === book.bookCategoryId)?.name || 'N/A';
+                  const subjectName = subjects.find(subj => subj.id === book.subjectId)?.khmer_name || subjects.find(subj => subj.id === book.subjectId)?.name || 'N/A';
+
+                  return (
+                    <BookCard
+                      key={book.id}
+                      book={book}
+                      t={t}
+                      getEmptyDisplay={getEmptyDisplay}
+                      layout="portrait"
+                      categoryName={categoryName}
+                      subjectName={subjectName}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
