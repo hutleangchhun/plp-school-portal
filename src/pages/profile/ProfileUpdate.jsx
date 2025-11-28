@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler, Download, QrCode as QrCodeIcon, BookOpen, CheckCircle2 } from 'lucide-react';
+import { User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -9,6 +9,7 @@ import ProfileImage from '../../components/ui/ProfileImage';
 import ProfileInfoDisplay from '../../components/ui/ProfileInfoDisplay';
 import { api, utils } from '../../utils/api';
 import { userService } from '../../utils/api/services/userService';
+import salaryTypeService from '../../utils/api/services/salaryTypeService';
 import { sanitizeUsername } from '../../utils/usernameUtils';
 import { convertHeightToCm, convertWeightToKg, calculateBMI } from '../../utils/physicalMeasurementUtils';
 import Dropdown from '../../components/ui/Dropdown';
@@ -45,9 +46,6 @@ export default function ProfileUpdate({ user, setUser }) {
     weight_kg: '',
     height_cm: '',
     bmi: '',
-    qr_code: '',
-    qr_token: '',
-    qr_generated_at: '',
     // Additional fields from API payload
     accessibility: [],
     employment_type: '',
@@ -55,6 +53,7 @@ export default function ProfileUpdate({ user, setUser }) {
     gradeLevel: '',
     hire_date: '',
     salary_type: '',
+    salary_type_name: '',
     education_level: '',
     training_type: '',
     teaching_type: '',
@@ -106,7 +105,6 @@ export default function ProfileUpdate({ user, setUser }) {
   const [pictureUploading, setPictureUploading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
-  const [showQRModal, setShowQRModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -203,12 +201,14 @@ export default function ProfileUpdate({ user, setUser }) {
           }
         })();
 
-        // Get detailed user data by ID
-        if (!authUser?.id) {
-          throw new Error('User ID not found. Please log in again.');
+        // Get user ID from props or auth
+        const userId = user?.id || authUser?.id;
+        if (!userId) {
+          throw new Error('User ID not found in props or localStorage');
         }
 
-        const userData = await api.user.getUserByID(authUser.id);
+        // Get detailed user data using /users/{userId} endpoint (includes profile picture)
+        const userData = await api.user.getUserByID(userId);
         console.log('User data loaded:', userData);
 
         // Debug user data structure (can be removed in production)
@@ -216,6 +216,9 @@ export default function ProfileUpdate({ user, setUser }) {
           console.log('=== USER DATA DEBUG ===');
           console.log('Full userData object:', userData);
           console.log('Available keys:', Object.keys(userData));
+          console.log('profile_picture value:', userData?.profile_picture);
+          console.log('profile_picture_url value:', userData?.profile_picture_url);
+          console.log('profilePicture value:', userData?.profilePicture);
           console.log('=== END USER DATA DEBUG ===');
         }
 
@@ -256,7 +259,7 @@ export default function ProfileUpdate({ user, setUser }) {
           gender: normalizedData.gender || 'MALE',
           profile_picture: normalizedData.profile_picture || '',
           phone: normalizedData.phone || '',
-          teacher_number: normalizedData.teacher_number || '',
+          teacher_number: normalizedData.teacher_number || teacher.teacher_number || '',
           nationality: normalizedData.nationality || 'ខ្មែរ',
           roleNameEn: normalizedData.roleNameEn || '',
           roleNameKh: normalizedData.roleNameKh || '',
@@ -264,9 +267,6 @@ export default function ProfileUpdate({ user, setUser }) {
           weight_kg: normalizedData.weight_kg || '',
           height_cm: normalizedData.height_cm || '',
           bmi: normalizedData.bmi || '',
-          qr_code: normalizedData.qr_code || '',
-          qr_token: normalizedData.qr_token || '',
-          qr_generated_at: normalizedData.qr_generated_at || '',
           // Additional fields from API payload - check both top level and nested teacher object
           accessibility: normalizedData.accessibility || [],
           employment_type: normalizedData.employment_type || teacher.employment_type || '',
@@ -274,32 +274,40 @@ export default function ProfileUpdate({ user, setUser }) {
           gradeLevel: normalizedData.gradeLevel || teacher.gradeLevel || '',
           hire_date: normalizedData.hire_date || teacher.hire_date || '',
           role: normalizedData.role || normalizedData.roleId || '',
-          salary_type: normalizedData.salaryTypeId ? String(normalizedData.salaryTypeId) : '',
+          salary_type: (normalizedData.salaryTypeId || teacher.salaryTypeId) ? String(normalizedData.salaryTypeId || teacher.salaryTypeId) : '',
           education_level: normalizedData.educationLevel || teacher.educationLevel || '',
           training_type: normalizedData.trainingType || teacher.trainingType || '',
           teaching_type: normalizedData.teachingType || teacher.teachingType || '',
           teacher_status: normalizedData.teacherStatus || teacher.teacherStatus || '',
           subject: Array.isArray(normalizedData.subject) ? normalizedData.subject : (Array.isArray(teacher.subject) ? teacher.subject : []),
-          appointed: typeof normalizedData.appointed === 'boolean' ? normalizedData.appointed : false,
-          burden: typeof normalizedData.burden === 'boolean' ? normalizedData.burden : false,
+          appointed: typeof normalizedData.appointed === 'boolean' ? normalizedData.appointed : (typeof teacher.appointed === 'boolean' ? teacher.appointed : false),
+          burden: typeof normalizedData.burden === 'boolean' ? normalizedData.burden : (typeof teacher.burden === 'boolean' ? teacher.burden : false),
           bookIds: Array.isArray(normalizedData.bookIds) ? normalizedData.bookIds : [],
           teacherExtraLearningTool: {
             'កញ្ចប់សម្ភារៈអំណាន': normalizedData.teacherExtraLearningTool?.['កញ្ចប់សម្ភារៈអំណាន'] === true || teacher.extraLearningTool?.['កញ្ចប់សម្ភារៈអំណាន'] === true,
             'គណិតវិទ្យាថ្នាក់ដំបូង': normalizedData.teacherExtraLearningTool?.['គណិតវិទ្យាថ្នាក់ដំបូង'] === true || teacher.extraLearningTool?.['គណិតវិទ្យាថ្នាក់ដំបូង'] === true
           },
-          // Handle nested residence object
+          // Handle nested residence object with full location data (Khmer names prioritized)
           residence: {
             provinceId: normalizedData.residence?.provinceId || normalizedData.province_id || '',
+            province_name: normalizedData.residence?.province?.province_name_kh || normalizedData.residence?.province?.province_name_en || '',
             districtId: normalizedData.residence?.districtId || normalizedData.district_id || '',
+            district_name: normalizedData.residence?.district?.district_name_kh || normalizedData.residence?.district?.district_name_en || '',
             communeId: normalizedData.residence?.communeId || normalizedData.commune_id || '',
-            villageId: normalizedData.residence?.villageId || normalizedData.village_id || ''
+            commune_name: normalizedData.residence?.commune?.commune_name_kh || normalizedData.residence?.commune?.commune_name_en || '',
+            villageId: normalizedData.residence?.villageId || normalizedData.village_id || '',
+            village_name: normalizedData.residence?.village?.village_name_kh || normalizedData.residence?.village?.village_name_en || ''
           },
-          // Handle nested placeOfBirth object
+          // Handle nested placeOfBirth object with full location data (Khmer names prioritized)
           placeOfBirth: {
             provinceId: normalizedData.placeOfBirth?.provinceId || normalizedData.residence?.provinceId || normalizedData.province_id || '',
+            province_name: normalizedData.placeOfBirth?.province?.province_name_kh || normalizedData.placeOfBirth?.province?.province_name_en || normalizedData.residence?.province?.province_name_kh || '',
             districtId: normalizedData.placeOfBirth?.districtId || normalizedData.residence?.districtId || normalizedData.district_id || '',
+            district_name: normalizedData.placeOfBirth?.district?.district_name_kh || normalizedData.placeOfBirth?.district?.district_name_en || normalizedData.residence?.district?.district_name_kh || '',
             communeId: normalizedData.placeOfBirth?.communeId || normalizedData.residence?.communeId || normalizedData.commune_id || '',
-            villageId: normalizedData.placeOfBirth?.villageId || normalizedData.residence?.villageId || normalizedData.village_id || ''
+            commune_name: normalizedData.placeOfBirth?.commune?.commune_name_kh || normalizedData.placeOfBirth?.commune?.commune_name_en || normalizedData.residence?.commune?.commune_name_kh || '',
+            villageId: normalizedData.placeOfBirth?.villageId || normalizedData.residence?.villageId || normalizedData.village_id || '',
+            village_name: normalizedData.placeOfBirth?.village?.village_name_kh || normalizedData.placeOfBirth?.village?.village_name_en || normalizedData.residence?.village?.village_name_kh || ''
           },
           // Handle teacher family information
           teacher_family: {
@@ -324,6 +332,27 @@ export default function ProfileUpdate({ user, setUser }) {
         setOriginalUsername(newFormData.username || '');
         setOriginalEmail(newFormData.email || '');
         console.log('User data loaded into form, keys present:', Object.keys(newFormData).filter(k => newFormData[k]));
+
+        // Fetch salary type name if salary type ID and employment type exist
+        const currentEmploymentType = newFormData.employment_type;
+        const currentSalaryTypeId = newFormData.salary_type;
+
+        if (currentSalaryTypeId && currentEmploymentType) {
+          try {
+            const salaryTypes = await salaryTypeService.getSalaryTypesByEmploymentType(currentEmploymentType);
+            if (Array.isArray(salaryTypes)) {
+              const selectedSalaryType = salaryTypes.find(st => String(st.id || st.salaryTypeId) === currentSalaryTypeId);
+              if (selectedSalaryType) {
+                setFormData(prev => ({
+                  ...prev,
+                  salary_type_name: selectedSalaryType.name
+                }));
+              }
+            }
+          } catch (error) {
+            console.warn('Failed to fetch salary type name:', error);
+          }
+        }
 
         // Store initial location data to set once provinces are loaded
         const residenceData = normalizedData.residence || {};
@@ -509,97 +538,6 @@ export default function ProfileUpdate({ user, setUser }) {
     setIsEditMode(!isEditMode);
   };
 
-  // View QR code
-  const handleViewQRCode = () => {
-    if (formData.qr_code) {
-      setShowQRModal(true);
-    } else {
-      showError(t('noQRCode') || 'QR code not available');
-    }
-  };
-
-  // Download QR code as image
-  const downloadQRCode = () => {
-    if (!formData.qr_code) return;
-
-    try {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        canvas.toBlob((blob) => {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `qr-code-${formData.username || 'user'}-${new Date().getTime()}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }, 'image/png');
-      };
-      img.onerror = () => {
-        // Fallback: try direct download
-        const link = document.createElement('a');
-        link.href = formData.qr_code;
-        link.download = `qr-code-${formData.username || 'user'}-${new Date().getTime()}.png`;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      };
-      img.src = formData.qr_code;
-    } catch (error) {
-      console.error('Download error:', error);
-      showError(t('downloadFailed') || 'Failed to download QR code');
-    }
-  };
-
-  // Download card as PNG image
-  const downloadCardAsImage = async () => {
-    try {
-      // Dynamic import of html2canvas
-      const html2canvas = (await import('html2canvas')).default;
-      const cardElement = document.querySelector('[data-card-download]');
-
-      if (!cardElement) {
-        showError('Card element not found');
-        return;
-      }
-
-      // Create canvas from the card
-      const canvas = await html2canvas(cardElement, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        width: cardElement.offsetWidth,
-        height: cardElement.offsetHeight
-      });
-
-      // Convert canvas to blob and download
-      canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `profile-card-${formData.username || 'user'}-${new Date().getTime()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        showSuccess(t('downloadSuccess') || 'Card downloaded successfully');
-      });
-    } catch (error) {
-      console.error('Download error:', error);
-      showError(t('downloadFailed') || 'Failed to download card. Please ensure html2canvas is installed.');
-    }
-  };
-
   // Download profile data as JSON with image
   const downloadProfileData = async () => {
     try {
@@ -634,8 +572,7 @@ export default function ProfileUpdate({ user, setUser }) {
         },
         additionalInfo: {
           ethnicity: formData.ethnic_group,
-          accessibility: formData.accessibility,
-          qrCode: formData.qr_code
+          accessibility: formData.accessibility
         },
         downloadedAt: new Date().toISOString()
       };
@@ -859,53 +796,37 @@ export default function ProfileUpdate({ user, setUser }) {
       }
 
       if (formData.weight_kg) {
-        updateData.weight_kg = formData.weight_kg;
+        updateData.weight_kg = parseFloat(formData.weight_kg);
       }
 
       if (formData.height_cm) {
-        updateData.height_cm = formData.height_cm;
+        updateData.height_cm = parseFloat(formData.height_cm);
       }
 
       if (formData.bmi) {
-        updateData.bmi = formData.bmi;
+        updateData.bmi = parseFloat(formData.bmi);
       }
 
-      // Include ID field if available - crucial for update
-      if (formData.id) {
-        updateData.id = formData.id;
-      }
+      // Note: Do NOT include id or role fields - the API doesn't accept them for current user updates
+      // Role is retrieved from the GET endpoint and cannot be changed via this endpoint
 
-      // Always include roleId if available (important for maintaining user role)
-      if (formData.roleId) {
-        updateData.roleId = formData.roleId;
-        console.log('Including roleId in update:', formData.roleId);
-      } else {
-        console.warn('Warning: roleId is empty, user role may not be preserved');
-      }
-
-      // Include location fields if available
+      // Include location fields if available - only send IDs, not location names
       if (formData.residence && (formData.residence.provinceId || formData.residence.districtId || formData.residence.communeId || formData.residence.villageId)) {
-        updateData.residence = formData.residence;
-        // Also include legacy flat fields for compatibility
-        if (formData.residence.provinceId) updateData.province_id = formData.residence.provinceId;
-        if (formData.residence.districtId) updateData.district_id = formData.residence.districtId;
-        if (formData.residence.communeId) updateData.commune_id = formData.residence.communeId;
-        if (formData.residence.villageId) updateData.village_id = formData.residence.villageId;
+        updateData.residence = {
+          provinceId: formData.residence.provinceId || undefined,
+          districtId: formData.residence.districtId || undefined,
+          communeId: formData.residence.communeId || undefined,
+          villageId: formData.residence.villageId || undefined
+        };
       }
 
       if (formData.placeOfBirth && (formData.placeOfBirth.provinceId || formData.placeOfBirth.districtId || formData.placeOfBirth.communeId || formData.placeOfBirth.villageId)) {
-        updateData.placeOfBirth = formData.placeOfBirth;
-      }
-
-      // Include QR code fields if available (read-only)
-      if (formData.qr_code) {
-        updateData.qr_code = formData.qr_code;
-      }
-      if (formData.qr_token) {
-        updateData.qr_token = formData.qr_token;
-      }
-      if (formData.qr_generated_at) {
-        updateData.qr_generated_at = formData.qr_generated_at;
+        updateData.placeOfBirth = {
+          provinceId: formData.placeOfBirth.provinceId || undefined,
+          districtId: formData.placeOfBirth.districtId || undefined,
+          communeId: formData.placeOfBirth.communeId || undefined,
+          villageId: formData.placeOfBirth.villageId || undefined
+        };
       }
 
       // Include newPassword if provided
@@ -934,10 +855,7 @@ export default function ProfileUpdate({ user, setUser }) {
         updateData.accessibility = formData.accessibility;
       }
 
-      // Add role field
-      if (formData.role) {
-        updateData.role = parseInt(formData.role);
-      }
+      // Note: Do NOT add role field - the API doesn't accept it and users cannot change their own role
 
       // Add salary type
       if (formData.salary_type) {
@@ -993,8 +911,12 @@ export default function ProfileUpdate({ user, setUser }) {
         updateData.teacher_family = buildTeacherFamilyPayload();
       }
 
-      // Use the correct endpoint for updating user profile via PATCH /users/my-account
-      const response = await api.user.updateMyAccount(updateData);
+      // Use the correct endpoint for updating user profile via PUT /users/{userId}
+      const userId = formData.id;
+      if (!userId) {
+        throw new Error('User ID not found in form data');
+      }
+      const response = await api.user.updateUser(userId, updateData);
       clearTimeout(timeoutId);
 
       const updatedUser = {
@@ -1028,9 +950,6 @@ export default function ProfileUpdate({ user, setUser }) {
         weight_kg: response.weight_kg || prev.weight_kg,
         height_cm: response.height_cm || prev.height_cm,
         bmi: response.bmi || prev.bmi,
-        qr_code: response.qr_code || prev.qr_code,
-        qr_token: response.qr_token || prev.qr_token,
-        qr_generated_at: response.qr_generated_at || prev.qr_generated_at,
         teacher_number: response.teacher_number || prev.teacher_number,
         // Additional fields - check both top level and nested teacher object
         accessibility: response.accessibility || teacher.accessibility || prev.accessibility,
@@ -1039,13 +958,14 @@ export default function ProfileUpdate({ user, setUser }) {
         gradeLevel: response.gradeLevel || teacher.gradeLevel || prev.gradeLevel,
         hire_date: response.hire_date || teacher.hire_date || prev.hire_date,
         salary_type: response.salaryTypeId ? String(response.salaryTypeId) : prev.salary_type,
+        salary_type_name: prev.salary_type_name,
         education_level: response.educationLevel || teacher.educationLevel || prev.education_level,
         training_type: response.trainingType || teacher.trainingType || prev.training_type,
         teaching_type: response.teachingType || teacher.teachingType || prev.teaching_type,
         teacher_status: response.teacherStatus || teacher.teacherStatus || prev.teacher_status,
         subject: Array.isArray(response.subject) ? response.subject : (Array.isArray(teacher.subject) ? teacher.subject : prev.subject),
-        appointed: typeof response.appointed === 'boolean' ? response.appointed : prev.appointed,
-        burden: typeof response.burden === 'boolean' ? response.burden : prev.burden,
+        appointed: typeof response.appointed === 'boolean' ? response.appointed : (typeof teacher.appointed === 'boolean' ? teacher.appointed : prev.appointed),
+        burden: typeof response.burden === 'boolean' ? response.burden : (typeof teacher.burden === 'boolean' ? teacher.burden : prev.burden),
         bookIds: Array.isArray(response.bookIds) ? response.bookIds : prev.bookIds,
         teacherExtraLearningTool: {
           'កញ្ចប់សម្ភារៈអំណាន': extraLearningToolData['កញ្ចប់សម្ភារៈអំណាន'] === true,
@@ -1071,20 +991,18 @@ export default function ProfileUpdate({ user, setUser }) {
       // Re-fetch user data to ensure all fields are properly displayed
       // This ensures the form shows the latest data from the server
       try {
-        const authUser = JSON.parse(localStorage.getItem('user') || '{}');
-        if (authUser?.id) {
-          const freshUserData = await api.user.getUserByID(authUser.id);
-          // Update formData with fresh data from server
-          const teacher = freshUserData.teacher || {};
-          setFormData(prev => ({
-            ...prev,
-            employment_type: freshUserData.employment_type || teacher.employment_type || prev.employment_type,
-            ethnic_group: freshUserData.ethnic_group || prev.ethnic_group,
-            gradeLevel: freshUserData.gradeLevel || teacher.gradeLevel || prev.gradeLevel,
-            hire_date: freshUserData.hire_date || teacher.hire_date || prev.hire_date,
-            accessibility: freshUserData.accessibility || teacher.accessibility || prev.accessibility
-          }));
-        }
+        const freshUserData = await api.user.getUserByID(userId);
+        // Update formData with fresh data from server
+        const teacher = freshUserData.teacher || {};
+        setFormData(prev => ({
+          ...prev,
+          profile_picture: freshUserData.profile_picture || prev.profile_picture,
+          employment_type: freshUserData.employment_type || teacher.employment_type || prev.employment_type,
+          ethnic_group: freshUserData.ethnic_group || prev.ethnic_group,
+          gradeLevel: freshUserData.gradeLevel || teacher.gradeLevel || prev.gradeLevel,
+          hire_date: freshUserData.hire_date || teacher.hire_date || prev.hire_date,
+          accessibility: freshUserData.accessibility || teacher.accessibility || prev.accessibility
+        }));
       } catch (refreshError) {
         console.warn('Could not refresh user data:', refreshError);
         // Continue anyway, as the initial update succeeded
@@ -1371,10 +1289,10 @@ export default function ProfileUpdate({ user, setUser }) {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-1">
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                 {t('profile', 'My Profile')}
               </h1>
-              <p className="text-gray-500 text-sm sm:text-base">
+              <p className="text-sm text-gray-600 mt-2">
                 {t('updateYourPersionalDetails','Update your personal details and preferences')}
               </p>
             </div>
@@ -1405,8 +1323,8 @@ export default function ProfileUpdate({ user, setUser }) {
         </div>
 
         {/* Profile Picture Card - Full Width */}
-        {!isEditMode && (
-          <div data-card-download className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 mb-8 hover:shadow-md transition-shadow">
+        {isEditMode && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 mb-8 transition-shadow">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8" ref={dropdownRef}>
               {/* Profile Picture */}
               <div
@@ -1418,16 +1336,20 @@ export default function ProfileUpdate({ user, setUser }) {
                     <img
                       src={URL.createObjectURL(profilePictureFile)}
                       alt="Profile Preview"
-                      className="h-32 w-32 sm:h-40 sm:w-40 rounded-full object-cover border-4 border-blue-500 shadow-lg group-hover:shadow-xl transition-all"
+                      className="h-32 w-32 sm:h-40 sm:w-40 rounded-full object-cover border-4 border-blue-500 shadow-lg transition-all"
                     />
                     {isEditMode && (
-                      <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                        <Upload className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 transition-all flex items-center justify-center">
+                        <Upload className="h-5 w-5 text-white opacity-0 transition-opacity" />
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="relative">
+                    {console.log('ProfileImage data:', {
+                      profile_picture: formData.profile_picture,
+                      profile_picture_value: formData.profile_picture ? `${formData.profile_picture}` : 'empty'
+                    })}
                     <ProfileImage
                       user={formData}
                       size="custom"
@@ -1439,8 +1361,8 @@ export default function ProfileUpdate({ user, setUser }) {
                       clickable={isEditMode}
                     />
                     {isEditMode && (
-                      <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                        <Upload className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 transition-all flex items-center justify-center">
+                        <Upload className="h-5 w-5 text-white opacity-0 transition-opacity" />
                       </div>
                     )}
                   </div>
@@ -1457,51 +1379,13 @@ export default function ProfileUpdate({ user, setUser }) {
                     </span>
                   )}
                   {formData.roleNameKh && (
-                    <p className="text-base text-gray-600">{formData.roleNameKh}</p>
+                    <p className="text-sm text-gray-600">{formData.roleNameKh}</p>
                   )}
                   {formData.school_name && (
                     <p className="text-sm text-gray-500">{formData.school_name}</p>
                   )}
                 </div>
               </div>
-
-              {/* QR Code Section */}
-              {formData.qr_code && (
-                <div className="flex-shrink-0">
-                  <div className="p-4 bg-white border border-gray-200 rounded-lg">
-                    <div className="flex flex-col items-center gap-4">
-                      <h5 className="text-sm font-semibold text-gray-900">QR Code</h5>
-                      <img
-                        src={formData.qr_code}
-                        alt="QR Code"
-                        className="h-32 w-32 object-contain"
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleViewQRCode}
-                          className="flex items-center gap-1 text-xs hover:bg-blue-50"
-                          title="View QR Code"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={downloadCardAsImage}
-                          className="flex items-center gap-1 text-xs hover:bg-blue-50"
-                          title="Download Card"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Dropdown Menu */}
               {showDropdown && (
@@ -1514,7 +1398,7 @@ export default function ProfileUpdate({ user, setUser }) {
                         variant="ghost"
                         size="sm"
                         fullWidth
-                        className="justify-start rounded-none px-4 py-2 hover:bg-gray-50 text-gray-700"
+                        className="justify-start rounded-none px-4 py-2 text-gray-700"
                       >
                         <Eye className="h-4 w-4 mr-3 text-gray-500" />
                         <span className="text-sm">{t('viewPicture') || 'View Picture'}</span>
@@ -1526,7 +1410,7 @@ export default function ProfileUpdate({ user, setUser }) {
                       variant="ghost"
                       size="sm"
                       fullWidth
-                      className="justify-start rounded-none px-4 py-2 hover:bg-blue-50 text-gray-700"
+                      className="justify-start rounded-none px-4 py-2 text-gray-700"
                     >
                       <Upload className="h-4 w-4 mr-3 text-blue-500" />
                       <span className="text-sm">{t('uploadNewPicture') || 'Upload New Picture'}</span>
@@ -1582,11 +1466,51 @@ export default function ProfileUpdate({ user, setUser }) {
 
         {/* Main Content - Full Width Form or Display */}
         {!isEditMode && (
-          <ProfileInfoDisplay
-            formData={formData}
-            calculateBMI={calculateBMI}
-            getBMICategory={getBMICategory}
-          />
+          <>
+            {/* Profile Picture Card - View Mode */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 mb-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8">
+                {/* Profile Picture */}
+                <div className="relative flex-shrink-0">
+                  <ProfileImage
+                    user={formData}
+                    size="custom"
+                    customSize="h-32 w-32 sm:h-40 sm:w-40"
+                    alt="Profile"
+                    className="shadow-lg"
+                    borderColor="border-gray-300"
+                    fallbackType="image"
+                  />
+                </div>
+
+                {/* User Info Summary */}
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    {formData.first_name && formData.last_name
+                      ? `${formData.first_name} ${formData.last_name}`
+                      : formData.username}
+                  </h2>
+                  {formData.roleNameKh && (
+                    <p className="text-sm text-gray-600 mb-1">
+                      {formData.roleNameKh} ({formData.roleNameEn})
+                    </p>
+                  )}
+                  {formData.school_name && (
+                    <p className="text-gray-600 text-sm">{formData.school_name}</p>
+                  )}
+                  {formData.email && (
+                    <p className="text-gray-600 text-sm mt-2">{formData.email}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <ProfileInfoDisplay
+              formData={formData}
+              calculateBMI={calculateBMI}
+              getBMICategory={getBMICategory}
+            />
+          </>
         )}
 
         {isEditMode && (
@@ -1612,7 +1536,7 @@ export default function ProfileUpdate({ user, setUser }) {
                           name="first_name"
                           id="first_name"
                           required
-                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                           value={formData.first_name}
                           onChange={handleInputChange}
                           placeholder={t('enterFirstName')}
@@ -1633,7 +1557,7 @@ export default function ProfileUpdate({ user, setUser }) {
                           name="last_name"
                           id="last_name"
                           required
-                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:scale-[1.01]"
                           value={formData.last_name}
                           onChange={handleInputChange}
                           placeholder={t('enterLastName')}
@@ -1713,10 +1637,10 @@ export default function ProfileUpdate({ user, setUser }) {
                           type="text"
                           name="weight_kg"
                           id="weight_kg"
-                          className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
+                          className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] ${
                             isWeightInvalid()
                               ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                              : 'border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400'
+                              : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
                           }`}
                           value={formData.weight_kg}
                           onChange={handleInputChange}
@@ -1747,10 +1671,10 @@ export default function ProfileUpdate({ user, setUser }) {
                           type="text"
                           name="height_cm"
                           id="height_cm"
-                          className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
+                          className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] ${
                             isHeightInvalid()
                               ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                              : 'border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400'
+                              : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
                           }`}
                           value={formData.height_cm}
                           onChange={handleInputChange}
@@ -1785,7 +1709,7 @@ export default function ProfileUpdate({ user, setUser }) {
                           { value: 'ពិការផ្លូវចិត្ត', label: 'ពិការផ្លូវចិត្ត' },
                           { value: 'ពិការផ្សេងៗ', label: 'ពិការផ្សេងៗ' }
                         ].map((option) => (
-                          <label key={option.value} className="flex items-center space-x-2 cursor-pointer hover:bg-white p-2 rounded transition-colors">
+                          <label key={option.value} className="flex items-center space-x-2 cursor-pointer p-2 rounded transition-colors">
                             <input
                               type="checkbox"
                               checked={formData.accessibility.includes(option.value)}
@@ -1828,7 +1752,7 @@ export default function ProfileUpdate({ user, setUser }) {
                               name="username"
                               id="username"
                               required
-                              className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                              className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:scale-[1.01] "
                               value={formData.username}
                               onChange={(e) => {
                                 const rawValue = e.target.value;
@@ -1853,7 +1777,7 @@ export default function ProfileUpdate({ user, setUser }) {
                             onClick={() => {
                               handleGenerateUsernameSuggestions(formData.username || '');
                             }}
-                            className="mt-1 px-2 py-1 text-xs border border-gray-300 rounded bg-white hover:bg-blue-50 text-gray-700 whitespace-nowrap"
+                            className="mt-1 px-2 py-1 text-xs border border-gray-300 rounded bg-white text-gray-700 whitespace-nowrap"
                           >
                             {t('suggestion')}
                           </button>
@@ -1865,7 +1789,7 @@ export default function ProfileUpdate({ user, setUser }) {
                               <button
                                 key={idx}
                                 type="button"
-                                className="w-full text-left px-3 py-1 hover:bg-blue-50"
+                                className="w-full text-left px-3 py-1"
                                 onClick={() => handleChooseUsernameSuggestion(suggestion)}
                               >
                                 {suggestion}
@@ -1904,7 +1828,7 @@ export default function ProfileUpdate({ user, setUser }) {
                           type="password"
                           name="newPassword"
                           id="newPassword"
-                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:scale-[1.01]"
                           value={formData.newPassword}
                           onChange={handleInputChange}
                           placeholder={t('enterNewPassword')}
@@ -1926,11 +1850,11 @@ export default function ProfileUpdate({ user, setUser }) {
                           id="email"
                           className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm ${
                             emailAvailable === false
-                              ? 'border-red-500 focus:ring-red-500 focus:border-red-500 hover:border-red-400'
+                              ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                               : emailAvailable === true
-                              ? 'border-green-500 focus:ring-green-500 focus:border-green-500 hover:border-green-400'
-                              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
-                          } focus:scale-[1.01] hover:shadow-md`}
+                              ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
+                              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } focus:scale-[1.01] `}
                           value={formData.email}
                           onChange={handleInputChange}
                           placeholder={t('enterEmail')}
@@ -1965,7 +1889,7 @@ export default function ProfileUpdate({ user, setUser }) {
                           type="tel"
                           name="phone"
                           id="phone"
-                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:scale-[1.01]"
                           value={formData.phone}
                           onChange={handleInputChange}
                           placeholder={t('enterPhone')}
@@ -2236,7 +2160,26 @@ export default function ProfileUpdate({ user, setUser }) {
                       <SalaryTypeDropdown
                         employmentType={formData.employment_type}
                         value={formData.salary_type}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, salary_type: value }))}
+                        onValueChange={async (value) => {
+                          setFormData(prev => ({ ...prev, salary_type: value, salary_type_name: '' }));
+                          // Fetch salary type name for display
+                          if (value && formData.employment_type) {
+                            try {
+                              const salaryTypes = await salaryTypeService.getSalaryTypesByEmploymentType(formData.employment_type);
+                              if (Array.isArray(salaryTypes)) {
+                                const selectedSalaryType = salaryTypes.find(st => String(st.id || st.salaryTypeId) === value);
+                                if (selectedSalaryType) {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    salary_type_name: selectedSalaryType.name
+                                  }));
+                                }
+                              }
+                            } catch (error) {
+                              console.warn('Failed to fetch salary type name:', error);
+                            }
+                          }
+                        }}
                         placeholder={t('selectSalaryType')}
                         disabled={!formData.employment_type}
                       />
@@ -2317,33 +2260,35 @@ export default function ProfileUpdate({ user, setUser }) {
                     </div>
                   </div>
 
-                  {/* Appointment and Burden Status */}
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      {t('appointmentStatus')}
-                    </label>
-                    <div className="flex items-center gap-6">
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                          checked={!!formData.appointed}
-                          onChange={(e) => setFormData(prev => ({ ...prev, appointed: e.target.checked }))}
-                        />
-                        <span>{t('appointed')}</span>
+                  {/* Appointment and Burden Status - Only for Principal (14) and Deputy Principal (15) */}
+                  {(String(formData.roleId) === '14' || String(formData.roleId) === '15') && (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        {t('appointmentStatus')}
                       </label>
+                      <div className="flex items-center gap-6">
+                        <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            checked={!!formData.appointed}
+                            onChange={(e) => setFormData(prev => ({ ...prev, appointed: e.target.checked }))}
+                          />
+                          <span>{t('appointed')}</span>
+                        </label>
 
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                          checked={!!formData.burden}
-                          onChange={(e) => setFormData(prev => ({ ...prev, burden: e.target.checked }))}
-                        />
-                        <span>{t('burden')}</span>
-                      </label>
+                        <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            checked={!!formData.burden}
+                            onChange={(e) => setFormData(prev => ({ ...prev, burden: e.target.checked }))}
+                          />
+                          <span>{t('burden')}</span>
+                        </label>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Training Information Subsection */}
                   <div className="mt-8 border-t border-gray-200 pt-6">
@@ -2389,7 +2334,7 @@ export default function ProfileUpdate({ user, setUser }) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {Object.entries(formData.teacherExtraLearningTool).map(([key, value]) => (
                         <div key={key}>
-                          <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                          <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-300 rounded-md transition-colors">
                             <input
                               type="checkbox"
                               checked={value === true}
@@ -2653,7 +2598,7 @@ export default function ProfileUpdate({ user, setUser }) {
                                 </div>
                                 <button
                                   type="button"
-                                  className="mt-6 inline-flex items-center justify-center h-10 w-10 border border-red-300 text-xs font-medium rounded text-red-700 bg-red-50 hover:bg-red-100"
+                                  className="mt-6 inline-flex items-center justify-center h-10 w-10 border border-red-300 text-xs font-medium rounded text-red-700 bg-red-50"
                                   onClick={() => {
                                     setFormData(prev => {
                                       const prevCount = parseInt(prev.teacher_family.number_of_children) || 0;
@@ -2693,7 +2638,7 @@ export default function ProfileUpdate({ user, setUser }) {
               onClick={() => setShowImageModal(false)}
               variant="ghost"
               size="icon"
-              className="absolute top-2 right-2 text-white hover:text-gray-300 hover:bg-white/10 z-10"
+              className="absolute top-2 right-2 text-white z-10"
             >
               <X className="w-6 h-6" />
             </Button>
@@ -2703,42 +2648,6 @@ export default function ProfileUpdate({ user, setUser }) {
               className="max-w-full max-h-full object-contain"
               onClick={(e) => e.stopPropagation()}
             />
-          </div>
-        </div>
-      )}
-
-      {/* QR Code Modal */}
-      {showQRModal && formData.qr_code && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowQRModal(false)}>
-          <div className="relative max-w-2xl max-h-full p-4 bg-white rounded-lg">
-            <Button
-              onClick={() => setShowQRModal(false)}
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 z-10"
-            >
-              <X className="w-6 h-6" />
-            </Button>
-            <div className="flex flex-col items-center justify-center p-8">
-              <img
-                src={formData.qr_code}
-                alt="QR Code"
-                className="max-w-full max-h-96 object-contain"
-                onClick={(e) => e.stopPropagation()}
-              />
-              <p className="mt-4 text-sm text-gray-600">
-                {formData.username}
-              </p>
-              <Button
-                onClick={downloadQRCode}
-                variant="secondary"
-                size="default"
-                className="mt-4 flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                {t('download') || 'Download'}
-              </Button>
-            </div>
           </div>
         </div>
       )}

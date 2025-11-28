@@ -1,5 +1,5 @@
 import { get, post, patch, put, uploadFile, uploadFilePatch } from '../client';
-import { ENDPOINTS } from '../config';
+import { ENDPOINTS, getStaticAssetBaseUrl } from '../config';
 
 /**
  * User API Service
@@ -277,15 +277,24 @@ const userService = {
       type: file.type
     });
     console.log('User ID provided:', userId);
-    console.log('Available endpoints to try:');
-    console.log('1. POST /users/{userId}/upload-profile (if userId provided)');
-    console.log('2. PATCH /users/my-account/profile-picture');
+    console.log('Available endpoints to try (in order):');
+    console.log('1. PATCH /users/my-account/profile-picture (primary)');
+    console.log('2. POST /users/{userId}/upload-profile (if userId provided)');
     console.log('3. POST /upload/single (generic fallback)');
     console.log('=== END UPLOAD SERVICE DEBUG ===');
     
     const endpoints = [];
-    
+
     // Build list of endpoints to try in order of preference
+    // Primary: Use /users/my-account/profile-picture endpoint (PATCH method)
+    endpoints.push({
+      name: 'Profile picture endpoint',
+      method: 'PATCH',
+      url: ENDPOINTS.USERS.MY_PROFILE_PICTURE,
+      uploadFn: () => uploadFilePatch(ENDPOINTS.USERS.MY_PROFILE_PICTURE, file, 'file')
+    });
+
+    // Fallback: User-specific upload endpoint
     if (userId && userId !== null && userId !== undefined && userId !== '') {
       endpoints.push({
         name: 'User-specific upload endpoint',
@@ -294,21 +303,14 @@ const userService = {
         uploadFn: () => uploadFile(ENDPOINTS.USERS.UPLOAD_PROFILE(userId), file, 'file')
       });
     }
-    
-    endpoints.push(
-      {
-        name: 'Legacy profile picture endpoint',
-        method: 'PATCH',
-        url: ENDPOINTS.USERS.MY_PROFILE_PICTURE,
-        uploadFn: () => uploadFilePatch(ENDPOINTS.USERS.MY_PROFILE_PICTURE, file, 'file')
-      },
-      {
-        name: 'Generic upload endpoint',
-        method: 'POST',
-        url: ENDPOINTS.UPLOAD.SINGLE,
-        uploadFn: () => uploadFile(ENDPOINTS.UPLOAD.SINGLE, file, 'file')
-      }
-    );
+
+    // Last resort: Generic upload endpoint
+    endpoints.push({
+      name: 'Generic upload endpoint',
+      method: 'POST',
+      url: ENDPOINTS.UPLOAD.SINGLE,
+      uploadFn: () => uploadFile(ENDPOINTS.UPLOAD.SINGLE, file, 'file')
+    });
     
     let lastError = null;
     const errors = [];
@@ -734,8 +736,8 @@ const userUtils = {
       return profilePicture;
     }
     
-    // Use production API for all environments
-    const staticBaseUrl = import.meta.env.VITE_STATIC_BASE_URL || 'https://plp-api.moeys.gov.kh';
+    // Use environment-aware static base URL from config
+    const staticBaseUrl = getStaticAssetBaseUrl();
     
     // Handle different path formats
     let profilePath = profilePicture;

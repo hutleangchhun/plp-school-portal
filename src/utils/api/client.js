@@ -18,6 +18,12 @@ const apiClient = axios.create({
 // Request interceptor to add auth token to requests
 apiClient.interceptors.request.use(
   (config) => {
+    // If data is FormData, remove Content-Type header to let axios set it with proper boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+      console.log('📤 FormData detected - removed Content-Type header to allow axios to set boundary');
+    }
+
     const token = localStorage.getItem('authToken');
     if (token) {
       // Check if token is expired before making request
@@ -26,7 +32,7 @@ apiClient.interceptors.request.use(
         if (tokenParts.length === 3) {
           const payload = JSON.parse(atob(tokenParts[1]));
           const now = Math.floor(Date.now() / 1000);
-          
+
           // Check if token expires within the next 5 minutes (300 seconds)
           if (payload.exp && payload.exp < (now + 300)) {
             console.warn('Auth token is expired or expiring soon');
@@ -220,27 +226,40 @@ export const del = async (url, params = {}, headers = {}) => {
  */
 export const uploadFile = async (url, file, fieldName = 'file', data = {}, onUploadProgress = null) => {
   const formData = new FormData();
+
+  // Verify file exists and is valid
+  if (!file) {
+    throw new Error('No file provided for upload');
+  }
+
+  console.log(`📤 Preparing file upload: ${fieldName}`, {
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: file.type,
+    url: url
+  });
+
   formData.append(fieldName, file);
-  
+
   // Append additional data to form data
   Object.entries(data).forEach(([key, value]) => {
     formData.append(key, value);
   });
-  
+
   const config = {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    // Don't explicitly set Content-Type header - let axios detect FormData and set proper boundary
+    headers: {},
   };
-  
+
   if (onUploadProgress) {
     config.onUploadProgress = onUploadProgress;
   }
-  
+
   try {
     const response = await apiClient.post(url, formData, config);
     return response;
   } catch (error) {
+    console.error('Upload error:', error);
     throw error;
   }
 };
@@ -256,27 +275,40 @@ export const uploadFile = async (url, file, fieldName = 'file', data = {}, onUpl
  */
 export const uploadFilePatch = async (url, file, fieldName = 'file', data = {}, onUploadProgress = null) => {
   const formData = new FormData();
+
+  // Verify file exists and is valid
+  if (!file) {
+    throw new Error('No file provided for upload');
+  }
+
+  console.log(`📤 Preparing file upload (PATCH): ${fieldName}`, {
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: file.type,
+    url: url
+  });
+
   formData.append(fieldName, file);
-  
+
   // Append additional data to form data
   Object.entries(data).forEach(([key, value]) => {
     formData.append(key, value);
   });
-  
+
   const config = {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    // Don't explicitly set Content-Type header - let axios detect FormData and set proper boundary
+    headers: {},
   };
-  
+
   if (onUploadProgress) {
     config.onUploadProgress = onUploadProgress;
   }
-  
+
   try {
     const response = await apiClient.patch(url, formData, config);
     return response;
   } catch (error) {
+    console.error('Upload error:', error);
     throw error;
   }
 };

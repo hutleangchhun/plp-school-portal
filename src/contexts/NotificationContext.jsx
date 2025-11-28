@@ -253,11 +253,26 @@ export function NotificationProvider({ children }) {
 
 /**
  * Hook to use notification context
+ * Returns a safe default value if context is not available (e.g., during hot reload or when not wrapped by provider)
  */
 export function useNotification() {
   const context = useContext(NotificationContext);
+
+  // Return safe default value if context is not available
   if (!context) {
-    throw new Error('useNotification must be used within NotificationProvider');
+    return {
+      notifications: [],
+      unreadCount: 0,
+      loading: false,
+      error: null,
+      fetchNotifications: async () => {},
+      fetchUnreadCount: async () => {},
+      markAsRead: async () => {},
+      markAllAsRead: async () => {},
+      deleteNotification: async () => {},
+      handleNotificationClick: () => {}
+    };
   }
+
   return context;
 }
