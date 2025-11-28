@@ -281,7 +281,11 @@ const SchoolLookup = () => {
     } catch (error) {
       console.error('Error loading users:', error);
       setUsers([]);
-      alert(t('មានបញ្ហាក្នុងការផ្ទុកបញ្ជីប្រើប្រាស់', 'Error loading users'));
+
+      // Don't show alert for 401/403 as these are handled by the API interceptor
+      if (error.status !== 401 && error.status !== 403) {
+        alert(t('មានបញ្ហាក្នុងការផ្ទុកបញ្ជីប្រើប្រាស់', 'Error loading users'));
+      }
     } finally {
       setUsersLoading(false);
     }
@@ -302,7 +306,7 @@ const SchoolLookup = () => {
     if (selectedSchool && showUsers) {
       loadUsers(selectedSchool);
     }
-  }, [currentPage, selectedSchool, showUsers, loadUsers]);
+  }, [currentPage, selectedSchool, showUsers]);
 
   // Filter users based on search query
   const filteredUsers = useMemo(() => {
