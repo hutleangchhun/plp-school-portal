@@ -16,19 +16,22 @@ const UserActivityLogs = () => {
   const [logs, setLogs] = useState([]);
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
-  const [pagination, setPagination] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const tableEndRef = React.useRef(null);
+  const autoRefreshRef = React.useRef(null);
+  const pageRef = React.useRef(1);
 
-  const fetchLogs = async (pageToLoad = 1, { silent = false } = {}) => {
+  const fetchLogs = async (pageToLoad = 1, { isLoadMore = false, silent = false } = {}) => {
     try {
       clearError();
-      if (!silent) {
+      if (!isLoadMore && !silent) {
         startLoading('fetchUserActivityLogs', t('loadingLogs', 'Loading activity logs...'));
       } else {
-        setRefreshing(true);
+        setLoadingMore(true);
       }
 
       const response = await api.userActivityLog.getLogs({ page: pageToLoad, limit });
@@ -37,18 +40,38 @@ const UserActivityLogs = () => {
         throw new Error(response.error || 'Failed to load activity logs');
       }
 
-      setLogs(response.data || []);
-      setPagination(response.pagination || null);
+      const newLogs = response.data || [];
+
+      // For load more, append to existing logs. For initial or page change, replace
+      if (isLoadMore) {
+        setLogs(prevLogs => {
+          // Deduplicate: create a Set of existing log IDs
+          const existingIds = new Set(prevLogs.map(log => log.id));
+          // Filter out any new logs that already exist
+          const uniqueNewLogs = newLogs.filter(log => !existingIds.has(log.id));
+          return [...prevLogs, ...uniqueNewLogs];
+        });
+      } else {
+        setLogs(newLogs);
+      }
+
       setPage(pageToLoad);
+      pageRef.current = pageToLoad;
+
+      // For now, we only keep a single page (latest 20 logs), so disable loading more pages
+      const paginationData = response.pagination;
+      const moreAvailable = false;
+      setHasMore(moreAvailable);
     } catch (err) {
       handleError(err, {
         toastMessage: t('failedToLoadLogs', 'Failed to load activity logs'),
       });
     } finally {
-      if (!silent) {
+      if (!isLoadMore && !silent) {
         stopLoading('fetchUserActivityLogs');
+      } else {
+        setLoadingMore(false);
       }
-      setRefreshing(false);
       setInitialLoading(false);
     }
   };
@@ -73,20 +96,55 @@ const UserActivityLogs = () => {
   };
 
   useEffect(() => {
+    // Start from page 1 (API already returns newest data first)
     fetchLogs(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Polling effect: refresh current page every 15 seconds
+  // Infinite scroll effect: Load more when user scrolls to end
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      // Use silent mode to avoid global loading spinner
-      fetchLogs(page, { silent: true });
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !initialLoading) {
+          fetchLogs(page + 1, { isLoadMore: true });
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (tableEndRef.current) {
+      observer.observe(tableEndRef.current);
+    }
+
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, hasMore, loadingMore, initialLoading]);
+
+  // Auto-refresh effect: Automatically load more data every 3 seconds if there's more data
+  useEffect(() => {
+    // Only set up the interval once after initial load
+    if (initialLoading) {
+      return;
+    }
+
+    // Clear any existing interval
+    if (autoRefreshRef.current) {
+      clearInterval(autoRefreshRef.current);
+    }
+
+    // Set up interval to periodically refresh the latest logs (first page only)
+    autoRefreshRef.current = setInterval(() => {
+      fetchLogs(1, { silent: true });
     }, 5000);
 
-    return () => clearInterval(intervalId);
+    // Cleanup interval on unmount or when initialLoading changes
+    return () => {
+      if (autoRefreshRef.current) {
+        clearInterval(autoRefreshRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [initialLoading]);
 
   if (initialLoading) {
     return (
@@ -107,8 +165,6 @@ const UserActivityLogs = () => {
       />
     );
   }
-
-  const totalPages = pagination?.pages || 1;
 
   const formatChangeValue = (value) => {
     if (value === null || value === undefined) return 'null';
@@ -139,20 +195,14 @@ const UserActivityLogs = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {refreshing && (
-                <div className="mb-2 text-xs text-gray-500">
-                  {t('refreshingLogs', 'Refreshing logs...')}
-                </div>
-              )}
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-50 sticky top-0">
                     <tr>
-                      <th className="px-3 py-2 text-left font-medium text-gray-700">#</th>
+                      <th className="px-3 py-2 text-left font-medium text-gray-700">{t('id', 'ID')}</th>
                       <th className="px-3 py-2 text-left font-medium text-gray-700">{t('actor', 'Actor')}</th>
                       <th className="px-3 py-2 text-left font-medium text-gray-700">{t('target', 'Target')}</th>
                       <th className="px-3 py-2 text-left font-medium text-gray-700">{t('activityType', 'Activity Type')}</th>
-                      <th className="px-3 py-2 text-left font-medium text-gray-700">{t('endpoint', 'Endpoint')}</th>
                       <th className="px-3 py-2 text-left font-medium text-gray-700">{t('timestamp', 'Time')}</th>
                       <th className="px-3 py-2 text-left font-medium text-gray-700">{t('changedFields', 'Changed Fields')}</th>
                     </tr>
@@ -160,12 +210,12 @@ const UserActivityLogs = () => {
                   <tbody className="bg-white divide-y divide-gray-100">
                     {logs.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-3 py-4 text-center text-gray-500">
+                        <td colSpan={6} className="px-3 py-4 text-center text-gray-500">
                           {t('noLogsFound', 'No activity logs found.')}
                         </td>
                       </tr>
                     )}
-                    {logs.map((log, index) => {
+                    {logs.map((log) => {
                       const actor = log.actor;
                       const target = log.target;
                       const details = log.activity_details || {};
@@ -195,8 +245,8 @@ const UserActivityLogs = () => {
                           className="hover:bg-gray-50 cursor-pointer"
                           onClick={() => fetchLogById(log.id)}
                         >
-                          <td className="px-3 py-2 whitespace-nowrap text-gray-700">
-                            {(pagination?.page || page) * limit - limit + index + 1}
+                          <td className="px-3 py-2 whitespace-nowrap text-gray-700 font-mono text-xs">
+                            {log.id}
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-700">
                             {actor ? `${actor.last_name || ''} ${actor.first_name || ''}`.trim() : '-'}
@@ -206,9 +256,6 @@ const UserActivityLogs = () => {
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-700">
                             {log.activity_type || '-'}
-                          </td>
-                          <td className="px-3 py-2 whitespace-nowrap text-gray-700 text-xs">
-                            {details.endpoint || '-'}
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-700 text-xs">
                             {details.timestamp ? new Date(details.timestamp).toLocaleString() : '-'}
@@ -225,31 +272,19 @@ const UserActivityLogs = () => {
                 </table>
               </div>
 
-              {totalPages > 1 && (
-                <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
-                  <div>
-                    {t('pageOf', { page, totalPages }, `Page ${page} of ${totalPages}`)}
-                  </div>
-                  <div className="space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => page > 1 && fetchLogs(page - 1)}
-                      disabled={page <= 1}
-                      className="px-3 py-1 rounded border border-gray-300 bg-white text-gray-700 disabled:opacity-50"
-                    >
-                      {t('previous', 'Previous')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => page < totalPages && fetchLogs(page + 1)}
-                      disabled={page >= totalPages}
-                      className="px-3 py-1 rounded border border-gray-300 bg-white text-gray-700 disabled:opacity-50"
-                    >
-                      {t('next', 'Next')}
-                    </button>
+              {/* Infinite scroll loading indicator */}
+              {loadingMore && (
+                <div className="mt-4 flex items-center justify-center py-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                   </div>
                 </div>
               )}
+
+              {/* Ref for infinite scroll trigger */}
+              <div ref={tableEndRef} className="mt-4" />
             </CardContent>
           </Card>
         </FadeInSection>
