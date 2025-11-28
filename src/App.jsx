@@ -45,12 +45,14 @@ import { api, utils } from './utils/api';
 import { ProtectedRoute } from './components/common/DynamicRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import { setToastContext } from './utils/notificationHelper';
+import LoginInfoDialog from './components/common/LoginInfoDialog';
 
 function AppContent() {
   const { t } = useLanguage();
   const toastContext = useToast();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showLoginInfo, setShowLoginInfo] = useState(false);
 
   // Initialize notification helper with toast context
   useEffect(() => {
@@ -76,6 +78,12 @@ function AppContent() {
     setLoading(false);
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      setShowLoginInfo(true);
+    }
+  }, [user]);
+
   const handleLogout = async () => {
       utils.user.removeUserData();
       setUser(null);
@@ -90,8 +98,9 @@ function AppContent() {
   }
 
   return (
-    <Router>
-      <Routes>
+    <>
+      <Router>
+        <Routes>
         <Route
           path="/login"
           element={
@@ -331,7 +340,13 @@ function AppContent() {
         {/* Catch-all route for 404 pages */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </Router>
+      </Router>
+
+      <LoginInfoDialog
+        isOpen={showLoginInfo}
+        onClose={() => setShowLoginInfo(false)}
+      />
+    </>
   );
 }
 

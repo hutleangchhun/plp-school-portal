@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler, Download, QrCode as QrCodeIcon } from 'lucide-react';
+import { User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler, Download, QrCode as QrCodeIcon, BookOpen, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -14,7 +14,9 @@ import Dropdown from '../../components/ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { useStableCallback } from '../../utils/reactOptimization';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
-import { ethnicGroupOptions as baseEthnicGroupOptions, employmentTypeOptions } from '../../utils/formOptions';
+import { ethnicGroupOptions as baseEthnicGroupOptions, employmentTypeOptions, accessibilityOptions, educationLevelOptions, trainingTypeOptions, teachingTypeOptions, teacherStatusOptions, subjectOptions, roleOptions, maritalStatusOptions, spouseJobOptions, gradeLevelOptions } from '../../utils/formOptions';
+import MultiSelectDropdown from '../../components/ui/MultiSelectDropdown';
+import SalaryTypeDropdown from '../../components/ui/SalaryTypeDropdown';
 
 export default function ProfileUpdate({ user, setUser }) {
   const { t } = useLanguage();
@@ -28,6 +30,7 @@ export default function ProfileUpdate({ user, setUser }) {
     fullname: '',
     email: '',
     roleId: '',
+    role: '',
     newPassword: '',
     date_of_birth: '',
     gender: 'MALE',
@@ -50,6 +53,19 @@ export default function ProfileUpdate({ user, setUser }) {
     ethnic_group: '',
     gradeLevel: '',
     hire_date: '',
+    salary_type: '',
+    education_level: '',
+    training_type: '',
+    teaching_type: '',
+    teacher_status: '',
+    subject: [],
+    appointed: false,
+    burden: false,
+    bookIds: [],
+    teacherExtraLearningTool: {
+      'កញ្ចប់សម្ភារៈអំណាន': false,
+      'គណិតវិទ្យាថ្នាក់ដំបូង': false
+    },
     // Current residence location
     residence: {
       provinceId: '',
@@ -63,6 +79,18 @@ export default function ProfileUpdate({ user, setUser }) {
       districtId: '',
       communeId: '',
       villageId: ''
+    },
+    // Family information
+    teacher_family: {
+      living_status: '',
+      spouse_info: {
+        spouse_name: '',
+        spouse_occupation: '',
+        spouse_place_of_birth: '',
+        spouse_phone: ''
+      },
+      number_of_children: '',
+      children: []
     },
     // Legacy fields for backward compatibility
     provinceId: '',
@@ -241,6 +269,20 @@ export default function ProfileUpdate({ user, setUser }) {
           ethnic_group: normalizedData.ethnic_group || '',
           gradeLevel: normalizedData.gradeLevel || teacher.gradeLevel || '',
           hire_date: normalizedData.hire_date || teacher.hire_date || '',
+          role: normalizedData.role || normalizedData.roleId || '',
+          salary_type: normalizedData.salaryTypeId ? String(normalizedData.salaryTypeId) : '',
+          education_level: normalizedData.educationLevel || teacher.educationLevel || '',
+          training_type: normalizedData.trainingType || teacher.trainingType || '',
+          teaching_type: normalizedData.teachingType || teacher.teachingType || '',
+          teacher_status: normalizedData.teacherStatus || teacher.teacherStatus || '',
+          subject: Array.isArray(normalizedData.subject) ? normalizedData.subject : (Array.isArray(teacher.subject) ? teacher.subject : []),
+          appointed: typeof normalizedData.appointed === 'boolean' ? normalizedData.appointed : false,
+          burden: typeof normalizedData.burden === 'boolean' ? normalizedData.burden : false,
+          bookIds: Array.isArray(normalizedData.bookIds) ? normalizedData.bookIds : [],
+          teacherExtraLearningTool: {
+            'កញ្ចប់សម្ភារៈអំណាន': normalizedData.teacherExtraLearningTool?.['កញ្ចប់សម្ភារៈអំណាន'] === true || teacher.extraLearningTool?.['កញ្ចប់សម្ភារៈអំណាន'] === true,
+            'គណិតវិទ្យាថ្នាក់ដំបូង': normalizedData.teacherExtraLearningTool?.['គណិតវិទ្យាថ្នាក់ដំបូង'] === true || teacher.extraLearningTool?.['គណិតវិទ្យាថ្នាក់ដំបូង'] === true
+          },
           // Handle nested residence object
           residence: {
             provinceId: normalizedData.residence?.provinceId || normalizedData.province_id || '',
@@ -254,6 +296,18 @@ export default function ProfileUpdate({ user, setUser }) {
             districtId: normalizedData.placeOfBirth?.districtId || normalizedData.residence?.districtId || normalizedData.district_id || '',
             communeId: normalizedData.placeOfBirth?.communeId || normalizedData.residence?.communeId || normalizedData.commune_id || '',
             villageId: normalizedData.placeOfBirth?.villageId || normalizedData.residence?.villageId || normalizedData.village_id || ''
+          },
+          // Handle teacher family information
+          teacher_family: {
+            living_status: teacher.teacher_family?.living_status || normalizedData.teacher_family?.living_status || '',
+            spouse_info: {
+              spouse_name: teacher.teacher_family?.spouse_info?.spouse_name || normalizedData.teacher_family?.spouse_info?.spouse_name || '',
+              spouse_occupation: teacher.teacher_family?.spouse_info?.spouse_occupation || normalizedData.teacher_family?.spouse_info?.spouse_occupation || '',
+              spouse_place_of_birth: teacher.teacher_family?.spouse_info?.spouse_place_of_birth || normalizedData.teacher_family?.spouse_info?.spouse_place_of_birth || '',
+              spouse_phone: teacher.teacher_family?.spouse_info?.spouse_phone || normalizedData.teacher_family?.spouse_info?.spouse_phone || ''
+            },
+            number_of_children: teacher.teacher_family?.number_of_children || normalizedData.teacher_family?.number_of_children || '',
+            children: Array.isArray(teacher.teacher_family?.children) ? teacher.teacher_family.children : (Array.isArray(normalizedData.teacher_family?.children) ? normalizedData.teacher_family.children : [])
           },
           // Legacy fields for backward compatibility
           provinceId: normalizedData.residence?.provinceId || normalizedData.province_id || '',
@@ -662,6 +716,47 @@ export default function ProfileUpdate({ user, setUser }) {
     !formData.username?.trim() ||
     usernameAvailable === false;
 
+  const buildTeacherFamilyPayload = () => {
+    const tf = formData.teacher_family || {};
+    const rawChildren = Array.isArray(tf.children) ? tf.children : [];
+
+    const numberOfChildrenRaw = tf.number_of_children;
+    const parsedNumber =
+      numberOfChildrenRaw === '' || numberOfChildrenRaw === null || numberOfChildrenRaw === undefined
+        ? undefined
+        : parseInt(numberOfChildrenRaw, 10);
+
+    const cleanedChildren = rawChildren
+      .map(child => ({ child_name: (child?.child_name || '').trim() }))
+      .filter(child => child.child_name);
+
+    // Align children array with number_of_children
+    let effectiveChildren = cleanedChildren;
+
+    if (typeof parsedNumber === 'number' && !Number.isNaN(parsedNumber)) {
+      if (parsedNumber <= 0) {
+        effectiveChildren = [];
+      } else if (effectiveChildren.length > parsedNumber) {
+        effectiveChildren = effectiveChildren.slice(0, parsedNumber);
+      }
+    }
+
+    const payload = {
+      living_status: tf.living_status || undefined,
+      spouse_info: {
+        spouse_name: tf.spouse_info?.spouse_name || undefined,
+        spouse_occupation: tf.spouse_info?.spouse_occupation || undefined,
+        spouse_place_of_birth: tf.spouse_info?.spouse_place_of_birth || undefined,
+        spouse_phone: tf.spouse_info?.spouse_phone || undefined
+      },
+      number_of_children:
+        typeof parsedNumber === 'number' && !Number.isNaN(parsedNumber) ? parsedNumber : undefined,
+      children: effectiveChildren.length > 0 ? effectiveChildren : undefined
+    };
+
+    return payload;
+  };
+
   const handleConfirmUpdate = async () => {
     setLoading(true);
     setShowConfirmDialog(false);
@@ -772,7 +867,7 @@ export default function ProfileUpdate({ user, setUser }) {
         updateData.newPassword = formData.newPassword;
       }
 
-      // Include additional fields if available
+      // Include additional teacher-specific fields if available
       if (formData.employment_type) {
         updateData.employment_type = formData.employment_type;
       }
@@ -793,6 +888,66 @@ export default function ProfileUpdate({ user, setUser }) {
         updateData.accessibility = formData.accessibility;
       }
 
+      // Add role field
+      if (formData.role) {
+        updateData.role = parseInt(formData.role);
+      }
+
+      // Add salary type
+      if (formData.salary_type) {
+        updateData.salaryTypeId = parseInt(formData.salary_type);
+      }
+
+      // Add education level
+      if (formData.education_level) {
+        updateData.educationLevel = formData.education_level;
+      }
+
+      // Add training type
+      if (formData.training_type) {
+        updateData.trainingType = formData.training_type;
+      }
+
+      // Add teaching type
+      if (formData.teaching_type) {
+        updateData.teachingType = formData.teaching_type;
+      }
+
+      // Add teacher status
+      if (formData.teacher_status) {
+        updateData.teacherStatus = formData.teacher_status;
+      }
+
+      // Add subjects
+      if (formData.subject && formData.subject.length > 0) {
+        updateData.subject = formData.subject;
+      }
+
+      // Add appointment and burden status
+      if (typeof formData.appointed === 'boolean') {
+        updateData.appointed = formData.appointed;
+      }
+
+      if (typeof formData.burden === 'boolean') {
+        updateData.burden = formData.burden;
+      }
+
+      // Add extra learning tools
+      if (formData.teacherExtraLearningTool && Object.keys(formData.teacherExtraLearningTool).length > 0) {
+        updateData.teacherExtraLearningTool = formData.teacherExtraLearningTool;
+      }
+
+      // Add book IDs if available
+      if (formData.bookIds && formData.bookIds.length > 0) {
+        updateData.bookIds = formData.bookIds;
+      }
+
+      // Add teacher family information
+      if (formData.teacher_family && (formData.teacher_family.living_status || formData.teacher_family.spouse_info?.spouse_name || formData.teacher_family.children?.length > 0)) {
+        updateData.teacher_family = buildTeacherFamilyPayload();
+      }
+
+      // Use the correct endpoint for updating user profile
       const response = await api.user.updateUserProfile(updateData);
       clearTimeout(timeoutId);
 
@@ -803,9 +958,13 @@ export default function ProfileUpdate({ user, setUser }) {
       utils.user.saveUserData(updatedUser);
       setUser(updatedUser);
 
-      // Update formData with the response data to refresh all displayed values including BMI
+      // Update formData with the response data to refresh all displayed values
       // Also handle nested teacher object which may contain some fields
       const teacher = response.teacher || {};
+      const familyData = teacher.teacher_family || response.teacher_family || {};
+      const childrenArray = Array.isArray(familyData.children) ? familyData.children : [];
+      const extraLearningToolData = teacher.extraLearningTool || response.teacherExtraLearningTool || {};
+
       setFormData(prev => ({
         ...prev,
         id: response.id || prev.id,
@@ -814,6 +973,7 @@ export default function ProfileUpdate({ user, setUser }) {
         last_name: response.last_name || prev.last_name,
         email: response.email || prev.email,
         roleId: response.roleId || prev.roleId,
+        role: response.role || prev.role,
         date_of_birth: response.date_of_birth || prev.date_of_birth,
         gender: response.gender || prev.gender,
         phone: response.phone || prev.phone,
@@ -825,14 +985,39 @@ export default function ProfileUpdate({ user, setUser }) {
         qr_code: response.qr_code || prev.qr_code,
         qr_token: response.qr_token || prev.qr_token,
         qr_generated_at: response.qr_generated_at || prev.qr_generated_at,
+        teacher_number: response.teacher_number || prev.teacher_number,
         // Additional fields - check both top level and nested teacher object
         accessibility: response.accessibility || teacher.accessibility || prev.accessibility,
         employment_type: response.employment_type || teacher.employment_type || prev.employment_type,
         ethnic_group: response.ethnic_group || prev.ethnic_group,
         gradeLevel: response.gradeLevel || teacher.gradeLevel || prev.gradeLevel,
         hire_date: response.hire_date || teacher.hire_date || prev.hire_date,
+        salary_type: response.salaryTypeId ? String(response.salaryTypeId) : prev.salary_type,
+        education_level: response.educationLevel || teacher.educationLevel || prev.education_level,
+        training_type: response.trainingType || teacher.trainingType || prev.training_type,
+        teaching_type: response.teachingType || teacher.teachingType || prev.teaching_type,
+        teacher_status: response.teacherStatus || teacher.teacherStatus || prev.teacher_status,
+        subject: Array.isArray(response.subject) ? response.subject : (Array.isArray(teacher.subject) ? teacher.subject : prev.subject),
+        appointed: typeof response.appointed === 'boolean' ? response.appointed : prev.appointed,
+        burden: typeof response.burden === 'boolean' ? response.burden : prev.burden,
+        bookIds: Array.isArray(response.bookIds) ? response.bookIds : prev.bookIds,
+        teacherExtraLearningTool: {
+          'កញ្ចប់សម្ភារៈអំណាន': extraLearningToolData['កញ្ចប់សម្ភារៈអំណាន'] === true,
+          'គណិតវិទ្យាថ្នាក់ដំបូង': extraLearningToolData['គណិតវិទ្យាថ្នាក់ដំបូង'] === true
+        },
         residence: response.residence || prev.residence,
-        placeOfBirth: response.placeOfBirth || prev.placeOfBirth
+        placeOfBirth: response.placeOfBirth || prev.placeOfBirth,
+        teacher_family: {
+          living_status: familyData.living_status || '',
+          spouse_info: {
+            spouse_name: familyData.spouse_info?.spouse_name || '',
+            spouse_occupation: familyData.spouse_info?.spouse_occupation || '',
+            spouse_place_of_birth: familyData.spouse_info?.spouse_place_of_birth || '',
+            spouse_phone: familyData.spouse_info?.spouse_phone || ''
+          },
+          number_of_children: familyData.number_of_children || '',
+          children: childrenArray
+        }
       }));
 
       setProfilePictureFile(null); // Clear the selected file
@@ -1050,835 +1235,601 @@ export default function ProfileUpdate({ user, setUser }) {
   }
 
   return (
-    <div className="bg-gray-100 p-3 sm:p-6">
-      <div className="">
-        <div className="bg-white rounded-2xl overflow-hidden">
-          <div className="px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
-              <div className="flex items-center min-w-0 flex-1">
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-2 sm:p-3 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
-                  <User className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-                </div>
-                <div className="ml-3 sm:ml-4 min-w-0">
-                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent truncate">
-                    {t('personalInformation')}
-                  </h3>
-                  <p className="text-slate-500 text-xs sm:text-sm mt-1 hidden sm:block">{t('updateYourPersionalDetails','Update your personal details and preferences')}</p>
-                </div>
-              </div>
-              <div className="flex gap-2 w-full sm:w-auto">
-                <Button
-                  type="button"
-                  onClick={handleEditToggle}
-                  variant="primary"
-                  size="sm"
-                  className="rounded-lg flex-1 sm:flex-initial"
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 w-full">
+      {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-1">
+                {t('profile', 'My Profile')}
+              </h1>
+              <p className="text-gray-500 text-sm sm:text-base">
+                {t('updateYourPersionalDetails','Update your personal details and preferences')}
+              </p>
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                onClick={handleEditToggle}
+                variant="primary"
+                size="md"
+                className="rounded-lg flex-1 sm:flex-initial"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                <span>{isEditMode ? t('cancel') || 'Cancel' : t('edit') || 'Edit'}</span>
+              </Button>
+              {isEditMode && (
+                <button
+                  type="submit"
+                  form="profile-form"
+                  disabled={isProfileSubmitDisabled}
+                  className="flex-1 sm:flex-initial px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
-                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <span className="text-xs sm:text-sm">{isEditMode ? t('cancel') || 'Cancel' : t('edit') || 'Edit'}</span>
-                </Button>
-                {isEditMode && (
-                  <button
-                    type="submit"
-                    form="profile-form"
-                    disabled={isProfileSubmitDisabled}
-                    className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>{loading ? t('updating') : t('updateProfile')}</span>
-                  </button>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>{loading ? t('updating') : t('save', 'Save Changes')}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Picture Card - Full Width */}
+        {!isEditMode && (
+          <div data-card-download className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 mb-8 hover:shadow-md transition-shadow">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8" ref={dropdownRef}>
+              {/* Profile Picture */}
+              <div
+                className={`relative flex-shrink-0 ${isEditMode ? 'cursor-pointer group' : 'cursor-default'}`}
+                onClick={isEditMode ? () => setShowDropdown(!showDropdown) : undefined}
+              >
+                {profilePictureFile ? (
+                  <div className="relative">
+                    <img
+                      src={URL.createObjectURL(profilePictureFile)}
+                      alt="Profile Preview"
+                      className="h-32 w-32 sm:h-40 sm:w-40 rounded-full object-cover border-4 border-blue-500 shadow-lg group-hover:shadow-xl transition-all"
+                    />
+                    {isEditMode && (
+                      <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                        <Upload className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <ProfileImage
+                      user={formData}
+                      size="custom"
+                      customSize="h-32 w-32 sm:h-40 sm:w-40"
+                      alt="Profile"
+                      className="shadow-lg"
+                      borderColor="border-blue-500"
+                      fallbackType="image"
+                      clickable={isEditMode}
+                    />
+                    {isEditMode && (
+                      <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                        <Upload className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
-            </div>
 
-            <div className="flex flex-col lg:flex-row gap-4">
-              {/* Profile Picture Section */}
-              <div data-card-download className="flex-shrink-0 w-full lg:w-96 p-6 lg:p-8 rounded-2xl bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-md hover:shadow-lg transition-shadow">
-                {/* Profile Picture with Dropdown */}
-                <div className="flex flex-col gap-5 justify-center items-center" ref={dropdownRef}>
-                  <div
-                    className={`relative ${isEditMode ? 'cursor-pointer group' : 'cursor-default'}`}
-                    onClick={isEditMode ? () => setShowDropdown(!showDropdown) : undefined}
-                  >
-                    {profilePictureFile ? (
-                      <div className='flex justify-center items-center'>
-                        <div className="relative">
-                          <img
-                            src={URL.createObjectURL(profilePictureFile)}
-                            alt="Profile Preview"
-                            className="h-32 w-32 sm:h-40 sm:w-40 rounded-full object-cover border-4 border-blue-500 shadow-lg group-hover:shadow-xl transition-all"
-                          />
-                          {isEditMode && (
-                            <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                              <Upload className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className='flex justify-center items-center'>
-                        <div className="relative">
-                          <ProfileImage
-                            user={formData}
-                            size="custom"
-                            customSize="h-32 w-32 sm:h-40 sm:w-40"
-                            alt="Profile"
-                            className="shadow-lg"
-                            borderColor="border-blue-500"
-                            fallbackType="image"
-                            clickable={isEditMode}
-                          />
-                          {isEditMode && (
-                            <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                              <Upload className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* User Info Summary - Always Visible */}
-                  <div className="w-full text-center space-y-2">
-                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">{formData.username || '-'}</h3>
-                    <div className="flex flex-col items-center gap-1">
-                      {formData.is_director && (
-                        <span className="inline-block px-2 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">
-                          {t('director') || 'Director'}
-                        </span>
-                      )}
-                      {formData.roleNameKh && (
-                        <p className="text-sm text-gray-600">{formData.roleNameKh}</p>
-                      )}
-                    </div>
-                    {/* School name would go here if available in formData */}
-                    {formData.school_name && (
-                      <p className="text-sm text-gray-500">{formData.school_name}</p>
-                    )}
-                  </div>
-
-                  {/* QR Code Section */}
-                  {formData.qr_code && (
-                    <div className="w-full">
-                      <div className="p-4 sm:p-5 bg-gradient-to-b from-white to-gray-50 border-2 border-gray-200 rounded-2xl">
-                        <div className="flex flex-row justify-between items-center mb-4">
-                          <h5 className="text-sm font-semibold text-gray-900">QR Code</h5>
-                          <div className="flex gap-2">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleViewQRCode}
-                              className="flex items-center gap-1 text-xs sm:text-sm hover:bg-blue-50"
-                              title="View QR Code"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={downloadCardAsImage}
-                              className="flex items-center gap-1 text-xs sm:text-sm hover:bg-blue-50"
-                              title="Download Card"
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="py-4 flex justify-center items-center bg-white rounded-lg border border-gray-100">
-                          <img
-                            src={formData.qr_code}
-                            alt="QR Code"
-                            className="h-40 w-40 sm:h-48 sm:w-48 object-contain p-2"
-                          />
-                        </div>
-                      </div>
-                    </div>
+              {/* User Info Summary */}
+              <div className="flex-1">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold text-gray-900">{formData.username || '-'}</h3>
+                  {formData.is_director && (
+                    <span className="inline-block px-3 py-1 bg-amber-100 text-amber-800 text-sm font-semibold rounded-full">
+                      {t('director') || 'Director'}
+                    </span>
                   )}
+                  {formData.roleNameKh && (
+                    <p className="text-base text-gray-600">{formData.roleNameKh}</p>
+                  )}
+                  {formData.school_name && (
+                    <p className="text-sm text-gray-500">{formData.school_name}</p>
+                  )}
+                </div>
+              </div>
 
-                  {/* Dropdown Menu */}
-                  {showDropdown && (
-                    <div className="absolute z-10 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200">
-                      <div className="py-2">
-                        {formData.profile_picture && (
-                          <Button
-                            type="button"
-                            onClick={handleViewPicture}
-                            variant="ghost"
-                            size="sm"
-                            fullWidth
-                            className="justify-start rounded-none px-4 py-2 hover:bg-gray-50 text-gray-700"
-                          >
-                            <Eye className="h-4 w-4 mr-3 text-gray-500" />
-                            <span className="text-sm">{t('viewPicture') || 'View Picture'}</span>
-                          </Button>
-                        )}
+              {/* QR Code Section */}
+              {formData.qr_code && (
+                <div className="flex-shrink-0">
+                  <div className="p-4 bg-white border border-gray-200 rounded-lg">
+                    <div className="flex flex-col items-center gap-4">
+                      <h5 className="text-sm font-semibold text-gray-900">QR Code</h5>
+                      <img
+                        src={formData.qr_code}
+                        alt="QR Code"
+                        className="h-32 w-32 object-contain"
+                      />
+                      <div className="flex gap-2">
                         <Button
                           type="button"
-                          onClick={handleUploadClick}
                           variant="ghost"
                           size="sm"
-                          fullWidth
-                          className="justify-start rounded-none px-4 py-2 hover:bg-blue-50 text-gray-700"
+                          onClick={handleViewQRCode}
+                          className="flex items-center gap-1 text-xs hover:bg-blue-50"
+                          title="View QR Code"
                         >
-                          <Upload className="h-4 w-4 mr-3 text-blue-500" />
-                          <span className="text-sm">{t('uploadNewPicture') || 'Upload New Picture'}</span>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={downloadCardAsImage}
+                          className="flex items-center gap-1 text-xs hover:bg-blue-50"
+                          title="Download Card"
+                        >
+                          <Download className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
-
-                {/* Hidden File Input */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfilePictureChange}
-                  className="hidden"
-                />
-
-                {profilePictureFile && (
-                  <div className='w-full p-3 sm:p-4 bg-green-50 rounded-lg border border-green-300 mt-4'>
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 text-green-600 mt-0.5">
-                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-green-800">
-                          {t('newPictureSelected') || 'New picture selected'}
-                        </p>
-                        <p className="text-xs text-green-700 mt-1 truncate">
-                          {profilePictureFile.name}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {pictureUploading && (
-                  <div className='w-full p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-300 mt-4'>
-                    <div className="flex items-center gap-3">
-                      <div className="animate-spin">
-                        <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                      </div>
-                      <p className="text-sm text-blue-700 font-medium">{t('uploadingImage')}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {!isEditMode && (
-                <ProfileInfoDisplay
-                  formData={formData}
-                  calculateBMI={calculateBMI}
-                  getBMICategory={getBMICategory}
-                />
               )}
 
-              {isEditMode && (
-              <form id="profile-form" onSubmit={handleSubmit} className="flex-1 space-y-4 lg:space-y-6 p-3 lg:p-4 border border-gray-100 rounded-lg bg-white max-h-[600px] overflow-y-auto">
-                <h4 className="text-base lg:text-lg font-medium text-gray-900 mb-4">{t('personalInformation') || 'Additional Information'}</h4>
-                <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
-                  <div ref={usernameContainerRef}>
-                    <label htmlFor="username" className="block text-xs sm:text-sm font-medium text-gray-700">
-                      {t('username')}
-                    </label>
-                    <div className="relative">
-                      <div className="flex items-center gap-2">
-                        <div className="relative flex-1">
-                          <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                            <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                          </div>
-                          <input
-                            type="text"
-                            name="username"
-                            id="username"
-                            required
-                            readOnly={!isEditMode}
-                            className={`mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                            value={formData.username}
-                            onChange={(e) => {
-                              if (!isEditMode) return;
-                              const rawValue = e.target.value;
-                              const newValue = sanitizeUsername(rawValue);
-                              setFormData(prev => ({
-                                ...prev,
-                                username: newValue
-                              }));
+              {/* Dropdown Menu */}
+              {showDropdown && (
+                <div className="absolute z-10 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200">
+                  <div className="py-2">
+                    {formData.profile_picture && (
+                      <Button
+                        type="button"
+                        onClick={handleViewPicture}
+                        variant="ghost"
+                        size="sm"
+                        fullWidth
+                        className="justify-start rounded-none px-4 py-2 hover:bg-gray-50 text-gray-700"
+                      >
+                        <Eye className="h-4 w-4 mr-3 text-gray-500" />
+                        <span className="text-sm">{t('viewPicture') || 'View Picture'}</span>
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      onClick={handleUploadClick}
+                      variant="ghost"
+                      size="sm"
+                      fullWidth
+                      className="justify-start rounded-none px-4 py-2 hover:bg-blue-50 text-gray-700"
+                    >
+                      <Upload className="h-4 w-4 mr-3 text-blue-500" />
+                      <span className="text-sm">{t('uploadNewPicture') || 'Upload New Picture'}</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
 
-                              if (usernameDebounceRef.current) {
-                                clearTimeout(usernameDebounceRef.current);
-                              }
-                              usernameDebounceRef.current = setTimeout(() => {
-                                handleGenerateUsernameSuggestions(newValue);
-                              }, 400);
-                            }}
-                          />
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleProfilePictureChange}
+              className="hidden"
+            />
+
+            {profilePictureFile && (
+              <div className='w-full p-3 sm:p-4 bg-green-50 rounded-lg border border-green-300 mt-4'>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 text-green-600 mt-0.5">
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-green-800">
+                      {t('newPictureSelected') || 'New picture selected'}
+                    </p>
+                    <p className="text-xs text-green-700 mt-1 truncate">
+                      {profilePictureFile.name}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {pictureUploading && (
+              <div className='w-full p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-300 mt-4'>
+                <div className="flex items-center gap-3">
+                  <div className="animate-spin">
+                    <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-blue-700 font-medium">{t('uploadingImage')}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Main Content - Full Width Form or Display */}
+        {!isEditMode && (
+          <ProfileInfoDisplay
+            formData={formData}
+            calculateBMI={calculateBMI}
+            getBMICategory={getBMICategory}
+          />
+        )}
+
+        {isEditMode && (
+        <form id="profile-form" onSubmit={handleSubmit} className="space-y-6">
+                {/* Personal Information Card */}
+                <div className="bg-white rounded-md border border-gray-200 p-6">
+                  <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {t('personalInformation')}
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
+                    <div>
+                      <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
+                        {t('firstName')} *
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <User className="h-4 w-4 text-gray-400" />
                         </div>
-                        {isEditMode && (
+                        <input
+                          type="text"
+                          name="first_name"
+                          id="first_name"
+                          required
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                          value={formData.first_name}
+                          onChange={handleInputChange}
+                          placeholder={t('enterFirstName')}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
+                        {t('lastName')} *
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <User className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <input
+                          type="text"
+                          name="last_name"
+                          id="last_name"
+                          required
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                          value={formData.last_name}
+                          onChange={handleInputChange}
+                          placeholder={t('enterLastName')}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('gender')} *
+                      </label>
+                      <Dropdown
+                        options={[
+                          { value: 'MALE', label: t('male') },
+                          { value: 'FEMALE', label: t('female') }
+                        ]}
+                        value={formData.gender}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
+                        placeholder={t('selectGender')}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('dateOfBirth')} *
+                      </label>
+                      <DatePickerWithDropdowns
+                        value={formData.date_of_birth ? new Date(formData.date_of_birth) : null}
+                        onChange={handleDateChange}
+                        placeholder={t('selectDate')}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('nationality')} *
+                      </label>
+                      <Dropdown
+                        options={[
+                          { value: 'ខ្មែរ', label: 'ខ្មែរ (Cambodian)' }
+                        ]}
+                        value={formData.nationality}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, nationality: value }))}
+                        placeholder={t('selectNationality')}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('ethnicGroup')}
+                      </label>
+                      <Dropdown
+                        options={[
+                          { value: '', label: t('selectEthnicGroup') },
+                          ...baseEthnicGroupOptions
+                        ]}
+                        value={formData.ethnic_group}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, ethnic_group: value }))}
+                        placeholder={t('selectEthnicGroup')}
+                        contentClassName="max-h-[200px] overflow-y-auto"
+                        className='w-full'
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="weight_kg" className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('weight')} ({t('kg')})
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Weight className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <input
+                          type="number"
+                          name="weight_kg"
+                          id="weight_kg"
+                          step="0.1"
+                          min="0"
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400"
+                          value={formData.weight_kg}
+                          onChange={handleInputChange}
+                          placeholder={t('enterWeight')}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="height_cm" className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('height')} ({t('cm')})
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Ruler className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <input
+                          type="number"
+                          name="height_cm"
+                          id="height_cm"
+                          step="0.1"
+                          min="0"
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400"
+                          value={formData.height_cm}
+                          onChange={handleInputChange}
+                          placeholder={t('enterHeight')}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Accessibility */}
+                    <div className='col-span-1 lg:col-span-4'>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('accessibility')}
+                      </label>
+                      <div className="mt-1 space-y-2 p-3 border border-gray-300 rounded-md bg-gray-50 max-h-40 overflow-y-auto">
+                        {[
+                          { value: 'ពិបាកក្នុងការធ្វើចលនា', label: 'ពិបាកក្នុងការធ្វើចលនា' },
+                          { value: 'ពិបាកក្នុងការស្ដាប់', label: 'ពិបាកក្នុងការស្ដាប់' },
+                          { value: 'ពិបាកក្នុងការនីយាយ', label: 'ពិបាកក្នុងការនីយាយ' },
+                          { value: 'ពិបាកក្នុងការមើល', label: 'ពិបាកក្នុងការមើល' },
+                          { value: 'ពិការសរីរាង្គខាងក្នុង', label: 'ពិការសរីរាង្គខាងក្នុង' },
+                          { value: 'ពិការសតិបញ្ញា', label: 'ពិការសតិបញ្ញា' },
+                          { value: 'ពិការផ្លូវចិត្ត', label: 'ពិការផ្លូវចិត្ត' },
+                          { value: 'ពិការផ្សេងៗ', label: 'ពិការផ្សេងៗ' }
+                        ].map((option) => (
+                          <label key={option.value} className="flex items-center space-x-2 cursor-pointer hover:bg-white p-2 rounded transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={formData.accessibility.includes(option.value)}
+                              onChange={(e) => {
+                                const newAccessibility = e.target.checked
+                                  ? [...formData.accessibility, option.value]
+                                  : formData.accessibility.filter(item => item !== option.value);
+                                setFormData(prev => ({ ...prev, accessibility: newAccessibility }));
+                              }}
+                              className="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                            />
+                            <span className="text-sm text-gray-700">{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Account Information Card */}
+                <div className="bg-white rounded-md border border-gray-200 p-6">
+                  <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {t('account', 'Account')}
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
+                    <div ref={usernameContainerRef}>
+                      <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                        {t('username')} *
+                      </label>
+                      <div className="relative">
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <User className="h-4 w-4 text-gray-400" />
+                            </div>
+                            <input
+                              type="text"
+                              name="username"
+                              id="username"
+                              required
+                              className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                              value={formData.username}
+                              onChange={(e) => {
+                                const rawValue = e.target.value;
+                                const newValue = sanitizeUsername(rawValue);
+                                setFormData(prev => ({
+                                  ...prev,
+                                  username: newValue
+                                }));
+
+                                if (usernameDebounceRef.current) {
+                                  clearTimeout(usernameDebounceRef.current);
+                                }
+                                usernameDebounceRef.current = setTimeout(() => {
+                                  handleGenerateUsernameSuggestions(newValue);
+                                }, 400);
+                              }}
+                              placeholder={t('enterUsername')}
+                            />
+                          </div>
                           <button
                             type="button"
                             onClick={() => {
                               handleGenerateUsernameSuggestions(formData.username || '');
                             }}
-                            className="mt-1 px-2 py-1 text-[10px] sm:text-xs border border-gray-300 rounded bg-white hover:bg-blue-50 text-gray-700 whitespace-nowrap"
+                            className="mt-1 px-2 py-1 text-xs border border-gray-300 rounded bg-white hover:bg-blue-50 text-gray-700 whitespace-nowrap"
                           >
-                            {t('suggestion', 'Suggestion')}
+                            {t('suggestion')}
                           </button>
-                        )}
-                      </div>
-
-                      {showUsernameSuggestions && usernameSuggestions.length > 0 && (
-                        <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-20 text-xs max-h-60 overflow-auto">
-                          {usernameSuggestions.map((suggestion, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              className="w-full text-left px-3 py-1 hover:bg-blue-50"
-                              onClick={() => handleChooseUsernameSuggestion(suggestion)}
-                            >
-                              {suggestion}
-                            </button>
-                          ))}
                         </div>
-                      )}
 
-                      {usernameAvailable === true && formData.username && (
-                        <p className="mt-1 text-[10px] sm:text-xs text-green-600">
-                          {t('usernameAvailable', 'This username is available.')}
-                        </p>
-                      )}
-                      {usernameAvailable === false && formData.username && (
-                        <p className="mt-1 text-[10px] sm:text-xs text-red-600">
-                          {t('usernameNotAvailable', 'This username is already taken')}
-                        </p>
-                      )}
-                      {usernameAvailable === null && formData.username && formData.username.trim() && (
-                        <p className="mt-1 text-[10px] sm:text-xs text-gray-500">
-                          {t('usernameSuggestionHint', 'Use Suggestion to check available username.')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="first_name" className="block text-xs sm:text-sm font-medium text-gray-700">
-                      {t('firstNameRequired')}
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                        <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="first_name"
-                        id="first_name"
-                        required
-                        readOnly={!isEditMode}
-                        className={`mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                        value={formData.first_name}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="last_name" className="block text-xs sm:text-sm font-medium text-gray-700">
-                      {t('lastNameRequired')}
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                        <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="last_name"
-                        id="last_name"
-                        required
-                        readOnly={!isEditMode}
-                        className={`mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                        value={formData.last_name}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-
-                </div>
-                <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
-                  <div>
-                    <label htmlFor="roleNameKh" className="block text-xs sm:text-sm font-medium text-gray-700">
-                      {t('role') || 'Role'}
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                        <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="roleNameKh"
-                        id="roleNameKh"
-                        readOnly
-                        className="mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
-                        value={formData.roleNameKh}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
-                      {t('gender') || 'Gender'}
-                    </label>
-                    <div className="mt-1">
-                      {isEditMode ? (
-                        <Dropdown
-                          value={formData.gender}
-                          onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
-                          options={[
-                            { value: 'MALE', label: t('male') || 'Male' },
-                            { value: 'FEMALE', label: t('female') || 'Female' }
-                          ]}
-                          placeholder={t('selectGender') || 'Select gender'}
-                          className="w-full"
-                        />
-                      ) : (
-                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                          {formData.gender === 'MALE' ? (t('male') || 'Male') : (t('female') || 'Female')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="nationality" className="block text-sm font-medium text-gray-700">
-                      {t('nationality')}
-                    </label>
-                    <div className="mt-1">
-                      {isEditMode ? (
-                        <Dropdown
-                          value={formData.nationality}
-                          onValueChange={(value) => {
-                            setFormData(prev => ({ ...prev, nationality: value }));
-                          }}
-                          options={[
-                            { value: 'ខ្មែរ', label: 'ខ្មែរ' },
-                          ]}
-                          placeholder={t('selectNationality') || 'Select nationality'}
-                          className="w-full"
-                        />
-                      ) : (
-                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                          {formData.nationality}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700">
-                      {t('dateOfBirth') || 'Date of Birth'}
-                    </label>
-                    <div className="mt-1">
-                      {isEditMode ? (
-                        <DatePickerWithDropdowns
-                          value={formData.date_of_birth ? new Date(formData.date_of_birth) : null}
-                          onChange={handleDateChange}
-                          placeholder={t('selectDate') || 'Select date'}
-                          className="w-full"
-                        />
-                      ) : (
-                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                          {formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : '-'}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      {t('email')}
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="email"
-                        name="email"
-                        id="email"
-                        readOnly={!isEditMode}
-                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                        value={formData.email}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                      {t('newPassword')}
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="password"
-                        name="newPassword"
-                        id="newPassword"
-                        readOnly={!isEditMode}
-                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                        value={formData.newPassword}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                      {t('phone')}
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Phone className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="tel"
-                        name="phone"
-                        id="phone"
-                        placeholder="+1234567890"
-                        readOnly={!isEditMode}
-                        className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-                </div>
-                {/* Additional Information Fields */}
-                <div className="">
-                  <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-2">
-                    <div className='grid grid-cols-1 gap-3 lg:gap-6 grid-rows-4'>
-                      <div>
-                        <label htmlFor="ethnic_group" className="block text-sm font-medium text-gray-700">
-                          {t('ethnicGroup') || 'Ethnic Group'}
-                        </label>
-                        {isEditMode ? (
-                          <Dropdown
-                            options={[
-                              { value: '', label: t('selectEthnicGroup', 'ជ្រើសរើសជនជាតិភាគតិច') },
-                              ...baseEthnicGroupOptions
-                            ]}
-                            value={formData.ethnic_group}
-                            onValueChange={(value) => setFormData(prev => ({ ...prev, ethnic_group: value }))}
-                            placeholder={t('selectEthnicGroup', 'ជ្រើសរើសជនជាតិភាគតិច')}
-                            contentClassName="max-h-[200px] overflow-y-auto"
-                            className='w-full'
-                          />
-                        ) : (
-                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {formData.ethnic_group || '-'}
+                        {showUsernameSuggestions && usernameSuggestions.length > 0 && (
+                          <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-20 text-xs max-h-60 overflow-auto">
+                            {usernameSuggestions.map((suggestion, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                className="w-full text-left px-3 py-1 hover:bg-blue-50"
+                                onClick={() => handleChooseUsernameSuggestion(suggestion)}
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
                           </div>
                         )}
-                      </div>
-                      <div>
-                        <label htmlFor="weight_kg" className="block text-sm font-medium text-gray-700">
-                          {t('weight', 'Weight')} ({t('kg', 'kg')}) <span className="text-gray-400 text-xs">{t('optional', '(Optional)')}</span>
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Weight className="h-4 w-4 text-gray-400" />
-                          </div>
-                          <input
-                            type="number"
-                            name="weight_kg"
-                            id="weight_kg"
-                            step="0.1"
-                            min="0"
-                            readOnly={!isEditMode}
-                            className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                            value={formData.weight_kg}
-                            onChange={handleInputChange}
-                            placeholder={t('enterWeight', 'Enter weight')}
-                          />
-                        </div>
-                      </div>
 
-                      <div>
-                        <label htmlFor="height_cm" className="block text-sm font-medium text-gray-700">
-                          {t('height', 'Height')} ({t('cm', 'cm')}) <span className="text-gray-400 text-xs">{t('optional', '(Optional)')}</span>
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Ruler className="h-4 w-4 text-gray-400" />
-                          </div>
-                          <input
-                            type="number"
-                            name="height_cm"
-                            id="height_cm"
-                            step="0.1"
-                            min="0"
-                            readOnly={!isEditMode}
-                            className={`mt-1 block w-full pl-10 rounded-md shadow-sm sm:text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                            value={formData.height_cm}
-                            onChange={handleInputChange}
-                            placeholder={t('enterHeight', 'Enter height')}
-                          />
-                        </div>
+                        {usernameAvailable === true && formData.username && (
+                          <p className="mt-1 text-xs text-green-600">
+                            {t('usernameAvailable')}
+                          </p>
+                        )}
+                        {usernameAvailable === false && formData.username && (
+                          <p className="mt-1 text-xs text-red-600">
+                            {t('usernameNotAvailable')}
+                          </p>
+                        )}
+                        {usernameAvailable === null && formData.username && formData.username.trim() && (
+                          <p className="mt-1 text-xs text-gray-500">
+                            {t('usernameSuggestionHint')}
+                          </p>
+                        )}
                       </div>
-                      {/* BMI Display as Read-only Input */}
-                      {(formData.weight_kg || formData.height_cm) && calculateBMI() && (
-                        <div>
-                          <label htmlFor="bmi" className="block text-sm font-medium text-gray-700">
-                            BMI
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              id="bmi"
-                              readOnly
-                              value={calculateBMI() || '-'}
-                              className={`mt-1 block w-full px-3 py-2 rounded-md shadow-sm sm:text-sm font-bold transition-all duration-300 cursor-not-allowed border-2 ${!calculateBMI()
-                                ? 'bg-gray-50 border-gray-300 text-gray-900'
-                                : getBMICategory(calculateBMI()).bmi < 18.5
-                                  ? 'bg-blue-50 border-blue-400 text-blue-900'
-                                  : getBMICategory(calculateBMI()).bmi < 25
-                                    ? 'bg-green-50 border-green-400 text-green-900'
-                                    : getBMICategory(calculateBMI()).bmi < 30
-                                      ? 'bg-yellow-50 border-yellow-400 text-yellow-900'
-                                      : 'bg-red-50 border-red-400 text-red-900'
-                                }`}
-                            />
-                          </div>
-                        </div>
-                      )}
                     </div>
-                    {/* Accessibility Checkboxes */}
-                    {isEditMode && (
-                      <div className="">
-                        <label className="block text-sm font-medium text-gray-700 mb-3">
-                          {t('accessibility', 'Accessibility')}
-                        </label>
-                        <div className="space-y-2 p-3 border border-gray-300 rounded-md bg-white max-h-64 overflow-y-auto">
-                          {[
-                            { value: 'ពិបាកក្នុងការធ្វើចលនា', label: 'ពិបាកក្នុងការធ្វើចលនា' },
-                            { value: 'ពិបាកក្នុងការស្ដាប់', label: 'ពិបាកក្នុងការស្ដាប់' },
-                            { value: 'ពិបាកក្នុងការនីយាយ', label: 'ពិបាកក្នុងការនីយាយ' },
-                            { value: 'ពិបាកក្នុងការមើល', label: 'ពិបាកក្នុងការមើល' },
-                            { value: 'ពិការសរីរាង្គខាងក្នុង', label: 'ពិការសរីរាង្គខាងក្នុង' },
-                            { value: 'ពិការសតិបញ្ញា', label: 'ពិការសតិបញ្ញា' },
-                            { value: 'ពិការផ្លូវចិត្ត', label: 'ពិការផ្លូវចិត្ត' },
-                            { value: 'ពិការផ្សេងៗ', label: 'ពិការផ្សេងៗ' }
-                          ].map((option) => (
-                            <label key={option.value} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                              <input
-                                type="checkbox"
-                                checked={formData.accessibility.includes(option.value)}
-                                onChange={(e) => {
-                                  const newAccessibility = e.target.checked
-                                    ? [...formData.accessibility, option.value]
-                                    : formData.accessibility.filter(item => item !== option.value);
-                                  setFormData(prev => ({ ...prev, accessibility: newAccessibility }));
-                                }}
-                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                              />
-                              <span className="text-sm text-gray-700">{option.label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
-                    {!isEditMode && formData.accessibility?.length > 0 && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">
-                          {t('accessibility', 'Accessibility')}
-                        </label>
-                        <div className="space-y-2 p-3 border border-gray-300 rounded-md hover:bg-gray-50 max-h-64 overflow-y-auto">
-                          {[
-                            { value: 'ពិបាកក្នុងការធ្វើចលនា', label: 'ពិបាកក្នុងការធ្វើចលនា' },
-                            { value: 'ពិបាកក្នុងការស្ដាប់', label: 'ពិបាកក្នុងការស្ដាប់' },
-                            { value: 'ពិបាកក្នុងការនីយាយ', label: 'ពិបាកក្នុងការនីយាយ' },
-                            { value: 'ពិបាកក្នុងការមើល', label: 'ពិបាកក្នុងការមើល' },
-                            { value: 'ពិការសរីរាង្គខាងក្នុង', label: 'ពិការសរីរាង្គខាងក្នុង' },
-                            { value: 'ពិការសតិបញ្ញា', label: 'ពិការសតិបញ្ញា' },
-                            { value: 'ពិការផ្លូវចិត្ត', label: 'ពិការផ្លូវចិត្ត' },
-                            { value: 'ពិការផ្សេងៗ', label: 'ពិការផ្សេងៗ' },
-                          ].map((option) => (
-                            <label
-                              key={option.value}
-                              className="flex items-center space-x-2 p-1 rounded"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={formData.accessibility.includes(option.value)}
-                                disabled
-                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-not-allowed bg-gray-100"
-                              />
-                              <span className="text-sm text-gray-700">{option.label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {/* Weight and Height */}
-                <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
-
-                </div>
-                <div className='border-t-2 pt-3 lg:pt-6'>
-                  <h4 className="text-base lg:text-lg font-medium text-gray-900 mb-4">{t('teacherInformation') || 'Teacher Information'}</h4>
-                  <div className='grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4 items-center'>
                     <div>
-                      <label htmlFor="teacher_number" className="block text-xs sm:text-sm font-medium text-gray-700">
-                        {t('teacherNumber')}
+                      <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
+                        {t('newPassword')}
                       </label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                          <Building className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Lock className="h-4 w-4 text-gray-400" />
                         </div>
                         <input
-                          type="text"
-                          name="teacher_number"
-                          id="teacher_number"
-                          readOnly={!isEditMode}
-                          className={`mt-1 block w-full pl-8 sm:pl-10 rounded-md shadow-sm text-sm transition-all duration-300 ${!isEditMode ? 'bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none' : 'border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md'}`}
-                          value={formData.teacher_number}
+                          type="password"
+                          name="newPassword"
+                          id="newPassword"
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                          value={formData.newPassword}
                           onChange={handleInputChange}
+                          placeholder={t('enterNewPassword')}
                         />
                       </div>
                     </div>
+
                     <div>
-                      <label htmlFor="employment_type" className="block text-sm font-medium text-gray-700">
-                        {t('employmentType') || 'Employment Type'}
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                        {t('email')}
                       </label>
-                      {isEditMode ? (
-                        <Dropdown
-                          options={[
-                            { value: '', label: t('selectEmploymentType', 'Select Type') },
-                            ...employmentTypeOptions
-                          ]}
-                          value={formData.employment_type}
-                          onValueChange={(value) => {
-                            setFormData(prev => ({ ...prev, employment_type: value }));
-                          }}
-                          placeholder={t('selectEmploymentType', 'Select Type')}
-                          minWidth="w-full"
-                          className='w-full'
-                        />
-                      ) : (
-                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                          {formData.employment_type || '-'}
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Mail className="h-4 w-4 text-gray-400" />
                         </div>
-                      )}
+                        <input
+                          type="email"
+                          name="email"
+                          id="email"
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder={t('enterEmail')}
+                        />
+                      </div>
                     </div>
+
                     <div>
-                      <label htmlFor="hire_date" className="block text-sm font-medium text-gray-700">
-                        {t('hireDate') || 'Hire Date'}
+                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                        {t('phone')}
                       </label>
-                      {isEditMode ? (
-                        <DatePickerWithDropdowns
-                          value={formData.hire_date ? new Date(formData.hire_date) : null}
-                          onChange={(date) => {
-                            if (date) {
-                              const year = date.getFullYear();
-                              const month = String(date.getMonth() + 1).padStart(2, '0');
-                              const day = String(date.getDate()).padStart(2, '0');
-                              const formattedDate = `${year}-${month}-${day}`;
-                              setFormData(prev => ({ ...prev, hire_date: formattedDate }));
-                            } else {
-                              setFormData(prev => ({ ...prev, hire_date: '' }));
-                            }
-                          }}
-                          placeholder={t('pickDate', 'Pick a date')}
-                          className="w-full"
-                        />
-                      ) : (
-                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                          {formData.hire_date ? new Date(formData.hire_date).toLocaleDateString() : '-'}
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Phone className="h-4 w-4 text-gray-400" />
                         </div>
-                      )}
-                    </div>
-                    <div>
-                      <label htmlFor="gradeLevel" className="block text-sm font-medium text-gray-700">
-                        {t('gradeLevel') || 'Grade Level'}
-                      </label>
-                      {isEditMode ? (
-                        <Dropdown
-                          options={[
-                            { value: '', label: t('selectGradeLevel', 'Select Grade Level') },
-                            { value: '1', label: t('grade1', 'Grade 1') },
-                            { value: '2', label: t('grade2', 'Grade 2') },
-                            { value: '3', label: t('grade3', 'Grade 3') },
-                            { value: '4', label: t('grade4', 'Grade 4') },
-                            { value: '5', label: t('grade5', 'Grade 5') },
-                            { value: '6', label: t('grade6', 'Grade 6') }
-                          ]}
-                          value={formData.gradeLevel}
-                          onValueChange={(value) => {
-                            setFormData(prev => ({ ...prev, gradeLevel: value }));
-                          }}
-                          placeholder={t('selectGradeLevel', 'Select Grade Level')}
-                          contentClassName="max-h-[200px] overflow-y-auto"
-                          className='w-full'
+                        <input
+                          type="tel"
+                          name="phone"
+                          id="phone"
+                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          placeholder={t('enterPhone')}
                         />
-                      ) : (
-                        <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                          {formData.gradeLevel || '-'}
-                        </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Current Residence Information */}
-                <div className="border-t-2 pt-4 lg:pt-6">
-                  <div className="flex items-center justify-between mb-3 lg:mb-4">
-                    <h4 className="text-base lg:text-lg font-medium text-gray-900">{t('currentResidence') || 'Current Residence'}</h4>
-                    {locationDataLoading && (
-                      <DynamicLoader
-                        type="dots"
-                        size="sm"
-                        message="Loading location data..."
-                        className="text-sm text-blue-600"
-                      />
-                    )}
+                {/* Current Residence Card */}
+                <div className="bg-white rounded-md border border-gray-200 p-6">
+                  <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {t('currentResidence')}
+                    </h3>
                   </div>
-
-                  {/* Province and District */}
-                  <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4 mb-6">
+                  <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
                     <div>
                       <label htmlFor="residence-province" className="block text-sm font-medium text-gray-700">
                         {t('province')}
                       </label>
                       <div className="mt-1">
-                        {isEditMode ? (
-                          <Dropdown
-                            value={selectedResidenceProvince}
-                            onValueChange={(value) => {
-                              handleResidenceProvinceChange(value);
-                              setFormData(prev => ({
-                                ...prev,
-                                residence: { ...prev.residence, provinceId: value },
-                                provinceId: value
-                              }));
-                            }}
-                            options={getResidenceProvinceOptions()}
-                            placeholder={t('selectProvince')}
-                            className="w-full"
-                            maxHeight="max-h-40"
-                            itemsToShow={5}
-                          />
-                        ) : (
-                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {getResidenceProvinceOptions().find(p => p.value === selectedResidenceProvince)?.label || '-'}
-                          </div>
-                        )}
+                        <Dropdown
+                          value={selectedResidenceProvince}
+                          onValueChange={(value) => {
+                            handleResidenceProvinceChange(value);
+                            setFormData(prev => ({
+                              ...prev,
+                              residence: { ...prev.residence, provinceId: value },
+                              provinceId: value
+                            }));
+                          }}
+                          options={getResidenceProvinceOptions()}
+                          placeholder={t('selectProvince')}
+                          className="w-full"
+                          maxHeight="max-h-40"
+                          itemsToShow={5}
+                        />
                       </div>
                     </div>
 
@@ -1887,61 +1838,48 @@ export default function ProfileUpdate({ user, setUser }) {
                         {t('district')}
                       </label>
                       <div className="mt-1">
-                        {isEditMode ? (
-                          <Dropdown
-                            value={selectedResidenceDistrict}
-                            onValueChange={(value) => {
-                              handleResidenceDistrictChange(value);
-                              setFormData(prev => ({
-                                ...prev,
-                                residence: { ...prev.residence, districtId: value },
-                                districtId: value
-                              }));
-                            }}
-                            options={getResidenceDistrictOptions()}
-                            placeholder={t('selectDistrict')}
-                            className="w-full"
-                            disabled={!selectedResidenceProvince}
-                            maxHeight="max-h-40"
-                            itemsToShow={5}
-                          />
-                        ) : (
-                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {getResidenceDistrictOptions().find(d => d.value === selectedResidenceDistrict)?.label || '-'}
-                          </div>
-                        )}
+                        <Dropdown
+                          value={selectedResidenceDistrict}
+                          onValueChange={(value) => {
+                            handleResidenceDistrictChange(value);
+                            setFormData(prev => ({
+                              ...prev,
+                              residence: { ...prev.residence, districtId: value },
+                              districtId: value
+                            }));
+                          }}
+                          options={getResidenceDistrictOptions()}
+                          placeholder={t('selectDistrict')}
+                          className="w-full"
+                          disabled={!selectedResidenceProvince}
+                          maxHeight="max-h-40"
+                          itemsToShow={5}
+                        />
                       </div>
                     </div>
 
-                    {/* Commune and Village */}
                     <div>
                       <label htmlFor="residence-commune" className="block text-sm font-medium text-gray-700">
                         {t('commune')}
                       </label>
                       <div className="mt-1">
-                        {isEditMode ? (
-                          <Dropdown
-                            value={selectedResidenceCommune}
-                            onValueChange={(value) => {
-                              handleResidenceCommuneChange(value);
-                              setFormData(prev => ({
-                                ...prev,
-                                residence: { ...prev.residence, communeId: value },
-                                communeId: value
-                              }));
-                            }}
-                            options={getResidenceCommuneOptions()}
-                            placeholder={t('selectCommune')}
-                            className="w-full"
-                            disabled={!selectedResidenceDistrict}
-                            maxHeight="max-h-40"
-                            itemsToShow={5}
-                          />
-                        ) : (
-                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {getResidenceCommuneOptions().find(c => c.value === selectedResidenceCommune)?.label || '-'}
-                          </div>
-                        )}
+                        <Dropdown
+                          value={selectedResidenceCommune}
+                          onValueChange={(value) => {
+                            handleResidenceCommuneChange(value);
+                            setFormData(prev => ({
+                              ...prev,
+                              residence: { ...prev.residence, communeId: value },
+                              communeId: value
+                            }));
+                          }}
+                          options={getResidenceCommuneOptions()}
+                          placeholder={t('selectCommune')}
+                          className="w-full"
+                          disabled={!selectedResidenceDistrict}
+                          maxHeight="max-h-40"
+                          itemsToShow={5}
+                        />
                       </div>
                     </div>
 
@@ -1950,66 +1888,56 @@ export default function ProfileUpdate({ user, setUser }) {
                         {t('village')}
                       </label>
                       <div className="mt-1">
-                        {isEditMode ? (
-                          <Dropdown
-                            value={selectedResidenceVillage}
-                            onValueChange={(value) => {
-                              handleResidenceVillageChange(value);
-                              setFormData(prev => ({
-                                ...prev,
-                                residence: { ...prev.residence, villageId: value },
-                                villageId: value
-                              }));
-                            }}
-                            options={getResidenceVillageOptions()}
-                            placeholder={t('selectVillage')}
-                            className="w-full"
-                            disabled={!selectedResidenceCommune}
-                            maxHeight="max-h-40"
-                            itemsToShow={5}
-                          />
-                        ) : (
-                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {getResidenceVillageOptions().find(v => v.value === selectedResidenceVillage)?.label || '-'}
-                          </div>
-                        )}
+                        <Dropdown
+                          value={selectedResidenceVillage}
+                          onValueChange={(value) => {
+                            handleResidenceVillageChange(value);
+                            setFormData(prev => ({
+                              ...prev,
+                              residence: { ...prev.residence, villageId: value },
+                              villageId: value
+                            }));
+                          }}
+                          options={getResidenceVillageOptions()}
+                          placeholder={t('selectVillage')}
+                          className="w-full"
+                          disabled={!selectedResidenceCommune}
+                          maxHeight="max-h-40"
+                          itemsToShow={5}
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Place of Birth Information */}
-                <div className="border-t-2 pt-4 lg:pt-6">
-                  <h4 className="text-base lg:text-lg font-medium text-gray-900 mb-3 lg:mb-4">{t('placeOfBirth') || 'Place of Birth'}</h4>
-
-                  {/* Province and District */}
-                  <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4 mb-6">
+                {/* Place of Birth Card */}
+                <div className="bg-white rounded-md border border-gray-200 p-6">
+                  <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {t('placeOfBirth')}
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
                     <div>
                       <label htmlFor="birth-province" className="block text-sm font-medium text-gray-700">
                         {t('province')}
                       </label>
                       <div className="mt-1">
-                        {isEditMode ? (
-                          <Dropdown
-                            value={selectedBirthProvince}
-                            onValueChange={(value) => {
-                              handleBirthProvinceChange(value);
-                              setFormData(prev => ({
-                                ...prev,
-                                placeOfBirth: { ...prev.placeOfBirth, provinceId: value }
-                              }));
-                            }}
-                            options={getBirthProvinceOptions()}
-                            placeholder={t('selectProvince')}
-                            className="w-full"
-                            maxHeight="max-h-40"
-                            itemsToShow={5}
-                          />
-                        ) : (
-                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {getBirthProvinceOptions().find(p => p.value === selectedBirthProvince)?.label || '-'}
-                          </div>
-                        )}
+                        <Dropdown
+                          value={selectedBirthProvince}
+                          onValueChange={(value) => {
+                            handleBirthProvinceChange(value);
+                            setFormData(prev => ({
+                              ...prev,
+                              placeOfBirth: { ...prev.placeOfBirth, provinceId: value }
+                            }));
+                          }}
+                          options={getBirthProvinceOptions()}
+                          placeholder={t('selectProvince')}
+                          className="w-full"
+                          maxHeight="max-h-40"
+                          itemsToShow={5}
+                        />
                       </div>
                     </div>
 
@@ -2018,59 +1946,46 @@ export default function ProfileUpdate({ user, setUser }) {
                         {t('district')}
                       </label>
                       <div className="mt-1">
-                        {isEditMode ? (
-                          <Dropdown
-                            value={selectedBirthDistrict}
-                            onValueChange={(value) => {
-                              handleBirthDistrictChange(value);
-                              setFormData(prev => ({
-                                ...prev,
-                                placeOfBirth: { ...prev.placeOfBirth, districtId: value }
-                              }));
-                            }}
-                            options={getBirthDistrictOptions()}
-                            placeholder={t('selectDistrict')}
-                            className="w-full"
-                            disabled={!selectedBirthProvince}
-                            maxHeight="max-h-40"
-                            itemsToShow={5}
-                          />
-                        ) : (
-                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {getBirthDistrictOptions().find(d => d.value === selectedBirthDistrict)?.label || '-'}
-                          </div>
-                        )}
+                        <Dropdown
+                          value={selectedBirthDistrict}
+                          onValueChange={(value) => {
+                            handleBirthDistrictChange(value);
+                            setFormData(prev => ({
+                              ...prev,
+                              placeOfBirth: { ...prev.placeOfBirth, districtId: value }
+                            }));
+                          }}
+                          options={getBirthDistrictOptions()}
+                          placeholder={t('selectDistrict')}
+                          className="w-full"
+                          disabled={!selectedBirthProvince}
+                          maxHeight="max-h-40"
+                          itemsToShow={5}
+                        />
                       </div>
                     </div>
 
-                    {/* Commune and Village */}
                     <div>
                       <label htmlFor="birth-commune" className="block text-sm font-medium text-gray-700">
                         {t('commune')}
                       </label>
                       <div className="mt-1">
-                        {isEditMode ? (
-                          <Dropdown
-                            value={selectedBirthCommune}
-                            onValueChange={(value) => {
-                              handleBirthCommuneChange(value);
-                              setFormData(prev => ({
-                                ...prev,
-                                placeOfBirth: { ...prev.placeOfBirth, communeId: value }
-                              }));
-                            }}
-                            options={getBirthCommuneOptions()}
-                            placeholder={t('selectCommune')}
-                            className="w-full"
-                            disabled={!selectedBirthDistrict}
-                            maxHeight="max-h-40"
-                            itemsToShow={5}
-                          />
-                        ) : (
-                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {getBirthCommuneOptions().find(c => c.value === selectedBirthCommune)?.label || '-'}
-                          </div>
-                        )}
+                        <Dropdown
+                          value={selectedBirthCommune}
+                          onValueChange={(value) => {
+                            handleBirthCommuneChange(value);
+                            setFormData(prev => ({
+                              ...prev,
+                              placeOfBirth: { ...prev.placeOfBirth, communeId: value }
+                            }));
+                          }}
+                          options={getBirthCommuneOptions()}
+                          placeholder={t('selectCommune')}
+                          className="w-full"
+                          disabled={!selectedBirthDistrict}
+                          maxHeight="max-h-40"
+                          itemsToShow={5}
+                        />
                       </div>
                     </div>
 
@@ -2079,39 +1994,522 @@ export default function ProfileUpdate({ user, setUser }) {
                         {t('village')}
                       </label>
                       <div className="mt-1">
-                        {isEditMode ? (
-                          <Dropdown
-                            value={selectedBirthVillage}
-                            onValueChange={(value) => {
-                              handleBirthVillageChange(value);
-                              setFormData(prev => ({
-                                ...prev,
-                                placeOfBirth: { ...prev.placeOfBirth, villageId: value }
-                              }));
-                            }}
-                            options={getBirthVillageOptions()}
-                            placeholder={t('selectVillage')}
-                            className="w-full"
-                            disabled={!selectedBirthCommune}
-                            maxHeight="max-h-40"
-                            itemsToShow={5}
-                          />
-                        ) : (
-                          <div className="mt-1 block w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm sm:text-sm text-gray-900">
-                            {getBirthVillageOptions().find(v => v.value === selectedBirthVillage)?.label || '-'}
-                          </div>
-                        )}
+                        <Dropdown
+                          value={selectedBirthVillage}
+                          onValueChange={(value) => {
+                            handleBirthVillageChange(value);
+                            setFormData(prev => ({
+                              ...prev,
+                              placeOfBirth: { ...prev.placeOfBirth, villageId: value }
+                            }));
+                          }}
+                          options={getBirthVillageOptions()}
+                          placeholder={t('selectVillage')}
+                          className="w-full"
+                          disabled={!selectedBirthCommune}
+                          maxHeight="max-h-40"
+                          itemsToShow={5}
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
 
-              </form>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+                {/* Employment Information Card */}
+                <div className="bg-white rounded-md border border-gray-200 p-6">
+                  <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {t('employmentInformation')}
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('gradeLevel')}
+                      </label>
+                      <Dropdown
+                        options={[
+                          { value: '', label: t('selectGradeLevel') },
+                          ...gradeLevelOptions
+                        ]}
+                        value={formData.gradeLevel}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, gradeLevel: value }))}
+                        placeholder={t('selectGradeLevel')}
+                        className='w-full'
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('employmentType')}
+                      </label>
+                      <Dropdown
+                        options={[
+                          { value: '', label: t('selectEmploymentType') },
+                          ...employmentTypeOptions
+                        ]}
+                        value={formData.employment_type}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, employment_type: value }))}
+                        placeholder={t('selectEmploymentType')}
+                        className='w-full'
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('salaryType')}
+                      </label>
+                      <SalaryTypeDropdown
+                        employmentType={formData.employment_type}
+                        value={formData.salary_type}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, salary_type: value }))}
+                        placeholder={t('selectSalaryType')}
+                        disabled={!formData.employment_type}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('teachingType')}
+                      </label>
+                      <Dropdown
+                        options={[
+                          { value: '', label: t('selectTeachingType') },
+                          ...teachingTypeOptions
+                        ]}
+                        value={formData.teaching_type}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, teaching_type: value }))}
+                        placeholder={t('selectTeachingType')}
+                        className='w-full'
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('teacherStatus')}
+                      </label>
+                      <Dropdown
+                        options={[
+                          { value: '', label: t('selectTeacherStatus') },
+                          ...teacherStatusOptions
+                        ]}
+                        value={formData.teacher_status}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, teacher_status: value }))}
+                        placeholder={t('selectTeacherStatus')}
+                        className='w-full'
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('subjects')}
+                      </label>
+                      <MultiSelectDropdown
+                        options={subjectOptions}
+                        value={formData.subject}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, subject: value }))}
+                        placeholder={t('selectSubjects')}
+                        maxHeight='max-h-[200px]'
+                        className='w-full'
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="teacher_number" className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('teacherNumber')}
+                      </label>
+                      <input
+                        type="text"
+                        id="teacher_number"
+                        className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                        value={formData.teacher_number}
+                        onChange={(e) => setFormData(prev => ({ ...prev, teacher_number: e.target.value }))}
+                        placeholder={t('enterTeacherNumber')}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="hire_date" className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('hireDate')}
+                      </label>
+                      <DatePickerWithDropdowns
+                        value={formData.hire_date ? new Date(formData.hire_date) : null}
+                        onChange={(date) => setFormData(prev => ({
+                          ...prev,
+                          hire_date: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : ''
+                        }))}
+                        placeholder={t('pickDate')}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Appointment and Burden Status */}
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      {t('appointmentStatus')}
+                    </label>
+                    <div className="flex items-center gap-6">
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          checked={!!formData.appointed}
+                          onChange={(e) => setFormData(prev => ({ ...prev, appointed: e.target.checked }))}
+                        />
+                        <span>{t('appointed')}</span>
+                      </label>
+
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          checked={!!formData.burden}
+                          onChange={(e) => setFormData(prev => ({ ...prev, burden: e.target.checked }))}
+                        />
+                        <span>{t('burden')}</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Training Information Subsection */}
+                  <div className="mt-8 border-t border-gray-200 pt-6">
+                    <h4 className="text-base font-medium text-gray-900 mb-4">{t('trainingInformation')}</h4>
+                    <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t('educationLevel')}
+                        </label>
+                        <Dropdown
+                          options={[
+                            { value: '', label: t('selectEducationLevel') },
+                            ...educationLevelOptions
+                          ]}
+                          value={formData.education_level}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, education_level: value }))}
+                          placeholder={t('selectEducationLevel')}
+                          className='w-full'
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t('trainingType')}
+                        </label>
+                        <Dropdown
+                          options={[
+                            { value: '', label: t('selectTrainingType') },
+                            ...trainingTypeOptions
+                          ]}
+                          value={formData.training_type}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, training_type: value }))}
+                          placeholder={t('selectTrainingType')}
+                          className='w-full'
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Extra Learning Tools Subsection */}
+                  <div className="mt-8 border-t border-gray-200 pt-6">
+                    <h4 className="text-base font-medium text-gray-900 mb-4">{t('extraLearningTool')}</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {Object.entries(formData.teacherExtraLearningTool).map(([key, value]) => (
+                        <div key={key}>
+                          <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={value === true}
+                              onChange={(e) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  teacherExtraLearningTool: {
+                                    ...prev.teacherExtraLearningTool,
+                                    [key]: e.target.checked
+                                  }
+                                }));
+                              }}
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm font-medium text-gray-700">{key}</span>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Family Information Subsection */}
+                  <div className="mt-8 border-t border-gray-200 pt-6">
+                    <h4 className="text-base font-medium text-gray-900 mb-4">{t('familyInformation')}</h4>
+                    <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t('maritalStatus')}
+                        </label>
+                        <Dropdown
+                          options={[
+                            { value: '', label: t('selectMaritalStatus') },
+                            ...maritalStatusOptions
+                          ]}
+                          value={formData.teacher_family.living_status}
+                          onValueChange={(value) => {
+                            setFormData(prev => {
+                              let nextTeacherFamily = {
+                                ...prev.teacher_family,
+                                living_status: value
+                              };
+
+                              // Single: clear spouse info and children
+                              if (value === 'នៅលីវ') {
+                                nextTeacherFamily = {
+                                  living_status: value,
+                                  spouse_info: {
+                                    spouse_name: '',
+                                    spouse_occupation: '',
+                                    spouse_place_of_birth: '',
+                                    spouse_phone: ''
+                                  },
+                                  number_of_children: '',
+                                  children: []
+                                };
+                              }
+
+                              // Widow/Divorced: no spouse info, but allow children
+                              if (value === 'ពោះម៉ាយ') {
+                                nextTeacherFamily = {
+                                  living_status: value,
+                                  spouse_info: {
+                                    spouse_name: '',
+                                    spouse_occupation: '',
+                                    spouse_place_of_birth: '',
+                                    spouse_phone: ''
+                                  },
+                                  number_of_children: prev.teacher_family?.number_of_children || '',
+                                  children: Array.isArray(prev.teacher_family?.children) ? prev.teacher_family.children : []
+                                };
+                              }
+
+                              // Married: keep spouse/children data
+                              if (value === 'រៀបការ') {
+                                nextTeacherFamily = {
+                                  ...prev.teacher_family,
+                                  living_status: value
+                                };
+                              }
+
+                              return {
+                                ...prev,
+                                teacher_family: nextTeacherFamily
+                              };
+                            });
+                          }}
+                          placeholder={t('selectMaritalStatus')}
+                          className='w-full'
+                        />
+                      </div>
+
+                      {/* Spouse Information - Show only if living_status is Married */}
+                      {formData.teacher_family.living_status === 'រៀបការ' && (
+                        <>
+                          <div>
+                            <label htmlFor="spouse_name" className="block text-sm font-medium text-gray-700 mb-1">
+                              {t('partnerName')}
+                            </label>
+                            <input
+                              type="text"
+                              id="spouse_name"
+                              className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                              value={formData.teacher_family.spouse_info.spouse_name}
+                              onChange={(e) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  teacher_family: {
+                                    ...prev.teacher_family,
+                                    spouse_info: {
+                                      ...prev.teacher_family.spouse_info,
+                                      spouse_name: e.target.value
+                                    }
+                                  }
+                                }));
+                              }}
+                              placeholder={t('enterPartnerName')}
+                            />
+                          </div>
+
+                          <div>
+                            <label htmlFor="spouse_occupation" className="block text-sm font-medium text-gray-700 mb-1">
+                              {t('partnerJobPlace')}
+                            </label>
+                            <Dropdown
+                              options={[
+                                { value: '', label: t('selectSpouseJob') },
+                                ...spouseJobOptions
+                              ]}
+                              value={formData.teacher_family.spouse_info.spouse_occupation}
+                              onValueChange={(value) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  teacher_family: {
+                                    ...prev.teacher_family,
+                                    spouse_info: {
+                                      ...prev.teacher_family.spouse_info,
+                                      spouse_occupation: value
+                                    }
+                                  }
+                                }));
+                              }}
+                              placeholder={t('selectSpouseJob')}
+                              className='w-full'
+                            />
+                          </div>
+
+                          <div>
+                            <label htmlFor="spouse_phone" className="block text-sm font-medium text-gray-700 mb-1">
+                              {t('partnerPhone')}
+                            </label>
+                            <input
+                              type="tel"
+                              id="spouse_phone"
+                              className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                              value={formData.teacher_family.spouse_info.spouse_phone}
+                              onChange={(e) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  teacher_family: {
+                                    ...prev.teacher_family,
+                                    spouse_info: {
+                                      ...prev.teacher_family.spouse_info,
+                                      spouse_phone: e.target.value
+                                    }
+                                  }
+                                }));
+                              }}
+                              placeholder={t('enterPhone')}
+                            />
+                          </div>
+
+                          <div>
+                            <label htmlFor="spouse_place_of_birth" className="block text-sm font-medium text-gray-700 mb-1">
+                              {t('placeOfBirth')}
+                            </label>
+                            <input
+                              type="text"
+                              id="spouse_place_of_birth"
+                              className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                              value={formData.teacher_family.spouse_info.spouse_place_of_birth}
+                              onChange={(e) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  teacher_family: {
+                                    ...prev.teacher_family,
+                                    spouse_info: {
+                                      ...prev.teacher_family.spouse_info,
+                                      spouse_place_of_birth: e.target.value
+                                    }
+                                  }
+                                }));
+                              }}
+                              placeholder={t('enterPlaceOfBirth')}
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {/* Number of Children - Show when living_status is not Single */}
+                      {formData.teacher_family.living_status && formData.teacher_family.living_status !== 'នៅលីវ' && (
+                        <div>
+                          <label htmlFor="number_of_children" className="block text-sm font-medium text-gray-700 mb-1">
+                            {t('numberOfChildren')}
+                          </label>
+                          <input
+                            type="number"
+                            id="number_of_children"
+                            min="0"
+                            className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                            value={formData.teacher_family.number_of_children}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                teacher_family: {
+                                  ...prev.teacher_family,
+                                  number_of_children: e.target.value
+                                }
+                              }));
+                            }}
+                            placeholder={t('enterNumber')}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Children List - Show when number_of_children > 0 */}
+                    {formData.teacher_family.number_of_children && parseInt(formData.teacher_family.number_of_children) > 0 && (
+                      <div className="mt-6 border-t pt-6">
+                        <h5 className="text-sm font-semibold text-gray-900 mb-4">{t('childrenInformation')}</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {Array.from({ length: parseInt(formData.teacher_family.number_of_children) || 0 }).map((_, index) => (
+                            <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-md">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1">
+                                  <label htmlFor={`child_name_${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                                    {t('childName')} {index + 1}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    id={`child_name_${index}`}
+                                    value={formData.teacher_family.children[index]?.child_name || ''}
+                                    onChange={(e) => {
+                                      setFormData(prev => {
+                                        const newChildren = [...prev.teacher_family.children];
+                                        if (!newChildren[index]) {
+                                          newChildren[index] = { child_name: '' };
+                                        }
+                                        newChildren[index].child_name = e.target.value;
+                                        return {
+                                          ...prev,
+                                          teacher_family: {
+                                            ...prev.teacher_family,
+                                            children: newChildren
+                                          }
+                                        };
+                                      });
+                                    }}
+                                    className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder={t('enterChildName')}
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  className="mt-6 inline-flex items-center justify-center h-10 w-10 border border-red-300 text-xs font-medium rounded text-red-700 bg-red-50 hover:bg-red-100"
+                                  onClick={() => {
+                                    setFormData(prev => {
+                                      const prevCount = parseInt(prev.teacher_family.number_of_children) || 0;
+                                      const newChildren = (prev.teacher_family.children || []).filter((_, i) => i !== index);
+                                      const newCount = Math.max(0, prevCount - 1);
+                                      return {
+                                        ...prev,
+                                        teacher_family: {
+                                          ...prev.teacher_family,
+                                          number_of_children: newCount ? String(newCount) : '',
+                                          children: newChildren
+                                        }
+                                      };
+                                    });
+                                  }}
+                                >
+                                  <X className="h-4 w-4" aria-hidden="true" />
+                                  <span className="sr-only">{t('remove')}</span>
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+          </form>
+        )}
 
       {/* Image Modal */}
       {showImageModal && formData.profile_picture && (
