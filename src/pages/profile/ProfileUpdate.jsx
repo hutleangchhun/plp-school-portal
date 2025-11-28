@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler, Download, QrCode as QrCodeIcon, BookOpen, ArrowLeft } from 'lucide-react';
+import { User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler, Download, QrCode as QrCodeIcon, BookOpen, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -10,6 +10,7 @@ import ProfileInfoDisplay from '../../components/ui/ProfileInfoDisplay';
 import { api, utils } from '../../utils/api';
 import { userService } from '../../utils/api/services/userService';
 import { sanitizeUsername } from '../../utils/usernameUtils';
+import { convertHeightToCm, convertWeightToKg, calculateBMI } from '../../utils/physicalMeasurementUtils';
 import Dropdown from '../../components/ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { useStableCallback } from '../../utils/reactOptimization';
@@ -696,6 +697,30 @@ export default function ProfileUpdate({ user, setUser }) {
     setShowUsernameSuggestions(false);
   };
 
+  const isWeightInvalid = () => {
+    const { weight_kg } = formData;
+    if (!weight_kg) return false;
+    const weightStr = String(weight_kg).trim();
+    const weightRegex = /^[0-9]{1,3}(\.[0-9]{1,2})?$/; // numeric(5,2)
+    if (!weightRegex.test(weightStr)) return true;
+    const w = parseFloat(weightStr);
+    return !Number.isNaN(w) && w < 10;
+  };
+
+  const isHeightInvalid = () => {
+    const { height_cm } = formData;
+    if (!height_cm) return false;
+    const heightStr = String(height_cm).trim();
+    const heightRegex = /^[0-9]{1,3}(\.[0-9])?$/; // numeric(4,1)
+    if (!heightRegex.test(heightStr)) return true;
+    const h = parseFloat(heightStr);
+    return !Number.isNaN(h) && h < 10;
+  };
+
+  const isPhysicalInvalid = () => {
+    return isWeightInvalid() || isHeightInvalid();
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -714,7 +739,8 @@ export default function ProfileUpdate({ user, setUser }) {
     !formData.date_of_birth ||
     !formData.nationality ||
     !formData.username?.trim() ||
-    usernameAvailable === false;
+    usernameAvailable === false ||
+    isPhysicalInvalid();
 
   const buildTeacherFamilyPayload = () => {
     const tf = formData.teacher_family || {};
@@ -822,6 +848,10 @@ export default function ProfileUpdate({ user, setUser }) {
 
       if (formData.height_cm) {
         updateData.height_cm = formData.height_cm;
+      }
+
+      if (formData.bmi) {
+        updateData.bmi = formData.bmi;
       }
 
       // Include ID field if available - crucial for update
@@ -947,8 +977,8 @@ export default function ProfileUpdate({ user, setUser }) {
         updateData.teacher_family = buildTeacherFamilyPayload();
       }
 
-      // Use the correct endpoint for updating user profile
-      const response = await api.user.updateUserProfile(updateData);
+      // Use the correct endpoint for updating user profile via PATCH /users/my-account
+      const response = await api.user.updateMyAccount(updateData);
       clearTimeout(timeoutId);
 
       const updatedUser = {
@@ -1195,6 +1225,61 @@ export default function ProfileUpdate({ user, setUser }) {
     }
   };
 
+  const validatePhysicalFields = () => {
+    const { weight_kg, height_cm } = formData;
+
+    // Allow empty values (both fields are optional)
+    if (weight_kg) {
+      const weightStr = String(weight_kg).trim();
+      const weightRegex = /^[0-9]{1,3}(\.[0-9]{1,2})?$/; // numeric(5,2)
+      if (!weightRegex.test(weightStr)) {
+        showError(
+          t(
+            'invalidWeightFormat',
+            'សូមបញ្ចូលទម្ងន់ជាលេខដោយមានខ្ទង់ទសភាគអតិបរមា ២ ខ្ទង់ (ឧ. 45, 45.5 ឬ 45.75)'
+          )
+        );
+        return false;
+      }
+      const w = parseFloat(weightStr);
+      if (!Number.isNaN(w) && w < 10) {
+        showError(
+          t(
+            'invalidWeightRange',
+            'ទម្ងន់ត្រូវតែធំជាង ឬស្មើ 10 គីឡូក្រាម'
+          )
+        );
+        return false;
+      }
+    }
+
+    if (height_cm) {
+      const heightStr = String(height_cm).trim();
+      const heightRegex = /^[0-9]{1,3}(\.[0-9])?$/; // numeric(4,1)
+      if (!heightRegex.test(heightStr)) {
+        showError(
+          t(
+            'invalidHeightFormat',
+            'សូមបញ្ចូលកម្ពស់ជាលេខដោយមានខ្ទង់ទសភាគអតិបរមា ១ ខ្ទង់ (ឧ. 150 ឬ 150.5)'
+          )
+        );
+        return false;
+      }
+      const h = parseFloat(heightStr);
+      if (!Number.isNaN(h) && h < 10) {
+        showError(
+          t(
+            'invalidHeightRange',
+            'កម្ពស់ត្រូវតែធំជាង ឬស្មើ 10 សង់ទីម៉ែត្រ'
+          )
+        );
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const validateForm = () => {
     if (!formData.username.trim()) {
       showError(t('usernameRequired'));
@@ -1218,6 +1303,9 @@ export default function ProfileUpdate({ user, setUser }) {
     }
     if (formData.phone && !/^[+]?[\d\s-()]+$/.test(formData.phone)) {
       showError(t('validPhoneRequired'));
+      return false;
+    }
+    if (!validatePhysicalFields()) {
       return false;
     }
     return true;
@@ -1252,24 +1340,22 @@ export default function ProfileUpdate({ user, setUser }) {
                 type="button"
                 onClick={handleEditToggle}
                 variant="primary"
-                size="md"
-                className="rounded-lg flex-1 sm:flex-initial"
+                size="sm"
               >
                 <Edit className="h-4 w-4 mr-2" />
                 <span>{isEditMode ? t('cancel') || 'Cancel' : t('edit') || 'Edit'}</span>
               </Button>
               {isEditMode && (
-                <button
+                <Button
                   type="submit"
                   form="profile-form"
                   disabled={isProfileSubmitDisabled}
-                  className="flex-1 sm:flex-initial px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                  variant="success"
+                  size="sm"
                 >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
                   <span>{loading ? t('updating') : t('save', 'Save Changes')}</span>
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -1581,14 +1667,26 @@ export default function ProfileUpdate({ user, setUser }) {
                           <Weight className="h-4 w-4 text-gray-400" />
                         </div>
                         <input
-                          type="number"
+                          type="text"
                           name="weight_kg"
                           id="weight_kg"
-                          step="0.1"
-                          min="0"
-                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400"
+                          className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
+                            isWeightInvalid()
+                              ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                              : 'border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400'
+                          }`}
                           value={formData.weight_kg}
                           onChange={handleInputChange}
+                          onBlur={(e) => {
+                            const converted = convertWeightToKg(e.target.value);
+                            setFormData(prev => {
+                              const updated = { ...prev, weight_kg: converted };
+                              if (updated.height_cm) {
+                                updated.bmi = calculateBMI(converted, updated.height_cm);
+                              }
+                              return updated;
+                            });
+                          }}
                           placeholder={t('enterWeight')}
                         />
                       </div>
@@ -1603,14 +1701,26 @@ export default function ProfileUpdate({ user, setUser }) {
                           <Ruler className="h-4 w-4 text-gray-400" />
                         </div>
                         <input
-                          type="number"
+                          type="text"
                           name="height_cm"
                           id="height_cm"
-                          step="0.1"
-                          min="0"
-                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400"
+                          className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
+                            isHeightInvalid()
+                              ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                              : 'border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400'
+                          }`}
                           value={formData.height_cm}
                           onChange={handleInputChange}
+                          onBlur={(e) => {
+                            const converted = convertHeightToCm(e.target.value);
+                            setFormData(prev => {
+                              const updated = { ...prev, height_cm: converted };
+                              if (updated.weight_kg) {
+                                updated.bmi = calculateBMI(updated.weight_kg, converted);
+                              }
+                              return updated;
+                            });
+                          }}
                           placeholder={t('enterHeight')}
                         />
                       </div>

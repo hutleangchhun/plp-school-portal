@@ -8,6 +8,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { decryptId, isValidEncryptedId } from '../../utils/encryption';
+import { convertHeightToCm, convertWeightToKg, calculateBMI } from '../../utils/physicalMeasurementUtils';
 import { Button } from '../ui/Button';
 import { DatePickerWithDropdowns } from '../ui/date-picker-with-dropdowns';
 import Dropdown from '../ui/Dropdown';
@@ -430,6 +431,14 @@ const TeacherEditModal = () => {
     }
   };
 
+  const isUsernameInvalid = () => {
+    const username = editForm.username || '';
+    if (!username.trim()) return false;
+    // Only allow English letters, numbers, dot, underscore, hyphen
+    const usernameRegex = /^[A-Za-z0-9._-]+$/;
+    return !usernameRegex.test(username);
+  };
+
   const buildTeacherFamilyPayload = () => {
     const tf = editForm.teacher_family || {};
     const rawChildren = Array.isArray(tf.children) ? tf.children : [];
@@ -474,8 +483,91 @@ const TeacherEditModal = () => {
     return payload;
   };
 
+  const isWeightInvalid = () => {
+    const { weight } = editForm;
+    if (!weight) return false;
+    const weightStr = String(weight).trim();
+    const weightRegex = /^[0-9]{1,3}(\.[0-9]{1,2})?$/; // numeric(5,2)
+    if (!weightRegex.test(weightStr)) return true;
+    const w = parseFloat(weightStr);
+    return !Number.isNaN(w) && w < 10;
+  };
+
+  const isHeightInvalid = () => {
+    const { height } = editForm;
+    if (!height) return false;
+    const heightStr = String(height).trim();
+    const heightRegex = /^[0-9]{1,3}(\.[0-9])?$/; // numeric(4,1)
+    if (!heightRegex.test(heightStr)) return true;
+    const h = parseFloat(heightStr);
+    return !Number.isNaN(h) && h < 10;
+  };
+
+  const isPhysicalInvalid = () => {
+    return isWeightInvalid() || isHeightInvalid();
+  };
+
+  const validatePhysicalFields = () => {
+    const { weight, height } = editForm;
+
+    // Allow empty values (both fields are optional)
+    if (weight) {
+      const weightStr = String(weight).trim();
+      const weightRegex = /^[0-9]{1,3}(\.[0-9]{1,2})?$/; // numeric(5,2)
+      if (!weightRegex.test(weightStr)) {
+        showError(
+          t(
+            'invalidWeightFormat',
+            'សូមបញ្ចូលទម្ងន់ជាលេខដោយមានខ្ទង់ទសភាគអតិបរមា ២ ខ្ទង់ (ឧ. 45, 45.5 ឬ 45.75)'
+          )
+        );
+        return false;
+      }
+      const w = parseFloat(weightStr);
+      if (!Number.isNaN(w) && w < 10) {
+        showError(
+          t(
+            'invalidWeightRange',
+            'ទម្ងន់ត្រូវតែធំជាង ឬស្មើ 10 គីឡូក្រាម'
+          )
+        );
+        return false;
+      }
+    }
+
+    if (height) {
+      const heightStr = String(height).trim();
+      const heightRegex = /^[0-9]{1,3}(\.[0-9])?$/; // numeric(4,1)
+      if (!heightRegex.test(heightStr)) {
+        showError(
+          t(
+            'invalidHeightFormat',
+            'សូមបញ្ចូលកម្ពស់ជាលេខដោយមានខ្ទង់ទសភាគអតិបរមា ១ ខ្ទង់ (ឧ. 150 ឬ 150.5)'
+          )
+        );
+        return false;
+      }
+      const h = parseFloat(heightStr);
+      if (!Number.isNaN(h) && h < 10) {
+        showError(
+          t(
+            'invalidHeightRange',
+            'កម្ពស់ត្រូវតែធំជាង ឬស្មើ 10 សង់ទីម៉ែត្រ'
+          )
+        );
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validatePhysicalFields()) {
+      return;
+    }
 
     try {
       setPageLoading(true);
@@ -744,7 +836,9 @@ const TeacherEditModal = () => {
     !editForm.username?.trim() ||
     !editForm.employment_type ||
     !editForm.hire_date ||
-    (mode === 'create' && !editForm.password?.trim());
+    (mode === 'create' && !editForm.password?.trim()) ||
+    isPhysicalInvalid() ||
+    isUsernameInvalid();
 
   // Show error state
   if (error && mode === 'edit') {
@@ -919,14 +1013,25 @@ const TeacherEditModal = () => {
                 <Weight className="h-4 w-4 text-gray-400" />
               </div>
               <input
-                type="number"
+                type="text"
                 id="weight"
-                step="0.1"
-                min="0"
                 value={editForm.weight}
                 onChange={(e) => handleFormChange('weight', e.target.value)}
-                className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400"
-                placeholder={t('enterWeight', 'Enter weight')}
+                onBlur={(e) => {
+                  const converted = convertWeightToKg(e.target.value);
+                  handleFormChange('weight', converted);
+                  // Auto-calculate BMI if height is available
+                  if (converted && editForm.height) {
+                    const bmi = calculateBMI(converted, editForm.height);
+                    handleFormChange('bmi', bmi);
+                  }
+                }}
+                className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
+                  isWeightInvalid()
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400'
+                }`}
+                placeholder={t('enterWeight', 'e.g., 45 or 0.45')}
               />
             </div>
           </div>
@@ -940,14 +1045,25 @@ const TeacherEditModal = () => {
                 <Ruler className="h-4 w-4 text-gray-400" />
               </div>
               <input
-                type="number"
+                type="text"
                 id="height"
-                step="0.1"
-                min="0"
                 value={editForm.height}
                 onChange={(e) => handleFormChange('height', e.target.value)}
-                className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400"
-                placeholder={t('enterHeight', 'Enter height')}
+                onBlur={(e) => {
+                  const converted = convertHeightToCm(e.target.value);
+                  handleFormChange('height', converted);
+                  // Auto-calculate BMI if weight is available
+                  if (converted && editForm.weight) {
+                    const bmi = calculateBMI(editForm.weight, converted);
+                    handleFormChange('bmi', bmi);
+                  }
+                }}
+                className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
+                  isHeightInvalid()
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400'
+                }`}
+                placeholder={t('enterHeight', 'e.g., 170 or 1.7')}
               />
             </div>
           </div>
@@ -1583,7 +1699,11 @@ const TeacherEditModal = () => {
                         handleGenerateUsernameSuggestions(newValue);
                       }, 400);
                     }}
-                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
+                      isUsernameInvalid()
+                        ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
+                    }`}
                     placeholder={t('enterUsername', 'Enter username')}
                     required
                   />

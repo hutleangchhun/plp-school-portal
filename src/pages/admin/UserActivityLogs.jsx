@@ -6,6 +6,7 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
+import { Badge } from '../../components/ui/Badge';
 import { api } from '../../utils/api';
 
 const UserActivityLogs = () => {
@@ -263,21 +264,20 @@ const UserActivityLogs = () => {
                             {target ? `${target.last_name || ''} ${target.first_name || ''}`.trim() : '-'}
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-700">
-                            <div className="flex flex-col">
+                            <div className="flex flex-col gap-0.5">
                               <span>{log.activity_type || '-'}</span>
                               {details.responseStatus && (
-                                <span
-                                  className={`mt-0.5 text-[11px] inline-flex items-center rounded-full px-2 py-0.5 font-medium ${
-                                    isError
-                                      ? 'bg-red-100 text-red-700'
-                                      : 'bg-green-100 text-green-700'
-                                  }`}
+                                <Badge
+                                  color={isError ? 'red' : 'green'}
+                                  variant="filled"
+                                  size="xs"
+                                  className="mt-0.5"
                                 >
                                   {details.responseStatus}
                                   {typeof details.responseStatusCode === 'number'
                                     ? ` (${details.responseStatusCode})`
                                     : ''}
-                                </span>
+                                </Badge>
                               )}
                             </div>
                           </td>

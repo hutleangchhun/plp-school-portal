@@ -159,29 +159,81 @@ const userService = {
     return put(ENDPOINTS.USERS.UPDATE_USER(currentUser.id), formattedData);
   },
   /**
-   * Update user account using /users/my-account route (PATCH method)
-   * @param {Object} userData - User data with fields: {username, first_name, last_name, email, newPassword, date_of_birth, gender, phone, teacher_number, provinceId, districtId, communeId, villageId, nationality}
+   * Update user account using /api/v1/users/my-account route (PATCH method)
+   * @param {Object} userData - User data with all profile fields
    * @returns {Promise<Object>} Updated user data
    */
   updateMyAccount: async (userData) => {
     // Format data to match backend expectations
     const formattedData = {
+      roleId: userData.roleId,
       username: userData.username,
       first_name: userData.firstName || userData.first_name,
       last_name: userData.lastName || userData.last_name,
       email: userData.email,
-      newPassword: userData.newPassword || userData.password,
       date_of_birth: userData.dateOfBirth || userData.date_of_birth,
       gender: userData.gender,
       phone: userData.phone,
       teacher_number: userData.teacherNumber || userData.teacher_number,
-      provinceId: userData.provinceId,
-      districtId: userData.districtId,
-      communeId: userData.communeId,
-      villageId: userData.villageId,
-      nationality: userData.nationality
+      nationality: userData.nationality,
+      profile_picture: userData.profile_picture,
+      weight_kg: userData.weight_kg,
+      height_cm: userData.height_cm,
+      bmi: userData.bmi,
+      ethnic_group: userData.ethnic_group,
+      accessibility: userData.accessibility,
+      employment_type: userData.employment_type,
+      gradeLevel: userData.gradeLevel,
+      hire_date: userData.hire_date,
+      educationLevel: userData.educationLevel,
+      salaryTypeId: userData.salaryTypeId ? parseInt(userData.salaryTypeId) : undefined,
+      trainingType: userData.trainingType,
+      teacherStatus: userData.teacherStatus,
+      subject: userData.subject,
+      teachingType: userData.teachingType,
+      teacherExtraLearningTool: userData.teacherExtraLearningTool,
+      appointed: userData.appointed,
+      burden: userData.burden,
+      schoolId: userData.schoolId,
+      teacher_family: userData.teacher_family,
+      bookIds: userData.bookIds
     };
-    
+
+    // Add password if provided
+    if (userData.newPassword && userData.newPassword.trim()) {
+      formattedData.newPassword = userData.newPassword;
+    }
+
+    // Handle residence data (nested object)
+    if (userData.residence || userData.provinceId || userData.districtId || userData.communeId || userData.villageId) {
+      formattedData.residence = {
+        provinceId: userData.residence?.provinceId || userData.provinceId,
+        districtId: userData.residence?.districtId || userData.districtId,
+        communeId: userData.residence?.communeId || userData.communeId,
+        villageId: userData.residence?.villageId || userData.villageId
+      };
+    }
+
+    // Handle place of birth data (nested object)
+    if (userData.placeOfBirth) {
+      formattedData.placeOfBirth = {
+        provinceId: userData.placeOfBirth.provinceId,
+        districtId: userData.placeOfBirth.districtId,
+        communeId: userData.placeOfBirth.communeId,
+        villageId: userData.placeOfBirth.villageId
+      };
+    }
+
+    // Remove undefined/null values to avoid sending empty fields
+    Object.keys(formattedData).forEach(key => {
+      if (formattedData[key] === undefined || formattedData[key] === null || formattedData[key] === '') {
+        delete formattedData[key];
+      }
+    });
+
+    console.log('Updating user account via PATCH /users/my-account');
+    console.log('Formatted data:', formattedData);
+
     return patch(ENDPOINTS.USERS.MY_ACCOUNT, formattedData);
   },
 
