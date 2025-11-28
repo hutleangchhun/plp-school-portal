@@ -377,7 +377,7 @@ const UserActivityLogs = () => {
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">
                         {t('changedFields', 'Changed Fields')}
                       </h3>
-                      <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                      <div className="bg-gray-50 p-4 rounded-lg space-y-3 max-h-64 overflow-y-auto">
                         {selectedLog.activity_details?.changedFields &&
                           selectedLog.activity_details.changedFields.length > 0 && (
                             <ul className="space-y-2">
