@@ -420,6 +420,12 @@ const TeacherEditModal = () => {
     navigate(redirectPath, { replace: true });
   };
 
+  const isValidEmailFormat = (email) => {
+    // Basic email format validation using regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleFormChange = (field, value) => {
     setEditForm(prev => ({
       ...prev,
@@ -435,12 +441,18 @@ const TeacherEditModal = () => {
       }
     }
     if (field === 'email') {
+      const trimmedEmail = value?.trim() || '';
+
       // If email is empty, mark as invalid
-      if (!value || !value.trim()) {
+      if (!trimmedEmail) {
+        setEmailAvailable(false);
+      }
+      // If email format is invalid, mark as invalid
+      else if (!isValidEmailFormat(trimmedEmail)) {
         setEmailAvailable(false);
       }
       // If email is unchanged from the original, treat it as available
-      else if ((value || '') === (originalEmail || '')) {
+      else if (trimmedEmail === (originalEmail || '')) {
         setEmailAvailable(true);
       } else {
         setEmailAvailable(null);
@@ -450,7 +462,7 @@ const TeacherEditModal = () => {
         }
         emailDebounceRef.current = setTimeout(async () => {
           try {
-            const result = await userService.validateEmail(value.trim());
+            const result = await userService.validateEmail(trimmedEmail);
             // If email exists, it's not available; if it doesn't exist, it's available
             setEmailAvailable(!result.exists);
           } catch (error) {
@@ -740,8 +752,8 @@ const TeacherEditModal = () => {
           username: editForm.username?.trim(),
           first_name: editForm.firstName?.trim(),
           last_name: editForm.lastName?.trim(),
-          email: editForm.email?.trim(),
-          phone: editForm.phone?.trim(),
+          email: editForm.email?.trim() || undefined,
+          phone: editForm.phone?.trim() || undefined,
           roleId: editForm.role ? parseInt(editForm.role) : undefined,
 
           // Date & Identity
@@ -864,12 +876,12 @@ const TeacherEditModal = () => {
     !editForm.dateOfBirth ||
     !editForm.nationality ||
     !editForm.username?.trim() ||
-    !editForm.email?.trim() ||
     !editForm.employment_type ||
     !editForm.hire_date ||
     (mode === 'create' && !editForm.password?.trim()) ||
     usernameAvailable === false ||
-    emailAvailable === false ||
+    (editForm.email?.trim() && emailAvailable === false) ||
+    (editForm.email?.trim() && emailAvailable === null && (editForm.email || '') !== (originalEmail || '')) ||
     isPhysicalInvalid() ||
     isUsernameInvalid();
 

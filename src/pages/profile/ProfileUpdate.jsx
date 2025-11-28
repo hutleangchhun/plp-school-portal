@@ -690,9 +690,9 @@ export default function ProfileUpdate({ user, setUser }) {
     !formData.date_of_birth ||
     !formData.nationality ||
     !formData.username?.trim() ||
-    !formData.email?.trim() ||
     usernameAvailable === false ||
-    emailAvailable === false ||
+    (formData.email?.trim() && emailAvailable === false) ||
+    (formData.email?.trim() && emailAvailable === null && (formData.email || '') !== (originalEmail || '')) ||
     isPhysicalInvalid();
 
   const buildTeacherFamilyPayload = () => {
@@ -768,8 +768,8 @@ export default function ProfileUpdate({ user, setUser }) {
       if (formData.last_name) {
         updateData.last_name = formData.last_name;
       }
-      if (formData.email) {
-        updateData.email = formData.email;
+      if (formData.email && formData.email.trim()) {
+        updateData.email = formData.email.trim();
       }
       if (formData.date_of_birth) {
         updateData.date_of_birth = formData.date_of_birth;
@@ -1018,6 +1018,12 @@ export default function ProfileUpdate({ user, setUser }) {
     }
   };
 
+  const isValidEmailFormat = (email) => {
+    // Basic email format validation using regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -1027,12 +1033,18 @@ export default function ProfileUpdate({ user, setUser }) {
 
     // Handle email validation
     if (name === 'email') {
+      const trimmedEmail = value?.trim() || '';
+
       // If email is empty, mark as invalid
-      if (!value || !value.trim()) {
+      if (!trimmedEmail) {
+        setEmailAvailable(false);
+      }
+      // If email format is invalid, mark as invalid
+      else if (!isValidEmailFormat(trimmedEmail)) {
         setEmailAvailable(false);
       }
       // If email is unchanged from the original, treat it as available
-      else if ((value || '') === (originalEmail || '')) {
+      else if (trimmedEmail === (originalEmail || '')) {
         setEmailAvailable(true);
       } else {
         setEmailAvailable(null);
@@ -1042,7 +1054,7 @@ export default function ProfileUpdate({ user, setUser }) {
         }
         emailDebounceRef.current = setTimeout(async () => {
           try {
-            const result = await userService.validateEmail(value.trim());
+            const result = await userService.validateEmail(trimmedEmail);
             // If email exists, it's not available; if it doesn't exist, it's available
             setEmailAvailable(!result.exists);
           } catch (error) {

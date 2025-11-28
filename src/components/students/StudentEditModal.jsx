@@ -374,6 +374,12 @@ const StudentEditModal = () => {
     navigate(redirectPath, { replace: true });
   };
 
+  const isValidEmailFormat = (email) => {
+    // Basic email format validation using regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleFormChange = (field, value) => {
     setEditForm(prev => ({
       ...prev,
@@ -388,12 +394,18 @@ const StudentEditModal = () => {
       }
     }
     if (field === 'email') {
+      const trimmedEmail = value?.trim() || '';
+
       // If email is empty, mark as invalid
-      if (!value || !value.trim()) {
+      if (!trimmedEmail) {
+        setEmailAvailable(false);
+      }
+      // If email format is invalid, mark as invalid
+      else if (!isValidEmailFormat(trimmedEmail)) {
         setEmailAvailable(false);
       }
       // If email is unchanged from the original, treat it as available
-      else if ((value || '') === (originalEmail || '')) {
+      else if (trimmedEmail === (originalEmail || '')) {
         setEmailAvailable(true);
       } else {
         setEmailAvailable(null);
@@ -403,7 +415,7 @@ const StudentEditModal = () => {
         }
         emailDebounceRef.current = setTimeout(async () => {
           try {
-            const result = await userService.validateEmail(value.trim());
+            const result = await userService.validateEmail(trimmedEmail);
             // If email exists, it's not available; if it doesn't exist, it's available
             setEmailAvailable(!result.exists);
           } catch (error) {
@@ -604,8 +616,8 @@ const StudentEditModal = () => {
       const payload = {
         first_name: editForm.firstName?.trim(),
         last_name: editForm.lastName?.trim(),
-        email: editForm.email?.trim(),
-        phone: editForm.phone?.trim(),
+        email: editForm.email?.trim() || undefined,
+        phone: editForm.phone?.trim() || undefined,
         date_of_birth: formatDate(editForm.dateOfBirth),
         gender: editForm.gender || undefined,
         nationality: editForm.nationality?.trim() || undefined,
@@ -712,9 +724,9 @@ const StudentEditModal = () => {
     !editForm.dateOfBirth ||
     !editForm.nationality ||
     !editForm.username?.trim() ||
-    !editForm.email?.trim() ||
     usernameAvailable === false ||
-    emailAvailable === false ||
+    (editForm.email?.trim() && emailAvailable === false) ||
+    (editForm.email?.trim() && emailAvailable === null && (editForm.email || '') !== (originalEmail || '')) ||
     isPhysicalInvalid() ||
     isUsernameInvalid();
 
