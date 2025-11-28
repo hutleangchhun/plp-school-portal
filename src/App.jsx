@@ -80,12 +80,25 @@ function AppContent() {
 
   useEffect(() => {
     if (user) {
-      setShowLoginInfo(true);
+      try {
+        const hasSeen = localStorage.getItem('plp_login_info_seen');
+        if (!hasSeen) {
+          setShowLoginInfo(true);
+          localStorage.setItem('plp_login_info_seen', 'true');
+        }
+      } catch (e) {
+        setShowLoginInfo(true);
+      }
     }
   }, [user]);
 
   const handleLogout = async () => {
       utils.user.removeUserData();
+      try {
+        localStorage.removeItem('plp_login_info_seen');
+      } catch (e) {
+        // ignore storage errors
+      }
       setUser(null);
   };
 
