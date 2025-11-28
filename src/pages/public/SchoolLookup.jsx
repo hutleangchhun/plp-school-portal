@@ -228,9 +228,8 @@ const SchoolLookup = () => {
       const selectedSchoolObj = schools.find(s => s.id.toString() === schoolId);
       if (selectedSchoolObj) {
         setSchoolInfo(selectedSchoolObj);
-        setShowUsers(true);
         setCurrentPage(1);
-        loadUsers(schoolId);
+        setShowUsers(true);
       }
     } else {
       setShowUsers(false);
