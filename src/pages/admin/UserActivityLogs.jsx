@@ -368,23 +368,50 @@ const UserActivityLogs = () => {
                   </div>
 
                   {/* Changed Fields */}
-                  {selectedLog.activity_details?.changedFields &&
-                    selectedLog.activity_details.changedFields.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                          {t('changedFields', 'Changed Fields')}
-                        </h3>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <ul className="space-y-2">
-                            {selectedLog.activity_details.changedFields.map((field, idx) => (
-                              <li key={idx} className="text-sm text-gray-700">
-                                • <span className="font-medium">{field}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                  {(selectedLog.activity_details?.changedFields &&
+                    selectedLog.activity_details.changedFields.length > 0) ||
+                  (selectedLog.activity_details?.changes &&
+                    typeof selectedLog.activity_details.changes === 'object' &&
+                    Object.keys(selectedLog.activity_details.changes).length > 0) ? (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        {t('changedFields', 'Changed Fields')}
+                      </h3>
+                      <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                        {selectedLog.activity_details?.changedFields &&
+                          selectedLog.activity_details.changedFields.length > 0 && (
+                            <ul className="space-y-2">
+                              {selectedLog.activity_details.changedFields.map((field, idx) => (
+                                <li key={idx} className="text-sm text-gray-700">
+                                  • <span className="font-medium">{field}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+
+                        {selectedLog.activity_details?.changes &&
+                          typeof selectedLog.activity_details.changes === 'object' &&
+                          Object.keys(selectedLog.activity_details.changes).length > 0 && (
+                            <div className="">
+                              <div className="space-y-1 text-xs text-gray-700">
+                                {Object.entries(selectedLog.activity_details.changes).map(
+                                  ([field, value]) => (
+                                    <div key={field} className="flex flex-col sm:flex-row sm:items-start sm:space-x-2">
+                                      <span className="font-semibold text-gray-900 min-w-[120px] sm:text-right">
+                                        {field}:
+                                      </span>
+                                      <span className="flex-1 break-words">
+                                        {formatChangeValue(value)}
+                                      </span>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          )}
                       </div>
-                    )}
+                    </div>
+                  ) : null}
 
                   {/* Request Body */}
                   {selectedLog.activity_details?.requestBody && (
