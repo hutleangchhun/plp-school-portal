@@ -295,7 +295,7 @@ export const getKhmerDayWithShorthand = (day, dayOfWeek) => {
  * @returns {boolean} True if Saturday (5) or Sunday (6)
  */
 export const isWeekend = (dayOfWeek) => {
-  return dayOfWeek === 5 || dayOfWeek === 6; // Saturday or Sunday
+  return dayOfWeek === 6; // Saturday or Sunday
 };
 
 /**
