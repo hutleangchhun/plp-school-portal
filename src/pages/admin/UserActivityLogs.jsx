@@ -222,6 +222,10 @@ const UserActivityLogs = () => {
                       const changes = details.changes || null;
                       const changedFields = details.changedFields || null;
 
+                      const isError =
+                        details.responseStatus === 'ERROR' ||
+                        (typeof details.responseStatusCode === 'number' && details.responseStatusCode >= 400);
+
                       let changesDisplay = '-';
 
                       // If changes is an object with data, show field: value pairs
@@ -242,7 +246,11 @@ const UserActivityLogs = () => {
                       return (
                         <tr
                           key={log.id}
-                          className="hover:bg-gray-50 cursor-pointer"
+                          className={`${
+                            isError
+                              ? 'bg-red-50 hover:bg-red-100'
+                              : 'hover:bg-gray-50'
+                          } cursor-pointer`}
                           onClick={() => fetchLogById(log.id)}
                         >
                           <td className="px-3 py-2 whitespace-nowrap text-gray-700 font-mono text-xs">
@@ -255,7 +263,23 @@ const UserActivityLogs = () => {
                             {target ? `${target.last_name || ''} ${target.first_name || ''}`.trim() : '-'}
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-700">
-                            {log.activity_type || '-'}
+                            <div className="flex flex-col">
+                              <span>{log.activity_type || '-'}</span>
+                              {details.responseStatus && (
+                                <span
+                                  className={`mt-0.5 text-[11px] inline-flex items-center rounded-full px-2 py-0.5 font-medium ${
+                                    isError
+                                      ? 'bg-red-100 text-red-700'
+                                      : 'bg-green-100 text-green-700'
+                                  }`}
+                                >
+                                  {details.responseStatus}
+                                  {typeof details.responseStatusCode === 'number'
+                                    ? ` (${details.responseStatusCode})`
+                                    : ''}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-700 text-xs">
                             {details.timestamp ? new Date(details.timestamp).toLocaleString() : '-'}
