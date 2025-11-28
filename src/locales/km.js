@@ -1411,6 +1411,9 @@ export const km = {
   mapPicker: 'ចុចលើផែនទីនេះដើម្បីកំណត់ GPS ទីតាំងសាលារៀន',
   searchSchool: 'ស្វែងរកសាលា...',
   searchTeacher: 'ស្វែងរកគ្រូ',
+  emailAvailable: 'អ៊ីមែលអាចប្រើបាន',
+  emailNotAvailable: 'អ៊ីមែលនេះមិនអាចប្រើបាន',
+  emailValidationHint: 'កំពុងពិនិត្រមើលអ៊ីមែល',
 
   // QR Code Generator
   studentQRCode: 'លេខកូដ QR សិស្ស',

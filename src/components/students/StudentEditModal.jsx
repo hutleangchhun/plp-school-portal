@@ -43,11 +43,14 @@ const StudentEditModal = () => {
   const [showUsernameSuggestions, setShowUsernameSuggestions] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [originalUsername, setOriginalUsername] = useState('');
+  const [emailAvailable, setEmailAvailable] = useState(null);
+  const [originalEmail, setOriginalEmail] = useState('');
   const [showBookModal, setShowBookModal] = useState(false);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const usernameContainerRef = useRef(null);
   const usernameDebounceRef = useRef(null);
+  const emailDebounceRef = useRef(null);
   const hideUsernameSuggestionsTimeoutRef = useRef(null);
 
   const [editForm, setEditForm] = useState({
@@ -286,6 +289,8 @@ const StudentEditModal = () => {
       });
       setOriginalUsername(initialUsername || '');
       setUsernameAvailable(null);
+      setOriginalEmail(fullData.email || '');
+      setEmailAvailable(null);
 
       console.log('StudentEditModal: Form initialized with:', {
         poorCardNumber: studentObj.poorCardNumber,
@@ -354,6 +359,10 @@ const StudentEditModal = () => {
     setProfilePictureFile(null);
     setShowDropdown(false);
     setUsernameAvailable(null);
+    setEmailAvailable(null);
+    if (emailDebounceRef.current) {
+      clearTimeout(emailDebounceRef.current);
+    }
   };
 
 
@@ -376,6 +385,31 @@ const StudentEditModal = () => {
         setUsernameAvailable(true);
       } else {
         setUsernameAvailable(null);
+      }
+    }
+    if (field === 'email') {
+      // If email is empty, mark as invalid
+      if (!value || !value.trim()) {
+        setEmailAvailable(false);
+      }
+      // If email is unchanged from the original, treat it as available
+      else if ((value || '') === (originalEmail || '')) {
+        setEmailAvailable(true);
+      } else {
+        setEmailAvailable(null);
+        // Debounce email validation API call
+        if (emailDebounceRef.current) {
+          clearTimeout(emailDebounceRef.current);
+        }
+        emailDebounceRef.current = setTimeout(async () => {
+          try {
+            const result = await userService.validateEmail(value.trim());
+            // If email exists, it's not available; if it doesn't exist, it's available
+            setEmailAvailable(!result.exists);
+          } catch (error) {
+            console.error('Error validating email:', error);
+          }
+        }, 500);
       }
     }
   };
@@ -678,7 +712,9 @@ const StudentEditModal = () => {
     !editForm.dateOfBirth ||
     !editForm.nationality ||
     !editForm.username?.trim() ||
+    !editForm.email?.trim() ||
     usernameAvailable === false ||
+    emailAvailable === false ||
     isPhysicalInvalid() ||
     isUsernameInvalid();
 
@@ -1233,10 +1269,31 @@ const StudentEditModal = () => {
                 id="email"
                 value={editForm.email}
                 onChange={(e) => handleFormChange('email', e.target.value)}
-                className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 ${
+                  emailAvailable === false
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500 hover:border-red-400'
+                    : emailAvailable === true
+                    ? 'border-green-500 focus:ring-green-500 focus:border-green-500 hover:border-green-400'
+                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
+                } focus:scale-[1.01] hover:shadow-md`}
                 placeholder={t('enterEmail', 'Enter email address')}
               />
             </div>
+            {emailAvailable === true && (
+              <p className="mt-1 text-xs text-green-600">
+                {t('emailAvailable', 'This email is available.')}
+              </p>
+            )}
+            {emailAvailable === false && (
+              <p className="mt-1 text-xs text-red-600">
+                {t('emailNotAvailable', 'This email is already in use')}
+              </p>
+            )}
+            {emailAvailable === null && editForm.email && editForm.email.trim() && (
+              <p className="mt-1 text-xs text-gray-500">
+                {t('emailValidationHint', 'Checking email availability...')}
+              </p>
+            )}
           </div>
 
           <div>

@@ -58,6 +58,7 @@ const ENDPOINTS = {
     UPDATE_USER: (userId) => `/users/${userId}`,
     GENERATE_QR_CODE: '/users/generate-qr-code',
     GENERATE_USERNAME: '/users/generate-username',
+    VALIDATE_EMAIL: (email) => `/users/validate/email?email=${encodeURIComponent(email)}`,
     PUBLIC_SCHOOL_USERS: (schoolId) => `/users/public/school/${schoolId}`,
     CREATE_USER: '/users',
   },

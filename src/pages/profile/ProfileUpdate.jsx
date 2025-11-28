@@ -114,8 +114,11 @@ export default function ProfileUpdate({ user, setUser }) {
   const [showUsernameSuggestions, setShowUsernameSuggestions] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [originalUsername, setOriginalUsername] = useState('');
+  const [emailAvailable, setEmailAvailable] = useState(null);
+  const [originalEmail, setOriginalEmail] = useState('');
   const usernameContainerRef = useRef(null);
   const usernameDebounceRef = useRef(null);
+  const emailDebounceRef = useRef(null);
 
   // Store pending location data for setting initial values
   const [pendingResidenceData, setPendingResidenceData] = useState(null);
@@ -318,6 +321,8 @@ export default function ProfileUpdate({ user, setUser }) {
         };
 
         setFormData(newFormData);
+        setOriginalUsername(newFormData.username || '');
+        setOriginalEmail(newFormData.email || '');
         console.log('User data loaded into form, keys present:', Object.keys(newFormData).filter(k => newFormData[k]));
 
         // Store initial location data to set once provinces are loaded
@@ -435,6 +440,15 @@ export default function ProfileUpdate({ user, setUser }) {
 
     return () => clearTimeout(timeout);
   }, [residenceInitialized, birthInitialized, pendingResidenceData, pendingBirthData]);
+
+  // Cleanup email debounce timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (emailDebounceRef.current) {
+        clearTimeout(emailDebounceRef.current);
+      }
+    };
+  }, []);
 
   // Calculate BMI
   const calculateBMI = () => {
@@ -739,7 +753,9 @@ export default function ProfileUpdate({ user, setUser }) {
     !formData.date_of_birth ||
     !formData.nationality ||
     !formData.username?.trim() ||
+    !formData.email?.trim() ||
     usernameAvailable === false ||
+    emailAvailable === false ||
     isPhysicalInvalid();
 
   const buildTeacherFamilyPayload = () => {
@@ -1090,6 +1106,33 @@ export default function ProfileUpdate({ user, setUser }) {
       ...prev,
       [name]: value
     }));
+
+    // Handle email validation
+    if (name === 'email') {
+      // If email is empty, mark as invalid
+      if (!value || !value.trim()) {
+        setEmailAvailable(false);
+      }
+      // If email is unchanged from the original, treat it as available
+      else if ((value || '') === (originalEmail || '')) {
+        setEmailAvailable(true);
+      } else {
+        setEmailAvailable(null);
+        // Debounce email validation API call
+        if (emailDebounceRef.current) {
+          clearTimeout(emailDebounceRef.current);
+        }
+        emailDebounceRef.current = setTimeout(async () => {
+          try {
+            const result = await userService.validateEmail(value.trim());
+            // If email exists, it's not available; if it doesn't exist, it's available
+            setEmailAvailable(!result.exists);
+          } catch (error) {
+            console.error('Error validating email:', error);
+          }
+        }, 500);
+      }
+    }
   };
 
   const handleDateChange = useStableCallback((date) => {
@@ -1881,12 +1924,33 @@ export default function ProfileUpdate({ user, setUser }) {
                           type="email"
                           name="email"
                           id="email"
-                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                          className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm ${
+                            emailAvailable === false
+                              ? 'border-red-500 focus:ring-red-500 focus:border-red-500 hover:border-red-400'
+                              : emailAvailable === true
+                              ? 'border-green-500 focus:ring-green-500 focus:border-green-500 hover:border-green-400'
+                              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
+                          } focus:scale-[1.01] hover:shadow-md`}
                           value={formData.email}
                           onChange={handleInputChange}
                           placeholder={t('enterEmail')}
                         />
                       </div>
+                      {emailAvailable === true && (
+                        <p className="mt-1 text-xs text-green-600">
+                          {t('emailAvailable', 'This email is available.')}
+                        </p>
+                      )}
+                      {emailAvailable === false && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {t('emailNotAvailable', 'This email is already in use')}
+                        </p>
+                      )}
+                      {emailAvailable === null && formData.email && formData.email.trim() && (
+                        <p className="mt-1 text-xs text-gray-500">
+                          {t('emailValidationHint', 'Checking email availability...')}
+                        </p>
+                      )}
                     </div>
 
                     <div>

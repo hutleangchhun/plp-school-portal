@@ -590,6 +590,17 @@ const userService = {
     console.log('Creating teacher with payload:', payload);
 
     return post(ENDPOINTS.USERS.CREATE_USER, payload);
+  },
+
+  /**
+   * Validate if email exists in the system
+   * @param {string} email - Email address to validate
+   * @returns {Promise<Object>} Response with { email, exists }
+   */
+  validateEmail: async (email) => {
+    if (!email || !email.trim()) return { email: '', exists: false };
+    const url = ENDPOINTS.USERS.VALIDATE_EMAIL(email.trim());
+    return get(url);
   }
 };
 
