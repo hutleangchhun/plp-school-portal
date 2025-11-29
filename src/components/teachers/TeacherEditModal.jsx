@@ -20,6 +20,7 @@ import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
 import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, employmentTypeOptions, educationLevelOptions, trainingTypeOptions, teacherStatusOptions, subjectOptions, roleOptions, maritalStatusOptions, teachingTypeOptions, spouseJobOptions } from '../../utils/formOptions';
 import { utils } from '../../utils/api';
+import GroupedDropdown from '../ui/GroupedDropdown';
 
 const TeacherEditModal = () => {
   const { t } = useLanguage();
@@ -481,6 +482,12 @@ const TeacherEditModal = () => {
     return !usernameRegex.test(username);
   };
 
+  const isPasswordInvalid = () => {
+    const password = mode === 'create' ? editForm.password : editForm.newPassword;
+    if (!password) return false;
+    return password.length <= 8;
+  };
+
   const buildTeacherFamilyPayload = () => {
     const tf = editForm.teacher_family || {};
     const rawChildren = Array.isArray(tf.children) ? tf.children : [];
@@ -879,6 +886,8 @@ const TeacherEditModal = () => {
     !editForm.employment_type ||
     !editForm.hire_date ||
     (mode === 'create' && !editForm.password?.trim()) ||
+    (mode === 'create' && isPasswordInvalid()) ||
+    (mode === 'edit' && editForm.newPassword?.trim() && isPasswordInvalid()) ||
     usernameAvailable === false ||
     (editForm.email?.trim() && emailAvailable === false) ||
     (editForm.email?.trim() && emailAvailable === null && (editForm.email || '') !== (originalEmail || '')) ||
@@ -1071,11 +1080,10 @@ const TeacherEditModal = () => {
                     handleFormChange('bmi', bmi);
                   }
                 }}
-                className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
-                  isWeightInvalid()
+                className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${isWeightInvalid()
                     ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400'
-                }`}
+                  }`}
                 placeholder={t('enterWeight', 'e.g., 45 or 0.45')}
               />
             </div>
@@ -1103,11 +1111,10 @@ const TeacherEditModal = () => {
                     handleFormChange('bmi', bmi);
                   }
                 }}
-                className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
-                  isHeightInvalid()
+                className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${isHeightInvalid()
                     ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-green-500 focus:border-green-500 hover:border-gray-400'
-                }`}
+                  }`}
                 placeholder={t('enterHeight', 'e.g., 170 or 1.7')}
               />
             </div>
@@ -1533,33 +1540,35 @@ const TeacherEditModal = () => {
                     placeholder={t('enterPartnerName', 'e.g., Jane Doe')}
                   />
                 </div>
-
                 <div>
-                  <label htmlFor="spouse_occupation" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="spouse_occupation"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     {t('partnerJobPlace', 'Spouse Occupation')}
                   </label>
-                  <Dropdown
+
+                  <GroupedDropdown
                     options={[
-                      { value: '', label: t('selectSpouseJob', 'ជ្រើសរើសមុខរបររបស់ដៃគូរស្វាមីភរិយា') },
-                      ...spouseJobOptions
+                      ...spouseJobOptions, // Your grouped job options
                     ]}
                     value={editForm.teacher_family.spouse_info.spouse_occupation}
                     onValueChange={(value) => {
-                      setEditForm(prev => ({
+                      setEditForm((prev) => ({
                         ...prev,
                         teacher_family: {
                           ...prev.teacher_family,
                           spouse_info: {
                             ...prev.teacher_family.spouse_info,
-                            spouse_occupation: value
-                          }
-                        }
+                            spouse_occupation: value,
+                          },
+                        },
                       }));
                     }}
                     placeholder={t('selectSpouseJob', 'ជ្រើសរើសមុខរបររបស់ដៃគូរស្វាមីភរិយា')}
                     contentClassName="max-h-[200px] overflow-y-auto"
                     disabled={false}
-                    className='w-full'
+                    className="w-full"
                   />
                 </div>
 
@@ -1744,11 +1753,10 @@ const TeacherEditModal = () => {
                         handleGenerateUsernameSuggestions(newValue);
                       }, 400);
                     }}
-                    className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
-                      isUsernameInvalid()
+                    className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${isUsernameInvalid()
                         ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                         : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
-                    }`}
+                      }`}
                     placeholder={t('enterUsername', 'Enter username')}
                     required
                   />
@@ -1837,13 +1845,12 @@ const TeacherEditModal = () => {
                 id="email"
                 value={editForm.email}
                 onChange={(e) => handleFormChange('email', e.target.value)}
-                className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 ${
-                  emailAvailable === false
+                className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 ${emailAvailable === false
                     ? 'border-red-500 focus:ring-red-500 focus:border-red-500 hover:border-red-400'
                     : emailAvailable === true
-                    ? 'border-green-500 focus:ring-green-500 focus:border-green-500 hover:border-green-400'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
-                } focus:scale-[1.01] hover:shadow-md`}
+                      ? 'border-green-500 focus:ring-green-500 focus:border-green-500 hover:border-green-400'
+                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
+                  } focus:scale-[1.01] hover:shadow-md`}
                 placeholder={t('enterEmail', 'Enter email address')}
               />
             </div>

@@ -17,7 +17,7 @@ import BookSelectionModal from '../modals/BookSelectionModal';
 import SelectedBooksDisplay from '../modals/SelectedBooksDisplay';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
-import { gradeLevelOptions, ethnicGroupOptions, accessibilityOptions, getAcademicYearOptions } from '../../utils/formOptions';
+import { gradeLevelOptions, ethnicGroupOptions, accessibilityOptions, getAcademicYearOptions, poorCardGradeOptions } from '../../utils/formOptions';
 import { utils } from '../../utils/api';
 
 const StudentEditModal = () => {
@@ -73,7 +73,7 @@ const StudentEditModal = () => {
     gradeLevel: '',
     isKindergarten: false,
     studentNumber: '',
-    poorCardNumber: '',
+    poorCardGrade: '',
     bookIds: [],
     extraLearningTool: {
       'កញ្ចប់សម្ភារៈអំណាន': '',
@@ -238,7 +238,8 @@ const StudentEditModal = () => {
         gradeLevel: studentObj.gradeLevel,
         academicYear: studentObj.academicYear,
         studentNumber: studentObj.studentNumber,
-        poorCardNumber: studentObj.poorCardNumber,
+        poorCardGrade: studentObj.poorCardGrade,
+        poorCard_grade: fullData.poorCard_grade,
         isKidgardener: studentObj.isKidgardener,
         is_kidgardener: studentObj.is_kidgardener,
         fullStudentObj: studentObj,
@@ -268,7 +269,7 @@ const StudentEditModal = () => {
         gradeLevel: (studentObj.gradeLevel || fullData.gradeLevel || ''),
         isKindergarten: studentObj.isKidgardener !== undefined ? studentObj.isKidgardener : (studentObj.is_kidgardener || fullData.is_kidgardener || fullData.isKindergarten || false),
         studentNumber: (studentObj.studentNumber || fullData.studentNumber || ''),
-        poorCardNumber: (studentObj.poorCardNumber || fullData.poorCardNumber || ''),
+        poorCardGrade: (studentObj.poorCardGrade || fullData.poorCard_grade || fullData.poorCardGrade || ''),
         bookIds: Array.isArray(fullData.bookIds) ? fullData.bookIds : [],
         extraLearningTool: (studentObj.extraLearningTool && typeof studentObj.extraLearningTool === 'object') ? studentObj.extraLearningTool : (fullData.extraLearningTool && typeof fullData.extraLearningTool === 'object') ? fullData.extraLearningTool : {
           'កញ្ចប់សម្ភារៈអំណាន': '',
@@ -293,7 +294,8 @@ const StudentEditModal = () => {
       setEmailAvailable(null);
 
       console.log('StudentEditModal: Form initialized with:', {
-        poorCardNumber: studentObj.poorCardNumber,
+        poorCardGrade: studentObj.poorCardGrade,
+        poorCard_grade: fullData.poorCard_grade,
         academicYear: studentObj.academicYear,
         gradeLevel: studentObj.gradeLevel,
         studentNumber: studentObj.studentNumber,
@@ -345,7 +347,7 @@ const StudentEditModal = () => {
       gradeLevel: '',
       isKindergarten: false,
       studentNumber: '',
-      poorCardNumber: '',
+      poorCardGrade: '',
       bookIds: [],
       extraLearningTool: {
         'កញ្ចប់សម្ភារៈអំណាន': '',
@@ -631,7 +633,7 @@ const StudentEditModal = () => {
         gradeLevel: editForm.gradeLevel || undefined,
         isKindergarten: editForm.isKindergarten || undefined,
         studentNumber: editForm.studentNumber?.trim() || undefined,
-        poorCardNumber: editForm.poorCardNumber?.trim() || undefined,
+        poorCard_grade: editForm.poorCardGrade || undefined,
         // Always include bookIds: array when there are items, null when none
         bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
         // Include extraLearningTool with values
@@ -1030,16 +1032,20 @@ const StudentEditModal = () => {
             />
           </div>
           <div>
-            <label htmlFor="poorCardNumber" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('poorCardNumber', 'Poor Card Number')}
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('poorCardGrade', 'Poor Card Grade')}
             </label>
-            <input
-              type="text"
-              id="poorCardNumber"
-              value={editForm.poorCardNumber}
-              onChange={(e) => handleFormChange('poorCardNumber', e.target.value)}
-              className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-              placeholder={t('enterPoorCardNumber', 'Enter poor card number')}
+            <Dropdown
+              options={[
+                { value: '', label: t('selectPoorCardGrade', 'Select Poor Card Grade') },
+                ...poorCardGradeOptions
+              ]}
+              value={editForm.poorCardGrade}
+              onValueChange={(value) => handleFormChange('poorCardGrade', value)}
+              placeholder={t('selectPoorCardGrade', 'Select Poor Card Grade')}
+              contentClassName="max-h-[200px] overflow-y-auto"
+              disabled={false}
+              className='w-full'
             />
           </div>
           <div>

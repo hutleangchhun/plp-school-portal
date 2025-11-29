@@ -1414,7 +1414,8 @@ export const km = {
   emailAvailable: 'អ៊ីមែលអាចប្រើបាន',
   emailNotAvailable: 'អ៊ីមែលនេះមិនអាចប្រើបាន',
   emailValidationHint: 'កំពុងពិនិត្រមើលអ៊ីមែល',
-
+  poorCardGrade: 'ប្រភេទបណ្ណសមធម៌(ប្រសិនបើមាន)',
+  selectPoorCardGrade: 'ជ្រើសរើសប្រភេទបណ្ណសមធម៌',
   // QR Code Generator
   studentQRCode: 'លេខកូដ QR សិស្ស',
   student: 'ឧបករណ៍បង្កើត QR Code សម្រាប់សិស្ស',

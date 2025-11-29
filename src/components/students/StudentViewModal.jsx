@@ -308,6 +308,12 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
                 label={t('isKindergartener', 'Is Kindergartener')}
                 value={student.student.isKidgardener ? t('yes', 'Yes') : t('no', 'No')}
               />
+              {student.student.poorCard_grade && (
+                <InfoItem
+                  label={t('poorCardGrade', 'Poor Card Grade')}
+                  value={student.student.poorCard_grade === '1' ? 'កម្រិត 1' : student.student.poorCard_grade === '2' ? 'កម្រិត 2' : student.student.poorCard_grade}
+                />
+              )}
             </div>
           </div>
         )}
