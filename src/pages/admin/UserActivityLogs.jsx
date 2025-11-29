@@ -223,15 +223,25 @@ const UserActivityLogs = () => {
                       const details = log.activity_details || {};
                       const changes = details.changes || null;
                       const changedFields = details.changedFields || null;
+                      const isLoginActivity = log.activity_type === 'USER_LOGIN';
+                      const loginDetails = isLoginActivity ? details : {};
 
                       const isError =
                         details.responseStatus === 'ERROR' ||
-                        (typeof details.responseStatusCode === 'number' && details.responseStatusCode >= 400);
+                        (typeof details.responseStatusCode === 'number' && details.responseStatusCode >= 400) ||
+                        loginDetails.status === 'FAILED';
 
                       let changesDisplay = '-';
 
+                      // For login logs, show username, role and status
+                      if (isLoginActivity) {
+                        const username = loginDetails.username || '-';
+                        const role = loginDetails.roleEn || '-';
+                        const status = loginDetails.status || '-';
+                        changesDisplay = `${username} (${role}) - ${status}`;
+                      }
                       // If changes is an object with data, show field: value pairs
-                      if (changes && typeof changes === 'object' && Object.keys(changes).length > 0) {
+                      else if (changes && typeof changes === 'object' && Object.keys(changes).length > 0) {
                         changesDisplay = Object.entries(changes)
                           .map(([field, value]) => `${field}: ${formatChangeValue(value)}`)
                           .join(', ');
@@ -280,10 +290,20 @@ const UserActivityLogs = () => {
                                     : ''}
                                 </Badge>
                               )}
+                              {isLoginActivity && loginDetails.status && (
+                                <Badge
+                                  color={loginDetails.status === 'SUCCESS' ? 'green' : 'red'}
+                                  variant="filled"
+                                  size="xs"
+                                  className="mt-0.5"
+                                >
+                                  {loginDetails.status}
+                                </Badge>
+                              )}
                             </div>
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-700 text-xs">
-                            {details.timestamp ? new Date(details.timestamp).toLocaleString() : '-'}
+                            {log.created_at ? new Date(log.created_at).toLocaleString() : '-'}
                           </td>
                           <td className="px-3 py-2 text-gray-700 text-xs max-w-xs" title={changesDisplay}>
                             <div className="truncate">
@@ -386,6 +406,42 @@ const UserActivityLogs = () => {
                         {selectedLog.activity_details?.endpoint || '-'}
                       </p>
                     </div>
+
+                    {/* Login-specific details */}
+                    {selectedLog.activity_type === 'USER_LOGIN' && (
+                      <>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">
+                            {t('username', 'Username')}
+                          </label>
+                          <p className="text-gray-900">
+                            {selectedLog.activity_details?.username || '-'}
+                          </p>
+                        </div>
+
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">
+                            {t('role', 'Role')}
+                          </label>
+                          <p className="text-gray-900">
+                            {selectedLog.activity_details?.roleEn || '-'}
+                          </p>
+                        </div>
+
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">
+                            {t('loginStatus', 'Login Status')}
+                          </label>
+                          <Badge
+                            color={selectedLog.activity_details?.status === 'SUCCESS' ? 'green' : 'red'}
+                            variant="filled"
+                            size="sm"
+                          >
+                            {selectedLog.activity_details?.status || '-'}
+                          </Badge>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Changed Fields */}
