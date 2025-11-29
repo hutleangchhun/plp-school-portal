@@ -9,6 +9,7 @@ import Dropdown from '../ui/Dropdown';
 import SidebarFilter from '../ui/SidebarFilter';
 import { RefreshCcw, SlidersHorizontal, Users, CheckCircle, AlertCircle } from 'lucide-react';
 import CustomTooltip from '../ui/TooltipChart';
+import { roleOptions } from '../../utils/formOptions';
 
 const COLORS = {
   complete: '#10b981', // green-500
@@ -219,17 +220,7 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
             onValueChange={handleRoleChange}
             options={[
               { value: '', label: t('allRoles', 'All Roles') },
-              { value: '8', label: t('teacher', 'Teacher') },
-              { value: '9', label: t('student', 'Student') },
-              { value: '10', label: t('parent', 'Parent') },
-              { value: '14', label: t('principal', 'Principal') },
-              { value: '15', label: t('deputyPrincipal', 'Deputy Principal') },
-              { value: '16', label: t('schoolSecretary', 'School Secretary') },
-              { value: '17', label: t('schoolTreasurer', 'School Treasurer') },
-              { value: '18', label: t('schoolLibrarian', 'School Librarian') },
-              { value: '19', label: t('schoolWorkshop', 'School Workshop') },
-              { value: '20', label: t('schoolSecurity', 'School Security') },
-              { value: '21', label: t('teacherIct', 'Teacher ICT') },
+              ...roleOptions
             ]}
             placeholder={t('selectRole', 'Select Role')}
             className='w-full'
