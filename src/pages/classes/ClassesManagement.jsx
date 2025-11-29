@@ -16,6 +16,7 @@ import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/acade
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
 import { GRADE_LEVELS, getGradeLabel } from '../../constants/grades';
 import { formatClassIdentifier } from '../../utils/helpers'; // Import class formatting utility
+import { getFullName } from '../../utils/usernameUtils'; // Import name formatting utility
 import Dropdown from '@/components/ui/Dropdown';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import { Button } from '../../components/ui/Button';
@@ -131,7 +132,7 @@ export default function ClassesManagement() {
       section: '',
       schoolId: '', // Will be set when schoolInfo is loaded
       teacherId: user?.teacherId || user?.id || '',
-      teacherName: `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Teacher',
+      teacherName: getFullName(user, user?.username || 'Teacher'),
       academicYear: getCurrentAcademicYear(),
       maxStudents: '30',
       subject: '',
@@ -172,7 +173,7 @@ export default function ClassesManagement() {
         // Format teachers for dropdown
         const formattedTeachers = response.data.map(teacher => ({
           value: teacher.teacherId?.toString() || '',
-          label: `${teacher.user?.first_name || ''} ${teacher.user?.last_name || ''}`.trim() || teacher.user?.username || `Teacher ${teacher.teacherId}`,
+          label: getFullName(teacher.user, teacher.user?.username || `Teacher ${teacher.teacherId}`),
           gradeLevel: teacher.gradeLevel,
           teacherData: teacher
         }));
@@ -413,10 +414,10 @@ export default function ClassesManagement() {
         let teacherName = 'Teacher';
         if (teacherDetails) {
           // Use full teacher details from teacherService
-          teacherName = `${teacherDetails.user?.firstName || ''} ${teacherDetails.user?.lastName || ''}`.trim() || teacherDetails.user?.username || `Teacher ${teacherDetails.teacherId}`;
+          teacherName = getFullName(teacherDetails.user, teacherDetails.user?.username || `Teacher ${teacherDetails.teacherId}`);
         } else if (classData.teacher) {
           // Fallback to class teacher data
-          teacherName = `${classData.teacher.user?.firstName || classData.teacher.firstName || ''} ${classData.teacher.user?.lastName || classData.teacher.lastName || ''}`.trim() || classData.teacher.user?.username || classData.teacher.username || `Teacher ${classData.teacher.teacherId}`;
+          teacherName = getFullName(classData.teacher.user || classData.teacher, classData.teacher.user?.username || classData.teacher.username || `Teacher ${classData.teacher.teacherId}`);
         }
 
         return {
@@ -556,15 +557,13 @@ export default function ClassesManagement() {
       let teacherName = 'Teacher'; // default fallback
 
       // Try to get teacher name from API response
-      if (classData.teacher?.user?.first_name || classData.teacher?.user?.last_name) {
-        teacherName = `${classData.teacher.user.first_name || ''} ${classData.teacher.user.last_name || ''}`.trim();
-      } else if (classData.teacher?.first_name || classData.teacher?.last_name) {
-        teacherName = `${classData.teacher.first_name || ''} ${classData.teacher.last_name || ''}`.trim();
+      if (classData.teacher?.user?.first_name || classData.teacher?.user?.last_name || classData.teacher?.first_name || classData.teacher?.last_name) {
+        teacherName = getFullName(classData.teacher.user || classData.teacher, classData.teacher.username || 'Teacher');
       } else if (classData.teacher?.username) {
         teacherName = classData.teacher.username;
       } else {
         // Fallback to current user's name if this is their class
-        teacherName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Teacher';
+        teacherName = getFullName(user, user?.username || 'Teacher');
       }
 
       const formDataToSet = {
@@ -616,10 +615,7 @@ export default function ClassesManagement() {
           let formattedTeacherName = teacherName; // default fallback
 
           if (classData.teacher?.user) {
-            const firstName = classData.teacher.user.first_name || '';
-            const lastName = classData.teacher.user.last_name || '';
-            const fullName = `${firstName}${firstName && lastName ? ' ' : ''}${lastName}`.trim();
-            formattedTeacherName = fullName || classData.teacher.user.username || teacherName;
+            formattedTeacherName = getFullName(classData.teacher.user, classData.teacher.user.username || teacherName);
           } else if (classData.teacher?.username) {
             formattedTeacherName = classData.teacher.username;
           }
@@ -649,10 +645,7 @@ export default function ClassesManagement() {
               // Create a new teacher object with consistent formatting
               let formattedTeacherName = teacherName;
               if (classData.teacher?.user) {
-                const firstName = classData.teacher.user.first_name || '';
-                const lastName = classData.teacher.user.last_name || '';
-                const fullName = `${firstName}${firstName && lastName ? ' ' : ''}${lastName}`.trim();
-                formattedTeacherName = fullName || classData.teacher.user.username || teacherName;
+                formattedTeacherName = getFullName(classData.teacher.user, classData.teacher.user.username || teacherName);
               } else if (classData.teacher?.username) {
                 formattedTeacherName = classData.teacher.username;
               }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, User } from 'lucide-react';
+import { getFullName } from '../../utils/usernameUtils';
 
 export default function WelcomeAlert({ user, t, onClose }) {
   const [isVisible, setIsVisible] = useState(true);
@@ -41,7 +42,7 @@ export default function WelcomeAlert({ user, t, onClose }) {
             </div>
             <div className="ml-3 w-0 flex-1 pr-2">
               <p className="text-sm sm:text-base font-medium break-words">
-                {t('ស្វាគមន៍', 'Welcome')}, <span className="font-semibold">{user?.first_name || user?.username}</span>!
+                {t('ស្វាគមន៍', 'Welcome')}, <span className="font-semibold">{getFullName(user, user?.username || '')}</span>!
               </p>
               <p className="text-xs sm:text-sm text-blue-600 mt-1">
                 {t('សារនេះនឹងបាត់បង់ក្នុងរយៈពេល ១០ វិនាទី', 'This message will disappear in 10 seconds')}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import Table from '../../../components/ui/Table';
 import { formatClassIdentifier } from '../../../utils/helpers';
+import { getFullName } from '../../../utils/usernameUtils';
 
 /**
  * Report 8 Preview Component - BMI Report
@@ -44,7 +45,7 @@ export function Report8Preview({ data }) {
     {
       key: 'Name',
       header: t('name', 'ឈ្មោះ'),
-      render: (student) => student.khmerName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
+      render: (student) => getFullName(student, student.khmerName || ''),
       cellClassName: 'font-medium'
     },
     {

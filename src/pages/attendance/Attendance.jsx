@@ -20,6 +20,7 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import EmptyState from '@/components/ui/EmptyState';
 import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
 import { formatDateKhmer } from '../../utils/formatters';
+import { getFullName } from '../../utils/usernameUtils';
 
 export default function Attendance() {
   const { t, setLanguage } = useLanguage();
@@ -230,13 +231,12 @@ export default function Attendance() {
             const userId = student.userId || student.user_id || student.id || student.user?.id;
             const firstName = student.firstName || student.first_name || student.user?.first_name || '';
             const lastName = student.lastName || student.last_name || student.user?.last_name || '';
-            const fullName = student.fullName || student.full_name || `${firstName} ${lastName}`.trim();
             const username = student.username || student.user?.username || '';
 
             return {
               id: Number(userId), // Normalize to number for consistent comparison
               studentId: student.studentId || student.student_id,
-              name: fullName || username || 'Unknown',
+              name: getFullName(student, username || 'Unknown'),
               firstName,
               lastName,
               username,
@@ -348,7 +348,7 @@ export default function Attendance() {
       const firstName = (student.firstName || '').toLowerCase();
       const lastName = (student.lastName || '').toLowerCase();
       const username = (student.username || '').toLowerCase();
-      const fullName = `${firstName} ${lastName}`.trim().toLowerCase();
+      const fullName = getFullName(student, '').toLowerCase();
 
       // Check both lowercase (for English) and original (for Khmer)
       return (
@@ -361,7 +361,7 @@ export default function Attendance() {
         (student.name || '').includes(searchTerm) ||
         (student.firstName || '').includes(searchTerm) ||
         (student.lastName || '').includes(searchTerm) ||
-        `${student.firstName || ''} ${student.lastName || ''}`.trim().includes(searchTerm)
+        getFullName(student, '').includes(searchTerm)
       );
     });
   }, [students, searchTerm]);

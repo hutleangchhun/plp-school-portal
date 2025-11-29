@@ -17,6 +17,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import { formatDateKhmer } from '../../utils/formatters';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { teacherService } from '../../utils/api/services/teacherService';
+import { getFullName } from '../../utils/usernameUtils';
 import { teacherSettingsService } from '../../utils/api/services/teacherSettingsService';
 import schoolService from '../../utils/api/services/schoolService';
 import { isToday } from '../attendance/utils';
@@ -205,19 +206,14 @@ export default function TeacherAttendance() {
             // Teacher data might be in nested user object
             const user = teacher.user || teacher;
             const userId = user.id || teacher.id || teacher.userId || teacher.user_id;
-            const firstName = user.firstName || user.first_name || teacher.firstName || teacher.first_name || '';
-            const lastName = user.lastName || user.last_name || teacher.lastName || teacher.last_name || '';
-            const fullName = `${firstName} ${lastName}`.trim();
             const username = user.username || teacher.username || '';
 
-            console.log('Teacher data:', { teacher, user, userId, firstName, lastName, fullName, username });
+            console.log('Teacher data:', { teacher, user, userId, username });
 
             return {
               id: Number(userId), // User ID (for attendance queries)
               teacherId: Number(teacher.teacherId || teacher.teacher_id || teacher.id), // Teacher ID (for teacher-settings API)
-              name: fullName || username || 'Unknown',
-              firstName,
-              lastName,
+              name: getFullName(user, username || 'Unknown'),
               username,
               teacherNumber: teacher.teacherNumber || teacher.teacher_number || '',
               profilePicture: user.profile_picture || user.profilePicture || teacher.profile_picture || teacher.profilePicture || ''
@@ -453,17 +449,12 @@ export default function TeacherAttendance() {
         .map(teacher => {
           const user = teacher.user || teacher;
           const userId = user.id || teacher.id || teacher.userId || teacher.user_id;
-          const firstName = user.firstName || user.first_name || teacher.firstName || teacher.first_name || '';
-          const lastName = user.lastName || user.last_name || teacher.lastName || teacher.last_name || '';
-          const fullName = `${firstName} ${lastName}`.trim();
           const username = user.username || teacher.username || '';
 
           return {
             id: Number(userId),
             teacherId: Number(teacher.teacherId || teacher.teacher_id || teacher.id),
-            name: fullName || username || 'Unknown',
-            firstName,
-            lastName,
+            name: getFullName(user, username || 'Unknown'),
             username,
             teacherNumber: teacher.teacherNumber || teacher.teacher_number || '',
             profilePicture: user.profile_picture || user.profilePicture || teacher.profile_picture || teacher.profilePicture || ''

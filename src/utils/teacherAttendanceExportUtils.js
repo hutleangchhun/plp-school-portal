@@ -2,6 +2,7 @@ import { formatDateKhmer, getMonthCalendarLayout, getKhmerDayShorthand, getKhmer
 import { getTimestampedFilename } from './exportUtils';
 import { attendanceService } from './api/services/attendanceService';
 import schoolService from './api/services/schoolService';
+import { getFullName } from './usernameUtils';
 
 /**
  * Export teacher attendance data to Excel with monthly calendar format
@@ -98,7 +99,7 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
       const row = {
         'ល.រ': index + 1,
         'អត្តលេខ': teacher.id || '',
-        'ឈ្មោះ': teacher.name || `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || teacher.username || '',
+        'ឈ្មោះ': getFullName(teacher, teacher.username || ''),
       };
 
       let absentCount = 0;

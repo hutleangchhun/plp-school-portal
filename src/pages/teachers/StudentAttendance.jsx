@@ -9,6 +9,7 @@ import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
+import { getFullName } from '../../utils/usernameUtils';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import EmptyState from '@/components/ui/EmptyState';
 import AttendanceExport from '../../components/attendance/AttendanceExport';
@@ -609,7 +610,7 @@ export default function TeacherAttendance({ user }) {
                             <div className="flex items-center">
                               <div className="ml-4">
                                 <div className="text-sm font-medium text-gray-900">
-                                  {student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.username}
+                                  {getFullName(student, student.username)}
                                 </div>
                               </div>
                             </div>

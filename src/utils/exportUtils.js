@@ -5,6 +5,7 @@ import html2canvas from 'html2canvas';
 import { userService } from './api/services/userService';
 import { formatDateKhmer } from './formatters';
 import { formatClassIdentifier } from './helpers';
+import { getFullName } from './usernameUtils';
 
 // Resolve a student's class id and name from various possible shapes
 const getStudentClassInfo = (student) => {
@@ -484,7 +485,7 @@ export const exportToPDF = async (data, classInfo, filename = 'students_data.pdf
           <tbody>
             ${filteredData.map((student, index) => {
               const username = student.username || '';
-              const fullName = student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '';
+              const fullName = getFullName(student, '');
               const phone = student.phone || '';
               const classObj = getStudentClassInfo(student);
               const className = student.class?.gradeLevel

@@ -23,6 +23,7 @@ import {
 import { examHistoryService } from '../../utils/api/services/examHistoryService';
 import { subjectService } from '../../utils/api/services/subjectService';
 import { decryptId } from '../../utils/encryption';
+import { getFullName } from '../../utils/usernameUtils';
 
 /**
  * StudentExamRecordsPage Component
@@ -376,9 +377,7 @@ export default function StudentExamRecordsPage({ user }) {
   }, [exams, statusFilter, searchTerm]);
 
   // Get student name
-  const firstName = student?.user?.first_name || student?.firstName || '';
-  const lastName = student?.user?.last_name || student?.lastName || '';
-  const studentName = `${firstName} ${lastName}`.trim() || '-';
+  const studentName = getFullName(student?.user || student, '-');
 
   // Build subject filter options
   const subjectFilterOptions = useMemo(() => {

@@ -13,6 +13,7 @@ import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import { classService } from '../../utils/api/services/classService';
 import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
+import { getFullName } from '../../utils/usernameUtils';
 import { formatClassIdentifier } from '../../utils/helpers';
 import { createQRCodeDownloadCard } from '../../components/qr-code/QRCodeDownloadCard';
 
@@ -154,7 +155,7 @@ export default function TeacherQRCodeManagement({ user }) {
 
                 qrData.push({
                   userId: userId,
-                  name: enrichedStudent.name,
+                  name: getFullName(userData, enrichedStudent.name),
                   username: enrichedStudent.username,
                   qrCode: userData.qr_code || null,
                   studentNumber: student.studentNumber,

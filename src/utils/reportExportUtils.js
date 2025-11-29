@@ -5,6 +5,7 @@
 
 import * as XLSX from 'xlsx-js-style';
 import { formatClassIdentifier } from './helpers';
+import { getFullName } from './usernameUtils';
 
 /**
  * Report 1: Student Name List (បញ្ជីហៅឈ្មោះសិស្ស)
@@ -167,8 +168,8 @@ export const transformStudentByClassReport = (rawData) => {
         no: globalIndex++,
         className: className,
         studentId: s.studentId || s.id,
-        khmerName: s.khmerName || `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.name || '',
-        englishName: s.englishName || s.name || `${s.firstName || ''} ${s.lastName || ''}`.trim() || '',
+        khmerName: s.khmerName || getFullName(s, s.name || ''),
+        englishName: s.englishName || getFullName(s, s.name || ''),
         gender: (s.gender === 'M' || s.gender === 'MALE') ? 'ប្រុស' : 'ស្រី',
         dateOfBirth: s.dateOfBirth || '',
         contact: s.phone || s.contact || s.email || ''
@@ -195,8 +196,8 @@ export const transformStudentAverageGradesReport = (rawData) => {
     return {
       no: index + 1,
       studentId: student.studentId || student.id,
-      khmerName: student.khmerName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name || '',
-      englishName: student.englishName || student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
+      khmerName: student.khmerName || getFullName(student, student.name || ''),
+      englishName: student.englishName || getFullName(student, student.name || ''),
       class: student.class?.name || '',
       totalSubjects: grades.length,
       average: parseFloat(average),
@@ -241,7 +242,7 @@ export const transformStudentAbsenceReport = (rawData) => {
         no: index + 1,
         studentId: student.studentId || student.id,
         khmerName: khmerName,
-        englishName: student.englishName || student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '',
+        englishName: student.englishName || getFullName(student, student.name || ''),
         gender: gender,
         class: student.class?.gradeLevel
           ? formatClassIdentifier(student.class.gradeLevel, student.class.section)

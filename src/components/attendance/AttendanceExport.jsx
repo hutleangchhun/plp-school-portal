@@ -6,6 +6,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { formatDateKhmer, getKhmerDayShorthand, isWeekend } from '../../utils/formatters';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import schoolService from '../../utils/api/services/schoolService';
+import { getFullName } from '../../utils/usernameUtils';
 
 /**
  * AttendanceExport Component
@@ -149,7 +150,7 @@ export default function AttendanceExport({
       const row = {
         'ល.រ': index + 1,
         'អត្តលេខ': student.studentId || student.id || '',
-        'ឈ្មោះ': student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.username || '',
+        'ឈ្មោះ': student.name || getFullName(student, student.username || ''),
         'ភេទ': student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : '',
       };
 
@@ -208,7 +209,7 @@ export default function AttendanceExport({
       const row = {
         'ល.រ': index + 1,
         'អត្តលេខ': student.studentId || student.id || '',
-        'ឈ្មោះ': student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.username || '',
+        'ឈ្មោះ': student.name || getFullName(student, student.username || ''),
         'ភេទ': student.gender === 'MALE' ? 'ប' : student.gender === 'FEMALE' ? 'ស' : '',
       };
 

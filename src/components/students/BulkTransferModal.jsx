@@ -6,6 +6,7 @@ import Modal from '../ui/Modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/Badge';
 import { formatClassIdentifier } from '../../utils/helpers';
+import { getFullName } from '../../utils/usernameUtils';
 
 const BulkTransferModal = ({
   isOpen,
@@ -130,7 +131,7 @@ const BulkTransferModal = ({
                     {/* Details */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        {student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Unknown'}
+                        {getFullName(student, 'Unknown')}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
                         {student.username || student.email || 'N/A'}

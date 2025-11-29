@@ -7,6 +7,7 @@ import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import Table from '../../../components/ui/Table';
 import { formatClassIdentifier } from '../../../utils/helpers';
+import { getFullName } from '../../../utils/usernameUtils';
 
 /**
  * Preview component for Report 4
@@ -66,7 +67,7 @@ export const Report4Preview = ({ data, semester, startDate, endDate, onDateRange
     {
       key: 'name',
       header: t('name', 'ឈ្មោះ'),
-      render: (student) => student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || '',
+      render: (student) => student.khmerName || getFullName(student, '') || '',
       cellClassName: 'font-medium text-gray-900'
     },
     {
@@ -130,7 +131,7 @@ export const Report4Preview = ({ data, semester, startDate, endDate, onDateRange
     {
       key: 'name',
       header: t('name', 'ឈ្មោះ'),
-      render: (student) => student.khmerName || `${student.lastName || ''} ${student.firstName || ''}`.trim() || '',
+      render: (student) => student.khmerName || getFullName(student, '') || '',
       cellClassName: 'font-medium text-gray-900'
     },
     {

@@ -5,6 +5,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import ProfileImage from '../ui/ProfileImage';
 import NotificationDropdown from '../notifications/NotificationDropdown';
+import { getFullName } from '../../utils/usernameUtils';
 
 const getPageTitle = (pathname) => {
   const path = pathname.split('/')[1];
@@ -83,7 +84,7 @@ const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1
                     fallbackType="icon"
                   />
                   <span className="hidden md:inline mr-1 font-medium text-gray-700 truncate max-w-24 lg:max-w-32">
-                    {`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'User'}
+                    {getFullName(user, user?.username || 'User')}
                   </span>
                   <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
                 </button>

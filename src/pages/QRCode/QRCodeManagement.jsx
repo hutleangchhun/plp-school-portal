@@ -16,6 +16,7 @@ import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
 import { schoolService } from '../../utils/api/services/schoolService';
 import { teacherService } from '../../utils/api/services/teacherService';
+import { getFullName } from '../../utils/usernameUtils';
 import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
 import QRCodeDisplay from '@/components/qr-code/QRCodeDisplay';
 import { createQRCodeDownloadCard } from '@/components/qr-code/QRCodeDownloadCard';
@@ -151,11 +152,11 @@ export default function StudentQRCodeGenerator() {
               };
               
               enrichedStudents.push(enrichedStudent);
-              
+
               // Add to QR data - include all students, even without QR codes
               qrData.push({
                 userId: userId,
-                name: enrichedStudent.name,
+                name: getFullName(userData, enrichedStudent.name),
                 username: enrichedStudent.username,
                 qrCode: userData.qr_code || null, // null if no QR code
                 studentNumber: student.studentNumber,
@@ -270,7 +271,7 @@ export default function StudentQRCodeGenerator() {
               // Add to QR data - include all teachers, even without QR codes
               qrData.push({
                 userId: userId,
-                name: enrichedTeacher.name,
+                name: getFullName(userData, enrichedTeacher.name),
                 username: enrichedTeacher.username,
                 qrCode: userData.qr_code || null, // null if no QR code
                 email: enrichedTeacher.email,

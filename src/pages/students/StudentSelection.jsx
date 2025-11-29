@@ -18,6 +18,7 @@ import DynamicLoader from '../../components/ui/DynamicLoader';
 import { formatDateKhmer } from '../../utils/formatters';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
+import { getFullName } from '../../utils/usernameUtils';
 
 const StudentSelection = () => {
   const navigate = useNavigate();
@@ -773,7 +774,7 @@ const StudentSelection = () => {
                             <div className="flex justify-between space-x-2">
                               <div>
                                 <h3 className="text-sm font-semibold text-gray-900 truncate">
-                                  {student.name}
+                                  {getFullName(student, student.username || 'Unknown')}
                                 </h3>
                               </div>
                             </div>

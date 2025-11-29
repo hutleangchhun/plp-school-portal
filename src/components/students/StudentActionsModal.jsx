@@ -8,6 +8,7 @@ import SelectedCard from '../ui/SelectedCard';
 import Dropdown from '../ui/Dropdown';
 import classService from '../../utils/api/services/classService';
 import { formatClassIdentifier } from '../../utils/helpers';
+import { getFullName } from '../../utils/usernameUtils';
 
 const StudentActionsModal = ({
   isOpen,
@@ -290,7 +291,7 @@ const StudentActionsModal = ({
               </div>
             ) : (
               studentsArray.map(student => {
-                const displayName = student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Unknown';
+                const displayName = getFullName(student, 'Unknown');
                 const classDisplay = student.class?.gradeLevel
                   ? formatClassIdentifier(student.class.gradeLevel, student.class.section)
                   : student.class?.name;

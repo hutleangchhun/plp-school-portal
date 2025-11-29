@@ -18,6 +18,7 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import SelectedCard from '../../components/ui/SelectedCard';
 import { formatClassIdentifier } from '../../utils/helpers';
+import { getFullName } from '../../utils/usernameUtils';
 
 
 export default function ParentsManagement() {
@@ -127,7 +128,7 @@ export default function ParentsManagement() {
         parent.email || '',
         parent.phone || '',
         parent.relationship || '',
-        `${parent.firstName || ''} ${parent.lastName || ''}`,
+        getFullName(parent, ''),
       ];
 
       return searchFields.some(field =>
@@ -202,12 +203,12 @@ export default function ParentsManagement() {
 
             const firstName = student.firstName || student.first_name || student.user?.first_name || '';
             const lastName = student.lastName || student.last_name || student.user?.last_name || '';
-            const fullName = student.fullName || student.full_name || `${firstName} ${lastName}`.trim();
             const username = student.username || student.user?.username || '';
+            const fullName = getFullName(student, username || 'Unknown');
 
             return {
               id: id,
-              fullName: fullName || username || 'Unknown',
+              fullName: fullName,
               firstName: firstName,
               lastName: lastName,
               username: username
@@ -313,9 +314,7 @@ export default function ParentsManagement() {
             parentId: parent.parentId || parentInfo.parentId,
             id: userData.id,
             students: parent.students || [], // Use students array from API response
-            fullname: userData.first_name && userData.last_name
-              ? `${userData.first_name} ${userData.last_name}`
-              : userData.username,
+            fullname: getFullName(userData, userData.username),
             firstName: userData.first_name,
             lastName: userData.last_name,
             email: userData.email,
@@ -620,7 +619,7 @@ export default function ParentsManagement() {
       render: (parent) => (
         <div className="flex items-center space-x-3 text-sm">
             <div className="font-medium text-gray-900">
-              {parent.fullname || `${parent.firstName || ''} ${parent.lastName || ''}`.trim() || '-'}
+              {getFullName(parent, parent.username || '-')}
             </div>
         </div>
       )
@@ -667,9 +666,7 @@ export default function ParentsManagement() {
       header: t('students', 'Students'),
       render: (parent) => {
         const studentNames = parent.students?.map(student =>
-          student.user?.first_name && student.user?.last_name
-            ? `${student.user.first_name} ${student.user.last_name}`
-            : student.user?.username || 'Unknown Student'
+          getFullName(student.user || student, 'Unknown Student')
         ) || [];
 
         return (
@@ -849,7 +846,7 @@ export default function ParentsManagement() {
                           .filter(student => student && student.id)
                           .map((student) => ({
                             value: student.id.toString(),
-                            label: student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.username || 'Unknown'
+                            label: getFullName(student, student.username || 'Unknown')
                           }))
                       ]}
                       placeholder={t('selectStudent', 'Select student...')}
@@ -958,7 +955,7 @@ export default function ParentsManagement() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {selectedParents.map((pid) => {
             const parent = parents.find(p => (p.id || p.parentId) === pid) || {};
-            const displayName = parent.fullname || `${parent.firstName || ''} ${parent.lastName || ''}`.trim() || parent.username || `Parent ${pid}`;
+            const displayName = getFullName(parent, parent.username || `Parent ${pid}`);
             const contact = [parent.email, parent.phone].filter(Boolean).join(' • ');
             return (
               <SelectedCard

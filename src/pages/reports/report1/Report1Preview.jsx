@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import Table from '../../../components/ui/Table';
 import { formatClassIdentifier } from '../../../utils/helpers';
+import { getFullName } from '../../../utils/usernameUtils';
 
 /**
  * Preview component for Report 1
@@ -52,7 +53,7 @@ export const Report1Preview = ({ data }) => {
     {
       key: 'name',
       header: t('name', 'Name'),
-      render: (student) => student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || '-',
+      render: (student) => getFullName(student, '-'),
       cellClassName: 'font-medium text-gray-900'
     },
     {

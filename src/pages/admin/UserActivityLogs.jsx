@@ -8,6 +8,7 @@ import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Badge } from '../../components/ui/Badge';
 import { api } from '../../utils/api';
+import { getFullName } from '../../utils/usernameUtils';
 
 const UserActivityLogs = () => {
   const { t } = useLanguage();
@@ -346,9 +347,7 @@ const UserActivityLogs = () => {
                         {t('actor', 'Actor')}
                       </label>
                       <p className="text-gray-900">
-                        {selectedLog.actor
-                          ? `${selectedLog.actor.lastName || selectedLog.actor.last_name || ''} ${selectedLog.actor.firstName || selectedLog.actor.first_name || ''}`.trim()
-                          : '-'}
+                        {selectedLog.actor ? getFullName(selectedLog.actor, '-') : '-'}
                       </p>
                     </div>
 
@@ -357,9 +356,7 @@ const UserActivityLogs = () => {
                         {t('target', 'Target')}
                       </label>
                       <p className="text-gray-900">
-                        {selectedLog.target
-                          ? `${selectedLog.target.lastName || selectedLog.target.last_name || ''} ${selectedLog.target.firstName || selectedLog.target.first_name || ''}`.trim()
-                          : '-'}
+                        {selectedLog.target ? getFullName(selectedLog.target, '-') : '-'}
                       </p>
                     </div>
 

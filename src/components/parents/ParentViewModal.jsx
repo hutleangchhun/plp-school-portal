@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Badge from '../ui/Badge';
 import { formatClassIdentifier } from '../../utils/helpers';
+import { getFullName } from '../../utils/usernameUtils';
 
 export default function ParentViewModal({ isOpen, onClose, parent }) {
   const { t } = useLanguage();
@@ -39,7 +40,7 @@ export default function ParentViewModal({ isOpen, onClose, parent }) {
           </div>
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-900">
-              {parent.fullname || `${parent.firstName || ''} ${parent.lastName || ''}`.trim() || t('unnamed', 'Unnamed')}
+              {getFullName(parent, t('unnamed', 'Unnamed'))}
             </h2>
             <div className="mt-1">
               <Badge
@@ -170,10 +171,7 @@ export default function ParentViewModal({ isOpen, onClose, parent }) {
                   </div>
                   <div className="flex-1">
                     <div className="font-medium text-gray-900">
-                      {student.user
-                        ? `${student.user.first_name || ''} ${student.user.last_name || ''}`.trim() || student.user.username
-                        : student.fullname || `${student.firstName || ''} ${student.lastName || ''}`.trim()
-                      }
+                      {getFullName(student.user || student, student.user?.username || 'Unknown Student')}
                     </div>
                     <div className="text-sm text-gray-500">
                       {t('studentId', 'Student ID')}: {student.studentNumber || student.studentId}

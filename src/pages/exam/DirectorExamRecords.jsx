@@ -7,6 +7,7 @@ import { examHistoryService } from '../../utils/api/services/examHistoryService'
 import { classService, studentService } from '@/utils/api';
 import { encryptId } from '../../utils/encryption';
 import { formatClassIdentifier } from '../../utils/helpers';
+import { getFullName } from '../../utils/usernameUtils';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -448,9 +449,7 @@ export default function DirectorExamRecords({ user }) {
 
     studentRecords.forEach((sr) => {
       // Handle nested user structure
-      const firstName = sr.student.user?.first_name || sr.student.firstName || '';
-      const lastName = sr.student.user?.last_name || sr.student.lastName || '';
-      const studentName = `${firstName} ${lastName}`.trim() || '-';
+      const studentName = getFullName(sr.student.user || sr.student, '-');
       const studentId = sr.student.studentId || sr.student.user?.id || sr.student.id;
 
       // Calculate statistics

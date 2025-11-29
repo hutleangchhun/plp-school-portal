@@ -10,6 +10,7 @@ import { Badge } from '../ui/Badge';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import DynamicLoader from '../ui/DynamicLoader';
 import { formatClassIdentifier } from '../../utils/helpers';
+import { getFullName } from '../../utils/usernameUtils';
 
 const StudentAssignmentModal = ({ isOpen, onClose, onSave, assignedStudents = [], parentName }) => {
   const { t } = useLanguage();
@@ -223,7 +224,7 @@ const StudentAssignmentModal = ({ isOpen, onClose, onSave, assignedStudents = []
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm font-medium text-gray-900 truncate">
-                              {student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim()}
+                              {getFullName(student, 'Unknown')}
                             </p>
                             <p className="text-xs text-gray-500">
                               {student.studentId} • {student.class?.gradeLevel

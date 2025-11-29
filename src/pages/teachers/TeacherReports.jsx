@@ -15,6 +15,7 @@ import { parentService } from '../../utils/api/services/parentService';
 import { bmiService } from '../../utils/api/services/bmiService';
 import { Button } from '@/components/ui/Button';
 import { formatClassIdentifier } from '../../utils/helpers';
+import { getFullName } from '../../utils/usernameUtils';
 // Modular report components
 import { useReport1Data, Report1Preview } from '../reports/report1/indexReport1';
 import { useReport4Data, Report4Preview, exportReport4ToExcel } from '../reports/report4/indexReport4';
@@ -378,7 +379,7 @@ export default function Reports() {
             studentId: student.studentId || student.id || userId,
             firstName: student.firstName || student.first_name || '',
             lastName: student.lastName || student.last_name || '',
-            khmerName: `${student.lastName || student.last_name || ''} ${student.firstName || student.first_name || ''}`.trim(),
+            khmerName: getFullName(student, ''),
             gender: student.gender || '',
             class: student.class,
             student: student.student || student, // Full student object
@@ -525,7 +526,7 @@ export default function Reports() {
                   studentId: studentId,
                   firstName: basicStudent.firstName || basicStudent.first_name || '',
                   lastName: basicStudent.lastName || basicStudent.last_name || '',
-                  khmerName: `${basicStudent.lastName || basicStudent.last_name || ''} ${basicStudent.firstName || basicStudent.first_name || ''}`.trim(),
+                  khmerName: getFullName(basicStudent, ''),
                   gender: formattedGender,
                   dateOfBirth: basicStudent.dateOfBirth || basicStudent.date_of_birth,
                   class: basicStudent.class,
@@ -569,7 +570,7 @@ export default function Reports() {
                   ...basicStudent,
                   firstName: basicStudent.firstName || basicStudent.first_name || '',
                   lastName: basicStudent.lastName || basicStudent.last_name || '',
-                  khmerName: `${basicStudent.lastName || basicStudent.last_name || ''} ${basicStudent.firstName || basicStudent.first_name || ''}`.trim(),
+                  khmerName: getFullName(basicStudent, ''),
                   gender: formattedGender,
                   dateOfBirth: basicStudent.dateOfBirth || basicStudent.date_of_birth,
                   class: basicStudent.class,

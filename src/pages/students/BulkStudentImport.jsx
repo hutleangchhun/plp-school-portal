@@ -16,6 +16,7 @@ import BulkImportTable from '../../components/students/BulkImportTable';
 import { templateDownloader } from '../../utils/templateDownloader';
 import { excelImportHandler } from '../../utils/excelImportHandler';
 import { genderOptions, nationalityOptions, ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, getAcademicYearOptions } from '../../utils/formOptions';
+import { getFullName } from '../../utils/usernameUtils';
 
 
 export default function BulkStudentImport() {
@@ -1041,7 +1042,7 @@ export default function BulkStudentImport() {
 
       // Initialize results array with all students (all processing initially)
       const initialResults = validStudents.map((student) => ({
-        studentName: `${student.firstName} ${student.lastName}`,
+        studentName: getFullName(student, student.username),
         username: student.username,
         processing: true,
         success: false,

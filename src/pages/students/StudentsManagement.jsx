@@ -17,6 +17,7 @@ import { Table } from '../../components/ui/Table';
 import { exportStudentsToExcel } from '../../utils/studentExportUtils';
 import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
 import { encryptId } from '../../utils/encryption';
+import { getFullName } from '../../utils/usernameUtils';
 import StudentActionsModal from '../../components/students/StudentActionsModal';
 import StudentViewModal from '../../components/students/StudentViewModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -222,7 +223,7 @@ export default function StudentsManagement() {
           student.email || '',
           student.phone || '',
           (student.name || ''),
-          (student.firstName && student.lastName ? `${student.firstName} ${student.lastName}` : ''),
+          getFullName(student, ''),
           (student.class?.name || ''),
           (student.className || '')
         ];
@@ -719,7 +720,7 @@ export default function StudentsManagement() {
       onClose={() => setShowDeleteDialog(false)}
       onConfirm={handleDeleteStudent}
       title={t('moveStudentToMaster', 'Move Student to Master Class')}
-      message={`${t('confirmMoveStudentToMaster', 'Are you sure you want to move')} ${selectedStudent?.firstName || t('thisStudent', 'this student')} ${t('toMasterClass', 'to the master class? This will remove them from the current class.')}`}
+      message={`${t('confirmMoveStudentToMaster', 'Are you sure you want to move')} ${getFullName(selectedStudent, t('thisStudent', 'this student'))} ${t('toMasterClass', 'to the master class? This will remove them from the current class.')}`}
       confirmText={isLoading('bulkDelete') ? t('moving', 'Moving...') : t('moveToMaster', 'Move to Master')}
       confirmVariant="danger"
       cancelText={t('cancel', 'Cancel')}
@@ -818,7 +819,7 @@ export default function StudentsManagement() {
           <p>{t('selectTargetClass', 'Select the class to transfer the student to')}:</p>
           <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-700">
-              {t('student', 'Student')}: <span className="font-bold">{selectedStudent?.name}</span>
+              {t('student', 'Student')}: <span className="font-bold">{getFullName(selectedStudent, selectedStudent?.username || 'Unknown')}</span>
             </label>
             <label className="block text-sm font-medium text-gray-700">
               {t('currentClass', 'Current Class')}: <span className="font-bold">{selectedStudent?.class?.name || 'N/A'}</span>
@@ -952,7 +953,7 @@ export default function StudentsManagement() {
       console.log('Final API call parameters:', {
         masterClassId: schoolId,
         studentId: numericStudentId,
-        studentName: selectedStudent.name || `${selectedStudent.firstName} ${selectedStudent.lastName}`,
+        studentName: selectedStudent.name || getFullName(selectedStudent),
         className: studentClassInfo.name
       });
 
@@ -1552,9 +1553,7 @@ export default function StudentsManagement() {
       header: t('name', 'Name'),
       render: (student) => (
         <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-          {student.name || (student.firstName || student.lastName
-            ? `${student.firstName || ''} ${student.lastName || ''}`.trim()
-            : student.username || '-')}
+          {getFullName(student, student.username || '-')}
         </div>
       )
     },

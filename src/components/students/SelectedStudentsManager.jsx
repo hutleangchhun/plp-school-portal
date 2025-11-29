@@ -10,6 +10,7 @@ import classService from '../../utils/api/services/classService';
 import DynamicLoader from '../ui/DynamicLoader';
 import SelectedCard from '../ui/SelectedCard';
 import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
+import { getFullName } from '../../utils/usernameUtils';
 
 const SelectedStudentsManager = ({
   selectedStudents = [],
@@ -392,9 +393,7 @@ const SelectedStudentsManager = ({
 
               // Handle case where student data might be missing
               const studentName = student
-                ? (student.name ||
-                    `${student.firstName || ''} ${student.lastName || ''}`.trim() ||
-                    student.username || 'No Name')
+                ? getFullName(student, student.username || 'No Name')
                 : `Student ID: ${studentId}`;
 
               const studentInfo = student

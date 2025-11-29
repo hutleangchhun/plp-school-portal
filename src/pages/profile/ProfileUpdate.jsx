@@ -10,7 +10,7 @@ import ProfileInfoDisplay from '../../components/ui/ProfileInfoDisplay';
 import { api, utils } from '../../utils/api';
 import { userService } from '../../utils/api/services/userService';
 import salaryTypeService from '../../utils/api/services/salaryTypeService';
-import { sanitizeUsername } from '../../utils/usernameUtils';
+import { sanitizeUsername, getFullName } from '../../utils/usernameUtils';
 import { convertHeightToCm, convertWeightToKg, calculateBMI } from '../../utils/physicalMeasurementUtils';
 import Dropdown from '../../components/ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
@@ -1498,9 +1498,7 @@ export default function ProfileUpdate({ user, setUser }) {
                 {/* User Info Summary */}
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    {formData.first_name && formData.last_name
-                      ? `${formData.first_name} ${formData.last_name}`
-                      : formData.username}
+                    {getFullName(formData, formData.username)}
                   </h2>
                   {formData.roleNameKh && (
                     <p className="text-sm text-gray-600 mb-1">

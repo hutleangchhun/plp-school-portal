@@ -6,6 +6,7 @@ import Modal from '../ui/Modal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import SelectedCard from '../ui/SelectedCard';
 import Dropdown from '../ui/Dropdown';
+import { getFullName } from '../../utils/usernameUtils';
 
 const ParentActionsModal = ({
   isOpen,
@@ -149,12 +150,7 @@ const ParentActionsModal = ({
               </label>
               <Dropdown
                 options={students.map(student => {
-                  const firstName = student.firstName || student.first_name || student.user?.first_name || '';
-                  const lastName = student.lastName || student.last_name || student.user?.last_name || '';
-                  const fullName = firstName && lastName
-                    ? `${firstName} ${lastName}`.trim()
-                    : student.user?.username || student.name || student.username || '';
-                  const studentName = fullName || `Student ${student.userId || student.id}`;
+                  const studentName = getFullName(student, student.name || student.username || `Student ${student.userId || student.id}`);
                   const studentId = student.userId || student.id;
 
                   return {
@@ -255,15 +251,11 @@ const ParentActionsModal = ({
             ) : (
               parentsArray.map(parent => {
                 const parentId = parent.id || parent.parentId;
-                const displayName = parent.fullname ||
-                  `${parent.firstName || ''} ${parent.lastName || ''}`.trim() ||
-                  'Unknown';
+                const displayName = getFullName(parent, 'Unknown');
 
                 // Get student names
                 const studentNames = parent.students?.map(student =>
-                  student.user?.first_name && student.user?.last_name
-                    ? `${student.user.first_name} ${student.user.last_name}`
-                    : student.user?.username || 'Unknown Student'
+                  getFullName(student.user || student, 'Unknown Student')
                 ) || [];
 
                 const subtitle = parent.phone

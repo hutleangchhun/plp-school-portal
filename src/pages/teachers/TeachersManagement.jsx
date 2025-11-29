@@ -5,6 +5,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { encryptId } from '../../utils/encryption';
+import { getFullName } from '../../utils/usernameUtils';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
 import { teacherService } from '../../utils/api/services/teacherService';
@@ -144,7 +145,7 @@ export default function TeachersManagement() {
         teacher.email || '',
         teacher.phone || '',
         (teacher.name || ''),
-        (teacher.firstName && teacher.lastName ? `${teacher.firstName} ${teacher.lastName}` : '')
+        getFullName(teacher, '')
       ];
 
       return searchFields.some(field =>
@@ -270,7 +271,7 @@ export default function TeachersManagement() {
         username: teacher.user?.username || '',
         firstName: teacher.user?.first_name || '',
         lastName: teacher.user?.last_name || '',
-        name: `${teacher.user?.first_name || ''} ${teacher.user?.last_name || ''}`.trim(),
+        name: getFullName(teacher.user, ''),
         email: teacher.user?.email || '',
         phone: teacher.user?.phone || '',
         schoolId: teacher.schoolId,
@@ -498,8 +499,7 @@ export default function TeachersManagement() {
         const row = [
           index + 1, // Row number
           teacher.teacherId || teacher.id || '', // អត្តលេខ
-          teacher.lastName || teacher.last_name || '', // គោត្តនាម
-          teacher.firstName || teacher.first_name || '', // នាម
+          getFullName(teacher, ''), // នាម (using getFullName which applies lastName firstName format)
           teacher.phone || '', // លេខទូរស័ព្ទ
           gender, // ភេទ
           formattedDob, // ថ្ងៃកំណើត
@@ -756,9 +756,7 @@ export default function TeachersManagement() {
       render: (teacher) => (
         <div className="flex items-center">
             <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-              {teacher.name || (teacher.firstName || teacher.lastName
-                ? `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim()
-                : teacher.username || t('noName', 'No Name'))}
+              {getFullName(teacher, teacher.username || t('noName', 'No Name'))}
             </div>
         </div>
       )
@@ -1158,7 +1156,7 @@ export default function TeachersManagement() {
         onClose={() => setShowDeleteDialog(false)}
         onConfirm={handleDeleteTeacher}
         title={t('deleteTeacher', 'Delete Teacher')}
-        message={`${t('confirmDeleteTeacher', 'Are you sure you want to delete')} ${selectedTeacher?.firstName || t('thisTeacher', 'this teacher')}? ${t('thisActionCannotBeUndone', 'This action cannot be undone.')}`}
+        message={`${t('confirmDeleteTeacher', 'Are you sure you want to delete')} ${getFullName(selectedTeacher, t('thisTeacher', 'this teacher'))}? ${t('thisActionCannotBeUndone', 'This action cannot be undone.')}`}
         confirmText={isLoading('deleteTeacher') ? t('deleting', 'Deleting...') : t('delete', 'Delete')}
         confirmVariant="danger"
         cancelText={t('cancel', 'Cancel')}
@@ -1206,7 +1204,7 @@ export default function TeachersManagement() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {selectedTeachers.map((teacher) => {
-              const displayName = teacher.name || `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || teacher.username || `Teacher ${teacher.id}`;
+              const displayName = getFullName(teacher, teacher.username || `Teacher ${teacher.id}`);
               const subtitle = [teacher.email, teacher.phone].filter(Boolean).join(' • ');
               return (
                 <SelectedCard

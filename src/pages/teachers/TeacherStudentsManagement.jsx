@@ -19,6 +19,7 @@ import SidebarFilter from '../../components/ui/SidebarFilter';
 import StudentViewModal from '../../components/students/StudentViewModal';
 import { formatClassIdentifier } from '../../utils/helpers';
 import { encryptId } from '../../utils/encryption';
+import { getFullName } from '../../utils/usernameUtils';
 
 export default function TeacherStudentsManagement({ user }) {
   const navigate = useNavigate();
@@ -324,9 +325,7 @@ export default function TeacherStudentsManagement({ user }) {
         <div className="flex items-center">
           <div className="ml-2 sm:ml-4 min-w-0 flex-1">
             <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-              {student.name || (student.firstName || student.lastName
-                ? `${student.firstName || ''} ${student.lastName || ''}`.trim()
-                : student.username || t('noName', 'No Name'))}
+              {getFullName(student, student.username || t('noName', 'No Name'))}
             </div>
             <div className="text-xs text-gray-500 truncate lg:hidden">
               {student.email || 'N/A'}
