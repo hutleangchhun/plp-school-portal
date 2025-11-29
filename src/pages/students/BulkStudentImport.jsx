@@ -46,6 +46,7 @@ export default function BulkStudentImport() {
       firstName: '',
       username: '',
       password: '',
+      email: '',
       dateOfBirth: '',
       gender: '',
       phone: '',
@@ -110,19 +111,52 @@ export default function BulkStudentImport() {
   const isCellInvalid = (student, columnKey) => {
     const value = student[columnKey];
 
-    // Don't show red border for empty cells
-    if (!value || value === '' || (Array.isArray(value) && value.length === 0)) {
-      return false;
+    // Email validation (must contain @ and valid format)
+    if (columnKey === 'email') {
+      // Empty email is OK (optional field)
+      if (!value || value === '') return false;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return !emailRegex.test(value.trim());
     }
 
     // Phone number validation (must start with 0 and be at least 8 digits total)
-    if (columnKey === 'phone' || columnKey === 'fatherPhone' || columnKey === 'motherPhone') {
+    if (columnKey === 'phone') {
+      // Empty phone is OK (optional field)
+      if (!value || value === '') return false;
+      const phoneRegex = /^0\d{8,}$/;
+      return !phoneRegex.test(value.replace(/\s/g, ''));
+    }
+
+    // Father phone validation - required ONLY if father name is provided
+    if (columnKey === 'fatherPhone') {
+      const hasFatherInfo = student.fatherFirstName && student.fatherFirstName.trim();
+
+      // If no father info, phone is not required
+      if (!hasFatherInfo) return false;
+
+      // If father info exists, phone is required and must be valid
+      if (!value || value === '') return true; // Missing phone is invalid
+      const phoneRegex = /^0\d{8,}$/;
+      return !phoneRegex.test(value.replace(/\s/g, ''));
+    }
+
+    // Mother phone validation - required ONLY if mother name is provided
+    if (columnKey === 'motherPhone') {
+      const hasMotherInfo = student.motherFirstName && student.motherFirstName.trim();
+
+      // If no mother info, phone is not required
+      if (!hasMotherInfo) return false;
+
+      // If mother info exists, phone is required and must be valid
+      if (!value || value === '') return true; // Missing phone is invalid
       const phoneRegex = /^0\d{8,}$/;
       return !phoneRegex.test(value.replace(/\s/g, ''));
     }
 
     // Date validation (dd/mm/yyyy format)
     if (columnKey === 'dateOfBirth' || columnKey === 'fatherDateOfBirth' || columnKey === 'motherDateOfBirth') {
+      // Empty date is OK (optional field)
+      if (!value || value === '') return false;
       const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
       const match = value.match(dateRegex);
       if (!match) return true;
@@ -135,12 +169,16 @@ export default function BulkStudentImport() {
 
     // Grade level validation (should be a number between 0-6, allowing 0 for Kindergarten)
     if (columnKey === 'gradeLevel') {
+      // Empty grade is OK (optional field)
+      if (!value || value === '') return false;
       const grade = parseInt(value);
       return isNaN(grade) || grade < 0 || grade > 6;
     }
 
     // Username validation (only English letters and numbers, 3-50 chars)
     if (columnKey === 'username') {
+      // Empty username is OK (optional field)
+      if (!value || value === '') return false;
       const usernameRegex = /^[a-zA-Z0-9]{3,50}$/;
       const formatInvalid = !usernameRegex.test(value);
 
@@ -152,6 +190,8 @@ export default function BulkStudentImport() {
 
     // Gender validation (only for student gender - parent genders are auto-set)
     if (columnKey === 'gender') {
+      // Empty gender is OK (optional field)
+      if (!value || value === '') return false;
       return !['MALE', 'FEMALE', 'ប្រុស', 'ស្រី'].includes(value.toUpperCase());
     }
 
@@ -164,6 +204,7 @@ export default function BulkStudentImport() {
     { key: 'firstName', header: 'នាម', width: 'min-w-[200px]' },
     { key: 'username', header: 'ឈ្មោះអ្នកប្រើ', width: 'min-w-[280px]' },
     { key: 'password', header: 'ពាក្យសម្ងាត់', width: 'min-w-[150px]' },
+    { key: 'email', header: 'អ៊ីមែល', width: 'min-w-[200px]' },
     { key: 'dateOfBirth', header: 'ថ្ងៃខែឆ្នាំកំណើត (dd/mm/yyyy)', width: 'min-w-[300px]', type: 'custom-date' },
     { key: 'gender', header: 'ភេទ', width: 'min-w-[80px]', type: 'select', options: genderOptions },
     { key: 'phone', header: 'លេខទូរស័ព្ទ', width: 'min-w-[150px]' },
@@ -708,6 +749,7 @@ export default function BulkStudentImport() {
       firstName: '',
       username: '',
       password: '',
+      email: '',
       dateOfBirth: '',
       gender: '',
       phone: '',
@@ -745,7 +787,7 @@ export default function BulkStudentImport() {
   const removeRow = (index) => {
     setStudents(prev => {
       const newStudents = prev.filter((_, i) => i !== index);
-      
+
       // If all rows are deleted, add a new empty row
       if (newStudents.length === 0) {
         return [{
@@ -754,6 +796,7 @@ export default function BulkStudentImport() {
           firstName: '',
           username: '',
           password: '',
+          email: '',
           dateOfBirth: '',
           gender: '',
           phone: '',
@@ -787,7 +830,7 @@ export default function BulkStudentImport() {
           accessibility: []
         }];
       }
-      
+
       return newStudents;
     });
   };
@@ -908,6 +951,10 @@ export default function BulkStudentImport() {
         };
 
         // Add optional fields only if they have values
+        if (student.email && student.email.trim()) {
+          studentData.email = student.email.trim();
+        }
+
         if (student.phone && student.phone.trim()) {
           studentData.phone = student.phone.trim();
         }
@@ -1088,6 +1135,7 @@ export default function BulkStudentImport() {
           firstName: '',
           username: '',
           password: '',
+          email: '',
           dateOfBirth: '',
           gender: '',
           phone: '',
