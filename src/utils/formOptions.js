@@ -102,8 +102,8 @@ export const educationLevelOptions = [
 
 // Training Type options for teachers
 export const trainingTypeOptions = [
-  { value: '8.1', label: '8.1' },
-  { value: '8.2', label: '8.2' },
+  { value: '8+1', label: '8+1' },
+  { value: '8+2', label: '8+2' },
   { value: '9+2', label: '9+2' },
   { value: '11+2', label: '11+2' },
   { value: '12+2', label: '12+2' },
