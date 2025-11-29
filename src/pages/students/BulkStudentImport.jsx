@@ -200,16 +200,16 @@ export default function BulkStudentImport() {
 
   const columns = [
     // Student Basic Info
-    { key: 'lastName', header: 'គោត្តនាម', width: 'min-w-[100px]' },
-    { key: 'firstName', header: 'នាម', width: 'min-w-[200px]' },
-    { key: 'username', header: 'ឈ្មោះអ្នកប្រើ', width: 'min-w-[280px]' },
+    { key: 'lastName', header: 'គោត្តនាម *', width: 'min-w-[100px]' },
+    { key: 'firstName', header: 'នាម *', width: 'min-w-[200px]' },
+    { key: 'username', header: 'ឈ្មោះអ្នកប្រើ *', width: 'min-w-[280px]' },
     { key: 'password', header: 'ពាក្យសម្ងាត់', width: 'min-w-[150px]' },
     { key: 'email', header: 'អ៊ីមែល', width: 'min-w-[200px]' },
-    { key: 'dateOfBirth', header: 'ថ្ងៃខែឆ្នាំកំណើត (dd/mm/yyyy)', width: 'min-w-[300px]', type: 'custom-date' },
-    { key: 'gender', header: 'ភេទ', width: 'min-w-[80px]', type: 'select', options: genderOptions },
+    { key: 'dateOfBirth', header: 'ថ្ងៃខែឆ្នាំកំណើត *', width: 'min-w-[300px]', type: 'custom-date' },
+    { key: 'gender', header: 'ភេទ *', width: 'min-w-[80px]', type: 'select', options: genderOptions },
     { key: 'phone', header: 'លេខទូរស័ព្ទ', width: 'min-w-[150px]' },
     { key: 'nationality', header: 'សញ្ជាតិ', width: 'min-w-[80px]', type: 'select', options: nationalityOptions },
-    { key: 'schoolId', header: 'លេខសាលា', width: 'min-w-[200px]' },
+    { key: 'schoolId', header: 'លេខសាលា *', width: 'min-w-[200px]' },
     { key: 'academicYear', header: 'ឆ្នាំសិក្សា', width: 'min-w-[150px]', type: 'select', options: academicYearOptions },
     { key: 'gradeLevel', header: 'កម្រិតថ្នាក់', width: 'min-w-[120px]', type: 'select', options: translatedGradeLevelOptions },
 
@@ -219,14 +219,14 @@ export default function BulkStudentImport() {
     // Father Info
     { key: 'fatherFirstName', header: 'នាមឪពុក', width: 'min-w-[250px]' },
     { key: 'fatherLastName', header: 'គោត្តនាមឪពុក', width: 'min-w-[250px]' },
-    { key: 'fatherPhone', header: 'ទូរស័ព្ទឪពុក', width: 'min-w-[250px]' },
+    { key: 'fatherPhone', header: 'ទូរស័ព្ទឪពុក *', width: 'min-w-[250px]' },
     { key: 'fatherOccupation', header: 'មុខរបរ​ឪពុក', width: 'min-w-[250px]' },
     { key: 'fatherResidenceFullAddress', header: 'អាសយដ្ឋានពេញឪពុក', width: 'min-w-[320px]' },
 
     // Mother Info
     { key: 'motherFirstName', header: 'នាមម្តាយ', width: 'min-w-[250px]' },
     { key: 'motherLastName', header: 'គោត្តនាមម្តាយ', width: 'min-w-[250px]' },
-    { key: 'motherPhone', header: 'ទូរស័ព្ទម្តាយ', width: 'min-w-[250px]' },
+    { key: 'motherPhone', header: 'ទូរស័ព្ទម្តាយ *', width: 'min-w-[250px]' },
     { key: 'motherOccupation', header: 'មុខរបរ​ម្តាយ', width: 'min-w-[250px]' },
     { key: 'motherResidenceFullAddress', header: 'អាសយដ្ឋានពេញម្តាយ', width: 'min-w-[320px]' },
 
