@@ -233,12 +233,18 @@ const UserActivityLogs = () => {
 
                       let changesDisplay = '-';
 
-                      // For login logs, show username, role and status
+                      // For login logs, show username, role, status and reason if failed
                       if (isLoginActivity) {
                         const username = loginDetails.username || '-';
                         const role = loginDetails.roleEn || '-';
                         const status = loginDetails.status || '-';
-                        changesDisplay = `${username} (${role}) - ${status}`;
+                        const reason = loginDetails.reason || '';
+
+                        if (status === 'FAILED' && reason) {
+                          changesDisplay = `${username} (${role}) - ${status}: ${reason}`;
+                        } else {
+                          changesDisplay = `${username} (${role}) - ${status}`;
+                        }
                       }
                       // If changes is an object with data, show field: value pairs
                       else if (changes && typeof changes === 'object' && Object.keys(changes).length > 0) {
@@ -440,6 +446,17 @@ const UserActivityLogs = () => {
                             {selectedLog.activity_details?.status || '-'}
                           </Badge>
                         </div>
+
+                        {selectedLog.activity_details?.reason && (
+                          <div className="bg-gray-50 p-4 rounded-lg md:col-span-2">
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                              {t('reason', 'Reason')}
+                            </label>
+                            <p className="text-gray-900">
+                              {selectedLog.activity_details.reason}
+                            </p>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
