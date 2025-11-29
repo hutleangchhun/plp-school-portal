@@ -1859,11 +1859,10 @@ export default function StudentsManagement() {
           onClose={() => setShowMobileFilters(false)}
           title={t('filters', 'Filters & Actions')}
           subtitle={t('manageStudentRecords', 'Manage your filters and actions')}
-          hasFilters={selectedGradeLevel !== 'all' || selectedClassId !== 'all' || poorCardIdFilter !== ''}
+          hasFilters={selectedGradeLevel !== 'all' || selectedClassId !== 'all'}
           onClearFilters={() => {
             setSelectedGradeLevel('all');
             setSelectedClassId('all');
-            setPoorCardIdFilter('');
             setPagination(prev => ({ ...prev, page: 1 }));
           }}
           onApply={() => {
@@ -1900,21 +1899,6 @@ export default function StudentsManagement() {
                   placeholder={t('selectClass', 'Select class...')}
                   minWidth="w-full"
                   triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
-                />
-              </div>
-
-              {/* Poor Card ID Filter */}
-              <div>
-                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('poorCardId', 'Poor Card ID')}</label>
-                <input
-                  type="text"
-                  className="text-sm w-full px-3 py-2 border border-gray-200 rounded-lg leading-5 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
-                  placeholder={t('searchPoorCardId', 'Search by Poor Card ID...')}
-                  value={poorCardIdFilter}
-                  onChange={(e) => {
-                    setPoorCardIdFilter(e.target.value);
-                    setPagination(prev => ({ ...prev, page: 1 }));
-                  }}
                 />
               </div>
             </>
