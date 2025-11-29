@@ -266,6 +266,12 @@ export const km = {
   selectedBooks: 'សៀវភៅសិក្សាដែលបានជ្រើសរើស',
   poorCardNumber: 'បណ្ណសមធម៌',
   healthAndBmiInformation: 'ព័ត៌មានសុខភាព និង BMI',
+  weakPassword: 'សុវត្ថិភាពខ្សោយ',
+  mediumPassword: 'សុវត្ថិភាពមធ្យម',
+  strongPassword: 'សុវត្ថិភាពខ្លាំង',
+  passwordStrength: 'កម្រិតសុវត្ថិភាព',
+  passwordSufficient: 'ចំនូនលេខសម្ងាត់គ្រប់គ្រាន់',
+  passwordTooShort: 'ចំនូនលេខសម្ងាត់ត្រូវតែលើស 8 ខ្ទង់',
 
   // Teacher Management
   addTeacher: 'បន្ថែមគ្រូ',

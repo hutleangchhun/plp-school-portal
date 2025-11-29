@@ -538,6 +538,46 @@ const StudentEditModal = () => {
     return isWeightInvalid() || isHeightInvalid();
   };
 
+  const isPasswordInvalid = () => {
+    const password = editForm.newPassword;
+    if (!password) return false;
+    if (password.length < 8) return true;
+    // Reject if contains non-English characters (only accept ASCII)
+    const hasNonEnglish = /[^\x00-\x7F]/.test(password);
+    return hasNonEnglish;
+  };
+
+  const getPasswordStrength = (password) => {
+    if (!password) return { level: 0, label: '', color: 'bg-gray-300' };
+
+    let strength = 0;
+
+    // Length check
+    if (password.length >= 8) strength++;
+    if (password.length >= 12) strength++;
+    if (password.length >= 16) strength++;
+
+    // Has lowercase
+    if (/[a-z]/.test(password)) strength++;
+
+    // Has uppercase
+    if (/[A-Z]/.test(password)) strength++;
+
+    // Has numbers
+    if (/[0-9]/.test(password)) strength++;
+
+    // Has special characters
+    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) strength++;
+
+    if (strength <= 2) {
+      return { level: 1, label: t('weakPassword', 'Weak'), color: 'bg-red-500' };
+    } else if (strength <= 4) {
+      return { level: 2, label: t('mediumPassword', 'Medium'), color: 'bg-orange-500' };
+    } else {
+      return { level: 3, label: t('strongPassword', 'Strong'), color: 'bg-green-500' };
+    }
+  };
+
   const validatePhysicalFields = () => {
     const { weight, height } = editForm;
 
@@ -1272,6 +1312,37 @@ const StudentEditModal = () => {
                 <Eye className="h-4 w-4" />
               </button>
             </div>
+            {editForm.newPassword && (
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-600">{t('passwordStrength', 'Password Strength')}</span>
+                  <span className={`text-xs font-medium ${getPasswordStrength(editForm.newPassword).color.replace('bg-', 'text-')}`}>
+                    {getPasswordStrength(editForm.newPassword).label}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-300 rounded-full ${getPasswordStrength(editForm.newPassword).color}`}
+                    style={{ width: `${Math.min((editForm.newPassword.length / 8) * 100, 100)}%` }}
+                  />
+                </div>
+                {editForm.newPassword.length < 8 && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    {t('passwordTooShort', 'Password must be at least 8 characters')}
+                  </p>
+                )}
+                {editForm.newPassword.length >= 8 && /[^\x00-\x7F]/.test(editForm.newPassword) && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {t('passwordEnglishOnly', 'Password must contain only English characters')}
+                  </p>
+                )}
+                {editForm.newPassword.length >= 8 && !/[^\x00-\x7F]/.test(editForm.newPassword) && (
+                  <p className="text-xs text-green-600 mt-1">
+                    {t('passwordSufficient', 'Password length is sufficient')}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div>
