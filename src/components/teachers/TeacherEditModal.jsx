@@ -919,6 +919,7 @@ const TeacherEditModal = () => {
     !editForm.username?.trim() ||
     !editForm.employment_type ||
     !editForm.hire_date ||
+    !editForm.role ||
     (mode === 'create' && !editForm.password?.trim()) ||
     (mode === 'create' && isPasswordInvalid()) ||
     (mode === 'edit' && editForm.newPassword?.trim() && isPasswordInvalid()) ||
