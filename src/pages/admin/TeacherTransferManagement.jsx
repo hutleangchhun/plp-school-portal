@@ -19,8 +19,7 @@ import { getFullName } from '../../utils/usernameUtils';
 import locationService from '../../utils/api/services/locationService';
 import schoolService from '../../utils/api/services/schoolService';
 import { roleOptions } from '../../utils/formOptions';
-import { Users } from 'lucide-react';
-import { ListFilter } from 'lucide-react';
+import { Users, ListFilter, RotateCcw } from 'lucide-react';
 
 const getRoleName = (roleId) => {
   const role = roleOptions.find(r => r.value === String(roleId));
@@ -326,6 +325,20 @@ const TeacherTransferManagement = () => {
     setSelectedTeachersMap(new Map());
   };
 
+  const handleResetSourceFilters = () => {
+    setSelectedSourceProvince('');
+    setSelectedSourceDistrict('');
+    setSelectedSourceSchool('');
+    setSourceDistricts([]);
+    setSourceSchools([]);
+    setTeachers([]);
+    setSearchQuery('');
+    setTeacherPagination({ page: 1, limit: 50, total: 0, pages: 1 });
+    setAllSelectedTeacherIds(new Set());
+    setSelectedTeachersMap(new Map());
+    setIsSourceFilterOpen(false);
+  };
+
   const handleApplySourceFilters = () => {
     // Only fetch when a source school is selected
     if (selectedSourceSchool) {
@@ -563,14 +576,25 @@ const TeacherTransferManagement = () => {
                 {t('transferTeachersDesc', 'Manage & Transfer teacher by school')}
               </p>
             </div>
-            <Button
-              type="button"
-              variant="primary"
-              onClick={() => setIsSourceFilterOpen(true)}
-              size="sm"
-            >
-              <ListFilter className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResetSourceFilters}
+                disabled={sourceLoading}
+              >
+                <RotateCcw className="w-4 h-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => setIsSourceFilterOpen(true)}
+                size="sm"
+              >
+                <ListFilter className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </FadeInSection>
 
