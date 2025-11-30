@@ -27,6 +27,15 @@ export const roleOptions = [
   { value: '21', label: 'គ្រូICT' } // TEACHERICT
 ];
 
+// Child status options
+export const childStatusOptions = [
+  { value: '', label: 'ជ្រើសរើសស្ថានភាព' },
+  { value: 'កូនក្នុងបន្ទុក', label: 'កូនក្នុងបន្ទុក' },
+  { value: 'កំពុងរៀន', label: 'កំពុងរៀន' },
+  { value: 'បញ្ចប់ការសិក្សា', label: 'បញ្ចប់ការសិក្សា' },
+  { value: 'ផ្សេងៗ', label: 'ផ្សេងៗ' }
+];
+
 // Ethnic Group options (25 groups)
 export const ethnicGroupOptions = [
   { value: 'ខ្មែរ', label: 'ជនជាតិខ្មែរ' },

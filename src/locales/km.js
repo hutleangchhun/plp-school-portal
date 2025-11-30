@@ -313,6 +313,7 @@ export const km = {
   numberOfChildren: 'ចំនួនកូន',
   childName: 'ឈ្មោះកូន',
   childrenInformation: 'ព័ត៌មានកូន',
+  childStatus: 'ស្ថានភាពកូន',
   appointmentStatus: 'ការតែងតាំង / បន្ទុក',
   appointed: 'តែងតាំង',
   burden: 'បន្ទុក',

@@ -18,7 +18,7 @@ import ErrorDisplay from '../ui/ErrorDisplay';
 import { PageLoader } from '../ui/DynamicLoader';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
-import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, employmentTypeOptions, educationLevelOptions, trainingTypeOptions, teacherStatusOptions, subjectOptions, roleOptions, maritalStatusOptions, teachingTypeOptions, spouseJobOptions } from '../../utils/formOptions';
+import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, employmentTypeOptions, educationLevelOptions, trainingTypeOptions, teacherStatusOptions, subjectOptions, roleOptions, maritalStatusOptions, teachingTypeOptions, spouseJobOptions, childStatusOptions } from '../../utils/formOptions';
 import { utils } from '../../utils/api';
 import GroupedDropdown from '../ui/GroupedDropdown';
 
@@ -264,7 +264,12 @@ const TeacherEditModal = () => {
 
       // Initialize family data from API response (prefer nested teacher.teacher_family)
       const familyData = teacherData.teacher_family || fullData.teacher_family || {};
-      const childrenArray = Array.isArray(familyData.children) ? familyData.children : [];
+      const childrenArray = Array.isArray(familyData.children)
+        ? familyData.children.map(child => ({
+            child_name: child.child_name || '',
+            status: child.status || ''
+          }))
+        : [];
 
       // Initialize extraLearningTool from nested teacher object
       const extraLearningToolData = teacherData.extraLearningTool || {};
@@ -533,7 +538,11 @@ const TeacherEditModal = () => {
         : parseInt(numberOfChildrenRaw, 10);
 
     const cleanedChildren = rawChildren
-      .map(child => ({ child_name: (child?.child_name || '').trim() }))
+      .map(child => ({
+        child_name: (child?.child_name || '').trim(),
+        status: (child?.status || '').toString().trim() || undefined
+      }))
+      // Keep only children that have a non-empty name, same as before
       .filter(child => child.child_name);
 
     // Align children array with number_of_children to avoid sending
@@ -1324,20 +1333,22 @@ const TeacherEditModal = () => {
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('subjects', 'Subjects')}
-            </label>
-            <MultiSelectDropdown
-              options={subjectOptions}
-              value={editForm.subject}
-              onValueChange={(value) => handleFormChange('subject', value)}
-              placeholder={t('selectSubjects', 'Select Subjects')}
-              maxHeight='max-h-[200px]'
-              disabled={false}
-              className='w-full'
-            />
-          </div>
+          {(editForm.employment_type === 'កិច្ចសន្យា' || editForm.employment_type === 'កិច្ចព្រមព្រៀង') && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('subjects', 'Subjects')}
+              </label>
+              <MultiSelectDropdown
+                options={subjectOptions}
+                value={editForm.subject}
+                onValueChange={(value) => handleFormChange('subject', value)}
+                placeholder={t('selectSubjects', 'Select Subjects')}
+                maxHeight='max-h-[200px]'
+                disabled={false}
+                className='w-full'
+              />
+            </div>
+          )}
 
           <div>
             <label htmlFor="teacher_number" className="block text-sm font-medium text-gray-700 mb-1">
@@ -1694,33 +1705,65 @@ const TeacherEditModal = () => {
                 {Array.from({ length: parseInt(editForm.teacher_family.number_of_children) || 0 }).map((_, index) => (
                   <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-md">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <label htmlFor={`child_name_${index}`} className="block text-sm font-medium text-gray-700 mb-1">
-                          {t('childName', 'Child Name')} {index + 1}
-                        </label>
-                        <input
-                          type="text"
-                          id={`child_name_${index}`}
-                          value={editForm.teacher_family.children[index]?.child_name || ''}
-                          onChange={(e) => {
-                            setEditForm(prev => {
-                              const newChildren = [...prev.teacher_family.children];
-                              if (!newChildren[index]) {
-                                newChildren[index] = { child_name: '' };
-                              }
-                              newChildren[index].child_name = e.target.value;
-                              return {
-                                ...prev,
-                                teacher_family: {
-                                  ...prev.teacher_family,
-                                  children: newChildren
+                      <div className="flex-1 space-y-3">
+                        <div>
+                          <label htmlFor={`child_name_${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                            {t('childName', 'Child Name')} {index + 1}
+                          </label>
+                          <input
+                            type="text"
+                            id={`child_name_${index}`}
+                            value={editForm.teacher_family.children[index]?.child_name || ''}
+                            onChange={(e) => {
+                              setEditForm(prev => {
+                                const newChildren = [...prev.teacher_family.children];
+                                if (!newChildren[index]) {
+                                  newChildren[index] = { child_name: '', status: '' };
                                 }
-                              };
-                            });
-                          }}
-                          className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder={t('enterChildName', 'e.g., សូថា')}
-                        />
+                                newChildren[index].child_name = e.target.value;
+                                return {
+                                  ...prev,
+                                  teacher_family: {
+                                    ...prev.teacher_family,
+                                    children: newChildren
+                                  }
+                                };
+                              });
+                            }}
+                            className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder={t('enterChildName', 'e.g., សូថា')}
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor={`child_status_${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                            {t('childStatus', 'Child Status')}
+                          </label>
+                          <Dropdown
+                            id={`child_status_${index}`}
+                            options={childStatusOptions}
+                            value={editForm.teacher_family.children[index]?.status || ''}
+                            onValueChange={(value) => {
+                              setEditForm(prev => {
+                                const newChildren = [...prev.teacher_family.children];
+                                if (!newChildren[index]) {
+                                  newChildren[index] = { child_name: '', status: '' };
+                                }
+                                newChildren[index].status = value;
+                                return {
+                                  ...prev,
+                                  teacher_family: {
+                                    ...prev.teacher_family,
+                                    children: newChildren
+                                  }
+                                };
+                              });
+                            }}
+                            placeholder={t('selectChildStatus', 'Select status')}
+                            contentClassName="max-h-[200px] overflow-y-auto"
+                            disabled={false}
+                            className="w-full"
+                          />
+                        </div>
                       </div>
                       <button
                         type="button"
