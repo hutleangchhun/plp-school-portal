@@ -67,7 +67,9 @@ export function ProtectedRoute({ children, path, user, fallbackPath }) {
   }
 
   // Check if user has access to this specific route
-  if (!hasRouteAccess(path, user)) {
+  const hasAccess = hasRouteAccess(path, user);
+
+  if (!hasAccess) {
     // Show 404 page when user tries to access a route they don't have permission for
     return <Navigate to="/404" replace />;
   }

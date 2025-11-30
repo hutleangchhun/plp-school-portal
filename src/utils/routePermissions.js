@@ -112,6 +112,10 @@ export const routePermissions = {
   '/admin-logs': {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'UserActivityLogs'
+  },
+  '/admin/teacher-transfer': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'TeacherTransferManagement'
   }
 };
 
@@ -122,7 +126,9 @@ export const routePermissions = {
  * @returns {boolean} Whether user has access
  */
 export const hasRouteAccess = (path, user) => {
-  if (!user || !path) return false;
+  if (!user || !path) {
+    return false;
+  }
 
   // Helper function to check if a path matches a route pattern
   const matchRoute = (pattern, pathname) => {
@@ -193,15 +199,17 @@ export const hasRouteAccess = (path, user) => {
     const routeConfig = findRouteConfig(path);
 
     // If route doesn't exist, deny access
-    if (!routeConfig) return false;
+    if (!routeConfig) {
+      return false;
+    }
 
     // If route specifies allowed roles, check if role1 can access
     if (routeConfig.allowedRoles && routeConfig.allowedRoles.length > 0) {
-      // Role1 can access routes that have ROLE1_ONLY or any role that TEACHER or DIRECTOR can access
-      return routeConfig.allowedRoles.includes(ROLES.ROLE1_ONLY) ||
+      const canAccess = routeConfig.allowedRoles.includes(ROLES.ROLE1_ONLY) ||
              routeConfig.allowedRoles.includes(ROLES.ROLE1) ||
              routeConfig.allowedRoles.includes(ROLES.TEACHER) ||
              routeConfig.allowedRoles.includes(ROLES.DIRECTOR);
+      return canAccess;
     }
 
     // If no allowedRoles specified, deny access
@@ -337,6 +345,10 @@ export const getNavigationItems = (user, t) => {
     {
       name: t('userActivityLogs', 'User Activity Logs'),
       href: '/admin-logs',
+    },
+    {
+      name: t('teacherTransfer', 'Teacher Transfer'),
+      href: '/admin/teacher-transfer',
     },
   ];
 

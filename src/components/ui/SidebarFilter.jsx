@@ -25,7 +25,8 @@ export default function SidebarFilter({
   actionsContent,
   onApply,
   onClearFilters,
-  hasFilters = false
+  hasFilters = false,
+  overlayClassName = ''
 }) {
   const { t } = useLanguage();
 
@@ -35,7 +36,7 @@ export default function SidebarFilter({
     <div className="fixed inset-0 z-50">
       {/* Overlay */}
       <div
-        className="absolute inset-0 bg-black bg-opacity-50"
+        className={`absolute inset-0 bg-black bg-opacity-50 ${overlayClassName}`}
         onClick={onClose}
       />
 

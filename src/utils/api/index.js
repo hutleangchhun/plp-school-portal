@@ -12,6 +12,8 @@ export { classService } from './services/classService.js';
 export { subjectService } from './services/subjectService.js';
 export { scoreService } from './services/scoreService.js';
 export { userActivityLogService } from './services/userActivityLogService.js';
+export { schoolService } from './services/schoolService.js';
+export { teacherService } from './services/teacherService.js';
 
 // Import services for convenience objects
 import { authService, authUtils } from './services/authService.js';
@@ -22,6 +24,8 @@ import { classService } from './services/classService.js';
 import { subjectService } from './services/subjectService.js';
 import { scoreService } from './services/scoreService.js';
 import { userActivityLogService } from './services/userActivityLogService.js';
+import { schoolService } from './services/schoolService.js';
+import { teacherService } from './services/teacherService.js';
 
 // Convenience exports for common operations
 export const api = {
@@ -33,6 +37,8 @@ export const api = {
   subject: subjectService,
   score: scoreService,
   userActivityLog: userActivityLogService,
+  school: schoolService,
+  teacher: teacherService,
 };
 
 export const utils = {

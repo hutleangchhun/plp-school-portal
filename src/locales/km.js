@@ -1537,6 +1537,12 @@ export const km = {
   idNumber: 'លេខសម្គាល់',
   generatedOn: 'បង្កើតថ្ងៃ',
 
-
-
+  //teacher transfer
+  teacherTransfer: 'ផ្ទេរមន្ត្រីរាជការ',
+  transferTeachersDesc: 'គ្រប់គ្រង និងផ្ទេរមន្ត្រីរាជការក្រោមកម្រិតសាលារៀន',
+  selectTeachers: 'ជ្រើសរើសគ្រូបង្រៀន',
+  selectTargetSchool: 'ជ្រើសរើសសាលាដែលត្រូវផ្ទេរ',
+  teachersToTransfer: 'គ្រូដែលត្រូវផ្ទេរ',
+  targetSchool: 'សាលាដែលបានជ្រើសរើសសម្រាប់ផ្ទេរ',
+  selectSourceSchoolDesc: 'ជ្រើសរើសសាលាដើម្បីស្វែងរកសាលា'
 };

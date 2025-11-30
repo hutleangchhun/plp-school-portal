@@ -17,7 +17,8 @@ import {
   CalendarCheck,
   UserRoundCheck,
   ListCheck,
-  ListChecks
+  ListChecks,
+  ArrowRightLeft
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -58,6 +59,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/teacher-reports': BarChart3,
     'attendance': Calendar, // Parent item for attendance dropdown
     'admin-dashboard': LayoutDashboard,
+    'admin-logs': Award,
+    'teacher-transfer': ArrowRightLeft,
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/achievements': Trophy,
     // '/settings': SettingsIcon,
@@ -84,6 +87,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/teacher-reports': 'blue',
     'attendance': 'blue', // Parent item for attendance dropdown
     'admin-dashboard': 'blue',
+    'admin-logs': 'blue',
+    'teacher-transfer': 'blue',
     // Temporarily removed color mappings (will be re-enabled later):
     // '/achievements': 'blue',
     // '/settings': 'blue',
