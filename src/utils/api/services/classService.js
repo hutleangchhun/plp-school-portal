@@ -336,6 +336,32 @@ export const classService = {
   },
 
   /**
+   * Create a master class for a given school
+   * @param {string|number} schoolId
+   * @param {Object} payload - { className, classCode, academicYear }
+   * @returns {Promise<Object>} { success, data }
+   */
+  async createMasterClassForSchool(schoolId, payload) {
+    try {
+      if (!schoolId) {
+        throw new Error('School ID is required to create master class');
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.post(ENDPOINTS.CLASSES.MASTER_CLASSES(schoolId), payload)
+      );
+
+      return {
+        success: true,
+        data: response?.data || response,
+      };
+    } catch (error) {
+      console.error('Error creating master class for school', schoolId, ':', error);
+      throw error;
+    }
+  },
+
+  /**
    * Utility functions for class data transformation
    */
   utils: {

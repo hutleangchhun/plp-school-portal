@@ -59,6 +59,7 @@ const StudentTransferManagement = () => {
   const [selectedTargetMasterClassId, setSelectedTargetMasterClassId] = useState('');
   const [selectedTargetMasterClassLabel, setSelectedTargetMasterClassLabel] = useState('');
   const [targetLoading, setTargetLoading] = useState(false);
+  const [creatingMasterClass, setCreatingMasterClass] = useState(false);
 
   const [studentPagination, setStudentPagination] = useState({
     page: 1,
@@ -363,6 +364,58 @@ const StudentTransferManagement = () => {
       });
     } finally {
       setTargetLoading(false);
+    }
+  };
+
+  const handleCreateMasterClass = async () => {
+    if (!selectedTargetSchool) return;
+
+    try {
+      setCreatingMasterClass(true);
+      clearError();
+
+      const currentYear = new Date().getFullYear();
+      const academicYear = `${currentYear}-${currentYear + 1}`;
+
+      const payload = {
+        className: `Master Class - School ${selectedTargetSchool}`,
+        classCode: `MC-${academicYear}`,
+        academicYear,
+      };
+
+      await classService.createMasterClassForSchool(selectedTargetSchool, payload);
+
+      const response = await classService.getMasterClassesList(selectedTargetSchool, {
+        page: 1,
+        limit: 5,
+      });
+
+      const data = Array.isArray(response?.data) ? response.data : [];
+
+      if (data.length > 0) {
+        const masterClass = data[0];
+        const masterClassId = String(
+          masterClass.master_class_id ??
+          masterClass.classId ??
+          masterClass.id
+        );
+        const masterClassName =
+          masterClass.class_name ||
+          masterClass.name ||
+          `${t('class', 'Class')} ${masterClassId}`;
+
+        setSelectedTargetMasterClassId(masterClassId);
+        setSelectedTargetMasterClassLabel(masterClassName);
+      } else {
+        setSelectedTargetMasterClassId('');
+        setSelectedTargetMasterClassLabel('');
+      }
+    } catch (err) {
+      handleError(err, {
+        toastMessage: t('failedToCreateMasterClass', 'Failed to create master class'),
+      });
+    } finally {
+      setCreatingMasterClass(false);
     }
   };
 
@@ -1011,6 +1064,19 @@ const StudentTransferManagement = () => {
                           ? `${t('masterClassLabel', 'Master class')}: ${selectedTargetMasterClassLabel}`
                           : t('noMasterClassFound', 'No master class found for this school')}
                       </span>
+                      {!selectedTargetMasterClassLabel && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCreateMasterClass}
+                          disabled={creatingMasterClass || targetLoading || transferring}
+                        >
+                          {creatingMasterClass
+                            ? t('creatingMasterClass', 'Creating...')
+                            : t('createMasterClass', 'Create master class')}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
