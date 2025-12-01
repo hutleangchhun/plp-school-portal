@@ -60,7 +60,7 @@ const StudentTransferManagement = () => {
 
   const [studentPagination, setStudentPagination] = useState({
     page: 1,
-    limit: 50,
+    limit: 9,
     total: 0,
     pages: 1
   });
@@ -91,7 +91,7 @@ const StudentTransferManagement = () => {
 
       const response = await studentService.getStudents({
         page,
-        limit: 50,
+        limit: 9,
         search: search.trim() || '',
       });
 
@@ -106,16 +106,18 @@ const StudentTransferManagement = () => {
         phone: student.phone,
         gradeLevel: student.gradeLevel,
         class: student.class,
-        schoolId: student.schoolId || student.school_id,
+        // Preserve source school from global /students endpoint
+        schoolId: student.schoolId,
+        schoolName: student.schoolName,
       }));
 
       setStudents(mappedStudents);
 
       const pagination = response.pagination || {
         page,
-        limit: 50,
+        limit: 9,
         total: mappedStudents.length,
-        pages: Math.max(1, Math.ceil(mappedStudents.length / 50)),
+        pages: Math.max(1, Math.ceil(mappedStudents.length / 9)),
       };
 
       setStudentPagination({
@@ -137,7 +139,7 @@ const StudentTransferManagement = () => {
   const fetchStudentsForSchool = useCallback(async (schoolId, page = 1, search = '') => {
     if (!schoolId) {
       setStudents([]);
-      setStudentPagination({ page: 1, limit: 50, total: 0, pages: 1 });
+      setStudentPagination({ page: 1, limit: 9, total: 0, pages: 1 });
       return;
     }
 
@@ -147,7 +149,7 @@ const StudentTransferManagement = () => {
 
       const response = await studentService.getStudentsBySchool(schoolId, {
         page,
-        limit: 50,
+        limit: 9,
         search: search.trim() || undefined,
       });
 
@@ -176,10 +178,10 @@ const StudentTransferManagement = () => {
           ...prev,
           page,
           total: response.pagination.total,
-          pages: response.pagination.pages || response.pagination.totalPages || Math.ceil(response.pagination.total / 50),
+          pages: response.pagination.pages || response.pagination.totalPages || Math.ceil(response.pagination.total / 9),
         }));
       } else {
-        const totalPages = Math.ceil((response.data?.length || 0) / 50);
+        const totalPages = Math.ceil((response.data?.length || 0) / 9);
         setStudentPagination(prev => ({
           ...prev,
           page,
@@ -227,7 +229,7 @@ const StudentTransferManagement = () => {
     setStudents([]);
     setSelectedStudentIds(new Set());
     setSelectedStudentsMap(new Map());
-    setStudentPagination({ page: 1, limit: 50, total: 0, pages: 1 });
+    setStudentPagination({ page: 1, limit: 9, total: 0, pages: 1 });
 
     if (!provinceId) {
       setSourceDistricts([]);
@@ -290,7 +292,7 @@ const StudentTransferManagement = () => {
   const handleSourceSchoolChange = (value) => {
     setSelectedSourceSchool(value);
     setSearchQuery('');
-    setStudentPagination({ page: 1, limit: 50, total: 0, pages: 1 });
+    setStudentPagination({ page: 1, limit: 9, total: 0, pages: 1 });
     setStudents([]);
     setSelectedStudentIds(new Set());
     setSelectedStudentsMap(new Map());
@@ -304,7 +306,7 @@ const StudentTransferManagement = () => {
     setSourceSchools([]);
     setStudents([]);
     setSearchQuery('');
-    setStudentPagination({ page: 1, limit: 50, total: 0, pages: 1 });
+    setStudentPagination({ page: 1, limit: 9, total: 0, pages: 1 });
     setSelectedStudentIds(new Set());
     setSelectedStudentsMap(new Map());
     setIsSourceFilterOpen(false);
@@ -329,8 +331,8 @@ const StudentTransferManagement = () => {
   };
 
   const openTransferModal = async () => {
-    if (selectedStudentIds.size === 0 || !selectedSourceSchool) {
-      handleError(new Error('Please select at least one student and source school'));
+    if (selectedStudentIds.size === 0) {
+      handleError(new Error('Please select at least one student'));
       return;
     }
 
@@ -492,8 +494,8 @@ const StudentTransferManagement = () => {
   };
 
   const handleTransferStudent = async () => {
-    if (selectedStudentIds.size === 0 || !selectedSourceSchool || !selectedTargetSchool || !selectedTargetMasterClassId) {
-      handleError(new Error('Please select students, source school, target school and target class'));
+    if (selectedStudentIds.size === 0 || !selectedTargetSchool || !selectedTargetMasterClassId) {
+      handleError(new Error('Please select students, target school and target class'));
       return;
     }
 
@@ -515,9 +517,13 @@ const StudentTransferManagement = () => {
         if (!studentId) {
           return Promise.resolve({ success: false, error: 'Missing studentId' });
         }
+
+        // Use the student's own source school if available (from global /students response)
+        const fromSchoolId = student?.schoolId || selectedSourceSchool;
+
         return studentService.transferStudentBetweenMasterClasses({
           studentId,
-          fromSchoolId: selectedSourceSchool,
+          fromSchoolId,
           toSchoolId: selectedTargetSchool,
           toMasterClassId: selectedTargetMasterClassId,
         });
@@ -866,6 +872,40 @@ const StudentTransferManagement = () => {
           >
             <div className="space-y-6">
               <div className="space-y-6">
+                {selectedStudentIds.size > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="inline-block w-1 h-5 bg-blue-600 rounded"></span>
+                      <h3 className="text-sm font-semibold text-gray-900">
+                        {t('selectedStudents', 'Selected Students')} ({selectedStudentIds.size})
+                      </h3>
+                    </div>
+                    <div className="max-h-40 overflow-y-auto border border-dashed border-gray-300 rounded-md bg-white px-3 py-2 space-y-1">
+                      {Array.from(selectedStudentIds).map(id => {
+                        const student = selectedStudentsMap.get(id) || students.find(s => s.id === id);
+                        if (!student) return null;
+                        return (
+                          <div
+                            key={id}
+                            className="flex items-center justify-between text-xs text-gray-700 border-b border-gray-100 last:border-b-0 py-1"
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {getFullName(student)}
+                              </span>
+                              {student.username && (
+                                <span className="text-gray-500">
+                                  {student.username}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2 mb-2">
                     <span className="inline-block w-1 h-5 bg-purple-600 rounded"></span>

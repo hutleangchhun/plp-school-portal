@@ -66,7 +66,7 @@ const TeacherTransferManagement = () => {
   // Pagination state
   const [teacherPagination, setTeacherPagination] = useState({
     page: 1,
-    limit: 50,
+    limit: 9,
     total: 0,
     pages: 1
   });
@@ -97,7 +97,7 @@ const TeacherTransferManagement = () => {
       clearError();
       const response = await api.teacher.getAllTeachers({
         page: page,
-        limit: 50,
+        limit: 9,
         search: search.trim() || undefined
       });
 
@@ -132,11 +132,11 @@ const TeacherTransferManagement = () => {
           ...prev,
           page: page,
           total: response.pagination.total,
-          pages: response.pagination.pages || response.pagination.totalPages || Math.ceil(response.pagination.total / 50)
+          pages: response.pagination.pages || response.pagination.totalPages || Math.ceil(response.pagination.total / 9)
         }));
       } else {
         // Fallback
-        const totalPages = Math.ceil((response.data?.length || 0) / 50);
+        const totalPages = Math.ceil((response.data?.length || 0) / 9);
         setTeacherPagination(prev => ({
           ...prev,
           page: page,
@@ -166,7 +166,7 @@ const TeacherTransferManagement = () => {
       clearError();
       const response = await api.teacher.getTeachersBySchool(schoolId, {
         page: page,
-        limit: 50,
+        limit: 9,
         search: search.trim() || undefined
       });
 
@@ -254,7 +254,7 @@ const TeacherTransferManagement = () => {
     setTeachers([]);
     setAllSelectedTeacherIds(new Set());
     setSelectedTeachersMap(new Map());
-    setTeacherPagination({ page: 1, limit: 50, total: 0, pages: 1 });
+    setTeacherPagination({ page: 1, limit: 9, total: 0, pages: 1 });
 
     if (!provinceId) {
       setSourceDistricts([]);
@@ -318,7 +318,7 @@ const TeacherTransferManagement = () => {
     setSelectedSourceSchool(value);
     // Reset search and pagination; actual fetch will happen on Apply
     setSearchQuery('');
-    setTeacherPagination({ page: 1, limit: 50, total: 0, pages: 1 });
+    setTeacherPagination({ page: 1, limit: 9, total: 0, pages: 1 });
     // Clear current teachers and selection when changing source school
     setTeachers([]);
     setAllSelectedTeacherIds(new Set());
@@ -333,7 +333,7 @@ const TeacherTransferManagement = () => {
     setSourceSchools([]);
     setTeachers([]);
     setSearchQuery('');
-    setTeacherPagination({ page: 1, limit: 50, total: 0, pages: 1 });
+    setTeacherPagination({ page: 1, limit: 9, total: 0, pages: 1 });
     setAllSelectedTeacherIds(new Set());
     setSelectedTeachersMap(new Map());
     setIsSourceFilterOpen(false);

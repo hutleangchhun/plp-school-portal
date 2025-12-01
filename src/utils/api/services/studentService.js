@@ -951,6 +951,9 @@ export const studentService = {
       
       // Student number for display
       const studentNumber = student.student_number || student.studentNumber || student.studentId || finalId;
+
+      // School information (for global /students endpoint)
+      const schoolInfo = student.school || {};
       
       return {
         // id remains for table selection; usually studentId
@@ -972,6 +975,11 @@ export const studentService = {
         profilePicture: student.profile_picture || student.profilePicture || user.profile_picture || user.profilePicture,
         isActive: student.student_status === 'ACTIVE' || student.isActive !== undefined ? student.isActive : (user.is_active !== undefined ? user.is_active : true),
         username: student.username || user.username || '',
+        // School info
+        schoolId: schoolInfo.schoolId || schoolInfo.id || student.schoolId || student.school_id,
+        schoolName: schoolInfo.name,
+        schoolCode: schoolInfo.code,
+        school: Object.keys(schoolInfo).length ? schoolInfo : undefined,
         class: {
           id: student.class_id || classInfo.classId || classInfo.id,
           classId: student.class_id || classInfo.classId || classInfo.id,
