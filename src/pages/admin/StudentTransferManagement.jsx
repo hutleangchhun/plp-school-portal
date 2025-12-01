@@ -776,8 +776,9 @@ const StudentTransferManagement = () => {
               </CardContent>
             </Card>
           </FadeInSection>
-
-          <SidebarFilter
+        </div>
+      </PageTransition>
+      <SidebarFilter
             isOpen={isSourceFilterOpen}
             onClose={() => setIsSourceFilterOpen(false)}
             title={t('filterBySchool', 'Filter by School')}
@@ -979,8 +980,6 @@ const StudentTransferManagement = () => {
               </div>
             </div>
           </Modal>
-        </div>
-      </PageTransition>
     </>
   );
 };
