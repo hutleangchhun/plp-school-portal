@@ -20,6 +20,7 @@ import locationService from '../../utils/api/services/locationService';
 import schoolService from '../../utils/api/services/schoolService';
 import classService from '../../utils/api/services/classService';
 import { studentService } from '../../utils/api/services/studentService';
+import { gradeLevelOptions as sharedGradeLevelOptions } from '../../utils/formOptions';
 import { Users, ListFilter, RotateCcw } from 'lucide-react';
 
 const StudentTransferManagement = () => {
@@ -33,6 +34,7 @@ const StudentTransferManagement = () => {
   const [selectedSourceProvince, setSelectedSourceProvince] = useState('');
   const [selectedSourceDistrict, setSelectedSourceDistrict] = useState('');
   const [selectedSourceSchool, setSelectedSourceSchool] = useState('');
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
 
   const [students, setStudents] = useState([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
@@ -82,7 +84,7 @@ const StudentTransferManagement = () => {
       }
     };
     init();
-  }, [clearError, handleError, t]);
+  }, [clearError, handleError, selectedGradeLevel, t]);
 
   const fetchStudentsGlobal = useCallback(async (page = 1, search = '') => {
     try {
@@ -93,6 +95,7 @@ const StudentTransferManagement = () => {
         page,
         limit: 9,
         search: search.trim() || '',
+        gradeLevel: selectedGradeLevel && selectedGradeLevel !== 'all' ? selectedGradeLevel : undefined,
       });
 
       const mappedStudents = (response.data || []).map(student => ({
@@ -111,7 +114,12 @@ const StudentTransferManagement = () => {
         schoolName: student.schoolName,
       }));
 
-      setStudents(mappedStudents);
+      const finalStudents =
+        selectedGradeLevel && selectedGradeLevel !== 'all'
+          ? mappedStudents.filter(s => String(s.gradeLevel) === String(selectedGradeLevel))
+          : mappedStudents;
+
+      setStudents(finalStudents);
 
       const pagination = response.pagination || {
         page,
@@ -134,7 +142,7 @@ const StudentTransferManagement = () => {
     } finally {
       setFetchingStudents(false);
     }
-  }, [clearError, handleError, t]);
+  }, [clearError, handleError, selectedGradeLevel, t]);
 
   const fetchStudentsForSchool = useCallback(async (schoolId, page = 1, search = '') => {
     if (!schoolId) {
@@ -151,6 +159,7 @@ const StudentTransferManagement = () => {
         page,
         limit: 9,
         search: search.trim() || undefined,
+        gradeLevel: selectedGradeLevel && selectedGradeLevel !== 'all' ? selectedGradeLevel : undefined,
       });
 
       if (!response.success) {
@@ -171,7 +180,12 @@ const StudentTransferManagement = () => {
         schoolId: schoolId,
       }));
 
-      setStudents(mappedStudents);
+      const finalStudents =
+        selectedGradeLevel && selectedGradeLevel !== 'all'
+          ? mappedStudents.filter(s => String(s.gradeLevel) === String(selectedGradeLevel))
+          : mappedStudents;
+
+      setStudents(finalStudents);
 
       if (response.pagination) {
         setStudentPagination(prev => ({
@@ -197,7 +211,7 @@ const StudentTransferManagement = () => {
     } finally {
       setFetchingStudents(false);
     }
-  }, [clearError, handleError, t]);
+  }, [clearError, handleError, selectedGradeLevel, t]);
 
   const handleSearchChange = (value) => {
     setSearchQuery(value);
@@ -302,6 +316,7 @@ const StudentTransferManagement = () => {
     setSelectedSourceProvince('');
     setSelectedSourceDistrict('');
     setSelectedSourceSchool('');
+    setSelectedGradeLevel('all');
     setSourceDistricts([]);
     setSourceSchools([]);
     setStudents([]);
@@ -579,6 +594,14 @@ const StudentTransferManagement = () => {
       label: school.name || `School ${school.id}`,
     }));
   };
+  
+  const gradeLevelOptions = [
+    { value: 'all', label: t('allGrades', 'All grades') },
+    ...sharedGradeLevelOptions.map(option => ({
+      value: option.value,
+      label: option.label,
+    })),
+  ];
 
 
   const sourceProvinceOptions = getProvinceOptions(sourceProvinces);
@@ -733,11 +756,11 @@ const StudentTransferManagement = () => {
                               <div className="text-xs text-gray-500">
                                 {student.username}
                               </div>
-                              {student.class?.name && (
-                                <div className="text-xs text-gray-500">
-                                  {student.class.name}
-                                </div>
-                              )}
+                              <div className="text-xs text-gray-500">
+                                {student.class?.name
+                                  ? student.class.name
+                                  : 'មិនមាន'}
+                              </div>
                               <div className="flex flex-wrap items-center gap-2 mt-1">
                                 {student.gradeLevel && (
                                   <Badge color="blue" variant="outlined" size="sm">
@@ -827,6 +850,20 @@ const StudentTransferManagement = () => {
                   searchPlaceholder={t('searchSchool', 'Search schools...')}
                   className="w-full"
                   disabled={!selectedSourceDistrict || sourceLoading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('gradeLevel', 'Grade Level')}
+                </label>
+                <Dropdown
+                  options={gradeLevelOptions}
+                  value={selectedGradeLevel}
+                  onValueChange={setSelectedGradeLevel}
+                  placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                  className="w-full"
+                  disabled={sourceLoading}
                 />
               </div>
             </div>

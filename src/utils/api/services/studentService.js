@@ -18,7 +18,7 @@ export const studentService = {
    * @returns {Promise<Object>} Response with student data and pagination info
    */
   async getStudents(params = {}) {
-    const { page = 1, limit = 10, search = '', status = true, roleId = 9, classId } = params;
+    const { page = 1, limit = 10, search = '', status = true, roleId = 9, classId, gradeLevel } = params;
 
     // Normalize status: accept 'active' | 'inactive' | '' | boolean
     let normalizedStatus = status;
@@ -38,6 +38,9 @@ export const studentService = {
     };
     if (normalizedStatus !== undefined) queryParams.status = normalizedStatus;
     if (classId !== undefined) queryParams.classId = classId;
+    if (gradeLevel !== undefined && gradeLevel !== null && gradeLevel !== '' && gradeLevel !== 'all') {
+      queryParams.gradeLevel = gradeLevel;
+    }
 
     const response = await handleApiResponse(() =>
       apiClient_.get(`${ENDPOINTS.STUDENTS.BASE}`, { params: queryParams })
@@ -971,7 +974,7 @@ export const studentService = {
         dateOfBirth: student.date_of_birth || student.dateOfBirth || user.date_of_birth || user.dateOfBirth,
         date_of_birth: student.date_of_birth || student.dateOfBirth || user.date_of_birth || user.dateOfBirth,
         academicYear: student.academic_year || classInfo.academicYear,
-        gradeLevel: student.grade_level || classInfo.gradeLevel,
+        gradeLevel: student.grade_level || student.gradeLevel || classInfo.gradeLevel,
         profilePicture: student.profile_picture || student.profilePicture || user.profile_picture || user.profilePicture,
         isActive: student.student_status === 'ACTIVE' || student.isActive !== undefined ? student.isActive : (user.is_active !== undefined ? user.is_active : true),
         username: student.username || user.username || '',
@@ -980,14 +983,17 @@ export const studentService = {
         schoolName: schoolInfo.name,
         schoolCode: schoolInfo.code,
         school: Object.keys(schoolInfo).length ? schoolInfo : undefined,
-        class: {
-          id: student.class_id || classInfo.classId || classInfo.id,
-          classId: student.class_id || classInfo.classId || classInfo.id,
-          name: student.class_name || classInfo.name,
-          gradeLevel: student.class_grade_level || student.grade_level || classInfo.gradeLevel,
-          section: student.section || classInfo.section,
-          academicYear: student.class_academic_year || student.academic_year || classInfo.academicYear
-        },
+        class:
+          student.class === null && !student.class_id && !student.class_name
+            ? null
+            : {
+                id: student.class_id || classInfo.classId || classInfo.id,
+                classId: student.class_id || classInfo.classId || classInfo.id,
+                name: student.class_name || classInfo.name,
+                gradeLevel: student.class_grade_level || student.grade_level || classInfo.gradeLevel,
+                section: student.section || classInfo.section,
+                academicYear: student.class_academic_year || student.academic_year || classInfo.academicYear,
+              },
         averageScore: student.averageScore || 0,
         timeSpent: student.timeSpent || 0,
         scores: student.scores || [],
