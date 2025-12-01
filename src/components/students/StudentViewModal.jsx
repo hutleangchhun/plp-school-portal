@@ -319,32 +319,154 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
         )}
 
         {/* Extra Learning Tool */}
-        {student.student?.extraLearningTool && Object.keys(student.student.extraLearningTool).length > 0 && (
-          <div className="border-t pt-4">
-            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
-              <div className='bg-blue-500 p-2 rounded-sm'>
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        {(() => {
+          const extra =
+            student.student?.extraLearningTool ||
+            student.extraLearningTool ||
+            null;
+
+          if (!extra || typeof extra !== 'object' || Object.keys(extra).length === 0) {
+            return null;
+          }
+
+          const reading = extra.reading_material_package || {};
+          const math = extra.math_grade1_package || {};
+
+          const renderBool = (flag) =>
+            flag === true ? t('have', 'Yes') : t('notHave', 'No');
+
+          const renderStatus = (status) => {
+            if (status === 'new') return t('statusNew', 'ថ្មី');
+            if (status === 'old') return t('statusOld', 'ចាស់');
+            return status;
+          };
+
+          const hasAny =
+            Object.keys(reading).length > 0 || Object.keys(math).length > 0;
+
+          if (!hasAny) return null;
+
+          return (
+            <div className="border-t pt-4">
+              <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+                <div className='bg-blue-500 p-2 rounded-sm'>
+                  <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                </div>
+                <div className="ml-2">
+                  {t('extraLearningTool', 'Extra Learning Tool')}
+                </div>
               </div>
-              <div className="ml-2">
-                {t('extraLearningTool', 'Extra Learning Tool')}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Reading material package */}
+                {Object.keys(reading).length > 0 && (
+                  <div className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white shadow-sm">
+                    <div className="font-medium text-gray-900 mb-2">
+                      {t('learningPackage', 'កញ្ចប់សម្ភារៈអំណាន')}
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">
+                          {t('hasPackage', 'Has Package')}
+                        </span>
+                        <span className="inline-flex items-center text-gray-900">
+                          <span
+                            className={`mr-2 inline-flex h-4 w-4 items-center justify-center rounded border ${
+                              reading._hasPackage
+                                ? 'bg-green-500 border-green-500'
+                                : 'bg-white border-gray-300'
+                            }`}
+                          >
+                            {reading._hasPackage && (
+                              <span className="block h-2 w-2 rounded-sm bg-white" />
+                            )}
+                          </span>
+                          {renderBool(reading._hasPackage)}
+                        </span>
+                      </div>
+
+                      {reading.status && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700">
+                            {t('statusBook', 'ស្ថានភាពសៀវភៅ')}
+                          </span>
+                          <span className="text-gray-900">
+                            {renderStatus(reading.status)}
+                          </span>
+                        </div>
+                      )}
+
+                      {reading.providedBy && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700">
+                            {t('providedBy', 'អ្នកផ្តល់')}
+                          </span>
+                          <span className="text-gray-900">
+                            {reading.providedBy}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Math grade 1 package */}
+                {Object.keys(math).length > 0 && (
+                  <div className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white shadow-sm">
+                    <div className="font-medium text-gray-900 mb-2">
+                      {t('mathGrade1', 'គណិតវិទ្យាថ្នាក់ដំបូង')}
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">
+                          {t('hasPackage', 'Has Package')}
+                        </span>
+                        <span className="inline-flex items-center text-gray-900">
+                          <span
+                            className={`mr-2 inline-flex h-4 w-4 items-center justify-center rounded border ${
+                              math._hasPackage
+                                ? 'bg-green-500 border-green-500'
+                                : 'bg-white border-gray-300'
+                            }`}
+                          >
+                            {math._hasPackage && (
+                              <span className="block h-2 w-2 rounded-sm bg-white" />
+                            )}
+                          </span>
+                          {renderBool(math._hasPackage)}
+                        </span>
+                      </div>
+
+                      {math.status && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700">
+                            {t('statusBook', 'ស្ថានភាពសៀវភៅ')}
+                          </span>
+                          <span className="text-gray-900">
+                            {renderStatus(math.status)}
+                          </span>
+                        </div>
+                      )}
+
+                      {math.providedBy && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700">
+                            {t('providedBy', 'អ្នកផ្តល់')}
+                          </span>
+                          <span className="text-gray-900">
+                            {math.providedBy}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              {student.student.extraLearningTool['កញ្ចប់សម្ភារៈអំណាន'] && (
-                <InfoItem
-                  label={t('learningPackage', 'កញ្ចប់សម្ភារៈអំណាន')}
-                  value={student.student.extraLearningTool['កញ្ចប់សម្ភារៈអំណាន'] || getEmptyDisplay()}
-                />
-              )}
-              {student.student.extraLearningTool['គណិតវិទ្យាថ្នាក់ដំបូង'] && (
-                <InfoItem
-                  label={t('mathGrade1', 'គណិតវិទ្យាថ្នាក់ដំបូង')}
-                  value={student.student.extraLearningTool['គណិតវិទ្យាថ្នាក់ដំបូង'] || getEmptyDisplay()}
-                />
-              )}
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Selected Books */}
         {student.bookIds && Array.isArray(student.bookIds) && student.bookIds.length > 0 && (

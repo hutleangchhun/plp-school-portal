@@ -17,7 +17,7 @@ import BookSelectionModal from '../modals/BookSelectionModal';
 import SelectedBooksDisplay from '../modals/SelectedBooksDisplay';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
-import { gradeLevelOptions, ethnicGroupOptions, accessibilityOptions, getAcademicYearOptions, poorCardGradeOptions } from '../../utils/formOptions';
+import { gradeLevelOptions, ethnicGroupOptions, accessibilityOptions, getAcademicYearOptions, poorCardGradeOptions, extraLearningStatusOptions } from '../../utils/formOptions';
 import { utils } from '../../utils/api';
 
 const StudentEditModal = () => {
@@ -76,8 +76,16 @@ const StudentEditModal = () => {
     poorCardGrade: '',
     bookIds: [],
     extraLearningTool: {
-      'កញ្ចប់សម្ភារៈអំណាន': '',
-      'គណិតវិទ្យាថ្នាក់ដំបូង': ''
+      reading_material_package: {
+        _hasPackage: false,
+        status: '',
+        providedBy: '',
+      },
+      math_grade1_package: {
+        _hasPackage: false,
+        status: '',
+        providedBy: '',
+      },
     },
     residence: {
       provinceId: '',
@@ -248,6 +256,51 @@ const StudentEditModal = () => {
 
       const initialUsername = fullData.username || '';
 
+      // Initialize extraLearningTool (supports new English keys + legacy Khmer keys)
+      const rawExtraStudent =
+        (studentObj.extraLearningTool && typeof studentObj.extraLearningTool === 'object')
+          ? studentObj.extraLearningTool
+          : (fullData.extraLearningTool && typeof fullData.extraLearningTool === 'object')
+            ? fullData.extraLearningTool
+            : {};
+
+      let extraLearningTool;
+
+      if (rawExtraStudent.reading_material_package || rawExtraStudent.math_grade1_package) {
+        const readingExtra = rawExtraStudent.reading_material_package || {};
+        const mathExtra = rawExtraStudent.math_grade1_package || {};
+
+        extraLearningTool = {
+          reading_material_package: {
+            _hasPackage: readingExtra._hasPackage === true,
+            status: readingExtra.status || '',
+            providedBy: readingExtra.providedBy || '',
+          },
+          math_grade1_package: {
+            _hasPackage: mathExtra._hasPackage === true,
+            status: mathExtra.status || '',
+            providedBy: mathExtra.providedBy || '',
+          },
+        };
+      } else {
+        // Legacy Khmer flat values
+        const readingLegacy = rawExtraStudent['កញ្ចប់សម្ភារៈអំណាន'];
+        const mathLegacy = rawExtraStudent['គណិតវិទ្យាថ្នាក់ដំបូង'];
+
+        extraLearningTool = {
+          reading_material_package: {
+            _hasPackage: !!readingLegacy,
+            status: typeof readingLegacy === 'string' ? readingLegacy : '',
+            providedBy: '',
+          },
+          math_grade1_package: {
+            _hasPackage: !!mathLegacy,
+            status: typeof mathLegacy === 'string' ? mathLegacy : '',
+            providedBy: '',
+          },
+        };
+      }
+
       setEditForm({
         firstName: fullData.firstName || fullData.first_name || '',
         lastName: fullData.lastName || fullData.last_name || '',
@@ -271,10 +324,7 @@ const StudentEditModal = () => {
         studentNumber: (studentObj.studentNumber || fullData.studentNumber || ''),
         poorCardGrade: (studentObj.poorCardGrade || fullData.poorCard_grade || fullData.poorCardGrade || ''),
         bookIds: Array.isArray(fullData.bookIds) ? fullData.bookIds : [],
-        extraLearningTool: (studentObj.extraLearningTool && typeof studentObj.extraLearningTool === 'object') ? studentObj.extraLearningTool : (fullData.extraLearningTool && typeof fullData.extraLearningTool === 'object') ? fullData.extraLearningTool : {
-          'កញ្ចប់សម្ភារៈអំណាន': '',
-          'គណិតវិទ្យាថ្នាក់ដំបូង': ''
-        },
+        extraLearningTool,
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
           districtId: fullData.residence?.districtId || fullData.district_id || '',
@@ -350,8 +400,16 @@ const StudentEditModal = () => {
       poorCardGrade: '',
       bookIds: [],
       extraLearningTool: {
-        'កញ្ចប់សម្ភារៈអំណាន': '',
-        'គណិតវិទ្យាថ្នាក់ដំបូង': ''
+        reading_material_package: {
+          _hasPackage: false,
+          status: '',
+          providedBy: '',
+        },
+        math_grade1_package: {
+          _hasPackage: false,
+          status: '',
+          providedBy: '',
+        },
       },
       residence: { provinceId: '', districtId: '', communeId: '', villageId: '' },
       placeOfBirth: { provinceId: '', districtId: '', communeId: '', villageId: '' },
@@ -1145,53 +1203,215 @@ const StudentEditModal = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             {t('extraLearningTool', 'Extra Learning Tool')}
           </h3>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('learningPackage', 'កញ្ចប់សម្ភារៈអំណាន')}
-              </label>
-              <Dropdown
-                options={[
-                  { value: '', label: t('selectOption', 'Select option') },
-                  { value: 'មាតាបិតា​ទិញឱ្យ', label: 'មាតាបិតា​ទិញឱ្យ' },
-                  { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
-                ]}
-                value={editForm.extraLearningTool['កញ្ចប់សម្ភារៈអំណាន'] || ''}
-                onValueChange={(value) =>
-                  handleFormChange('extraLearningTool', {
-                    ...editForm.extraLearningTool,
-                    'កញ្ចប់សម្ភារៈអំណាន': value
-                  })
-                }
-                placeholder={t('selectOption', 'Select option')}
-                contentClassName="max-h-[200px] overflow-y-auto"
-                disabled={false}
-                className='w-full'
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('mathGrade1', 'គណិតវិទ្យាថ្នាក់ដំបូង')}
-              </label>
-              <Dropdown
-                options={[
-                  { value: '', label: t('selectOption', 'Select option') },
-                  { value: 'មាតាបិតា​ទិញឱ្យ', label: 'មាតាបិតា​ទិញឱ្យ' },
-                  { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
-                ]}
-                value={editForm.extraLearningTool['គណិតវិទ្យាថ្នាក់ដំបូង'] || ''}
-                onValueChange={(value) =>
-                  handleFormChange('extraLearningTool', {
-                    ...editForm.extraLearningTool,
-                    'គណិតវិទ្យាថ្នាក់ដំបូង': value
-                  })
-                }
-                placeholder={t('selectOption', 'Select option')}
-                contentClassName="max-h-[200px] overflow-y-auto"
-                disabled={false}
-                className='w-full'
-              />
-            </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Reading material package card */}
+            {(() => {
+              const reading = editForm.extraLearningTool.reading_material_package || {};
+              const hasPackage = !!reading._hasPackage;
+
+              return (
+                <div className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+                  <div className="font-medium text-gray-900 mb-3">
+                    {t('learningPackage', 'កញ្ចប់សម្ភារៈអំណាន')}
+                  </div>
+
+                  <div className="space-y-3 text-sm">
+                    {/* Has package checkbox */}
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">
+                        {t('hasPackage', 'Has Package')}
+                      </span>
+                      <span className="inline-flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          checked={hasPackage}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setEditForm(prev => ({
+                              ...prev,
+                              extraLearningTool: {
+                                ...prev.extraLearningTool,
+                                reading_material_package: {
+                                  ...(prev.extraLearningTool.reading_material_package || {}),
+                                  _hasPackage: checked,
+                                },
+                              },
+                            }));
+                          }}
+                        />
+                      </span>
+                    </label>
+
+                    {/* Status dropdown */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('statusBook', 'ស្ថានភាពសៀវភៅ')}
+                      </label>
+                      <Dropdown
+                        options={[
+                          { value: '', label: t('selectOption', 'ជ្រើសរើស') },
+                          ...extraLearningStatusOptions
+                        ]}
+                        value={reading.status || ''}
+                        onValueChange={(value) => {
+                          setEditForm(prev => ({
+                            ...prev,
+                            extraLearningTool: {
+                              ...prev.extraLearningTool,
+                              reading_material_package: {
+                                ...(prev.extraLearningTool.reading_material_package || {}),
+                                status: value,
+                              },
+                            },
+                          }));
+                        }}
+                        placeholder={t('selectOption', 'ជ្រើសរើស')}
+                        contentClassName="max-h-[200px] overflow-y-auto"
+                        disabled={false}
+                        className='w-full'
+                      />
+                    </div>
+
+                    {/* ProvidedBy dropdown */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('providedBy', 'Provided By')}
+                      </label>
+                      <Dropdown
+                        options={[
+                          { value: '', label: t('selectOption', 'ជ្រើសរើស') },
+                          { value: 'មាតាបិតាទិញឱ្យ', label: 'មាតាបិតាទិញឱ្យ' },
+                          { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
+                        ]}
+                        value={reading.providedBy || ''}
+                        onValueChange={(value) => {
+                          setEditForm(prev => ({
+                            ...prev,
+                            extraLearningTool: {
+                              ...prev.extraLearningTool,
+                              reading_material_package: {
+                                ...(prev.extraLearningTool.reading_material_package || {}),
+                                providedBy: value,
+                              },
+                            },
+                          }));
+                        }}
+                        placeholder={t('selectOption', 'ជ្រើសរើស')}
+                        contentClassName="max-h-[200px] overflow-y-auto"
+                        disabled={false}
+                        className='w-full'
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Math grade 1 package card */}
+            {(() => {
+              const math = editForm.extraLearningTool.math_grade1_package || {};
+              const hasPackage = !!math._hasPackage;
+
+              return (
+                <div className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+                  <div className="font-medium text-gray-900 mb-3">
+                    {t('mathGrade1', 'គណិតវិទ្យាថ្នាក់ដំបូង')}
+                  </div>
+
+                  <div className="space-y-3 text-sm">
+                    {/* Has package checkbox */}
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">
+                        {t('hasPackage', 'Has Package')}
+                      </span>
+                      <span className="inline-flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          checked={hasPackage}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setEditForm(prev => ({
+                              ...prev,
+                              extraLearningTool: {
+                                ...prev.extraLearningTool,
+                                math_grade1_package: {
+                                  ...(prev.extraLearningTool.math_grade1_package || {}),
+                                  _hasPackage: checked,
+                                },
+                              },
+                            }));
+                          }}
+                        />
+                      </span>
+                    </label>
+
+                    {/* Status dropdown */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('statusBook', 'ស្ថានភាពសៀវភៅ')}
+                      </label>
+                      <Dropdown
+                        options={[
+                          { value: '', label: t('selectOption', 'ជ្រើសរើស') },
+                          ...extraLearningStatusOptions
+                        ]}
+                        value={math.status || ''}
+                        onValueChange={(value) => {
+                          setEditForm(prev => ({
+                            ...prev,
+                            extraLearningTool: {
+                              ...prev.extraLearningTool,
+                              math_grade1_package: {
+                                ...(prev.extraLearningTool.math_grade1_package || {}),
+                                status: value,
+                              },
+                            },
+                          }));
+                        }}
+                        placeholder={t('selectOption', 'ជ្រើសរើស')}
+                        contentClassName="max-h-[200px] overflow-y-auto"
+                        disabled={false}
+                        className='w-full'
+                      />
+                    </div>
+
+                    {/* ProvidedBy dropdown */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('providedBy', 'Provided By')}
+                      </label>
+                      <Dropdown
+                        options={[
+                          { value: '', label: t('selectOption', 'ជ្រើសរើស') },
+                          { value: 'មាតាបិតាទិញឱ្យ', label: 'មាតាបិតាទិញឱ្យ' },
+                          { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
+                        ]}
+                        value={math.providedBy || ''}
+                        onValueChange={(value) => {
+                          setEditForm(prev => ({
+                            ...prev,
+                            extraLearningTool: {
+                              ...prev.extraLearningTool,
+                              math_grade1_package: {
+                                ...(prev.extraLearningTool.math_grade1_package || {}),
+                                providedBy: value,
+                              },
+                            },
+                          }));
+                        }}
+                        placeholder={t('selectOption', 'Select option')}
+                        contentClassName="max-h-[200px] overflow-y-auto"
+                        disabled={false}
+                        className='w-full'
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

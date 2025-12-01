@@ -506,27 +506,173 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
         </div>
 
         {/* Extra Learning Tool */}
-        {(teacherData.extraLearningTool && Object.keys(teacherData.extraLearningTool).length > 0) && (
-          <div className="border-t pt-4">
-            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
-              <div className='bg-blue-500 p-2 rounded-sm'>
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        {(() => {
+          const teacherToolObj =
+            teacherData.teacherExtraLearningTool ||
+            displayTeacher.teacherExtraLearningTool ||
+            {};
+
+          const extraToolObj =
+            teacherData.extraLearningTool ||
+            {};
+
+          // Build a merged view per category so we can show _hasPackage from teacherExtraLearningTool
+          // and status from extraLearningTool for ALL packages
+          const categoryKeys = Array.from(
+            new Set([
+              ...Object.keys(teacherToolObj || {}),
+              ...Object.keys(extraToolObj || {}),
+            ])
+          );
+
+          if (categoryKeys.length === 0) return null;
+
+          const mergedExtra = categoryKeys.reduce((acc, key) => {
+            const teacherVal = teacherToolObj ? teacherToolObj[key] : undefined;
+            const extraVal = extraToolObj ? extraToolObj[key] : undefined;
+
+            const teacherObj =
+              teacherVal && typeof teacherVal === 'object'
+                ? teacherVal
+                : teacherVal === true
+                  ? { _hasPackage: true }
+                  : {};
+
+            let extraObj = {};
+            if (extraVal && typeof extraVal === 'object') {
+              extraObj = extraVal;
+            } else if (typeof extraVal === 'string' && extraVal) {
+              // Legacy: treat string as status
+              extraObj = { status: extraVal };
+            }
+
+            acc[key] = { ...teacherObj, ...extraObj };
+            return acc;
+          }, {});
+
+          const entries = Object.entries(mergedExtra);
+
+          const renderBool = (flag) =>
+            flag === true ? t('have', 'Yes') : t('notHave', 'No');
+
+          const renderStatus = (status) => {
+            if (status === 'new') return t('statusNew', 'ថ្មី');
+            if (status === 'old') return t('statusOld', 'ចាស់');
+            return status;
+          };
+
+          const getCategoryLabel = (key) => {
+            if (key === 'reading_material_package') {
+              return t('learningPackage', 'កញ្ចប់សម្ភារៈអំណាន');
+            }
+            if (key === 'math_grade1_package') {
+              return t('mathGrade1', 'គណិតវិទ្យាថ្នាក់ដំបូង');
+            }
+            return key;
+          };
+
+          const getDetailLabel = (key) => {
+            if (key === 'picture_cards') {
+              return t('pictureCards', 'ប័ណ្ឌរូបភាព');
+            }
+            if (key === 'manipulatives') {
+              return t('manipulatives', 'សម្ភារឧបទេស');
+            }
+            return key;
+          };
+
+          return (
+            <div className="border-t pt-4">
+              <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+                <div className='bg-blue-500 p-2 rounded-sm'>
+                  <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                </div>
+                <div className="ml-2">
+                  {t('extraLearningTool', 'Extra Learning Tool')}
+                </div>
               </div>
-              <div className="ml-2">
-                {t('extraLearningTool', 'Extra Learning Tool')}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {entries.map(([category, tools]) => {
+                  const obj = tools && typeof tools === 'object' ? tools : {};
+                  const hasPackage = obj._hasPackage === true || tools === true;
+
+                  // Try to find a human tool key other than _hasPackage
+                  const detailKeys = Object.keys(obj).filter(k => k !== '_hasPackage');
+                  const detailKey = detailKeys[0];
+                  const detailFlag = detailKey ? obj[detailKey] === true : false;
+
+                  return (
+                    <div
+                      key={category}
+                      className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white shadow-sm"
+                    >
+                      <div className="font-medium text-gray-900 mb-2">
+                        {getCategoryLabel(category)}
+                      </div>
+
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700">
+                            {t('hasPackage', 'Has Package')}
+                          </span>
+                          <span className="inline-flex items-center text-gray-900">
+                            <span
+                              className={`mr-2 inline-flex h-4 w-4 items-center justify-center rounded border ${
+                                hasPackage
+                                  ? 'bg-green-500 border-green-500'
+                                  : 'bg-white border-gray-300'
+                              }`}
+                            >
+                              {hasPackage && (
+                                <span className="block h-2 w-2 rounded-sm bg-white" />
+                              )}
+                            </span>
+                            {renderBool(hasPackage)}
+                          </span>
+                        </div>
+
+                        {/* Optional status display when extraLearningTool uses status string */}
+                        {typeof obj.status === 'string' && obj.status && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-700">
+                              {t('statusBook', 'ស្ថានភាព')}
+                            </span>
+                            <span className="text-gray-900">
+                              {renderStatus(obj.status)}
+                            </span>
+                          </div>
+                        )}
+
+                        {detailKey && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-700">
+                              {getDetailLabel(detailKey)}
+                            </span>
+                            <span className="inline-flex items-center text-gray-900">
+                              <span
+                                className={`mr-2 inline-flex h-4 w-4 items-center justify-center rounded border ${
+                                  detailFlag
+                                    ? 'bg-green-500 border-green-500'
+                                    : 'bg-white border-gray-300'
+                                }`}
+                              >
+                                {detailFlag && (
+                                  <span className="block h-2 w-2 rounded-sm bg-white" />
+                                )}
+                              </span>
+                              {renderBool(detailFlag)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              {Object.entries(teacherData.extraLearningTool).map(([key, value]) => (
-                <InfoItem
-                  key={key}
-                  label={key}
-                  value={value === true ? t('have', 'Yes') : t('notHave', 'No')}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Selected Books */}
         {displayTeacher.bookIds && Array.isArray(displayTeacher.bookIds) && displayTeacher.bookIds.length > 0 && (

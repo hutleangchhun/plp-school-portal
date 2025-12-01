@@ -326,6 +326,9 @@ export const km = {
   allCategories: 'ប្រភេទសៀវភៅទាំងអស់',
   noBooksAvailable: 'មិនមានសៀវភៅដែលអ្នកជ្រើសរើស, សូមជ្រើសរើសតម្រងផ្សេង',
   cannotChange: 'មិនអាចប្តូរបានទេ',
+  hasPackage: 'មានកញ្ចប់',
+  providedBy: 'អ្នកផ្ដល់ជូន',
+  statusBooK: 'ស្ថានភាពសៀវភៅ',
 
 
 

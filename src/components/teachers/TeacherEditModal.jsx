@@ -81,8 +81,24 @@ const TeacherEditModal = () => {
     hire_date: null,
     bookIds: [],
     teacherExtraLearningTool: {
-      'កញ្ចប់សម្ភារៈអំណាន': false,
-      'គណិតវិទ្យាថ្នាក់ដំបូង': false
+      reading_material_package: {
+        _hasPackage: false,
+        picture_cards: false,
+      },
+      math_grade1_package: {
+        _hasPackage: false,
+        manipulatives: false,
+      },
+    },
+    extraLearningTool: {
+      reading_material_package: {
+        _hasPackage: false,
+        status: '',
+      },
+      math_grade1_package: {
+        _hasPackage: false,
+        status: '',
+      },
     },
     residence: {
       provinceId: '',
@@ -271,12 +287,98 @@ const TeacherEditModal = () => {
           }))
         : [];
 
-      // Initialize extraLearningTool from nested teacher object
-      const extraLearningToolData = teacherData.extraLearningTool || {};
-      const teacherExtraLearningTool = {
-        'កញ្ចប់សម្ភារៈអំណាន': extraLearningToolData['កញ្ចប់សម្ភារៈអំណាន'] === true,
-        'គណិតវិទ្យាថ្នាក់ដំបូង': extraLearningToolData['គណិតវិទ្យាថ្នាក់ដំបូង'] === true
-      };
+      // Initialize teacher extra learning tools (supports new English keys + legacy Khmer keys)
+      const rawTeacherExtra =
+        teacherData.teacherExtraLearningTool ||
+        fullData.teacherExtraLearningTool ||
+        teacherData.extraLearningTool ||
+        fullData.extraLearningTool ||
+        {};
+
+      let teacherExtraLearningTool;
+
+      if (rawTeacherExtra.reading_material_package || rawTeacherExtra.math_grade1_package) {
+        // New English-key structure from backend
+        const readingNew = rawTeacherExtra.reading_material_package || {};
+        const mathNew = rawTeacherExtra.math_grade1_package || {};
+
+        teacherExtraLearningTool = {
+          reading_material_package: {
+            _hasPackage: readingNew._hasPackage === true,
+            picture_cards: readingNew.picture_cards === true,
+          },
+          math_grade1_package: {
+            _hasPackage: mathNew._hasPackage === true,
+            manipulatives: mathNew.manipulatives === true,
+          },
+        };
+      } else {
+        // Legacy Khmer-key structure
+        const readingLegacy = rawTeacherExtra['កញ្ចប់សម្ភារៈអំណាន'] || {};
+        const mathLegacy = rawTeacherExtra['គណិតវិទ្យាថ្នាក់ដំបូង'] || {};
+
+        teacherExtraLearningTool = {
+          reading_material_package: {
+            _hasPackage:
+              typeof readingLegacy === 'object'
+                ? readingLegacy._hasPackage === true
+                : readingLegacy === true,
+            picture_cards:
+              typeof readingLegacy === 'object'
+                ? readingLegacy['ប័ណ្ឌរូបភាព'] === true
+                : false,
+          },
+          math_grade1_package: {
+            _hasPackage:
+              typeof mathLegacy === 'object'
+                ? mathLegacy._hasPackage === true
+                : mathLegacy === true,
+            manipulatives:
+              typeof mathLegacy === 'object'
+                ? mathLegacy['សម្ភារឧបទេស'] === true
+                : false,
+          },
+        };
+      }
+
+      // Initialize extraLearningTool (package metadata) with new English-key structure, mapping legacy if needed
+      const rawExtraTool =
+        teacherData.extraLearningTool ||
+        fullData.extraLearningTool ||
+        {};
+
+      let extraLearningTool;
+
+      if (rawExtraTool.reading_material_package || rawExtraTool.math_grade1_package) {
+        const readingExtra = rawExtraTool.reading_material_package || {};
+        const mathExtra = rawExtraTool.math_grade1_package || {};
+
+        extraLearningTool = {
+          reading_material_package: {
+            _hasPackage: readingExtra._hasPackage === true,
+            status: readingExtra.status || '',
+          },
+          math_grade1_package: {
+            _hasPackage: mathExtra._hasPackage === true,
+            status: mathExtra.status || '',
+          },
+        };
+      } else {
+        // Legacy structure with Khmer keys or flat values
+        const readingLegacyStatus = rawExtraTool['កញ្ចប់សម្ភារៈអំណាន'];
+        const mathLegacyStatus = rawExtraTool['គណិតវិទ្យាថ្នាក់ដំបូង'];
+
+        extraLearningTool = {
+          reading_material_package: {
+            _hasPackage: !!readingLegacyStatus,
+            status: typeof readingLegacyStatus === 'string' ? readingLegacyStatus : '',
+          },
+          math_grade1_package: {
+            _hasPackage: !!mathLegacyStatus,
+            status: typeof mathLegacyStatus === 'string' ? mathLegacyStatus : '',
+          },
+        };
+      }
 
       setEditForm({
         firstName: fullData.firstName || fullData.first_name || '',
@@ -309,6 +411,7 @@ const TeacherEditModal = () => {
         hire_date: teacherData.hire_date ? new Date(teacherData.hire_date) : null,
         bookIds: Array.isArray(fullData.bookIds) ? fullData.bookIds : [],
         teacherExtraLearningTool,
+        extraLearningTool,
         residence: {
           provinceId: fullData.residence?.provinceId || fullData.province_id || '',
           districtId: fullData.residence?.districtId || fullData.district_id || '',
@@ -736,6 +839,7 @@ const TeacherEditModal = () => {
 
           // Teacher Learning Tools
           teacherExtraLearningTool: editForm.teacherExtraLearningTool || undefined,
+          extraLearningTool: editForm.extraLearningTool || undefined,
 
           // Books Assignment
           bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
@@ -746,8 +850,8 @@ const TeacherEditModal = () => {
 
         // Remove undefined/empty values - but keep bookIds and teacherExtraLearningTool even when null
         const cleanPayload = Object.keys(createPayload).reduce((acc, k) => {
-          // Special cases: keep bookIds and teacherExtraLearningTool even when null/false so backend sees explicit values
-          if (k === 'bookIds' || k === 'teacherExtraLearningTool') {
+          // Special cases: keep bookIds and learning tool objects even when null/false so backend sees explicit values
+          if (k === 'bookIds' || k === 'teacherExtraLearningTool' || k === 'extraLearningTool') {
             acc[k] = createPayload[k];
             return acc;
           }
@@ -865,10 +969,10 @@ const TeacherEditModal = () => {
           updatePayload.newPassword = editForm.newPassword.trim();
         }
 
-        // Remove undefined/empty values - but keep bookIds and teacherExtraLearningTool even when null
+        // Remove undefined/empty values - but keep bookIds and learning tool objects even when null
         const cleanUpdatePayload = Object.keys(updatePayload).reduce((acc, k) => {
-          // Special cases: keep bookIds and teacherExtraLearningTool even when null/false so backend sees explicit values
-          if (k === 'bookIds' || k === 'teacherExtraLearningTool') {
+          // Special cases: keep bookIds and learning tool objects even when null/false so backend sees explicit values
+          if (k === 'bookIds' || k === 'teacherExtraLearningTool' || k === 'extraLearningTool') {
             acc[k] = updatePayload[k];
             return acc;
           }
@@ -1461,29 +1565,111 @@ const TeacherEditModal = () => {
         <div className="mt-8 border-t border-gray-200 pt-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('extraLearningTool', 'Extra Learning Tool')}</h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Object.entries(editForm.teacherExtraLearningTool).map(([key, value]) => (
-              <div key={key}>
-                <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={value === true}
-                    onChange={(e) => {
-                      setEditForm(prev => ({
-                        ...prev,
-                        teacherExtraLearningTool: {
-                          ...prev.teacherExtraLearningTool,
-                          [key]: e.target.checked
-                        }
-                      }));
-                    }}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">{key}</span>
-                </label>
+          {(() => {
+            const getCategoryLabel = (key) => {
+              if (key === 'reading_material_package') {
+                return t('learningPackage', 'កញ្ចប់សម្ភារៈអំណាន');
+              }
+              if (key === 'math_grade1_package') {
+                return t('mathGrade1', 'គណិតវិទ្យាថ្នាក់ដំបូង');
+              }
+              return key;
+            };
+
+            const getDetailLabel = (key) => {
+              if (key === 'picture_cards') {
+                return t('pictureCards', 'ប័ណ្ឌរូបភាព');
+              }
+              if (key === 'manipulatives') {
+                return t('manipulatives', 'សម្ភារឧបទេស');
+              }
+              return key;
+            };
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {Object.entries(editForm.teacherExtraLearningTool).map(([category, tools]) => {
+                  const obj = tools || {};
+
+                  // Determine main detail key (first non-_hasPackage key)
+                  const detailKeys = Object.keys(obj).filter(k => k !== '_hasPackage');
+                  const detailKey = detailKeys[0];
+
+                  const hasPackage = !!obj._hasPackage;
+                  const detailFlag = detailKey ? !!obj[detailKey] : false;
+
+                  return (
+                    <div
+                      key={category}
+                      className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white shadow-sm"
+                    >
+                      <div className="font-medium text-gray-900 mb-2">
+                        {getCategoryLabel(category)}
+                      </div>
+
+                      <div className="space-y-3 text-sm">
+                        {/* Has Package checkbox */}
+                        <label className="flex items-center justify-between cursor-pointer">
+                          <span className="text-gray-700">
+                            {t('hasPackage', 'Has Package')}
+                          </span>
+                          <span className="inline-flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={hasPackage}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setEditForm(prev => ({
+                                  ...prev,
+                                  teacherExtraLearningTool: {
+                                    ...prev.teacherExtraLearningTool,
+                                    [category]: {
+                                      ...(prev.teacherExtraLearningTool[category] || {}),
+                                      _hasPackage: checked,
+                                    },
+                                  },
+                                }));
+                              }}
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                          </span>
+                        </label>
+
+                        {/* Detail tool checkbox */}
+                        {detailKey && (
+                          <label className="flex items-center justify-between cursor-pointer">
+                            <span className="text-gray-700">
+                              {getDetailLabel(detailKey)}
+                            </span>
+                            <span className="inline-flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={detailFlag}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setEditForm(prev => ({
+                                    ...prev,
+                                    teacherExtraLearningTool: {
+                                      ...prev.teacherExtraLearningTool,
+                                      [category]: {
+                                        ...(prev.teacherExtraLearningTool[category] || {}),
+                                        [detailKey]: checked,
+                                      },
+                                    },
+                                  }));
+                                }}
+                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              />
+                            </span>
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </div>
 
         {/* Family Information Section */}

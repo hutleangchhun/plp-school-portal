@@ -327,6 +327,12 @@ export const poorCardGradeOptions = [
   { value: '2', label: 'កម្រិត 2' }
 ];
 
+// Extra Learning Tool status options (used for student extraLearningTool.status)
+export const extraLearningStatusOptions = [
+  { value: 'new', label: 'មាននៅឆ្នាំសិក្សាថ្មី' },
+  { value: 'old', label: 'មានពីឆ្នាំសិក្សាចាស់' }
+];
+
 // Academic Year options (dynamically generated based on current year)
 export const getAcademicYearOptions = () => {
   const currentYear = new Date().getFullYear();
