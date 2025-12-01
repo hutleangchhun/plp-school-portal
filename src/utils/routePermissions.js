@@ -116,6 +116,10 @@ export const routePermissions = {
   '/admin/teacher-transfer': {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'TeacherTransferManagement'
+  },
+  '/admin/student-transfer': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'StudentTransferManagement'
   }
 };
 
@@ -349,6 +353,10 @@ export const getNavigationItems = (user, t) => {
     {
       name: t('teacherTransfer', 'Teacher Transfer'),
       href: '/admin/teacher-transfer',
+    },
+    {
+      name: t('studentTransfer', 'Student Transfer'),
+      href: '/admin/student-transfer',
     },
   ];
 

@@ -668,6 +668,48 @@ export const studentService = {
   },
 
   /**
+   * Transfer a student between schools (master classes)
+   * @param {Object} payload
+   * @param {string|number} payload.studentId - The ID of the student to transfer
+   * @param {string|number} payload.fromSchoolId - Source school ID
+   * @param {string|number} payload.toSchoolId - Target school ID
+   * @param {string|number} payload.toMasterClassId - Target master class ID
+   * @returns {Promise<Object>} Transfer response
+   */
+  async transferStudentBetweenMasterClasses({ studentId, fromSchoolId, toSchoolId, toMasterClassId }) {
+    try {
+      const body = {
+        studentId: Number(studentId),
+        fromSchoolId: Number(fromSchoolId),
+        toSchoolId: Number(toSchoolId),
+        toMasterClassId: Number(toMasterClassId)
+      };
+
+      console.log('Attempting to transfer student between master classes:', {
+        ...body,
+        endpoint: ENDPOINTS.CLASSES.TRANSFER_STUDENT_MASTERCLASS
+      });
+
+      const response = await handleApiResponse(() =>
+        apiClient_.post(ENDPOINTS.CLASSES.TRANSFER_STUDENT_MASTERCLASS, body)
+      );
+
+      console.log('Transfer student between master classes response:', response);
+      return response;
+
+    } catch (error) {
+      console.error('Error in transferStudentBetweenMasterClasses:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        response: error.response?.data
+      });
+      throw error;
+    }
+  },
+
+  /**
    * Get all students from a specific school using master-class endpoint
    * @param {string|number} schoolId - The ID of the school
    * @param {Object} params - Query parameters for filtering

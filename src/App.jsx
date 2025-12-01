@@ -7,6 +7,7 @@ import TeacherReports from './pages/teachers/TeacherReports';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserActivityLogs from './pages/admin/UserActivityLogs';
 import TeacherTransferManagement from './pages/admin/TeacherTransferManagement';
+import StudentTransferManagement from './pages/admin/StudentTransferManagement';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -172,6 +173,15 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<TeacherTransferManagement />} />
+          </Route>
+
+          {/* Admin student transfer route - role ID 1 only (enforced by routePermissions) */}
+          <Route path="admin/student-transfer" element={
+            <ProtectedRoute path="/admin/student-transfer" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<StudentTransferManagement />} />
           </Route>
 
           <Route path="students" element={

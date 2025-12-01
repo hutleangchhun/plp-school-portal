@@ -89,7 +89,9 @@ export default function Login({ setUser }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50 flex flex-col bg-gray-50">
+    <div
+      className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50 flex flex-col bg-gray-50"
+    >
       {/* Language Switcher at the top */}
       <div className="flex justify-end p-4">
         <LanguageSwitcher />

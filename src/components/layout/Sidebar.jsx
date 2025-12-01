@@ -61,6 +61,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     'admin-dashboard': LayoutDashboard,
     'admin-logs': Award,
     'teacher-transfer': ArrowRightLeft,
+    'student-transfer': ArrowRightLeft,
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/achievements': Trophy,
     // '/settings': SettingsIcon,
@@ -89,6 +90,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     'admin-dashboard': 'blue',
     'admin-logs': 'blue',
     'teacher-transfer': 'blue',
+    'student-transfer': 'blue',
     // Temporarily removed color mappings (will be re-enabled later):
     // '/achievements': 'blue',
     // '/settings': 'blue',
