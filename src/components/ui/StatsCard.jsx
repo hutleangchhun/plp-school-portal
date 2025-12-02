@@ -38,10 +38,10 @@ export default function StatsCard({
 }) {
   if (enhanced) {
     return (
-      <div className={`bg-white ${responsive ? 'rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-6' : 'rounded-xl p-6'} border border-gray-100 ${responsive ? 'sm:border-2' : 'border-2'} shadow-sm hover:shadow-lg hover:scale-[1.02] ${hoverColor} transition-all duration-300 ${clickable ? 'cursor-pointer' : ''} group ${className}`}>
+      <div className={`bg-white ${responsive ? 'rounded-md sm:rounded-md p-3 sm:p-4 lg:p-6' : 'rounded-md p-6'} border border-gray-100 ${responsive ? 'sm:border-2' : 'border-2'} shadow-sm hover:shadow-lg hover:scale-[1.02] ${hoverColor} transition-all duration-300 ${clickable ? 'cursor-pointer' : ''} group ${className}`}>
         <div className={`flex ${responsive ? 'flex-col sm:flex-row items-center sm:items-start text-center sm:text-left' : 'items-center'}`}>
           <div className={`flex-shrink-0 ${responsive ? 'mb-2 sm:mb-0' : ''}`}>
-            <div className={`${responsive ? 'h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12' : 'h-12 w-12'} bg-gradient-to-br ${gradientFrom} ${gradientTo} rounded-lg flex items-center justify-center shadow-md group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 ${responsive ? 'mx-auto' : ''}`}>
+            <div className={`${responsive ? 'h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12' : 'h-12 w-12'} bg-gradient-to-br ${gradientFrom} ${gradientTo} rounded-md flex items-center justify-center shadow-md group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 ${responsive ? 'mx-auto' : ''}`}>
               {Icon && <Icon className={`${responsive ? 'h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6' : 'h-6 w-6'} text-white group-hover:rotate-12 transition-transform duration-300`} />}
             </div>
           </div>

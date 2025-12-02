@@ -244,15 +244,15 @@ export default function Dashboard({ user: initialUser }) {
   };
 
   return (
-    <PageTransition variant="fade" className="flex-1 bg-gray-50">
+    <PageTransition variant="fade" className="flex-1">
       <div className="p-3 sm:p-6">
         {/* School Information Card */}
         {schoolInfo && (
           <FadeInSection delay={100} className="mb-6">
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div className="bg-white rounded-md border border-gray-200 shadow-sm p-6">
               <div className="flex flex-col sm:flex-row items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md">
+                  <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-md shadow-md">
                     <Building2 className="h-6 w-6 text-white" />
                   </div>
                   <div>

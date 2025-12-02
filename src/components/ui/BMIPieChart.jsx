@@ -102,7 +102,7 @@ export default function BMIPieChart({ schoolId, className = "" }) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-white rounded-md border border-gray-200 p-6">
         <div className="flex items-center justify-center h-80">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -122,10 +122,10 @@ export default function BMIPieChart({ schoolId, className = "" }) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="bg-white rounded-md border border-gray-200 p-6">
       {/* Header with Icon and Title */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-purple-600">
+        <div className="w-12 h-12 rounded-md flex items-center justify-center bg-purple-600">
           <Activity className="h-5 w-5 text-white" />
         </div>
         <div className="grid gap-1">
