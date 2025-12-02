@@ -185,7 +185,7 @@ const SchoolDistributionChart = ({
 
   if (loading) {
     return (
-      <div className={`bg-white rounded-xl border border-gray-200 p-6 ${className}`}>
+      <div className={`bg-white rounded-md border border-gray-200 p-6 ${className}`}>
         <div className="flex flex-col items-center justify-center h-64">
           <LoadingSpinner size="lg" />
           <p className="mt-4 text-gray-600">{t('loadingChartData', 'Loading chart data...')}</p>
@@ -196,7 +196,7 @@ const SchoolDistributionChart = ({
 
   if (error) {
     return (
-      <div className={`bg-white rounded-xl border border-gray-200 p-6 ${className}`}>
+      <div className={`bg-white rounded-md border border-gray-200 p-6 ${className}`}>
         <div className="flex flex-col items-center justify-center h-64">
           <p className="text-red-500 mb-4">{t('error', 'Error')}:</p>
           <p className="text-gray-600 mb-4">{error.message || t('errorFetchingData', 'Error fetching data')}</p>
@@ -209,7 +209,7 @@ const SchoolDistributionChart = ({
   }
 
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 p-6 ${className}`}>
+    <div className={`bg-white rounded-md border border-gray-200 p-6 ${className}`}>
       {/* Filters Sidebar */}
       <SidebarFilter
         isOpen={isFilterOpen}

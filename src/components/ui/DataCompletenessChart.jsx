@@ -172,7 +172,7 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
 
   if (loading) {
     return (
-      <div className={`bg-white rounded-xl border border-gray-200 p-6 ${className}`}>
+      <div className={`bg-white rounded-md border border-gray-200 p-6 ${className}`}>
         <div className="flex flex-col items-center justify-center h-64">
           <LoadingSpinner size="lg" />
           <p className="mt-4 text-gray-600">{t('loadingChartData', 'Loading chart data...')}</p>
@@ -183,7 +183,7 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
 
   if (error) {
     return (
-      <div className={`bg-white rounded-xl border border-gray-200 p-6 ${className}`}>
+      <div className={`bg-white rounded-md border border-gray-200 p-6 ${className}`}>
         <div className="flex flex-col items-center justify-center h-64">
           <p className="text-red-500 mb-4 font-semibold">{t('error', 'Error')}:</p>
           <p className="text-gray-600 mb-4 text-center max-w-md">{error.message || t('errorFetchingData', 'Error fetching data')}</p>
@@ -196,7 +196,7 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
   }
 
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 p-6 ${className}`}>
+    <div className={`bg-white rounded-md border border-gray-200 p-6 ${className}`}>
       {/* Filters Sidebar */}
       <SidebarFilter
         isOpen={isFilterOpen}
@@ -271,8 +271,8 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
       </div>
 
       <div className="flex flex-col justify-center space-y-4">
-        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-          <div className="p-3 bg-blue-100 rounded-lg">
+        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-md">
+          <div className="p-3 bg-blue-100 rounded-md">
             <Users className="h-6 w-6 text-blue-600" />
           </div>
           <div>
@@ -281,8 +281,8 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
           </div>
         </div>
 
-        <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
-          <div className="p-3 bg-green-100 rounded-lg">
+        <div className="flex items-center gap-3 p-4 bg-green-50 rounded-md">
+          <div className="p-3 bg-green-100 rounded-md">
             <CheckCircle className="h-6 w-6 text-green-600" />
           </div>
           <div>
@@ -291,8 +291,8 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
           </div>
         </div>
 
-        <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg">
-          <div className="p-3 bg-red-100 rounded-lg">
+        <div className="flex items-center gap-3 p-4 bg-red-50 rounded-md">
+          <div className="p-3 bg-red-100 rounded-md">
             <AlertCircle className="h-6 w-6 text-red-600" />
           </div>
           <div>
@@ -301,7 +301,7 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
           </div>
         </div>
 
-        <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+        <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-md border border-blue-200">
           <p className="text-sm text-gray-600 mb-1">{t('completionRate', 'Completion Rate')}</p>
           <p className="text-3xl font-bold text-blue-600">{summary.completionRate.toFixed(1)}%</p>
         </div>

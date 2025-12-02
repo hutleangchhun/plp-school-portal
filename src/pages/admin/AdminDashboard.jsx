@@ -115,7 +115,7 @@ const AdminDashboard = ({ user: initialUser }) => {
             <CardHeader>
               <div className="flex flex-col sm:flex-row items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md">
+                  <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-md shadow-md">
                     <Building2 className="h-6 w-6 text-white" />
                   </div>
                   <div>
