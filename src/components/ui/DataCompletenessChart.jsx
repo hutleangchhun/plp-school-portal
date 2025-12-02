@@ -270,8 +270,8 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
         </div>
       </div>
 
-      <div className="flex flex-col justify-center space-y-4">
-        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-md">
+      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200">
           <div className="p-3 bg-blue-100 rounded-md">
             <Users className="h-6 w-6 text-blue-600" />
           </div>
@@ -281,7 +281,7 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
           </div>
         </div>
 
-        <div className="flex items-center gap-3 p-4 bg-green-50 rounded-md">
+        <div className="flex items-center gap-3 p-4 bg-green-50 rounded-md border border-green-200">
           <div className="p-3 bg-green-100 rounded-md">
             <CheckCircle className="h-6 w-6 text-green-600" />
           </div>
@@ -291,7 +291,7 @@ const DataCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersCh
           </div>
         </div>
 
-        <div className="flex items-center gap-3 p-4 bg-red-50 rounded-md">
+        <div className="flex items-center gap-3 p-4 bg-red-50 rounded-md border border-red-200">
           <div className="p-3 bg-red-100 rounded-md">
             <AlertCircle className="h-6 w-6 text-red-600" />
           </div>

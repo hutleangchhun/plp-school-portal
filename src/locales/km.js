@@ -800,6 +800,7 @@ export const km = {
   notAssigned: 'មិនបានកំណត់',
   placeOfBirth: 'ទីកន្លែងកំណើត',
   residence: 'ទីលំនៅ',
+  adminUser: 'អ្នកគ្រប់គ្រងថ្នាល់បឋម',
 
   // Navigation items that might be missing  
   myGrades: 'ពិន្ទុរបស់ខ្ញុំ',

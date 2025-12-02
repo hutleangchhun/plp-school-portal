@@ -12,6 +12,7 @@ import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import { Building2, Users, BookOpen, User } from 'lucide-react';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import Badge from '@/components/ui/Badge';
 
 const AdminDashboard = ({ user: initialUser }) => {
   const { t } = useLanguage();
@@ -111,7 +112,7 @@ const AdminDashboard = ({ user: initialUser }) => {
       <div className="p-3 sm:p-6">
         {/* System Overview Card */}
         <FadeInSection delay={100} className="mb-6">
-          <Card className="border border-gray-200 shadow-sm">
+          <Card className="border border-gray-200 shadow-sm rounded-md">
             <CardHeader>
               <div className="flex flex-col sm:flex-row items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -131,13 +132,19 @@ const AdminDashboard = ({ user: initialUser }) => {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-3">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                <Badge 
+                  color='green'
+                  size='md'
+                >
                   {t('adminUser', 'Admin User')}
-                </span>
+                </Badge>
                 {user?.username && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  <Badge
+                  color='orange'
+                  size='md'
+                  >
                     {user.username}
-                  </span>
+                  </Badge>
                 )}
               </div>
             </CardContent>
