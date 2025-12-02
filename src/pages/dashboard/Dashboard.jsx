@@ -244,7 +244,7 @@ export default function Dashboard({ user: initialUser }) {
   };
 
   return (
-    <PageTransition variant="fade" className="flex-1">
+    <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-3 sm:p-6">
         {/* School Information Card */}
         {schoolInfo && (
