@@ -72,6 +72,13 @@ export default function BMIPieChart({ schoolId, className = "" }) {
       console.log(`📊 Students with BMI data: ${summary.studentsWithBMIData}`);
       console.log('✅ BMI Category Distribution:', chartData);
 
+      // If no students have BMI data, don't show the chart
+      if (!summary.studentsWithBMIData || summary.studentsWithBMIData === 0) {
+        setBmiCategoryData([]);
+        setTotalStudents(summary.totalStudents || 0);
+        return;
+      }
+
       // Add display names to chart data
       const chartDataWithLabels = chartData.map(item => ({
         ...item,
