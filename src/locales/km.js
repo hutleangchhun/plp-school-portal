@@ -72,6 +72,8 @@ export const km = {
   loadingBMIData: 'កំពុងទាញយកទិន្នន័យក្នុងការប្រើប្រាស់',
   studentBMIDistribution: 'ការបែងចែកប្រភេទBMIក្នុងសាលារៀន',
   bmiCategoryBreakdown: 'ក្រាបប្រភេទBMI',
+  userActivityLogs: 'សកម្មភាពអ្នកប្រើប្រាស់',
+  studentTransfer: 'ផ្ទេរសិស្សានុសិស្ស',
 
   // Profile
   profileInformation: 'ព័ត៌មានផ្ទាល់ខ្លួន',
@@ -1545,11 +1547,13 @@ export const km = {
   generatedOn: 'បង្កើតថ្ងៃ',
 
   //teacher transfer
-  teacherTransfer: 'ផ្ទេរមន្ត្រីរាជការ',
+  teacherTransfer: 'ផ្ទេរគ្រូ',
   transferTeachersDesc: 'គ្រប់គ្រង និងផ្ទេរមន្ត្រីរាជការក្រោមកម្រិតសាលារៀន',
   selectTeachers: 'ជ្រើសរើសគ្រូបង្រៀន',
   selectTargetSchool: 'ជ្រើសរើសសាលាដែលត្រូវផ្ទេរ',
   teachersToTransfer: 'គ្រូដែលត្រូវផ្ទេរ',
   targetSchool: 'សាលាដែលបានជ្រើសរើសសម្រាប់ផ្ទេរ',
-  selectSourceSchoolDesc: 'ជ្រើសរើសសាលាដើម្បីស្វែងរកសាលា'
+  selectSourceSchoolDesc: 'ជ្រើសរើសសាលាដើម្បីស្វែងរកសាលា',
+  searchStudent: 'ស្វែងរកសិស្ស',
+  transferStudentsDesc: 'ការផ្ទេរសិស្សឆ្លងបានគ្រប់សាលា'
 };

@@ -18,7 +18,8 @@ import {
   UserRoundCheck,
   ListCheck,
   ListChecks,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Activity
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -57,9 +58,13 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/my-students-exams': Award,
     '/reports': BarChart3,
     '/teacher-reports': BarChart3,
+    '/admin-dashboard': LayoutDashboard,
+    '/admin-logs': Activity,
+    '/admin/teacher-transfer': ArrowRightLeft,
+    '/admin/student-transfer': ArrowRightLeft,
     'attendance': Calendar, // Parent item for attendance dropdown
     'admin-dashboard': LayoutDashboard,
-    'admin-logs': Award,
+    'admin-logs': Activity,
     'teacher-transfer': ArrowRightLeft,
     'student-transfer': ArrowRightLeft,
     // Temporarily removed icon mappings (will be re-enabled later):
@@ -86,6 +91,10 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/my-students-exams': 'blue',
     '/reports': 'blue',
     '/teacher-reports': 'blue',
+    '/admin-dashboard': 'blue',
+    '/admin-logs': 'blue',
+    '/admin/teacher-transfer': 'blue',
+    '/admin/student-transfer': 'blue',
     'attendance': 'blue', // Parent item for attendance dropdown
     'admin-dashboard': 'blue',
     'admin-logs': 'blue',
