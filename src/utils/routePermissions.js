@@ -74,7 +74,7 @@ export const routePermissions = {
     component: 'TeacherReports'
   },
   '/students/bulk-import': {
-    allowedRoles: [ROLES.DIRECTOR],
+    allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'BulkStudentImport'
   },
   '/attendance/approval': {

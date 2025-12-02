@@ -106,8 +106,8 @@ const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1
                     </Link>
                   </DropdownMenu.Item>
 
-                  {/* Bulk Import - Directors only (roleId = 14) */}
-                  {user && user.roleId === 14 && (
+                  {/* Bulk Import - Admin only (roleId = 1) */}
+                  {user && user.roleId === 1 && (
                     <DropdownMenu.Item asChild>
                       <Link
                         to="/students/bulk-import"
