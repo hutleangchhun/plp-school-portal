@@ -135,15 +135,16 @@ export default function Dashboard({ user: initialUser }) {
           // Get total students count - fetch all students without pagination
           const studentsResponse = await studentService.getStudentsBySchoolClasses(accountData.school_id, {
             page: 1,
-            limit: 100 // API max limit is 100
+            limit: 9999 // No practical limit - fetch all students
           });
 
-          const totalStudents = studentsResponse?.data?.length || studentsResponse?.pagination?.total || 0;
+          // Use pagination.total if available (server-side count), otherwise use data length
+          const totalStudents = studentsResponse?.pagination?.total || studentsResponse?.data?.length || 0;
 
           // Get teachers count from the teachers endpoint - fetch all teachers
           const teachersResponse = await teacherService.getTeachersBySchool(accountData.school_id, {
             page: 1,
-            limit: 100 // API max limit is 100
+            limit: 200 // API max limit is 100
           });
 
           // Count based on roleId: directors are roleId = 14

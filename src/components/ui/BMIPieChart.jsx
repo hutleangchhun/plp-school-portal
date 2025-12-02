@@ -107,23 +107,11 @@ export default function BMIPieChart({ schoolId, className = "" }) {
   }
 
   if (error) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="text-red-600 text-center">
-          <p>{t('error', 'Error')}: {error}</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (bmiCategoryData.length === 0) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="text-gray-600 text-center">
-          <p>{t('noData', 'No data available')}</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

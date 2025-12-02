@@ -189,28 +189,11 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
   }
 
   if (error) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="text-red-600 text-center">
-          <p>{t('error', 'Error')}: {error}</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (chartData.length === 0) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="text-gray-600 text-center">
-          <p>{t('noData', 'No data available')}</p>
-          <p className="text-sm mt-2 text-gray-500">
-            {activeTab === 'ethnic'
-              ? 'Ethnic group data not yet populated in student profiles'
-              : 'Accessibility data not yet populated in student profiles'}
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Render both charts side-by-side when showBothTabs=true
