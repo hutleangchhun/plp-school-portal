@@ -45,9 +45,12 @@ const TeacherEditModal = () => {
   const [emailAvailable, setEmailAvailable] = useState(null);
   const [originalEmail, setOriginalEmail] = useState('');
   const [showBookModal, setShowBookModal] = useState(false);
+  const [teacherNumberAvailable, setTeacherNumberAvailable] = useState(null);
+  const [originalTeacherNumber, setOriginalTeacherNumber] = useState('');
   const usernameContainerRef = useRef(null);
   const usernameDebounceRef = useRef(null);
   const emailDebounceRef = useRef(null);
+  const teacherNumberDebounceRef = useRef(null);
 
   const [editForm, setEditForm] = useState({
     firstName: '',
@@ -441,6 +444,8 @@ const TeacherEditModal = () => {
       setUsernameAvailable(null);
       setOriginalEmail(fullData.email || '');
       setEmailAvailable(null);
+      setOriginalTeacherNumber((teacherData.teacher_number || teacherData.teacherNumber) || '');
+      setTeacherNumberAvailable(null);
 
       // Log gradeLevels from API response for debugging
       console.log('Teacher data received from API:', {
@@ -576,6 +581,42 @@ const TeacherEditModal = () => {
             setEmailAvailable(!result.exists);
           } catch (error) {
             console.error('Error validating email:', error);
+          }
+        }, 500);
+      }
+    }
+    if (field === 'teacher_number') {
+      const trimmedTeacherNumber = value?.trim() || '';
+
+      // If teacher number is unchanged from the original, treat it as available
+      if (trimmedTeacherNumber === (originalTeacherNumber || '')) {
+        setTeacherNumberAvailable(true);
+      } else if (!trimmedTeacherNumber) {
+        setTeacherNumberAvailable(null);
+      } else {
+        setTeacherNumberAvailable(null);
+        // Debounce teacher number validation API call
+        if (teacherNumberDebounceRef.current) {
+          clearTimeout(teacherNumberDebounceRef.current);
+        }
+        teacherNumberDebounceRef.current = setTimeout(async () => {
+          try {
+            const result = await userService.checkTeacherNumber(trimmedTeacherNumber);
+            console.log('🔍 Full result object:', result);
+            console.log('🔍 Result type:', typeof result);
+            console.log('🔍 Result.exists:', result?.exists);
+            console.log('🔍 Result.data:', result?.data);
+
+            // The API returns { exists: boolean } directly (axios interceptor extracts data)
+            const exists = result?.exists;
+            console.log('🔍 Final exists value:', exists, 'Type:', typeof exists);
+
+            // If teacher number exists (exists: true), it's not available (false)
+            // If teacher number doesn't exist (exists: false), it's available (true)
+            console.log('🔍 Setting teacherNumberAvailable to:', exists === false);
+            setTeacherNumberAvailable(exists === false);
+          } catch (error) {
+            console.error('Error checking teacher number:', error);
           }
         }, 500);
       }
@@ -1039,6 +1080,7 @@ const TeacherEditModal = () => {
     usernameAvailable === false ||
     (editForm.email?.trim() && emailAvailable === false) ||
     (editForm.email?.trim() && emailAvailable === null && (editForm.email || '') !== (originalEmail || '')) ||
+    (editForm.teacher_number?.trim() && teacherNumberAvailable === false) ||
     isPhysicalInvalid() ||
     isUsernameInvalid();
 
@@ -1458,14 +1500,32 @@ const TeacherEditModal = () => {
             <label htmlFor="teacher_number" className="block text-sm font-medium text-gray-700 mb-1">
               {t('teacherNumber', 'Teacher Number')}
             </label>
-            <input
-              type="text"
-              id="teacher_number"
-              value={editForm.teacher_number}
-              onChange={(e) => handleFormChange('teacher_number', e.target.value)}
-              className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-              placeholder={t('enterTeacherNumber', 'e.g., T00000001')}
-            />
+            <div className="relative">
+              <input
+                type="text"
+                id="teacher_number"
+                value={editForm.teacher_number}
+                onChange={(e) => handleFormChange('teacher_number', e.target.value)}
+                className={`mt-1 block w-full rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
+                  editForm.teacher_number && teacherNumberAvailable === false
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                    : editForm.teacher_number && teacherNumberAvailable === true
+                      ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
+                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
+                }`}
+                placeholder={t('teacherNumber', 'e.g., T00000001')}
+              />
+              {editForm.teacher_number && teacherNumberAvailable === false && (
+                <div className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                  ✕ {t('teacherNumberExists', 'This teacher number is already in use')}
+                </div>
+              )}
+              {editForm.teacher_number && teacherNumberAvailable === true && (
+                <div className="mt-1 text-xs text-green-600 flex items-center gap-1">
+                  ✓ {t('teacherNumberAvailable', 'Teacher number is available')}
+                </div>
+              )}
+            </div>
           </div>
 
           <div>

@@ -603,6 +603,24 @@ const userService = {
     if (!email || !email.trim()) return { email: '', exists: false };
     const url = ENDPOINTS.USERS.VALIDATE_EMAIL(email.trim());
     return get(url);
+  },
+
+  /**
+   * Check if teacher number exists
+   * @param {string} teacherNumber - Teacher number to check
+   * @returns {Promise<Object>} Response with { exists, teacherNumber }
+   */
+  checkTeacherNumber: async (teacherNumber) => {
+    if (!teacherNumber || !teacherNumber.trim()) return { teacherNumber: '', exists: false };
+    const url = ENDPOINTS.TEACHERS.CHECK_NUMBER(teacherNumber.trim());
+    try {
+      const response = await get(url);
+      return response;
+    } catch (error) {
+      console.error('Error checking teacher number:', error);
+      // Return exists: false if check fails
+      return { teacherNumber: teacherNumber.trim(), exists: false };
+    }
   }
 };
 

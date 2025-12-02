@@ -329,6 +329,8 @@ export const km = {
   hasPackage: 'មានកញ្ចប់',
   providedBy: 'អ្នកផ្ដល់ជូន',
   statusBooK: 'ស្ថានភាពសៀវភៅ',
+  teacherNumberExists: 'អត្តលេខមន្ត្រីរាជការត្រូវបានប្រើប្រាស់រូចហើយ',
+  teacherNumberAvailable: 'អត្តលេខមន្ត្រីរាជការអាចប្រើប្រាស់បាន',
 
 
 
