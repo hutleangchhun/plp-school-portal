@@ -6,6 +6,7 @@ import { useLoading } from '../../contexts/LoadingContext';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
+import schoolService from '../../utils/api/services/schoolService';
 import transliterate from '../../utils/transliterator';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
@@ -17,6 +18,9 @@ import { templateDownloader } from '../../utils/templateDownloader';
 import { excelImportHandler } from '../../utils/excelImportHandler';
 import { genderOptions, nationalityOptions, ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, getAcademicYearOptions } from '../../utils/formOptions';
 import { getFullName } from '../../utils/usernameUtils';
+import locationService from '../../utils/api/services/locationService';
+import Dropdown from '../../components/ui/Dropdown';
+import SearchableDropdown from '../../components/ui/SearchableDropdown';
 
 
 export default function BulkStudentImport() {
@@ -39,6 +43,20 @@ export default function BulkStudentImport() {
 
   const [schoolId, setSchoolId] = useState(null);
   const [schoolName, setSchoolName] = useState('');
+
+  // Cascading filter states
+  const [provinces, setProvinces] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [schools, setSchools] = useState([]);
+
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [selectedSchool, setSelectedSchool] = useState('');
+
+  // Loading states for cascading filters
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingSchools, setLoadingSchools] = useState(false);
 
   const [students, setStudents] = useState([
     {
@@ -237,48 +255,176 @@ export default function BulkStudentImport() {
     { key: 'actions', header: 'សកម្មភាព', width: 'min-w-[120px]' }
   ];
 
-  // Fetch school ID from authenticated user
+  // Load provinces on component mount
   useEffect(() => {
-    const fetchSchoolId = async () => {
+    const loadProvinces = async () => {
       try {
-        if (!user) {
-          console.error('No user found in localStorage');
-          showError('សូមចូលប្រើប្រាស់ជាមុនសិន។');
-          navigate('/login');
-          return;
-        }
+        setLoadingProvinces(true);
+        const response = await locationService.getProvinces();
+        console.log('Provinces response:', response);
 
-        setInitialLoading(true);
-        const accountData = await userService.getMyAccount();
-
-        if (accountData && accountData.school_id) {
-          console.log('✅ School ID fetched from account:', accountData.school_id);
-          setSchoolId(accountData.school_id);
-          setSchoolName(accountData.school?.name || '');
-
-          // Auto-update all student rows with school ID
-          setStudents(prevStudents =>
-            prevStudents.map(student => ({
-              ...student,
-              schoolId: accountData.school_id.toString()
-            }))
-          );
-        } else {
-          console.error('No school_id found in account data:', accountData);
-          showError('គ្មានព័ត៌មានសាលារបស់អ្នក។ សូមទាក់ទងអ្នកគ្រប់គ្រង។');
+        // Handle both response.data and direct array response
+        const provincesData = response?.data || response || [];
+        if (Array.isArray(provincesData)) {
+          setProvinces(provincesData);
         }
       } catch (error) {
-        console.error('Error fetching school ID:', error);
-        handleError(error, {
-          toastMessage: 'មិនអាចទាញយកព័ត៌មានសាលា។ សូមព្យាយាមម្តងទៀត។'
-        });
+        console.error('Error loading provinces:', error);
+        showError('មិនអាចផ្ទុកខេត្ត។');
+        setProvinces([]);
       } finally {
+        setLoadingProvinces(false);
         setInitialLoading(false);
       }
     };
 
-    fetchSchoolId();
-  }, [user, navigate, showError, handleError]);
+    loadProvinces();
+  }, [showError]);
+
+  // Load districts when province is selected
+  useEffect(() => {
+    const loadDistricts = async () => {
+      if (!selectedProvince) {
+        setDistricts([]);
+        setSelectedDistrict('');
+        setSchools([]);
+        setSelectedSchool('');
+        setSchoolId(null);
+        setSchoolName('');
+        return;
+      }
+
+      try {
+        setLoadingDistricts(true);
+        const response = await locationService.getDistrictsByProvince(String(selectedProvince));
+        console.log('Districts response:', response);
+
+        // Handle both response.data and direct array response
+        const districtsData = response?.data || response || [];
+        if (Array.isArray(districtsData)) {
+          setDistricts(districtsData);
+        }
+      } catch (error) {
+        console.error('Error loading districts:', error);
+        showError('មិនអាចផ្ទុកស្រុក។');
+        setDistricts([]);
+      } finally {
+        setLoadingDistricts(false);
+      }
+    };
+
+    loadDistricts();
+  }, [selectedProvince, showError]);
+
+  // Load schools when district is selected
+  useEffect(() => {
+    const loadSchools = async () => {
+      if (!selectedDistrict) {
+        setSchools([]);
+        setSelectedSchool('');
+        setSchoolId(null);
+        setSchoolName('');
+        return;
+      }
+
+      try {
+        setLoadingSchools(true);
+        const districtObj = districts.find(d => d.district_code === selectedDistrict);
+        const districtId = districtObj?.district_id || districtObj?.id || districtObj?.districtId;
+
+        if (!districtId) {
+          throw new Error('District ID not found');
+        }
+
+        const response = await schoolService.getSchoolsByDistrict(districtId);
+        console.log('Schools response:', response);
+
+        // Handle both direct array and { data: [] } response format
+        let schoolsData = [];
+        if (Array.isArray(response)) {
+          schoolsData = response;
+        } else if (response && response.data && Array.isArray(response.data)) {
+          schoolsData = response.data;
+        }
+
+        if (Array.isArray(schoolsData)) {
+          setSchools(schoolsData);
+        }
+      } catch (error) {
+        console.error('Error loading schools:', error);
+        showError('មិនអាចផ្ទុកសាលា។');
+        setSchools([]);
+      } finally {
+        setLoadingSchools(false);
+      }
+    };
+
+    loadSchools();
+  }, [selectedDistrict, districts, showError]);
+
+  // Fetch school details when school is selected
+  useEffect(() => {
+    const fetchSchoolDetails = async () => {
+      if (!selectedSchool) {
+        setSchoolId(null);
+        setSchoolName('');
+        // Reset student rows
+        setStudents(prevStudents =>
+          prevStudents.map(student => ({
+            ...student,
+            schoolId: ''
+          }))
+        );
+        return;
+      }
+
+      try {
+        setLoadingSchools(true);
+        // Get the selected school object from schools array
+        const selectedSchoolObj = schools.find(s => (s.id || s.schoolId)?.toString() === selectedSchool?.toString());
+
+        if (selectedSchoolObj) {
+          const schoolIdFromObj = selectedSchoolObj.id || selectedSchoolObj.schoolId;
+          console.log('✅ School selected:', { schoolId: schoolIdFromObj, schoolName: selectedSchoolObj.name });
+
+          // Fetch detailed school info using schoolService.getSchoolById
+          const response = await schoolService.getSchoolById(schoolIdFromObj);
+
+          if (response && response.data) {
+            const schoolData = response.data;
+            setSchoolId(schoolIdFromObj);
+            setSchoolName(schoolData.name || selectedSchoolObj.name || '');
+
+            // Auto-update all student rows with school ID
+            setStudents(prevStudents =>
+              prevStudents.map(student => ({
+                ...student,
+                schoolId: schoolIdFromObj.toString()
+              }))
+            );
+          } else {
+            // If detailed fetch fails, use info from schools list
+            setSchoolId(schoolIdFromObj);
+            setSchoolName(selectedSchoolObj.name || '');
+
+            setStudents(prevStudents =>
+              prevStudents.map(student => ({
+                ...student,
+                schoolId: schoolIdFromObj.toString()
+              }))
+            );
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching school details:', error);
+        showError('មិនអាចទាញយកព័ត៌មានសាលា។');
+      } finally {
+        setLoadingSchools(false);
+      }
+    };
+
+    fetchSchoolDetails();
+  }, [selectedSchool, schools, showError]);
 
   // Cell update function - must be defined before callbacks that use it
   const updateCell = useCallback((rowIndex, columnKey, value) => {
@@ -1275,6 +1421,82 @@ export default function BulkStudentImport() {
             studentsCount={students.length}
             canSubmit={canSubmit}
           />
+        </FadeInSection>
+
+        {/* School Filter Section */}
+        <FadeInSection delay={25} className="mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {t('selectSchool') || 'ជ្រើសរើសសាលា'}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Province Dropdown */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('province', 'Province')}
+                </label>
+                <Dropdown
+                  value={selectedProvince}
+                  onValueChange={setSelectedProvince}
+                  options={provinces.map(province => ({
+                    value: province.id.toString(),
+                    label: province.province_name_kh || province.province_name_en
+                  }))}
+                  placeholder={t('selectProvince', 'Select Province')}
+                  disabled={loadingProvinces}
+                  className="w-full"
+                />
+              </div>
+
+              {/* District Dropdown */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('district', 'District')}
+                </label>
+                <Dropdown
+                  value={selectedDistrict}
+                  onValueChange={setSelectedDistrict}
+                  options={districts.map(district => ({
+                    value: district.district_code,
+                    label: district.district_name_kh || district.district_name_en
+                  }))}
+                  placeholder={t('selectDistrict', 'Select District')}
+                  disabled={!selectedProvince || loadingDistricts}
+                  className="w-full"
+                />
+              </div>
+
+              {/* School SearchableDropdown */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('school', 'School')} <span className="text-red-500">*</span>
+                </label>
+                <SearchableDropdown
+                  value={selectedSchool}
+                  onValueChange={setSelectedSchool}
+                  options={schools.map(school => ({
+                    value: school.id?.toString() || '',
+                    label: school.name || school.school_name || ''
+                  }))}
+                  placeholder={t('selectSchool') || 'ជ្រើសរើសសាលា'}
+                  searchPlaceholder={t('searchSchool') || 'វាយបញ្ចូលនាមសាលា...'}
+                  disabled={!selectedDistrict || loadingSchools || schools.length === 0}
+                  isLoading={loadingSchools}
+                  emptyMessage={t('noSchools') || 'គ្មានសាលាទេ'}
+                  minWidth="min-w-[300px]"
+                />
+              </div>
+            </div>
+
+            {/* Selected School Info */}
+            {schoolId && schoolName && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium">ឈ្មោះសាលាដែលបានជ្រើស:</span> {schoolName}
+                </p>
+              </div>
+            )}
+          </div>
         </FadeInSection>
 
         {/* Excel-like Table */}

@@ -123,7 +123,34 @@ const TeacherTransferManagement = () => {
         classes: teacher.classes || []
       }));
 
-      setTeachers(mappedTeachers);
+      // Fetch school details for teachers that don't have schoolName
+      const teachersWithSchoolInfo = await Promise.all(
+        mappedTeachers.map(async (teacher) => {
+          // If we already have schoolName, use it
+          if (teacher.schoolName) {
+            return teacher;
+          }
+
+          // Otherwise, fetch school info by schoolId
+          if (teacher.schoolId) {
+            try {
+              const schoolResponse = await schoolService.getSchoolById(teacher.schoolId);
+              if (schoolResponse && schoolResponse.data) {
+                return {
+                  ...teacher,
+                  schoolName: schoolResponse.data.name || ''
+                };
+              }
+            } catch (err) {
+              console.error(`Failed to fetch school info for teacher ${teacher.id}:`, err);
+            }
+          }
+
+          return teacher;
+        })
+      );
+
+      setTeachers(teachersWithSchoolInfo);
       // Don't clear selections - they persist across pages
 
       // Update pagination info from API response
@@ -191,7 +218,29 @@ const TeacherTransferManagement = () => {
         classes: teacher.classes || []
       }));
 
-      setTeachers(mappedTeachers);
+      // Fetch school details for teachers that don't have schoolName
+      const teachersWithSchoolInfo = await Promise.all(
+        mappedTeachers.map(async (teacher) => {
+          // If we need to fetch school info by schoolId
+          if (teacher.schoolId) {
+            try {
+              const schoolResponse = await schoolService.getSchoolById(teacher.schoolId);
+              if (schoolResponse && schoolResponse.data) {
+                return {
+                  ...teacher,
+                  schoolName: schoolResponse.data.name || ''
+                };
+              }
+            } catch (err) {
+              console.error(`Failed to fetch school info for teacher ${teacher.id}:`, err);
+            }
+          }
+
+          return teacher;
+        })
+      );
+
+      setTeachers(teachersWithSchoolInfo);
 
       // Update pagination info from API response
       if (response.pagination) {
@@ -203,11 +252,11 @@ const TeacherTransferManagement = () => {
         }));
       } else {
         // Fallback
-        const totalPages = Math.ceil((response.data?.length || 0) / 50);
+        const totalPages = Math.ceil((teachersWithSchoolInfo?.length || 0) / 50);
         setTeacherPagination(prev => ({
           ...prev,
           page: page,
-          total: response.data?.length || 0,
+          total: teachersWithSchoolInfo?.length || 0,
           pages: totalPages
         }));
       }

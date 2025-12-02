@@ -16,6 +16,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import { api } from '../../utils/api';
 import { getFullName } from '../../utils/usernameUtils';
+import { formatClassIdentifier } from '../../utils/helpers';
 import locationService from '../../utils/api/services/locationService';
 import schoolService from '../../utils/api/services/schoolService';
 import classService from '../../utils/api/services/classService';
@@ -110,23 +111,51 @@ const StudentTransferManagement = () => {
         phone: student.phone,
         gradeLevel: student.gradeLevel,
         class: student.class,
-        // Preserve source school from global /students endpoint
-        schoolId: student.schoolId,
-        schoolName: student.schoolName,
+        // Preserve source school from global /students endpoint or nested school object
+        schoolId: student.schoolId || student.school?.schoolId,
+        schoolName: student.schoolName || student.school?.name,
+        rawStudent: student // Keep raw for school fetch
       }));
+
+      // Fetch school details for students that don't have schoolName
+      const studentsWithSchoolInfo = await Promise.all(
+        mappedStudents.map(async (student) => {
+          // If we already have schoolName, use it
+          if (student.schoolName) {
+            return student;
+          }
+
+          // Otherwise, fetch school info by schoolId
+          if (student.schoolId) {
+            try {
+              const schoolResponse = await schoolService.getSchoolById(student.schoolId);
+              if (schoolResponse && schoolResponse.data) {
+                return {
+                  ...student,
+                  schoolName: schoolResponse.data.name || ''
+                };
+              }
+            } catch (err) {
+              console.error(`Failed to fetch school info for student ${student.id}:`, err);
+            }
+          }
+
+          return student;
+        })
+      );
 
       const finalStudents =
         selectedGradeLevel && selectedGradeLevel !== 'all'
-          ? mappedStudents.filter(s => String(s.gradeLevel) === String(selectedGradeLevel))
-          : mappedStudents;
+          ? studentsWithSchoolInfo.filter(s => String(s.gradeLevel) === String(selectedGradeLevel))
+          : studentsWithSchoolInfo;
 
       setStudents(finalStudents);
 
       const pagination = response.pagination || {
         page,
         limit: 9,
-        total: mappedStudents.length,
-        pages: Math.max(1, Math.ceil(mappedStudents.length / 9)),
+        total: studentsWithSchoolInfo.length,
+        pages: Math.max(1, Math.ceil(studentsWithSchoolInfo.length / 9)),
       };
 
       setStudentPagination({
@@ -179,12 +208,42 @@ const StudentTransferManagement = () => {
         gradeLevel: student.gradeLevel,
         class: student.class,
         schoolId: schoolId,
+        // Extract school name from nested school object or use default
+        schoolName: student.school?.name,
+        rawStudent: student // Keep raw for school fetch
       }));
+
+      // Fetch school details if not already available
+      const studentsWithSchoolInfo = await Promise.all(
+        mappedStudents.map(async (student) => {
+          // If we already have schoolName, use it
+          if (student.schoolName) {
+            return student;
+          }
+
+          // Otherwise, fetch school info by schoolId
+          if (student.schoolId) {
+            try {
+              const schoolResponse = await schoolService.getSchoolById(student.schoolId);
+              if (schoolResponse && schoolResponse.data) {
+                return {
+                  ...student,
+                  schoolName: schoolResponse.data.name || ''
+                };
+              }
+            } catch (err) {
+              console.error(`Failed to fetch school info for student ${student.id}:`, err);
+            }
+          }
+
+          return student;
+        })
+      );
 
       const finalStudents =
         selectedGradeLevel && selectedGradeLevel !== 'all'
-          ? mappedStudents.filter(s => String(s.gradeLevel) === String(selectedGradeLevel))
-          : mappedStudents;
+          ? studentsWithSchoolInfo.filter(s => String(s.gradeLevel) === String(selectedGradeLevel))
+          : studentsWithSchoolInfo;
 
       setStudents(finalStudents);
 
@@ -196,11 +255,11 @@ const StudentTransferManagement = () => {
           pages: response.pagination.pages || response.pagination.totalPages || Math.ceil(response.pagination.total / 9),
         }));
       } else {
-        const totalPages = Math.ceil((response.data?.length || 0) / 9);
+        const totalPages = Math.ceil((studentsWithSchoolInfo?.length || 0) / 9);
         setStudentPagination(prev => ({
           ...prev,
           page,
-          total: response.data?.length || 0,
+          total: studentsWithSchoolInfo?.length || 0,
           pages: totalPages,
         }));
       }
@@ -810,10 +869,15 @@ const StudentTransferManagement = () => {
                                 {student.username}
                               </div>
                               <div className="text-xs text-gray-500">
-                                {student.class?.name
-                                  ? student.class.name
+                                {student.class?.gradeLevel || student.class?.name
+                                  ? formatClassIdentifier(student.class?.gradeLevel, student.class?.section) || student.class?.name || 'មិនមាន'
                                   : 'មិនមាន'}
                               </div>
+                              {student.schoolName && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {student.schoolName}
+                                </div>
+                              )}
                               <div className="flex flex-wrap items-center gap-2 mt-1">
                                 {student.gradeLevel && (
                                   <Badge color="blue" variant="outlined" size="sm">

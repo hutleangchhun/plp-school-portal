@@ -24,22 +24,36 @@ export const schoolService = {
 
     async getSchoolById(schoolId) {
         try {
+            console.log('📍 Fetching school details for ID:', schoolId);
             const response = await handleApiResponse(() =>
                 apiClient_.get(`${ENDPOINTS.SCHOOLS.BASE}/${schoolId}`)
             );
 
-            if (response?.success && response.data) {
+            console.log('📍 School by ID response:', response);
+
+            // Handle both response formats: { data: {...} } or direct object
+            let schoolData = response?.data || response;
+
+            // If we got school data (either directly or nested)
+            if (schoolData && Object.keys(schoolData).length > 0) {
+                console.log('✅ School data fetched:', schoolData);
                 return {
                     success: true,
-                    data: response.data
+                    data: schoolData
                 };
             }
+
             return {
                 success: false,
                 error: 'Failed to fetch school data'
             };
         } catch (error) {
             console.error('Error fetching school by ID:', error);
+            console.error('Error details:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data
+            });
             return {
                 success: false,
                 error: error.message || 'Failed to fetch school data'
