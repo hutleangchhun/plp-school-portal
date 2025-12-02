@@ -1375,7 +1375,7 @@ export default function ProfileUpdate({ user, setUser }) {
 
         {/* Profile Picture Card - Full Width */}
         {isEditMode && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 mb-8 transition-shadow">
+          <div className="bg-white rounded-md border border-gray-200 shadow-sm p-8 mb-8 transition-shadow">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8" ref={dropdownRef}>
               {/* Profile Picture */}
               <div
@@ -1440,7 +1440,7 @@ export default function ProfileUpdate({ user, setUser }) {
 
               {/* Dropdown Menu */}
               {showDropdown && (
-                <div className="absolute z-10 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200">
+                <div className="absolute z-10 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200">
                   <div className="py-2">
                     {formData.profile_picture && (
                       <Button
@@ -1481,7 +1481,7 @@ export default function ProfileUpdate({ user, setUser }) {
             />
 
             {profilePictureFile && (
-              <div className='w-full p-3 sm:p-4 bg-green-50 rounded-lg border border-green-300 mt-4'>
+              <div className='w-full p-3 sm:p-4 bg-green-50 rounded-md border border-green-300 mt-4'>
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 text-green-600 mt-0.5">
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -1501,7 +1501,7 @@ export default function ProfileUpdate({ user, setUser }) {
             )}
 
             {pictureUploading && (
-              <div className='w-full p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-300 mt-4'>
+              <div className='w-full p-3 sm:p-4 bg-blue-50 rounded-md border border-blue-300 mt-4'>
                 <div className="flex items-center gap-3">
                   <div className="animate-spin">
                     <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1519,7 +1519,7 @@ export default function ProfileUpdate({ user, setUser }) {
         {!isEditMode && (
           <>
             {/* Profile Picture Card - View Mode */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 mb-8">
+            <div className="bg-white rounded-md border border-gray-200 shadow-sm p-8 mb-8">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8">
                 {/* Profile Picture */}
                 <div className="relative flex-shrink-0">

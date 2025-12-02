@@ -13,7 +13,7 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
   return (
     <div className="space-y-6 overflow-y-auto pb-8">
       {/* Personal Information Card */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 ">
+      <div className="bg-white rounded-md border border-gray-200 shadow-sm p-6 ">
         <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
           <h3 className="text-base font-semibold text-gray-900 uppercase tracking-wide">
             {t('personalInformation')}
@@ -40,7 +40,7 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
       </div>
 
       {/* Account Information Card */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 ">
+      <div className="bg-white rounded-md border border-gray-200 shadow-sm p-6 ">
         <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
           <h3 className="text-base font-semibold text-gray-900 uppercase tracking-wide">
             {t('account', 'Account')}
@@ -60,7 +60,7 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
       </div>
 
       {/* Current Residence Card */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 ">
+      <div className="bg-white rounded-md border border-gray-200 shadow-sm p-6 ">
         <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
           <h3 className="text-base font-semibold text-gray-900 uppercase tracking-wide">
             {t('currentResidence')}
@@ -75,7 +75,7 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
       </div>
 
       {/* Place of Birth Card */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 ">
+      <div className="bg-white rounded-md border border-gray-200 shadow-sm p-6 ">
         <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
           <h3 className="text-base font-semibold text-gray-900 uppercase tracking-wide">
             {t('placeOfBirth')}
@@ -90,7 +90,7 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
       </div>
 
       {/* Employment Information Card */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 ">
+      <div className="bg-white rounded-md border border-gray-200 shadow-sm p-6 ">
         <div className="flex items-center mb-6 pb-4 border-b border-gray-100">
           <h3 className="text-base font-semibold text-gray-900 uppercase tracking-wide">
             {t('employmentInformation')}
