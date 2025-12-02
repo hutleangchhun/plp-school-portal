@@ -275,7 +275,7 @@ export default function TeacherDashboard({ user }) {
       <div className="">
         <FadeInSection>
           {/* Welcome Header */}
-          <div className="p-6 bg-white rounded-xl border border-gray-200 mb-4">
+          <div className="p-6 bg-white rounded-md border border-gray-200 mb-4">
             <div className='flex justify-between'>
               <div className='mb-8'>
                 <h1 className="text-lg sm:text-xl font-bold text-gray-900">
@@ -334,14 +334,14 @@ export default function TeacherDashboard({ user }) {
           {/* Chart and User Info Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
             {/* Attendance Chart */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 flex flex-col">
+            <div className="bg-white rounded-md border border-gray-200 p-4 sm:p-6 flex flex-col">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
                 <div className="flex items-center gap-3 flex-1">
                   <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
                     <UserCheck className="h-5 w-5 text-white" />
                   </div>
-                  <div className="grid gap-2 flex-1 min-w-0">
-                    <h3 className="text-sm sm:text-md font-bold text-gray-900 truncate">
+                  <div className="grid flex-1 min-w-0">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">
                       {t('todayAttendanceOverview', "Today's Attendance Overview")}
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-500">
@@ -438,13 +438,10 @@ export default function TeacherDashboard({ user }) {
             </div>
 
             {/* User Information */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
-                  <User className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-md font-bold text-gray-900">
+            <div className="bg-white rounded-md border border-gray-200 p-6">
+              <div className="flex mb-6">
+                <div className=''>
+                  <h3 className="text-lg font-bold text-gray-900">
                     {t('teacherInfo', 'Teacher Information')}
                   </h3>
                 </div>
@@ -452,10 +449,8 @@ export default function TeacherDashboard({ user }) {
 
               <div className="space-y-4">
                 {/* Name */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <User className="h-5 w-5 text-blue-600" />
-                  </div>
+                <div className="flex items-start gap-3  bg-gray-50 p-3 border-l-2 border-green-500">
+                  
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-gray-500 mb-1">{t('name', 'Name')}</p>
                     <p className="text-sm font-medium text-gray-900 break-words">
@@ -468,10 +463,7 @@ export default function TeacherDashboard({ user }) {
 
                 {/* Email */}
                 {user?.email && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Mail className="h-5 w-5 text-green-600" />
-                    </div>
+                  <div className="flex items-start gap-3  bg-gray-50 p-3 border-l-2 border-indigo-500">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-gray-500 mb-1">{t('email', 'Email')}</p>
                       <p className="text-sm font-medium text-gray-900 break-words">
@@ -483,10 +475,7 @@ export default function TeacherDashboard({ user }) {
 
                 {/* Phone */}
                 {user?.phone && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Phone className="h-5 w-5 text-orange-600" />
-                    </div>
+                  <div className="flex items-start gap-3  bg-gray-50 p-3 border-l-2 border-orange-500">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-gray-500 mb-1">{t('phone', 'Phone')}</p>
                       <p className="text-sm font-medium text-gray-900">
@@ -497,10 +486,7 @@ export default function TeacherDashboard({ user }) {
                 )}
 
                 {/* School */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Building2 className="h-5 w-5 text-indigo-600" />
-                  </div>
+                <div className="flex items-start gap-3 bg-gray-50 p-3 border-l-2 border-purple-500">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-gray-500 mb-1">{t('school', 'School')}</p>
                     <p className="text-sm font-medium text-gray-900 break-words">
@@ -510,10 +496,7 @@ export default function TeacherDashboard({ user }) {
                 </div>
 
                 {/* Classes */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <BookOpen className="h-5 w-5 text-blue-600" />
-                  </div>
+                <div className="flex items-start gap-3  bg-gray-50 p-3 border-l-2 border-blue-500">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-gray-500 mb-2">{t('myClasses', 'My Classes')}</p>
                     {classes.length > 0 ? (
