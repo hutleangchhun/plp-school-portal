@@ -726,6 +726,9 @@ export const km = {
   enterPassword: 'បញ្ចូលពាក្យសម្ងាត់របស់អ្នក',
   signingIn: 'កំពុងចូល...',
   signIn: 'ចូលប្រព័ន្ធ',
+  invalidUsernameAndPassword : 'ឈ្មោះអ្នកប្រើ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ',
+  permissionDenied : 'អនុញ្ញាតឱ្យចូលប្រើ',
+  serverError: 'បញ្ហាម៉ាស៊ីនមេ',
 
   // Student Selection
   studentSelection: 'ការជ្រើសរើសសិស្ស',
@@ -1555,5 +1558,21 @@ export const km = {
   targetSchool: 'សាលាដែលបានជ្រើសរើសសម្រាប់ផ្ទេរ',
   selectSourceSchoolDesc: 'ជ្រើសរើសសាលាដើម្បីស្វែងរកសាលា',
   searchStudent: 'ស្វែងរកសិស្ស',
-  transferStudentsDesc: 'ការផ្ទេរសិស្សឆ្លងបានគ្រប់សាលា'
+  transferStudentsDesc: 'ការផ្ទេរសិស្សឆ្លងបានគ្រប់សាលា',
+  resetPassword: 'ផ្លាស់ប្ដូរលេខសម្ងាត់ថ្មី',
+  copyUsername: 'ចម្លងឈ្មោះអ្នកប្រើប្រាស់',
+  usernameCopied: 'ឈ្មោះអ្នកប្រើប្រាស់បានចម្លងរួចរាល់',
+  resettingPasswordFor: 'ផ្លាស់ប្ដូរលេខសម្ងាត់របស់',
+  confirmPassword: 'បញ្ជាក់លេខកូដ',
+  confirmNewPassword: 'បំពេញលេខកូដម្ដងទៀត',
+  passwordsDoNotMatch: 'លេខសម្ងាត់មិនត្រឹមត្រូវ',
+  passwordsMatch: 'លេខសម្ងាត់ត្រឹមត្រូវ',
+  minChars8: 'តិចបំផុត 8 តួរ',
+  lowercase: 'មានអក្សរតូចយ៉ាងតិចមួយ',
+  uppercase: 'មានអក្សរធំយ៉ាងតិចមួយ',
+  number: 'មានលេខយ៉ាងតិចមួយ',
+  special: 'មានសញ្ញាយ៉ាងតិចមួយ',
+  passwordRequirements: 'បច្ចេកទេសក្នុងការប្រើប្រាស់លេខសម្ងាត់',
+  passwordValid: 'លេខកូដសម្ងាត់អាចប្រើប្រាស់បាន',
+  passwordResetSuccess: 'លេខកូដសម្ងាត់ផ្លាស់ប្ដូរបានជោគជ័យ',
 };

@@ -59,23 +59,45 @@ function AppContent() {
     setToastContext(toastContext);
   }, [toastContext]);
 
-  useEffect(() => {
+  // Check authentication and sync with localStorage
+  const checkAuth = () => {
     const isAuth = api.auth.isAuthenticated();
     if (isAuth) {
       const userData = utils.user.getUserData();
 
-      // Allow teachers (roleId=8), directors (roleId=14), and role ID 1 users
-      if (userData && ![8, 14, 1].includes(userData.roleId)) {
+      // Allow teachers (roleId=8), directors (roleId=14), admin (roleId=1), and restricted roles (roleId 15-21)
+      if (userData && ![8, 14, 1, 15, 16, 17, 18, 19, 20, 21].includes(userData.roleId)) {
         console.warn('Non-authorized user detected. Logging out.');
         utils.user.removeUserData();
         setUser(null);
-        setLoading(false);
         return;
       }
 
       setUser(userData);
+    } else {
+      setUser(null);
     }
+  };
+
+  useEffect(() => {
+    checkAuth();
     setLoading(false);
+  }, []);
+
+  // Listen for user data changes from login
+  useEffect(() => {
+    const handleUserChange = () => {
+      console.log('User data changed, re-checking auth...');
+      checkAuth();
+    };
+
+    window.addEventListener('userDataUpdated', handleUserChange);
+    window.addEventListener('storage', handleUserChange);
+
+    return () => {
+      window.removeEventListener('userDataUpdated', handleUserChange);
+      window.removeEventListener('storage', handleUserChange);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -102,6 +124,7 @@ function AppContent() {
             (user && user.roleId === 8 ? <Navigate to="/teacher-dashboard" replace /> :
              user && user.roleId === 1 ? <Navigate to="/admin-dashboard" replace /> :
              user && user.roleId === 14 ? <Navigate to="/dashboard" replace /> :
+             user && [15, 16, 17, 18, 19, 20, 21].includes(user.roleId) ? <Navigate to="/my-attendance" replace /> :
              <Navigate to="/login" replace />)
           }
         />
@@ -136,6 +159,7 @@ function AppContent() {
             user && user.roleId === 8 ? <Navigate to="/teacher-dashboard" replace /> :
             user && user.roleId === 1 ? <Navigate to="/admin-dashboard" replace /> :
             user && user.roleId === 14 ? <Navigate to="/dashboard" replace /> :
+            user && [15, 16, 17, 18, 19, 20, 21].includes(user.roleId) ? <Navigate to="/my-attendance" replace /> :
             <Navigate to="/login" replace />
           } />
           

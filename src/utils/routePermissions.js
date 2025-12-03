@@ -11,6 +11,14 @@ export const ROLES = {
   DIRECTOR: 'DIRECTOR', // Special marker to indicate director-only routes (roleId=14)
   TEACHER_ONLY: 'TEACHER_ONLY', // Special marker for teacher-only routes (roleId=8)
   ROLE1_ONLY: 'ROLE1_ONLY', // Special marker for role1-only routes (roleId=1)
+  ROLE15: 15, // Deputy Principal
+  ROLE16: 16, // School Secretary
+  ROLE17: 17, // School Treasurer
+  ROLE18: 18, // School Librarian
+  ROLE19: 19, // School Workshop
+  ROLE20: 20, // School Security
+  ROLE21: 21, // ICT Teacher
+  RESTRICTED_ROLES_ONLY: 'RESTRICTED_ROLES_ONLY', // Special marker for roles 15-21
 };
 
 // Route permissions configuration
@@ -22,7 +30,7 @@ export const routePermissions = {
     component: 'Dashboard'
   },
   '/profile': {
-    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR],
+    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR, ROLES.RESTRICTED_ROLES_ONLY],
     component: 'ProfileUpdate'
   },
   '/students': {
@@ -66,7 +74,7 @@ export const routePermissions = {
     component: 'StudentEditModal'
   },
   '/my-attendance': {
-    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR],
+    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR, ROLES.RESTRICTED_ROLES_ONLY],
     component: 'TeacherSelfAttendance'
   },
   '/teacher-reports': {
@@ -220,6 +228,24 @@ export const hasRouteAccess = (path, user) => {
     return false;
   }
 
+  // Restricted Roles: roleId = 15-21 (can access only /profile and /my-attendance)
+  if (user.roleId >= ROLES.ROLE15 && user.roleId <= ROLES.ROLE21) {
+    const routeConfig = findRouteConfig(path);
+
+    // If route doesn't exist, deny access
+    if (!routeConfig) {
+      return false;
+    }
+
+    // If route specifies allowed roles, check if restricted role can access
+    if (routeConfig.allowedRoles && routeConfig.allowedRoles.length > 0) {
+      return routeConfig.allowedRoles.includes(ROLES.RESTRICTED_ROLES_ONLY);
+    }
+
+    // If no allowedRoles specified, deny access
+    return false;
+  }
+
   return false;
 };
 
@@ -360,6 +386,14 @@ export const getNavigationItems = (user, t) => {
     },
   ];
 
+  // Restricted Roles (15-21) navigation items
+  const restrictedRolesItems = [
+    {
+      name: t('myAttendance') || 'វត្តមានរបស់ខ្ញុំ',
+      href: '/my-attendance',
+    },
+  ];
+
   // Return appropriate items based on user role
   if (user.roleId === 1) {
     return role1Items;
@@ -373,6 +407,12 @@ export const getNavigationItems = (user, t) => {
   // Teacher: roleId = 8
   if (user.roleId === 8) {
     return teacherItems;
+  }
+
+  // Restricted Roles: roleId = 15-21 (Deputy Principal, School Secretary, etc.)
+  // These roles can access /profile and /my-attendance with sidebar navigation
+  if (user.roleId >= 15 && user.roleId <= 21) {
+    return restrictedRolesItems;
   }
 
   return [];

@@ -43,6 +43,7 @@ const ENDPOINTS = {
     LOGOUT: '/auth/logout',
     REFRESH_TOKEN: '/auth/refresh-token',
     ME: '/auth/me',
+    RESET_PASSWORD: '/auth/reset-password',
   },
   USERS: {
     BASE: '/users',

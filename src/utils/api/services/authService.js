@@ -30,11 +30,12 @@ export const authService = {
         is_director: user.roleId === 14
       };
 
-      // Allow users with roleId = 8 (teachers), roleId = 14 (directors), and roleId = 1 to access this portal
+      // Allow users with roleId = 8 (teachers), roleId = 14 (directors), roleId = 1 (admin), and roleId 15-21 (restricted roles)
       // Teacher: roleId = 8
       // Director: roleId = 14
       // Admin: roleId = 1
-      if (![8, 14, 1].includes(normalizedUser.roleId)) {
+      // Restricted roles: roleId = 15-21 (Deputy Principal, School Secretary, etc.)
+      if (![8, 14, 1, 15, 16, 17, 18, 19, 20, 21].includes(normalizedUser.roleId)) {
         return {
           success: false,
           error: 'Only authorized users can access this portal. Please contact your administrator.'
@@ -156,14 +157,14 @@ export const authService = {
   },
 
   /**
-   * Check if user is authenticated (teacher, director, or role ID 1)
+   * Check if user is authenticated (teacher, director, admin, or restricted roles 15-21)
    * @returns {boolean} Authentication status
    */
   isAuthenticated: () => {
     const hasToken = tokenManager.hasToken();
     const userData = userUtils.getUserData();
-    // User must have token, valid user data, and roleId = 8 (teacher), 14 (director), or 1 (admin)
-    return hasToken && userData !== null && ([8, 14, 1].includes(userData.roleId));
+    // User must have token, valid user data, and roleId = 8 (teacher), 14 (director), 1 (admin), or 15-21 (restricted roles)
+    return hasToken && userData !== null && ([8, 14, 1, 15, 16, 17, 18, 19, 20, 21].includes(userData.roleId));
   },
 
   /**
@@ -281,15 +282,15 @@ export const authUtils = {
     
     // Handle specific error cases
     if (error.status === 401) {
-      return t('ឈ្មោះអ្នកប្រើ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ', 'Invalid username or password');
+      return t('invalidUsernameAndPassword', 'Invalid username or password');
     }
     
     if (error.status === 403) {
-      return t('មិនអនុញ្ញាតឱ្យចូលប្រើ', 'Access denied');
+      return t('permissionDenied', 'Access denied');
     }
     
     if (error.status >= 500) {
-      return t('បញ្ហាម៉ាស៊ីនមេ', 'Server error');
+      return t('serverError', 'Server error');
     }
     
     return error.message || defaultMessage;

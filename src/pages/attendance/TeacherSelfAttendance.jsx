@@ -307,9 +307,10 @@ export default function TeacherSelfAttendance() {
     return date > today;
   };
 
-  // Check if user is teacher or director (roleId = 8 for teacher, roleId = 14 for director)
+  // Check if user is teacher, director, or restricted roles (roleId = 8 for teacher, roleId = 14 for director, roleId 15-21 for restricted roles)
   const isDirector = user?.roleId === 14;
-  const isTeacherOrDirector = isTeacher || isDirector;
+  const isRestrictedRole = user?.roleId >= 15 && user?.roleId <= 21;
+  const isTeacherOrDirector = isTeacher || isDirector || isRestrictedRole;
 
   // Helper function to translate attendance status to Khmer
   const getStatusInKhmer = (status) => {

@@ -14,6 +14,8 @@ import Modal from '../../components/ui/Modal';
 import Pagination from '../../components/ui/Pagination';
 import EmptyState from '../../components/ui/EmptyState';
 import SidebarFilter from '../../components/ui/SidebarFilter';
+import TeacherContextMenu from '../../components/admin/TeacherContextMenu';
+import ResetPasswordModal from '../../components/admin/ResetPasswordModal';
 import { api } from '../../utils/api';
 import { getFullName } from '../../utils/usernameUtils';
 import locationService from '../../utils/api/services/locationService';
@@ -47,6 +49,10 @@ const TeacherTransferManagement = () => {
   const searchInputRef = useRef(null);
 
   const [isSourceFilterOpen, setIsSourceFilterOpen] = useState(false);
+
+  // Reset password modal state
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [selectedTeacherForReset, setSelectedTeacherForReset] = useState(null);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [fetchingTeachers, setFetchingTeachers] = useState(false);
@@ -519,6 +525,16 @@ const TeacherTransferManagement = () => {
     setSelectedTeachersMap(newMap);
   };
 
+  const handleResetPassword = (teacher) => {
+    setSelectedTeacherForReset(teacher);
+    setShowResetPasswordModal(true);
+  };
+
+  const handleCloseResetPasswordModal = () => {
+    setShowResetPasswordModal(false);
+    setSelectedTeacherForReset(null);
+  };
+
   const handleTransferTeachers = async () => {
     const selectedTeachersArray = Array.from(allSelectedTeacherIds);
 
@@ -733,15 +749,19 @@ const TeacherTransferManagement = () => {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
                     {teachers.map((teacher) => (
-                      <div
+                      <TeacherContextMenu
                         key={teacher.id}
-                        className={
-                          `bg-white rounded-sm border hover:border-blue-400 hover:shadow-md transition-all duration-200 flex justify-between items-start p-4 ` +
-                          (allSelectedTeacherIds.has(teacher.id)
-                            ? 'border-blue-500 ring-2 ring-blue-200'
-                            : 'border-gray-200')
-                        }
+                        teacher={teacher}
+                        onResetPassword={handleResetPassword}
                       >
+                        <div
+                          className={
+                            `bg-white rounded-sm border hover:border-blue-400 hover:shadow-md transition-all duration-200 flex justify-between items-start p-4 ` +
+                            (allSelectedTeacherIds.has(teacher.id)
+                              ? 'border-blue-500 ring-2 ring-blue-200'
+                              : 'border-gray-200')
+                          }
+                        >
                         <div className="space-3">
                           <div>
                             {/* Teacher name */}
@@ -792,7 +812,8 @@ const TeacherTransferManagement = () => {
                           />
                         </div>
 
-                      </div>
+                        </div>
+                      </TeacherContextMenu>
                     ))}
                   </div>
 
@@ -1048,6 +1069,13 @@ const TeacherTransferManagement = () => {
           </div>
         </div>
       </SidebarFilter>
+
+      {/* Reset Password Modal */}
+      <ResetPasswordModal
+        isOpen={showResetPasswordModal}
+        onClose={handleCloseResetPasswordModal}
+        teacher={selectedTeacherForReset}
+      />
     </>
   );
 };
