@@ -68,7 +68,7 @@ const TeacherEditModal = () => {
     height: '',
     bmi: '',
     ethnicGroup: '',
-    gradeLevel: '', // Single grade level as string
+    gradeLevel: null, // Single grade level as string or null for មិនមាន
     accessibility: [],
     employment_type: '',
     salary_type: '',
@@ -398,7 +398,7 @@ const TeacherEditModal = () => {
         height: height,
         bmi: bmi,
         ethnicGroup: fullData.ethnic_group || fullData.ethnicGroup || '',
-        gradeLevel: teacherData.gradeLevel || '',
+        gradeLevel: teacherData.gradeLevel !== undefined ? teacherData.gradeLevel : null,
         accessibility: Array.isArray(fullData.accessibility) ? fullData.accessibility : [],
         employment_type: teacherData.employment_type || '',
         salary_type: teacherData.salaryTypeId ? String(teacherData.salaryTypeId) : '',
@@ -866,7 +866,7 @@ const TeacherEditModal = () => {
           // Teacher-Specific Fields
           teacher_number: editForm.teacher_number || undefined,
           schoolId: schoolId || undefined,
-          gradeLevel: editForm.gradeLevel?.trim() || undefined,
+          gradeLevel: editForm.gradeLevel === null ? null : (editForm.gradeLevel?.trim() || undefined),
           employment_type: editForm.employment_type || undefined,
           salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
           educationLevel: editForm.education_level || undefined,
@@ -889,10 +889,10 @@ const TeacherEditModal = () => {
           teacher_family: buildTeacherFamilyPayload()
         };
 
-        // Remove undefined/empty values - but keep bookIds and teacherExtraLearningTool even when null
+        // Remove undefined/empty values - but keep bookIds, gradeLevel, and teacherExtraLearningTool even when null
         const cleanPayload = Object.keys(createPayload).reduce((acc, k) => {
-          // Special cases: keep bookIds and learning tool objects even when null/false so backend sees explicit values
-          if (k === 'bookIds' || k === 'teacherExtraLearningTool' || k === 'extraLearningTool') {
+          // Special cases: keep bookIds, gradeLevel, and learning tool objects even when null/false so backend sees explicit values
+          if (k === 'bookIds' || k === 'gradeLevel' || k === 'teacherExtraLearningTool' || k === 'extraLearningTool') {
             acc[k] = createPayload[k];
             return acc;
           }
@@ -983,7 +983,7 @@ const TeacherEditModal = () => {
           // Teacher-Specific Fields
           teacher_number: editForm.teacher_number || undefined,
           schoolId: schoolId || undefined,
-          gradeLevel: editForm.gradeLevel?.trim() || undefined,
+          gradeLevel: editForm.gradeLevel === null ? null : (editForm.gradeLevel?.trim() || undefined),
           employment_type: editForm.employment_type || undefined,
           salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
           educationLevel: editForm.education_level || undefined,
@@ -1010,10 +1010,10 @@ const TeacherEditModal = () => {
           updatePayload.newPassword = editForm.newPassword.trim();
         }
 
-        // Remove undefined/empty values - but keep bookIds and learning tool objects even when null
+        // Remove undefined/empty values - but keep bookIds, gradeLevel, and learning tool objects even when null
         const cleanUpdatePayload = Object.keys(updatePayload).reduce((acc, k) => {
-          // Special cases: keep bookIds and learning tool objects even when null/false so backend sees explicit values
-          if (k === 'bookIds' || k === 'teacherExtraLearningTool' || k === 'extraLearningTool') {
+          // Special cases: keep bookIds, gradeLevel, and learning tool objects even when null/false so backend sees explicit values
+          if (k === 'bookIds' || k === 'gradeLevel' || k === 'teacherExtraLearningTool' || k === 'extraLearningTool') {
             acc[k] = updatePayload[k];
             return acc;
           }
@@ -1375,10 +1375,7 @@ const TeacherEditModal = () => {
               {t('gradeLevel', 'Grade Level')}
             </label>
             <Dropdown
-              options={[
-                { value: '', label: t('selectGradeLevel', 'Select Grade Level') },
-                ...gradeLevelOptions
-              ]}
+              options={gradeLevelOptions}
               value={editForm.gradeLevel}
               onValueChange={(value) => handleFormChange('gradeLevel', value)}
               placeholder={t('selectGradeLevel', 'Select Grade Level')}
