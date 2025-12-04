@@ -14,6 +14,8 @@ import Modal from '../../components/ui/Modal';
 import Pagination from '../../components/ui/Pagination';
 import EmptyState from '../../components/ui/EmptyState';
 import SidebarFilter from '../../components/ui/SidebarFilter';
+import StudentContextMenu from '../../components/admin/StudentContextMenu';
+import ResetPasswordModal from '../../components/admin/ResetPasswordModal';
 import { api } from '../../utils/api';
 import { getFullName } from '../../utils/usernameUtils';
 import { formatClassIdentifier } from '../../utils/helpers';
@@ -44,6 +46,10 @@ const StudentTransferManagement = () => {
   const searchInputRef = useRef(null);
 
   const [isSourceFilterOpen, setIsSourceFilterOpen] = useState(false);
+
+  // Reset password modal state
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [selectedStudentForReset, setSelectedStudentForReset] = useState(null);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [fetchingStudents, setFetchingStudents] = useState(false);
@@ -620,6 +626,16 @@ const StudentTransferManagement = () => {
     setSelectedStudentsMap(newSelectedMap);
   };
 
+  const handleResetPassword = (student) => {
+    setSelectedStudentForReset(student);
+    setShowResetPasswordModal(true);
+  };
+
+  const handleCloseResetPasswordModal = () => {
+    setShowResetPasswordModal(false);
+    setSelectedStudentForReset(null);
+  };
+
   const handleTransferStudent = async () => {
     if (selectedStudentIds.size === 0 || !selectedTargetSchool || !selectedTargetMasterClassId) {
       handleError(new Error('Please select students, target school and target class'));
@@ -846,15 +862,19 @@ const StudentTransferManagement = () => {
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
                       {students.map((student) => (
-                        <div
+                        <StudentContextMenu
                           key={student.id}
-                          className={
-                            `bg-white rounded-sm border hover:border-blue-400 hover:shadow-md transition-all duration-200 flex justify-between items-start p-4 ` +
-                            (selectedStudentIds.has(student.id)
-                              ? 'border-blue-500 ring-2 ring-blue-200'
-                              : 'border-gray-200')
-                          }
+                          student={student}
+                          onResetPassword={handleResetPassword}
                         >
+                          <div
+                            className={
+                              `bg-white rounded-sm border hover:border-blue-400 hover:shadow-md transition-all duration-200 flex justify-between items-start p-4 ` +
+                              (selectedStudentIds.has(student.id)
+                                ? 'border-blue-500 ring-2 ring-blue-200'
+                                : 'border-gray-200')
+                            }
+                          >
                           <div className="space-3">
                             <div>
                               <div>
@@ -895,7 +915,8 @@ const StudentTransferManagement = () => {
                               className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer mt-0.5"
                             />
                           </div>
-                        </div>
+                          </div>
+                        </StudentContextMenu>
                       ))}
                     </div>
 
@@ -1147,6 +1168,14 @@ const StudentTransferManagement = () => {
               </div>
             </div>
           </Modal>
+
+      {/* Reset Password Modal */}
+      <ResetPasswordModal
+        isOpen={showResetPasswordModal}
+        onClose={handleCloseResetPasswordModal}
+        teacher={selectedStudentForReset}
+        userType="student"
+      />
     </>
   );
 };

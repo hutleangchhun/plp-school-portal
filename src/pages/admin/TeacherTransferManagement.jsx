@@ -1075,6 +1075,7 @@ const TeacherTransferManagement = () => {
         isOpen={showResetPasswordModal}
         onClose={handleCloseResetPasswordModal}
         teacher={selectedTeacherForReset}
+        userType="teacher"
       />
     </>
   );

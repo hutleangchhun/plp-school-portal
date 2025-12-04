@@ -4,11 +4,11 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { useLoading } from '../../contexts/LoadingContext';
 import Modal from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, CheckCircle, CircleCheckBig } from 'lucide-react';
 import { api } from '../../utils/api';
 import { getFullName } from '../../utils/usernameUtils';
 
-const ResetPasswordModal = ({ isOpen, onClose, teacher }) => {
+const ResetPasswordModal = ({ isOpen, onClose, teacher, userType = 'teacher' }) => {
   const { t } = useLanguage();
   const { startLoading, stopLoading } = useLoading();
   const { error, handleError, clearError } = useErrorHandler();
@@ -19,6 +19,46 @@ const ResetPasswordModal = ({ isOpen, onClose, teacher }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Auto-generate password based on user type and role
+  const getDefaultPassword = () => {
+    if (!teacher) return '';
+
+    // Check if director (roleId = 14)
+    if (teacher.roleId === 14 || teacher.roleId === '14') {
+      return 'director@123';
+    }
+
+    // Otherwise use type-based password
+    if (userType === 'student') {
+      return 'student@123';
+    } else if (userType === 'teacher') {
+      return 'teacher@123';
+    }
+
+    return '';
+  };
+
+  // Handle toggling default password on button click
+  const handleSetDefaultPassword = () => {
+    const defaultPassword = getDefaultPassword();
+
+    // If fields already contain the default password, clear them
+    if (newPassword === defaultPassword && confirmPassword === defaultPassword) {
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPassword(false);
+      setShowConfirmPassword(false);
+    } else {
+      // Otherwise set the default password
+      if (defaultPassword) {
+        setNewPassword(defaultPassword);
+        setConfirmPassword(defaultPassword);
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+      }
+    }
+  };
 
   // Password validation functions (same as TeacherEditModal)
   const isPasswordInvalid = () => {
@@ -159,7 +199,8 @@ const ResetPasswordModal = ({ isOpen, onClose, teacher }) => {
       stickyFooter={true}
     >
       <div className="space-y-6">
-        {/* Teacher Info */}
+        <div className='flex justify-between items-start'>
+          {/* Teacher Info */}
         <div className="">
           <p className="text-sm text-gray-600">
             {t('resettingPasswordFor', 'Resetting password for')}:
@@ -170,6 +211,21 @@ const ResetPasswordModal = ({ isOpen, onClose, teacher }) => {
           <p className="text-sm text-gray-500 mt-1">
             {teacher.username}
           </p>
+        </div>
+        {/* Set Default Password Button */}
+        {!successMessage && (
+          <div className="flex justify-center">
+            <Button
+              type="button"
+              variant="success"
+              onClick={handleSetDefaultPassword}
+              disabled={isResetting}
+              size="sm"
+            >
+              <CircleCheckBig/>
+            </Button>
+          </div>
+        )}
         </div>
         <hr />
 
