@@ -1095,24 +1095,6 @@ const StudentEditModal = () => {
               {t('academicInformation', 'Academic Information')}
             </h3>
           </div>
-
-          {/* Book Selection Button */}
-          {editForm.gradeLevel && (
-            <div className='mb-6'>
-              <Button
-                type="button"
-                onClick={() => setShowBookModal(true)}
-                variant="success"
-                size="sm"
-                className="w-full flex items-center justify-center gap-2 h-11"
-              >
-                <BookOpen className="w-4 h-4" />
-                {editForm.bookIds.length > 0
-                  ? `${t('booksSelected', 'Books Selected')} (${editForm.bookIds.length})`
-                  : t('chooseBooks', 'Choose Books')}
-              </Button>
-            </div>
-          )}
         </div>
 
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6'>
@@ -1780,14 +1762,35 @@ const StudentEditModal = () => {
         {formContent}
 
         {/* Selected Books Display */}
-        <SelectedBooksDisplay
-          selectedBookIds={editForm.bookIds}
-          onRemoveBook={(bookId) => {
-            const newBookIds = editForm.bookIds.filter(id => id !== bookId);
-            handleFormChange('bookIds', newBookIds);
-          }}
-          t={t}
-        />
+        {editForm.gradeLevel && (
+          <div className="bg-white rounded-md border border-gray-200 p-6 my-6">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {t('chooseBooks', 'Student Books')}
+              </h3>
+              <Button
+                type="button"
+                onClick={() => setShowBookModal(true)}
+                variant="success"
+                size="sm"
+                className="flex items-center justify-center gap-2 h-11"
+              >
+                <BookOpen className="w-4 h-4" />
+                {editForm.bookIds.length > 0
+                  ? `${t('booksSelected', 'Books Selected')} (${editForm.bookIds.length})`
+                  : t('chooseBooks', 'Choose Books')}
+              </Button>
+            </div>
+            <SelectedBooksDisplay
+              selectedBookIds={editForm.bookIds}
+              onRemoveBook={(bookId) => {
+                const newBookIds = editForm.bookIds.filter(id => id !== bookId);
+                handleFormChange('bookIds', newBookIds);
+              }}
+              t={t}
+            />
+          </div>
+        )}
 
         {/* Action Buttons for Page Mode */}
         <div className="left-0 right-0 p-4 sm:p-6 flex items-center justify-end space-x-3">

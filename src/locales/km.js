@@ -260,7 +260,7 @@ export const km = {
   usernameSuggestionHint: 'ចុច​ការផ្ដល់យោបល់ដើម្បីបង្កើតឈ្មោះអ្នកប្រើប្រាស់ស្វ័យប្រវត្តិ',
   selectBooks: 'ជ្រើសរើសសៀវភៅ',
   booksSelected: 'សៀវភៅបានជ្រើសរើស',
-  chooseBooks: 'ជ្រើសរើសសៀវភៅសិក្សារបស់សិស្ស',
+  chooseBooks: 'ជ្រើសរើសសៀវភៅ',
   noBooksSelected: 'គ្មានសៀវភៅសិក្សារបស់សិស្សដែលត្រូវបានជ្រើសរើស',
   category: 'ប្រភេទសៀវភៅ',
   done: 'ជ្រើសរើស',
@@ -328,11 +328,12 @@ export const km = {
   allCategories: 'ប្រភេទសៀវភៅទាំងអស់',
   noBooksAvailable: 'មិនមានសៀវភៅដែលអ្នកជ្រើសរើស, សូមជ្រើសរើសតម្រងផ្សេង',
   cannotChange: 'មិនអាចប្តូរបានទេ',
-  hasPackage: 'មានកញ្ចប់',
+  hasPackage: 'មាន',
   providedBy: 'អ្នកផ្ដល់ជូន',
   statusBooK: 'ស្ថានភាពសៀវភៅ',
   teacherNumberExists: 'អត្តលេខមន្ត្រីរាជការត្រូវបានប្រើប្រាស់រូចហើយ',
   teacherNumberAvailable: 'អត្តលេខមន្ត្រីរាជការអាចប្រើប្រាស់បាន',
+  teacherBooks: 'ជ្រើសរើសសៀវភៅសម្រាប់គ្រួ',
 
 
 
