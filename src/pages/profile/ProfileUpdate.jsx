@@ -63,8 +63,24 @@ export default function ProfileUpdate({ user, setUser }) {
     burden: false,
     bookIds: [],
     teacherExtraLearningTool: {
-      'កញ្ចប់សម្ភារៈអំណាន': false,
-      'គណិតវិទ្យាថ្នាក់ដំបូង': false
+      reading_material_package: {
+        _hasPackage: false,
+        picture_cards: false,
+      },
+      math_grade1_package: {
+        _hasPackage: false,
+        manipulatives: false,
+      },
+    },
+    extraLearningTool: {
+      reading_material_package: {
+        _hasPackage: false,
+        status: '',
+      },
+      math_grade1_package: {
+        _hasPackage: false,
+        status: '',
+      },
     },
     // Current residence location
     residence: {
@@ -114,9 +130,12 @@ export default function ProfileUpdate({ user, setUser }) {
   const [originalUsername, setOriginalUsername] = useState('');
   const [emailAvailable, setEmailAvailable] = useState(null);
   const [originalEmail, setOriginalEmail] = useState('');
+  const [teacherNumberAvailable, setTeacherNumberAvailable] = useState(null);
+  const [originalTeacherNumber, setOriginalTeacherNumber] = useState('');
   const usernameContainerRef = useRef(null);
   const usernameDebounceRef = useRef(null);
   const emailDebounceRef = useRef(null);
+  const teacherNumberDebounceRef = useRef(null);
 
   // Store pending location data for setting initial values
   const [pendingResidenceData, setPendingResidenceData] = useState(null);
@@ -139,7 +158,8 @@ export default function ProfileUpdate({ user, setUser }) {
     getDistrictOptions: getResidenceDistrictOptions,
     getCommuneOptions: getResidenceCommuneOptions,
     getVillageOptions: getResidenceVillageOptions,
-    setInitialValues: setResidenceInitialValues
+    setInitialValues: setResidenceInitialValues,
+    loadingProvinces: residenceLoadingProvinces
   } = useLocationData();
 
   // Initialize location data hooks for place of birth
@@ -156,7 +176,8 @@ export default function ProfileUpdate({ user, setUser }) {
     getDistrictOptions: getBirthDistrictOptions,
     getCommuneOptions: getBirthCommuneOptions,
     getVillageOptions: getBirthVillageOptions,
-    setInitialValues: setBirthInitialValues
+    setInitialValues: setBirthInitialValues,
+    loadingProvinces: birthLoadingProvinces
   } = useLocationData();
 
 
@@ -283,10 +304,97 @@ export default function ProfileUpdate({ user, setUser }) {
           appointed: typeof normalizedData.appointed === 'boolean' ? normalizedData.appointed : (typeof teacher.appointed === 'boolean' ? teacher.appointed : false),
           burden: typeof normalizedData.burden === 'boolean' ? normalizedData.burden : (typeof teacher.burden === 'boolean' ? teacher.burden : false),
           bookIds: Array.isArray(normalizedData.bookIds) ? normalizedData.bookIds : [],
-          teacherExtraLearningTool: {
-            'កញ្ចប់សម្ភារៈអំណាន': normalizedData.teacherExtraLearningTool?.['កញ្ចប់សម្ភារៈអំណាន'] === true || teacher.extraLearningTool?.['កញ្ចប់សម្ភារៈអំណាន'] === true,
-            'គណិតវិទ្យាថ្នាក់ដំបូង': normalizedData.teacherExtraLearningTool?.['គណិតវិទ្យាថ្នាក់ដំបូង'] === true || teacher.extraLearningTool?.['គណិតវិទ្យាថ្នាក់ដំបូង'] === true
-          },
+          teacherExtraLearningTool: (() => {
+            // Initialize teacher extra learning tools (supports new English keys + legacy Khmer keys)
+            const rawTeacherExtra =
+              normalizedData.teacherExtraLearningTool ||
+              teacher.teacherExtraLearningTool ||
+              normalizedData.extraLearningTool ||
+              teacher.extraLearningTool ||
+              {};
+
+            if (rawTeacherExtra.reading_material_package || rawTeacherExtra.math_grade1_package) {
+              // New English-key structure from backend
+              const readingNew = rawTeacherExtra.reading_material_package || {};
+              const mathNew = rawTeacherExtra.math_grade1_package || {};
+
+              return {
+                reading_material_package: {
+                  _hasPackage: readingNew._hasPackage === true,
+                  picture_cards: readingNew.picture_cards === true,
+                },
+                math_grade1_package: {
+                  _hasPackage: mathNew._hasPackage === true,
+                  manipulatives: mathNew.manipulatives === true,
+                },
+              };
+            } else {
+              // Legacy Khmer-key structure
+              const readingLegacy = rawTeacherExtra['កញ្ចប់សម្ភារៈអំណាន'] || {};
+              const mathLegacy = rawTeacherExtra['គណិតវិទ្យាថ្នាក់ដំបូង'] || {};
+
+              return {
+                reading_material_package: {
+                  _hasPackage:
+                    typeof readingLegacy === 'object'
+                      ? readingLegacy._hasPackage === true
+                      : readingLegacy === true,
+                  picture_cards:
+                    typeof readingLegacy === 'object'
+                      ? readingLegacy['ប័ណ្ឌរូបភាព'] === true
+                      : false,
+                },
+                math_grade1_package: {
+                  _hasPackage:
+                    typeof mathLegacy === 'object'
+                      ? mathLegacy._hasPackage === true
+                      : mathLegacy === true,
+                  manipulatives:
+                    typeof mathLegacy === 'object'
+                      ? mathLegacy['សម្ភារឧបទេស'] === true
+                      : false,
+                },
+              };
+            }
+          })(),
+          extraLearningTool: (() => {
+            // Initialize extraLearningTool (package metadata) with new English-key structure, mapping legacy if needed
+            const rawExtraTool =
+              normalizedData.extraLearningTool ||
+              teacher.extraLearningTool ||
+              {};
+
+            if (rawExtraTool.reading_material_package || rawExtraTool.math_grade1_package) {
+              const readingExtra = rawExtraTool.reading_material_package || {};
+              const mathExtra = rawExtraTool.math_grade1_package || {};
+
+              return {
+                reading_material_package: {
+                  _hasPackage: readingExtra._hasPackage === true,
+                  status: readingExtra.status || '',
+                },
+                math_grade1_package: {
+                  _hasPackage: mathExtra._hasPackage === true,
+                  status: mathExtra.status || '',
+                },
+              };
+            } else {
+              // Legacy structure with Khmer keys or flat values
+              const readingLegacyStatus = rawExtraTool['កញ្ចប់សម្ភារៈអំណាន'];
+              const mathLegacyStatus = rawExtraTool['គណិតវិទ្យាថ្នាក់ដំបូង'];
+
+              return {
+                reading_material_package: {
+                  _hasPackage: !!readingLegacyStatus,
+                  status: typeof readingLegacyStatus === 'string' ? readingLegacyStatus : '',
+                },
+                math_grade1_package: {
+                  _hasPackage: !!mathLegacyStatus,
+                  status: typeof mathLegacyStatus === 'string' ? mathLegacyStatus : '',
+                },
+              };
+            }
+          })(),
           // Handle nested residence object with full location data (Khmer names prioritized)
           residence: {
             provinceId: normalizedData.residence?.provinceId || normalizedData.province_id || '',
@@ -331,6 +439,8 @@ export default function ProfileUpdate({ user, setUser }) {
         setFormData(newFormData);
         setOriginalUsername(newFormData.username || '');
         setOriginalEmail(newFormData.email || '');
+        setOriginalTeacherNumber(newFormData.teacher_number || '');
+        setTeacherNumberAvailable(null);
         console.log('User data loaded into form, keys present:', Object.keys(newFormData).filter(k => newFormData[k]));
 
         // Fetch salary type name if salary type ID and employment type exist
@@ -361,17 +471,17 @@ export default function ProfileUpdate({ user, setUser }) {
         // Store the initial values to be set later using React state
         const residenceInitialData = residenceData.provinceId || residenceData.districtId || residenceData.communeId || residenceData.villageId ||
           normalizedData.province_id || normalizedData.district_id || normalizedData.commune_id || normalizedData.village_id ? {
-          provinceId: residenceData.provinceId || normalizedData.province_id,
-          districtId: residenceData.districtId || normalizedData.district_id,
-          communeId: residenceData.communeId || normalizedData.commune_id,
-          villageId: residenceData.villageId || normalizedData.village_id
+          provinceId: (residenceData.provinceId || normalizedData.province_id)?.toString(),
+          districtId: (residenceData.districtId || normalizedData.district_id)?.toString(),
+          communeId: (residenceData.communeId || normalizedData.commune_id)?.toString(),
+          villageId: (residenceData.villageId || normalizedData.village_id)?.toString()
         } : null;
 
         const birthInitialData = birthData.provinceId || birthData.districtId || birthData.communeId || birthData.villageId ? {
-          provinceId: birthData.provinceId,
-          districtId: birthData.districtId,
-          communeId: birthData.communeId,
-          villageId: birthData.villageId
+          provinceId: birthData.provinceId?.toString(),
+          districtId: birthData.districtId?.toString(),
+          communeId: birthData.communeId?.toString(),
+          villageId: birthData.villageId?.toString()
         } : residenceInitialData;
 
         // Set pending location data for initialization
@@ -403,54 +513,46 @@ export default function ProfileUpdate({ user, setUser }) {
     fetchUserData();
   }, []); // Remove setUser from dependencies as it can cause infinite loops
 
-  // Initialize location data when pending data is available
+  // Initialize location data when pending data is available and provinces are loaded
   useEffect(() => {
-    if (!residenceInitialized && pendingResidenceData) {
-      const timer = setTimeout(() => {
-        console.log('🏠 Setting residence data:', pendingResidenceData);
-        setLocationDataLoading(true);
+    if (!residenceInitialized && pendingResidenceData && !residenceLoadingProvinces) {
+      console.log('🏠 Setting residence data:', pendingResidenceData);
+      setLocationDataLoading(true);
 
-        setResidenceInitialValues(pendingResidenceData)
-          .then(() => {
-            console.log('✅ Residence data set successfully');
-          })
-          .catch(error => {
-            console.error('❌ Error setting residence initial values:', error);
-          })
-          .finally(() => {
-            setLocationDataLoading(false);
-            setResidenceInitialized(true);
-            setPendingResidenceData(null);
-          });
-      }, 1000); // Wait 1s for provinces to load
-
-      return () => clearTimeout(timer);
+      setResidenceInitialValues(pendingResidenceData)
+        .then(() => {
+          console.log('✅ Residence data set successfully');
+        })
+        .catch(error => {
+          console.error('❌ Error setting residence initial values:', error);
+        })
+        .finally(() => {
+          setLocationDataLoading(false);
+          setResidenceInitialized(true);
+          setPendingResidenceData(null);
+        });
     }
-  }, [pendingResidenceData, residenceInitialized, setResidenceInitialValues]);
+  }, [pendingResidenceData, residenceInitialized, residenceLoadingProvinces, setResidenceInitialValues]);
 
   useEffect(() => {
-    if (!birthInitialized && pendingBirthData) {
-      const timer = setTimeout(() => {
-        console.log('🏥 Setting birth data:', pendingBirthData);
-        setLocationDataLoading(true);
+    if (!birthInitialized && pendingBirthData && !birthLoadingProvinces) {
+      console.log('🏥 Setting birth data:', pendingBirthData);
+      setLocationDataLoading(true);
 
-        setBirthInitialValues(pendingBirthData)
-          .then(() => {
-            console.log('✅ Birth data set successfully');
-          })
-          .catch(error => {
-            console.error('❌ Error setting birth initial values:', error);
-          })
-          .finally(() => {
-            setLocationDataLoading(false);
-            setBirthInitialized(true);
-            setPendingBirthData(null);
-          });
-      }, 1000); // Wait 1s for provinces to load
-
-      return () => clearTimeout(timer);
+      setBirthInitialValues(pendingBirthData)
+        .then(() => {
+          console.log('✅ Birth data set successfully');
+        })
+        .catch(error => {
+          console.error('❌ Error setting birth initial values:', error);
+        })
+        .finally(() => {
+          setLocationDataLoading(false);
+          setBirthInitialized(true);
+          setPendingBirthData(null);
+        });
     }
-  }, [pendingBirthData, birthInitialized, setBirthInitialValues]);
+  }, [pendingBirthData, birthInitialized, birthLoadingProvinces, setBirthInitialValues]);
 
   // Fallback timeout to ensure initialization happens even if there are issues
   useEffect(() => {
@@ -693,6 +795,7 @@ export default function ProfileUpdate({ user, setUser }) {
     usernameAvailable === false ||
     (formData.email?.trim() && emailAvailable === false) ||
     (formData.email?.trim() && emailAvailable === null && (formData.email || '') !== (originalEmail || '')) ||
+    (formData.teacher_number?.trim() && teacherNumberAvailable === false) ||
     isPhysicalInvalid();
 
   const buildTeacherFamilyPayload = () => {
@@ -758,158 +861,98 @@ export default function ProfileUpdate({ user, setUser }) {
       }
 
       // Transform formData to match API payload structure
-      // Build update data similar to TeachersManagement pattern
-      const updateData = {};
+      // Build update data with upfront construction and cleanup pattern (matching TeacherEditModal)
+      const updateData = {
+        // Basic Personal Information
+        username: formData.username?.trim() || undefined,
+        first_name: formData.first_name?.trim() || undefined,
+        last_name: formData.last_name?.trim() || undefined,
+        email: formData.email?.trim() || undefined,
+        phone: formData.phone?.trim() || undefined,
 
-      // Always include core user fields (required fields)
-      if (formData.first_name) {
-        updateData.first_name = formData.first_name;
-      }
-      if (formData.last_name) {
-        updateData.last_name = formData.last_name;
-      }
-      if (formData.email && formData.email.trim()) {
-        updateData.email = formData.email.trim();
-      }
-      if (formData.date_of_birth) {
-        updateData.date_of_birth = formData.date_of_birth;
-      }
-      if (formData.gender) {
-        updateData.gender = formData.gender;
-      }
+        // Date & Identity
+        date_of_birth: formData.date_of_birth || undefined,
+        gender: formData.gender || undefined,
+        nationality: formData.nationality?.trim() || undefined,
+        profile_picture: profilePictureUrl || formData.profile_picture || undefined,
 
-      // Include optional fields only if they have values
-      if (formData.username) {
-        updateData.username = formData.username;
-      }
+        // Physical Information
+        weight_kg: formData.weight_kg ? parseFloat(formData.weight_kg) : undefined,
+        height_cm: formData.height_cm ? parseFloat(formData.height_cm) : undefined,
+        bmi: formData.bmi ? parseFloat(formData.bmi) : undefined,
 
-      if (formData.phone) {
-        updateData.phone = formData.phone;
-      }
+        // Location Information
+        ethnic_group: formData.ethnic_group?.trim() || undefined,
+        residence: {
+          provinceId: selectedResidenceProvince || formData.residence?.provinceId || undefined,
+          districtId: selectedResidenceDistrict || formData.residence?.districtId || undefined,
+          communeId: selectedResidenceCommune || formData.residence?.communeId || undefined,
+          villageId: selectedResidenceVillage || formData.residence?.villageId || undefined,
+        },
+        placeOfBirth: {
+          provinceId: selectedBirthProvince || formData.placeOfBirth?.provinceId || undefined,
+          districtId: selectedBirthDistrict || formData.placeOfBirth?.districtId || undefined,
+          communeId: selectedBirthCommune || formData.placeOfBirth?.communeId || undefined,
+          villageId: selectedBirthVillage || formData.placeOfBirth?.villageId || undefined,
+        },
 
-      if (profilePictureUrl || formData.profile_picture) {
-        updateData.profile_picture = profilePictureUrl || formData.profile_picture;
-      }
+        // Health & Accessibility
+        accessibility: formData.accessibility && formData.accessibility.length > 0 ? formData.accessibility : undefined,
 
-      if (formData.nationality) {
-        updateData.nationality = formData.nationality;
-      }
+        // Teacher-Specific Fields
+        employment_type: formData.employment_type || undefined,
+        salaryTypeId: formData.salary_type ? parseInt(formData.salary_type) : undefined,
+        educationLevel: formData.education_level || undefined,
+        trainingType: formData.training_type || undefined,
+        teachingType: formData.teaching_type || undefined,
+        teacherStatus: formData.teacher_status || undefined,
+        subject: formData.subject && formData.subject.length > 0 ? formData.subject : undefined,
+        gradeLevel: formData.gradeLevel === null ? null : (formData.gradeLevel?.trim() || undefined),
+        hire_date: formData.hire_date || undefined,
+        appointed: typeof formData.appointed === 'boolean' ? formData.appointed : undefined,
+        burden: typeof formData.burden === 'boolean' ? formData.burden : undefined,
 
-      if (formData.weight_kg) {
-        updateData.weight_kg = parseFloat(formData.weight_kg);
-      }
+        // Teacher Learning Tools
+        teacherExtraLearningTool: formData.teacherExtraLearningTool || undefined,
+        extraLearningTool: formData.extraLearningTool || undefined,
 
-      if (formData.height_cm) {
-        updateData.height_cm = parseFloat(formData.height_cm);
-      }
+        // Books Assignment
+        bookIds: formData.bookIds && formData.bookIds.length > 0 ? formData.bookIds : null,
 
-      if (formData.bmi) {
-        updateData.bmi = parseFloat(formData.bmi);
-      }
+        // Family Information
+        teacher_family: buildTeacherFamilyPayload()
+      };
 
-      // Note: Do NOT include id or role fields - the API doesn't accept them for current user updates
-      // Role is retrieved from the GET endpoint and cannot be changed via this endpoint
-
-      // Include location fields if available - only send IDs, not location names
-      if (formData.residence && (formData.residence.provinceId || formData.residence.districtId || formData.residence.communeId || formData.residence.villageId)) {
-        updateData.residence = {
-          provinceId: formData.residence.provinceId || undefined,
-          districtId: formData.residence.districtId || undefined,
-          communeId: formData.residence.communeId || undefined,
-          villageId: formData.residence.villageId || undefined
-        };
-      }
-
-      if (formData.placeOfBirth && (formData.placeOfBirth.provinceId || formData.placeOfBirth.districtId || formData.placeOfBirth.communeId || formData.placeOfBirth.villageId)) {
-        updateData.placeOfBirth = {
-          provinceId: formData.placeOfBirth.provinceId || undefined,
-          districtId: formData.placeOfBirth.districtId || undefined,
-          communeId: formData.placeOfBirth.communeId || undefined,
-          villageId: formData.placeOfBirth.villageId || undefined
-        };
-      }
-
-      // Include newPassword if provided
+      // Add password if provided
       if (formData.newPassword && formData.newPassword.trim()) {
-        updateData.newPassword = formData.newPassword;
+        updateData.newPassword = formData.newPassword.trim();
       }
 
-      // Include additional teacher-specific fields if available
-      if (formData.employment_type) {
-        updateData.employment_type = formData.employment_type;
-      }
+      // Remove undefined/empty values - but keep bookIds, gradeLevel, and learning tool objects even when null
+      const cleanUpdateData = Object.keys(updateData).reduce((acc, k) => {
+        // Special cases: keep bookIds, gradeLevel, and learning tool objects even when null so backend sees explicit values
+        if (k === 'bookIds' || k === 'gradeLevel' || k === 'teacherExtraLearningTool' || k === 'extraLearningTool') {
+          acc[k] = updateData[k];
+          return acc;
+        }
 
-      if (formData.ethnic_group) {
-        updateData.ethnic_group = formData.ethnic_group;
-      }
+        // For objects (residence, placeOfBirth, teacher_family), only keep if they have at least one defined value
+        if (typeof updateData[k] === 'object' && updateData[k] !== null) {
+          const hasDefinedValue = Object.values(updateData[k]).some(v => v !== undefined && v !== null && v !== '');
+          if (hasDefinedValue) {
+            acc[k] = updateData[k];
+          }
+          return acc;
+        }
 
-      if (formData.gradeLevel) {
-        updateData.gradeLevel = formData.gradeLevel;
-      }
+        // For other values, only keep if defined, not null, and not empty string
+        if (updateData[k] !== undefined && updateData[k] !== null && updateData[k] !== '') {
+          acc[k] = updateData[k];
+        }
+        return acc;
+      }, {});
 
-      if (formData.hire_date) {
-        updateData.hire_date = formData.hire_date;
-      }
-
-      if (formData.accessibility && formData.accessibility.length > 0) {
-        updateData.accessibility = formData.accessibility;
-      }
-
-      // Note: Do NOT add role field - the API doesn't accept it and users cannot change their own role
-
-      // Add salary type
-      if (formData.salary_type) {
-        updateData.salaryTypeId = parseInt(formData.salary_type);
-      }
-
-      // Add education level
-      if (formData.education_level) {
-        updateData.educationLevel = formData.education_level;
-      }
-
-      // Add training type
-      if (formData.training_type) {
-        updateData.trainingType = formData.training_type;
-      }
-
-      // Add teaching type
-      if (formData.teaching_type) {
-        updateData.teachingType = formData.teaching_type;
-      }
-
-      // Add teacher status
-      if (formData.teacher_status) {
-        updateData.teacherStatus = formData.teacher_status;
-      }
-
-      // Add subjects
-      if (formData.subject && formData.subject.length > 0) {
-        updateData.subject = formData.subject;
-      }
-
-      // Add appointment and burden status
-      if (typeof formData.appointed === 'boolean') {
-        updateData.appointed = formData.appointed;
-      }
-
-      if (typeof formData.burden === 'boolean') {
-        updateData.burden = formData.burden;
-      }
-
-      // Add extra learning tools
-      if (formData.teacherExtraLearningTool && Object.keys(formData.teacherExtraLearningTool).length > 0) {
-        updateData.teacherExtraLearningTool = formData.teacherExtraLearningTool;
-      }
-
-      // Add book IDs if available
-      if (formData.bookIds && formData.bookIds.length > 0) {
-        updateData.bookIds = formData.bookIds;
-      }
-
-      // Add teacher family information
-      if (formData.teacher_family && (formData.teacher_family.living_status || formData.teacher_family.spouse_info?.spouse_name || formData.teacher_family.children?.length > 0)) {
-        updateData.teacher_family = buildTeacherFamilyPayload();
-      }
+      Object.assign(updateData, cleanUpdateData);
 
       // Use the correct endpoint for updating user profile via PUT /users/{userId}
       const userId = formData.id;
@@ -1059,6 +1102,33 @@ export default function ProfileUpdate({ user, setUser }) {
             setEmailAvailable(!result.exists);
           } catch (error) {
             console.error('Error validating email:', error);
+          }
+        }, 500);
+      }
+    }
+
+    // Handle teacher_number validation
+    if (name === 'teacher_number') {
+      const trimmedTeacherNumber = value?.trim() || '';
+
+      // If teacher number is unchanged from the original, treat it as available
+      if (trimmedTeacherNumber === (originalTeacherNumber || '')) {
+        setTeacherNumberAvailable(true);
+      } else if (!trimmedTeacherNumber) {
+        setTeacherNumberAvailable(null);
+      } else {
+        setTeacherNumberAvailable(null);
+        // Debounce teacher number validation API call
+        if (teacherNumberDebounceRef.current) {
+          clearTimeout(teacherNumberDebounceRef.current);
+        }
+        teacherNumberDebounceRef.current = setTimeout(async () => {
+          try {
+            const result = await userService.checkTeacherNumber(trimmedTeacherNumber);
+            // If teacher number exists, it's not available; if it doesn't exist, it's available
+            setTeacherNumberAvailable(!result.exists);
+          } catch (error) {
+            console.error('Error checking teacher number:', error);
           }
         }, 500);
       }
@@ -2315,14 +2385,33 @@ export default function ProfileUpdate({ user, setUser }) {
                       <label htmlFor="teacher_number" className="block text-sm font-medium text-gray-700 mb-1">
                         {t('teacherNumber')}
                       </label>
-                      <input
-                        type="text"
-                        id="teacher_number"
-                        className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                        value={formData.teacher_number}
-                        onChange={(e) => setFormData(prev => ({ ...prev, teacher_number: e.target.value }))}
-                        placeholder={t('enterTeacherNumber')}
-                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          id="teacher_number"
+                          name="teacher_number"
+                          className={`mt-1 block w-full rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
+                            formData.teacher_number && teacherNumberAvailable === false
+                              ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                              : formData.teacher_number && teacherNumberAvailable === true
+                                ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
+                                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
+                          }`}
+                          value={formData.teacher_number}
+                          onChange={handleInputChange}
+                          placeholder={t('enterTeacherNumber')}
+                        />
+                        {formData.teacher_number && teacherNumberAvailable === false && (
+                          <div className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                            ✕ {t('teacherNumberExists', 'This teacher number is already in use')}
+                          </div>
+                        )}
+                        {formData.teacher_number && teacherNumberAvailable === true && (
+                          <div className="mt-1 text-xs text-green-600 flex items-center gap-1">
+                            ✓ {t('teacherNumberAvailable', 'Teacher number is available')}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div>
@@ -2411,29 +2500,112 @@ export default function ProfileUpdate({ user, setUser }) {
                   {/* Extra Learning Tools Subsection */}
                   <div className="mt-8 border-t border-gray-200 pt-6">
                     <h4 className="text-base font-medium text-gray-900 mb-4">{t('extraLearningTool')}</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {Object.entries(formData.teacherExtraLearningTool).map(([key, value]) => (
-                        <div key={key}>
-                          <label className="flex items-center space-x-3 cursor-pointer p-3 border border-gray-300 rounded-md transition-colors">
-                            <input
-                              type="checkbox"
-                              checked={value === true}
-                              onChange={(e) => {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  teacherExtraLearningTool: {
-                                    ...prev.teacherExtraLearningTool,
-                                    [key]: e.target.checked
-                                  }
-                                }));
-                              }}
-                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-sm font-medium text-gray-700">{key}</span>
-                          </label>
+
+                    {(() => {
+                      const getCategoryLabel = (key) => {
+                        if (key === 'reading_material_package') {
+                          return t('learningPackage', 'កញ្ចប់សម្ភារៈអំណាន');
+                        }
+                        if (key === 'math_grade1_package') {
+                          return t('mathGrade1', 'គណិតវិទ្យាថ្នាក់ដំបូង');
+                        }
+                        return key;
+                      };
+
+                      const getDetailLabel = (key) => {
+                        if (key === 'picture_cards') {
+                          return t('pictureCards', 'ប័ណ្ឌរូបភាព');
+                        }
+                        if (key === 'manipulatives') {
+                          return t('manipulatives', 'សម្ភារឧបទេស');
+                        }
+                        return key;
+                      };
+
+                      return (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {Object.entries(formData.teacherExtraLearningTool).map(([category, tools]) => {
+                            const obj = tools || {};
+
+                            // Determine main detail key (first non-_hasPackage key)
+                            const detailKeys = Object.keys(obj).filter(k => k !== '_hasPackage');
+                            const detailKey = detailKeys[0];
+
+                            const hasPackage = !!obj._hasPackage;
+                            const detailFlag = detailKey ? !!obj[detailKey] : false;
+
+                            return (
+                              <div
+                                key={category}
+                                className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white shadow-sm"
+                              >
+                                <div className="font-medium text-gray-900 mb-2">
+                                  {getCategoryLabel(category)}
+                                </div>
+
+                                <div className="space-y-3 text-sm">
+                                  {/* Has Package checkbox */}
+                                  <label className="flex items-center justify-between cursor-pointer">
+                                    <span className="text-gray-700">
+                                      {t('hasPackage', 'Has Package')}
+                                    </span>
+                                    <span className="inline-flex items-center">
+                                      <input
+                                        type="checkbox"
+                                        checked={hasPackage}
+                                        onChange={(e) => {
+                                          const checked = e.target.checked;
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            teacherExtraLearningTool: {
+                                              ...prev.teacherExtraLearningTool,
+                                              [category]: {
+                                                ...(prev.teacherExtraLearningTool[category] || {}),
+                                                _hasPackage: checked,
+                                              },
+                                            },
+                                          }));
+                                        }}
+                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                      />
+                                    </span>
+                                  </label>
+
+                                  {/* Detail tool checkbox */}
+                                  {detailKey && (
+                                    <label className="flex items-center justify-between cursor-pointer">
+                                      <span className="text-gray-700">
+                                        {getDetailLabel(detailKey)}
+                                      </span>
+                                      <span className="inline-flex items-center">
+                                        <input
+                                          type="checkbox"
+                                          checked={detailFlag}
+                                          onChange={(e) => {
+                                            const checked = e.target.checked;
+                                            setFormData(prev => ({
+                                              ...prev,
+                                              teacherExtraLearningTool: {
+                                                ...prev.teacherExtraLearningTool,
+                                                [category]: {
+                                                  ...(prev.teacherExtraLearningTool[category] || {}),
+                                                  [detailKey]: checked,
+                                                },
+                                              },
+                                            }));
+                                          }}
+                                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                      </span>
+                                    </label>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Family Information Subsection */}

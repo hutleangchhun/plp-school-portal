@@ -1,22 +1,19 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, ChevronDown } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { bookService } from '../../utils/api/services/bookService';
 import { subjectService } from '../../utils/api/services/subjectService';
 import { apiClient_, handleApiResponse } from '../../utils/api/client.js';
-import { Button } from '../ui/Button';
 import BookCard from '../books/BookCard';
 
 const SelectedBooksDisplay = ({
   selectedBookIds,
   onRemoveBook,
   t,
-  showRemoveButtons = true,
-  maxDisplay = 10
+  showRemoveButtons = true
 }) => {
   const [books, setBooks] = useState([]);
   const [allAvailableBooks, setAllAvailableBooks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showAll, setShowAll] = useState(false);
   const [bookCategories, setBookCategories] = useState([]);
   const [subjects, setSubjects] = useState([]);
 
@@ -111,8 +108,6 @@ const SelectedBooksDisplay = ({
 
   // Filter books to only show those in selectedBookIds
   const filteredBooks = books.filter(book => selectedBookIds.includes(book.id));
-  const displayedBooks = showAll ? filteredBooks : filteredBooks.slice(0, maxDisplay);
-  const hasMoreBooks = filteredBooks.length > maxDisplay;
 
   return (
     <>
@@ -121,50 +116,26 @@ const SelectedBooksDisplay = ({
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
       ) : filteredBooks.length > 0 ? (
-        <>
-          <div className="grid grid sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-            {displayedBooks.map((book) => {
-              const categoryName = bookCategories.find(cat => cat.id === book.bookCategoryId)?.name || 'N/A';
-              const subjectName = subjects.find(subj => subj.id === book.subjectId)?.khmer_name || subjects.find(subj => subj.id === book.subjectId)?.name || 'N/A';
+        <div className="grid grid sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          {filteredBooks.map((book) => {
+            const categoryName = bookCategories.find(cat => cat.id === book.bookCategoryId)?.name || 'N/A';
+            const subjectName = subjects.find(subj => subj.id === book.subjectId)?.khmer_name || subjects.find(subj => subj.id === book.subjectId)?.name || 'N/A';
 
-              return (
-                <BookCard
-                  key={book.id}
-                  book={book}
-                  t={t}
-                  getEmptyDisplay={() => 'N/A'}
-                  layout="portrait"
-                  categoryName={categoryName}
-                  subjectName={subjectName}
-                  showRemoveButton={showRemoveButtons}
-                  onRemoveBook={onRemoveBook}
-                />
-              );
-            })}
-          </div>
-
-          {hasMoreBooks && (
-            <div className="mt-6 flex justify-center">
-              <Button
-                type="button"
-                variant={showAll ? 'outline' : 'primary'}
-                onClick={() => setShowAll(!showAll)}
-                className="flex items-center gap-2"
-              >
-                {showAll ? (
-                  <>
-                    {t('showLess', 'Show Less')}
-                  </>
-                ) : (
-                  <>
-                    {t('showMore', 'Show More')} ({books.length - maxDisplay} {t('more', 'more')})
-                    <ChevronDown className="w-4 h-4" />
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-        </>
+            return (
+              <BookCard
+                key={book.id}
+                book={book}
+                t={t}
+                getEmptyDisplay={() => 'N/A'}
+                layout="portrait"
+                categoryName={categoryName}
+                subjectName={subjectName}
+                showRemoveButton={showRemoveButtons}
+                onRemoveBook={onRemoveBook}
+              />
+            );
+          })}
+        </div>
       ) : null}
     </>
   );

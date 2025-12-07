@@ -334,6 +334,7 @@ export const km = {
   teacherNumberExists: 'អត្តលេខមន្ត្រីរាជការត្រូវបានប្រើប្រាស់រូចហើយ',
   teacherNumberAvailable: 'អត្តលេខមន្ត្រីរាជការអាចប្រើប្រាស់បាន',
   teacherBooks: 'ជ្រើសរើសសៀវភៅសម្រាប់គ្រួ',
+  enterTeacherNumber: 'អត្តលេខមន្ត្រីរាជការ',
 
 
 

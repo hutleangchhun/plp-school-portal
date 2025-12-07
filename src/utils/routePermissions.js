@@ -377,11 +377,11 @@ export const getNavigationItems = (user, t) => {
       href: '/admin-logs',
     },
     {
-      name: t('teacherTransfer', 'Teacher Transfer'),
+      name: t('teachersManagement', 'Teacher Transfer'),
       href: '/admin/teacher-transfer',
     },
     {
-      name: t('studentTransfer', 'Student Transfer'),
+      name: t('studentsManagement', 'Student Transfer'),
       href: '/admin/student-transfer',
     },
   ];

@@ -752,7 +752,7 @@ const StudentTransferManagement = () => {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {t('studentTransfer', 'Student Transfer Between Schools')}
+                  {t('studentsManagement', 'Student Transfer Between Schools')}
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">
                   {t('transferStudentsDesc', 'Transfer a student from one school master class to another')}

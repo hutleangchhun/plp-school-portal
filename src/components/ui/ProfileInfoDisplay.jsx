@@ -157,21 +157,86 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
         )}
 
         {/* Extra Learning Tools Subsection */}
-        {formData.teacherExtraLearningTool && Object.values(formData.teacherExtraLearningTool).some(v => v === true) && (
-          <div className="mt-8 border-t border-gray-200 pt-6">
-            <h4 className="text-base font-medium text-gray-900 mb-4">{t('extraLearningTool')}</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {Object.entries(formData.teacherExtraLearningTool).map(([key, value]) => (
-                value === true && (
-                  <div key={key} className="flex items-center gap-2 text-sm text-gray-900">
-                    <span className="h-2 w-2 rounded-full bg-green-600"></span>
-                    {key}
-                  </div>
-                )
-              ))}
+        {formData.teacherExtraLearningTool && (() => {
+          const getCategoryLabel = (key) => {
+            if (key === 'reading_material_package') {
+              return t('learningPackage', 'កញ្ចប់សម្ភារៈអំណាន');
+            }
+            if (key === 'math_grade1_package') {
+              return t('mathGrade1', 'គណិតវិទ្យាថ្នាក់ដំបូង');
+            }
+            return key;
+          };
+
+          const getDetailLabel = (key) => {
+            if (key === 'picture_cards') {
+              return t('pictureCards', 'ប័ណ្ឌរូបភាព');
+            }
+            if (key === 'manipulatives') {
+              return t('manipulatives', 'សម្ភារឧបទេស');
+            }
+            return key;
+          };
+
+          // Check if there's any data to display
+          const hasAnyData = Object.entries(formData.teacherExtraLearningTool).some(([_, tools]) => {
+            if (!tools) return false;
+            // For new format (objects), check if _hasPackage or any detail is true
+            if (typeof tools === 'object') {
+              return Object.values(tools).some(v => v === true);
+            }
+            // For legacy format (boolean values)
+            return tools === true;
+          });
+
+          if (!hasAnyData) return null;
+
+          return (
+            <div className="mt-8 border-t border-gray-200 pt-6">
+              <h4 className="text-base font-medium text-gray-900 mb-4">{t('extraLearningTool')}</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {Object.entries(formData.teacherExtraLearningTool).map(([category, tools]) => {
+                  // Handle new format (objects)
+                  if (typeof tools === 'object' && tools !== null) {
+                    const detailKeys = Object.keys(tools).filter(k => k !== '_hasPackage');
+                    const detailKey = detailKeys[0];
+                    const hasPackage = !!tools._hasPackage;
+                    const detailFlag = detailKey ? !!tools[detailKey] : false;
+
+                    if (!hasPackage && !detailFlag) return null;
+
+                    return (
+                      <div key={category} className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                          <span className="h-2 w-2 rounded-full bg-green-600"></span>
+                          {getCategoryLabel(category)}
+                        </div>
+                        {detailFlag && (
+                          <div className="ml-4 flex items-center gap-2 text-sm text-gray-700">
+                            <span className="h-2 w-2 rounded-full bg-blue-600"></span>
+                            {getDetailLabel(detailKey)}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // Handle legacy format (boolean values)
+                  if (tools === true) {
+                    return (
+                      <div key={category} className="flex items-center gap-2 text-sm text-gray-900">
+                        <span className="h-2 w-2 rounded-full bg-green-600"></span>
+                        {category}
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Family Information Subsection */}
         {formData.teacher_family && (formData.teacher_family.living_status || formData.teacher_family.spouse_info || formData.teacher_family.children) && (

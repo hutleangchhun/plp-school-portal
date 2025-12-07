@@ -60,8 +60,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/teacher-reports': BarChart3,
     '/admin-dashboard': LayoutDashboard,
     '/admin-logs': Activity,
-    '/admin/teacher-transfer': ArrowRightLeft,
-    '/admin/student-transfer': ArrowRightLeft,
+    '/admin/teacher-transfer': UserStar,
+    '/admin/student-transfer': Users,
     'attendance': Calendar, // Parent item for attendance dropdown
     'admin-dashboard': LayoutDashboard,
     'admin-logs': Activity,

@@ -34,20 +34,20 @@ export default function MultiSelectDropdown({
     <DropdownMenu.Root open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenu.Trigger asChild>
         <button
-          className={`inline-flex items-center justify-between rounded px-3 py-2 text-xs bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 w-full h-8 ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+          className={`inline-flex items-center justify-between rounded px-4 py-2 text-sm bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
           disabled={disabled}
         >
-          <span className="truncate flex-1 text-left text-xs">
+          <span className="truncate flex-1 text-left">
             {displayValue}
           </span>
           <div className="flex items-center ml-2 flex-shrink-0">
             {value.length > 0 && (
               <X
-                className="h-3 w-3 text-gray-400 hover:text-gray-600 mr-1"
+                className="h-4 w-4 text-gray-400 hover:text-gray-600 mr-1"
                 onClick={handleClear}
               />
             )}
-            <ChevronDown className={`h-3 w-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
           </div>
         </button>
       </DropdownMenu.Trigger>
@@ -61,24 +61,26 @@ export default function MultiSelectDropdown({
           {options.map((option) => (
             <DropdownMenu.Item
               key={option.value}
-              className="flex items-center px-2 py-1.5 text-xs cursor-pointer hover:bg-gray-50 rounded-sm outline-none"
+              className={`flex items-center px-3 py-2 text-sm rounded-sm transition-colors focus:outline-none ${
+                value.includes(option.value)
+                  ? 'bg-blue-100 text-blue-900 cursor-pointer hover:bg-blue-100'
+                  : 'text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-gray-900'
+              } data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900 data-[highlighted]:outline-none`}
               onSelect={(e) => {
                 e.preventDefault();
                 handleToggle(option.value);
               }}
             >
-              <div className="flex items-center w-full">
-                <div className="w-4 h-4 mr-2 flex items-center justify-center">
-                  {value.includes(option.value) && (
-                    <Check className="h-3 w-3 text-blue-600" />
-                  )}
-                </div>
-                <span className="flex-1">{option.label}</span>
+              <div className="w-4 h-4 mr-2 flex items-center justify-center flex-shrink-0">
+                {value.includes(option.value) && (
+                  <Check className="h-4 w-4 text-blue-600" />
+                )}
               </div>
+              <span className="flex-1">{option.label}</span>
             </DropdownMenu.Item>
           ))}
           {options.length === 0 && (
-            <div className="px-2 py-1.5 text-xs text-gray-500 text-center">
+            <div className="px-3 py-2 text-sm text-gray-500 text-center">
               No options available
             </div>
           )}
