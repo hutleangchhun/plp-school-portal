@@ -17,10 +17,10 @@ import {
 } from 'recharts';
 
 /**
- * BMI Distribution Growth Chart Component
- * Displays BMI distribution comparison between two academic years
+ * BMI Distribution Chart Component
+ * Displays BMI distribution data with integrated sidebar filters
  *
- * @param {Object} dashboardData - Dashboard data containing bmiDistribution for both years
+ * @param {Object} dashboardData - Dashboard data containing bmiDistribution
  * @param {Array} academicYearOptions - List of available academic years
  * @param {Object} dashboardFilters - Current filter values
  * @param {Object} locationOptions - Location filter options (provinces, districts, schools)
@@ -153,17 +153,16 @@ const BMIDistributionChart = ({
         {/* Header with Title and Filter Button */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-gray-900">{t('bmiGrowthChart', 'BMI Growth Comparison')}</h3>
+            <h3 className="text-lg font-bold text-gray-900">{t('bmiDistribution', 'BMI Distribution')}</h3>
             <p className="text-sm text-gray-500 mt-1">
               {hasActiveFilters
-                ? `${t('comparing', 'Comparing')}: ${[
-                    selectedYear1 && `${selectedYear1}`,
-                    selectedYear2 && `vs ${selectedYear2}`,
+                ? `${t('filteringBy', 'Filtering by')}: ${[
+                    selectedYear1 && selectedYear2 ? `${selectedYear1} vs ${selectedYear2}` : selectedYear1 || selectedYear2,
                     selectedProvince,
                     selectedDistrict,
                     selectedSchool
                   ].filter(Boolean).join(' • ')}`
-                : t('selectYearsToCompare', 'Select two academic years to compare BMI distribution growth')}
+                : t('bmiDistributionDesc', 'View BMI distribution across all students')}
             </p>
           </div>
           <div className="flex gap-2">
@@ -197,7 +196,7 @@ const BMIDistributionChart = ({
             <XAxis
               dataKey="name"
               angle={0}
-              height={100}
+              height={30}
               className='text-sm'
             />
             <YAxis />
@@ -226,8 +225,8 @@ const BMIDistributionChart = ({
       <SidebarFilter
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        title={t('growthComparisonFilters', 'Growth Comparison Filters')}
-        subtitle={t('selectTwoYearsToCompare', 'Select two academic years and location filters')}
+        title={t('filters', 'BMI Dashboard Filters')}
+        subtitle={t('filterBmiData', 'Filter BMI data by location and academic year')}
         onApply={() => {
           // Apply sidebar filters to the dashboard
           onFilterChange('academicYear1', sidebarFilters.academicYear1);
@@ -252,11 +251,11 @@ const BMIDistributionChart = ({
         {/* Academic Year 1 Filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('firstYear', 'First Year')}
+            {t('academicYear', 'Academic Year')} 1
           </label>
           <Dropdown
             options={[
-              { value: '', label: t('selectFirstYear', 'Select first year') },
+              { value: '', label: t('all', 'All Years') },
               ...academicYearOptions
             ]}
             value={sidebarFilters.academicYear1}
@@ -269,11 +268,11 @@ const BMIDistributionChart = ({
         {/* Academic Year 2 Filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('secondYear', 'Second Year')}
+            {t('academicYear', 'Academic Year')} 2
           </label>
           <Dropdown
             options={[
-              { value: '', label: t('selectSecondYear', 'Select second year') },
+              { value: '', label: t('all', 'All Years') },
               ...academicYearOptions
             ]}
             value={sidebarFilters.academicYear2}

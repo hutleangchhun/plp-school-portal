@@ -29,7 +29,8 @@ const BMIReport = () => {
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [dashboardFilters, setDashboardFilters] = useState({
-    academicYear: '2025-2026',
+    academicYear1: '',
+    academicYear2: '',
     province: '',
     district: '',
     school: ''
@@ -54,33 +55,53 @@ const BMIReport = () => {
     setAcademicYearOptions(years);
   }, []);
 
-  // Fetch BMI Dashboard data
+  // Fetch BMI Dashboard data for growth comparison
   const fetchBmiDashboard = useCallback(async () => {
     setDashboardLoading(true);
     try {
-      const params = {
-        academicYear: dashboardFilters.academicYear || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)
-      };
-
-      // Add location filters if selected
+      // Base location filters
+      const baseParams = {};
       if (dashboardFilters.province) {
-        params.provinceId = dashboardFilters.province;
+        baseParams.provinceId = dashboardFilters.province;
       }
       if (dashboardFilters.district) {
-        params.districtId = dashboardFilters.district;
+        baseParams.districtId = dashboardFilters.district;
       }
       if (dashboardFilters.school) {
-        params.schoolId = dashboardFilters.school;
+        baseParams.schoolId = dashboardFilters.school;
       }
 
-      console.log('📊 Fetching BMI dashboard with params:', params);
+      // Fetch data for both years if selected
+      const promises = [];
 
-      const response = await bmiService.getBmiDashboard('primary', params);
-
-      if (response.success) {
-        setDashboardData(response.data);
+      if (dashboardFilters.academicYear1) {
+        const params1 = { ...baseParams, academicYear: dashboardFilters.academicYear1 };
+        console.log('📊 Fetching Year 1 BMI dashboard with params:', params1);
+        promises.push(bmiService.getBmiDashboard('primary', params1));
       } else {
-        throw new Error(response.error || 'Failed to fetch BMI dashboard');
+        promises.push(Promise.resolve({ success: true, data: { bmiDistribution: {} } }));
+      }
+
+      if (dashboardFilters.academicYear2) {
+        const params2 = { ...baseParams, academicYear: dashboardFilters.academicYear2 };
+        console.log('📊 Fetching Year 2 BMI dashboard with params:', params2);
+        promises.push(bmiService.getBmiDashboard('primary', params2));
+      } else {
+        promises.push(Promise.resolve({ success: true, data: { bmiDistribution: {} } }));
+      }
+
+      const [response1, response2] = await Promise.all(promises);
+
+      if (response1.success && response2.success) {
+        // Combine both years' data
+        setDashboardData({
+          bmiDistribution: {
+            year1: response1.data?.bmiDistribution || {},
+            year2: response2.data?.bmiDistribution || {}
+          }
+        });
+      } else {
+        throw new Error('Failed to fetch BMI dashboard data');
       }
     } catch (err) {
       console.error('Error fetching BMI dashboard:', err);
@@ -411,16 +432,22 @@ const BMIReport = () => {
                   ...prev,
                   school: value
                 }));
-              } else if (field === 'academicYear') {
+              } else if (field === 'academicYear1') {
                 setDashboardFilters(prev => ({
                   ...prev,
-                  academicYear: value
+                  academicYear1: value
+                }));
+              } else if (field === 'academicYear2') {
+                setDashboardFilters(prev => ({
+                  ...prev,
+                  academicYear2: value
                 }));
               }
             }}
             onClearFilters={() => {
               setDashboardFilters({
-                academicYear: '2025-2026',
+                academicYear1: '',
+                academicYear2: '',
                 province: '',
                 district: '',
                 school: ''
