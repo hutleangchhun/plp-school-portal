@@ -86,32 +86,45 @@ const BMIDistributionChart = ({
   // Prepare growth chart data comparing two years
   const year1Data = dashboardData.bmiDistribution?.year1 || dashboardData.bmiDistribution || {};
   const year2Data = dashboardData.bmiDistribution?.year2 || {};
+  const hasComparison = dashboardFilters.academicYear1 && dashboardFilters.academicYear2;
+
+  // Helper function to calculate growth rate
+  const calculateGrowthRate = (year1Value, year2Value) => {
+    if (!hasComparison || !year1Value || year1Value === 0) return null;
+    const change = ((year2Value - year1Value) / year1Value * 100).toFixed(1);
+    return parseFloat(change);
+  };
 
   const chartData = [
     {
       name: t('severeThinness', 'Severe Thinness'),
       [dashboardFilters.academicYear1 || 'Year 1']: year1Data.severeThinness || 0,
       [dashboardFilters.academicYear2 || 'Year 2']: year2Data.severeThinness || 0,
+      growthRate: calculateGrowthRate(year1Data.severeThinness, year2Data.severeThinness)
     },
     {
       name: t('thinness', 'Thinness'),
       [dashboardFilters.academicYear1 || 'Year 1']: year1Data.thinness || 0,
       [dashboardFilters.academicYear2 || 'Year 2']: year2Data.thinness || 0,
+      growthRate: calculateGrowthRate(year1Data.thinness, year2Data.thinness)
     },
     {
       name: t('normal', 'Normal'),
       [dashboardFilters.academicYear1 || 'Year 1']: year1Data.normal || 0,
       [dashboardFilters.academicYear2 || 'Year 2']: year2Data.normal || 0,
+      growthRate: calculateGrowthRate(year1Data.normal, year2Data.normal)
     },
     {
       name: t('overweight', 'Overweight'),
       [dashboardFilters.academicYear1 || 'Year 1']: year1Data.overweight || 0,
       [dashboardFilters.academicYear2 || 'Year 2']: year2Data.overweight || 0,
+      growthRate: calculateGrowthRate(year1Data.overweight, year2Data.overweight)
     },
     {
       name: t('obesity', 'Obesity'),
       [dashboardFilters.academicYear1 || 'Year 1']: year1Data.obesity || 0,
       [dashboardFilters.academicYear2 || 'Year 2']: year2Data.obesity || 0,
+      growthRate: calculateGrowthRate(year1Data.obesity, year2Data.obesity)
     }
   ];
 
@@ -219,6 +232,31 @@ const BMIDistributionChart = ({
             />
           </BarChart>
         </ResponsiveContainer>
+
+        {/* Growth Rate Summary (if comparing two years) */}
+        {hasComparison && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">
+              {t('yearOverYearChange', 'Year-over-Year Change')}
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {chartData.map((item, index) => (
+                <div key={index} className="text-center">
+                  <p className="text-xs text-gray-600 mb-1">{item.name}</p>
+                  {item.growthRate !== null ? (
+                    <p className={`text-sm font-bold ${
+                      item.growthRate > 0 ? 'text-red-600' : 'text-green-600'
+                    }`}>
+                      {item.growthRate > 0 ? '+' : ''}{item.growthRate}%
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-400">-</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sidebar Filter */}

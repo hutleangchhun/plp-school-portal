@@ -9,6 +9,7 @@ import { schoolService } from '../../utils/api/services/schoolService';
 import { ArrowLeft, Download } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import BMIDistributionChart from '../../components/charts/BMIDistributionChart';
+import BMISummaryCards from '../../components/dashboard/BMISummaryCards';
 
 const BMIReport = () => {
   const { t } = useLanguage();
@@ -372,7 +373,7 @@ const BMIReport = () => {
       <div className="p-4 sm:p-6">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{t('bmiAnalysis', 'BMI Data Analysis')}</h1>
               <p className="text-sm text-gray-600 mt-2">{t('bmiReportDescription', 'Analys and manage BMI data for all users')}</p>
@@ -389,8 +390,13 @@ const BMIReport = () => {
             </Button>
           </div>
 
-          <div className='grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2'>
-                      {/* BMI Distribution Chart with Integrated Filters */}
+          {/* Summary Statistics Cards */}
+          <BMISummaryCards
+            dashboardData={dashboardData}
+            dashboardFilters={dashboardFilters}
+          />
+
+          {/* BMI Distribution Chart with Integrated Filters */}
           <BMIDistributionChart
             dashboardData={dashboardData}
             academicYearOptions={academicYearOptions}
@@ -462,7 +468,6 @@ const BMIReport = () => {
             fetchDistricts={fetchDistricts}
             fetchSchools={fetchSchools}
           />
-          </div>
         </div>
       </div>
     </div>

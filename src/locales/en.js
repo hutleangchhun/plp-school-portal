@@ -949,4 +949,751 @@ export const en = {
   teacherIdentification: 'Teacher Identification',
   idNumber: 'ID Number',
   generatedOn: 'Generated on',
+
+  // BMI Dashboard & Analysis
+  bmiAnalysis: 'BMI Data Analysis',
+  bmiReportDescription: 'Analyze and manage BMI data for all users',
+  bmiDistribution: 'BMI Distribution',
+  bmiDistributionDesc: 'View BMI distribution across all students',
+  filterBmiData: 'Filter BMI data',
+  severeThinness: 'Severe Thinness',
+  thinness: 'Thinness',
+  normal: 'Normal',
+  overweight: 'Overweight',
+  obesity: 'Obesity',
+  filteringBy: 'Filtering by',
+
+  // BMI Summary Cards
+  totalStudentsMeasured: 'Total Students Measured',
+  healthyWeight: 'Healthy Weight',
+  atRiskStudents: 'At Risk Students',
+  obesityRate: 'Obesity Rate',
+  ofTotal: 'of total',
+  comparedTo: 'Compared to',
+
+  // Growth Rate
+  yearOverYearChange: 'Year-over-Year Change',
+
+  // Detailed Table
+  detailedBMIRecords: 'Detailed BMI Records',
+  showingRecords: 'Showing',
+  records: 'records',
+  userName: 'User Name',
+  recordedAt: 'Recorded At',
+  noRecordsFound: 'No records found',
+  page: 'Page',
+
+  // Additional BMI-related
+  all: 'All',
+  selectYear: 'Select year',
+  selectSchool: 'Select school',
+  searchSchool: 'Search school...',
+  noSchoolsFound: 'No schools found',
+
+  // Additional missing translations (from km.js)
+  // Months
+  Apr: 'Apr',
+  April: 'April',
+  Aug: 'Aug',
+  August: 'August',
+  Dec: 'Dec',
+  December: 'December',
+  Feb: 'Feb',
+  February: 'February',
+  Jan: 'Jan',
+  January: 'January',
+  Jul: 'Jul',
+  July: 'July',
+  Jun: 'Jun',
+  June: 'June',
+  Mar: 'Mar',
+  March: 'March',
+  May: 'May',
+  Nov: 'Nov',
+  November: 'November',
+  Oct: 'Oct',
+  October: 'October',
+  Sep: 'Sep',
+  September: 'September',
+  april: 'April',
+  august: 'August',
+  december: 'December',
+  february: 'February',
+  january: 'January',
+  july: 'July',
+  june: 'June',
+  march: 'March',
+  may: 'May',
+  november: 'November',
+  october: 'October',
+  september: 'September',
+
+  // Attendance
+  absent: 'Absent',
+  present: 'Present',
+  late: 'Late',
+  leave: 'Leave',
+  weeklyAttendance: 'Weekly Attendance',
+  attendanceAlreadyMarked: 'Attendance Already Marked',
+  attendanceApprovals: 'Attendance Approvals',
+  attendanceApproved: 'Attendance Approved',
+  attendanceMarked: 'Attendance Marked',
+  attendanceMarkedSuccess: 'Attendance Marked Successfully',
+  attendanceRate: 'Attendance Rate',
+  attendanceRejected: 'Attendance Rejected',
+  attendanceSavedSuccess: 'Attendance Saved Successfully',
+  attendanceStatus: 'Attendance Status',
+  loadingAttendance: 'Loading Attendance...',
+  markAllPresent: 'Mark All Present',
+  markAttendance: 'Mark Attendance',
+  markStudentAttendance: 'Mark Student Attendance',
+  markTodayAttendance: 'Mark Today Attendance',
+  markedAllPresent: 'Marked All Present',
+  markingAgainWillUpdate: 'Marking Again Will Update',
+  canOnlyMarkCurrentMonth: 'Can Only Mark Current Month',
+  canOnlyMarkTodayAttendance: 'Can Only Mark Today Attendance',
+  cannotEditPastAttendance: 'Cannot Edit Past Attendance',
+  cannotMarkPastOrFuture: 'Cannot Mark Past Or Future',
+  clickToMarkAttendance: 'Click To Mark Attendance',
+  failedSaveAttendance: 'Failed to Save Attendance',
+  failedToMarkAttendance: 'Failed To Mark Attendance',
+  errorFetchingAttendance: 'Error Fetching Attendance',
+  errorApprovingAttendance: 'Error Approving Attendance',
+  errorRejectingAttendance: 'Error Rejecting Attendance',
+  noAttendanceData: 'No Attendance Data',
+  noAttendanceDataMessage: 'No Attendance Data Message',
+  allAttendanceApproved: 'All Attendance Approved',
+  noPendingApprovals: 'No Pending Approvals',
+  reviewPendingApprovals: 'Review Pending Approvals',
+  selectAttendanceFirst: 'Select Attendance First',
+  selectClassToViewAttendance: 'Select Class To View Attendance',
+  submittingAttendance: 'Submitting Attendance...',
+  todayAttendanceOverview: 'Today Attendance Overview',
+  viewingPastAttendance: 'Viewing Past Attendance',
+  studentAttendance: 'Student Attendance',
+  teacherAttendance: 'Teacher Attendance',
+  teacherAttendanceTracking: 'Teacher Attendance Tracking',
+  trackTeacherAttendance: 'Track Teacher Attendance',
+  trackYourAttendance: 'Track Your Attendance',
+  avgAbsences: 'Average Absences',
+  highAbsences: 'High Absences',
+  noAbsences: 'No Absences',
+  noLeaves: 'No Leaves',
+  totalAbsences: 'Total Absences',
+  totalLeaves: 'Total Leaves',
+  studentWithMostAbsences: 'Student With Most Absences',
+  studentWithMostLeaves: 'Student With Most Leaves',
+  topAbsentStudents: 'Top Absent Students',
+
+  // Access & Permissions
+  accessDeniedTeacherOnly: 'Access Denied - Teacher Only',
+  accessibility: 'Accessibility',
+  permissionDenied: 'Permission Denied',
+  authenticationRequired: 'Authentication Required',
+
+  // Account & User
+  account: 'Account',
+  userDetails: 'User Details',
+  yourAccountDetails: 'Your Account Details',
+  userDataUpdated: 'User Data Updated',
+  failedToFetchAccountInfo: 'Failed To Fetch Account Info',
+  failedToFetchUserData: 'Failed To Fetch User Data',
+  failedToLoadUserData: 'Failed To Load User Data',
+
+  // Actions & Operations
+  apply: 'Apply',
+  approve: 'Approve',
+  reject: 'Reject',
+  close: 'Close',
+  done: 'Done',
+  skipped: 'Skipped',
+  submitted: 'Submitted',
+  completed: 'Completed',
+  completedAt: 'Completed At',
+  created: 'Created',
+  dateCreated: 'Date Created',
+  startedAt: 'Started At',
+  pending: 'Pending',
+  inProgress: 'In Progress',
+  cannotChange: 'Cannot Change',
+
+  // Achievements & Placeholders
+  achievementsPlaceholder: 'Enter student achievements...',
+  enterNotesAchievements: 'Enter notes or achievements...',
+
+  // Appointments
+  appointed: 'Appointed',
+  appointmentStatus: 'Appointment Status',
+
+  // Approvals
+  approveSelected: 'Approve Selected',
+  bulkApproveSuccess: 'Bulk Approve Success',
+  errorBulkApproving: 'Error Bulk Approving',
+  approvalRequiredDisabled: 'Approval Required Disabled',
+  approvalRequiredEnabled: 'Approval Required Enabled',
+  requiresApproval: 'Requires Approval',
+  requiresApprovalTooltip: 'Enable if teacher attendance requires director approval',
+
+  // At
+  at: 'At',
+
+  // BMI Information
+  bmiCategory: 'BMI Category',
+  bmiInformation: 'BMI Information',
+  bmiValue: 'BMI Value',
+  healthAndBmiInformation: 'Health And BMI Information',
+  healthInformation: 'Health Information',
+  healthRecommendations: 'Health Recommendations',
+
+  // Books
+  bookSelected: 'Book Selected',
+  booksSelected: 'Books Selected',
+  chooseBooks: 'Choose Books',
+  noBooksAvailable: 'No Books Available',
+  noBooksSelected: 'No Books Selected',
+  selectBooks: 'Select Books',
+  selectedBooks: 'Selected Books',
+  teacherBooks: 'Teacher Books',
+  category: 'Category',
+  allCategories: 'All Categories',
+  filterByCategory: 'Filter By Category',
+  statusBooK: 'Book Status',
+
+  // Bulk Operations
+  bulkStudentImport: 'Bulk Student Import',
+  bulkUpdateSuccess: 'Bulk Update Successfully',
+  errorBulkUpdating: 'Error Bulk Updating',
+
+  // Burden
+  burden: 'Burden',
+
+  // Time Periods
+  byMonth: 'By Month',
+  bySemester1: 'By Semester 1',
+  bySemester2: 'By Semester 2',
+  byYear: 'By Year',
+  currentWeek: 'Current Week',
+  days: 'Days',
+  today: 'Today',
+
+  // Certificates
+  certificate: 'Certificate',
+  certificateScore: 'Certificate Score',
+  downloadCertificate: 'Download Certificate',
+
+  // Children & Family
+  childName: 'Child Name',
+  childStatus: 'Child Status',
+  childrenInformation: 'Children Information',
+  numberOfChildren: 'Number Of Children',
+  familyInformation: 'Family Information',
+  bothParents: 'Both Parents',
+  oneParent: 'One Parent',
+  noParents: 'No Parents',
+  parentStatus: 'Parent Status',
+
+  // Class Operations
+  chooseClass: 'Choose Class',
+  chooseYear: 'Choose Year',
+  classAddedSuccessfully: 'Class Added Successfully',
+  classDeletedSuccessfully: 'Class Deleted Successfully',
+  classUpdatedSuccessfully: 'Class Updated Successfully',
+  deleteClass: 'Delete Class',
+  enterClassName: 'Enter Class Name',
+  errorDeletingClass: 'Error Deleting Class',
+  errorSavingClass: 'Error Saving Class',
+  errorUpdatingClass: 'Error Updating Class',
+  errorFetchingClassDetails: 'Error Fetching Class Details',
+  mostEnrolledClass: 'Most Enrolled Class',
+  noClassSelected: 'No Class Selected',
+  noClasses: 'No Classes',
+  noClassesAssignedMessage: 'No Classes Assigned - Contact Admin',
+  noClassesDescription: 'Create classes for your school',
+  noClassesForGrade: 'No Classes For Grade',
+  noClassesFound: 'No Classes Found',
+  noClassesMatchFilter: 'No Classes Match Filter',
+  noClassesYet: 'No Classes Yet',
+  searchClasses: 'Search Classes',
+  selectClassFirstDesc: 'Select Class First',
+  selectClassForReport4: 'Select Class For Report 4',
+  selectClassRequired: 'Select Class Required',
+  filterByClass: 'Filter By Class',
+  pleaseSelectClassAbove: 'Please Select Class Above',
+  myClasses: 'My Classes',
+  yourClassesInSchool: 'Your Classes In School',
+
+  // Clear & Reset
+  clearFilters: 'Clear Filters',
+  clearSearch: 'Clear Search',
+
+  // Click Actions
+  clickToUpload: 'Click To Upload',
+
+  // Completeness
+  complete: 'Complete',
+  completeProfiles: 'Complete Profiles',
+  completionPercentage: 'Completion Percentage',
+  completionRate: 'Completion Rate',
+  incomplete: 'Incomplete',
+  incompleteInformation: 'Incomplete Information',
+  incompleteOnly: 'Incomplete Only',
+  incompleteProfiles: 'Incomplete Profiles',
+  dataCompleteness: 'Data Completeness',
+  dataCompletenessDesc: 'Track user profile completion status',
+  dataCompletenessFilters: 'Data Completeness Filters',
+  dataCompletenessFiltersDesc: 'Filter users by role, school, and completion',
+  fieldCompleteness: 'Field Completeness',
+  fieldCompletenessDesc: 'Track completion rate for each profile field',
+  fieldCompletenessFilters: 'Field Completeness Filters',
+  fieldCompletenessFiltersDesc: 'Filter fields by role and school',
+  fieldName: 'Field Name',
+  fields: 'Fields',
+  fillRate: 'Fill Rate',
+  filled: 'Filled',
+  missing: 'Missing',
+  missingFields: 'Missing Fields',
+  allComplete: 'All Complete',
+
+  // Comments & Notes
+  enterComments: 'Enter Comments...',
+  note: 'Note',
+  notes: 'Notes',
+  reason: 'Reason',
+  reasonRequired: 'Reason Required',
+  enterReason: 'Enter Reason...',
+
+  // Confirm Actions
+  confirmDeleteParents: 'Confirm Delete Parents',
+  confirmDeleteParentsMessage: 'Are you sure you want to delete {{count}} parents? This action cannot be undone.',
+  confirmDeleteTeacher: 'Confirm Delete Teacher',
+  confirmMoveStudentToMaster: 'Confirm Move Student To Master',
+  confirmMoveStudentsToMaster: 'Confirm Move Students To Master',
+  confirmNewPassword: 'Confirm New Password',
+  confirmPassword: 'Confirm Password',
+  confirmRemoveStudentsMessage: 'Confirm Remove Students Message',
+  thisActionCannotBeUndone: 'This Action Cannot Be Undone',
+
+  // Contact
+  contactAdminToAssignClasses: 'Contact Admin To Assign Classes',
+
+  // Copy
+  copyUsername: 'Copy Username',
+  usernameCopied: 'Username Copied',
+
+  // Correct/Incorrect
+  correct: 'Correct',
+  incorrect: 'Incorrect',
+
+  // Current
+  currentStudent: 'Current Student',
+
+  // Dashboard
+  dashboardGreeting: 'Welcome to School Management System',
+  welcomeToDashboard: 'Welcome To Dashboard',
+
+  // Delete Operations
+  deleteParents: 'Delete Parents',
+  deleteParentsDescription: 'This will permanently delete {{count}} parents. This action cannot be undone.',
+  deleteParentsWarning: 'Delete Parents Warning',
+  deleteSelected: 'Delete Selected',
+  deleteTeacher: 'Delete Teacher',
+  deleting: 'Deleting...',
+
+  // Disabilities
+  disabilityTypes: 'Disability Types',
+  hearingImpairment: 'Hearing Impairment',
+  intellectualDisability: 'Intellectual Disability',
+  learningDisability: 'Learning Disability',
+  multipleDisabilities: 'Multiple Disabilities',
+  otherDisability: 'Other Disability',
+  physicalDisability: 'Physical Disability',
+  visualImpairment: 'Visual Impairment',
+  studentsWithDisabilities: 'Students With Disabilities',
+
+  // Approval Settings
+  disableApprovalForSelected: 'Disable Approval For Selected',
+  enableApprovalForSelected: 'Enable Approval For Selected',
+
+  // Education
+  educationLevel: 'Education Level',
+  selectEducationLevel: 'Select Education Level',
+
+  // Email
+  emailAvailable: 'Email Available',
+  emailNotAvailable: 'Email Not Available',
+  emailValidationHint: 'Checking email availability...',
+
+  // Employment
+  employmentInformation: 'Employment Information',
+
+  // Dates
+  endDate: 'End Date',
+  startDate: 'Start Date',
+  selectDate: 'Select Date',
+  selectDateOfBirth: 'Select Date Of Birth',
+  selectEndDate: 'Select End Date',
+  selectStartDate: 'Select Start Date',
+  pickDate: 'Pick Date',
+
+  // Enter Fields
+  enterHeight: 'Enter Height (cm)',
+  enterProfilePictureUrl: 'Enter Profile Picture URL',
+  enterTeacherNumber: 'Enter Teacher Number',
+  enterWeight: 'Enter Weight (kg)',
+
+  // Errors
+  errorSelectingAllStudents: 'Error Selecting All Students',
+  errorUpdatingSettings: 'Error Updating Settings',
+
+  // Ethnic Groups
+  ethnicGroup: 'Ethnic Group',
+  ethnicGroups: 'Ethnic Groups',
+  ethnicMinorityStudents: 'Ethnic Minority Students',
+
+  // Exams
+  exam: 'Exam',
+  examDetails: 'Exam Details',
+  examFilters: 'Exam Filters',
+  examRecord: 'Exam Record',
+  examTypeExam: 'Exam',
+  examTypeQuiz: 'Quiz',
+  examTypeTest: 'Test',
+  loadingExamRecords: 'Loading Exam Records...',
+  noExamRecords: 'No Exam Records',
+  noExamRecordsForStudent: 'No Exam Records For Student',
+  noStudentExamRecords: 'No Student Exam Records',
+  noStudentsWithRecords: 'No Students With Records',
+  searchExams: 'Search Exams',
+  studentExamRecords: 'Student Exam Records',
+  totalExams: 'Total Exams',
+  viewAllStudentExams: 'View All Student Exams',
+  quiz: 'Quiz',
+  test: 'Test',
+  allExamTypes: 'All Exam Types',
+
+  // Export
+  exportFailed: 'Export Failed',
+  exportToSeeAll: 'Export To See All',
+  noDataToExport: 'No Data To Export',
+
+  // Extra Learning
+  extraLearningTool: 'Extra Learning Tool',
+  hasPackage: 'Has Package',
+  have: 'Have',
+  notHave: 'Not Have',
+
+  // Failed Operations
+  failedToAddStudentToParents: 'Failed To Add Student To Parents',
+  failedToAddStudentToSomeParents: 'Failed To Add Student To Some Parents',
+  failedToFetchStudentDetails: 'Failed To Fetch Student Details',
+  failedToFetchStudents: 'Failed To Fetch Students',
+  failedToFetchTeachers: 'Failed To Fetch Teachers',
+  failedTransferStudents: 'Failed To Transfer Students',
+
+  // Feature
+  featureComingSoon: 'Feature Coming Soon',
+
+  // Filters
+  adjustFiltersOrSearch: 'Adjust Filters Or Search',
+  advancedFilters: 'Advanced Filters',
+  filterByActionBelow: 'Filter By Action Below',
+  filterByGradeLevel: 'Filter By Grade Level',
+  filterByStatusSubjectDate: 'Filter By Status, Subject, Date',
+  filtered: 'Filtered',
+  filteredFrom: 'Filtered From',
+  selectedFilters: 'Selected Filters',
+
+  // Gender
+  genderDistribution: 'Gender Distribution',
+
+  // Geometry
+  geometry: 'Geometry',
+
+  // Hide/Show
+  hideDetails: 'Hide Details',
+  showDetails: 'Show Details',
+  showAllTeachers: 'Show All Teachers',
+  tryShowAllTeachers: 'Try Show All Teachers',
+  showingTopStudents: 'Showing Top Students',
+
+  // Images
+  imageSizeLimit: 'Image Size Limit',
+  maxSize: 'Max Size',
+  supportedFormats: 'Supported Formats',
+
+  // Interface
+  interfaceLanguage: 'Interface Language',
+
+  // Invalid
+  invalidGradeLevel: 'Invalid Grade Level',
+  invalidMaxStudents: 'Invalid Max Students',
+  invalidUsernameAndPassword: 'Invalid Username And Password',
+
+  // Kindergarten
+  isKindergartener: 'Is Kindergartener',
+  kindergarten: 'Kindergarten',
+
+  // Language & Skills
+  language: 'Language',
+  listening: 'Listening',
+  reading: 'Reading',
+  speaking: 'Speaking',
+  writing: 'Writing',
+
+  // Loading
+  loadingBMIData: 'Loading BMI Data...',
+  loadingReportData: 'Loading Report Data',
+  loadingSchool: 'Loading School...',
+  loadingSubjects: 'Loading Subjects...',
+
+  // Manage
+  manageParentRecords: 'Manage Parent Records',
+  manageParents: 'Manage Parents',
+  manageSelectedParents: 'Manage Selected Parents',
+  manageYourStudents: 'Manage Your Students',
+
+  // Marital Status
+  maritalStatus: 'Marital Status',
+  selectMaritalStatus: 'Select Marital Status',
+
+  // Max Students
+  maxStudents: 'Max Students',
+
+  // Master Class
+  moveSelectedToMaster: 'Move Selected To Master',
+  moveStudentToMaster: 'Move Student To Master',
+  moveStudentsToMaster: 'Move Students To Master',
+  moveToMaster: 'Move To Master',
+  moving: 'Moving...',
+  studentsToMasterClass: 'Remove students from class? This will move them out of their current class.',
+  toMasterClass: 'Remove student? This will move them out of their current class.',
+
+  // Navigation
+  firstPage: 'First Page',
+  lastPage: 'Last Page',
+  nextPage: 'Next Page',
+  previousPage: 'Previous Page',
+  pages: 'Pages',
+
+  // No Data Messages
+  noDataMessage: 'Please select filters and wait for data to load',
+  noOptionsAvailable: 'No Options Available',
+  noOptionsFound: 'No Options Found',
+  noResults: 'No Results',
+  noSchoolIdInAccount: 'No School ID In Account',
+  noStudents: 'No Students',
+  noStudentsDesc: 'No Students In Selected Class',
+  noStudentsInClass: 'No Students In Class',
+  noStudentsYet: 'No Students Yet',
+  noTargetClassSelected: 'No Target Class Selected',
+  noTeachersForGrade: 'No Teachers For Grade',
+  noTeachersForGradeMessage: 'No Teachers Assigned To Grade',
+  noTeachersSelected: 'No Teachers Selected',
+
+  // Notifications
+  notifications: 'Notifications',
+  noNotifications: 'No Notifications',
+
+  // Number
+  number: 'Number',
+
+  // Other
+  other: 'Other',
+  notSpecified: 'Not Specified',
+
+  // Parents
+  addStudentToParents: 'Add Student To Parents',
+  addingStudentToParents: 'Adding Student To Parents...',
+  noParentsSelected: 'No Parents Selected',
+  selectedParents: 'Selected Parents',
+  studentAddedToParentsSuccess: 'Student Added To Parents Successfully',
+  studentWillBeAddedToParents: 'Student Will Be Added To Parents',
+  viewSelectedParents: 'View Selected Parents',
+  readyToAddStudent: 'Ready To Add Student',
+
+  // Partner Information
+  partnerJobPlace: 'Partner Job Place',
+  partnerName: 'Partner Name',
+  partnerPhone: 'Partner Phone',
+  partnerPlaceOfBirth: 'Partner Place Of Birth',
+
+  // Passed
+  passed: 'Passed',
+
+  // Password
+  confirmNewPassword: 'Confirm New Password',
+  lowercase: 'One lowercase letter',
+  mediumPassword: 'Medium Security',
+  minChars8: 'Minimum 8 characters',
+  passwordRequirements: 'Password Requirements',
+  passwordResetSuccess: 'Password Reset Successfully',
+  passwordStrength: 'Password Strength',
+  passwordSufficient: 'Sufficient Password',
+  passwordTooShort: 'Password Too Short',
+  passwordValid: 'Valid Password',
+  passwordsDoNotMatch: 'Passwords Do Not Match',
+  passwordsMatch: 'Passwords Match',
+  resetPassword: 'Reset Password',
+  resettingPasswordFor: 'Resetting Password For',
+  special: 'One special character',
+  strongPassword: 'Strong Security',
+  uppercase: 'One uppercase letter',
+  weakPassword: 'Weak Security',
+
+  // Percentage
+  percentage: 'Percentage',
+
+  // Place
+  place: 'Place',
+
+  // Please Complete
+  pleaseCompleteAllRequiredFields: 'Please Complete All Required Fields',
+  pleaseCompleteFields: 'Please Complete Fields',
+  pleaseSelectStudent: 'Please Select Student',
+
+  // Poor Card
+  poorCardGrade: 'Poor Card Grade',
+  poorCardNumber: 'Poor Card Number',
+  selectPoorCardGrade: 'Select Poor Card Grade',
+
+  // Powered By
+  poweredBy: 'Powered By',
+  providedBy: 'Provided By',
+  allRightsReserved: 'All Rights Reserved',
+
+  // Profile
+  profilePictureUrl: 'Profile Picture URL',
+  profileSettings: 'Profile Settings',
+
+  // Records
+  recordsLoaded: 'Records Loaded',
+  viewRecords: 'View Records',
+
+  // Remove Students
+  removeStudentsFromClasses: 'Remove Students From Classes',
+
+  // Reports
+  report10: 'Student Transfer List',
+  report11: 'Dropout Student List',
+  report12: 'Tracking Book',
+  report13: 'Academic Book',
+  report2: 'Class Roll Call List',
+  report3: 'Student Average List',
+  report4: 'Student Absence List',
+  report5: 'Scholarship Student List',
+  report6: 'Student Disability List',
+  report7: 'Health Issue Student List',
+  report8: 'Personal Issue Student List',
+  report9: 'Ethnic Minority Student List',
+  reportReadyToExport: '{{count}} records ready to export. Click "Export Report" above to download as Excel.',
+  reportStudentNameInfo: 'Student Roll Call List',
+  selectReportType: 'Select Report Type',
+
+  // Roles
+  roles: 'Roles',
+  selectRole: 'Select Role',
+
+  // Salary
+  salaryType: 'Salary Type',
+  selectSalaryType: 'Select Salary Type',
+
+  // School
+  schoolDetails: 'School Details',
+  schoolInfoNotAvailable: 'School Info Not Available',
+  schoolInfoStillLoading: 'School Info Still Loading',
+  schoolManagement: 'School Management',
+  schoolPopulationDistributionDesc: 'Staff Type Distribution',
+  yourSchoolDetails: 'Your School Details',
+  targetSchool: 'Target School',
+  selectTargetSchool: 'Select Target School',
+  selectSourceSchoolDesc: 'Select Source School',
+
+  // Search
+  searchByName: 'Search By Name',
+  searchStudent: 'Search Student',
+  searchTeacher: 'Search Teacher',
+
+  // Select Options
+  selectAcademicYear: 'Select Academic Year',
+  selectGender: 'Select Gender',
+  selectMonth: 'Select Month',
+  selectNationality: 'Select Nationality',
+  selectOption: 'Select Option',
+  selectStatus: 'Select Status',
+  selectStudent: 'Select Student',
+  selectSubjects: 'Select Subjects',
+  selectTeacherStatus: 'Select Teacher Status',
+  selectTeacherType: 'Select Teacher Type',
+  selectTeachers: 'Select Teachers',
+  selectTeachingType: 'Select Teaching Type',
+  selectTimePeriod: 'Select Time Period',
+  selectTrainingType: 'Select Training Type',
+
+  // Selected
+  selectedCount: 'Selected',
+  selectedTeachers: 'Selected Teachers',
+
+  // Special Needs
+  special: 'Special',
+  specialNeedsStudents: 'Special Needs Students',
+
+  // Statistics
+  statistics: 'Statistics',
+  summaryInfo: 'Summary Info',
+
+  // Status
+  allStatuses: 'All Statuses',
+
+  // Student Operations
+  myStudents: 'My Students',
+  studentDetails: 'Student Details',
+  studentTransfer: 'Student Transfer',
+  studentsTransferredSuccess: 'Students Transferred Successfully',
+  transferStudentsDesc: 'Transfer Students Across Schools',
+  viewSelected: 'View Selected',
+
+  // Subjects
+  subjects: 'Subjects',
+  allSubjects: 'All Subjects',
+
+  // Teacher Operations
+  teacherAssignedToDifferentGrade: 'Note: This teacher is teaching Grade {{grade}}',
+  teacherInfo: 'Teacher Info',
+  teacherNumberAvailable: 'Teacher Number Available',
+  teacherNumberExists: 'Teacher Number Exists',
+  teacherStatus: 'Teacher Status',
+  teacherTransfer: 'Teacher Transfer',
+  teacherType: 'Teacher Type',
+  teachersToTransfer: 'Teachers To Transfer',
+  teachingType: 'Teaching Type',
+  thisTeacher: 'This Teacher',
+  transferTeachersDesc: 'Manage And Transfer Teachers',
+  totalDirectors: 'Total Directors',
+
+  // Toggle
+  toggleSortOrder: 'Toggle Sort Order',
+
+  // Total
+  total: 'Total',
+
+  // Training
+  trainingInformation: 'Training Information',
+  trainingType: 'Training Type',
+
+  // Updating
+  updatingResults: 'Updating Results...',
+
+  // User Activity
+  userActivityLogs: 'User Activity Logs',
+
+  // Username
+  usernameAvailable: 'Username Available',
+  usernameNotAvailable: 'Username Not Available',
+  usernameSuggestionHint: 'Click suggestions to auto-generate username',
+
+  // View
+  viewDetails: 'View Details',
+
+  // Will Be Transferred
+  willBeTransferredTo: 'Will Be Transferred To',
 };  

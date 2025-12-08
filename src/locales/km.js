@@ -1592,4 +1592,33 @@ export const km = {
   normal: 'ធម្មតា',
   overweight: 'លើសទម្ងន់',
   obesity: 'ធាត់',
+
+  // BMI Summary Cards
+  totalStudentsMeasured: 'ចំនួនសិស្សដែលបានវាស់',
+  healthyWeight: 'ទម្ងន់ល្អ',
+  atRiskStudents: 'សិស្សមានហានិភ័យ',
+  obesityRate: 'អត្រាធាត់',
+  students: 'សិស្ស',
+  ofTotal: 'ពីសរុប',
+  comparedTo: 'ប្រៀបធៀបទៅនឹង',
+
+  // Growth Rate
+  yearOverYearChange: 'ការផ្លាស់ប្តូរប្រចាំឆ្នាំ',
+
+  // Detailed Table
+  detailedBMIRecords: 'បញ្ជីលម្អិត BMI',
+  showingRecords: 'កំពុងបង្ហាញ',
+  of: 'នៃ',
+  records: 'កំណត់ត្រា',
+  userName: 'ឈ្មោះអ្នកប្រើប្រាស់',
+  email: 'អ៊ីមែល',
+  academicYear: 'ឆ្នាំសិក្សា',
+  height: 'កម្ពស់',
+  weight: 'ទម្ងន់',
+  status: 'ស្ថានភាព',
+  recordedAt: 'កាលបរិច្ឆេទកត់ត្រា',
+  noRecordsFound: 'រកមិនឃើញកំណត់ត្រា',
+  page: 'ទំព័រ',
+  previous: 'មុន',
+  next: 'បន្ទាប់',
 };
