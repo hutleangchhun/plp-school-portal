@@ -12,14 +12,15 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer
 } from 'recharts';
 
 /**
- * BMI Distribution Chart Component
- * Displays BMI distribution data with integrated sidebar filters
+ * BMI Distribution Growth Chart Component
+ * Displays BMI distribution comparison between two academic years
  *
- * @param {Object} dashboardData - Dashboard data containing bmiDistribution
+ * @param {Object} dashboardData - Dashboard data containing bmiDistribution for both years
  * @param {Array} academicYearOptions - List of available academic years
  * @param {Object} dashboardFilters - Current filter values
  * @param {Object} locationOptions - Location filter options (provinces, districts, schools)
@@ -43,7 +44,8 @@ const BMIDistributionChart = ({
 
   // Local state for sidebar filters (temporary until Apply is clicked)
   const [sidebarFilters, setSidebarFilters] = useState({
-    academicYear: dashboardFilters.academicYear,
+    academicYear1: dashboardFilters.academicYear1 || '',
+    academicYear2: dashboardFilters.academicYear2 || '',
     province: dashboardFilters.province,
     district: dashboardFilters.district,
     school: dashboardFilters.school
@@ -52,7 +54,8 @@ const BMIDistributionChart = ({
   // Sync sidebar filters when dashboard filters change (from external changes like Reset)
   React.useEffect(() => {
     setSidebarFilters({
-      academicYear: dashboardFilters.academicYear,
+      academicYear1: dashboardFilters.academicYear1 || '',
+      academicYear2: dashboardFilters.academicYear2 || '',
       province: dashboardFilters.province,
       district: dashboardFilters.district,
       school: dashboardFilters.school
@@ -80,31 +83,35 @@ const BMIDistributionChart = ({
     return selected?.label || '';
   };
 
+  // Prepare growth chart data comparing two years
+  const year1Data = dashboardData.bmiDistribution?.year1 || dashboardData.bmiDistribution || {};
+  const year2Data = dashboardData.bmiDistribution?.year2 || {};
+
   const chartData = [
     {
       name: t('severeThinness', 'Severe Thinness'),
-      value: dashboardData.bmiDistribution.severeThinness || 0,
-      fill: '#6366f1'
+      [dashboardFilters.academicYear1 || 'Year 1']: year1Data.severeThinness || 0,
+      [dashboardFilters.academicYear2 || 'Year 2']: year2Data.severeThinness || 0,
     },
     {
       name: t('thinness', 'Thinness'),
-      value: dashboardData.bmiDistribution.thinness || 0,
-      fill: '#3b82f6'
+      [dashboardFilters.academicYear1 || 'Year 1']: year1Data.thinness || 0,
+      [dashboardFilters.academicYear2 || 'Year 2']: year2Data.thinness || 0,
     },
     {
       name: t('normal', 'Normal'),
-      value: dashboardData.bmiDistribution.normal || 0,
-      fill: '#10b981'
+      [dashboardFilters.academicYear1 || 'Year 1']: year1Data.normal || 0,
+      [dashboardFilters.academicYear2 || 'Year 2']: year2Data.normal || 0,
     },
     {
       name: t('overweight', 'Overweight'),
-      value: dashboardData.bmiDistribution.overweight || 0,
-      fill: '#f59e0b'
+      [dashboardFilters.academicYear1 || 'Year 1']: year1Data.overweight || 0,
+      [dashboardFilters.academicYear2 || 'Year 2']: year2Data.overweight || 0,
     },
     {
       name: t('obesity', 'Obesity'),
-      value: dashboardData.bmiDistribution.obesity || 0,
-      fill: '#ef4444'
+      [dashboardFilters.academicYear1 || 'Year 1']: year1Data.obesity || 0,
+      [dashboardFilters.academicYear2 || 'Year 2']: year2Data.obesity || 0,
     }
   ];
 
@@ -118,10 +125,15 @@ const BMIDistributionChart = ({
   const selectedSchool = dashboardFilters.school
     ? getSelectedLabel(dashboardFilters.school, locationOptions.schools)
     : '';
-  const selectedYear = dashboardFilters.academicYear && dashboardFilters.academicYear !== '2025-2026'
-    ? dashboardFilters.academicYear
-    : null;
-  const hasActiveFilters = Object.values(dashboardFilters).some(v => v !== '' && v !== '2025-2026');
+  const selectedYear1 = dashboardFilters.academicYear1 || null;
+  const selectedYear2 = dashboardFilters.academicYear2 || null;
+  const hasActiveFilters = Boolean(
+    dashboardFilters.province ||
+    dashboardFilters.district ||
+    dashboardFilters.school ||
+    dashboardFilters.academicYear1 ||
+    dashboardFilters.academicYear2
+  );
 
   // Debug log to check filter values
   if (process.env.NODE_ENV === 'development') {
@@ -141,13 +153,17 @@ const BMIDistributionChart = ({
         {/* Header with Title and Filter Button */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-gray-900">{t('bmiDistribution', 'BMI Distribution')}</h3>
+            <h3 className="text-lg font-bold text-gray-900">{t('bmiGrowthChart', 'BMI Growth Comparison')}</h3>
             <p className="text-sm text-gray-500 mt-1">
               {hasActiveFilters
-                ? `${t('filteringBy', 'Filtering by')}: ${[selectedYear, selectedProvince, selectedDistrict, selectedSchool]
-                    .filter(Boolean)
-                    .join(' • ')}`
-                : t('bmiDistributionDesc', 'View BMI distribution across all students')}
+                ? `${t('comparing', 'Comparing')}: ${[
+                    selectedYear1 && `${selectedYear1}`,
+                    selectedYear2 && `vs ${selectedYear2}`,
+                    selectedProvince,
+                    selectedDistrict,
+                    selectedSchool
+                  ].filter(Boolean).join(' • ')}`
+                : t('selectYearsToCompare', 'Select two academic years to compare BMI distribution growth')}
             </p>
           </div>
           <div className="flex gap-2">
@@ -171,7 +187,7 @@ const BMIDistributionChart = ({
           </div>
         </div>
 
-        {/* Chart */}
+        {/* Growth Comparison Chart */}
         <ResponsiveContainer width="100%" height={400}>
           <BarChart
             data={chartData}
@@ -189,7 +205,19 @@ const BMIDistributionChart = ({
               contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}
               formatter={(value) => value}
             />
-            <Bar dataKey="value" fill="#3b82f6" name={t('count', 'Count')} barSize={60}/>
+            <Legend />
+            <Bar
+              dataKey={dashboardFilters.academicYear1 || 'Year 1'}
+              fill="#3b82f6"
+              barSize={40}
+              radius={[4, 4, 0, 0]}
+            />
+            <Bar
+              dataKey={dashboardFilters.academicYear2 || 'Year 2'}
+              fill="#10b981"
+              barSize={40}
+              radius={[4, 4, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -198,11 +226,12 @@ const BMIDistributionChart = ({
       <SidebarFilter
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        title={t('filters', 'BMI Dashboard Filters')}
-        subtitle={t('filterBmiData', 'Filter BMI data by location and academic year')}
+        title={t('growthComparisonFilters', 'Growth Comparison Filters')}
+        subtitle={t('selectTwoYearsToCompare', 'Select two academic years and location filters')}
         onApply={() => {
           // Apply sidebar filters to the dashboard
-          onFilterChange('academicYear', sidebarFilters.academicYear);
+          onFilterChange('academicYear1', sidebarFilters.academicYear1);
+          onFilterChange('academicYear2', sidebarFilters.academicYear2);
           onFilterChange('province', sidebarFilters.province);
           onFilterChange('district', sidebarFilters.district);
           onFilterChange('school', sidebarFilters.school);
@@ -211,26 +240,44 @@ const BMIDistributionChart = ({
         onClearFilters={() => {
           onClearFilters();
           setSidebarFilters({
-            academicYear: '2025-2026',
+            academicYear1: '',
+            academicYear2: '',
             province: '',
             district: '',
             school: ''
           });
         }}
-        hasFilters={Object.values(sidebarFilters).some(v => v !== '' && v !== '2025-2026')}
+        hasFilters={Object.values(sidebarFilters).some(v => v !== '')}
       >
-        {/* Academic Year Filter */}
+        {/* Academic Year 1 Filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('academicYear', 'Academic Year')}
+            {t('firstYear', 'First Year')}
           </label>
           <Dropdown
             options={[
-              { value: '', label: t('all', 'All Years') },
+              { value: '', label: t('selectFirstYear', 'Select first year') },
               ...academicYearOptions
             ]}
-            value={sidebarFilters.academicYear}
-            onValueChange={(value) => setSidebarFilters(prev => ({ ...prev, academicYear: value }))}
+            value={sidebarFilters.academicYear1}
+            onValueChange={(value) => setSidebarFilters(prev => ({ ...prev, academicYear1: value }))}
+            placeholder={t('selectYear', 'Select year')}
+            className="w-full"
+          />
+        </div>
+
+        {/* Academic Year 2 Filter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('secondYear', 'Second Year')}
+          </label>
+          <Dropdown
+            options={[
+              { value: '', label: t('selectSecondYear', 'Select second year') },
+              ...academicYearOptions
+            ]}
+            value={sidebarFilters.academicYear2}
+            onValueChange={(value) => setSidebarFilters(prev => ({ ...prev, academicYear2: value }))}
             placeholder={t('selectYear', 'Select year')}
             className="w-full"
           />
