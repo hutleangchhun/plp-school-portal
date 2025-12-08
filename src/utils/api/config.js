@@ -172,6 +172,7 @@ const ENDPOINTS = {
     BASE: '/bmi',
     BY_USER: (userId) => `/users/${userId}/bmi-history`,
     ALL_USERS_REPORT: '/bmi-report/all-users',
+    DASHBOARD: (level) => `/bmi-dashboard/${level}`,
   },
   DASHBOARD: {
     BASE: '/dashboard',

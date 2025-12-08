@@ -125,6 +125,67 @@ export const bmiService = {
   },
 
   /**
+   * Get BMI dashboard data for a specific level (national, province, district, school)
+   * @param {string} level - Dashboard level: "national", "primary", "secondary", or school level
+   * @param {Object} params - Query parameters for filtering
+   * @param {string} [params.academicYear] - Academic year filter (e.g., "2025-2026")
+   * @param {string} [params.provinceId] - Province ID filter (optional)
+   * @param {string} [params.districtId] - District ID filter (optional)
+   * @param {string} [params.schoolId] - School ID filter (optional)
+   * @returns {Promise<Object>} Response with BMI dashboard data including distribution
+   */
+  async getBmiDashboard(level = 'primary', params = {}) {
+    try {
+      const queryParams = {};
+
+      // Add academic year filter if provided
+      if (params.academicYear) {
+        queryParams.academicYear = params.academicYear;
+      }
+
+      // Add location filters if provided
+      if (params.provinceId) {
+        queryParams.provinceId = params.provinceId;
+      }
+
+      if (params.districtId) {
+        queryParams.districtId = params.districtId;
+      }
+
+      if (params.schoolId) {
+        queryParams.schoolId = params.schoolId;
+      }
+
+      console.log('📊 Fetching BMI dashboard data for level:', level, 'with params:', queryParams);
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.BMI.DASHBOARD(level), {
+          params: queryParams
+        })
+      );
+
+      console.log('📊 BMI dashboard response:', response);
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch BMI dashboard data');
+      }
+
+      return {
+        success: true,
+        data: response.data || {}
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getBmiDashboard:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch BMI dashboard data',
+        data: {}
+      };
+    }
+  },
+
+  /**
    * Get BMI history for multiple students by their user IDs
    * @param {Array<string|number>} userIds - Array of user IDs
    * @param {Object} params - Query parameters for filtering
