@@ -128,6 +128,10 @@ export const routePermissions = {
   '/admin/student-transfer': {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'StudentTransferManagement'
+  },
+  '/admin/bmi-report': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'BMIReport'
   }
 };
 
@@ -383,6 +387,10 @@ export const getNavigationItems = (user, t) => {
     {
       name: t('studentsManagement', 'Student Transfer'),
       href: '/admin/student-transfer',
+    },
+    {
+      name: t('bmiReport', 'BMI Report'),
+      href: '/admin/bmi-report',
     },
   ];
 

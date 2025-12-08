@@ -19,7 +19,8 @@ import {
   ListCheck,
   ListChecks,
   ArrowRightLeft,
-  Activity
+  Activity,
+  Heart
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -62,11 +63,13 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin-logs': Activity,
     '/admin/teacher-transfer': UserStar,
     '/admin/student-transfer': Users,
+    '/admin/bmi-report': Heart,
     'attendance': Calendar, // Parent item for attendance dropdown
     'admin-dashboard': LayoutDashboard,
     'admin-logs': Activity,
     'teacher-transfer': ArrowRightLeft,
     'student-transfer': ArrowRightLeft,
+    'bmi-report': Heart,
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/achievements': Trophy,
     // '/settings': SettingsIcon,
@@ -95,11 +98,13 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin-logs': 'blue',
     '/admin/teacher-transfer': 'blue',
     '/admin/student-transfer': 'blue',
+    '/admin/bmi-report': 'blue',
     'attendance': 'blue', // Parent item for attendance dropdown
     'admin-dashboard': 'blue',
     'admin-logs': 'blue',
     'teacher-transfer': 'blue',
     'student-transfer': 'blue',
+    'bmi-report': 'blue',
     // Temporarily removed color mappings (will be re-enabled later):
     // '/achievements': 'blue',
     // '/settings': 'blue',

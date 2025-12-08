@@ -69,6 +69,62 @@ export const bmiService = {
   },
 
   /**
+   * Get BMI report for all users (Admin endpoint)
+   * @param {Object} params - Query parameters for filtering and pagination
+   * @param {number} [params.page] - Page number (default: 1)
+   * @param {number} [params.limit] - Records per page (default: 20, max: 100)
+   * @param {string} [params.academicYear] - Filter by academic year (e.g., "2024-2025")
+   * @returns {Promise<Object>} Response with BMI report data for all users
+   */
+  async getBmiReportAllUsers(params = {}) {
+    try {
+      const queryParams = {};
+
+      // Add pagination parameters
+      if (params.page) {
+        queryParams.page = params.page;
+      }
+
+      if (params.limit) {
+        queryParams.limit = Math.min(params.limit, 100); // Cap at 100
+      }
+
+      // Add academic year filter if provided
+      if (params.academicYear) {
+        queryParams.academicYear = params.academicYear;
+      }
+
+      console.log('📊 Fetching BMI report for all users with params:', queryParams);
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.BMI.ALL_USERS_REPORT, {
+          params: queryParams
+        })
+      );
+
+      console.log('📊 BMI report response:', response);
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch BMI report');
+      }
+
+      return {
+        success: true,
+        data: response.data || [],
+        pagination: response.pagination
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getBmiReportAllUsers:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch BMI report',
+        data: []
+      };
+    }
+  },
+
+  /**
    * Get BMI history for multiple students by their user IDs
    * @param {Array<string|number>} userIds - Array of user IDs
    * @param {Object} params - Query parameters for filtering
