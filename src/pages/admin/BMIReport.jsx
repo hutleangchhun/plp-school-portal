@@ -347,17 +347,17 @@ const BMIReport = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="">
+    <div variant='fade' className="p-3 sm:p-4">
+      <div className="p-4 sm:p-6">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{t('bmiReport', 'BMI Report')}</h1>
-              <p className="text-gray-600 mt-2">{t('bmiReportDescription', 'View and manage BMI data for all users')}</p>
+              <h1 className="text-2xl font-bold text-gray-900">{t('bmiAnalysis', 'BMI Data Analysis')}</h1>
+              <p className="text-sm text-gray-600 mt-2">{t('bmiReportDescription', 'Analys and manage BMI data for all users')}</p>
             </div>
             <Button
-              variant="secondary"
+              variant="primary"
               size="sm"
               onClick={handleExportCSV}
               disabled={bmiData.length === 0}
@@ -368,7 +368,8 @@ const BMIReport = () => {
             </Button>
           </div>
 
-          {/* BMI Distribution Chart with Integrated Filters */}
+          <div className='grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2'>
+                      {/* BMI Distribution Chart with Integrated Filters */}
           <BMIDistributionChart
             dashboardData={dashboardData}
             academicYearOptions={academicYearOptions}
@@ -434,6 +435,7 @@ const BMIReport = () => {
             fetchDistricts={fetchDistricts}
             fetchSchools={fetchSchools}
           />
+          </div>
         </div>
       </div>
     </div>

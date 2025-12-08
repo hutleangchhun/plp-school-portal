@@ -389,7 +389,7 @@ export const getNavigationItems = (user, t) => {
       href: '/admin/student-transfer',
     },
     {
-      name: t('bmiReport', 'BMI Report'),
+      name: t('bmiAnalysis', 'BMI Analysis'),
       href: '/admin/bmi-report',
     },
   ];

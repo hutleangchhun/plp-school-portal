@@ -1577,4 +1577,19 @@ export const km = {
   passwordRequirements: 'បច្ចេកទេសក្នុងការប្រើប្រាស់លេខសម្ងាត់',
   passwordValid: 'លេខកូដសម្ងាត់អាចប្រើប្រាស់បាន',
   passwordResetSuccess: 'លេខកូដសម្ងាត់ផ្លាស់ប្ដូរបានជោគជ័យ',
+
+
+
+  // admin
+  filteringBy: 'តម្រងដែលត្រូវបានជ្រើសរើស',
+  bmiAnalysis: 'ការវិភាគទិន្នន័យ BMI',
+  bmiReportDescription: 'វិភាគ និងគ្រប់គ្រងទិន្នន័យ BMI របស់អ្នកប្រើប្រាស់',
+  bmiDistribution: 'បំណែងចែកស្ថិតិសម្រាប់ BMI',
+  bmiDistributionDesc: 'ពិនិត្រមើលពីបម្រែបម្រួលទិន្នន័យ​ BMI របស់អ្នកប្រើប្រាស់',
+  filterBmiData: 'ជ្រើសរើសតម្រងសម្រាប់ទិន្នន័យ',
+  severeThinness: 'ស្គមខ្លាំង',
+  thinness: 'ស្គម',
+  normal: 'ធម្មតា',
+  overweight: 'លើសទម្ងន់',
+  obesity: 'ធាត់',
 };

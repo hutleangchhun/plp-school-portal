@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Filter } from 'lucide-react';
+import { Filter, RefreshCcw } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Button } from '../ui/Button';
 import Dropdown from '../ui/Dropdown';
@@ -152,13 +152,13 @@ const BMIDistributionChart = ({
           </div>
           <div className="flex gap-2">
             <Button
-              variant="outline"
+              variant="success"
               size="sm"
               onClick={() => onClearFilters()}
               className="whitespace-nowrap"
               disabled={!hasActiveFilters}
             >
-              {t('reset', 'Reset')}
+              <RefreshCcw className='w-4 h-4' />
             </Button>
             <Button
               variant="primary"
@@ -167,7 +167,6 @@ const BMIDistributionChart = ({
               className="flex items-center gap-2 whitespace-nowrap"
             >
               <Filter className="h-4 w-4" />
-              {t('filters', 'Filters')}
             </Button>
           </div>
         </div>
@@ -178,19 +177,19 @@ const BMIDistributionChart = ({
             data={chartData}
             margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb"/>
             <XAxis
               dataKey="name"
-              angle={-45}
-              textAnchor="end"
+              angle={0}
               height={100}
+              className='text-sm'
             />
             <YAxis />
             <Tooltip
               contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}
               formatter={(value) => value}
             />
-            <Bar dataKey="value" fill="#3b82f6" name={t('count', 'Count')} />
+            <Bar dataKey="value" fill="#3b82f6" name={t('count', 'Count')} barSize={60}/>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -199,7 +198,7 @@ const BMIDistributionChart = ({
       <SidebarFilter
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        title={t('bmiDashboardFilters', 'BMI Dashboard Filters')}
+        title={t('filters', 'BMI Dashboard Filters')}
         subtitle={t('filterBmiData', 'Filter BMI data by location and academic year')}
         onApply={() => {
           // Apply sidebar filters to the dashboard
