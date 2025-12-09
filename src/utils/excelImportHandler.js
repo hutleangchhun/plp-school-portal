@@ -294,9 +294,29 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
       // Map gender values
       const mapGender = (gender) => {
         if (!gender) return '';
-        const g = gender.toLowerCase();
-        if (g === 'ប្រុស' || g === 'male' || g === 'm' || g === 'ប') return 'MALE';
-        if (g === 'ស្រី' || g === 'female' || g === 'f' || g === 'ស') return 'FEMALE';
+
+        // Trim whitespace and normalize Unicode for Khmer text
+        const trimmed = String(gender).trim();
+        const normalized = trimmed.normalize('NFC'); // Normalize Unicode composition
+        const g = normalized.toLowerCase();
+
+        console.log('🚻 Gender mapping - Original:', gender, 'Trimmed:', trimmed, 'Normalized:', normalized, 'Lower:', g);
+
+        // Check for male values (including Khmer ប្រុស with various possible encodings)
+        if (g === 'ប្រុស' || g === 'ប្រុស​' || g.includes('ប្រុស') ||
+            g === 'male' || g === 'm' || g === 'ប') {
+          console.log('✅ Mapped to MALE');
+          return 'MALE';
+        }
+
+        // Check for female values (including Khmer ស្រី with various possible encodings)
+        if (g === 'ស្រី' || g === 'ស្រី​' || g.includes('ស្រី') ||
+            g === 'female' || g === 'f' || g === 'ស') {
+          console.log('✅ Mapped to FEMALE');
+          return 'FEMALE';
+        }
+
+        console.warn('⚠️ Gender value not recognized:', gender);
         return '';
       };
 
@@ -330,6 +350,25 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
         return mapped;
       };
 
+      // Map grade level (handle Khmer kindergarten text)
+      const mapGradeLevel = (gradeLevel) => {
+        if (!gradeLevel) return '';
+        const grade = String(gradeLevel).trim();
+
+        // Check if it's "មត្តេយ្យ​" or "មត្តេយ្យ" (Kindergarten) - map to 0
+        if (grade === 'មត្តេយ្យ​' || grade === 'មត្តេយ្យ' || grade.includes('មត្តេយ្យ')) {
+          return '0';
+        }
+
+        // Check if it's already a number
+        if (/^\d+$/.test(grade)) {
+          return grade;
+        }
+
+        // Return as-is for other values
+        return grade;
+      };
+
       // Handle dynamic column detection for files without headers
       if (!hasHeaders) {
         const firstCellValue = String(row[0] || '').trim();
@@ -360,17 +399,24 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
       const normalizeDateForDisplay = (dateStr) => {
         if (!dateStr) return '';
 
+        console.log('📅 Normalizing date:', dateStr, 'Type:', typeof dateStr);
+
+        // Handle Date objects
         if (dateStr instanceof Date) {
           if (!isNaN(dateStr.getTime())) {
             const day = dateStr.getDate().toString().padStart(2, '0');
             const month = (dateStr.getMonth() + 1).toString().padStart(2, '0');
             const year = dateStr.getFullYear().toString();
-            return `${day}/${month}/${year}`;
+            const result = `${day}/${month}/${year}`;
+            console.log('✅ Date object converted:', result);
+            return result;
           } else {
+            console.log('❌ Invalid Date object');
             return '';
           }
         }
 
+        // Handle Excel serial numbers (e.g., 44927 for a date)
         const numValue = typeof dateStr === 'number' ? dateStr : parseFloat(dateStr);
         if (!isNaN(numValue) && numValue > 10000 && numValue < 100000) {
           const excelEpoch = new Date(1900, 0, 1);
@@ -379,41 +425,77 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
             const day = jsDate.getDate().toString().padStart(2, '0');
             const month = (jsDate.getMonth() + 1).toString().padStart(2, '0');
             const year = jsDate.getFullYear().toString();
-            return `${day}/${month}/${year}`;
+            const result = `${day}/${month}/${year}`;
+            console.log('✅ Excel serial number converted:', numValue, '→', result);
+            return result;
           }
         }
 
         const dateString = String(dateStr).trim();
 
-        if (dateString.match(/^\d{1,2}[/.]\d{1,2}[/.]\d{4}$/)) {
-          return dateString.replace(/\./g, '/');
+        // Handle yyyy-mm-dd format (ISO format) - Check this FIRST before dd/mm/yyyy
+        const yyyymmddMatch = dateString.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (yyyymmddMatch) {
+          const [, year, month, day] = yyyymmddMatch;
+          const result = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+          console.log('✅ ISO format (yyyy-mm-dd) converted:', dateString, '→', result);
+          return result;
         }
 
-        const ddmmyyMatch = dateString.match(/^(\d{1,2})[/.](\d{1,2})[/.](\d{2})$/);
+        // Handle dd/mm/yy format (2-digit year) - support /, ., and -
+        const ddmmyyMatch = dateString.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2})$/);
         if (ddmmyyMatch) {
           const [, day, month, year] = ddmmyyMatch;
           const fullYear = `20${year}`;
-          return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${fullYear}`;
+          const result = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${fullYear}`;
+          console.log('✅ 2-digit year format converted:', dateString, '→', result);
+          return result;
         }
 
-        const yyyymmddMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if (yyyymmddMatch) {
-          const [, year, month, day] = yyyymmddMatch;
-          return `${day}/${month}/${year}`;
+        // Handle dd/mm/yyyy or dd.mm.yyyy or dd-mm-yyyy format - support /, ., and -
+        const dateMatch = dateString.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/);
+        if (dateMatch) {
+          const [, part1, part2, year] = dateMatch;
+          const num1 = parseInt(part1);
+          const num2 = parseInt(part2);
+
+          // If first number is > 12, it MUST be day (dd/mm/yyyy)
+          if (num1 > 12) {
+            const result = `${part1.padStart(2, '0')}/${part2.padStart(2, '0')}/${year}`;
+            console.log('✅ Detected dd/mm/yyyy (day > 12):', dateString, '→', result);
+            return result;
+          }
+          // If second number is > 12, first MUST be month (mm/dd/yyyy) - convert to dd/mm/yyyy
+          else if (num2 > 12) {
+            const result = `${part2.padStart(2, '0')}/${part1.padStart(2, '0')}/${year}`;
+            console.log('✅ Detected mm/dd/yyyy (month > 12), converted to dd/mm/yyyy:', dateString, '→', result);
+            return result;
+          }
+          // Ambiguous case (both ≤ 12) - ASSUME dd/mm/yyyy (international standard)
+          else {
+            const result = `${part1.padStart(2, '0')}/${part2.padStart(2, '0')}/${year}`;
+            console.log('⚠️ Ambiguous date (both ≤ 12), assuming dd/mm/yyyy:', dateString, '→', result);
+            return result;
+          }
         }
 
+        // Try parsing as a JavaScript date string (as last resort)
         try {
           const parsedDate = new Date(dateString);
-          if (!isNaN(parsedDate.getTime())) {
+          if (!isNaN(parsedDate.getTime()) && parsedDate.getFullYear() > 1900) {
             const day = parsedDate.getDate().toString().padStart(2, '0');
             const month = (parsedDate.getMonth() + 1).toString().padStart(2, '0');
             const year = parsedDate.getFullYear().toString();
-            return `${day}/${month}/${year}`;
+            const result = `${day}/${month}/${year}`;
+            console.log('✅ JS Date parsing succeeded:', dateString, '→', result);
+            return result;
           }
         } catch (e) {
-          // Ignore parsing errors
+          console.log('❌ JS Date parsing failed:', e.message);
         }
 
+        // Return original string if we can't parse it
+        console.log('⚠️ Could not parse date, returning original:', dateString);
         return dateString;
       };
 
@@ -431,7 +513,7 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
         nationality: columnIndices.nationality >= 0 ? getValue(columnIndices.nationality) : '',
         schoolId: columnIndices.schoolId >= 0 ? getValue(columnIndices.schoolId) : '',
         academicYear: columnIndices.academicYear >= 0 ? getValue(columnIndices.academicYear) : '',
-        gradeLevel: columnIndices.gradeLevel >= 0 ? getValue(columnIndices.gradeLevel) : '',
+        gradeLevel: columnIndices.gradeLevel >= 0 ? mapGradeLevel(getValue(columnIndices.gradeLevel)) : '',
 
         // Location info
         residenceFullAddress: columnIndices.residenceFullAddress >= 0 ? getValue(columnIndices.residenceFullAddress) : '',

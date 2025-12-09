@@ -130,6 +130,42 @@ export default function BulkStudentImport() {
   const isCellInvalid = (student, columnKey) => {
     const value = student[columnKey];
 
+    // Check if the row has any data at all (excluding auto-populated fields)
+    const hasAnyData = Object.keys(student).some(key => {
+      // Exclude auto-populated or internal fields
+      const excludedFields = [
+        'actions',
+        'schoolId',  // Auto-populated from school selection
+        'usernameAvailable',  // Internal flag for username validation
+        'fatherGender',  // Auto-set to MALE
+        'motherGender',  // Auto-set to FEMALE
+        'accessibility'  // Array field that defaults to []
+      ];
+
+      if (excludedFields.includes(key)) return false;
+
+      const val = student[key];
+      // Check for non-empty values (handle arrays separately)
+      if (Array.isArray(val)) {
+        return val.length > 0;
+      }
+      return val && String(val).trim() !== '';
+    });
+
+    // If the row is completely empty, don't show red borders
+    if (!hasAnyData) {
+      return false;
+    }
+
+    // Required fields validation - check if empty (only if row has some data)
+    const requiredFields = ['lastName', 'firstName', 'username', 'password', 'dateOfBirth', 'gender', 'schoolId'];
+    if (requiredFields.includes(columnKey)) {
+      // If the field is required and empty, it's invalid
+      if (!value || String(value).trim() === '') {
+        return true;
+      }
+    }
+
     // Email validation (must contain @ and valid format)
     if (columnKey === 'email') {
       // Empty email is OK (optional field)
@@ -146,28 +182,18 @@ export default function BulkStudentImport() {
       return !phoneRegex.test(value.replace(/\s/g, ''));
     }
 
-    // Father phone validation - required ONLY if father name is provided
+    // Father phone validation - optional field, only validate format if provided
     if (columnKey === 'fatherPhone') {
-      const hasFatherInfo = student.fatherFirstName && student.fatherFirstName.trim();
-
-      // If no father info, phone is not required
-      if (!hasFatherInfo) return false;
-
-      // If father info exists, phone is required and must be valid
-      if (!value || value === '') return true; // Missing phone is invalid
+      // Empty phone is OK (optional field)
+      if (!value || value === '') return false;
       const phoneRegex = /^0\d{8,}$/;
       return !phoneRegex.test(value.replace(/\s/g, ''));
     }
 
-    // Mother phone validation - required ONLY if mother name is provided
+    // Mother phone validation - optional field, only validate format if provided
     if (columnKey === 'motherPhone') {
-      const hasMotherInfo = student.motherFirstName && student.motherFirstName.trim();
-
-      // If no mother info, phone is not required
-      if (!hasMotherInfo) return false;
-
-      // If mother info exists, phone is required and must be valid
-      if (!value || value === '') return true; // Missing phone is invalid
+      // Empty phone is OK (optional field)
+      if (!value || value === '') return false;
       const phoneRegex = /^0\d{8,}$/;
       return !phoneRegex.test(value.replace(/\s/g, ''));
     }
@@ -176,14 +202,41 @@ export default function BulkStudentImport() {
     if (columnKey === 'dateOfBirth' || columnKey === 'fatherDateOfBirth' || columnKey === 'motherDateOfBirth') {
       // Empty date is OK (optional field)
       if (!value || value === '') return false;
+
+      const trimmedValue = String(value).trim();
+
+      // Accept dd/mm/yyyy format (with optional leading zeros)
       const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
-      const match = value.match(dateRegex);
-      if (!match) return true;
+      const match = trimmedValue.match(dateRegex);
+
+      if (!match) {
+        // Date doesn't match the expected format
+        return true;
+      }
+
       const [, day, month, year] = match;
       const d = parseInt(day);
       const m = parseInt(month);
       const y = parseInt(year);
-      return !(d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100);
+
+      // Validate ranges
+      if (y < 1900 || y > 2100) return true;
+      if (m < 1 || m > 12) return true;
+      if (d < 1 || d > 31) return true;
+
+      // More sophisticated day validation based on month
+      const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+      // Check for leap year
+      const isLeapYear = (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+      if (m === 2 && isLeapYear) {
+        daysInMonth[1] = 29;
+      }
+
+      // Validate day is within the valid range for the month
+      if (d > daysInMonth[m - 1]) return true;
+
+      return false; // Date is valid
     }
 
     // Grade level validation (should be a number between 0-6, allowing 0 for Kindergarten)
@@ -238,14 +291,14 @@ export default function BulkStudentImport() {
     // Father Info
     { key: 'fatherFirstName', header: 'នាមឪពុក', width: 'min-w-[250px]' },
     { key: 'fatherLastName', header: 'គោត្តនាមឪពុក', width: 'min-w-[250px]' },
-    { key: 'fatherPhone', header: 'ទូរស័ព្ទឪពុក *', width: 'min-w-[250px]' },
+    { key: 'fatherPhone', header: 'ទូរស័ព្ទឪពុក', width: 'min-w-[250px]' },
     { key: 'fatherOccupation', header: 'មុខរបរ​ឪពុក', width: 'min-w-[250px]' },
     { key: 'fatherResidenceFullAddress', header: 'អាសយដ្ឋានពេញឪពុក', width: 'min-w-[320px]' },
 
     // Mother Info
     { key: 'motherFirstName', header: 'នាមម្តាយ', width: 'min-w-[250px]' },
     { key: 'motherLastName', header: 'គោត្តនាមម្តាយ', width: 'min-w-[250px]' },
-    { key: 'motherPhone', header: 'ទូរស័ព្ទម្តាយ *', width: 'min-w-[250px]' },
+    { key: 'motherPhone', header: 'ទូរស័ព្ទម្តាយ', width: 'min-w-[250px]' },
     { key: 'motherOccupation', header: 'មុខរបរ​ម្តាយ', width: 'min-w-[250px]' },
     { key: 'motherResidenceFullAddress', header: 'អាសយដ្ឋានពេញម្តាយ', width: 'min-w-[320px]' },
 
@@ -984,13 +1037,35 @@ export default function BulkStudentImport() {
 
   const isValidDate = (dateStr) => {
     if (!dateStr || dateStr.trim() === '') return true; // Empty is valid (optional field)
-    const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+
+    const trimmedDate = String(dateStr).trim();
+    const match = trimmedDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+
     if (!match) return false;
+
     const [, day, month, year] = match;
     const d = parseInt(day);
     const m = parseInt(month);
     const y = parseInt(year);
-    return d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100;
+
+    // Validate ranges
+    if (y < 1900 || y > 2100) return false;
+    if (m < 1 || m > 12) return false;
+    if (d < 1 || d > 31) return false;
+
+    // More sophisticated day validation based on month
+    const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+    // Check for leap year
+    const isLeapYear = (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+    if (m === 2 && isLeapYear) {
+      daysInMonth[1] = 29;
+    }
+
+    // Validate day is within the valid range for the month
+    if (d > daysInMonth[m - 1]) return false;
+
+    return true;
   };
 
   const handleSubmit = async () => {
@@ -1431,7 +1506,7 @@ export default function BulkStudentImport() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Province Dropdown */}
-              <div>
+              <div className="w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('province', 'Province')}
                 </label>
@@ -1445,11 +1520,12 @@ export default function BulkStudentImport() {
                   placeholder={t('selectProvince', 'Select Province')}
                   disabled={loadingProvinces}
                   className="w-full"
+                  triggerClassName="w-full"
                 />
               </div>
 
               {/* District Dropdown */}
-              <div>
+              <div className="w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('district', 'District')}
                 </label>
@@ -1463,11 +1539,12 @@ export default function BulkStudentImport() {
                   placeholder={t('selectDistrict', 'Select District')}
                   disabled={!selectedProvince || loadingDistricts}
                   className="w-full"
+                  triggerClassName="w-full"
                 />
               </div>
 
               {/* School SearchableDropdown */}
-              <div>
+              <div className="w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('school', 'School')} <span className="text-red-500">*</span>
                 </label>
@@ -1476,14 +1553,18 @@ export default function BulkStudentImport() {
                   onValueChange={setSelectedSchool}
                   options={schools.map(school => ({
                     value: school.id?.toString() || '',
-                    label: school.name || school.school_name || ''
+                    label: school.name || school.school_name || '',
+                    code: school.code || school.school_code || '' // Add school code
                   }))}
                   placeholder={t('selectSchool') || 'ជ្រើសរើសសាលា'}
                   searchPlaceholder={t('searchSchool') || 'វាយបញ្ចូលនាមសាលា...'}
                   disabled={!selectedDistrict || loadingSchools || schools.length === 0}
                   isLoading={loadingSchools}
                   emptyMessage={t('noSchools') || 'គ្មានសាលាទេ'}
-                  minWidth="min-w-[300px]"
+                  minWidth="w-full"
+                  triggerClassName="w-full"
+                  showSecondaryInfo={true}
+                  secondaryInfoKey="code"
                 />
               </div>
             </div>

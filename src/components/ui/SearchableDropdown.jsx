@@ -19,7 +19,9 @@ export default function SearchableDropdown({
   onSearch,
   isLoading = false,
   showClearButton = true,
-  emptyMessage = 'No results found'
+  emptyMessage = 'No results found',
+  showSecondaryInfo = false, // New prop to show secondary info (like school code)
+  secondaryInfoKey = 'secondary' // Key name for secondary info in option object
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,7 +30,12 @@ export default function SearchableDropdown({
 
   const selectedOption = options.find(option => option.value === value);
   // Use label if found, otherwise use placeholder
-  const displayValue = selectedOption?.label || placeholder;
+  // If showSecondaryInfo is enabled and secondary info exists, show it
+  const displayValue = selectedOption
+    ? (showSecondaryInfo && selectedOption[secondaryInfoKey]
+        ? `${selectedOption.label} (${selectedOption[secondaryInfoKey]})`
+        : selectedOption.label)
+    : placeholder;
 
   // Update filtered options when options change
   useEffect(() => {
@@ -42,12 +49,17 @@ export default function SearchableDropdown({
       onSearch(searchTerm);
     } else {
       // Default client-side filtering
-      const filtered = options.filter(option =>
-        option.label.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const filtered = options.filter(option => {
+        const labelMatch = option.label.toLowerCase().includes(searchTerm.toLowerCase());
+        // Also search in secondary info if enabled
+        const secondaryMatch = showSecondaryInfo && option[secondaryInfoKey]
+          ? option[secondaryInfoKey].toLowerCase().includes(searchTerm.toLowerCase())
+          : false;
+        return labelMatch || secondaryMatch;
+      });
       setFilteredOptions(filtered);
     }
-  }, [searchTerm, options, onSearch]);
+  }, [searchTerm, options, onSearch, showSecondaryInfo, secondaryInfoKey]);
 
   // Focus search input when dropdown opens
   useEffect(() => {
@@ -160,7 +172,16 @@ export default function SearchableDropdown({
                             : 'text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-gray-900'
                       } data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900 data-[highlighted]:outline-none`}
                     >
-                      <span className="flex-1 truncate">{option.label}</span>
+                      <span className="flex-1 truncate">
+                        {showSecondaryInfo && option[secondaryInfoKey] ? (
+                          <span className="flex flex-col">
+                            <span className="font-medium">{option.label}</span>
+                            <span className="text-xs text-gray-500">Code: {option[secondaryInfoKey]}</span>
+                          </span>
+                        ) : (
+                          option.label
+                        )}
+                      </span>
                       {value === option.value && (
                         <span className="ml-auto text-blue-600 flex-shrink-0">
                           <Check className="h-4 w-4" />
