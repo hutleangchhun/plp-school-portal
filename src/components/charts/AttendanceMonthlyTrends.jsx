@@ -84,6 +84,64 @@ const AttendanceMonthlyTrends = ({
   // Prepare monthly trends data
   const monthlyData = dashboardData.monthly || [];
 
+  // Generate list of month keys (YYYY-MM) between two dates
+  const generateMonthRange = (startDateStr, endDateStr) => {
+    if (!startDateStr || !endDateStr) return [];
+
+    const start = new Date(startDateStr + 'T00:00:00');
+    const end = new Date(endDateStr + 'T00:00:00');
+    if (isNaN(start) || isNaN(end) || start > end) return [];
+
+    const months = [];
+    const current = new Date(start.getFullYear(), start.getMonth(), 1);
+    const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+
+    while (current <= endMonth) {
+      const y = current.getFullYear();
+      const m = String(current.getMonth() + 1).padStart(2, '0');
+      months.push(`${y}-${m}`);
+      current.setMonth(current.getMonth() + 1);
+    }
+
+    return months;
+  };
+
+  // Build padded monthly data so every month in the selected range is shown
+  const getPaddedMonthlyData = () => {
+    // Fallback: if no filters, just use raw data
+    if (!dashboardFilters.startDate || !dashboardFilters.endDate || monthlyData.length === 0) {
+      return monthlyData;
+    }
+
+    const monthRange = generateMonthRange(dashboardFilters.startDate, dashboardFilters.endDate);
+    if (monthRange.length === 0) return monthlyData;
+
+    const dataByMonth = new Map();
+    monthlyData.forEach((item) => {
+      if (item && item.month) {
+        dataByMonth.set(item.month, item);
+      }
+    });
+
+    return monthRange.map((monthKey) => {
+      const existing = dataByMonth.get(monthKey);
+      if (existing) return existing;
+
+      // Create zero entry for months with no data
+      return {
+        month: monthKey,
+        totalRecords: 0,
+        present: 0,
+        absent: 0,
+        late: 0,
+        leave: 0,
+        attendancePercentage: 0
+      };
+    });
+  };
+
+  const paddedMonthlyData = getPaddedMonthlyData();
+
   // Helper function to format month labels
   const formatMonthLabel = (monthStr) => {
     if (!monthStr) return '';
@@ -114,8 +172,7 @@ const AttendanceMonthlyTrends = ({
   return (
     <>
       {/* Monthly Trends - Attendance Counts */}
-      {monthlyData && monthlyData.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
@@ -161,68 +218,74 @@ const AttendanceMonthlyTrends = ({
             </div>
           </div>
 
-          <ResponsiveContainer width="100%" height={350}>
-            <LineChart
-              data={monthlyData.map(month => ({
-                ...month,
-                formattedMonth: formatMonthLabel(month.month)
-              }))}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis
-                dataKey="formattedMonth"
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-              />
-              <YAxis
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                label={{ value: t('count', 'Count'), angle: -90, position: 'insideLeft', style: { fill: '#6b7280', fontSize: 12 } }}
-              />
-              <Tooltip />
-              <Legend wrapperStyle={{ fontSize: '14px', paddingTop: '20px' }} />
-              <Line
-                type="monotone"
-                dataKey="present"
-                stroke="#10b981"
-                strokeWidth={2}
-                name={t('present', 'Present')}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="absent"
-                stroke="#ef4444"
-                strokeWidth={2}
-                name={t('absent', 'Absent')}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="late"
-                stroke="#f59e0b"
-                strokeWidth={2}
-                name={t('late', 'Late')}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="leave"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                name={t('leave', 'Leave')}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          {paddedMonthlyData && paddedMonthlyData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart
+                data={paddedMonthlyData.map(month => ({
+                  ...month,
+                  formattedMonth: formatMonthLabel(month.month)
+                }))}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="formattedMonth"
+                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                />
+                <YAxis
+                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  label={{ value: t('count', 'Count'), angle: -90, position: 'insideLeft', style: { fill: '#6b7280', fontSize: 12 } }}
+                />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: '14px', paddingTop: '20px' }} />
+                <Line
+                  type="monotone"
+                  dataKey="present"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  name={t('present', 'Present')}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="absent"
+                  stroke="#ef4444"
+                  strokeWidth={2}
+                  name={t('absent', 'Absent')}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="late"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  name={t('late', 'Late')}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="leave"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  name={t('leave', 'Leave')}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="py-8 text-center text-sm text-gray-500">
+              {t('noAttendanceDataForFilters', 'No attendance data found for the selected filters. Adjust filters to see data.')}
+            </div>
+          )}
         </div>
       )}
 
       {/* Monthly Attendance Rate Trend */}
-      {monthlyData && monthlyData.length > 0 && (
+      {paddedMonthlyData && paddedMonthlyData.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -235,7 +298,7 @@ const AttendanceMonthlyTrends = ({
 
           <ResponsiveContainer width="100%" height={300}>
             <LineChart
-              data={monthlyData.map(month => ({
+              data={paddedMonthlyData.map(month => ({
                 ...month,
                 formattedMonth: formatMonthLabel(month.month)
               }))}

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { dashboardService } from '../../utils/api/services/dashboardService';
+import locationService from '../../utils/api/services/locationService';
+import { schoolService } from '../../utils/api/services/schoolService';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Button } from '../ui/Button';
@@ -23,14 +25,92 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
   });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  // Location data
+  const [provinces, setProvinces] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [schools, setSchools] = useState([]);
+
   // Applied filters that actually drive the query
   const [appliedRole, setAppliedRole] = useState(sharedFilters.selectedRole || '8');
   const [appliedSchool, setAppliedSchool] = useState(sharedFilters.selectedSchool || '');
+  const [appliedProvince, setAppliedProvince] = useState(sharedFilters.selectedProvince || '');
+  const [appliedDistrict, setAppliedDistrict] = useState(sharedFilters.selectedDistrict || '');
 
   // Pending filters edited in the sidebar (only applied when user clicks Apply)
   const [selectedRole, setSelectedRole] = useState(appliedRole);
   const [selectedSchool, setSelectedSchool] = useState(appliedSchool);
-  const [dataType, setDataType] = useState('filled'); // 'filled' or 'missing'
+  const [selectedProvince, setSelectedProvince] = useState(appliedProvince);
+  const [selectedDistrict, setSelectedDistrict] = useState(appliedDistrict);
+
+  // Load provinces on mount
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      try {
+        const response = await locationService.getProvinces();
+        if (response && response.success !== false) {
+          setProvinces(Array.isArray(response) ? response : response.data || []);
+        } else {
+          setProvinces([]);
+        }
+      } catch (err) {
+        console.error('Error fetching provinces for FieldCompletenessChart:', err);
+        setProvinces([]);
+      }
+    };
+
+    fetchProvinces();
+  }, []);
+
+  // Load districts when province changes (pending selection)
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      if (!selectedProvince) {
+        setDistricts([]);
+        setSchools([]);
+        return;
+      }
+
+      try {
+        const provinceId = parseInt(selectedProvince, 10);
+        const response = await locationService.getDistrictsByProvince(provinceId);
+        if (response && response.success !== false) {
+          setDistricts(Array.isArray(response) ? response : response.data || []);
+        } else {
+          setDistricts([]);
+        }
+      } catch (err) {
+        console.error('Error fetching districts for FieldCompletenessChart:', err);
+        setDistricts([]);
+      }
+    };
+
+    fetchDistricts();
+  }, [selectedProvince]);
+
+  // Load schools when district changes (pending selection)
+  useEffect(() => {
+    const fetchSchools = async () => {
+      if (!selectedDistrict) {
+        setSchools([]);
+        return;
+      }
+
+      try {
+        const districtId = parseInt(selectedDistrict, 10);
+        const response = await schoolService.getSchoolsByDistrict(districtId);
+        if (response && response.success !== false) {
+          setSchools(Array.isArray(response) ? response : response.data || []);
+        } else {
+          setSchools([]);
+        }
+      } catch (err) {
+        console.error('Error fetching schools for FieldCompletenessChart:', err);
+        setSchools([]);
+      }
+    };
+
+    fetchSchools();
+  }, [selectedDistrict]);
 
   // Fetch field completeness data
   useEffect(() => {
@@ -43,6 +123,8 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
 
         if (appliedRole) params.roleId = parseInt(appliedRole, 10);
         if (appliedSchool) params.schoolId = parseInt(appliedSchool, 10);
+        if (appliedProvince) params.provinceId = parseInt(appliedProvince, 10);
+        if (appliedDistrict) params.districtId = parseInt(appliedDistrict, 10);
 
         console.log('📊 Fetching missing fields statistics with params:', params);
 
@@ -91,7 +173,7 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
     };
 
     fetchFieldCompleteness();
-  }, [appliedRole, appliedSchool, clearError, t, handleError]);
+  }, [appliedRole, appliedSchool, appliedProvince, appliedDistrict, clearError, t, handleError]);
 
   const handleRefresh = async () => {
     // Trigger re-fetch by clearing error
@@ -103,16 +185,22 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
     // Reset pending filters
     setSelectedRole('');
     setSelectedSchool('');
+    setSelectedProvince('');
+    setSelectedDistrict('');
 
     // Reset applied filters that actually drive the query
     setAppliedRole('');
     setAppliedSchool('');
+    setAppliedProvince('');
+    setAppliedDistrict('');
 
     // Update shared filters if callback provided
     if (onFiltersChange) {
       onFiltersChange({
         selectedRole: '',
-        selectedSchool: ''
+        selectedSchool: '',
+        selectedProvince: '',
+        selectedDistrict: ''
       });
     }
   };
@@ -126,20 +214,36 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
     setSelectedSchool(value);
   };
 
+  const handleProvinceChange = (value) => {
+    setSelectedProvince(value);
+    // Reset district when province changes
+    setSelectedDistrict('');
+    setSelectedSchool('');
+  };
+
+  const handleDistrictChange = (value) => {
+    setSelectedDistrict(value);
+    setSelectedSchool('');
+  };
+
   // Apply filters: copy pending -> applied and update shared filters
   const handleApplyFilters = () => {
     setAppliedRole(selectedRole);
     setAppliedSchool(selectedSchool);
+    setAppliedProvince(selectedProvince);
+    setAppliedDistrict(selectedDistrict);
 
     if (onFiltersChange) {
       onFiltersChange({
         selectedRole: selectedRole,
-        selectedSchool: selectedSchool
+        selectedSchool: selectedSchool,
+        selectedProvince: selectedProvince,
+        selectedDistrict: selectedDistrict
       });
     }
   };
 
-  const hasFilters = !!(appliedRole || appliedSchool);
+  const hasFilters = !!(appliedRole || appliedSchool || appliedProvince || appliedDistrict);
 
   if (loading) {
     return (
@@ -208,6 +312,80 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
             className='w-full'
           />
         </div>
+
+        {/* Province filter */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {t('province', 'Province')}
+          </label>
+          <Dropdown
+            value={selectedProvince}
+            onValueChange={handleProvinceChange}
+            options={[
+              { value: '', label: t('allProvinces', 'All Provinces') },
+              ...provinces.map((province) => ({
+                value: province.id?.toString?.() || String(province.id || ''),
+                label:
+                  province.province_name_kh ||
+                  province.province_name_en ||
+                  province.name ||
+                  'Unknown Province',
+              })),
+            ]}
+            placeholder={t('selectProvince', 'Select Province')}
+            className='w-full'
+          />
+        </div>
+
+        {/* District filter */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {t('district', 'District')}
+          </label>
+          <Dropdown
+            value={selectedDistrict}
+            onValueChange={handleDistrictChange}
+            options={[
+              { value: '', label: t('allDistricts', 'All Districts') },
+              ...districts.map((district) => ({
+                value: district.id?.toString?.() || String(district.id || ''),
+                label:
+                  district.district_name_kh ||
+                  district.district_name_en ||
+                  district.name ||
+                  'Unknown District',
+              })),
+            ]}
+            placeholder={t('selectDistrict', 'Select District')}
+            disabled={!selectedProvince}
+            className='w-full'
+          />
+        </div>
+
+        {/* School filter */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {t('school', 'School')}
+          </label>
+          <Dropdown
+            value={selectedSchool}
+            onValueChange={handleSchoolChange}
+            options={[
+              { value: '', label: t('allSchools', 'All Schools') },
+              ...schools.map((school) => ({
+                value: school.id?.toString?.() || String(school.id || ''),
+                label:
+                  school.school_name_kh ||
+                  school.school_name_en ||
+                  school.name ||
+                  'Unknown School',
+              })),
+            ]}
+            placeholder={t('selectSchool', 'Select School')}
+            disabled={!selectedDistrict}
+            className='w-full'
+          />
+        </div>
       </SidebarFilter>
 
       <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-6">
@@ -237,24 +415,6 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
         </div>
       </div>
 
-      {/* Data Type Toggle */}
-      <div className="mb-6 flex gap-2">
-        <Button
-          onClick={() => setDataType('filled')}
-          variant={dataType === 'filled' ? 'primary' : 'outline'}
-          size="sm"
-        >
-          {t('filled', 'Filled')}
-        </Button>
-        <Button
-          onClick={() => setDataType('missing')}
-          variant={dataType === 'missing' ? 'primary' : 'outline'}
-          size="sm"
-        >
-          {t('missing', 'Missing')}
-        </Button>
-      </div>
-
       {/* Bar Chart */}
       <div className="h-[600px]">
         <ResponsiveContainer width="100%" height="100%">
@@ -281,9 +441,9 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
               formatter={(value) => value}
             />
             <Bar
-              dataKey={dataType}
-              name={dataType === 'filled' ? t('filled', 'Filled') : t('missing', 'Missing')}
-              fill={dataType === 'filled' ? '#10b981' : '#ef4444'}
+              dataKey="filled"
+              name={t('filled', 'Filled')}
+              fill="#10b981"
               radius={[4, 4, 0, 0]}
             />
           </BarChart>

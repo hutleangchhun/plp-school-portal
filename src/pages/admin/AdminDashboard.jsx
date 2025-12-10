@@ -30,7 +30,9 @@ const AdminDashboard = ({ user: initialUser }) => {
   // Shared filter state for both completeness charts
   const [sharedFilters, setSharedFilters] = useState({
     selectedRole: '8',
-    selectedSchool: ''
+    selectedSchool: '',
+    selectedProvince: '',
+    selectedDistrict: ''
   });
 
   // Fetch system-wide statistics

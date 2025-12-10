@@ -104,7 +104,8 @@ const AttendanceOverview = () => {
     }
 
     try {
-      const response = await locationService.getDistrictsByProvince(provinceId);
+      const numericProvinceId = parseInt(provinceId, 10);
+      const response = await locationService.getDistrictsByProvince(numericProvinceId);
       console.log('Districts response:', response);
 
       // Handle different response formats
@@ -142,7 +143,8 @@ const AttendanceOverview = () => {
     }
 
     try {
-      const response = await schoolService.getSchoolsByDistrict(districtId);
+      const numericDistrictId = parseInt(districtId, 10);
+      const response = await schoolService.getSchoolsByDistrict(numericDistrictId);
       console.log('Schools response:', response);
 
       // Handle different response formats
@@ -177,9 +179,9 @@ const AttendanceOverview = () => {
       const params = {};
       if (dashboardFilters.startDate) params.startDate = dashboardFilters.startDate;
       if (dashboardFilters.endDate) params.endDate = dashboardFilters.endDate;
-      if (dashboardFilters.province) params.provinceId = dashboardFilters.province;
-      if (dashboardFilters.district) params.districtId = dashboardFilters.district;
-      if (dashboardFilters.school) params.schoolId = dashboardFilters.school;
+      if (dashboardFilters.province) params.provinceId = parseInt(dashboardFilters.province, 10);
+      if (dashboardFilters.district) params.districtId = parseInt(dashboardFilters.district, 10);
+      if (dashboardFilters.school) params.schoolId = parseInt(dashboardFilters.school, 10);
 
       console.log('Fetching attendance dashboard with params:', params);
 
