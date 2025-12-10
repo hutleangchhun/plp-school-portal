@@ -212,6 +212,14 @@ const AdminDashboard = ({ user: initialUser }) => {
               onFiltersChange={setSharedFilters}
             />
           </div>
+
+          {/* Field Completeness Chart */}
+          <div className="">
+            <FieldCompletenessChart
+              sharedFilters={sharedFilters}
+              onFiltersChange={setSharedFilters}
+            />
+          </div>
         </FadeInSection>
       </div>
     </PageTransition>

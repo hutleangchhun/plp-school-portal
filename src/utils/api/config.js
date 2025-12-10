@@ -135,6 +135,16 @@ const ENDPOINTS = {
   },
   ATTENDANCE: {
     BASE: '/attendance',
+    DASHBOARD: {
+      PRIMARY: '/attendance-dashboard/primary',
+      GENDER_COMPARISON: '/attendance-dashboard/gender-comparison',
+      GRADE_BREAKDOWN: '/attendance-dashboard/grade-breakdown',
+      CLASS_BREAKDOWN: '/attendance-dashboard/class-breakdown',
+      SCHOOL_RANKINGS: '/attendance-dashboard/school-rankings',
+      DAILY_TRENDS: '/attendance-dashboard/daily-trends',
+      MONTHLY_TRENDS: '/attendance-dashboard/monthly-trends',
+      APPROVAL_STATUS: '/attendance-dashboard/approval-status',
+    },
   },
   GRADES: {
     BASE: '/grades',

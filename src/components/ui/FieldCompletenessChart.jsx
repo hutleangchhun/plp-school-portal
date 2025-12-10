@@ -44,41 +44,43 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
         if (appliedRole) params.roleId = parseInt(appliedRole, 10);
         if (appliedSchool) params.schoolId = parseInt(appliedSchool, 10);
 
-        console.log('📊 Fetching field completeness with params:', params);
+        console.log('📊 Fetching missing fields statistics with params:', params);
 
-        const response = await dashboardService.getDataCompletenessSummary(params);
+        const response = await dashboardService.getMissingFieldsStatistics(params);
 
-        console.log('📊 Field completeness response:', response);
+        console.log('📊 Missing fields statistics response:', response);
 
         if (response.success) {
-          // Set summary data
-          setSummary(response.summary || {
-            total: 0,
-            complete: 0,
-            incomplete: 0,
-            completionRate: 0
+          const apiData = response.data || {};
+
+          // Extract summary data from API response
+          setSummary({
+            total: apiData.totalUsers || 0,
+            complete: apiData.usersWithCompleteProfiles || 0,
+            incomplete: apiData.usersWithIncompleteProfiles || 0,
+            completionRate: apiData.overallCompletionRate || 0
           });
 
           // Transform field stats for bar chart
-          const fieldStats = (response.fieldStats || []).map(field => ({
-            name: field.fieldName,
-            filled: field.filled || 0,
-            missing: field.missing || 0,
-            fillRate: field.fillRate || 0
+          const fieldStats = (apiData.fieldStatistics || []).map(field => ({
+            name: field.fieldName || field.field_name || field.name,
+            filled: field.filledCount || field.filled_count || 0,
+            missing: field.missingCount || field.missing_count || 0,
+            fillRate: field.completionRate || field.completion_rate || 0
           }));
 
           setChartData(fieldStats);
 
-          console.log('✅ Field completeness loaded:', fieldStats);
+          console.log('✅ Missing fields statistics loaded:', fieldStats);
         } else {
-          console.error('Failed to fetch field completeness:', response.error);
-          handleError(new Error(response.error || 'Failed to fetch field completeness'), {
+          console.error('Failed to fetch missing fields statistics:', response.error);
+          handleError(new Error(response.error || 'Failed to fetch missing fields statistics'), {
             toastMessage: t('errorFetchingData', 'Error fetching data'),
             setError: true
           });
         }
       } catch (error) {
-        console.error('❌ Error fetching field completeness:', error);
+        console.error('❌ Error fetching missing fields statistics:', error);
         handleError(error, {
           toastMessage: t('errorFetchingData', 'Error fetching data'),
           setError: true

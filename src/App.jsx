@@ -9,6 +9,7 @@ import UserActivityLogs from './pages/admin/UserActivityLogs';
 import TeacherTransferManagement from './pages/admin/TeacherTransferManagement';
 import StudentTransferManagement from './pages/admin/StudentTransferManagement';
 import BMIReport from './pages/admin/BMIReport';
+import AttendanceOverview from './pages/admin/AttendanceOverview';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -216,6 +217,15 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<BMIReport />} />
+          </Route>
+
+          {/* Admin Attendance Overview route - role ID 1 only (enforced by routePermissions) */}
+          <Route path="admin/attendance-overview" element={
+            <ProtectedRoute path="/admin/attendance-overview" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AttendanceOverview />} />
           </Route>
 
           <Route path="students" element={

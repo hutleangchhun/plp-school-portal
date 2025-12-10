@@ -434,5 +434,47 @@ export const dashboardService = {
         fieldStats: []
       };
     }
+  },
+
+  /**
+   * Get missing fields statistics for tracking incomplete profile fields
+   * @param {Object} params - Query parameters
+   * @param {number} [params.roleId] - Filter by role ID (8=Teacher, 9=Student, etc.)
+   * @param {number} [params.schoolId] - Filter by school ID
+   * @param {number} [params.provinceId] - Filter by province ID
+   * @returns {Promise<Object>} Response with missing fields statistics
+   */
+  async getMissingFieldsStatistics(params = {}) {
+    try {
+      console.log('📊 Fetching missing fields statistics...', params);
+
+      const queryParams = { ...params };
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(`${ENDPOINTS.USERS.BASE}/dashboard/missing-fields-statistics`, {
+          params: queryParams
+        })
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch missing fields statistics');
+      }
+
+      // handleApiResponse wraps the API response in { success: true, data: response }
+      const apiData = response.data || {};
+
+      return {
+        success: true,
+        data: apiData
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getMissingFieldsStatistics:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get missing fields statistics',
+        data: {}
+      };
+    }
   }
 };

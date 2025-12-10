@@ -132,6 +132,10 @@ export const routePermissions = {
   '/admin/bmi-report': {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'BMIReport'
+  },
+  '/admin/attendance-overview': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'AttendanceOverview'
   }
 };
 
@@ -391,6 +395,10 @@ export const getNavigationItems = (user, t) => {
     {
       name: t('bmiAnalysis', 'BMI Analysis'),
       href: '/admin/bmi-report',
+    },
+    {
+      name: t('attendanceOverview', 'Attendance Overview'),
+      href: '/admin/attendance-overview',
     },
   ];
 

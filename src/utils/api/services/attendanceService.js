@@ -273,6 +273,193 @@ export const attendanceService = {
   },
 
   /**
+   * Attendance Dashboard API Methods
+   */
+  dashboard: {
+    /**
+     * Get primary dashboard statistics
+     * @param {Object} params - Query parameters
+     * @param {string} [params.academicYear] - Academic year (e.g., "2024-2025")
+     * @param {string} [params.startDate] - Start date (ISO 8601)
+     * @param {string} [params.endDate] - End date (ISO 8601)
+     * @param {number} [params.provinceId] - Province ID
+     * @param {number} [params.districtId] - District ID
+     * @param {number} [params.schoolId] - School ID
+     * @param {number} [params.classId] - Class ID
+     * @returns {Promise<Object>} Primary dashboard data
+     */
+    async getPrimaryDashboard(params = {}) {
+      const queryParams = {};
+      if (params.academicYear) queryParams.academicYear = params.academicYear;
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+      if (params.classId) queryParams.classId = params.classId;
+
+      return handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.PRIMARY, { params: queryParams })
+      );
+    },
+
+    /**
+     * Get gender comparison statistics
+     * @param {Object} params - Query parameters (same as getPrimaryDashboard)
+     * @returns {Promise<Array>} Gender comparison data
+     */
+    async getGenderComparison(params = {}) {
+      const queryParams = {};
+      if (params.academicYear) queryParams.academicYear = params.academicYear;
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+      if (params.classId) queryParams.classId = params.classId;
+
+      return handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.GENDER_COMPARISON, { params: queryParams })
+      );
+    },
+
+    /**
+     * Get grade breakdown statistics
+     * @param {Object} params - Query parameters
+     * @param {string} [params.academicYear] - Academic year
+     * @param {string} [params.startDate] - Start date
+     * @param {string} [params.endDate] - End date
+     * @param {number} [params.provinceId] - Province ID
+     * @param {number} [params.districtId] - District ID
+     * @param {number} [params.schoolId] - School ID
+     * @returns {Promise<Array>} Grade breakdown data
+     */
+    async getGradeBreakdown(params = {}) {
+      const queryParams = {};
+      if (params.academicYear) queryParams.academicYear = params.academicYear;
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+
+      return handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.GRADE_BREAKDOWN, { params: queryParams })
+      );
+    },
+
+    /**
+     * Get class breakdown statistics
+     * @param {Object} params - Query parameters
+     * @param {string} [params.academicYear] - Academic year
+     * @param {string} [params.startDate] - Start date
+     * @param {string} [params.endDate] - End date
+     * @param {number} [params.provinceId] - Province ID
+     * @param {number} [params.districtId] - District ID
+     * @param {number} [params.schoolId] - School ID
+     * @returns {Promise<Array>} Class breakdown data
+     */
+    async getClassBreakdown(params = {}) {
+      const queryParams = {};
+      if (params.academicYear) queryParams.academicYear = params.academicYear;
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+
+      return handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.CLASS_BREAKDOWN, { params: queryParams })
+      );
+    },
+
+    /**
+     * Get school rankings by attendance percentage
+     * @param {Object} params - Query parameters
+     * @param {string} [params.academicYear] - Academic year
+     * @param {string} [params.startDate] - Start date
+     * @param {string} [params.endDate] - End date
+     * @param {number} [params.provinceId] - Province ID
+     * @param {number} [params.districtId] - District ID
+     * @param {number} [params.limit=20] - Maximum results
+     * @returns {Promise<Array>} School rankings data
+     */
+    async getSchoolRankings(params = {}) {
+      const queryParams = {};
+      if (params.academicYear) queryParams.academicYear = params.academicYear;
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.limit !== undefined) queryParams.limit = params.limit;
+
+      return handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.SCHOOL_RANKINGS, { params: queryParams })
+      );
+    },
+
+    /**
+     * Get daily attendance trends
+     * @param {Object} params - Query parameters (same as getPrimaryDashboard)
+     * @returns {Promise<Array>} Daily trends data
+     */
+    async getDailyTrends(params = {}) {
+      const queryParams = {};
+      if (params.academicYear) queryParams.academicYear = params.academicYear;
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+      if (params.classId) queryParams.classId = params.classId;
+
+      return handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.DAILY_TRENDS, { params: queryParams })
+      );
+    },
+
+    /**
+     * Get monthly attendance trends
+     * @param {Object} params - Query parameters (same as getPrimaryDashboard)
+     * @returns {Promise<Array>} Monthly trends data
+     */
+    async getMonthlyTrends(params = {}) {
+      const queryParams = {};
+      if (params.academicYear) queryParams.academicYear = params.academicYear;
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+      if (params.classId) queryParams.classId = params.classId;
+
+      return handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.MONTHLY_TRENDS, { params: queryParams })
+      );
+    },
+
+    /**
+     * Get approval status distribution
+     * @param {Object} params - Query parameters (same as getPrimaryDashboard)
+     * @returns {Promise<Object>} Approval status distribution data
+     */
+    async getApprovalStatus(params = {}) {
+      const queryParams = {};
+      if (params.academicYear) queryParams.academicYear = params.academicYear;
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+      if (params.classId) queryParams.classId = params.classId;
+
+      return handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.APPROVAL_STATUS, { params: queryParams })
+      );
+    }
+  },
+
+  /**
    * Utility functions for attendance data transformation
    */
   utils: {
