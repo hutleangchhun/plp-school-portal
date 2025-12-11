@@ -16,6 +16,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import StudentContextMenu from '../../components/admin/StudentContextMenu';
 import ResetPasswordModal from '../../components/admin/ResetPasswordModal';
+import ExportProgressModal from '../../components/modals/ExportProgressModal';
 import { api } from '../../utils/api';
 import { getFullName } from '../../utils/usernameUtils';
 import { formatClassIdentifier } from '../../utils/helpers';
@@ -68,6 +69,11 @@ const StudentTransferManagement = () => {
   const [selectedTargetMasterClassLabel, setSelectedTargetMasterClassLabel] = useState('');
   const [targetLoading, setTargetLoading] = useState(false);
   const [creatingMasterClass, setCreatingMasterClass] = useState(false);
+
+  // Export progress modal state
+  const [showExportProgress, setShowExportProgress] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportStatus, setExportStatus] = useState('processing'); // 'processing', 'success', 'error'
 
   const [studentPagination, setStudentPagination] = useState({
     page: 1,
@@ -639,7 +645,9 @@ const StudentTransferManagement = () => {
 
   const handleExportStudents = async () => {
     try {
-      startLoading('export', t('exportingStudents', 'Exporting students...'));
+      setShowExportProgress(true);
+      setExportProgress(0);
+      setExportStatus('processing');
       clearError();
 
       let allStudentsData = [];
@@ -670,9 +678,11 @@ const StudentTransferManagement = () => {
             gradeLevel: student.gradeLevel,
             schoolId: selectedSourceSchool,
             schoolName: student.school?.name || sourceSchools.find(s => s.id.toString() === selectedSourceSchool)?.name || '',
+            schoolCode: student.school?.code || sourceSchools.find(s => s.id.toString() === selectedSourceSchool)?.code || '',
           }));
 
           allStudentsData = [...allStudentsData, ...mappedStudents];
+          setExportProgress(Math.min(50, (allStudentsData.length / 1000) * 50)); // Progress up to 50%
 
           // Check if there are more pages
           if (response.pagination) {
@@ -709,9 +719,11 @@ const StudentTransferManagement = () => {
             gradeLevel: student.gradeLevel,
             schoolId: student.schoolId || student.school?.schoolId,
             schoolName: student.schoolName || student.school?.name || '',
+            schoolCode: student.school?.code || '',
           }));
 
           allStudentsData = [...allStudentsData, ...mappedStudents];
+          setExportProgress(Math.min(50, (allStudentsData.length / 1000) * 50)); // Progress up to 50%
 
           // Check if there are more pages
           if (response.pagination) {
@@ -725,19 +737,24 @@ const StudentTransferManagement = () => {
       }
 
       if (allStudentsData.length === 0) {
-        stopLoading('export');
+        setShowExportProgress(false);
         handleError(new Error(t('noStudentsToExport', 'No students to export')));
         return;
       }
 
-      // Prepare data for export with school name, names, and grade level only
+      setExportProgress(60); // Progress to 60% for data processing
+
+      // Prepare data for export with school name, code, names, and grade level only
       const exportData = allStudentsData.map(student => ({
+        [t('schoolCode', 'លេខសាលា')]: student.schoolCode || '',
         [t('school', 'សាលា')]: student.schoolName || '',
         [t('firstName', 'នាមខ្លួន')]: student.firstName || '',
         [t('lastName', 'នាមត្រកូល')]: student.lastName || '',
         [t('fullName', 'ឈ្មោះពេញ')]: getFullName(student),
         [t('gradeLevel', 'កម្រិតថ្នាក់')]: student.gradeLevel || '',
       }));
+
+      setExportProgress(75); // Progress to 75% for worksheet creation
 
       // Create worksheet
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -763,6 +780,8 @@ const StudentTransferManagement = () => {
       }
       ws['!cols'] = colWidths;
 
+      setExportProgress(90); // Progress to 90% for file generation
+
       // Generate filename with timestamp
       const timestamp = new Date().toISOString().split('T')[0];
       const schoolName = selectedSourceSchool
@@ -773,10 +792,17 @@ const StudentTransferManagement = () => {
       // Write file
       XLSX.writeFile(wb, filename);
 
-      stopLoading('export');
-      alert(t('exportSuccess', `Data exported successfully - ${allStudentsData.length} students`));
+      setExportProgress(100); // Complete
+      setExportStatus('success');
+
+      // Close modal after 1 second
+      setTimeout(() => {
+        setShowExportProgress(false);
+        alert(t('exportSuccess', `Data exported successfully - ${allStudentsData.length} students`));
+      }, 1000);
     } catch (err) {
-      stopLoading('export');
+      setExportStatus('error');
+      setShowExportProgress(false);
       handleError(err, {
         toastMessage: t('exportFailed', 'Failed to export students'),
       });
@@ -1338,6 +1364,13 @@ const StudentTransferManagement = () => {
         onClose={handleCloseResetPasswordModal}
         teacher={selectedStudentForReset}
         userType="student"
+      />
+
+      {/* Export Progress Modal */}
+      <ExportProgressModal
+        isOpen={showExportProgress}
+        progress={exportProgress}
+        status={exportStatus}
       />
     </>
   );
