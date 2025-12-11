@@ -24,7 +24,8 @@ import schoolService from '../../utils/api/services/schoolService';
 import classService from '../../utils/api/services/classService';
 import { studentService } from '../../utils/api/services/studentService';
 import { gradeLevelOptions as sharedGradeLevelOptions } from '../../utils/formOptions';
-import { Users, ListFilter, RotateCcw } from 'lucide-react';
+import { Users, ListFilter, RotateCcw, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const StudentTransferManagement = () => {
   const { t } = useLanguage();
@@ -636,6 +637,65 @@ const StudentTransferManagement = () => {
     setSelectedStudentForReset(null);
   };
 
+  const handleExportStudents = async () => {
+    if (students.length === 0) {
+      handleError(new Error(t('noStudentsToExport', 'No students to export')));
+      return;
+    }
+
+    try {
+      // Prepare data for export with school name, names, and grade level only
+      const exportData = students.map(student => ({
+        [t('school', 'សាលា')]: student.schoolName || '',
+        [t('firstName', 'នាមខ្លួន')]: student.firstName || '',
+        [t('lastName', 'នាមត្រកូល')]: student.lastName || '',
+        [t('fullName', 'ឈ្មោះពេញ')]: getFullName(student),
+        [t('gradeLevel', 'កម្រិតថ្នាក់')]: student.gradeLevel || '',
+      }));
+
+      // Create worksheet
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Students');
+
+      // Auto-size columns
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      const colWidths = [];
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        let maxWidth = 0;
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+          const cellAddress = XLSX.utils.encode_cell({ c: C, r: R });
+          const cell = ws[cellAddress];
+          if (cell && cell.v) {
+            const cellLength = cell.v.toString().length;
+            if (cellLength > maxWidth) {
+              maxWidth = cellLength;
+            }
+          }
+        }
+        colWidths.push({ wch: Math.min(maxWidth + 2, 50) });
+      }
+      ws['!cols'] = colWidths;
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const schoolName = selectedSourceSchool
+        ? sourceSchools.find(s => s.id.toString() === selectedSourceSchool)?.name || 'All_Schools'
+        : 'All_Schools';
+      const filename = `student_transfer_${schoolName.replace(/\s+/g, '_')}_${timestamp}.xlsx`;
+
+      // Write file
+      XLSX.writeFile(wb, filename);
+
+      // Show success message
+      alert(t('exportSuccess', 'Data exported successfully'));
+    } catch (err) {
+      handleError(err, {
+        toastMessage: t('exportFailed', 'Failed to export students'),
+      });
+    }
+  };
+
   const handleTransferStudent = async () => {
     if (selectedStudentIds.size === 0 || !selectedTargetSchool || !selectedTargetMasterClassId) {
       handleError(new Error('Please select students, target school and target class'));
@@ -801,18 +861,34 @@ const StudentTransferManagement = () => {
                         : t('noDataAvailable', 'No data available')}
                     </p>
                   </div>
-                  {students.length > 0 && selectedStudentIds.size > 0 && (
-                    <div className="flex items-center space-x-3">
+                  {students.length > 0 && (
+                    <div className="flex items-center space-x-2">
+                      {/* Export Button - Always show when students exist */}
                       <Button
                         type="button"
-                        variant="primary"
+                        variant="outline"
                         size="sm"
-                        disabled={transferring}
-                        onClick={openTransferModal}
+                        onClick={handleExportStudents}
+                        disabled={fetchingStudents}
                         className="whitespace-nowrap"
                       >
-                        {t('proceedToTransfer', `Transfer ${selectedStudentIds.size} Student(s)`)}
+                        <Download className="w-4 h-4 mr-1" />
+                        {t('export', 'Export')}
                       </Button>
+
+                      {/* Transfer Button - Only show when students are selected */}
+                      {selectedStudentIds.size > 0 && (
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          disabled={transferring}
+                          onClick={openTransferModal}
+                          className="whitespace-nowrap"
+                        >
+                          {t('proceedToTransfer', `Transfer ${selectedStudentIds.size} Student(s)`)}
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
