@@ -638,14 +638,100 @@ const StudentTransferManagement = () => {
   };
 
   const handleExportStudents = async () => {
-    if (students.length === 0) {
-      handleError(new Error(t('noStudentsToExport', 'No students to export')));
-      return;
-    }
-
     try {
+      startLoading('export', t('exportingStudents', 'Exporting students...'));
+      clearError();
+
+      let allStudentsData = [];
+
+      // If a specific school is selected, fetch all students from that school
+      if (selectedSourceSchool) {
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+          const response = await studentService.getStudentsBySchool(selectedSourceSchool, {
+            page,
+            limit: 100, // Fetch 100 at a time
+            gradeLevel: selectedGradeLevel && selectedGradeLevel !== 'all' ? selectedGradeLevel : undefined,
+          });
+
+          if (!response.success || !response.data || response.data.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          // Map students with school info
+          const mappedStudents = response.data.map(student => ({
+            id: student.studentId || student.id,
+            studentId: student.studentId || student.id,
+            firstName: student.firstName,
+            lastName: student.lastName,
+            gradeLevel: student.gradeLevel,
+            schoolId: selectedSourceSchool,
+            schoolName: student.school?.name || sourceSchools.find(s => s.id.toString() === selectedSourceSchool)?.name || '',
+          }));
+
+          allStudentsData = [...allStudentsData, ...mappedStudents];
+
+          // Check if there are more pages
+          if (response.pagination) {
+            hasMore = page < response.pagination.pages || page < response.pagination.totalPages;
+          } else {
+            hasMore = false;
+          }
+
+          page++;
+        }
+      } else {
+        // If no school selected, fetch all students globally
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+          const response = await studentService.getStudents({
+            page,
+            limit: 100, // Fetch 100 at a time
+            gradeLevel: selectedGradeLevel && selectedGradeLevel !== 'all' ? selectedGradeLevel : undefined,
+          });
+
+          if (!response.data || response.data.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          // Map students with school info
+          const mappedStudents = response.data.map(student => ({
+            id: student.studentId || student.id,
+            studentId: student.studentId || student.id,
+            firstName: student.firstName,
+            lastName: student.lastName,
+            gradeLevel: student.gradeLevel,
+            schoolId: student.schoolId || student.school?.schoolId,
+            schoolName: student.schoolName || student.school?.name || '',
+          }));
+
+          allStudentsData = [...allStudentsData, ...mappedStudents];
+
+          // Check if there are more pages
+          if (response.pagination) {
+            hasMore = page < response.pagination.pages || page < response.pagination.totalPages;
+          } else {
+            hasMore = false;
+          }
+
+          page++;
+        }
+      }
+
+      if (allStudentsData.length === 0) {
+        stopLoading('export');
+        handleError(new Error(t('noStudentsToExport', 'No students to export')));
+        return;
+      }
+
       // Prepare data for export with school name, names, and grade level only
-      const exportData = students.map(student => ({
+      const exportData = allStudentsData.map(student => ({
         [t('school', 'សាលា')]: student.schoolName || '',
         [t('firstName', 'នាមខ្លួន')]: student.firstName || '',
         [t('lastName', 'នាមត្រកូល')]: student.lastName || '',
@@ -687,9 +773,10 @@ const StudentTransferManagement = () => {
       // Write file
       XLSX.writeFile(wb, filename);
 
-      // Show success message
-      alert(t('exportSuccess', 'Data exported successfully'));
+      stopLoading('export');
+      alert(t('exportSuccess', `Data exported successfully - ${allStudentsData.length} students`));
     } catch (err) {
+      stopLoading('export');
       handleError(err, {
         toastMessage: t('exportFailed', 'Failed to export students'),
       });
