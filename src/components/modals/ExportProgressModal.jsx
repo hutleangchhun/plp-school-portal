@@ -1,5 +1,6 @@
 import React from 'react';
 import { Download, CheckCircle, AlertCircle } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 /**
  * Reusable Export Progress Modal Component
@@ -12,6 +13,8 @@ const ExportProgressModal = ({
   status = 'processing', // 'processing', 'success', 'error'
   onComplete = null
 }) => {
+  const { t } = useLanguage();
+
   if (!isOpen) return null;
 
   const isProcessing = status === 'processing';
@@ -23,7 +26,7 @@ const ExportProgressModal = ({
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <Download className="h-5 w-5 text-blue-600 animate-pulse" />
-            <span className="text-sm font-medium text-gray-700">{t$('exporting', 'Exporting')}</span>
+            <span className="text-sm font-medium text-gray-700">{t('exporting', 'Exporting')}</span>
           </div>
 
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
