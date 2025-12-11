@@ -16,12 +16,14 @@ import EmptyState from '../../components/ui/EmptyState';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import TeacherContextMenu from '../../components/admin/TeacherContextMenu';
 import ResetPasswordModal from '../../components/admin/ResetPasswordModal';
+import ExportProgressModal from '../../components/modals/ExportProgressModal';
 import { api } from '../../utils/api';
 import { getFullName } from '../../utils/usernameUtils';
 import locationService from '../../utils/api/services/locationService';
 import schoolService from '../../utils/api/services/schoolService';
 import { roleOptions } from '../../utils/formOptions';
-import { Users, ListFilter, RotateCcw } from 'lucide-react';
+import { Users, ListFilter, RotateCcw, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const getRoleName = (roleId) => {
   const role = roleOptions.find(r => r.value === String(roleId));
@@ -68,6 +70,11 @@ const TeacherTransferManagement = () => {
   const [selectedTargetDistrict, setSelectedTargetDistrict] = useState('');
   const [selectedTargetSchool, setSelectedTargetSchool] = useState('');
   const [targetLoading, setTargetLoading] = useState(false);
+
+  // Export progress modal state
+  const [showExportProgress, setShowExportProgress] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportStatus, setExportStatus] = useState('processing');
 
   // Pagination state
   const [teacherPagination, setTeacherPagination] = useState({
@@ -535,6 +542,183 @@ const TeacherTransferManagement = () => {
     setSelectedTeacherForReset(null);
   };
 
+  const handleExportTeachers = async () => {
+    if (teachers.length === 0) {
+      handleError(new Error(t('noTeachersToExport', 'No teachers to export')));
+      return;
+    }
+
+    try {
+      setShowExportProgress(true);
+      setExportProgress(0);
+      setExportStatus('processing');
+
+      // Start fetching all teachers without pagination limit
+      setExportProgress(50);
+      setExportStatus('processing');
+
+      let allTeachersData = [];
+      let hasMore = true;
+      let page = 1;
+
+      if (selectedSourceSchool) {
+        // Fetch teachers from specific school in batches of 100
+        while (hasMore) {
+          const response = await api.teacher.getTeachersBySchool(selectedSourceSchool, {
+            page: page,
+            limit: 100,
+            search: searchQuery.trim() || undefined
+          });
+
+          if (!response.success || !response.data) {
+            break;
+          }
+
+          const mappedTeachers = (response.data || []).map(teacher => ({
+            id: teacher.teacherId || teacher.id,
+            teacherId: teacher.teacherId,
+            userId: teacher.userId,
+            username: teacher.user?.username || '',
+            firstName: teacher.user?.first_name || '',
+            lastName: teacher.user?.last_name || '',
+            email: teacher.user?.email || '',
+            phone: teacher.user?.phone || '',
+            gradeLevel: teacher.gradeLevel || null,
+            roleId: teacher.roleId,
+            schoolId: teacher.schoolId,
+            schoolName: teacher.school?.name || '',
+            schoolCode: teacher.school?.code || sourceSchools.find(s => s.id.toString() === selectedSourceSchool)?.code || '',
+            status: teacher.status,
+            classes: teacher.classes || []
+          }));
+
+          allTeachersData = allTeachersData.concat(mappedTeachers);
+
+          // Check if there are more pages
+          if (response.pagination && response.pagination.pages) {
+            hasMore = page < response.pagination.pages;
+          } else {
+            hasMore = mappedTeachers.length === 100;
+          }
+
+          page++;
+        }
+      } else {
+        // Fetch all teachers globally in batches of 100
+        while (hasMore) {
+          const response = await api.teacher.getAllTeachers({
+            page: page,
+            limit: 100,
+            search: searchQuery.trim() || undefined
+          });
+
+          if (!response.success || !response.data) {
+            break;
+          }
+
+          const mappedTeachers = (response.data || []).map(teacher => ({
+            id: teacher.teacherId || teacher.id,
+            teacherId: teacher.teacherId,
+            userId: teacher.userId,
+            username: teacher.user?.username || '',
+            firstName: teacher.user?.first_name || '',
+            lastName: teacher.user?.last_name || '',
+            email: teacher.user?.email || '',
+            phone: teacher.user?.phone || '',
+            gradeLevel: teacher.gradeLevel || null,
+            roleId: teacher.roleId,
+            schoolId: teacher.schoolId,
+            schoolName: teacher.school?.name || '',
+            schoolCode: teacher.school?.code || '',
+            status: teacher.status,
+            classes: teacher.classes || []
+          }));
+
+          allTeachersData = allTeachersData.concat(mappedTeachers);
+
+          // Check if there are more pages
+          if (response.pagination && response.pagination.pages) {
+            hasMore = page < response.pagination.pages;
+          } else {
+            hasMore = mappedTeachers.length === 100;
+          }
+
+          page++;
+        }
+      }
+
+      setExportProgress(60);
+
+      // Prepare export data with teacher-specific columns
+      const exportData = allTeachersData.map(teacher => ({
+        [t('schoolCode', 'លេខសាលា')]: teacher.schoolCode || '',
+        [t('school', 'សាលា')]: teacher.schoolName || '',
+        [t('firstName', 'នាមខ្លួន')]: teacher.firstName || '',
+        [t('lastName', 'នាមត្រកូល')]: teacher.lastName || '',
+        [t('fullName', 'ឈ្មោះពេញ')]: getFullName(teacher),
+        [t('role', 'តួនាទី')]: getRoleName(teacher.roleId) || '',
+      }));
+
+      setExportProgress(75);
+
+      // Create worksheet
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Teachers');
+
+      // Auto-size columns
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      const colWidths = [];
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        let maxWidth = 0;
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+          const cellAddress = XLSX.utils.encode_cell({ c: C, r: R });
+          const cell = ws[cellAddress];
+          if (cell && cell.v) {
+            const cellLength = cell.v.toString().length;
+            if (cellLength > maxWidth) {
+              maxWidth = cellLength;
+            }
+          }
+        }
+        colWidths.push({ wch: Math.min(maxWidth + 2, 50) });
+      }
+      ws['!cols'] = colWidths;
+
+      setExportProgress(90);
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const schoolName = selectedSourceSchool
+        ? sourceSchools.find(s => s.id.toString() === selectedSourceSchool)?.name || 'All_Schools'
+        : 'All_Schools';
+      const filename = `teacher_transfer_${schoolName.replace(/\s+/g, '_')}_${timestamp}.xlsx`;
+
+      // Write file
+      XLSX.writeFile(wb, filename);
+
+      setExportProgress(100);
+      setExportStatus('success');
+
+      // Auto-close after 1 second
+      setTimeout(() => {
+        setShowExportProgress(false);
+        setExportProgress(0);
+        setExportStatus('processing');
+      }, 1000);
+    } catch (err) {
+      setExportStatus('error');
+      handleError(err, {
+        toastMessage: t('exportFailed', 'Failed to export teachers'),
+      });
+      setTimeout(() => {
+        setShowExportProgress(false);
+        setExportProgress(0);
+        setExportStatus('processing');
+      }, 1500);
+    }
+  };
+
   const handleTransferTeachers = async () => {
     const selectedTeachersArray = Array.from(allSelectedTeacherIds);
 
@@ -686,7 +870,21 @@ const TeacherTransferManagement = () => {
                   </p>
                 </div>
                 {teachers.length > 0 && (
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    {/* Export Button - Always show when teachers exist */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportTeachers}
+                      disabled={fetchingTeachers}
+                      className="whitespace-nowrap"
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      {t('export', 'Export')}
+                    </Button>
+
+                    {/* Transfer Button - Only show when teachers are selected */}
                     {allSelectedTeacherIds.size > 0 && (
                       <Button
                         type="button"
@@ -1076,6 +1274,13 @@ const TeacherTransferManagement = () => {
         onClose={handleCloseResetPasswordModal}
         teacher={selectedTeacherForReset}
         userType="teacher"
+      />
+
+      {/* Export Progress Modal */}
+      <ExportProgressModal
+        isOpen={showExportProgress}
+        progress={exportProgress}
+        status={exportStatus}
       />
     </>
   );
