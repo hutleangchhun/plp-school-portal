@@ -1436,6 +1436,7 @@ export const km = {
   emailValidationHint: 'កំពុងពិនិត្រមើលអ៊ីមែល',
   poorCardGrade: 'ប្រភេទបណ្ណសមធម៌(ប្រសិនបើមាន)',
   selectPoorCardGrade: 'ជ្រើសរើសប្រភេទបណ្ណសមធម៌',
+  schoolInfo: 'ព័ត៌មានសាលារៀន',
   // QR Code Generator
   studentQRCode: 'លេខកូដ QR សិស្ស',
   student: 'ឧបករណ៍បង្កើត QR Code សម្រាប់សិស្ស',
