@@ -44,8 +44,9 @@ export default function BulkStudentImport() {
 
   const [schoolId, setSchoolId] = useState(null);
   const [schoolName, setSchoolName] = useState('');
+  const [userRole, setUserRole] = useState(null);
 
-  // Cascading filter states
+  // Cascading filter states (for admins)
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [schools, setSchools] = useState([]);
@@ -313,33 +314,81 @@ export default function BulkStudentImport() {
     { key: 'actions', header: 'សកម្មភាព', width: 'min-w-[120px]' }
   ];
 
-  // Load provinces on component mount
+  // Load user account data on component mount to determine role and school access
   useEffect(() => {
-    const loadProvinces = async () => {
+    const loadUserAccount = async () => {
       try {
-        setLoadingProvinces(true);
-        const response = await locationService.getProvinces();
-        console.log('Provinces response:', response);
+        setInitialLoading(true);
+        const accountResponse = await userService.getMyAccount();
+        console.log('User account response:', accountResponse);
 
-        // Handle both response.data and direct array response
-        const provincesData = response?.data || response || [];
-        if (Array.isArray(provincesData)) {
-          setProvinces(provincesData);
+        // Get user data from response
+        const userData = accountResponse?.data || accountResponse;
+
+        // Check user role
+        const userRoleId = userData?.roleId || userData?.role_id;
+        const isAdmin = userRoleId === 1;
+        const isDirector = userRoleId === 14;
+        const canAccessBulkImport = isAdmin || isDirector;
+
+        if (!canAccessBulkImport) {
+          showError('អ្នកមិនមានសិទ្ធិក្នុងការប្រើប្រាស់មុខងារនេះទេ។');
+          navigate('/dashboard');
+          return;
+        }
+
+        setUserRole(userRoleId);
+
+        // For Directors: Auto-populate school ID from account
+        if (isDirector) {
+          const userSchoolId = userData?.schoolId || userData?.school_id;
+          if (userSchoolId) {
+            setSchoolId(userSchoolId);
+
+            // Fetch school name
+            try {
+              const schoolResponse = await schoolService.getSchoolById(userSchoolId);
+              const schoolData = schoolResponse?.data || schoolResponse;
+              setSchoolName(schoolData?.name || '');
+
+              // Auto-populate all student rows with school ID
+              setStudents(prevStudents =>
+                prevStudents.map(student => (
+                  {
+                    ...student,
+                    schoolId: userSchoolId.toString()
+                  }
+                ))
+              );
+            } catch (err) {
+              console.error('Error fetching school details:', err);
+            }
+          }
+        } else if (isAdmin) {
+          // For Admins: Load provinces for cascading selection
+          try {
+            const response = await locationService.getProvinces();
+            const provincesData = response?.data || response || [];
+            if (Array.isArray(provincesData)) {
+              setProvinces(provincesData);
+            }
+          } catch (error) {
+            console.error('Error loading provinces:', error);
+            showError('មិនអាចផ្ទុកខេត្ត។');
+          }
         }
       } catch (error) {
-        console.error('Error loading provinces:', error);
-        showError('មិនអាចផ្ទុកខេត្ត។');
-        setProvinces([]);
+        console.error('Error loading user account:', error);
+        showError('មិនអាចផ្ទុកព័ត៌មានគណនីរបស់អ្នក។');
       } finally {
-        setLoadingProvinces(false);
         setInitialLoading(false);
       }
     };
 
-    loadProvinces();
-  }, [showError]);
+    loadUserAccount();
+  }, [showError, navigate]);
 
-  // Load districts when province is selected
+  // Load districts when province is selected (Admin only)
   useEffect(() => {
     const loadDistricts = async () => {
       if (!selectedProvince) {
@@ -355,9 +404,6 @@ export default function BulkStudentImport() {
       try {
         setLoadingDistricts(true);
         const response = await locationService.getDistrictsByProvince(String(selectedProvince));
-        console.log('Districts response:', response);
-
-        // Handle both response.data and direct array response
         const districtsData = response?.data || response || [];
         if (Array.isArray(districtsData)) {
           setDistricts(districtsData);
@@ -374,7 +420,7 @@ export default function BulkStudentImport() {
     loadDistricts();
   }, [selectedProvince, showError]);
 
-  // Load schools when district is selected
+  // Load schools when district is selected (Admin only)
   useEffect(() => {
     const loadSchools = async () => {
       if (!selectedDistrict) {
@@ -395,9 +441,6 @@ export default function BulkStudentImport() {
         }
 
         const response = await schoolService.getSchoolsByDistrict(districtId);
-        console.log('Schools response:', response);
-
-        // Handle both direct array and { data: [] } response format
         let schoolsData = [];
         if (Array.isArray(response)) {
           schoolsData = response;
@@ -420,13 +463,12 @@ export default function BulkStudentImport() {
     loadSchools();
   }, [selectedDistrict, districts, showError]);
 
-  // Fetch school details when school is selected
+  // Fetch school details when school is selected (Admin only)
   useEffect(() => {
     const fetchSchoolDetails = async () => {
       if (!selectedSchool) {
         setSchoolId(null);
         setSchoolName('');
-        // Reset student rows
         setStudents(prevStudents =>
           prevStudents.map(student => ({
             ...student,
@@ -438,14 +480,13 @@ export default function BulkStudentImport() {
 
       try {
         setLoadingSchools(true);
-        // Get the selected school object from schools array
         const selectedSchoolObj = schools.find(s => (s.id || s.schoolId)?.toString() === selectedSchool?.toString());
 
         if (selectedSchoolObj) {
           const schoolIdFromObj = selectedSchoolObj.id || selectedSchoolObj.schoolId;
           console.log('✅ School selected:', { schoolId: schoolIdFromObj, schoolName: selectedSchoolObj.name });
 
-          // Fetch detailed school info using schoolService.getSchoolById
+          // Fetch detailed school info
           const response = await schoolService.getSchoolById(schoolIdFromObj);
 
           if (response && response.data) {
@@ -483,6 +524,7 @@ export default function BulkStudentImport() {
 
     fetchSchoolDetails();
   }, [selectedSchool, schools, showError]);
+
 
   // Cell update function - must be defined before callbacks that use it
   const updateCell = useCallback((rowIndex, columnKey, value) => {
@@ -1540,87 +1582,102 @@ export default function BulkStudentImport() {
           />
         </FadeInSection>
 
-        {/* School Filter Section */}
-        <FadeInSection delay={25} className="mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {t('selectSchool') || 'ជ្រើសរើសសាលា'}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Province Dropdown */}
-              <div className="w-full">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('province', 'Province')}
-                </label>
-                <Dropdown
-                  value={selectedProvince}
-                  onValueChange={setSelectedProvince}
-                  options={provinces.map(province => ({
-                    value: province.id.toString(),
-                    label: province.province_name_kh || province.province_name_en
-                  }))}
-                  placeholder={t('selectProvince', 'Select Province')}
-                  disabled={loadingProvinces}
-                  className="w-full"
-                  triggerClassName="w-full"
-                />
-              </div>
+        {/* School Info Display - Conditional based on role */}
+        {(userRole === 1 || (userRole === 14 && schoolId && schoolName)) && (
+          <FadeInSection delay={25} className="mb-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                {t('schoolInfo') || 'ព័ត៌មានសាលា'}
+              </h3>
 
-              {/* District Dropdown */}
-              <div className="w-full">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('district', 'District')}
-                </label>
-                <Dropdown
-                  value={selectedDistrict}
-                  onValueChange={setSelectedDistrict}
-                  options={districts.map(district => ({
-                    value: district.district_code,
-                    label: district.district_name_kh || district.district_name_en
-                  }))}
-                  placeholder={t('selectDistrict', 'Select District')}
-                  disabled={!selectedProvince || loadingDistricts}
-                  className="w-full"
-                  triggerClassName="w-full"
-                />
-              </div>
+              {/* For Admins: Show Cascading Selection */}
+              {userRole === 1 && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Province Dropdown */}
+                  <div className="w-full">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('province', 'Province')}
+                    </label>
+                    <Dropdown
+                      value={selectedProvince}
+                      onValueChange={setSelectedProvince}
+                      options={provinces.map(province => ({
+                        value: province.id.toString(),
+                        label: province.province_name_kh || province.province_name_en
+                      }))}
+                      placeholder={t('selectProvince', 'Select Province')}
+                      disabled={loadingProvinces}
+                      className="w-full"
+                      triggerClassName="w-full"
+                    />
+                  </div>
 
-              {/* School SearchableDropdown */}
-              <div className="w-full">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('school', 'School')} <span className="text-red-500">*</span>
-                </label>
-                <SearchableDropdown
-                  value={selectedSchool}
-                  onValueChange={setSelectedSchool}
-                  options={schools.map(school => ({
-                    value: school.id?.toString() || '',
-                    label: school.name || school.school_name || '',
-                    code: school.code || school.school_code || '' // Add school code
-                  }))}
-                  placeholder={t('selectSchool') || 'ជ្រើសរើសសាលា'}
-                  searchPlaceholder={t('searchSchool') || 'វាយបញ្ចូលនាមសាលា...'}
-                  disabled={!selectedDistrict || loadingSchools || schools.length === 0}
-                  isLoading={loadingSchools}
-                  emptyMessage={t('noSchools') || 'គ្មានសាលាទេ'}
-                  minWidth="w-full"
-                  triggerClassName="w-full"
-                  showSecondaryInfo={true}
-                  secondaryInfoKey="code"
-                />
-              </div>
+                  {/* District Dropdown */}
+                  <div className="w-full">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('district', 'District')}
+                    </label>
+                    <Dropdown
+                      value={selectedDistrict}
+                      onValueChange={setSelectedDistrict}
+                      options={districts.map(district => ({
+                        value: district.district_code,
+                        label: district.district_name_kh || district.district_name_en
+                      }))}
+                      placeholder={t('selectDistrict', 'Select District')}
+                      disabled={!selectedProvince || loadingDistricts}
+                      className="w-full"
+                      triggerClassName="w-full"
+                    />
+                  </div>
+
+                  {/* School SearchableDropdown */}
+                  <div className="w-full">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('school', 'School')} <span className="text-red-500">*</span>
+                    </label>
+                    <SearchableDropdown
+                      value={selectedSchool}
+                      onValueChange={setSelectedSchool}
+                      options={schools.map(school => ({
+                        value: school.id?.toString() || '',
+                        label: school.name || school.school_name || '',
+                        code: school.code || school.school_code || '' // Add school code
+                      }))}
+                      placeholder={t('selectSchool') || 'ជ្រើសរើសសាលា'}
+                      searchPlaceholder={t('searchSchool') || 'វាយបញ្ចូលនាមសាលា...'}
+                      disabled={!selectedDistrict || loadingSchools || schools.length === 0}
+                      isLoading={loadingSchools}
+                      emptyMessage={t('noSchools') || 'គ្មានសាលាទេ'}
+                      minWidth="w-full"
+                      triggerClassName="w-full"
+                      showSecondaryInfo={true}
+                      secondaryInfoKey="code"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* For Admins: Show selected school info after selection */}
+              {userRole === 1 && schoolId && schoolName && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">ឈ្មោះសាលាដែលបានជ្រើស:</span> {schoolName}
+                  </p>
+                </div>
+              )}
+
+              {/* For Directors: Show auto-populated school info only */}
+              {userRole === 14 && schoolId && schoolName && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">ឈ្មោះសាលា:</span> {schoolName}
+                  </p>
+                </div>
+              )}
             </div>
-
-            {/* Selected School Info */}
-            {schoolId && schoolName && (
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <p className="text-sm text-gray-700">
-                  <span className="font-medium">ឈ្មោះសាលាដែលបានជ្រើស:</span> {schoolName}
-                </p>
-              </div>
-            )}
-          </div>
-        </FadeInSection>
+          </FadeInSection>
+        )}
 
         {/* Excel-like Table */}
         <FadeInSection delay={50}>
