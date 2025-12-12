@@ -281,7 +281,7 @@ export default function BulkStudentImport() {
     { key: 'lastName', header: 'គោត្តនាម *', width: 'min-w-[100px]' },
     { key: 'firstName', header: 'នាម *', width: 'min-w-[200px]' },
     { key: 'username', header: 'ឈ្មោះអ្នកប្រើ *', width: 'min-w-[280px]' },
-    { key: 'password', header: 'ពាក្យសម្ងាត់', width: 'min-w-[150px]' },
+    { key: 'password', header: 'ពាក្យសម្ងាត់ *', width: 'min-w-[150px]' },
     { key: 'email', header: 'អ៊ីមែល', width: 'min-w-[200px]' },
     { key: 'dateOfBirth', header: 'ថ្ងៃខែឆ្នាំកំណើត *', width: 'min-w-[300px]', type: 'custom-date' },
     { key: 'gender', header: 'ភេទ *', width: 'min-w-[80px]', type: 'select', options: genderOptions },
