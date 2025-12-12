@@ -14,6 +14,7 @@ import { PageLoader } from '../../components/ui/DynamicLoader';
 import BulkImportProgressTracker from '../../components/students/BulkImportProgressTracker';
 import BulkImportHeader from '../../components/students/BulkImportHeader';
 import BulkImportTable from '../../components/students/BulkImportTable';
+import ExportProgressModal from '../../components/modals/ExportProgressModal';
 import { templateDownloader } from '../../utils/templateDownloader';
 import { excelImportHandler } from '../../utils/excelImportHandler';
 import { genderOptions, nationalityOptions, ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, getAcademicYearOptions } from '../../utils/formOptions';
@@ -108,6 +109,10 @@ export default function BulkStudentImport() {
   const [importResults, setImportResults] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
+
+  // Excel import progress modal state
+  const [showExcelImportProgress, setShowExcelImportProgress] = useState(false);
+  const [excelImportProgress, setExcelImportProgress] = useState(0);
 
   // Excel-like functionality
   const [selectedCell, setSelectedCell] = useState({ row: 0, col: 0 });
@@ -792,6 +797,10 @@ export default function BulkStudentImport() {
     const file = event.target.files[0];
     if (!file) return;
 
+    // Show progress modal during import
+    setShowExcelImportProgress(true);
+    setExcelImportProgress(10);
+
     const mappedStudents = await excelImportHandler(
       file,
       ethnicGroupOptions,
@@ -801,6 +810,7 @@ export default function BulkStudentImport() {
     );
 
     if (mappedStudents && mappedStudents.length > 0) {
+      setExcelImportProgress(30);
       // After importing from Excel, proactively check username availability and auto-generate if needed
       const studentsWithAvailability = await Promise.all(
         mappedStudents.map(async (student) => {
@@ -812,9 +822,9 @@ export default function BulkStudentImport() {
             originalUsername = generateAutoUsername(student.firstName, student.lastName);
           }
 
-          // Auto-generate password if missing
+          // Auto-generate password if missing - default to s1234567
           if (!originalPassword) {
-            originalPassword = generateAutoPassword();
+            originalPassword = 's1234567';
           }
 
           // If no username could be generated, return student as is
@@ -936,6 +946,15 @@ export default function BulkStudentImport() {
       );
 
       setStudents(studentsWithAvailability);
+      setExcelImportProgress(100);
+      // Close modal after brief delay
+      setTimeout(() => {
+        setShowExcelImportProgress(false);
+        setExcelImportProgress(0);
+      }, 500);
+    } else {
+      setShowExcelImportProgress(false);
+      setExcelImportProgress(0);
     }
 
     // Reset file input
@@ -1622,6 +1641,17 @@ export default function BulkStudentImport() {
           />
         </FadeInSection>
       </div>
+
+      {/* Excel Import Progress Modal */}
+      <ExportProgressModal
+        isOpen={showExcelImportProgress}
+        progress={excelImportProgress}
+        status={excelImportProgress === 100 ? 'success' : 'processing'}
+        onComplete={() => {
+          setShowExcelImportProgress(false);
+          setExcelImportProgress(0);
+        }}
+      />
 
       {/* Bulk Import Progress Tracker */}
       <BulkImportProgressTracker
