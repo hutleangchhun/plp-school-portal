@@ -717,7 +717,7 @@ export default function SchoolSettingsPage({ user }) {
                         name="code"
                         value={formData.code}
                         onChange={handleInputChange}
-                        disabled={!isEditMode || submitting}
+                        disabled={true}
                         className="w-full px-4 py-2 border text-sm border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                         placeholder={t('enterSchoolCode') || 'Enter school code'}
                       />
