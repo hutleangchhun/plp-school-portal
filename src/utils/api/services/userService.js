@@ -495,7 +495,19 @@ const userService = {
     const url = `${ENDPOINTS.USERS.SIMPLE}?${queryParams}`;
     console.log('🌐 Loading users from:', url);
 
-    return get(url);
+    const response = await get(url);
+
+    // Transform response to normalize pagination format
+    if (response && response.pagination) {
+      return {
+        data: response.data || [],
+        totalPages: response.pagination.pages || 1,
+        total: response.pagination.total || 0,
+        schoolInfo: response.schoolInfo
+      };
+    }
+
+    return response;
   },
 
   /**

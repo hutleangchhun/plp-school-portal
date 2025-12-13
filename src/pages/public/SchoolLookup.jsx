@@ -7,7 +7,7 @@ import { userService } from '../../utils/api/services/userService';
 import Dropdown from '../../components/ui/Dropdown';
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
 import Table from '../../components/ui/Table';
-import { SquarePen, Building2, Users, Phone, Mail, ExternalLink, User, GraduationCap, Search, X } from 'lucide-react';
+import { SquarePen, Building2, Users, Search, X } from 'lucide-react';
 
 const SchoolLookup = () => {
   const { t } = useLanguage();
@@ -247,12 +247,12 @@ const SchoolLookup = () => {
   };
 
   // User-related functions (Teachers and Directors)
-  const loadUsers = useCallback(async (schoolId, roleId = selectedRole) => {
+  const loadUsers = useCallback(async (schoolId, roleId = selectedRole, page = currentPage) => {
     try {
       setUsersLoading(true);
 
       const params = {
-        page: currentPage,
+        page: page,
         limit: limit,
         roleId: roleId || selectedRole
       };
@@ -303,9 +303,9 @@ const SchoolLookup = () => {
   // Load users when page changes or school is selected
   useEffect(() => {
     if (selectedSchool && showUsers) {
-      loadUsers(selectedSchool);
+      loadUsers(selectedSchool, selectedRole, currentPage);
     }
-  }, [currentPage, selectedSchool, showUsers]);
+  }, [currentPage, selectedSchool, showUsers, selectedRole, loadUsers]);
 
   // Filter users based on search query
   const filteredUsers = useMemo(() => {
