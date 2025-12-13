@@ -488,11 +488,10 @@ const userService = {
     const queryParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
-      schoolId: schoolId.toString(),
       roleId: roleId.toString()
     });
 
-    const url = `${ENDPOINTS.USERS.SIMPLE}?${queryParams}`;
+    const url = `${ENDPOINTS.USERS.PUBLIC_SCHOOL_USERS(schoolId)}?${queryParams}`;
     console.log('🌐 Loading users from:', url);
 
     const response = await get(url);
