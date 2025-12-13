@@ -190,93 +190,90 @@ const AttendanceDailyTrends = ({
           </div>
         </div>
 
-        {selectedDayData ? (
-          <ResponsiveContainer width="100%" height={350}>
-            <BarChart
-              data={attendanceStatusData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis
-                dataKey="name"
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                angle={-45}
-                textAnchor="end"
-                interval={0}
-              />
-              <YAxis
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                label={{ value: t('count', 'Count'), angle: -90, position: 'insideLeft', style: { fill: '#6b7280', fontSize: 12 } }}
-              />
-              <Tooltip />
-              <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                {attendanceStatusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="py-8 text-center text-sm text-gray-500">
-            {t('selectDateForAttendance', 'Select a date to view attendance data')}
+        <div className='grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4'>
+          {selectedDayData ? (
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
+                data={attendanceStatusData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  interval={0}
+                />
+                <YAxis
+                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  label={{ value: t('count', 'Count'), angle: -90, position: 'insideLeft', style: { fill: '#6b7280', fontSize: 12 } }}
+                />
+                <Tooltip />
+                <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                  {attendanceStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="py-8 text-center text-sm text-gray-500">
+              {t('selectDateForAttendance', 'Select a date to view attendance data')}
+            </div>
+          )}
+          <div>
+            {/* Daily Attendance Statistics Cards */}
+            {selectedDayData && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {/* Present */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <p className="text-sm text-gray-600 mb-1">{t('present', 'Present')}</p>
+                  <p className="text-3xl font-bold text-green-600">{selectedDayData.present || 0}</p>
+                </div>
+
+                {/* Absent */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <p className="text-sm text-gray-600 mb-1">{t('absent', 'Absent')}</p>
+                  <p className="text-3xl font-bold text-red-600">{selectedDayData.absent || 0}</p>
+                </div>
+
+                {/* Late */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <p className="text-sm text-gray-600 mb-1">{t('late', 'Late')}</p>
+                  <p className="text-3xl font-bold text-amber-600">{selectedDayData.late || 0}</p>
+                </div>
+
+                {/* Leave */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <p className="text-sm text-gray-600 mb-1">{t('leave', 'Leave')}</p>
+                  <p className="text-3xl font-bold text-blue-600">{selectedDayData.leave || 0}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Attendance Rate Card */}
+            {selectedDayData && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-2">{t('attendanceRate', 'Attendance Rate')}</p>
+                    <p className="text-4xl font-bold text-green-600">
+                      {(selectedDayData.attendancePercentage || 0).toFixed(2)}%
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600 mb-2">{t('date', 'Date')}</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {formatDateLabel(dashboardFilters.startDate)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
-
-      {/* Daily Attendance Statistics Cards */}
-      {selectedDayData && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          {/* Total Records */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">{t('totalRecords', 'Total Records')}</p>
-            <p className="text-3xl font-bold text-gray-900">{selectedDayData.totalRecords || 0}</p>
-          </div>
-
-          {/* Present */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">{t('present', 'Present')}</p>
-            <p className="text-3xl font-bold text-green-600">{selectedDayData.present || 0}</p>
-          </div>
-
-          {/* Absent */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">{t('absent', 'Absent')}</p>
-            <p className="text-3xl font-bold text-red-600">{selectedDayData.absent || 0}</p>
-          </div>
-
-          {/* Late */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">{t('late', 'Late')}</p>
-            <p className="text-3xl font-bold text-amber-600">{selectedDayData.late || 0}</p>
-          </div>
-
-          {/* Leave */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">{t('leave', 'Leave')}</p>
-            <p className="text-3xl font-bold text-blue-600">{selectedDayData.leave || 0}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Attendance Rate Card */}
-      {selectedDayData && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-2">{t('attendanceRate', 'Attendance Rate')}</p>
-              <p className="text-4xl font-bold text-green-600">
-                {(selectedDayData.attendancePercentage || 0).toFixed(2)}%
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600 mb-2">{t('date', 'Date')}</p>
-              <p className="text-lg font-semibold text-gray-900">
-                {formatDateLabel(dashboardFilters.startDate)}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Sidebar Filter */}
       <SidebarFilter
