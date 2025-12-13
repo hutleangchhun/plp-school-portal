@@ -61,6 +61,7 @@ const ENDPOINTS = {
     GENERATE_USERNAME: '/users/generate-username',
     VALIDATE_EMAIL: (email) => `/users/validate/email?email=${encodeURIComponent(email)}`,
     PUBLIC_SCHOOL_USERS: (schoolId) => `/users/public/school/${schoolId}`,
+    SIMPLE: '/users/simple',
     CREATE_USER: '/users',
   },
   SCHOOLS: {
