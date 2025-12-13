@@ -12,6 +12,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/ca
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import AttendanceSummaryCards from '../../components/dashboard/AttendanceSummaryCards';
+import AttendanceDailyTrends from '../../components/charts/AttendanceDailyTrends';
 import AttendanceMonthlyTrends from '../../components/charts/AttendanceMonthlyTrends';
 
 const AttendanceOverview = () => {
@@ -40,8 +41,19 @@ const AttendanceOverview = () => {
     };
   };
 
-  // Filter state - initialize with current month
-  const [dashboardFilters, setDashboardFilters] = useState(() => {
+  // Daily Trends Filter state - initialize with today
+  const [dailyFilters, setDailyFilters] = useState(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return {
+      startDate: today,
+      province: '',
+      district: '',
+      school: ''
+    };
+  });
+
+  // Monthly Trends Filter state - initialize with current month
+  const [monthlyFilters, setMonthlyFilters] = useState(() => {
     const { startDate, endDate } = getCurrentMonthRange();
     return {
       startDate,
@@ -52,17 +64,21 @@ const AttendanceOverview = () => {
     };
   });
 
-  // Location options
-  const [locationOptions, setLocationOptions] = useState({
+  // Location options for daily trends
+  const [dailyLocationOptions, setDailyLocationOptions] = useState({
     provinces: [],
     districts: [],
     schools: []
   });
 
-  // Sidebar state
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Location options for monthly trends
+  const [monthlyLocationOptions, setMonthlyLocationOptions] = useState({
+    provinces: [],
+    districts: [],
+    schools: []
+  });
 
-  // Fetch provinces
+  // Fetch provinces for both daily and monthly
   const fetchProvinces = useCallback(async () => {
     try {
       const response = await locationService.getProvinces();
@@ -81,7 +97,11 @@ const AttendanceOverview = () => {
           value: (p.id || p.province_id).toString(),
           label: p.province_name_kh || p.province_name_en || p.name || p.province_name || 'Unknown'
         }));
-        setLocationOptions(prev => ({
+        setDailyLocationOptions(prev => ({
+          ...prev,
+          provinces
+        }));
+        setMonthlyLocationOptions(prev => ({
           ...prev,
           provinces
         }));
@@ -92,10 +112,10 @@ const AttendanceOverview = () => {
     }
   }, []);
 
-  // Fetch districts based on selected province
-  const fetchDistricts = useCallback(async (provinceId) => {
+  // Fetch districts for daily trends
+  const fetchDailyDistricts = useCallback(async (provinceId) => {
     if (!provinceId) {
-      setLocationOptions(prev => ({
+      setDailyLocationOptions(prev => ({
         ...prev,
         districts: [],
         schools: []
@@ -121,7 +141,7 @@ const AttendanceOverview = () => {
           value: (d.id || d.district_id).toString(),
           label: d.district_name_kh || d.district_name_en || d.name || d.district_name || 'Unknown'
         }));
-        setLocationOptions(prev => ({
+        setDailyLocationOptions(prev => ({
           ...prev,
           districts,
           schools: []
@@ -132,10 +152,50 @@ const AttendanceOverview = () => {
     }
   }, []);
 
-  // Fetch schools based on selected district
-  const fetchSchools = useCallback(async (districtId) => {
+  // Fetch districts for monthly trends
+  const fetchMonthlyDistricts = useCallback(async (provinceId) => {
+    if (!provinceId) {
+      setMonthlyLocationOptions(prev => ({
+        ...prev,
+        districts: [],
+        schools: []
+      }));
+      return;
+    }
+
+    try {
+      const numericProvinceId = parseInt(provinceId, 10);
+      const response = await locationService.getDistrictsByProvince(numericProvinceId);
+      console.log('Districts response:', response);
+
+      // Handle different response formats
+      let districtsList = [];
+      if (response && response.data) {
+        districtsList = Array.isArray(response.data) ? response.data : response.data.data || [];
+      } else if (Array.isArray(response)) {
+        districtsList = response;
+      }
+
+      if (districtsList.length > 0) {
+        const districts = districtsList.map(d => ({
+          value: (d.id || d.district_id).toString(),
+          label: d.district_name_kh || d.district_name_en || d.name || d.district_name || 'Unknown'
+        }));
+        setMonthlyLocationOptions(prev => ({
+          ...prev,
+          districts,
+          schools: []
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching districts:', err);
+    }
+  }, []);
+
+  // Fetch schools for daily trends
+  const fetchDailySchools = useCallback(async (districtId) => {
     if (!districtId) {
-      setLocationOptions(prev => ({
+      setDailyLocationOptions(prev => ({
         ...prev,
         schools: []
       }));
@@ -160,7 +220,7 @@ const AttendanceOverview = () => {
           value: (s.id || s.school_id).toString(),
           label: s.school_name_kh || s.school_name_en || s.name || s.school_name || 'Unknown'
         }));
-        setLocationOptions(prev => ({
+        setDailyLocationOptions(prev => ({
           ...prev,
           schools
         }));
@@ -170,35 +230,96 @@ const AttendanceOverview = () => {
     }
   }, []);
 
-  // Fetch attendance dashboard data
+  // Fetch schools for monthly trends
+  const fetchMonthlySchools = useCallback(async (districtId) => {
+    if (!districtId) {
+      setMonthlyLocationOptions(prev => ({
+        ...prev,
+        schools: []
+      }));
+      return;
+    }
+
+    try {
+      const numericDistrictId = parseInt(districtId, 10);
+      const response = await schoolService.getSchoolsByDistrict(numericDistrictId);
+      console.log('Schools response:', response);
+
+      // Handle different response formats
+      let schoolsList = [];
+      if (response && response.data) {
+        schoolsList = Array.isArray(response.data) ? response.data : response.data.data || [];
+      } else if (Array.isArray(response)) {
+        schoolsList = response;
+      }
+
+      if (schoolsList.length > 0) {
+        const schools = schoolsList.map(s => ({
+          value: (s.id || s.school_id).toString(),
+          label: s.school_name_kh || s.school_name_en || s.name || s.school_name || 'Unknown'
+        }));
+        setMonthlyLocationOptions(prev => ({
+          ...prev,
+          schools
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching schools:', err);
+    }
+  }, []);
+
+  // Fetch attendance dashboard data (primary + approval status)
   const fetchAttendanceDashboard = useCallback(async () => {
     setDashboardLoading(true);
     clearError();
 
     try {
-      const params = {};
-      if (dashboardFilters.startDate) params.startDate = dashboardFilters.startDate;
-      if (dashboardFilters.endDate) params.endDate = dashboardFilters.endDate;
-      if (dashboardFilters.province) params.provinceId = parseInt(dashboardFilters.province, 10);
-      if (dashboardFilters.district) params.districtId = parseInt(dashboardFilters.district, 10);
-      if (dashboardFilters.school) params.schoolId = parseInt(dashboardFilters.school, 10);
+      // Fetch primary and approval data (using monthly filters for overall dashboard)
+      const primaryParams = {};
+      if (monthlyFilters.startDate) primaryParams.startDate = monthlyFilters.startDate;
+      if (monthlyFilters.endDate) primaryParams.endDate = monthlyFilters.endDate;
+      if (monthlyFilters.province) primaryParams.provinceId = parseInt(monthlyFilters.province, 10);
+      if (monthlyFilters.district) primaryParams.districtId = parseInt(monthlyFilters.district, 10);
+      if (monthlyFilters.school) primaryParams.schoolId = parseInt(monthlyFilters.school, 10);
 
-      console.log('Fetching attendance dashboard with params:', params);
+      console.log('Fetching primary dashboard with params:', primaryParams);
+
+      // Fetch daily trends data
+      const dailyParams = {};
+      if (dailyFilters.startDate) dailyParams.startDate = dailyFilters.startDate;
+      if (dailyFilters.province) dailyParams.provinceId = parseInt(dailyFilters.province, 10);
+      if (dailyFilters.district) dailyParams.districtId = parseInt(dailyFilters.district, 10);
+      if (dailyFilters.school) dailyParams.schoolId = parseInt(dailyFilters.school, 10);
+
+      console.log('Fetching daily trends with params:', dailyParams);
+
+      // Fetch monthly trends data
+      const monthlyParams = {};
+      if (monthlyFilters.startDate) monthlyParams.startDate = monthlyFilters.startDate;
+      if (monthlyFilters.endDate) monthlyParams.endDate = monthlyFilters.endDate;
+      if (monthlyFilters.province) monthlyParams.provinceId = parseInt(monthlyFilters.province, 10);
+      if (monthlyFilters.district) monthlyParams.districtId = parseInt(monthlyFilters.district, 10);
+      if (monthlyFilters.school) monthlyParams.schoolId = parseInt(monthlyFilters.school, 10);
+
+      console.log('Fetching monthly trends with params:', monthlyParams);
 
       // Fetch all dashboard endpoints in parallel
       const [
         primaryResponse,
+        dailyResponse,
         monthlyResponse,
         approvalResponse
       ] = await Promise.all([
-        attendanceService.dashboard.getPrimaryDashboard(params),
-        attendanceService.dashboard.getMonthlyTrends(params),
-        attendanceService.dashboard.getApprovalStatus(params)
+        attendanceService.dashboard.getPrimaryDashboard(primaryParams),
+        attendanceService.dashboard.getDailyTrends(dailyParams),
+        attendanceService.dashboard.getMonthlyTrends(monthlyParams),
+        attendanceService.dashboard.getApprovalStatus(primaryParams)
       ]);
 
       // Combine all data
       setDashboardData({
         primary: primaryResponse.success ? primaryResponse.data : null,
+        daily: dailyResponse.success ? dailyResponse.data : [],
         monthly: monthlyResponse.success ? monthlyResponse.data : [],
         approval: approvalResponse.success ? approvalResponse.data : null
       });
@@ -212,7 +333,7 @@ const AttendanceOverview = () => {
       setDashboardLoading(false);
       setLoading(false);
     }
-  }, [dashboardFilters, handleError, clearError, t]);
+  }, [dailyFilters, monthlyFilters, handleError, clearError, t]);
 
   // Load provinces on mount
   useEffect(() => {
@@ -340,63 +461,136 @@ const AttendanceOverview = () => {
           {/* Summary Statistics Cards */}
           <AttendanceSummaryCards
             dashboardData={dashboardData}
-            dashboardFilters={dashboardFilters}
+            dashboardFilters={monthlyFilters}
           />
 
-          {/* Monthly Trends with Integrated Filters */}
-          <AttendanceMonthlyTrends
+          {/* Daily Trends with Separate Filters */}
+          <AttendanceDailyTrends
             dashboardData={dashboardData}
-            dashboardFilters={dashboardFilters}
-            locationOptions={locationOptions}
+            dashboardFilters={dailyFilters}
+            locationOptions={dailyLocationOptions}
             onFilterChange={(field, value) => {
               // Handle batch filter update
               if (field === 'all') {
-                setDashboardFilters(value);
+                setDailyFilters(value);
                 return;
               }
 
               if (field === 'province') {
-                setDashboardFilters(prev => ({
+                setDailyFilters(prev => ({
                   ...prev,
                   province: value,
                   district: '',
                   school: ''
                 }));
                 // Clear districts and schools when province changes
-                setLocationOptions(prev => ({
+                setDailyLocationOptions(prev => ({
                   ...prev,
                   districts: [],
                   schools: []
                 }));
                 if (value) {
-                  fetchDistricts(value);
+                  fetchDailyDistricts(value);
                 }
               } else if (field === 'district') {
-                setDashboardFilters(prev => ({
+                setDailyFilters(prev => ({
                   ...prev,
                   district: value,
                   school: ''
                 }));
                 // Clear schools when district changes
-                setLocationOptions(prev => ({
+                setDailyLocationOptions(prev => ({
                   ...prev,
                   schools: []
                 }));
                 if (value) {
-                  fetchSchools(value);
+                  fetchDailySchools(value);
                 }
               } else if (field === 'school') {
-                setDashboardFilters(prev => ({
+                setDailyFilters(prev => ({
                   ...prev,
                   school: value
                 }));
               } else if (field === 'startDate') {
-                setDashboardFilters(prev => ({
+                setDailyFilters(prev => ({
+                  ...prev,
+                  startDate: value
+                }));
+              }
+            }}
+            onClearFilters={() => {
+              const today = new Date().toISOString().split('T')[0];
+              setDailyFilters({
+                startDate: today,
+                province: '',
+                district: '',
+                school: ''
+              });
+              // Clear location options when resetting
+              setDailyLocationOptions({
+                provinces: dailyLocationOptions.provinces,
+                districts: [],
+                schools: []
+              });
+            }}
+            fetchDistricts={fetchDailyDistricts}
+            fetchSchools={fetchDailySchools}
+          />
+
+          {/* Monthly Trends with Separate Filters */}
+          <AttendanceMonthlyTrends
+            dashboardData={dashboardData}
+            dashboardFilters={monthlyFilters}
+            locationOptions={monthlyLocationOptions}
+            onFilterChange={(field, value) => {
+              // Handle batch filter update
+              if (field === 'all') {
+                setMonthlyFilters(value);
+                return;
+              }
+
+              if (field === 'province') {
+                setMonthlyFilters(prev => ({
+                  ...prev,
+                  province: value,
+                  district: '',
+                  school: ''
+                }));
+                // Clear districts and schools when province changes
+                setMonthlyLocationOptions(prev => ({
+                  ...prev,
+                  districts: [],
+                  schools: []
+                }));
+                if (value) {
+                  fetchMonthlyDistricts(value);
+                }
+              } else if (field === 'district') {
+                setMonthlyFilters(prev => ({
+                  ...prev,
+                  district: value,
+                  school: ''
+                }));
+                // Clear schools when district changes
+                setMonthlyLocationOptions(prev => ({
+                  ...prev,
+                  schools: []
+                }));
+                if (value) {
+                  fetchMonthlySchools(value);
+                }
+              } else if (field === 'school') {
+                setMonthlyFilters(prev => ({
+                  ...prev,
+                  school: value
+                }));
+              } else if (field === 'startDate') {
+                setMonthlyFilters(prev => ({
                   ...prev,
                   startDate: value
                 }));
               } else if (field === 'endDate') {
-                setDashboardFilters(prev => ({
+                setMonthlyFilters(prev => ({
                   ...prev,
                   endDate: value
                 }));
@@ -404,7 +598,7 @@ const AttendanceOverview = () => {
             }}
             onClearFilters={() => {
               const { startDate, endDate } = getCurrentMonthRange();
-              setDashboardFilters({
+              setMonthlyFilters({
                 startDate,
                 endDate,
                 province: '',
@@ -412,14 +606,14 @@ const AttendanceOverview = () => {
                 school: ''
               });
               // Clear location options when resetting
-              setLocationOptions({
-                provinces: locationOptions.provinces,
+              setMonthlyLocationOptions({
+                provinces: monthlyLocationOptions.provinces,
                 districts: [],
                 schools: []
               });
             }}
-            fetchDistricts={fetchDistricts}
-            fetchSchools={fetchSchools}
+            fetchDistricts={fetchMonthlyDistricts}
+            fetchSchools={fetchMonthlySchools}
           />
         </div>
       </div>

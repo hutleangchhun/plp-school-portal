@@ -282,7 +282,6 @@ const AttendanceMonthlyTrends = ({
             </div>
           )}
         </div>
-      )}
 
       {/* Monthly Attendance Rate Trend */}
       {paddedMonthlyData && paddedMonthlyData.length > 0 && (
