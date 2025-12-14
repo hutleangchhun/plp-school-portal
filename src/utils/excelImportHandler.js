@@ -14,7 +14,20 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
   const fileExtension = file.name.split('.').pop().toLowerCase();
   const allowedExtensions = ['xlsx', 'xls', 'csv'];
 
-  if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+  // Validate: check MIME type first, then fall back to extension check
+  // This allows files with Khmer names to work even if MIME type is incorrect
+  const isValidByType = allowedTypes.includes(file.type);
+  const isValidByExtension = allowedExtensions.includes(fileExtension);
+
+  console.log('📁 File validation:', {
+    fileName: file.name,
+    fileExtension,
+    mimeType: file.type,
+    isValidByType,
+    isValidByExtension
+  });
+
+  if (!isValidByType && !isValidByExtension) {
     showError('សូមជ្រើសរើសឯកសារ Excel (.xlsx, .xls) ឬ CSV (.csv) តែប៉ុណ្ណោះ');
     return null;
   }
@@ -41,6 +54,13 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+
+    console.log('📊 Excel data loaded:', {
+      sheetName,
+      totalRows: jsonData.length,
+      firstRow: jsonData[0]?.slice(0, 5),
+      lastRow: jsonData[jsonData.length - 1]?.slice(0, 5)
+    });
 
     if (jsonData.length < 2) {
       showError('ឯកសារ Excel ត្រូវការយ៉ាងហោចណាស់ 2 ជួរ (ក្បាលនិងទិន្នន័យ)');
@@ -98,12 +118,14 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
       firstRow = null;
     }
 
-    // Define expected headers for filtering
-    const expectedHeaders = [
-      'ព័ត៌មានសិស្ស', 'អាសយដ្ឋានស្នាក់នៅ', 'ទីកន្លែងកំណើត', 'ព័ត៌មានឪពុក', 'ព័ត៌មានម្តាយ', 'ព័ត៌មានបន្ថែម',
-      'អត្តលេខ', 'គោត្តនាម', 'នាម', 'ភេទ', 'ថ្ងៃខែឆ្នាំកំណើត', 'ទីកន្លែងកំណើត',
-      'ឈ្មោះឪពុក', 'មុខរបរ', 'ឈ្មោះម្តាយ', 'អាសយដ្ឋានសព្វថ្ងៃ', 'ជនជាតិភាគតិច', 'លក្ខណៈពិសេស'
-    ];
+    console.log('📍 Header detection:', {
+      mainHeaderRowIndex,
+      subHeaderRowIndex,
+      dataStartIndex,
+      hasHeaders,
+      rowsBeforeData: dataStartIndex,
+      rowsAfterData: jsonData.length - dataStartIndex
+    });
 
     // Filter out empty rows and header-like rows from data
     const dataRows = jsonData.slice(dataStartIndex).filter(row => {
@@ -113,29 +135,44 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
 
       const rowText = row.map(cell => String(cell || '').toLowerCase()).join(' ');
 
-      // Skip rows that look like headers (contain expected header text)
-      const isHeaderRow = expectedHeaders.some(header =>
-        rowText.includes(header.toLowerCase())
-      );
+      // Skip rows that are pure headers (first cell is # or contains only header keywords with no data)
+      // Check if row looks like it's all headers - if first cell is just # and rest are empty or header labels
+      const firstCell = String(row[0] || '').trim().toLowerCase();
+      const hasHeaderMarker = firstCell === '#' || firstCell === 'no.' || firstCell === 'no' || firstCell === 'ល.រ';
+
+      if (hasHeaderMarker && !row.slice(1).some(cell => {
+        const val = String(cell || '').trim();
+        // Check if any cell has actual data (not just header labels with asterisks)
+        return val && !val.includes('*') && !val.match(/^(ព័ត៌មាន|លេខ|ទូរស័ព្ទ|អាសយដ្ឋាន|ថ្ងៃខែឆ្នាំ)/);
+      })) {
+        return false; // Skip header rows
+      }
 
       // Skip administrative/school header rows - use very specific keywords only
       const adminKeywords = [
         'ព្រះរាជាណាចក្រកម្ពុជា', 'kingdom of cambodia', 'ជាតិសាសនា', 'ព្រះមហាក្សត្រ',
-        'king', 'nation religion', 'កម្រងហស', 'សាលា', 'បញ្ជីរាយនាម',
-        'student list', 'ថ្នាក់ទី', 'ឆ្នាំសិក្សា', 'academic year',
+        'king', 'nation religion', 'កម្រងហស', 'បញ្ជីរាយនាម',
+        'student list', 'ឆ្នាំសិក្សា', 'academic year',
         'គ្រូប្រចាំថ្នាក់', 'class teacher',
-        'បញ្ឈប៉បញ្ជី', 'នាក់', 'រោងឆស័ក', 'ព.ស២៥៦៨',
+        'បញ្ឈប៉បញ្ជី', 'រោងឆស័ក', 'ព.ស២៥៦៨',
         'ធ្វើនៅថ្ងៃទី', 'បានឃើញនិងឯកភាព',
         'នាយកសាលា', 'principal', 'director', 'signature', 'approved', 'certified',
         'ត្រឹមលេខរៀង', 'summary', 'statistics',
         'grand total', 'ចុះហត្ថលេខា', 'signed', 'អនុម័ត', 'approved by'
       ];
 
-      const isAdminRow = adminKeywords.some(keyword =>
-        rowText.includes(keyword)
-      );
+      const matchedAdminKeywords = adminKeywords.filter(keyword => rowText.includes(keyword)).length;
+      // Only consider it an admin row if it has multiple admin keywords or is very specific
+      const isAdminRow = matchedAdminKeywords >= 2 ||
+        (matchedAdminKeywords === 1 && (rowText.includes('ព្រះរាជាណាចក្រ') || rowText.includes('ចុះហត្ថលេខា') || rowText.includes('អនុម័ត')));
 
-      return !isHeaderRow && !isAdminRow;
+      return !isAdminRow;
+    });
+
+    console.log('🔍 Data filtering results:', {
+      rowsBeforeFilter: jsonData.slice(dataStartIndex).length,
+      rowsAfterFilter: dataRows.length,
+      rowsFiltered: jsonData.slice(dataStartIndex).length - dataRows.length
     });
 
     if (dataRows.length === 0) {
@@ -165,6 +202,8 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
 
       // If we detected headers, try to find columns by header names
       if (hasHeaders && firstRow) {
+        console.log('🔎 Analyzing headers for mapping:', firstRow.slice(0, 15));
+
         // Find section boundaries
         let studentSectionEnd = -1;
         let fatherSectionStart = -1;
@@ -186,8 +225,12 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
         if (fatherSectionEnd > 0) fatherSectionStart = studentSectionEnd + 1;
         if (motherSectionEnd > 0) motherSectionStart = fatherSectionEnd + 1;
 
+        console.log('🔎 Section boundaries:', { studentSectionEnd, fatherSectionStart, fatherSectionEnd, motherSectionStart, motherSectionEnd });
+
         firstRow.forEach((header, idx) => {
-          const headerStr = String(header || '').toLowerCase().trim();
+          let headerStr = String(header || '').toLowerCase().trim();
+          // Also keep a version without asterisks for flexible matching
+          let headerStrNoAsterisk = headerStr.replace(/\*/g, '').trim();
 
           // Skip sequential number columns
           if (headerStr === '#' || headerStr.includes('ល.រ') || headerStr.includes('លេខរៀង') || headerStr === 'no.' || headerStr === 'no' || headerStr === 'n°') {
@@ -198,85 +241,87 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
           const isInMotherSection = motherSectionStart > 0 && idx >= motherSectionStart && idx <= motherSectionEnd;
           const isInStudentSection = idx <= studentSectionEnd;
 
-          // Map headers to column indices
-          if ((headerStr.includes('ឪពុក') && headerStr.includes('នាម') && !headerStr.includes('គោត្ត')) || (headerStr.includes('father') && headerStr.includes('first'))) {
+          // Map headers to column indices - check both with and without asterisks
+          if ((headerStrNoAsterisk.includes('ឪពុក') && headerStrNoAsterisk.includes('នាម') && !headerStrNoAsterisk.includes('គោត្ត')) || (headerStrNoAsterisk.includes('father') && headerStrNoAsterisk.includes('first'))) {
             columnIndices.fatherFirstName = idx;
-          } else if ((headerStr.includes('ឪពុក') && headerStr.includes('គោត្តនាម')) || (headerStr.includes('father') && headerStr.includes('last'))) {
+          } else if ((headerStrNoAsterisk.includes('ឪពុក') && headerStrNoAsterisk.includes('គោត្តនាម')) || (headerStrNoAsterisk.includes('father') && headerStrNoAsterisk.includes('last'))) {
             columnIndices.fatherLastName = idx;
-          } else if ((headerStr.includes('ឪពុក') && headerStr.includes('ទូរស័ព្ទ')) || (headerStr.includes('father') && headerStr.includes('phone'))) {
+          } else if ((headerStrNoAsterisk.includes('ឪពុក') && headerStrNoAsterisk.includes('ទូរស័ព្ទ')) || (headerStrNoAsterisk.includes('father') && headerStrNoAsterisk.includes('phone'))) {
             columnIndices.fatherPhone = idx;
-          } else if ((headerStr.includes('ឪពុក') && headerStr.includes('ភេទ')) || (headerStr.includes('father') && headerStr.includes('gender'))) {
+          } else if ((headerStrNoAsterisk.includes('ឪពុក') && headerStrNoAsterisk.includes('ភេទ')) || (headerStrNoAsterisk.includes('father') && headerStrNoAsterisk.includes('gender'))) {
             columnIndices.fatherGender = idx;
-          } else if ((headerStr.includes('ឪពុក') && headerStr.includes('មុខរបរ')) || (headerStr.includes('father') && headerStr.includes('occupation'))) {
+          } else if ((headerStrNoAsterisk.includes('ឪពុក') && headerStrNoAsterisk.includes('មុខរបរ')) || (headerStrNoAsterisk.includes('father') && headerStrNoAsterisk.includes('occupation'))) {
             columnIndices.fatherOccupation = idx;
-          } else if ((headerStr.includes('ឪពុក') && headerStr.includes('អាសយដ្ឋាន')) || (headerStr.includes('father') && headerStr.includes('address'))) {
+          } else if ((headerStrNoAsterisk.includes('ឪពុក') && headerStrNoAsterisk.includes('អាសយដ្ឋាន')) || (headerStrNoAsterisk.includes('father') && headerStrNoAsterisk.includes('address'))) {
             columnIndices.fatherResidenceFullAddress = idx;
-          } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('នាម') && !headerStr.includes('គោត្ត')) || (headerStr.includes('mother') && headerStr.includes('first'))) {
+          } else if ((headerStrNoAsterisk.includes('ម្តាយ') && headerStrNoAsterisk.includes('នាម') && !headerStrNoAsterisk.includes('គោត្ត')) || (headerStrNoAsterisk.includes('mother') && headerStrNoAsterisk.includes('first'))) {
             columnIndices.motherFirstName = idx;
-          } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('គោត្តនាម')) || (headerStr.includes('mother') && headerStr.includes('last'))) {
+          } else if ((headerStrNoAsterisk.includes('ម្តាយ') && headerStrNoAsterisk.includes('គោត្តនាម')) || (headerStrNoAsterisk.includes('mother') && headerStrNoAsterisk.includes('last'))) {
             columnIndices.motherLastName = idx;
-          } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('ទូរស័ព្ទ')) || (headerStr.includes('mother') && headerStr.includes('phone'))) {
+          } else if ((headerStrNoAsterisk.includes('ម្តាយ') && headerStrNoAsterisk.includes('ទូរស័ព្ទ')) || (headerStrNoAsterisk.includes('mother') && headerStrNoAsterisk.includes('phone'))) {
             columnIndices.motherPhone = idx;
-          } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('ភេទ')) || (headerStr.includes('mother') && headerStr.includes('gender'))) {
+          } else if ((headerStrNoAsterisk.includes('ម្តាយ') && headerStrNoAsterisk.includes('ភេទ')) || (headerStrNoAsterisk.includes('mother') && headerStrNoAsterisk.includes('gender'))) {
             columnIndices.motherGender = idx;
-          } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('មុខរបរ')) || (headerStr.includes('mother') && headerStr.includes('occupation'))) {
+          } else if ((headerStrNoAsterisk.includes('ម្តាយ') && headerStrNoAsterisk.includes('មុខរបរ')) || (headerStrNoAsterisk.includes('mother') && headerStrNoAsterisk.includes('occupation'))) {
             columnIndices.motherOccupation = idx;
-          } else if ((headerStr.includes('ម្តាយ') && headerStr.includes('អាសយដ្ឋាន')) || (headerStr.includes('mother') && headerStr.includes('address'))) {
+          } else if ((headerStrNoAsterisk.includes('ម្តាយ') && headerStrNoAsterisk.includes('អាសយដ្ឋាន')) || (headerStrNoAsterisk.includes('mother') && headerStrNoAsterisk.includes('address'))) {
             columnIndices.motherResidenceFullAddress = idx;
-          } else if (isInFatherSection && headerStr === 'នាម') {
+          } else if (isInFatherSection && (headerStrNoAsterisk === 'នាម' || headerStrNoAsterisk.includes('ឪពុក') && headerStrNoAsterisk.includes('នាម'))) {
             columnIndices.fatherFirstName = idx;
-          } else if (isInFatherSection && headerStr === 'គោត្តនាម') {
+          } else if (isInFatherSection && (headerStrNoAsterisk === 'គោត្តនាម' || headerStrNoAsterisk.includes('ឪពុក') && headerStrNoAsterisk.includes('គោត្តនាម'))) {
             columnIndices.fatherLastName = idx;
-          } else if (isInFatherSection && headerStr === 'ទូរស័ព្ទ') {
+          } else if (isInFatherSection && (headerStrNoAsterisk === 'ទូរស័ព្ទ' || headerStrNoAsterisk.includes('ឪពុក') && headerStrNoAsterisk.includes('ទូរស័ព្ទ'))) {
             columnIndices.fatherPhone = idx;
-          } else if (isInFatherSection && headerStr === 'ភេទ') {
+          } else if (isInFatherSection && (headerStrNoAsterisk === 'ភេទ' || headerStrNoAsterisk.includes('ឪពុក') && headerStrNoAsterisk.includes('ភេទ'))) {
             columnIndices.fatherGender = idx;
-          } else if (isInFatherSection && headerStr === 'មុខរបរ') {
+          } else if (isInFatherSection && (headerStrNoAsterisk === 'មុខរបរ' || headerStrNoAsterisk.includes('ឪពុក') && headerStrNoAsterisk.includes('មុខរបរ'))) {
             columnIndices.fatherOccupation = idx;
-          } else if (isInMotherSection && headerStr === 'នាម') {
+          } else if (isInMotherSection && (headerStrNoAsterisk === 'នាម' || headerStrNoAsterisk.includes('ម្តាយ') && headerStrNoAsterisk.includes('នាម'))) {
             columnIndices.motherFirstName = idx;
-          } else if (isInMotherSection && headerStr === 'គោត្តនាម') {
+          } else if (isInMotherSection && (headerStrNoAsterisk === 'គោត្តនាម' || headerStrNoAsterisk.includes('ម្តាយ') && headerStrNoAsterisk.includes('គោត្តនាម'))) {
             columnIndices.motherLastName = idx;
-          } else if (isInMotherSection && headerStr === 'ទូរស័ព្ទ') {
+          } else if (isInMotherSection && (headerStrNoAsterisk === 'ទូរស័ព្ទ' || headerStrNoAsterisk.includes('ម្តាយ') && headerStrNoAsterisk.includes('ទូរស័ព្ទ'))) {
             columnIndices.motherPhone = idx;
-          } else if (isInMotherSection && headerStr === 'ភេទ') {
+          } else if (isInMotherSection && (headerStrNoAsterisk === 'ភេទ' || headerStrNoAsterisk.includes('ម្តាយ') && headerStrNoAsterisk.includes('ភេទ'))) {
             columnIndices.motherGender = idx;
-          } else if (isInMotherSection && headerStr === 'មុខរបរ') {
+          } else if (isInMotherSection && (headerStrNoAsterisk === 'មុខរបរ' || headerStrNoAsterisk.includes('ម្តាយ') && headerStrNoAsterisk.includes('មុខរបរ'))) {
             columnIndices.motherOccupation = idx;
-          } else if (headerStr.includes('អត្តលេខ') || (headerStr.includes('student') && (headerStr.includes('id') || headerStr.includes('number')))) {
+          } else if (headerStrNoAsterisk.includes('អត្តលេខ') || (headerStrNoAsterisk.includes('student') && (headerStrNoAsterisk.includes('id') || headerStrNoAsterisk.includes('number')))) {
             columnIndices.id = idx;
-          } else if (isInStudentSection && (headerStr === 'គោត្តនាម' || (headerStr.includes('last') && headerStr.includes('name')))) {
+          } else if (isInStudentSection && (headerStrNoAsterisk === 'គោត្តនាម' || (headerStrNoAsterisk.includes('last') && headerStrNoAsterisk.includes('name')))) {
             columnIndices.lastName = idx;
-          } else if (isInStudentSection && (headerStr === 'នាម' || (headerStr.includes('first') && headerStr.includes('name')))) {
+          } else if (isInStudentSection && (headerStrNoAsterisk === 'នាម' || (headerStrNoAsterisk.includes('first') && headerStrNoAsterisk.includes('name')))) {
             columnIndices.firstName = idx;
-          } else if (headerStr.includes('អ៊ីមែល') || headerStr.includes('email')) {
+          } else if (headerStrNoAsterisk.includes('អ៊ីមែល') || headerStrNoAsterisk.includes('email')) {
             columnIndices.email = idx;
-          } else if (headerStr.includes('ឈ្មោះអ្នកប្រើ') || headerStr.includes('username')) {
+          } else if (headerStrNoAsterisk.includes('ឈ្មោះអ្នកប្រើ') || headerStrNoAsterisk.includes('username')) {
             columnIndices.username = idx;
-          } else if (headerStr.includes('ពាក្យសម្ងាត់') || headerStr.includes('password')) {
+          } else if (headerStrNoAsterisk.includes('ពាក្យសម្ងាត់') || headerStrNoAsterisk.includes('password')) {
             columnIndices.password = idx;
-          } else if (isInStudentSection && (headerStr === 'ភេទ' || headerStr.includes('gender') || headerStr.includes('sex'))) {
+          } else if (isInStudentSection && (headerStrNoAsterisk === 'ភេទ' || headerStrNoAsterisk.includes('gender') || headerStrNoAsterisk.includes('sex'))) {
             columnIndices.gender = idx;
-          } else if (headerStr.includes('ថ្ងៃខែឆ្នាំកំណើត') || (headerStr.includes('date') && headerStr.includes('birth'))) {
+          } else if (headerStrNoAsterisk.includes('ថ្ងៃខែឆ្នាំកំណើត') || (headerStrNoAsterisk.includes('date') && headerStrNoAsterisk.includes('birth'))) {
             columnIndices.dob = idx;
-          } else if (isInStudentSection && (headerStr === 'លេខទូរស័ព្ទ' || headerStr === 'ទូរស័ព្ទ' || headerStr.includes('phone'))) {
+          } else if (isInStudentSection && (headerStrNoAsterisk === 'លេខទូរស័ព្ទ' || headerStrNoAsterisk === 'ទូរស័ព្ទ' || headerStrNoAsterisk.includes('phone'))) {
             columnIndices.phone = idx;
-          } else if (headerStr.includes('សញ្ជាតិ') || headerStr.includes('nationality')) {
+          } else if (headerStrNoAsterisk.includes('សញ្ជាតិ') || headerStrNoAsterisk.includes('nationality')) {
             columnIndices.nationality = idx;
-          } else if (headerStr.includes('លេខសាលា') || (headerStr.includes('school') && headerStr.includes('id'))) {
+          } else if (headerStrNoAsterisk.includes('លេខសាលា') || (headerStrNoAsterisk.includes('school') && headerStrNoAsterisk.includes('id'))) {
             columnIndices.schoolId = idx;
-          } else if (headerStr.includes('ឆ្នាំសិក្សា') || (headerStr.includes('academic') && headerStr.includes('year'))) {
+          } else if (headerStrNoAsterisk.includes('ឆ្នាំសិក្សា') || (headerStrNoAsterisk.includes('academic') && headerStrNoAsterisk.includes('year'))) {
             columnIndices.academicYear = idx;
-          } else if (headerStr.includes('កម្រិតថ្នាក់') || (headerStr.includes('grade') && headerStr.includes('level'))) {
+          } else if (headerStrNoAsterisk.includes('កម្រិតថ្នាក់') || (headerStrNoAsterisk.includes('grade') && headerStrNoAsterisk.includes('level'))) {
             columnIndices.gradeLevel = idx;
-          } else if (headerStr.includes('អាសយដ្ឋាន') || headerStr.includes('address')) {
+          } else if (headerStrNoAsterisk.includes('អាសយដ្ឋាន') || headerStrNoAsterisk.includes('address')) {
             columnIndices.residenceFullAddress = idx;
-          } else if (headerStr.includes('ជនជាតិ') || headerStr.includes('ethnic')) {
+          } else if (headerStrNoAsterisk.includes('ជនជាតិ') || headerStrNoAsterisk.includes('ethnic')) {
             columnIndices.ethnic = idx;
-          } else if (headerStr.includes('លក្ខណៈពិសេស') || headerStr.includes('accessibility') || headerStr.includes('disability')) {
+          } else if (headerStrNoAsterisk.includes('លក្ខណៈពិសេស') || headerStrNoAsterisk.includes('accessibility') || headerStrNoAsterisk.includes('disability')) {
             columnIndices.access = idx;
           }
         });
+
+        console.log('🔎 Column indices found:', columnIndices);
       } else {
         // No headers detected, use positional mapping
         columnIndices = {
@@ -289,6 +334,7 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
           motherOccupation: 24, motherResidenceFullAddress: 25,
           ethnic: 26, access: 27
         };
+        console.log('🔎 Using positional column mapping');
       }
 
       // Map gender values
@@ -391,7 +437,18 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
       const firstName = columnIndices.firstName >= 0 ? getValue(columnIndices.firstName) : '';
       const lastName = columnIndices.lastName >= 0 ? getValue(columnIndices.lastName) : '';
 
+      if (index === 0) {
+        console.log('🔎 Sample row values:', {
+          columnIndices,
+          studentId,
+          firstName,
+          lastName,
+          fullRow: row.slice(0, 10)
+        });
+      }
+
       if (!studentId.trim() && !firstName.trim() && !lastName.trim()) {
+        if (index === 0) console.log('❌ Row 0 rejected: no ID or name found');
         return null;
       }
 
@@ -538,6 +595,12 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
         accessibility: columnIndices.access >= 0 ? mapAccessibility(getValue(columnIndices.access)) : []
       };
     }).filter(student => student !== null);
+
+    console.log('✅ Students mapped:', {
+      totalMapped: mappedStudents.length,
+      firstStudent: mappedStudents[0],
+      sampleStudents: mappedStudents.slice(0, 3).map(s => ({ name: s.firstName, lastName: s.lastName, username: s.username }))
+    });
 
     // Check if imported students exceed the limit of 70
     if (mappedStudents.length > 70) {
