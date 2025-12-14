@@ -726,7 +726,7 @@ const TeacherEditModal = () => {
     const weightRegex = /^[0-9]{1,3}(\.[0-9]{1,2})?$/; // numeric(5,2)
     if (!weightRegex.test(weightStr)) return true;
     const w = parseFloat(weightStr);
-    return !Number.isNaN(w) && w < 10;
+    return !Number.isNaN(w) && (w < 10 || w > 200);
   };
 
   const isHeightInvalid = () => {
@@ -736,7 +736,7 @@ const TeacherEditModal = () => {
     const heightRegex = /^[0-9]{1,3}(\.[0-9])?$/; // numeric(4,1)
     if (!heightRegex.test(heightStr)) return true;
     const h = parseFloat(heightStr);
-    return !Number.isNaN(h) && h < 10;
+    return !Number.isNaN(h) && (h < 10 || h > 250);
   };
 
   const isPhysicalInvalid = () => {
@@ -769,6 +769,15 @@ const TeacherEditModal = () => {
         );
         return false;
       }
+      if (!Number.isNaN(w) && w > 200) {
+        showError(
+          t(
+            'invalidWeightMax',
+            'ទម្ងន់ត្រូវតែតិចជាង ឬស្មើ 200 គីឡូក្រាម'
+          )
+        );
+        return false;
+      }
     }
 
     if (height) {
@@ -789,6 +798,15 @@ const TeacherEditModal = () => {
           t(
             'invalidHeightRange',
             'កម្ពស់ត្រូវតែធំជាង ឬស្មើ 10 សង់ទីម៉ែត្រ'
+          )
+        );
+        return false;
+      }
+      if (!Number.isNaN(h) && h > 250) {
+        showError(
+          t(
+            'invalidHeightMax',
+            'កម្ពស់ត្រូវតែតិចជាង ឬស្មើ 250 សង់ទីម៉ែត្រ'
           )
         );
         return false;
@@ -1438,7 +1456,7 @@ const TeacherEditModal = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('role', 'Role')}
+              {t('role', 'Role')} *
             </label>
             {editForm.role === '14' ? (
               <div className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-700">
