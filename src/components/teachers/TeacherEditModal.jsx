@@ -1137,26 +1137,6 @@ const TeacherEditModal = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('firstName', 'First Name')} *
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                id="firstName"
-                value={editForm.firstName}
-                onChange={(e) => handleFormChange('firstName', e.target.value)}
-                className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                placeholder={t('enterFirstName', 'Enter first name')}
-                required
-              />
-            </div>
-          </div>
-
-          <div>
             <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
               {t('lastName', 'Last Name')} *
             </label>
@@ -1171,6 +1151,25 @@ const TeacherEditModal = () => {
                 onChange={(e) => handleFormChange('lastName', e.target.value)}
                 className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
                 placeholder={t('enterLastName', 'Enter last name')}
+                required
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+              {t('firstName', 'First Name')} *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                id="firstName"
+                value={editForm.firstName}
+                onChange={(e) => handleFormChange('firstName', e.target.value)}
+                className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                placeholder={t('enterFirstName', 'Enter first name')}
                 required
               />
             </div>
