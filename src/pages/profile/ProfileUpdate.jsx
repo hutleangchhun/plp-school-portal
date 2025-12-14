@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Eye, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler, CheckCircle2 } from 'lucide-react';
+import { User, Eye, EyeOff, Upload, Edit, Mail, Lock, Phone, Globe, X, Building, Weight, Ruler, CheckCircle2, Wand2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -1647,7 +1647,7 @@ export default function ProfileUpdate({ user, setUser }) {
                         {t('firstName')} *
                       </label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                           <User className="h-4 w-4 text-gray-400" />
                         </div>
                         <input
@@ -1668,7 +1668,7 @@ export default function ProfileUpdate({ user, setUser }) {
                         {t('lastName')} *
                       </label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                           <User className="h-4 w-4 text-gray-400" />
                         </div>
                         <input
@@ -1749,7 +1749,7 @@ export default function ProfileUpdate({ user, setUser }) {
                         {t('weight')} ({t('kg')})
                       </label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                           <Weight className="h-4 w-4 text-gray-400" />
                         </div>
                         <input
@@ -1783,7 +1783,7 @@ export default function ProfileUpdate({ user, setUser }) {
                         {t('height')} ({t('cm')})
                       </label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                           <Ruler className="h-4 w-4 text-gray-400" />
                         </div>
                         <input
@@ -1861,44 +1861,43 @@ export default function ProfileUpdate({ user, setUser }) {
                         {t('username')} *
                       </label>
                       <div className="relative">
-                        <div className="flex items-center gap-2">
-                          <div className="relative flex-1">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <User className="h-4 w-4 text-gray-400" />
-                            </div>
-                            <input
-                              type="text"
-                              name="username"
-                              id="username"
-                              required
-                              className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:scale-[1.01] "
-                              value={formData.username}
-                              onChange={(e) => {
-                                const rawValue = e.target.value;
-                                const newValue = sanitizeUsername(rawValue);
-                                setFormData(prev => ({
-                                  ...prev,
-                                  username: newValue
-                                }));
-
-                                if (usernameDebounceRef.current) {
-                                  clearTimeout(usernameDebounceRef.current);
-                                }
-                                usernameDebounceRef.current = setTimeout(() => {
-                                  handleGenerateUsernameSuggestions(newValue);
-                                }, 400);
-                              }}
-                              placeholder={t('enterUsername')}
-                            />
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                            <User className="h-4 w-4 text-gray-400" />
                           </div>
+                          <input
+                            type="text"
+                            name="username"
+                            id="username"
+                            required
+                            className="mt-1 block w-full pl-10 pr-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:scale-[1.01] "
+                            value={formData.username}
+                            onChange={(e) => {
+                              const rawValue = e.target.value;
+                              const newValue = sanitizeUsername(rawValue);
+                              setFormData(prev => ({
+                                ...prev,
+                                username: newValue
+                              }));
+
+                              if (usernameDebounceRef.current) {
+                                clearTimeout(usernameDebounceRef.current);
+                              }
+                              usernameDebounceRef.current = setTimeout(() => {
+                                handleGenerateUsernameSuggestions(newValue);
+                              }, 400);
+                            }}
+                            placeholder={t('enterUsername')}
+                          />
                           <button
                             type="button"
                             onClick={() => {
                               handleGenerateUsernameSuggestions(formData.username || '');
                             }}
-                            className="mt-1 px-2 py-1 text-xs border border-gray-300 rounded bg-white text-gray-700 whitespace-nowrap"
+                            title={t('suggestion', 'Generate suggestions')}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-blue-600 transition-colors z-10"
                           >
-                            {t('suggestion')}
+                            <Wand2 className="h-4 w-4" />
                           </button>
                         </div>
 
@@ -1940,18 +1939,26 @@ export default function ProfileUpdate({ user, setUser }) {
                         {t('newPassword')}
                       </label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                           <Lock className="h-4 w-4 text-gray-400" />
                         </div>
                         <input
-                          type="password"
+                          type={showPassword ? 'text' : 'password'}
                           name="newPassword"
                           id="newPassword"
-                          className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:scale-[1.01]"
+                          className="mt-1 block w-full pl-10 pr-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:scale-[1.01]"
                           value={formData.newPassword}
                           onChange={handleInputChange}
                           placeholder={t('enterNewPassword')}
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors z-10"
+                          tabIndex="-1"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
                       </div>
                       {formData.newPassword && (
                         <div className="mt-2">
@@ -1991,7 +1998,7 @@ export default function ProfileUpdate({ user, setUser }) {
                         {t('email')}
                       </label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                           <Mail className="h-4 w-4 text-gray-400" />
                         </div>
                         <input
@@ -2032,7 +2039,7 @@ export default function ProfileUpdate({ user, setUser }) {
                         {t('phone')}
                       </label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                           <Phone className="h-4 w-4 text-gray-400" />
                         </div>
                         <input

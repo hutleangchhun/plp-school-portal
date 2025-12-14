@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Wand2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import MultiSelectDropdown from '../ui/MultiSelectDropdown';
@@ -228,7 +228,7 @@ const StudentTableRow = ({
               />
             ) : column.key === 'username' ? (
               <div className="relative">
-                <div className="flex items-center gap-1">
+                <div className="relative">
                   <input
                     type="text"
                     value={student.username || ''}
@@ -249,7 +249,7 @@ const StudentTableRow = ({
                     onFocus={() => handleInputFocus('username')}
                     onKeyDown={handleInputKeyDown}
                     onBlur={handleUsernameBlur}
-                    className={`w-full px-3 py-2 text-xs border-0 focus:border focus:ring-1 ${isCellInvalid(student, 'username')
+                    className={`w-full pr-8 px-3 py-2 text-xs border-0 focus:border focus:ring-1 ${isCellInvalid(student, 'username')
                       ? 'bg-white border-2 border-red-500 focus:border-red-500 focus:ring-red-500'
                       : 'bg-white focus:border-blue-500 focus:ring-blue-500'
                       }`}
@@ -264,9 +264,10 @@ const StudentTableRow = ({
                       }
                       handleGenerateUsernameSuggestions(student.username || '');
                     }}
-                    className="px-1.5 py-1 text-[10px] border border-gray-300 rounded bg-white hover:bg-blue-50 text-gray-700"
+                    title={t('suggestion', 'Generate suggestions')}
+                    className="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-500 hover:text-blue-600 transition-colors z-10"
                   >
-                    {t('suggestion', 'Suggestion')}
+                    <Wand2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
                 {showUsernameSuggestions && usernameSuggestions.length > 0 && (

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { User, Mail, Phone, Eye, Lock, X, Weight, Ruler, ArrowLeft, BookOpen } from 'lucide-react';
+import { User, Mail, Phone, Eye, EyeOff, Lock, X, Weight, Ruler, ArrowLeft, BookOpen, Wand2 } from 'lucide-react';
 import BookSelectionModal from '../modals/BookSelectionModal';
 import SelectedBooksDisplay from '../modals/SelectedBooksDisplay';
 import { sanitizeUsername } from '../../utils/usernameUtils';
@@ -16,6 +16,7 @@ import MultiSelectDropdown from '../ui/MultiSelectDropdown';
 import SalaryTypeDropdown from '../ui/SalaryTypeDropdown';
 import ErrorDisplay from '../ui/ErrorDisplay';
 import { PageLoader } from '../ui/DynamicLoader';
+import ValidationSummary from '../ui/ValidationSummary';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
 import { ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, employmentTypeOptions, educationLevelOptions, trainingTypeOptions, teacherStatusOptions, subjectOptions, roleOptions, maritalStatusOptions, teachingTypeOptions, spouseJobOptions, childStatusOptions } from '../../utils/formOptions';
@@ -743,6 +744,178 @@ const TeacherEditModal = () => {
     return isWeightInvalid() || isHeightInvalid();
   };
 
+  const getValidationErrors = () => {
+    const errorsList = [];
+
+    // Check required fields
+    if (!editForm.firstName?.trim()) {
+      errorsList.push({
+        field: t('firstName', 'នាម'),
+        messages: [t('fieldRequired', 'ត្រូវបំពេញជាចាំបាច់')]
+      });
+    }
+
+    if (!editForm.lastName?.trim()) {
+      errorsList.push({
+        field: t('lastName', 'គោត្តនាម'),
+        messages: [t('fieldRequired', 'ត្រូវបំពេញជាចាំបាច់')]
+      });
+    }
+
+    if (!editForm.gender) {
+      errorsList.push({
+        field: t('gender', 'ភេទ'),
+        messages: [t('fieldRequired', 'ត្រូវបំពេញជាចាំបាច់')]
+      });
+    }
+
+    if (!editForm.dateOfBirth) {
+      errorsList.push({
+        field: t('dateOfBirth', 'ថ្ងៃខែឆ្នាំកំណើត'),
+        messages: [t('fieldRequired', 'ត្រូវបំពេញជាចាំបាច់')]
+      });
+    }
+
+    if (!editForm.nationality) {
+      errorsList.push({
+        field: t('nationality', 'សញ្ជាតិ'),
+        messages: [t('fieldRequired', 'ត្រូវបំពេញជាចាំបាច់')]
+      });
+    }
+
+    if (!editForm.username?.trim()) {
+      errorsList.push({
+        field: t('username', 'ឈ្មោះអ្នកប្រើ'),
+        messages: [t('fieldRequired', 'ត្រូវបំពេញជាចាំបាច់')]
+      });
+    } else if (isUsernameInvalid()) {
+      errorsList.push({
+        field: t('username', 'ឈ្មោះអ្នកប្រើ'),
+        messages: [t('usernameContainsInvalidChars', 'ឈ្មោះអ្នកប្រើមានលក្ខណៈដែលមិនត្រឹមត្រូវ')]
+      });
+    } else if (usernameAvailable === false) {
+      errorsList.push({
+        field: t('username', 'ឈ្មោះអ្នកប្រើ'),
+        messages: [t('usernameNotAvailable', 'ឈ្មោះអ្នកប្រើនេះត្រូវបានប្រើរួចហើយ')]
+      });
+    }
+
+    if (!editForm.employment_type) {
+      errorsList.push({
+        field: t('employmentType', 'ប្រភេទការងារ'),
+        messages: [t('fieldRequired', 'ាលលេខនេះគឺចាំបាច់')]
+      });
+    }
+
+    if (!editForm.hire_date) {
+      errorsList.push({
+        field: t('hireDate', 'ថ្ងៃឡើងងារ'),
+        messages: [t('fieldRequired', 'ត្រូវបំពេញជាចាំបាច់')]
+      });
+    }
+
+    if (!editForm.role) {
+      errorsList.push({
+        field: t('role', 'តួនាទី'),
+        messages: [t('fieldRequired', 'ត្រូវបំពេញជាចាំបាច់')]
+      });
+    }
+
+    // Password validation for create mode
+    if (mode === 'create' && !editForm.password?.trim()) {
+      errorsList.push({
+        field: t('password', 'ពាក្យសម្ងាត់'),
+        messages: [t('fieldRequired', 'ត្រូវបំពេញជាចាំបាច់')]
+      });
+    } else if (mode === 'create' && isPasswordInvalid()) {
+      errorsList.push({
+        field: t('password', 'ពាក្យសម្ងាត់'),
+        messages: [t('passwordTooShort', 'ពាក្យសម្ងាត់ត្រូវមាន​យ៉ាងហោចណាស់ 8 តួអក្សរ')]
+      });
+    }
+
+    // Password validation for edit mode (if new password provided)
+    if (mode === 'edit' && editForm.newPassword?.trim() && isPasswordInvalid()) {
+      errorsList.push({
+        field: t('newPassword', 'ពាក្យសម្ងាត់ថ្មី'),
+        messages: [t('passwordTooShort', 'ពាក្យសម្ងាត់ត្រូវមាន​យ៉ាងហោចណាស់ 8 តួអក្សរ')]
+      });
+    }
+
+    // Email validation (if provided)
+    if (editForm.email?.trim() && emailAvailable === false) {
+      errorsList.push({
+        field: t('email', 'អ៊ីមែល'),
+        messages: [t('emailNotAvailable', 'អ៊ីមែលនេះត្រូវបានប្រើរួចហើយ')]
+      });
+    }
+
+    // Teacher number validation (if provided)
+    if (editForm.teacher_number?.trim() && teacherNumberAvailable === false) {
+      errorsList.push({
+        field: t('teacherNumber', 'លេខគ្រូ'),
+        messages: [t('teacherNumberNotAvailable', 'លេខគ្រូនេះត្រូវបានប្រើរួចហើយ')]
+      });
+    }
+
+    // Weight validation
+    if (editForm.weight && isWeightInvalid()) {
+      const weightStr = String(editForm.weight).trim();
+      const weightRegex = /^[0-9]{1,3}(\.[0-9]{1,2})?$/;
+      const weightMessages = [];
+
+      if (!weightRegex.test(weightStr)) {
+        weightMessages.push(t('weightFormatError', 'សូមបញ្ចូលលេខត្រឹមត្រូវ (10-200 គីឡូក្រាម)'));
+      } else {
+        const w = parseFloat(weightStr);
+        if (w < 10) {
+          weightMessages.push(t('weightMinError', 'ទម្ងន់ត្រូវតែធំជាង ឬស្មើ 10 គីឡូក្រាម'));
+        }
+        if (w > 200) {
+          weightMessages.push(t('weightMaxError', 'ទម្ងន់ត្រូវតែតិចជាង ឬស្មើ 200 គីឡូក្រាម'));
+        }
+      }
+
+      if (weightMessages.length > 0) {
+        errorsList.push({
+          field: t('weight', 'ទម្ងន់'),
+          messages: weightMessages
+        });
+      }
+    }
+
+    // Height validation
+    if (editForm.height && isHeightInvalid()) {
+      const heightStr = String(editForm.height).trim();
+      const heightRegex = /^[0-9]{1,3}(\.[0-9])?$/;
+      const heightMessages = [];
+
+      if (!heightRegex.test(heightStr)) {
+        heightMessages.push(t('heightFormatError', 'សូមបញ្ចូលលេខត្រឹមត្រូវ (10-250 សង់ទីម៉ែត្រ)'));
+      } else {
+        const h = parseFloat(heightStr);
+        if (h < 10) {
+          heightMessages.push(t('heightMinError', 'កម្ពស់ត្រូវតែធំជាង ឬស្មើ 10 សង់ទីម៉ែត្រ'));
+        }
+        if (h > 250) {
+          heightMessages.push(t('heightMaxError', 'កម្ពស់ត្រូវតែតិចជាង ឬស្មើ 250 សង់ទីម៉ែត្រ'));
+        }
+      }
+
+      if (heightMessages.length > 0) {
+        errorsList.push({
+          field: t('height', 'កម្ពស់'),
+          messages: heightMessages
+        });
+      }
+    }
+
+    return errorsList;
+  };
+
+  const validationErrorsList = getValidationErrors();
+  const hasValidationErrors = validationErrorsList.length > 0;
+
   const validatePhysicalFields = () => {
     const { weight, height } = editForm;
 
@@ -1159,7 +1332,7 @@ const TeacherEditModal = () => {
               {t('lastName', 'Last Name')} *
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                 <User className="h-4 w-4 text-gray-400" />
               </div>
               <input
@@ -1178,7 +1351,7 @@ const TeacherEditModal = () => {
               {t('firstName', 'First Name')} *
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                 <User className="h-4 w-4 text-gray-400" />
               </div>
               <input
@@ -1270,7 +1443,7 @@ const TeacherEditModal = () => {
               {t('weight', 'Weight')} ({t('kg', 'kg')})
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                 <Weight className="h-4 w-4 text-gray-400" />
               </div>
               <input
@@ -1301,7 +1474,7 @@ const TeacherEditModal = () => {
               {t('height', 'Height')} ({t('cm', 'cm')})
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                 <Ruler className="h-4 w-4 text-gray-400" />
               </div>
               <input
@@ -2056,43 +2229,42 @@ const TeacherEditModal = () => {
               {t('username', 'Username')} *
             </label>
             <div className="relative">
-              <div className="flex items-center gap-2">
-                <div className='relative'>
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    id="username"
-                    value={editForm.username}
-                    onChange={(e) => {
-                      const rawValue = e.target.value;
-                      const newValue = sanitizeUsername(rawValue);
-                      handleFormChange('username', newValue);
-
-                      if (usernameDebounceRef.current) {
-                        clearTimeout(usernameDebounceRef.current);
-                      }
-                      usernameDebounceRef.current = setTimeout(() => {
-                        handleGenerateUsernameSuggestions(newValue);
-                      }, 400);
-                    }}
-                    className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${isUsernameInvalid()
-                        ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
-                      }`}
-                    placeholder={t('enterUsername', 'Enter username')}
-                    required
-                  />
+              <div className='relative'>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                  <User className="h-4 w-4 text-gray-400" />
                 </div>
+                <input
+                  type="text"
+                  id="username"
+                  value={editForm.username}
+                  onChange={(e) => {
+                    const rawValue = e.target.value;
+                    const newValue = sanitizeUsername(rawValue);
+                    handleFormChange('username', newValue);
+
+                    if (usernameDebounceRef.current) {
+                      clearTimeout(usernameDebounceRef.current);
+                    }
+                    usernameDebounceRef.current = setTimeout(() => {
+                      handleGenerateUsernameSuggestions(newValue);
+                    }, 400);
+                  }}
+                  className={`mt-1 block w-full pl-10 pr-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${isUsernameInvalid()
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
+                    }`}
+                  placeholder={t('enterUsername', 'Enter username')}
+                  required
+                />
                 <button
                   type="button"
                   onClick={() => {
                     handleGenerateUsernameSuggestions(editForm.username || '');
                   }}
-                  className="px-2 py-1 text-xs border border-gray-300 rounded bg-white hover:bg-blue-50 text-gray-700"
+                  title={t('suggestion', 'Generate suggestions')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-blue-600 transition-colors"
                 >
-                  {t('suggestion', 'Suggestion')}
+                  <Wand2 className="h-4 w-4" />
                 </button>
               </div>
               {showUsernameSuggestions && usernameSuggestions.length > 0 && (
@@ -2132,7 +2304,7 @@ const TeacherEditModal = () => {
               {mode === 'create' ? t('password', 'Password') : t('newPassword', 'New Password')} {mode === 'create' && '*'}
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                 <Lock className="h-4 w-4 text-gray-400" />
               </div>
               <input
@@ -2148,10 +2320,10 @@ const TeacherEditModal = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors z-10"
                 tabIndex="-1"
               >
-                <Eye className="h-4 w-4" />
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {(mode === 'create' ? editForm.password : editForm.newPassword) && (
@@ -2192,7 +2364,7 @@ const TeacherEditModal = () => {
               {t('email', 'Email')}
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                 <Mail className="h-4 w-4 text-gray-400" />
               </div>
               <input
@@ -2231,7 +2403,7 @@ const TeacherEditModal = () => {
               {t('phone', 'Phone')}
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                 <Phone className="h-4 w-4 text-gray-400" />
               </div>
               <input
@@ -2439,6 +2611,16 @@ const TeacherEditModal = () => {
           allowedCategoryIds={[38, 42, 46, 47, 49, 51]}
         />
       </div>
+
+      {/* Validation Summary */}
+      {hasValidationErrors && (
+        <div className="bg-white rounded-md border border-gray-200 p-6 mb-6">
+          <ValidationSummary
+            errors={validationErrorsList}
+            t={t}
+          />
+        </div>
+      )}
 
       {/* Action Buttons for Page Mode - Sticky */}
       <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 sm:p-6 flex items-center justify-end space-x-3 shadow-lg z-10">
