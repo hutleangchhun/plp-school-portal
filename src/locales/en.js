@@ -1685,6 +1685,11 @@ export const en = {
 
   // User Activity
   userActivityLogs: 'User Activity Logs',
+  userLogins: 'User Logins',
+  userCreations: 'User Creations',
+  userUpdates: 'User Updates',
+  userDeletions: 'User Deletions',
+  failedToLoadActivityCounts: 'Failed to load activity counts',
 
   // Username
   usernameAvailable: 'Username Available',

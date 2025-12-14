@@ -73,6 +73,11 @@ export const km = {
   studentBMIDistribution: 'ការបែងចែកប្រភេទBMIក្នុងសាលារៀន',
   bmiCategoryBreakdown: 'ក្រាបប្រភេទBMI',
   userActivityLogs: 'សកម្មភាពអ្នកប្រើប្រាស់',
+  userLogins: 'ការចូលប្រើប្រាស់',
+  userCreations: 'ការបង្កើតអ្នកប្រើប្រាស់',
+  userUpdates: 'ការធ្វើបច្ចុប្បន្នភាពអ្នកប្រើប្រាស់',
+  userDeletions: 'ការលុបអ្នកប្រើប្រាស់',
+  failedToLoadActivityCounts: 'បរាជ័យក្នុងការផ្ទុកចំនួនសកម្មភាព',
   studentTransfer: 'ផ្ទេរសិស្សានុសិស្ស',
 
   // Profile

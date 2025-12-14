@@ -7,6 +7,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/ca
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Badge } from '../../components/ui/Badge';
+import StatsCard from '../../components/ui/StatsCard';
+import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
+import { LogIn, UserPlus, Edit, UserMinus } from 'lucide-react';
 import { api } from '../../utils/api';
 import { getFullName } from '../../utils/usernameUtils';
 
@@ -23,11 +26,52 @@ const UserActivityLogs = () => {
   const [selectedLog, setSelectedLog] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [activityCounts, setActivityCounts] = useState({
+    USER_LOGIN: { success: 0, failed: 0 },
+    USER_CREATE: { success: 0, failed: 0 },
+    USER_UPDATE: { success: 0, failed: 0 },
+    USER_DELETE: { success: 0, failed: 0 },
+  });
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const tableEndRef = React.useRef(null);
   const autoRefreshRef = React.useRef(null);
   const pageRef = React.useRef(1);
 
-  const fetchLogs = async (pageToLoad = 1, { isLoadMore = false, silent = false } = {}) => {
+  // Helper function to convert Date object to YYYY-MM-DD format
+  const formatDateToString = (date) => {
+    if (!date) return new Date().toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const fetchActivityCounts = async (dateObj) => {
+    try {
+      const dateString = formatDateToString(dateObj);
+      const response = await api.userActivityLog.getActivityCountByDate(dateString);
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to load activity counts');
+      }
+
+      // Merge with default structure to ensure all types exist
+      const defaultCounts = {
+        USER_LOGIN: { success: 0, failed: 0 },
+        USER_CREATE: { success: 0, failed: 0 },
+        USER_UPDATE: { success: 0, failed: 0 },
+        USER_DELETE: { success: 0, failed: 0 },
+      };
+
+      setActivityCounts({ ...defaultCounts, ...response.data });
+    } catch (err) {
+      handleError(err, {
+        toastMessage: t('failedToLoadActivityCounts', 'Failed to load activity counts'),
+      });
+    }
+  };
+
+  const fetchLogs = async (pageToLoad = 1, { isLoadMore = false, silent = false, date = null } = {}) => {
     try {
       clearError();
       if (!isLoadMore && !silent) {
@@ -36,7 +80,12 @@ const UserActivityLogs = () => {
         setLoadingMore(true);
       }
 
-      const response = await api.userActivityLog.getLogs({ page: pageToLoad, limit });
+      const logsParams = { page: pageToLoad, limit };
+      if (date) {
+        logsParams.date = formatDateToString(date);
+      }
+
+      const response = await api.userActivityLog.getLogs(logsParams);
 
       if (!response.success) {
         throw new Error(response.error || 'Failed to load activity logs');
@@ -99,9 +148,15 @@ const UserActivityLogs = () => {
 
   useEffect(() => {
     // Start from page 1 (API already returns newest data first)
-    fetchLogs(1);
+    fetchLogs(1, { date: selectedDate });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedDate]);
+
+  // Fetch activity counts when date changes
+  useEffect(() => {
+    fetchActivityCounts(selectedDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
 
   // Infinite scroll effect: Load more when user scrolls to end
   useEffect(() => {
@@ -189,6 +244,75 @@ const UserActivityLogs = () => {
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-3 sm:p-6 space-y-4">
+        {/* Date Filter */}
+        <FadeInSection delay={0}>
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 max-w-md">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('selectDate', 'Select Date')}
+              </label>
+              <DatePickerWithDropdowns
+                date={selectedDate}
+                onChange={setSelectedDate}
+                placeholder={t('selectDate', 'Select Date')}
+              />
+            </div>
+          </div>
+        </FadeInSection>
+
+        {/* Activity Count Stats */}
+        <FadeInSection delay={50}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatsCard
+              title={t('userLogins', 'User Logins')}
+              value={activityCounts.USER_LOGIN.success + activityCounts.USER_LOGIN.failed}
+              subtitle={`${activityCounts.USER_LOGIN.success} success / ${activityCounts.USER_LOGIN.failed} failed`}
+              icon={LogIn}
+              enhanced={true}
+              gradientFrom="from-blue-500"
+              gradientTo="to-blue-600"
+              hoverColor="hover:border-blue-200"
+              responsive={true}
+            />
+
+            <StatsCard
+              title={t('userCreations', 'User Creations')}
+              value={activityCounts.USER_CREATE.success + activityCounts.USER_CREATE.failed}
+              subtitle={`${activityCounts.USER_CREATE.success} success / ${activityCounts.USER_CREATE.failed} failed`}
+              icon={UserPlus}
+              enhanced={true}
+              gradientFrom="from-green-500"
+              gradientTo="to-green-600"
+              hoverColor="hover:border-green-200"
+              responsive={true}
+            />
+
+            <StatsCard
+              title={t('userUpdates', 'User Updates')}
+              value={activityCounts.USER_UPDATE.success + activityCounts.USER_UPDATE.failed}
+              subtitle={`${activityCounts.USER_UPDATE.success} success / ${activityCounts.USER_UPDATE.failed} failed`}
+              icon={Edit}
+              enhanced={true}
+              gradientFrom="from-purple-500"
+              gradientTo="to-purple-600"
+              hoverColor="hover:border-purple-200"
+              responsive={true}
+            />
+
+            <StatsCard
+              title={t('userDeletions', 'User Deletions')}
+              value={activityCounts.USER_DELETE.success + activityCounts.USER_DELETE.failed}
+              subtitle={`${activityCounts.USER_DELETE.success} success / ${activityCounts.USER_DELETE.failed} failed`}
+              icon={UserMinus}
+              enhanced={true}
+              gradientFrom="from-red-500"
+              gradientTo="to-red-600"
+              hoverColor="hover:border-red-200"
+              responsive={true}
+            />
+          </div>
+        </FadeInSection>
+
         <FadeInSection delay={100}>
           <Card className="border border-gray-200 shadow-sm">
             <CardHeader>

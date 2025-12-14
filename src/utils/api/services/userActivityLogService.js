@@ -11,6 +11,7 @@ export const userActivityLogService = {
    * @param {Object} params
    * @param {number} [params.page=1]
    * @param {number} [params.limit=20]
+   * @param {string} [params.date] - Optional date filter in YYYY-MM-DD format
    */
   async getLogs(params = {}) {
     const query = new URLSearchParams();
@@ -19,6 +20,10 @@ export const userActivityLogService = {
 
     query.append('page', page);
     query.append('limit', limit);
+
+    if (params.date) {
+      query.append('date', params.date);
+    }
 
     const url = `${ENDPOINTS.USER_ACTIVITY_LOGS.BASE}?${query.toString()}`;
 
@@ -62,6 +67,29 @@ export const userActivityLogService = {
     return {
       success: true,
       data: response.data || null,
+    };
+  },
+
+  /**
+   * Get activity count by date grouped by activity type
+   * @param {string} date - Date in YYYY-MM-DD format
+   */
+  async getActivityCountByDate(date) {
+    const url = `${ENDPOINTS.USER_ACTIVITY_LOGS.BASE}/activity-count/by-date?date=${date}`;
+
+    const response = await handleApiResponse(() => apiClient_.get(url));
+
+    if (!response || !response.success) {
+      return {
+        success: false,
+        error: response?.error || 'Failed to fetch activity counts',
+        data: null,
+      };
+    }
+
+    return {
+      success: true,
+      data: response.data || {},
     };
   },
 };
