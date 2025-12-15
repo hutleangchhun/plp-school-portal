@@ -19,9 +19,30 @@ export const authService = {
       apiClient_.post(ENDPOINTS.AUTH.LOGIN, credentials)
     );
 
+    // Handle account selection requirement
+    // Check both top-level and within response.data due to handleApiResponse wrapping
+    const responseData = response.data || response;
+    if (responseData.requiresSelection && responseData.accounts) {
+      return {
+        requiresSelection: true,
+        message: responseData.message,
+        accounts: responseData.accounts
+      };
+    }
+
     // If login successful, save token and fetch fresh user data
     if (response.success) {
-      const { accessToken, user } = response.data;
+      // Handle both response structures: { data: { accessToken, user } } and { accessToken, user, data: {...} }
+      const parsedData = responseData.accessToken ? responseData : responseData.data;
+      const { accessToken, user } = parsedData;
+
+      // Validate we have the required fields
+      if (!user || !accessToken) {
+        return {
+          success: false,
+          error: 'Invalid response from server. Missing user data or access token.'
+        };
+      }
 
       // Normalize user data: roleId = 14 is the primary director role
       const normalizedUser = {
@@ -190,6 +211,93 @@ export const authService = {
     } catch (err) {
       console.warn('Error clearing cached data:', err);
     }
+  },
+
+  /**
+   * Select account after multiple accounts were found
+   * @param {string} accountId - Selected account ID
+   * @param {string} username - Original username from login
+   * @param {string} password - Original password from login
+   * @returns {Promise<Object>} Login response with token and user data
+   */
+  selectAccount: async (accountId, username, password) => {
+    const response = await handleApiResponse(() =>
+      apiClient_.post(ENDPOINTS.AUTH.SELECT_ACCOUNT, {
+        accountId,
+        username,
+        password
+      })
+    );
+
+    // Process same as regular login
+    if (response.success) {
+      // Handle both response structures due to handleApiResponse wrapping
+      const responseData = response.data || response;
+      const parsedData = responseData.accessToken ? responseData : responseData.data;
+      const { accessToken, user } = parsedData;
+
+      // Validate we have the required fields
+      if (!user || !accessToken) {
+        return {
+          success: false,
+          error: 'Invalid response from server. Missing user data or access token.'
+        };
+      }
+
+      const normalizedUser = {
+        ...user,
+        isDirector: user.roleId === 14,
+        is_director: user.roleId === 14
+      };
+
+      // Check role authorization
+      if (![8, 14, 1, 15, 16, 17, 18, 19, 20, 21].includes(normalizedUser.roleId)) {
+        return {
+          success: false,
+          error: 'Only authorized users can access this portal. Please contact your administrator.'
+        };
+      }
+
+      tokenManager.setToken(accessToken);
+
+      // Fetch fresh user data
+      try {
+        const accountResponse = await handleApiResponse(() =>
+          apiClient_.get(ENDPOINTS.USERS.MY_ACCOUNT)
+        );
+
+        if (accountResponse.success && accountResponse.data) {
+          const freshUserData = {
+            ...normalizedUser,
+            ...accountResponse.data,
+            id: accountResponse.data.id || normalizedUser.id,
+            schoolId: accountResponse.data.school_id || normalizedUser.schoolId,
+            school_id: accountResponse.data.school_id || normalizedUser.school_id,
+            isDirector: accountResponse.data.roleId === 14 || accountResponse.data.role_id === 14,
+            is_director: accountResponse.data.roleId === 14 || accountResponse.data.role_id === 14
+          };
+
+          userUtils.saveUserData(freshUserData);
+
+          return {
+            success: true,
+            data: { accessToken, user: freshUserData }
+          };
+        }
+      } catch (accountError) {
+        console.error('Failed to fetch fresh account data:', accountError);
+        userUtils.saveUserData(normalizedUser);
+      }
+
+      userUtils.saveUserData(normalizedUser);
+
+      return {
+        success: true,
+        data: { accessToken, user: normalizedUser }
+      };
+    }
+
+    return response;
   }
 };
 

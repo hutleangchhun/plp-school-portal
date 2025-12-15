@@ -40,6 +40,7 @@ export const HTTPS_CONFIG = {
 const ENDPOINTS = {
   AUTH: {
     LOGIN: '/auth/login',
+    SELECT_ACCOUNT: '/auth/select-account',
     LOGOUT: '/auth/logout',
     REFRESH_TOKEN: '/auth/refresh-token',
     ME: '/auth/me',

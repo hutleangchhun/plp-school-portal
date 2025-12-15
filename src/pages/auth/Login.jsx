@@ -5,6 +5,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import LanguageSwitcher from '../../components/common/LanguageSwitcher';
 import { Button } from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
+import Modal from '../../components/ui/Modal';
 import { api, utils } from '../../utils/api';
 import Footer from '../../components/layout/Footer';
 import plpLogo from '../../assets/ptom-scs.png';
@@ -24,6 +26,9 @@ export default function Login({ setUser }) {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showAccountSelection, setShowAccountSelection] = useState(false);
+  const [availableAccounts, setAvailableAccounts] = useState([]);
+  const [selectedAccountId, setSelectedAccountId] = useState(null);
 
   // Check for username in URL parameters and pre-fill
   useEffect(() => {
@@ -49,6 +54,14 @@ export default function Login({ setUser }) {
         password: formData.password
       });
 
+      // Handle account selection requirement
+      if (response.requiresSelection && response.accounts) {
+        setAvailableAccounts(response.accounts);
+        setShowAccountSelection(true);
+        setLoading(false);
+        return;
+      }
+
       if (response.success) {
         // Get fresh user data that authService saved to localStorage (includes latest school_id)
         const freshUser = utils.user.getUserData();
@@ -65,6 +78,46 @@ export default function Login({ setUser }) {
         setError: err.response?.status === 401 ? false : true // Don't show error display for auth errors, just toast
       });
       console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAccountSelection = async () => {
+    if (!selectedAccountId) {
+      showError(t('pleaseSelectAccount', 'Please select an account'));
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Get the selected account object
+      const selectedAccount = availableAccounts.find(acc => acc.id === selectedAccountId);
+      if (!selectedAccount) {
+        showError(t('accountNotFound', 'Selected account not found'));
+        return;
+      }
+
+      // Use the selected account's username for login
+      const response = await api.auth.login({
+        username: selectedAccount.username,
+        password: formData.password
+      });
+
+      if (response.success) {
+        const freshUser = utils.user.getUserData();
+        setUser(freshUser);
+        showSuccess(t('loginSuccessful', 'Login successful!'));
+        setShowAccountSelection(false);
+        setSelectedAccountId(null);
+      } else {
+        showError(utils.auth.getErrorMessage(response, t));
+      }
+    } catch (err) {
+      const errorMessage = utils.auth.getErrorMessage(err, t);
+      showError(errorMessage || t('accountSelectionFailed', 'Failed to select account'));
+      console.error('Account selection error:', err);
     } finally {
       setLoading(false);
     }
@@ -210,6 +263,106 @@ export default function Login({ setUser }) {
           </form>
         </div>
       </div>
+
+      {/* Account Selection Modal */}
+      <Modal
+        isOpen={showAccountSelection}
+        onClose={() => {
+          setShowAccountSelection(false);
+          setSelectedAccountId(null);
+        }}
+        title={t('selectAccount', 'Select Account')}
+        size="full"
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <Button
+              onClick={() => {
+                setShowAccountSelection(false);
+                setSelectedAccountId(null);
+              }}
+              variant="outline"
+              disabled={loading}
+            >
+              {t('cancel', 'Cancel')}
+            </Button>
+            <Button
+              onClick={handleAccountSelection}
+              variant="primary"
+              disabled={!selectedAccountId || loading}
+            >
+              {loading ? t('signingIn', 'Signing in...') : t('continue', 'Continue')}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            {t('multipleAccountsMessage', 'Multiple accounts found. Please select one to continue.')}
+          </p>
+
+          <div className="space-y-2 grid grid-cols-2 gap-4 overflow-y-auto">
+            {availableAccounts.map((account) => (
+              <div
+                key={account.id}
+                onClick={() => setSelectedAccountId(account.id)}
+                className={`
+                  p-4 border-2 rounded-lg cursor-pointer transition-all
+                  ${selectedAccountId === account.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }
+                `}
+              >
+                <div className="flex items-start gap-3">
+                  {/* Radio button indicator */}
+                  <div className="flex-shrink-0 mt-1">
+                    <div className={`
+                      w-5 h-5 rounded-full border-2 flex items-center justify-center
+                      ${selectedAccountId === account.id
+                        ? 'border-blue-500 bg-blue-500'
+                        : 'border-gray-300'
+                      }
+                    `}>
+                      {selectedAccountId === account.id && (
+                        <div className="w-2 h-2 bg-white rounded-full" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Account info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                        {account.first_name} {account.last_name}
+                      </p>
+                        </div>
+                      <div>
+                        <Badge
+                          color="blue"
+                          variant="filled"
+                          size="sm"
+                        >
+                          {account.roleKh || account.roleEn}
+                        </Badge>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600">{account.username}</p>
+                    {account.email && (
+                      <p className="text-xs text-gray-500 mt-1 truncate">{account.email}</p>
+                    )}
+                    {account.studentNumber && (
+                      <p className="text-xs text-gray-500">
+                        {t('studentNumber', 'Student #')}: {account.studentNumber}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
