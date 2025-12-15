@@ -96,7 +96,7 @@ export const en = {
   agreement: 'Agreement',
   selectGradeLevel: 'Select Grade Level',
   teacherInformation: 'Teacher Information',
-    updateYourPersionalDetails: 'Update your personal details and preferences',
+  updateYourPersionalDetails: 'Update your personal details and preferences',
   
   // Location fields
   provinceId: 'Province ID',
@@ -167,13 +167,13 @@ export const en = {
   systemOverviewDesc: 'Overview of the entire school system',
 
 
-    // Student Management
-    addStudent: 'Add Student',
-    editStudent: 'Edit Student',
-    errorFetchingStudents: 'Error fetching students',
-    manageStudentRecords: 'Manage Student',
-    promote: 'Promote',
-    promoteStudents: 'Promote Students',
+  // Student Management
+  addStudent: 'Add Student',
+  editStudent: 'Edit Student',
+  errorFetchingStudents: 'Error fetching students',
+  manageStudentRecords: 'Manage Student',
+  promote: 'Promote',
+  promoteStudents: 'Promote Students',
   promoteStudentsToNextGrade: 'Promote students to the next grade level',
   selectStudents: 'Please select students to promote',
   selectTargetGrade: 'Please select target grade',
@@ -431,6 +431,7 @@ export const en = {
   enterPassword: 'Enter your password',
   signingIn: 'Signing in...',
   signIn: 'Sign in',
+  usernameAndPhonenumber: 'Username or Phone Number',
   
   // Student Selection
   studentSelection: 'Student Selection',

@@ -736,6 +736,8 @@ export const km = {
   invalidUsernameAndPassword : 'ឈ្មោះអ្នកប្រើ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ',
   permissionDenied : 'អនុញ្ញាតឱ្យចូលប្រើ',
   serverError: 'បញ្ហាម៉ាស៊ីនមេ',
+  usernameAndPhonenumber: 'ឈ្មោះអ្នកប្រើប្រាស់​ ឬលេខទូរស័ព្ទ',
+
 
   // Student Selection
   studentSelection: 'ការជ្រើសរើសសិស្ស',

@@ -181,7 +181,7 @@ export default function Login({ setUser }) {
             <div className="space-y-3 sm:space-y-4">
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                  {t('username')}
+                  {t('usernameAndPhonenumber')}
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
