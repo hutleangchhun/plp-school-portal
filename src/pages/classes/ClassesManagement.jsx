@@ -411,14 +411,15 @@ export default function ClassesManagement() {
         const teacherDetails = classData.teacher?.teacherId ? teacherDetailsMap.get(classData.teacher.teacherId) : null;
 
         // Construct teacher name with full details
-        let teacherName = 'Teacher';
+        let teacherName = '';
         if (teacherDetails) {
           // Use full teacher details from teacherService
           teacherName = getFullName(teacherDetails.user, teacherDetails.user?.username || `Teacher ${teacherDetails.teacherId}`);
-        } else if (classData.teacher) {
-          // Fallback to class teacher data
+        } else if (classData.teacher && classData.teacher.teacherId) {
+          // Fallback to class teacher data only if teacherId exists
           teacherName = getFullName(classData.teacher.user || classData.teacher, classData.teacher.user?.username || classData.teacher.username || `Teacher ${classData.teacher.teacherId}`);
         }
+        // If no teacher data, leave teacherName as empty string
 
         return {
           id: classData.classId,
@@ -428,7 +429,7 @@ export default function ClassesManagement() {
           section: classData.section || '',
           subject: `Subject ${classData.gradeLevel}`,
           teacher: teacherName,
-          teacherId: classData.teacher?.teacherId,
+          teacherId: classData.teacher?.teacherId || null,
           userId: classData.teacher?.userId,
           teacherUser: classData.teacher?.user,
           schedule: 'Mon, Wed, Fri',
@@ -982,10 +983,16 @@ export default function ClassesManagement() {
               {classes.map((classItem) => {
                 const badges = [];
 
-                if (classItem.teacher) {
+                if (classItem.teacher && classItem.teacherId) {
                   badges.push({
                     label: classItem.teacher,
                     color: 'blue',
+                    variant: 'outline'
+                  });
+                } else {
+                  badges.push({
+                    label: t('noTeacher', 'No Teacher'),
+                    color: 'gray',
                     variant: 'outline'
                   });
                 }
@@ -1232,7 +1239,10 @@ export default function ClassesManagement() {
                           teacherName: teacherName
                         }));
                       }}
-                      options={showAllTeachers ? availableTeachers : filteredTeachers}
+                      options={[
+                        { value: '', label: t('noTeacher', 'No Teacher') },
+                        ...(showAllTeachers ? availableTeachers : filteredTeachers)
+                      ]}
                       placeholder={t('selectTeacher', 'Select Teacher')}
                       searchPlaceholder={t('searchTeacher', 'Search teachers...')}
                       className="w-full"

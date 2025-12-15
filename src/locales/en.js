@@ -111,6 +111,7 @@ export const en = {
   classes: 'Classes',
   gradeLevels: 'Grade Levels',
   teacher: 'Teacher',
+  noTeacher: 'No Teacher',
   director: 'Director',
   
   // Validation messages
@@ -745,6 +746,7 @@ export const en = {
   achievementAddedSuccessfully: 'Achievement added successfully',
   loginFailed: 'Login failed. Please check your username and password.',
   loginSuccessful: 'Login successful!',
+  unauthorizedAccess: 'Only authorized users can access this portal. Please contact your administrator.',
   selectAccount: 'Select Account',
   pleaseSelectAccount: 'Please select an account',
   multipleAccountsMessage: 'Multiple accounts found. Please select one to continue.',
@@ -761,6 +763,10 @@ export const en = {
   attendanceSavedSuccessfully: 'Attendance saved successfully',
   errorSavingAttendance: 'Error saving attendance',
   cannotMarkFutureAttendance: 'Cannot mark future attendance',
+  deleteUser: 'Delete User',
+  confirmDeleteUser: 'Are you sure you want to delete this user? This action cannot be undone.',
+  userDeletedSuccessfully: 'User has been deleted successfully',
+  deleteUserFailed: 'Failed to delete user',
 
   // Additional navigation/action translations that may appear
   'Assign Students': 'Assign Students',

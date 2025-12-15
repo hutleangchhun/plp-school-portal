@@ -1,4 +1,4 @@
-import { get, post, patch, put, uploadFile, uploadFilePatch } from '../client';
+import { get, post, patch, put, del, uploadFile, uploadFilePatch } from '../client';
 import { ENDPOINTS, getStaticAssetBaseUrl } from '../config';
 
 /**
@@ -633,6 +633,15 @@ const userService = {
       // Return exists: false if check fails
       return { teacherNumber: teacherNumber.trim(), exists: false };
     }
+  },
+
+  /**
+   * Delete a user by ID
+   * @param {string|number} userId - User ID to delete
+   * @returns {Promise<Object>} Response from DELETE /users/{userId}
+   */
+  deleteUser: async (userId) => {
+    return del(ENDPOINTS.USERS.UPDATE_USER(userId));
   }
 };
 
@@ -840,19 +849,19 @@ const userUtils = {
    */
   getWorkingProfilePictureUrl: async (user) => {
     if (!user) return '';
-    
+
     // Try HTTPS first
     const httpsUrl = userUtils.getProfilePictureUrl(user, true);
     if (httpsUrl && await userUtils.checkProfilePictureUrl(httpsUrl)) {
       return httpsUrl;
     }
-    
+
     // Fallback to HTTP
     const httpUrl = userUtils.getProfilePictureUrl(user, false);
     if (httpUrl && await userUtils.checkProfilePictureUrl(httpUrl)) {
       return httpUrl;
     }
-    
+
     return '';
   }
 };

@@ -70,7 +70,15 @@ export default function Login({ setUser }) {
         setUser(freshUser);
         showSuccess(t('loginSuccessful', 'Login successful!'));
       } else {
-        showError(utils.auth.getErrorMessage(response, t));
+        // Handle error response from authService
+        let errorMessage = response.error || utils.auth.getErrorMessage(response, t);
+
+        // Use translation if error matches known message
+        if (errorMessage.includes('Only authorized users')) {
+          errorMessage = t('unauthorizedAccess', 'Only authorized users can access this portal. Please contact your administrator.');
+        }
+
+        showError(errorMessage);
       }
     } catch (err) {
       const errorMessage = utils.auth.getErrorMessage(err, t);
@@ -100,11 +108,11 @@ export default function Login({ setUser }) {
         return;
       }
 
-      // Use the selected account's username for login
-      const response = await api.auth.login({
-        username: selectedAccount.username,
-        password: formData.password
-      });
+      // Use the select-account endpoint with userId and password
+      const response = await api.auth.selectAccount(
+        selectedAccount.id,
+        formData.password
+      );
 
       if (response.success) {
         const freshUser = utils.user.getUserData();
@@ -113,7 +121,15 @@ export default function Login({ setUser }) {
         setShowAccountSelection(false);
         setSelectedAccountId(null);
       } else {
-        showError(utils.auth.getErrorMessage(response, t));
+        // Handle error response from authService
+        let errorMessage = response.error || utils.auth.getErrorMessage(response, t);
+
+        // Use translation if error matches known message
+        if (errorMessage.includes('Only authorized users')) {
+          errorMessage = t('unauthorizedAccess', 'Only authorized users can access this system');
+        }
+
+        showError(errorMessage);
       }
     } catch (err) {
       const errorMessage = utils.auth.getErrorMessage(err, t);

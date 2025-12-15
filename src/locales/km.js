@@ -163,6 +163,7 @@ export const km = {
   filtered: 'បានត្រង',
   gradeLevels: 'កម្រិតថ្នាក់',
   teacher: 'គ្រូបង្រៀន',
+  noTeacher: 'គ្មានគ្រូបង្រៀន',
   director: 'នាយក',
 
   // Validation messages
@@ -1131,6 +1132,7 @@ export const km = {
   achievementAddedSuccessfully: 'បានបន្ថែមសមិទ្ធិផលដោយជោគជ័យ',
   loginFailed: 'ការចូលបរាជ័យ។ សូមពិនិត្យឈ្មោះអ្នកប្រើ និងពាក្យសម្ងាត់របស់អ្នក។',
   loginSuccessful: 'បានចូលដោយជោគជ័យ!',
+  unauthorizedAccess: 'មានតែអ្នកប្រើប្រាស់ដែលបានអនុញ្ញាត្តិប៉ុណ្ណោះដែលអាចចូលប្រើបាន។',
   selectAccount: 'ជ្រើសរើសគណនី',
   pleaseSelectAccount: 'សូមជ្រើសរើសគណនី',
   multipleAccountsMessage: 'រកឃើញគណនីច្រើន។ សូមជ្រើសរើសមួយដើម្បីបន្ត។',
@@ -1146,6 +1148,10 @@ export const km = {
   errorFetchingStudentData: 'កំហុសក្នុងការទាញយកទិន្នន័យសិស្ស',
   attendanceSavedSuccessfully: 'បានរក្សាទុកវត្តមានដោយជោគជ័យ',
   errorSavingAttendance: 'កំហុសក្នុងការរក្សាទុកវត្តមាន',
+  deleteUser: 'លុបអ្នកប្រើប្រាស់',
+  confirmDeleteUser: 'តើអ្នកប្រាកដថាចង់លុបអ្នកប្រើប្រាស់នេះដែរឬទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+  userDeletedSuccessfully: 'អ្នកប្រើប្រាស់បានលុបដោយជោគជ័យ',
+  deleteUserFailed: 'បរាជ័យក្នុងការលុបអ្នកប្រើប្រាស់',
   cannotEditPastAttendance: 'មិនអាចកែវត្តមានសម្រាប់កាលបរិច្ឆេទកន្លងមកបានទេ',
   viewingPastAttendance: 'អ្នកកំពុងមើលវត្តមានសម្រាប់កាលបរិច្ឆេទកន្លងមក។ មិនអាចកែប្រែបានទេ។',
   canOnlyMarkTodayAttendance: 'អ្នកអាចបញ្ជូនវត្តមានតែថ្ងៃនេះប៉ុណ្ណោះ',

@@ -2,9 +2,9 @@ import React from 'react';
 import * as ContextMenu from '@radix-ui/react-context-menu';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
-import { Lock, Copy } from 'lucide-react';
+import { Lock, Copy, Trash2 } from 'lucide-react';
 
-const TeacherContextMenu = ({ children, teacher, onResetPassword }) => {
+const TeacherContextMenu = ({ children, teacher, onResetPassword, onDelete }) => {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
 
@@ -13,7 +13,6 @@ const TeacherContextMenu = ({ children, teacher, onResetPassword }) => {
   };
 
   const handleCopyUsername = () => {
-
     if (!teacher?.username) {
       console.warn('No username found');
       return;
@@ -33,6 +32,12 @@ const TeacherContextMenu = ({ children, teacher, onResetPassword }) => {
     } else {
       // Fallback for older browsers
       fallbackCopyToClipboard(teacher.username);
+    }
+  };
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(teacher);
     }
   };
 
@@ -90,6 +95,21 @@ const TeacherContextMenu = ({ children, teacher, onResetPassword }) => {
             <Copy className="w-4 h-4" />
             <span>{t('copyUsername', 'Copy Username')}</span>
           </ContextMenu.Item>
+
+          {onDelete && (
+            <>
+              <ContextMenu.Separator className="bg-gray-200 h-px" />
+
+              {/* Delete User Option */}
+              <ContextMenu.Item
+                onSelect={handleDelete}
+                className="px-3 py-2.5 text-sm text-red-600 cursor-pointer flex items-center space-x-2 hover:bg-red-50 hover:text-red-700 transition-colors focus:outline-none focus:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{t('deleteUser', 'Delete User')}</span>
+              </ContextMenu.Item>
+            </>
+          )}
 
         </ContextMenu.Content>
       </ContextMenu.Portal>

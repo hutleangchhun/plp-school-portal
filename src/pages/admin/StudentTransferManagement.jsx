@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
+import { useToast } from '../../contexts/ToastContext';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { PageLoader } from '../../components/ui/DynamicLoader';
@@ -17,6 +18,7 @@ import SidebarFilter from '../../components/ui/SidebarFilter';
 import StudentContextMenu from '../../components/admin/StudentContextMenu';
 import ResetPasswordModal from '../../components/admin/ResetPasswordModal';
 import ExportProgressModal from '../../components/modals/ExportProgressModal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { api } from '../../utils/api';
 import { getFullName } from '../../utils/usernameUtils';
 import { formatClassIdentifier } from '../../utils/helpers';
@@ -32,6 +34,7 @@ const StudentTransferManagement = () => {
   const { t } = useLanguage();
   const { startLoading, stopLoading } = useLoading();
   const { error, handleError, clearError } = useErrorHandler();
+  const { showSuccess } = useToast();
 
   const [sourceProvinces, setSourceProvinces] = useState([]);
   const [sourceDistricts, setSourceDistricts] = useState([]);
@@ -52,6 +55,11 @@ const StudentTransferManagement = () => {
   // Reset password modal state
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [selectedStudentForReset, setSelectedStudentForReset] = useState(null);
+
+  // Delete confirmation dialog state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedStudentForDelete, setSelectedStudentForDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [fetchingStudents, setFetchingStudents] = useState(false);
@@ -643,6 +651,59 @@ const StudentTransferManagement = () => {
     setSelectedStudentForReset(null);
   };
 
+  const handleDeleteStudent = (student) => {
+    setSelectedStudentForDelete(student);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedStudentForDelete) return;
+
+    try {
+      setIsDeleting(true);
+      clearError();
+
+      const response = await studentService.deleteStudent(selectedStudentForDelete.userId);
+
+      console.log('Delete response:', response, 'Status:', response?.status);
+
+      // Check if deletion was successful
+      // API may return { success: true }, { success: false }, or no success field
+      const isSuccess = response?.success !== false && response?.error === undefined;
+
+      if (isSuccess) {
+        // Remove student from the list
+        setStudents(prev => prev.filter(s => s.userId !== selectedStudentForDelete.userId));
+        // Remove from selection if selected
+        const newSelected = new Set(selectedStudentIds);
+        newSelected.delete(selectedStudentForDelete.id);
+        setSelectedStudentIds(newSelected);
+
+        const newMap = new Map(selectedStudentsMap);
+        newMap.delete(selectedStudentForDelete.id);
+        setSelectedStudentsMap(newMap);
+
+        showSuccess(t('userDeletedSuccessfully', `${getFullName(selectedStudentForDelete)} has been deleted successfully`));
+        setShowDeleteConfirm(false);
+        setSelectedStudentForDelete(null);
+      } else {
+        throw new Error(response?.error || 'Failed to delete student');
+      }
+    } catch (err) {
+      console.error('Delete student error:', err);
+      handleError(err, {
+        toastMessage: t('deleteUserFailed', 'Failed to delete user'),
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setSelectedStudentForDelete(null);
+  };
+
   const handleExportStudents = async () => {
     try {
       setShowExportProgress(true);
@@ -1055,6 +1116,7 @@ const StudentTransferManagement = () => {
                           key={student.id}
                           student={student}
                           onResetPassword={handleResetPassword}
+                          onDelete={handleDeleteStudent}
                         >
                           <div
                             className={
@@ -1371,6 +1433,19 @@ const StudentTransferManagement = () => {
         isOpen={showExportProgress}
         progress={exportProgress}
         status={exportStatus}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title={t('deleteUser', 'Delete User')}
+        message={selectedStudentForDelete ? t('confirmDeleteUser', `Are you sure you want to delete ${getFullName(selectedStudentForDelete)}? This action cannot be undone.`) : ''}
+        type="danger"
+        confirmText={t('delete', 'Delete')}
+        cancelText={t('cancel', 'Cancel')}
+        loading={isDeleting}
       />
     </>
   );

@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
+import { useToast } from '../../contexts/ToastContext';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { PageLoader } from '../../components/ui/DynamicLoader';
@@ -17,10 +18,12 @@ import SidebarFilter from '../../components/ui/SidebarFilter';
 import TeacherContextMenu from '../../components/admin/TeacherContextMenu';
 import ResetPasswordModal from '../../components/admin/ResetPasswordModal';
 import ExportProgressModal from '../../components/modals/ExportProgressModal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { api } from '../../utils/api';
 import { getFullName } from '../../utils/usernameUtils';
 import locationService from '../../utils/api/services/locationService';
 import schoolService from '../../utils/api/services/schoolService';
+import { userService } from '../../utils/api/services/userService';
 import { roleOptions } from '../../utils/formOptions';
 import { Users, ListFilter, RotateCcw, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -34,6 +37,7 @@ const TeacherTransferManagement = () => {
   const { t } = useLanguage();
   const { startLoading, stopLoading } = useLoading();
   const { error, handleError, clearError } = useErrorHandler();
+  const { showSuccess } = useToast();
 
   // Location state for source school cascade filtering
   const [sourceProvinces, setSourceProvinces] = useState([]);
@@ -55,6 +59,11 @@ const TeacherTransferManagement = () => {
   // Reset password modal state
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [selectedTeacherForReset, setSelectedTeacherForReset] = useState(null);
+
+  // Delete confirmation dialog state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedTeacherForDelete, setSelectedTeacherForDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [fetchingTeachers, setFetchingTeachers] = useState(false);
@@ -542,6 +551,59 @@ const TeacherTransferManagement = () => {
     setSelectedTeacherForReset(null);
   };
 
+  const handleDeleteUser = (teacher) => {
+    setSelectedTeacherForDelete(teacher);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedTeacherForDelete) return;
+
+    try {
+      setIsDeleting(true);
+      clearError();
+
+      const response = await userService.deleteUser(selectedTeacherForDelete.userId);
+
+      console.log('Delete response:', response, 'Status:', response?.status);
+
+      // Check if deletion was successful
+      // API may return { success: true }, { success: false }, or no success field
+      const isSuccess = response?.success !== false && response?.error === undefined;
+
+      if (isSuccess) {
+        // Remove teacher from the list
+        setTeachers(prev => prev.filter(t => t.userId !== selectedTeacherForDelete.userId));
+        // Remove from selection if selected
+        const newSelected = new Set(allSelectedTeacherIds);
+        newSelected.delete(selectedTeacherForDelete.id);
+        setAllSelectedTeacherIds(newSelected);
+
+        const newMap = new Map(selectedTeachersMap);
+        newMap.delete(selectedTeacherForDelete.id);
+        setSelectedTeachersMap(newMap);
+
+        showSuccess(t('userDeletedSuccessfully', `${getFullName(selectedTeacherForDelete)} has been deleted successfully`));
+        setShowDeleteConfirm(false);
+        setSelectedTeacherForDelete(null);
+      } else {
+        throw new Error(response?.error || 'Failed to delete user');
+      }
+    } catch (err) {
+      console.error('Delete user error:', err);
+      handleError(err, {
+        toastMessage: t('deleteUserFailed', 'Failed to delete user'),
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setSelectedTeacherForDelete(null);
+  };
+
   const handleExportTeachers = async () => {
     if (teachers.length === 0) {
       handleError(new Error(t('noTeachersToExport', 'No teachers to export')));
@@ -951,6 +1013,7 @@ const TeacherTransferManagement = () => {
                         key={teacher.id}
                         teacher={teacher}
                         onResetPassword={handleResetPassword}
+                        onDelete={handleDeleteUser}
                       >
                         <div
                           className={
@@ -1281,6 +1344,19 @@ const TeacherTransferManagement = () => {
         isOpen={showExportProgress}
         progress={exportProgress}
         status={exportStatus}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title={t('deleteUser', 'Delete User')}
+        message={selectedTeacherForDelete ? t('confirmDeleteUser', `Are you sure you want to delete ${getFullName(selectedTeacherForDelete)}? This action cannot be undone.`) : ''}
+        type="danger"
+        confirmText={t('delete', 'Delete')}
+        cancelText={t('cancel', 'Cancel')}
+        loading={isDeleting}
       />
     </>
   );
