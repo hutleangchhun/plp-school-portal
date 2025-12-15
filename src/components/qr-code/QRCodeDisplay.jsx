@@ -114,7 +114,7 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                     <p className="text-xs text-gray-500">{t('school', 'School')}: {qrCode.schoolName}</p>
                   )}
                   {qrCode.class?.gradeLevel || qrCode.className ? (
-                    <p className="text-xs text-gray-500">{t('class', 'Class')}: {qrCode.class?.gradeLevel ? formatClassIdentifier(qrCode.class.gradeLevel, qrCode.class.section) : qrCode.className}</p>
+                    <p className="text-xs text-gray-500">{t('class', 'Class')}: {qrCode.class?.gradeLevel ? formatClassIdentifier(qrCode.class.gradeLevel === 0 || qrCode.class.gradeLevel === '0' ? t('grade0', 'Kindergarten') : qrCode.class.gradeLevel, qrCode.class.section) : qrCode.className}</p>
                   ) : null}
                   {qrCode.qrCode && (
                     <Button
@@ -187,7 +187,7 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                   <td className="px-4 py-3 text-sm text-gray-600">{qrCode.username}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{qrCode.schoolName || '-'}</td>
                   {qrCodes[0]?.className || qrCodes[0]?.class?.gradeLevel ? (
-                    <td className="px-4 py-3 text-sm text-gray-600">{qrCode.class?.gradeLevel ? formatClassIdentifier(qrCode.class.gradeLevel, qrCode.class.section) : qrCode.className || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{qrCode.class?.gradeLevel ? formatClassIdentifier(qrCode.class.gradeLevel === 0 || qrCode.class.gradeLevel === '0' ? t('grade0', 'Kindergarten') : qrCode.class.gradeLevel, qrCode.class.section) : qrCode.className || '-'}</td>
                   ) : null}
                   <td className="px-4 py-3 text-center">
                     {qrCode.qrCode ? (

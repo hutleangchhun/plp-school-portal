@@ -584,7 +584,18 @@ export default function StudentQRCodeGenerator() {
           allCodes = await fetchAllStudentQRCodes(schoolId, classId);
           // Get class name from classes array - compare with both number and string
           const classObj = classes.find(c => c.id === classId || c.id === selectedClass);
-          className = classObj ? formatClassIdentifier(classObj.gradeLevel, classObj.section) : 'QR_Codes';
+          if (classObj) {
+            // Convert grade level 0 to Kindergarten display (same as class filter)
+            const rawGradeLevel = typeof classObj.gradeLevel !== 'undefined' && classObj.gradeLevel !== null
+              ? String(classObj.gradeLevel)
+              : '';
+            const displayGradeLevel = rawGradeLevel === '0'
+              ? t('grade0', 'Kindergarten')
+              : rawGradeLevel;
+            className = formatClassIdentifier(displayGradeLevel, classObj.section);
+          } else {
+            className = 'QR_Codes';
+          }
         } else {
           showError(t('selectClassFirst', 'Please select a class first'));
           return;
