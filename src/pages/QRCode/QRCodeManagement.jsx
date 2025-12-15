@@ -337,6 +337,138 @@ export default function StudentQRCodeGenerator() {
     };
   });
 
+  // Fetch all student QR codes for a class (paginated, no limit)
+  const fetchAllStudentQRCodes = async (sid, classId) => {
+    const allQrCodes = [];
+    let currentPage = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      try {
+        const response = await studentService.getStudentsBySchoolClasses(sid, {
+          limit: 100, // Fetch 100 at a time
+          page: currentPage,
+          classId: classId
+        });
+
+        if (response.success && response.data && response.data.length > 0) {
+          // Enrich students with full user data including QR codes
+          for (const student of response.data) {
+            try {
+              const userId = student.userId || student.user?.id || student.id;
+              if (!userId) continue;
+
+              const userResponse = await userService.getUserByID(userId);
+              const userData = userResponse?.data || userResponse;
+
+              if (userData) {
+                allQrCodes.push({
+                  userId: userId,
+                  name: getFullName(userData, student.name || `${userData.first_name || ''} ${userData.last_name || ''}`.trim()),
+                  username: userData.username || student.username,
+                  qrCode: userData.qr_code || null,
+                  studentNumber: student.studentNumber,
+                  email: userData.email || student.email,
+                  hasQrCode: !!userData.qr_code,
+                  schoolName: schoolName,
+                  class: {
+                    classId: student.class?.id || student.class?.classId,
+                    name: student.class?.name || null,
+                    gradeLevel: student.class?.gradeLevel,
+                    section: student.class?.section
+                  },
+                  className: student.class?.name || null
+                });
+              }
+            } catch (err) {
+              console.warn(`Failed to fetch user data for student:`, err);
+            }
+          }
+
+          // Check if there are more pages
+          if (response.pagination) {
+            hasMore = currentPage < (response.pagination.pages || 1);
+          } else {
+            hasMore = response.data.length === 100;
+          }
+          currentPage++;
+        } else {
+          hasMore = false;
+        }
+      } catch (error) {
+        console.error('Error fetching student QR codes:', error);
+        hasMore = false;
+      }
+    }
+
+    return allQrCodes;
+  };
+
+  // Fetch all teacher QR codes (paginated, no limit)
+  const fetchAllTeacherQRCodes = async (sid) => {
+    const allQrCodes = [];
+    let currentPage = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      try {
+        const params = {
+          page: currentPage,
+          limit: 100
+        };
+
+        if (selectedTeacherGradeLevel && selectedTeacherGradeLevel !== 'all') {
+          params.grade_level = selectedTeacherGradeLevel;
+        }
+
+        const response = await teacherService.getTeachersBySchool(sid, params);
+
+        if (response.success && response.data && response.data.length > 0) {
+          // Enrich teachers with full user data including QR codes
+          for (const teacher of response.data) {
+            try {
+              const userId = teacher.user?.id || teacher.userId || teacher.user_id || teacher.id;
+              if (!userId) continue;
+
+              const userResponse = await userService.getUserByID(userId);
+              const userData = userResponse?.data || userResponse;
+
+              if (userData) {
+                allQrCodes.push({
+                  userId: userId,
+                  name: getFullName(userData, `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.username),
+                  username: userData.username || teacher.username,
+                  qrCode: userData.qr_code || null,
+                  email: userData.email || teacher.email,
+                  teacherNumber: teacher.teacher_number || teacher.teacherNumber,
+                  hasQrCode: !!userData.qr_code,
+                  schoolName: schoolName
+                });
+              }
+            } catch (err) {
+              console.warn(`Failed to fetch user data for teacher:`, err);
+            }
+          }
+
+          // Check if there are more pages
+          if (response.pagination) {
+            hasMore = currentPage < (response.pagination.pages || 1);
+          } else {
+            hasMore = response.data.length === 100;
+          }
+          currentPage++;
+        } else {
+          hasMore = false;
+        }
+      } catch (error) {
+        console.error('Error fetching teacher QR codes:', error);
+        hasMore = false;
+      }
+    }
+
+    return allQrCodes;
+  };
+
   // Download entire card as image
   const downloadQRCode = async (qrCode, cardRef, passedCardType) => {
     try {
@@ -400,24 +532,70 @@ export default function StudentQRCodeGenerator() {
   };
 
   const handleDownloadAllQueued = async () => {
-    const allCodes = activeTab === 'students' ? studentQrCodes : teacherQrCodes;
     const cardType = activeTab === 'teachers' ? 'teacher' : 'student';
 
-    await downloadQRCodesQueued(
-      allCodes,
-      cardType,
-      t,
-      (current, total) => setDownloadProgress(Math.round((current / total) * 100)),
-      showSuccess,
-      showError
-    );
+    try {
+      startLoading('downloadAll', t('downloadingQRCodes', 'Downloading QR codes...'));
+
+      let allCodes = [];
+
+      if (activeTab === 'students') {
+        // Fetch all students for selected class
+        if (selectedClass !== 'all') {
+          allCodes = await fetchAllStudentQRCodes(schoolId, parseInt(selectedClass));
+        } else {
+          showError(t('selectClassFirst', 'Please select a class first'));
+          return;
+        }
+      } else {
+        // Fetch all teachers with filter
+        allCodes = await fetchAllTeacherQRCodes(schoolId);
+      }
+
+      await downloadQRCodesQueued(
+        allCodes,
+        cardType,
+        t,
+        (current, total) => setDownloadProgress(Math.round((current / total) * 100)),
+        showSuccess,
+        showError
+      );
+    } catch (error) {
+      showError(t('downloadError', 'Error during download'));
+      console.error('Download error:', error);
+    } finally {
+      stopLoading('downloadAll');
+    }
   };
 
   const handleDownloadAllPDF = async () => {
-    const allCodes = activeTab === 'students' ? studentQrCodes : teacherQrCodes;
     const cardType = activeTab === 'teachers' ? 'teacher' : 'student';
 
-    await downloadQRCodesAsPDF(allCodes, cardType, t, showSuccess, showError);
+    try {
+      startLoading('downloadPDF', t('generatingPDF', 'Generating PDF...'));
+
+      let allCodes = [];
+
+      if (activeTab === 'students') {
+        // Fetch all students for selected class
+        if (selectedClass !== 'all') {
+          allCodes = await fetchAllStudentQRCodes(schoolId, parseInt(selectedClass));
+        } else {
+          showError(t('selectClassFirst', 'Please select a class first'));
+          return;
+        }
+      } else {
+        // Fetch all teachers with filter
+        allCodes = await fetchAllTeacherQRCodes(schoolId);
+      }
+
+      await downloadQRCodesAsPDF(allCodes, cardType, t, showSuccess, showError);
+    } catch (error) {
+      showError(t('pdfGenerationError', 'Error generating PDF'));
+      console.error('PDF generation error:', error);
+    } finally {
+      stopLoading('downloadPDF');
+    }
   };
 
   return (

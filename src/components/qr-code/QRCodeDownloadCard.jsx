@@ -33,6 +33,9 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
     return defaultText;
   };
 
+  const accentColor = '#733E0A'; // Standard brown/gold accent color for cards
+  const headerBg = '#733E0A';
+
   // --- Card Container Setup (Minimal for printing/downloading) ---
   const element = document.createElement('div');
   element.style.position = 'fixed';
@@ -43,9 +46,7 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
   element.style.fontFamily = 'Hanuman, "Khmer OS", "Noto Sans Khmer", sans-serif';
   element.style.overflow = 'hidden';
   element.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.05)';
-
-  const accentColor = '#733E0A'; // Standard blue for student
-  const headerBg = '#733E0A';
+  element.style.border = `2px solid ${accentColor}`; // Main card border with accent color
 
   // --- Header Section (School Name & Title) ---
   const header = document.createElement('div');

@@ -22,6 +22,8 @@ export default function DownloadOptionsModal({
     setLoadingType('single');
     try {
       await onDownloadSingle();
+      // Add a small delay before closing to ensure toast shows
+      await new Promise(resolve => setTimeout(resolve, 500));
     } finally {
       setIsLoading(false);
       setLoadingType(null);
@@ -34,6 +36,8 @@ export default function DownloadOptionsModal({
     setLoadingType('queued');
     try {
       await onDownloadQueued();
+      // Add a small delay before closing to ensure toast shows
+      await new Promise(resolve => setTimeout(resolve, 500));
     } finally {
       setIsLoading(false);
       setLoadingType(null);
@@ -46,6 +50,8 @@ export default function DownloadOptionsModal({
     setLoadingType('pdf');
     try {
       await onDownloadPDF();
+      // Add a small delay before closing to ensure toast shows
+      await new Promise(resolve => setTimeout(resolve, 500));
     } finally {
       setIsLoading(false);
       setLoadingType(null);

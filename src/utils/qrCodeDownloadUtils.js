@@ -42,15 +42,19 @@ export const downloadQRCodesQueued = async (qrCodes, cardType, t, onProgress, sh
 
         document.body.removeChild(element);
 
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${qrCode.name}_QR_Card.png`;
-            link.click();
-            URL.revokeObjectURL(url);
-          }
+        // Wait for blob conversion to complete
+        await new Promise((resolve) => {
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `${qrCode.name}_QR_Card.png`;
+              link.click();
+              URL.revokeObjectURL(url);
+            }
+            resolve();
+          });
         });
 
         downloaded++;
@@ -108,12 +112,12 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
     const pageHeight = pdf.internal.pageSize.getHeight();
     const cardsPerRow = 3;
     const cardWidth = (pageWidth - 30) / cardsPerRow; // 30mm for margins
-    const cardHeight = cardWidth * 1.4; // Aspect ratio for card
     const margin = 10;
+    const rowGap = 8; // Gap between rows
 
-    let currentRow = 0;
     let cardsInRow = 0;
     let currentY = margin;
+    let maxHeightInRow = 0;
 
     for (let i = 0; i < qrCodes.length; i++) {
       const qrCode = qrCodes[i];
@@ -145,20 +149,36 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
         // Calculate position
         const currentX = margin + (cardsInRow * cardWidth);
 
-        // Check if we need a new page
+        // Check if we need a new page or new row
         if (currentY + imgHeight > pageHeight - margin) {
-          pdf.addPage();
-          currentY = margin;
-          cardsInRow = 0;
+          // Check if it's just overflow in current row
+          if (cardsInRow > 0 && cardsInRow < cardsPerRow) {
+            // Move to next row first
+            currentY += maxHeightInRow + rowGap;
+            cardsInRow = 0;
+            maxHeightInRow = 0;
+          }
+
+          // If still doesn't fit, add new page
+          if (currentY + imgHeight > pageHeight - margin) {
+            pdf.addPage();
+            currentY = margin;
+            cardsInRow = 0;
+            maxHeightInRow = 0;
+          }
         }
 
         // Add image to PDF
         pdf.addImage(imgData, 'PNG', currentX, currentY, imgWidth, imgHeight);
 
+        // Track max height in current row
+        maxHeightInRow = Math.max(maxHeightInRow, imgHeight);
+
         cardsInRow++;
         if (cardsInRow >= cardsPerRow) {
-          currentY += cardHeight;
+          currentY += maxHeightInRow + rowGap;
           cardsInRow = 0;
+          maxHeightInRow = 0;
         }
       } catch (err) {
         console.warn(`Failed to add ${qrCode.name} to PDF:`, err);
