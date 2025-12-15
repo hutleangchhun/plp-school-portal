@@ -154,9 +154,16 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
 
   // Add Class Info
   if (cardType === 'student' && (qrCode.class?.gradeLevel || qrCode.className)) {
-    const classDisplay = qrCode.class?.gradeLevel
-      ? formatClassIdentifier(qrCode.class.gradeLevel, qrCode.class.section)
-      : qrCode.className;
+    let classDisplay = '';
+    if (qrCode.class?.gradeLevel) {
+      // Convert grade level 0 to Kindergarten display
+      const displayGradeLevel = qrCode.class.gradeLevel === 0 || qrCode.class.gradeLevel === '0'
+        ? translate('grade0', 'Kindergarten')
+        : qrCode.class.gradeLevel;
+      classDisplay = formatClassIdentifier(displayGradeLevel, qrCode.class.section);
+    } else {
+      classDisplay = qrCode.className;
+    }
     createDetailLine(translate('class', 'Class'), classDisplay);
   }
   content.appendChild(detailsDiv);

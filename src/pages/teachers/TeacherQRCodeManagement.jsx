@@ -298,7 +298,9 @@ export default function TeacherQRCodeManagement({ user }) {
   };
 
   const handleDownloadAllPDF = async () => {
-    await downloadQRCodesAsPDF(studentQrCodes, 'student', t, showSuccess, showError);
+    const selectedClass = classes.find(c => c.id === selectedClassId);
+    const className = selectedClass ? formatClassIdentifier(selectedClass.gradeLevel, selectedClass.section) : 'QR_Codes';
+    await downloadQRCodesAsPDF(studentQrCodes, 'student', t, showSuccess, showError, className);
   };
 
   if (loading) {

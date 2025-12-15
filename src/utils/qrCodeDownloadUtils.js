@@ -90,8 +90,9 @@ export const downloadQRCodesQueued = async (qrCodes, cardType, t, onProgress, sh
  * @param {Function} t - Translation function
  * @param {Function} showSuccess - Toast success callback
  * @param {Function} showError - Toast error callback
+ * @param {String} className - Class name for PDF filename
  */
-export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, showError) => {
+export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, showError, className = 'QR_Codes') => {
   if (!qrCodes || qrCodes.length === 0) {
     showError(t('noQRCodes', 'No QR codes to download'));
     return;
@@ -110,7 +111,7 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const cardsPerRow = 3;
+    const cardsPerRow = 4;
     const cardWidth = (pageWidth - 30) / cardsPerRow; // 30mm for margins
     const margin = 10;
     const rowGap = 8; // Gap between rows
@@ -186,7 +187,7 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
     }
 
     // Save PDF
-    const fileName = `QR_Codes_${cardType}s_${new Date().toISOString().split('T')[0]}.pdf`;
+    const fileName = `${className}.pdf`;
     pdf.save(fileName);
     showSuccess(t('pdfDownloadSuccess', `PDF downloaded with ${qrCodes.length} QR codes`));
   } catch (error) {

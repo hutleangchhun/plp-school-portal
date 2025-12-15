@@ -575,11 +575,16 @@ export default function StudentQRCodeGenerator() {
       startLoading('downloadPDF', t('generatingPDF', 'Generating PDF...'));
 
       let allCodes = [];
+      let className = 'QR_Codes';
 
       if (activeTab === 'students') {
         // Fetch all students for selected class
         if (selectedClass !== 'all') {
-          allCodes = await fetchAllStudentQRCodes(schoolId, parseInt(selectedClass));
+          const classId = parseInt(selectedClass);
+          allCodes = await fetchAllStudentQRCodes(schoolId, classId);
+          // Get class name from classes array - compare with both number and string
+          const classObj = classes.find(c => c.id === classId || c.id === selectedClass);
+          className = classObj ? formatClassIdentifier(classObj.gradeLevel, classObj.section) : 'QR_Codes';
         } else {
           showError(t('selectClassFirst', 'Please select a class first'));
           return;
@@ -587,9 +592,10 @@ export default function StudentQRCodeGenerator() {
       } else {
         // Fetch all teachers with filter
         allCodes = await fetchAllTeacherQRCodes(schoolId);
+        className = 'Teachers';
       }
 
-      await downloadQRCodesAsPDF(allCodes, cardType, t, showSuccess, showError);
+      await downloadQRCodesAsPDF(allCodes, cardType, t, showSuccess, showError, className);
     } catch (error) {
       showError(t('pdfGenerationError', 'Error generating PDF'));
       console.error('PDF generation error:', error);
