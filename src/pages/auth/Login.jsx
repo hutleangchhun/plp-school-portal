@@ -351,11 +351,6 @@ export default function Login({ setUser }) {
                     {account.email && (
                       <p className="text-xs text-gray-500 mt-1 truncate">{account.email}</p>
                     )}
-                    {account.studentNumber && (
-                      <p className="text-xs text-gray-500">
-                        {t('studentNumber', 'Student #')}: {account.studentNumber}
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
