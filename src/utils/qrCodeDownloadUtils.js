@@ -113,6 +113,8 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
     const pageHeight = pdf.internal.pageSize.getHeight();
     const cardsPerRow = 4;
     const cardWidth = (pageWidth - 30) / cardsPerRow; // 30mm for margins
+    const totalCardsWidth = cardWidth * cardsPerRow;
+    const leftMargin = (pageWidth - totalCardsWidth) / 2; // Center cards horizontally
     const margin = 10;
     const rowGap = 8; // Gap between rows
 
@@ -147,8 +149,8 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
         const imgWidth = cardWidth - 4; // 2mm padding on each side
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        // Calculate position
-        const currentX = margin + (cardsInRow * cardWidth);
+        // Calculate position (centered horizontally)
+        const currentX = leftMargin + (cardsInRow * cardWidth);
 
         // Check if we need a new page or new row
         if (currentY + imgHeight > pageHeight - margin) {
