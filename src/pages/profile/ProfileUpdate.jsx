@@ -122,6 +122,7 @@ export default function ProfileUpdate({ user, setUser }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const [usernameSuggestions, setUsernameSuggestions] = useState([]);
