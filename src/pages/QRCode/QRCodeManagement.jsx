@@ -20,10 +20,12 @@ import { getFullName } from '../../utils/usernameUtils';
 import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
 import QRCodeDisplay from '@/components/qr-code/QRCodeDisplay';
 import { createQRCodeDownloadCard } from '@/components/qr-code/QRCodeDownloadCard';
+import DownloadOptionsModal from '../../components/qr-code/DownloadOptionsModal';
+import { downloadQRCodesQueued, downloadQRCodesAsPDF } from '../../utils/qrCodeDownloadUtils';
 
 export default function StudentQRCodeGenerator() {
   const { t, setLanguage } = useLanguage();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
   const { startLoading, stopLoading } = useLoading();
   const { error, handleError, clearError } = useErrorHandler();
 
@@ -60,6 +62,8 @@ export default function StudentQRCodeGenerator() {
   const teacherItemsPerPage = 8;
 
   const cardRefsRef = useRef({});
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   // 🔹 Get School ID and Name
   useEffect(() => {
@@ -383,6 +387,39 @@ export default function StudentQRCodeGenerator() {
     }
   };
 
+  // Download handlers for new modal
+  const handleDownloadCurrentPage = async () => {
+    const currentCodes = activeTab === 'students' ? studentQrCodes : teacherQrCodes;
+    const cardType = activeTab === 'teachers' ? 'teacher' : 'student';
+
+    for (const qrCode of currentCodes) {
+      await downloadQRCode(qrCode, null, cardType);
+      // Add delay between downloads
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  };
+
+  const handleDownloadAllQueued = async () => {
+    const allCodes = activeTab === 'students' ? studentQrCodes : teacherQrCodes;
+    const cardType = activeTab === 'teachers' ? 'teacher' : 'student';
+
+    await downloadQRCodesQueued(
+      allCodes,
+      cardType,
+      t,
+      (current, total) => setDownloadProgress(Math.round((current / total) * 100)),
+      showSuccess,
+      showError
+    );
+  };
+
+  const handleDownloadAllPDF = async () => {
+    const allCodes = activeTab === 'students' ? studentQrCodes : teacherQrCodes;
+    const cardType = activeTab === 'teachers' ? 'teacher' : 'student';
+
+    await downloadQRCodesAsPDF(allCodes, cardType, t, showSuccess, showError);
+  };
+
   return (
     <PageTransition className="flex-1 p-3 sm:p-4">
       <div className="p-4 sm:p-6">
@@ -398,6 +435,17 @@ export default function StudentQRCodeGenerator() {
                 {t('generateQRCodes', 'បង្កើត និងទាញយកលេខកូដ QR')}
               </p>
             </div>
+            {(activeTab === 'students' ? studentQrCodes : teacherQrCodes).length > 0 && (
+              <Button
+                onClick={() => setShowDownloadModal(true)}
+                variant="primary"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {t('downloadAll', 'Download All')}
+              </Button>
+            )}
           </div>
 
           {/* Tabs Container */}
@@ -597,6 +645,18 @@ export default function StudentQRCodeGenerator() {
             </Tabs.Content>
           </Tabs.Root>
         </FadeInSection>
+
+        {/* Download Options Modal */}
+        <DownloadOptionsModal
+          isOpen={showDownloadModal}
+          onClose={() => setShowDownloadModal(false)}
+          qrCodes={activeTab === 'students' ? studentQrCodes : teacherQrCodes}
+          cardType={activeTab === 'teachers' ? 'teacher' : 'student'}
+          t={t}
+          onDownloadQueued={handleDownloadAllQueued}
+          onDownloadPDF={handleDownloadAllPDF}
+          onDownloadSingle={handleDownloadCurrentPage}
+        />
       </div>
     </PageTransition>
   );

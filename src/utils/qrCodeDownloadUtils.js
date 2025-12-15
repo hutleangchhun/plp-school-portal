@@ -1,0 +1,219 @@
+import { createQRCodeDownloadCard } from '../components/qr-code/QRCodeDownloadCard';
+
+/**
+ * Download QR code one by one with queue (Option 2)
+ * @param {Array} qrCodes - Array of QR code objects
+ * @param {String} cardType - 'student' or 'teacher'
+ * @param {Function} t - Translation function
+ * @param {Function} onProgress - Callback for progress updates (index, total)
+ * @param {Function} showSuccess - Toast success callback
+ * @param {Function} showError - Toast error callback
+ */
+export const downloadQRCodesQueued = async (qrCodes, cardType, t, onProgress, showSuccess, showError) => {
+  if (!qrCodes || qrCodes.length === 0) {
+    showError(t('noQRCodes', 'No QR codes to download'));
+    return;
+  }
+
+  const total = qrCodes.length;
+  let downloaded = 0;
+  let failed = 0;
+
+  try {
+    const { default: html2canvas } = await import('html2canvas');
+
+    for (let i = 0; i < qrCodes.length; i++) {
+      const qrCode = qrCodes[i];
+
+      try {
+        const element = createQRCodeDownloadCard(qrCode, cardType, t);
+        document.body.appendChild(element);
+
+        // Wait for images to load
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        const canvas = await html2canvas(element, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          logging: false,
+          allowTaint: true,
+          useCORS: true
+        });
+
+        document.body.removeChild(element);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${qrCode.name}_QR_Card.png`;
+            link.click();
+            URL.revokeObjectURL(url);
+          }
+        });
+
+        downloaded++;
+        onProgress(downloaded, total);
+
+        // Add delay between downloads to avoid overwhelming the browser
+        if (i < qrCodes.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } catch (err) {
+        console.warn(`Failed to download QR code for ${qrCode.name}:`, err);
+        failed++;
+        onProgress(downloaded, total);
+      }
+    }
+
+    if (downloaded > 0) {
+      showSuccess(t('downloadedQRCodes', `Downloaded ${downloaded}/${total} QR codes`));
+    }
+    if (failed > 0) {
+      showError(t('failedQRCodes', `Failed to download ${failed} QR codes`));
+    }
+  } catch (error) {
+    console.error('Error in batch download:', error);
+    showError(t('batchDownloadError', 'Error downloading QR codes'));
+  }
+};
+
+/**
+ * Download QR codes as PDF (Option 3)
+ * @param {Array} qrCodes - Array of QR code objects
+ * @param {String} cardType - 'student' or 'teacher'
+ * @param {Function} t - Translation function
+ * @param {Function} showSuccess - Toast success callback
+ * @param {Function} showError - Toast error callback
+ */
+export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, showError) => {
+  if (!qrCodes || qrCodes.length === 0) {
+    showError(t('noQRCodes', 'No QR codes to download'));
+    return;
+  }
+
+  try {
+    const { default: html2canvas } = await import('html2canvas');
+    const { jsPDF } = await import('jspdf');
+
+    // Create PDF with custom dimensions
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const cardsPerRow = 3;
+    const cardWidth = (pageWidth - 30) / cardsPerRow; // 30mm for margins
+    const cardHeight = cardWidth * 1.4; // Aspect ratio for card
+    const margin = 10;
+
+    let currentRow = 0;
+    let cardsInRow = 0;
+    let currentY = margin;
+
+    for (let i = 0; i < qrCodes.length; i++) {
+      const qrCode = qrCodes[i];
+
+      try {
+        // Create card element
+        const element = createQRCodeDownloadCard(qrCode, cardType, t);
+        document.body.appendChild(element);
+
+        // Wait for images to load
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Convert to canvas
+        const canvas = await html2canvas(element, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          logging: false,
+          allowTaint: true,
+          useCORS: true
+        });
+
+        document.body.removeChild(element);
+
+        // Convert canvas to image
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = cardWidth - 4; // 2mm padding on each side
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        // Calculate position
+        const currentX = margin + (cardsInRow * cardWidth);
+
+        // Check if we need a new page
+        if (currentY + imgHeight > pageHeight - margin) {
+          pdf.addPage();
+          currentY = margin;
+          cardsInRow = 0;
+        }
+
+        // Add image to PDF
+        pdf.addImage(imgData, 'PNG', currentX, currentY, imgWidth, imgHeight);
+
+        cardsInRow++;
+        if (cardsInRow >= cardsPerRow) {
+          currentY += cardHeight;
+          cardsInRow = 0;
+        }
+      } catch (err) {
+        console.warn(`Failed to add ${qrCode.name} to PDF:`, err);
+      }
+    }
+
+    // Save PDF
+    const fileName = `QR_Codes_${cardType}s_${new Date().toISOString().split('T')[0]}.pdf`;
+    pdf.save(fileName);
+    showSuccess(t('pdfDownloadSuccess', `PDF downloaded with ${qrCodes.length} QR codes`));
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    showError(t('pdfDownloadError', 'Error downloading PDF'));
+  }
+};
+
+/**
+ * Download single QR code as image
+ * @param {Object} qrCode - QR code object
+ * @param {String} cardType - 'student' or 'teacher'
+ * @param {Function} t - Translation function
+ * @param {Function} showError - Toast error callback
+ */
+export const downloadSingleQRCode = async (qrCode, cardType, t, showError) => {
+  try {
+    const { default: html2canvas } = await import('html2canvas');
+    const { createQRCodeDownloadCard } = await import('../components/qr-code/QRCodeDownloadCard');
+
+    const element = createQRCodeDownloadCard(qrCode, cardType, t);
+    document.body.appendChild(element);
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const canvas = await html2canvas(element, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      logging: false,
+      allowTaint: true,
+      useCORS: true
+    });
+
+    document.body.removeChild(element);
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${qrCode.name}_QR_Card.png`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+  } catch (error) {
+    console.error('Error downloading QR code:', error);
+    showError(t('downloadError', 'Error downloading QR code'));
+  }
+};

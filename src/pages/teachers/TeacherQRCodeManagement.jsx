@@ -10,6 +10,8 @@ import EmptyState from '../../components/ui/EmptyState';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import QRCodeDisplay from '../../components/qr-code/QRCodeDisplay';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
+import DownloadOptionsModal from '../../components/qr-code/DownloadOptionsModal';
+import { downloadQRCodesQueued, downloadQRCodesAsPDF } from '../../utils/qrCodeDownloadUtils';
 import { classService } from '../../utils/api/services/classService';
 import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
@@ -35,6 +37,8 @@ export default function TeacherQRCodeManagement({ user }) {
 
   const cardRefsRef = useRef({});
   const [schoolName, setSchoolName] = useState(null);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   // Load teacher's classes on mount
   useEffect(() => {
@@ -273,6 +277,30 @@ export default function TeacherQRCodeManagement({ user }) {
     };
   });
 
+  // Download handlers for new modal
+  const handleDownloadCurrentPage = async () => {
+    for (const qrCode of studentQrCodes) {
+      await downloadQRCode(qrCode, null, 'student');
+      // Add delay between downloads
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  };
+
+  const handleDownloadAllQueued = async () => {
+    await downloadQRCodesQueued(
+      studentQrCodes,
+      'student',
+      t,
+      (current, total) => setDownloadProgress(Math.round((current / total) * 100)),
+      showSuccess,
+      showError
+    );
+  };
+
+  const handleDownloadAllPDF = async () => {
+    await downloadQRCodesAsPDF(studentQrCodes, 'student', t, showSuccess, showError);
+  };
+
   if (loading) {
     return <PageLoader message={t('loadingClasses', 'Loading classes...')} />;
   }
@@ -282,14 +310,27 @@ export default function TeacherQRCodeManagement({ user }) {
       <div className="p-4 sm:p-6">
         <FadeInSection>
           {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-lg sm:text-2xl font-bold text-gray-900 flex items-center gap-2 mb-2">
-              <QrCode className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600" />
-              {t('QRCodeManangement', 'My Students QR Codes')}
-            </h1>
-            <p className="text-sm text-gray-500">
-              {t('generateQRCodesForStudents', 'View and download QR codes for your students')}
-            </p>
+          <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+            <div>
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 flex items-center gap-2 mb-2">
+                <QrCode className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600" />
+                {t('QRCodeManangement', 'My Students QR Codes')}
+              </h1>
+              <p className="text-sm text-gray-500">
+                {t('generateQRCodesForStudents', 'View and download QR codes for your students')}
+              </p>
+            </div>
+            {studentQrCodes.length > 0 && (
+              <Button
+                onClick={() => setShowDownloadModal(true)}
+                variant="primary"
+                size="sm"
+                className="flex items-center gap-2 flex-shrink-0"
+              >
+                <Download className="h-4 w-4" />
+                {t('downloadAll', 'Download All')}
+              </Button>
+            )}
           </div>
 
           {/* Class Selector and View Toggle */}
@@ -376,6 +417,18 @@ export default function TeacherQRCodeManagement({ user }) {
             </>
           )}
         </FadeInSection>
+
+        {/* Download Options Modal */}
+        <DownloadOptionsModal
+          isOpen={showDownloadModal}
+          onClose={() => setShowDownloadModal(false)}
+          qrCodes={studentQrCodes}
+          cardType="student"
+          t={t}
+          onDownloadQueued={handleDownloadAllQueued}
+          onDownloadPDF={handleDownloadAllPDF}
+          onDownloadSingle={handleDownloadCurrentPage}
+        />
       </div>
     </PageTransition>
   );
