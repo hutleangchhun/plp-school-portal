@@ -41,13 +41,11 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
   element.style.width = '350px'; // Reduced width for an ID card look
   element.style.backgroundColor = '#ffffff';
   element.style.fontFamily = 'Hanuman, "Khmer OS", "Noto Sans Khmer", sans-serif';
-  element.style.border = '1px solid #e0e0e0';
-  element.style.borderRadius = '8px';
   element.style.overflow = 'hidden';
   element.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.05)';
 
-  const accentColor = '#0369a1'; // Standard blue for student
-  const headerBg = '#f4f4f4';
+  const accentColor = '#733E0A'; // Standard blue for student
+  const headerBg = '#733E0A';
 
   // --- Header Section (School Name & Title) ---
   const header = document.createElement('div');
@@ -60,7 +58,7 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
   schoolNameEl.textContent = qrCode.schoolName || translate('school', 'School');
   schoolNameEl.style.fontSize = '15px';
   schoolNameEl.style.fontWeight = '700';
-  schoolNameEl.style.color = '#333333';
+  schoolNameEl.style.color = '#fff';
   schoolNameEl.style.margin = '0 0 4px 0';
   schoolNameEl.style.textTransform = 'uppercase';
   header.appendChild(schoolNameEl);
@@ -169,7 +167,7 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
   footer.style.backgroundColor = headerBg;
   footer.style.textAlign = 'center';
   footer.style.fontSize = '11px';
-  footer.style.color = '#6b7280';
+  footer.style.color = '#fff';
   footer.style.fontWeight = '500';
 
   const date = new Date();
