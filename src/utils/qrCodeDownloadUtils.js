@@ -111,7 +111,7 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const cardsPerRow = 4;
+    const cardsPerRow = 3;
     const cardWidth = (pageWidth - 30) / cardsPerRow; // 30mm for margins
     const totalCardsWidth = cardWidth * cardsPerRow;
     const leftMargin = (pageWidth - totalCardsWidth) / 2; // Center cards horizontally
