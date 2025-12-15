@@ -13,6 +13,7 @@ import plpLogo from '../../assets/ptom-scs.png';
 import moeysLogo from '../../assets/moeys-logo.png';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
+import { getFullName } from '../../utils/usernameUtils';
 
 export default function Login({ setUser }) {
   const { t } = useLanguage();
@@ -334,7 +335,7 @@ export default function Login({ setUser }) {
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <div>
                         <p className="font-semibold text-gray-900">
-                        {account.first_name} {account.last_name}
+                        {getFullName(account)}
                       </p>
                         </div>
                       <div>
