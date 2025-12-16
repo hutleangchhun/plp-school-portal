@@ -299,8 +299,19 @@ export default function TeacherQRCodeManagement({ user }) {
 
   const handleDownloadAllPDF = async () => {
     const selectedClass = classes.find(c => c.id === selectedClassId);
-    const className = selectedClass ? formatClassIdentifier(selectedClass.gradeLevel, selectedClass.section) : 'QR_Codes';
-    await downloadQRCodesAsPDF(studentQrCodes, 'student', t, showSuccess, showError, className);
+    if (selectedClass) {
+      // Convert grade level 0 to Kindergarten display (same as class filter)
+      const rawGradeLevel = typeof selectedClass.gradeLevel !== 'undefined' && selectedClass.gradeLevel !== null
+        ? String(selectedClass.gradeLevel)
+        : '';
+      const displayGradeLevel = rawGradeLevel === '0'
+        ? t('grade0', 'Kindergarten')
+        : rawGradeLevel;
+      const className = formatClassIdentifier(displayGradeLevel, selectedClass.section);
+      await downloadQRCodesAsPDF(studentQrCodes, 'student', t, showSuccess, showError, className);
+    } else {
+      await downloadQRCodesAsPDF(studentQrCodes, 'student', t, showSuccess, showError, 'QR_Codes');
+    }
   };
 
   if (loading) {
