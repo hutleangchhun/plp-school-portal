@@ -1,7 +1,8 @@
 import { createQRCodeDownloadCard } from '../components/qr-code/QRCodeDownloadCard';
 
 /**
- * Download QR code one by one with queue (Option 2)
+ * Download QR codes sequentially as individual PNG files (Option 2)
+ * Processes all QR code cards and downloads them with sequential delays
  * @param {Array} qrCodes - Array of QR code objects
  * @param {String} cardType - 'student' or 'teacher'
  * @param {Function} t - Translation function
@@ -16,11 +17,14 @@ export const downloadQRCodesQueued = async (qrCodes, cardType, t, onProgress, sh
   }
 
   const total = qrCodes.length;
-  let downloaded = 0;
+  let processed = 0;
   let failed = 0;
 
   try {
     const { default: html2canvas } = await import('html2canvas');
+
+    // Collect all blobs
+    const blobs = [];
 
     for (let i = 0; i < qrCodes.length; i++) {
       const qrCode = qrCodes[i];
@@ -42,46 +46,68 @@ export const downloadQRCodesQueued = async (qrCodes, cardType, t, onProgress, sh
 
         document.body.removeChild(element);
 
-        // Wait for blob conversion to complete
+        // Convert canvas to blob
         await new Promise((resolve) => {
           canvas.toBlob((blob) => {
             if (blob) {
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = `${qrCode.name}_QR_Card.png`;
-              link.click();
-              URL.revokeObjectURL(url);
+              blobs.push({
+                name: `${qrCode.name}_QR_Card.png`,
+                blob
+              });
             }
+            processed++;
+            onProgress(processed, total);
             resolve();
           });
         });
 
-        downloaded++;
-        onProgress(downloaded, total);
-
-        // Add delay between downloads to avoid overwhelming the browser
+        // Add delay between processing to avoid overwhelming the browser
         if (i < qrCodes.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 300));
         }
       } catch (err) {
-        console.warn(`Failed to download QR code for ${qrCode.name}:`, err);
+        console.warn(`Failed to process QR code for ${qrCode.name}:`, err);
         failed++;
-        onProgress(downloaded, total);
+        processed++;
+        onProgress(processed, total);
       }
     }
 
-    if (downloaded > 0) {
-      showSuccess(t('downloadedQRCodes', `Downloaded ${downloaded}/${total} QR codes`));
+    // Download all blobs sequentially
+    if (blobs.length > 0) {
+      downloadBlobsSequentially(blobs);
+    }
+
+    if (processed > 0) {
+      showSuccess(t('downloadedQRCodes', `Downloaded ${processed - failed}/${total} QR codes`));
     }
     if (failed > 0) {
-      showError(t('failedQRCodes', `Failed to download ${failed} QR codes`));
+      showError(t('failedQRCodes', `Failed to process ${failed} QR codes`));
     }
   } catch (error) {
     console.error('Error in batch download:', error);
     showError(t('batchDownloadError', 'Error downloading QR codes'));
   }
 };
+
+/**
+ * Helper function to download multiple blobs sequentially
+ * @param {Array} blobs - Array of {name, blob} objects
+ */
+function downloadBlobsSequentially(blobs) {
+  blobs.forEach((item, index) => {
+    setTimeout(() => {
+      const url = URL.createObjectURL(item.blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = item.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, index * 300); // 300ms delay between each download
+  });
+}
 
 /**
  * Download QR codes as PDF (Option 3)
@@ -111,7 +137,7 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const cardsPerRow = 3;
+    const cardsPerRow = 2;
     const cardWidth = (pageWidth - 30) / cardsPerRow; // 30mm for margins
     const totalCardsWidth = cardWidth * cardsPerRow;
     const leftMargin = (pageWidth - totalCardsWidth) / 2; // Center cards horizontally

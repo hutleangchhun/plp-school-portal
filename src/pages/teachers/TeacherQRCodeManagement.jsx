@@ -307,7 +307,8 @@ export default function TeacherQRCodeManagement({ user }) {
       const displayGradeLevel = rawGradeLevel === '0'
         ? t('grade0', 'Kindergarten')
         : rawGradeLevel;
-      const className = formatClassIdentifier(displayGradeLevel, selectedClass.section);
+      const classIdentifier = formatClassIdentifier(displayGradeLevel, selectedClass.section);
+      const className = `ថ្នាក់_${classIdentifier}`;
       await downloadQRCodesAsPDF(studentQrCodes, 'student', t, showSuccess, showError, className);
     } else {
       await downloadQRCodesAsPDF(studentQrCodes, 'student', t, showSuccess, showError, 'QR_Codes');

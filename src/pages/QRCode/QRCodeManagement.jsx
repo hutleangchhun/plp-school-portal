@@ -592,7 +592,8 @@ export default function StudentQRCodeGenerator() {
             const displayGradeLevel = rawGradeLevel === '0'
               ? t('grade0', 'Kindergarten')
               : rawGradeLevel;
-            className = formatClassIdentifier(displayGradeLevel, classObj.section);
+            const classIdentifier = formatClassIdentifier(displayGradeLevel, classObj.section);
+            className = `ថ្នាក់_${classIdentifier}`;
           } else {
             className = 'QR_Codes';
           }
