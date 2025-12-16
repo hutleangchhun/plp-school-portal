@@ -29,6 +29,9 @@ export default function AttendanceApprovalPage({ user }) {
   const [totalRecords, setTotalRecords] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
+  // Get schoolId from user object
+  const schoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId || null;
+
   // Fetch pending approvals
   const fetchPendingApprovals = useCallback(async (page = 1) => {
     try {
@@ -37,7 +40,8 @@ export default function AttendanceApprovalPage({ user }) {
 
       const response = await attendanceService.getPendingApprovals({
         page,
-        limit: 10
+        limit: 10,
+        schoolId
       });
 
       if (response.success) {
@@ -52,7 +56,7 @@ export default function AttendanceApprovalPage({ user }) {
     } finally {
       setLoading(false);
     }
-  }, [clearError, handleError]);
+  }, [schoolId, clearError, handleError]);
 
   // Initial fetch
   useEffect(() => {

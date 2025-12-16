@@ -159,6 +159,7 @@ export const attendanceService = {
    * @param {number} [params.page=1] - Page number
    * @param {number} [params.limit=10] - Items per page
    * @param {number} [params.userId] - Filter by user ID
+   * @param {number} [params.schoolId] - Filter by school ID
    * @param {string} [params.startDate] - Filter by start date
    * @param {string} [params.endDate] - Filter by end date
    * @returns {Promise<Object>} Pending approval attendance records
@@ -168,12 +169,14 @@ export const attendanceService = {
       page = 1,
       limit = 10,
       userId,
+      schoolId,
       startDate,
       endDate
     } = params;
 
     const queryParams = { page, limit };
     if (userId !== undefined) queryParams.userId = userId;
+    if (schoolId !== undefined) queryParams.schoolId = schoolId;
     if (startDate !== undefined) queryParams.startDate = startDate;
     if (endDate !== undefined) queryParams.endDate = endDate;
 
