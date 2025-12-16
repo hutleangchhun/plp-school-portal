@@ -19,9 +19,6 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import DynamicLoader from '../../components/ui/DynamicLoader';
 import StatsCard from '../../components/ui/StatsCard';
 import Badge from '../../components/ui/Badge';
-import Dropdown from '../../components/ui/Dropdown';
-import { Bar, BarChart, XAxis, YAxis, LabelList } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { formatClassIdentifier } from '../../utils/helpers';
 
 export default function TeacherDashboard({ user }) {
@@ -70,16 +67,44 @@ export default function TeacherDashboard({ user }) {
           }
         }
 
-        // Fetch classes
-        const classesResponse = await classService.getClassByUser(userId);
-        const teacherClasses = classesResponse.success ? classesResponse.classes || [] : [];
+        // Fetch classes - use localStorage cache for teachers (roleId = 8)
+        let teacherClasses = [];
+
+        if (user.roleId === 8) {
+          // Try to load from localStorage first (cached during login)
+          try {
+            const storedClasses = localStorage.getItem('teacherClasses');
+            if (storedClasses) {
+              teacherClasses = JSON.parse(storedClasses);
+              console.log('📚 Loaded', teacherClasses.length, 'classes from localStorage for dashboard');
+            }
+          } catch (err) {
+            console.error('Error loading classes from localStorage:', err);
+          }
+        }
+
+        // Fallback: fetch from API if not in localStorage or not a teacher
+        if (teacherClasses.length === 0) {
+          const classesResponse = await classService.getClassByUser(userId);
+          teacherClasses = classesResponse.success ? classesResponse.classes || [] : [];
+
+          // Cache for teachers
+          if (user.roleId === 8 && teacherClasses.length > 0) {
+            localStorage.setItem('teacherClasses', JSON.stringify(teacherClasses));
+          }
+        }
 
         if (!mounted) return;
         setClasses(teacherClasses);
 
-        // Auto-select first class if available
+        // Auto-select first class if available, or use stored selection
         if (teacherClasses.length > 0) {
-          setSelectedClassId(String(teacherClasses[0].id || teacherClasses[0].classId));
+          const storedClassId = localStorage.getItem('currentClassId');
+          if (storedClassId && teacherClasses.find(c => String(c.id || c.classId) === String(storedClassId))) {
+            setSelectedClassId(storedClassId);
+          } else {
+            setSelectedClassId(String(teacherClasses[0].id || teacherClasses[0].classId));
+          }
         }
 
         let totalStudents = 0;
@@ -331,113 +356,8 @@ export default function TeacherDashboard({ user }) {
               />
             </div>
           </div>
-          {/* Chart and User Info Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-            {/* Attendance Chart */}
-            <div className="bg-white rounded-md border border-gray-200 p-4 sm:p-6 flex flex-col">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <UserCheck className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="grid flex-1 min-w-0">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">
-                      {t('todayAttendanceOverview', "Today's Attendance Overview")}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-500">
-                      {t('attendanceRate', 'Attendance Rate')}: <span className="font-semibold text-green-600">{(() => {
-                        const cls = classStats[selectedClassId];
-                        if (!cls) return 0;
-                        const total = cls.present + cls.absent + cls.late;
-                        return total > 0 ? Math.round((cls.present / total) * 100) : 0;
-                      })()}%</span>
-                    </p>
-                  </div>
-                </div>
-                <div className="w-full sm:w-40">
-                  <Dropdown
-                    value={selectedClassId}
-                    onValueChange={setSelectedClassId}
-                    options={classes.map(cls => {
-                      const rawGradeLevel =
-                        typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
-                          ? String(cls.gradeLevel)
-                          : '';
-
-                      const displayGradeLevel =
-                        rawGradeLevel === '0'
-                          ? t('grade0', 'Kindergarten')
-                          : rawGradeLevel;
-
-                      return {
-                        value: String(cls.id || cls.classId),
-                        label: `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`
-                      };
-                    })}
-                    placeholder={t('selectClass', 'Select class...')}
-                    minWidth="w-full"
-                  />
-                </div>
-              </div>
-
-              {(() => {
-                const displayStats = classStats[selectedClassId] || { present: 0, absent: 0, late: 0, leave: 0 };
-
-                const chartData = [
-                  { status: t('present', 'Present'), students: displayStats.present, fill: '#10b981' },
-                  { status: t('absent', 'Absent'), students: displayStats.absent, fill: '#ef4444' },
-                  { status: t('late', 'Late'), students: displayStats.late, fill: '#f59e0b' },
-                  { status: t('leave', 'Leave'), students: displayStats.leave, fill: '#a78bfa' }
-                ];
-
-                return (
-                  <div className="flex justify-center items-center">
-                    <ChartContainer
-                      config={{
-                        students: {
-                          label: t('students', 'Students'),
-                          color: "hsl(var(--chart-2))",
-                        },
-                      }}
-                      className="h-[200px] sm:h-[250px] lg:h-[350px] w-full"
-                    >
-                      <BarChart data={chartData} margin={{ top: 15, right: 5, left: -25, bottom: window.innerWidth < 640 ? 35 : 20 }}>
-                        <XAxis
-                          dataKey="status"
-                          tickLine={false}
-                          axisLine={false}
-                          className="text-[9px] sm:text-[10px] lg:text-xs"
-                          height={window.innerWidth < 640 ? 50 : 60}
-                          angle={window.innerWidth < 640 ? -45 : 0}
-                          textAnchor={window.innerWidth < 640 ? "end" : "middle"}
-                        />
-                        <YAxis
-                          tickLine={false}
-                          axisLine={false}
-                          className="text-[9px] sm:text-[10px] lg:text-xs"
-                          width={window.innerWidth < 640 ? 25 : 30}
-                        />
-                        <ChartTooltip
-                          content={<ChartTooltipContent />}
-                        />
-                        <Bar
-                          dataKey="students"
-                          radius={[4, 4, 0, 0]}
-                          cursor="default"
-                          style={{ cursor: 'default' }}
-                          onMouseEnter={() => { }}
-                          onMouseLeave={() => { }}
-                        >
-
-                        </Bar>
-                      </BarChart>
-                    </ChartContainer>
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* User Information */}
+          {/* User Information - Full Width */}
+          <div className="mb-8">
             <div className="bg-white rounded-md border border-gray-200 p-6">
               <div className="flex mb-6">
                 <div className=''>

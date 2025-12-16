@@ -488,6 +488,11 @@ export const attendanceService = {
         reason: attendance.reason || '',
         createdAt: attendance.created_at || attendance.createdAt,
         updatedAt: attendance.updated_at || attendance.updatedAt,
+        // Check-in/Check-out fields (new API)
+        checkInTime: attendance.checkInTime || attendance.check_in_time || null,
+        checkOutTime: attendance.checkOutTime || attendance.check_out_time || null,
+        hoursWorked: attendance.hoursWorked !== undefined ? attendance.hoursWorked : (attendance.hours_worked !== undefined ? attendance.hours_worked : null),
+        isCheckedOut: attendance.isCheckedOut === true || attendance.is_checked_out === true,
         // Approval-related fields
         approvalStatus: attendance.approval_status || attendance.approvalStatus || null, // PENDING, APPROVED, REJECTED
         approvedBy: attendance.approved_by || attendance.approvedBy || null,

@@ -1,6 +1,49 @@
 import { apiClient_, handleApiResponse, tokenManager } from '../client.js';
 import { ENDPOINTS } from '../config.js';
 import { userUtils } from './userService.js';
+import { classService } from './classService.js';
+
+/**
+ * Helper function to fetch and store teacher's classes (for roleId = 8)
+ * @param {Object} user - User object
+ */
+const fetchAndStoreTeacherClasses = async (user) => {
+  // Only for teachers (roleId = 8)
+  if (!user || user.roleId !== 8) {
+    return;
+  }
+
+  try {
+    console.log('📚 Fetching classes for teacher:', user.id);
+    const response = await classService.getClassByUser(user.id);
+
+    if (response.success && response.classes && response.classes.length > 0) {
+      console.log('✅ Found', response.classes.length, 'classes for teacher');
+
+      // Store classes in localStorage
+      localStorage.setItem('teacherClasses', JSON.stringify(response.classes));
+
+      // Get current selected class from localStorage, or use first class
+      let currentClassId = localStorage.getItem('currentClassId');
+
+      if (!currentClassId || !response.classes.find(c => String(c.classId || c.id) === String(currentClassId))) {
+        // If no class selected or selected class not found, use first class
+        currentClassId = response.classes[0].classId || response.classes[0].id;
+        localStorage.setItem('currentClassId', String(currentClassId));
+        console.log('✅ Set default class:', currentClassId);
+      } else {
+        console.log('✅ Using existing selected class:', currentClassId);
+      }
+    } else {
+      console.warn('⚠️ No classes found for teacher');
+      localStorage.removeItem('teacherClasses');
+      localStorage.removeItem('currentClassId');
+    }
+  } catch (error) {
+    console.error('❌ Error fetching teacher classes:', error);
+    // Don't fail login if class fetch fails
+  }
+};
 
 /**
  * Authentication API Service
@@ -105,6 +148,9 @@ export const authService = {
           const verifyData = userUtils.getUserData();
           console.log('✓ Verified school_id in localStorage:', verifyData?.school_id);
 
+          // Fetch and store teacher's classes if user is a teacher (roleId = 8)
+          await fetchAndStoreTeacherClasses(freshUserData);
+
           return {
             success: true,
             data: { accessToken, user: freshUserData }
@@ -124,6 +170,9 @@ export const authService = {
       console.log('   - isDirector:', normalizedUser.isDirector, 'Type:', typeof normalizedUser.isDirector);
       console.log('   - is_director:', normalizedUser.is_director, 'Type:', typeof normalizedUser.is_director);
       userUtils.saveUserData(normalizedUser);
+
+      // Fetch and store teacher's classes if user is a teacher (roleId = 8)
+      await fetchAndStoreTeacherClasses(normalizedUser);
 
       return {
         success: true,
@@ -147,10 +196,12 @@ export const authService = {
     tokenManager.removeToken();
     userUtils.removeUserData();
 
-    // Clear any other cached data (selectedStudents, etc.)
+    // Clear any other cached data (selectedStudents, teacher classes, etc.)
     try {
       localStorage.removeItem('selectedStudents');
       localStorage.removeItem('selectedStudentsData');
+      localStorage.removeItem('teacherClasses');
+      localStorage.removeItem('currentClassId');
       // Clear any other app-specific cached data
       console.log('Cleared all cached data on logout');
     } catch (err) {
@@ -207,6 +258,8 @@ export const authService = {
     try {
       localStorage.removeItem('selectedStudents');
       localStorage.removeItem('selectedStudentsData');
+      localStorage.removeItem('teacherClasses');
+      localStorage.removeItem('currentClassId');
       console.log('Cleared all auth and cached data');
     } catch (err) {
       console.warn('Error clearing cached data:', err);
@@ -279,6 +332,9 @@ export const authService = {
 
           userUtils.saveUserData(freshUserData);
 
+          // Fetch and store teacher's classes if user is a teacher (roleId = 8)
+          await fetchAndStoreTeacherClasses(freshUserData);
+
           return {
             success: true,
             data: { accessToken, user: freshUserData }
@@ -290,6 +346,9 @@ export const authService = {
       }
 
       userUtils.saveUserData(normalizedUser);
+
+      // Fetch and store teacher's classes if user is a teacher (roleId = 8)
+      await fetchAndStoreTeacherClasses(normalizedUser);
 
       return {
         success: true,
