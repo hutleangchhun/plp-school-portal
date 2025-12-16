@@ -8,6 +8,7 @@ import Dropdown from '../../components/ui/Dropdown';
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
 import Table from '../../components/ui/Table';
 import { SquarePen, Building2, Users, Search, X } from 'lucide-react';
+import { roleOptions } from '@/utils/formOptions';
 
 const SchoolLookup = () => {
   const { t } = useLanguage();
@@ -241,9 +242,6 @@ const SchoolLookup = () => {
   const handleRoleChange = (roleId) => {
     setSelectedRole(roleId);
     setCurrentPage(1);
-    if (selectedSchool) {
-      loadUsers(selectedSchool, roleId);
-    }
   };
 
   // User-related functions (Teachers and Directors)
@@ -350,9 +348,19 @@ const SchoolLookup = () => {
       header: t('role', 'Role'),
       accessor: 'roleNameKh',
       render: (teacher) => {
-        const isDirector = teacher.roleId === 14;
-        const roleText = isDirector ? 'នាយក' : 'គ្រូបង្រៀន';
-        const bgColor = isDirector ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
+        const roleOption = roleOptions.find(role => role.value === teacher.roleId?.toString());
+        const roleText = roleOption?.label || 'Unknown';
+        const roleColors = {
+          '14': 'bg-blue-100 text-blue-800',     // Principal
+          '15': 'bg-purple-100 text-purple-800', // Deputy Principal
+          '16': 'bg-indigo-100 text-indigo-800', // School Secretary
+          '17': 'bg-cyan-100 text-cyan-800',     // School Treasurer
+          '18': 'bg-teal-100 text-teal-800',     // School Librarian
+          '19': 'bg-amber-100 text-amber-800',   // School Workshop
+          '20': 'bg-orange-100 text-orange-800', // School Security
+          '21': 'bg-pink-100 text-pink-800',     // Teacher ICT
+        };
+        const bgColor = roleColors[teacher.roleId?.toString()] || 'bg-green-100 text-green-800'; // Default to green for teachers
 
         return (
           <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${bgColor}`}>
@@ -370,6 +378,11 @@ const SchoolLookup = () => {
     total: totalUsers,
     limit: limit
   };
+
+  const currentRoleOption = useMemo(
+    () => roleOptions.find((role) => role.value === selectedRole),
+    [selectedRole]
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
@@ -461,10 +474,7 @@ const SchoolLookup = () => {
               <Dropdown
                 value={selectedRole}
                 onValueChange={handleRoleChange}
-                options={[
-                  { value: '8', label: 'គ្រូបង្រៀន (Teachers)' },
-                  { value: '14', label: 'នាយក (Directors)' }
-                ]}
+                options={roleOptions}
                 placeholder={t('selectRole', 'Select Role')}
                 disabled={!selectedSchool}
                 className="w-full h-12 text-base"
@@ -532,7 +542,7 @@ const SchoolLookup = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <h3 className="text-base font-semibold text-gray-800">
-                        {selectedRole === '14' ? 'បញ្ជីនាយក' : 'បញ្ជីគ្រូបង្រៀន'}
+                        {currentRoleOption?.label || t('usersList', 'Users List')}
                       </h3>
                       <span className="text-sm text-gray-500">
                         ({filteredUsers.length} / {totalUsers})
