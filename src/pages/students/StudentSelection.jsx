@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Filter, User, X, ArrowLeft, Search } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -136,6 +136,9 @@ const StudentSelection = () => {
     total: 0,
     pages: 1
   });
+  const fetchingRef = useRef(false); // Prevent duplicate fetches
+  const fetchingClassesRef = useRef(false); // Prevent duplicate class fetches
+  const initialFetchDoneRef = useRef(false); // Track if initial fetch completed
   const [filters, setFilters] = useState({
     search: '',
     academicYear: '',
@@ -160,36 +163,52 @@ const StudentSelection = () => {
   }, [filters.search]);
 
 
-  // Initialize classes using CLASS_BY_SCHOOL API
+  // Initialize classes and school ID using CLASS_BY_SCHOOL API (single consolidated fetch)
   useEffect(() => {
-    const fetchClassDetails = async () => {
+    const fetchClassDetailsAndSchoolId = async () => {
       if (!user?.id) {
         console.log('No user ID available for fetching classes');
         setClasses([]);
+        setClassesLoaded(true);
         return;
       }
 
-      try {
-        console.log('Fetching classes using CLASS_BY_SCHOOL API...');
+      // Prevent duplicate fetches - check both in-progress and completed
+      if (fetchingClassesRef.current || initialFetchDoneRef.current) {
+        console.log('Classes fetch already in progress or completed, skipping...');
+        return;
+      }
 
-        // Get school ID from my-account endpoint
+      fetchingClassesRef.current = true;
+
+      try {
+        console.log('Fetching school ID and classes (consolidated fetch)...');
+
+        // Get school ID from my-account endpoint (ONLY ONCE HERE)
         const accountData = await userService.getMyAccount();
         if (!accountData || !accountData.school_id) {
           console.error('No school_id found in account data:', accountData);
           showError(t('noSchoolIdFound', 'No school ID found for your account'));
           setClasses([]);
+          setClassesLoaded(true);
+          fetchingClassesRef.current = false;
           return;
         }
 
-        const schoolId = accountData.school_id;
-        console.log('✅ School ID fetched from account:', schoolId);
+        const fetchedSchoolId = accountData.school_id;
+        console.log('✅ School ID fetched from account:', fetchedSchoolId);
 
-        // Get class data from /classes/school/{schoolId} endpoint
-        const classResponse = await classService.getBySchool(schoolId);
+        // Set school ID immediately
+        setSchoolId(fetchedSchoolId);
+
+        // Get class data from /classes/school/{schoolId} endpoint with high limit to get all classes
+        const classResponse = await classService.getBySchool(fetchedSchoolId, { limit: 1000 });
 
         if (!classResponse || !classResponse.success) {
           console.log('No classes found in API response:', classResponse);
           setClasses([]);
+          setClassesLoaded(true);
+          fetchingClassesRef.current = false;
           return;
         }
 
@@ -199,6 +218,8 @@ const StudentSelection = () => {
         if (!Array.isArray(classesArray)) {
           console.log('Classes data is not an array:', classesArray);
           setClasses([]);
+          setClassesLoaded(true);
+          fetchingClassesRef.current = false;
           return;
         }
 
@@ -220,12 +241,8 @@ const StudentSelection = () => {
         }));
 
         setClasses(teacherClasses);
-
-        // Store school ID for later use
-        if (teacherClasses.length > 0 && teacherClasses[0].schoolId) {
-          console.log('Setting school ID from classes data:', teacherClasses[0].schoolId);
-          setSchoolId(teacherClasses[0].schoolId);
-        }
+        setClassesLoaded(true);
+        initialFetchDoneRef.current = true; // Mark initial fetch as complete
 
         console.log(`User ${user.username} has access to ${teacherClasses.length} classes for student selection:`,
           teacherClasses.map(c => `${c.name} (ID: ${c.classId}, Max: ${c.maxStudents})`));
@@ -235,17 +252,16 @@ const StudentSelection = () => {
         showError(t('errorFetchingClasses', 'Failed to load classes. Some features may not work properly.'));
         // Fallback to empty classes array
         setClasses([]);
+        setClassesLoaded(true);
+        initialFetchDoneRef.current = true; // Mark as done even on error
+      } finally {
+        fetchingClassesRef.current = false;
       }
     };
 
-    fetchClassDetails();
-  }, [user?.id, user?.username, showError, t]);
-
-  // Set initial loading to false once classes fetch completes (regardless of whether there are classes)
-  useEffect(() => {
-    // Mark as loaded once we've attempted to fetch classes
-    setClassesLoaded(true);
-  }, [classes]); // Runs after classes state is updated
+    fetchClassDetailsAndSchoolId();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Set initial loading to false once classes have been loaded
   useEffect(() => {
@@ -253,48 +269,6 @@ const StudentSelection = () => {
       setInitialLoading(false);
     }
   }, [classesLoaded]);
-
-  // Fetch current user's school ID from my-account endpoint
-  const fetchSchoolId = useStableCallback(async () => {
-    try {
-      if (schoolId) {
-        console.log('School ID already available:', schoolId);
-        return;
-      }
-
-      console.log('Fetching school ID from my-account endpoint...');
-      const accountData = await userService.getMyAccount();
-      console.log('📥 Full my-account response in StudentSelection:', accountData);
-
-      if (accountData && accountData.school_id) {
-        console.log('✅ School ID fetched from account:', accountData.school_id);
-        setSchoolId(accountData.school_id);
-      } else {
-        console.error('No school_id found in account data:', accountData);
-        showError(t('noSchoolIdFound', 'No school ID found for your account'));
-      }
-    } catch (error) {
-      console.error('Error fetching school ID:', error);
-      showError(t('failedToFetchSchoolId', 'Failed to fetch school information'));
-    }
-  }, [schoolId, showError, t, user?.id]);
-
-  // Re-fetch school ID when user school_id changes (e.g., after login or transfer)
-  useEffect(() => {
-    if (user?.teacher?.schoolId || user?.school_id || user?.schoolId) {
-      const newSchoolId = user?.teacher?.schoolId || user.school_id || user.schoolId;
-      console.log('🔄 User school_id changed in StudentSelection:', newSchoolId);
-      if (schoolId !== newSchoolId) {
-        console.log('Updating schoolId to new value');
-        setSchoolId(newSchoolId);
-      }
-    }
-  }, [user?.teacher?.schoolId, user?.school_id, user?.schoolId, schoolId]);
-
-  // Fetch school ID when component mounts
-  useEffect(() => {
-    fetchSchoolId();
-  }, [fetchSchoolId]);
 
   // Move the fetchData function inside the component and wrap it in useStableCallback
   const fetchData = useStableCallback(async () => {
@@ -304,6 +278,13 @@ const StudentSelection = () => {
         return;
       }
 
+      // Prevent duplicate fetches
+      if (fetchingRef.current) {
+        console.log('Fetch already in progress, skipping...');
+        return;
+      }
+
+      fetchingRef.current = true;
       setListLoading(true);
       setFetchError(null); // Clear any previous errors
       setStudents([]); // Clear previous students data when loading starts
@@ -375,6 +356,7 @@ const StudentSelection = () => {
       setStudents([]);
     } finally {
       setListLoading(false);
+      fetchingRef.current = false;
     }
   }, [schoolId, debouncedSearch, pagination.page, pagination.limit, filters.academicYear, filters.gender, filters.dateOfBirth, filters.gradeLevel, filters.classId, showError, t]);
 
@@ -390,7 +372,8 @@ const StudentSelection = () => {
     if (schoolId && pagination.page !== 1) {
       setPagination(prev => ({ ...prev, page: 1 }));
     }
-  }, [filters.academicYear, filters.gender, filters.dateOfBirth, filters.gradeLevel, filters.classId, schoolId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.academicYear, filters.gender, filters.dateOfBirth, filters.gradeLevel, filters.classId]);
 
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -692,6 +675,7 @@ const StudentSelection = () => {
                       onRemoveStudent={actualRemoveStudent}
                       onClearAll={actualClearAll}
                       schoolId={schoolId}
+                      classes={classes}
                       isOpen={showSelectedStudentsSidebar}
                       onToggle={setShowSelectedStudentsSidebar}
                       autoOpen={false}

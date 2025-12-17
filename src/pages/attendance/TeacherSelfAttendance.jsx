@@ -1066,10 +1066,10 @@ export default function TeacherSelfAttendance() {
                                       const className = cls?.name || (classId ? `Class ${classId}` : null);
                                       return (
                                         <div key={idx} className="py-0.5">
-                                          <div className="text-gray-300">
+                                          <div className="text-gray-900 font-medium">
                                             {className ? `${className} - ${getStatusInKhmer(record.status)}` : getStatusInKhmer(record.status)}
                                           </div>
-                                          <div className="text-gray-400 text-xs">
+                                          <div className="text-gray-700 text-xs">
                                             ចូល: {record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
                                             {record.isCheckedOut ? ` | ចេញ: ${new Date(record.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}` : ' | ឥឡូវនៅ'}
                                           </div>
@@ -1087,10 +1087,10 @@ export default function TeacherSelfAttendance() {
                                       const className = cls?.name || (classId ? `Class ${classId}` : null);
                                       return (
                                         <div key={idx} className="py-0.5">
-                                          <div className="text-gray-300">
+                                          <div className="text-gray-900 font-medium">
                                             {className ? `${className} - ${getStatusInKhmer(record.status)}` : getStatusInKhmer(record.status)}
                                           </div>
-                                          <div className="text-gray-400 text-xs">
+                                          <div className="text-gray-700 text-xs">
                                             ចូល: {record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
                                             {record.isCheckedOut ? ` | ចេញ: ${new Date(record.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}` : ' | ឥឡូវនៅ'}
                                           </div>
@@ -1131,17 +1131,10 @@ export default function TeacherSelfAttendance() {
           isOpen={showSubmitModal}
           onClose={() => setShowSubmitModal(false)}
           title={t('submitAttendance', 'បញ្ជូនវត្តមាន')}
-          size="md"
+          size="xl"
+          className="!w-[90vw] sm:!w-[700px]"
           footer={
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
-              <Button
-                onClick={() => setShowSubmitModal(false)}
-                disabled={submitting}
-                variant="outline"
-                className="w-full sm:w-auto"
-              >
-                {t('cancel', 'បោះបង់')}
-              </Button>
               <Button
                 onClick={() => handleSubmitFromModal('LEAVE')}
                 disabled={submitting || (isTeacher && classes.length > 0 && !selectedClassForSubmit)}
@@ -1168,8 +1161,8 @@ export default function TeacherSelfAttendance() {
         >
           {/* Current Time Info */}
           <div className="mb-4 p-3 bg-blue-50 rounded-md">
-            <p className="text-sm text-gray-700">
-              {t('currentTime', 'ពេលវេលាបច្ចុប្បន្ន')}: <strong>{getCurrentTimeDisplay()}</strong>
+            <p className="text-sm font-semibold text-gray-700">
+              {t('currentTime', 'ពេលវេលាបច្ចុប្បន្ន')}: <strong className='font-medium'>{getCurrentTimeDisplay()}</strong>
             </p>
           </div>
 
@@ -1177,7 +1170,7 @@ export default function TeacherSelfAttendance() {
           {isTeacher && classes.length > 0 && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('selectClass', 'ជ្រើសរើសថ្នាក់')}
+                {t('selectClass', 'ជ្រើសរើសថ្នាក់')} <span className='text-red-500'>*</span>
               </label>
               <Dropdown
                 value={selectedClassForSubmit?.toString() || ''}
@@ -1199,7 +1192,7 @@ export default function TeacherSelfAttendance() {
           {/* Shift Selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('selectShift', 'ជ្រើសរើសវេន')}
+              {t('selectShift', 'ជ្រើសរើសវេន')} <span className='text-red-500'>*</span>
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -1238,8 +1231,8 @@ export default function TeacherSelfAttendance() {
             }`}>
             <p className="text-sm font-medium">
               {isLateForShift(selectedShiftForSubmit)
-                ? t('willBeMarkedLate', 'នឹងត្រូវកត់ត្រាថាយឺត')
-                : t('willBeMarkedPresent', 'នឹងត្រូវកត់ត្រាថាវត្តមាន')}
+                ? t('willBeMarkedLate', 'ប្រព័ន្ធនឹងកត់ត្រាថាអ្នកចុះវត្តមានយឺត')
+                : t('willBeMarkedPresent', 'ប្រព័ន្ធនឹងកត់ត្រាថាអ្នកចុះវត្តមានទាន់')}
             </p>
           </div>
 

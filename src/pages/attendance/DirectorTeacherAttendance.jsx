@@ -290,19 +290,33 @@ export default function TeacherAttendance() {
             }
           }
 
+          // Group attendance records by userId -> date -> array of records
           allAttendanceRecords.forEach(record => {
             const userId = Number(record.userId || record.user_id);
             const recordDate = record.date ? record.date.split('T')[0] : null;
+            const recordClassId = record.classId || 'null';
 
             if (!userId || isNaN(userId) || !recordDate) {
               return;
             }
 
+            // Initialize user's attendance data if not exists
             if (!weeklyAttendanceData[userId]) {
               weeklyAttendanceData[userId] = {};
             }
 
-            weeklyAttendanceData[userId][recordDate] = {
+            // Initialize date's attendance data if not exists
+            if (!weeklyAttendanceData[userId][recordDate]) {
+              weeklyAttendanceData[userId][recordDate] = [];
+            }
+
+            // Infer shift from submission time
+            const recordTime = record.checkInTime ? new Date(record.checkInTime) : (record.createdAt ? new Date(record.createdAt) : null);
+            const recordHour = recordTime ? recordTime.getHours() : 12;
+            const shift = recordHour < 12 ? 'MORNING' : 'AFTERNOON';
+
+            // Add the attendance record with all details
+            weeklyAttendanceData[userId][recordDate].push({
               status: record.status?.toUpperCase() || 'PRESENT',
               time: record.createdAt ? new Date(record.createdAt).toLocaleTimeString('en-US', {
                 hour: '2-digit',
@@ -311,8 +325,27 @@ export default function TeacherAttendance() {
               }) : null,
               id: record.id,
               createdAt: record.createdAt,
-              reason: record.reason || ''
-            };
+              reason: record.reason || '',
+              classId: record.classId,
+              className: record.class?.name || null,
+              shift: shift,
+              checkInTime: record.checkInTime || null,
+              checkOutTime: record.checkOutTime || null,
+              hoursWorked: record.hoursWorked !== undefined ? record.hoursWorked : null,
+              isCheckedOut: record.isCheckedOut === true,
+              approvalStatus: record.approvalStatus || null
+            });
+          });
+
+          // Sort each date's records by checkInTime or createdAt
+          Object.keys(weeklyAttendanceData).forEach(userId => {
+            Object.keys(weeklyAttendanceData[userId]).forEach(date => {
+              weeklyAttendanceData[userId][date].sort((a, b) => {
+                const timeA = new Date(a.checkInTime || a.createdAt || 0);
+                const timeB = new Date(b.checkInTime || b.createdAt || 0);
+                return timeA - timeB;
+              });
+            });
           });
         } catch (err) {
           console.error(`Error fetching weekly attendance:`, err);
@@ -1052,17 +1085,33 @@ export default function TeacherAttendance() {
                             const month = String(date.getMonth() + 1).padStart(2, '0');
                             const day = String(date.getDate()).padStart(2, '0');
                             const dateStr = `${year}-${month}-${day}`;
-                            const attendance = weeklyAttendance[teacher.id]?.[dateStr];
+
+                            // Get all attendance records for this teacher on this date
+                            const teacherAttendanceForDay = weeklyAttendance[teacher.id]?.[dateStr];
                             const isWeekendDay = isWeekend(date);
                             const isCurrentDay = isToday(date);
 
-                            // Status badge config
-                            let badge = null;
-                            if (attendance) {
+                            // attendanceRecords is now always an array
+                            let attendanceRecords = [];
+                            if (teacherAttendanceForDay) {
+                              if (Array.isArray(teacherAttendanceForDay)) {
+                                // New structure: array of records
+                                attendanceRecords = teacherAttendanceForDay;
+                              } else if (teacherAttendanceForDay.status) {
+                                // Old structure: single attendance record object
+                                attendanceRecords = [teacherAttendanceForDay];
+                              } else {
+                                // Fallback: try to convert object to array
+                                attendanceRecords = Object.values(teacherAttendanceForDay).filter(r => r && r.status);
+                              }
+                            }
+
+                            // Helper function to get badge info for a status
+                            const getBadgeInfo = (status) => {
                               let color = 'gray';
                               let icon = null;
                               let text = '-';
-                              switch (attendance.status) {
+                              switch (status) {
                                 case 'PRESENT':
                                   color = 'green';
                                   icon = <Check className="h-4 w-4 mr-1 text-green-600" />;
@@ -1091,38 +1140,130 @@ export default function TeacherAttendance() {
                                 default:
                                   color = 'gray';
                                   icon = null;
-                                  text = t(attendance.status?.toLowerCase(), attendance.status);
+                                  text = t(status?.toLowerCase(), status);
                               }
-                              badge = (
-                                <Tooltip
-                                  content={
-                                    <div className="text-left">
-                                      <div className="mb-1 font-semibold flex items-center gap-3">
-                                        {t('status', 'ស្ថានភាព')}: {text}
+                              return { color, icon, text };
+                            };
+
+                            // Status badge config
+                            let badge = null;
+                            if (attendanceRecords.length > 0) {
+                              // Use the first record for display
+                              const primaryAttendance = attendanceRecords[0];
+                              const badgeInfo = getBadgeInfo(primaryAttendance.status);
+
+                              // Build tooltip content showing all records
+                              const tooltipContent = (
+                                <div className="text-left text-xs space-y-2 max-w-xs">
+                                  {attendanceRecords.map((record, recordIdx) => {
+                                    const recordBadgeInfo = getBadgeInfo(record.status);
+                                    const shift = record.shift ? (record.shift === 'MORNING' ? t('morning', 'ព្រឹក') : t('afternoon', 'រសៀល')) : '';
+                                    const className = record.className || (record.classId ? `${t('class', 'ថ្នាក់')} ${record.classId}` : '');
+                                    const checkInTime = record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-US', {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: true
+                                    }) : record.time;
+                                    const checkOutTime = record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('en-US', {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: true
+                                    }) : null;
+
+                                    return (
+                                      <div key={recordIdx} className="py-1 border-b border-gray-300 last:border-b-0">
+                                        <div className="mb-1 font-semibold flex items-center gap-2 flex-wrap">
+                                          {className && <span className="text-blue-500">{className}</span>}
+                                          {shift && <span className="text-purple-500">{shift}</span>}
+                                          <span className="text-gray-900">{recordBadgeInfo.text}</span>
+                                        </div>
+                                        {record.status !== 'LEAVE' ? (
+                                          <>
+                                            <div className="text-gray-700 text-xs">
+                                              {t('checkIn', 'ចូល')}: {checkInTime || 'N/A'}
+                                            </div>
+                                            {record.isCheckedOut && checkOutTime && (
+                                              <div className="text-gray-700 text-xs">
+                                                {t('checkOut', 'ចេញ')}: {checkOutTime}
+                                              </div>
+                                            )}
+                                            {!record.isCheckedOut && (
+                                              <div className="text-yellow-600 text-xs">
+                                                {t('notCheckedOut', 'មិនទាន់ចេញវត្តមាន')}
+                                              </div>
+                                            )}
+                                            {record.hoursWorked !== null && record.hoursWorked !== undefined && (
+                                              <div className="text-gray-700 text-xs">
+                                                {t('hoursWorked', 'ម៉ោងធ្វើការ')}: {record.hoursWorked.toFixed(2)} {t('hours', 'ម៉ោង')}
+                                              </div>
+                                            )}
+                                          </>
+                                        ) : (
+                                          <div className="text-gray-700 text-xs">
+                                            {t('submittedAt', 'បានបញ្ជូននៅ')}: {checkInTime}
+                                          </div>
+                                        )}
+                                        {record.reason && (
+                                          <div className="text-gray-700 text-xs mt-1">
+                                            <span className="font-semibold">{t('reason', 'មូលហេតុ')}:</span> {record.reason}
+                                          </div>
+                                        )}
+                                        {record.approvalStatus && (
+                                          <div className="text-gray-700 text-xs mt-1">
+                                            <span className="font-semibold">{t('approvalStatus', 'ស្ថានភាពអនុម័ត')}:</span> {
+                                              record.approvalStatus === 'APPROVED' ? t('approved', 'បានអនុម័ត') :
+                                              record.approvalStatus === 'PENDING' ? t('pending', 'កំពុងរង់ចាំ') :
+                                              record.approvalStatus === 'REJECTED' ? t('rejected', 'បានបដិសេធ') :
+                                              record.approvalStatus
+                                            }
+                                          </div>
+                                        )}
                                       </div>
-                                      {attendance.reason && (
-                                        <div className="mb-1"><span className="font-semibold">{t('reason', 'មូលហេតុ')}:</span> {attendance.reason}</div>
-                                      )}
-                                      <div className="text-xs text-gray-500">{t('created', 'បានបង្កើត')}: {attendance.createdAt ? formatDateKhmer(attendance.createdAt, 'full') : '-'}</div>
-                                    </div>
-                                  }
+                                    );
+                                  })}
+                                </div>
+                              );
+
+                              badge = (
+                                <div
+                                  className="flex flex-col items-center gap-1"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                  }}
+                                  onMouseDown={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                  }}
                                 >
-                                  <Badge color={color} variant="outline" size="sm" className="gap-1">
-                                    {icon}
-                                    {text}
-                                  </Badge>
-                                </Tooltip>
+                                  <Tooltip content={tooltipContent}>
+                                    <div className="flex flex-col items-center gap-1">
+                                      <Badge color={badgeInfo.color} variant="outline" size="sm" className="gap-1">
+                                        {badgeInfo.icon}
+                                        {badgeInfo.text}
+                                      </Badge>
+                                      {attendanceRecords.length > 1 && (
+                                        <span className="text-xs text-gray-500">+{attendanceRecords.length - 1}</span>
+                                      )}
+                                    </div>
+                                  </Tooltip>
+                                </div>
                               );
                             }
 
                             return (
                               <td
                                 key={idx}
-                                className={`px-3 py-3 text-center cursor-pointer hover:bg-blue-100 transition-colors ${
+                                className={`px-3 py-3 text-center ${attendanceRecords.length > 0 ? '' : 'cursor-pointer hover:bg-blue-100'} transition-colors ${
                                   isCurrentDay ? 'bg-blue-50' : isWeekendDay ? 'bg-gray-50' : ''
                                 }`}
-                                onClick={() => openAttendanceModal(teacher, date, attendance)}
-                                title={isToday(date) ? t('clickToMarkAttendance', 'ចុចដើម្បីបញ្ជូនវត្តមាន') : ''}
+                                onClick={(e) => {
+                                  // Only open modal if there are no attendance records (empty cell)
+                                  if (attendanceRecords.length === 0) {
+                                    openAttendanceModal(teacher, date, null);
+                                  }
+                                }}
+                                title={isToday(date) && attendanceRecords.length === 0 ? t('clickToMarkAttendance', 'ចុចដើម្បីបញ្ជូនវត្តមាន') : ''}
                               >
                                 {badge || <span className="text-gray-400">-</span>}
                               </td>

@@ -20,6 +20,7 @@ const SelectedStudentsManager = ({
   onBulkAction,
   actions = [],
   schoolId, // Add schoolId prop to fetch classes
+  classes: externalClasses, // Accept classes as prop to avoid duplicate fetches
   className = '',
   showActions = true,
   isOpen: externalIsOpen,
@@ -29,20 +30,21 @@ const SelectedStudentsManager = ({
 }) => {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
-  
+
   // Debug: Log component props
   console.log('🏗️ SelectedStudentsManager mounted with props:', {
     schoolId,
     selectedStudentsCount: selectedStudents.length,
     showActions,
-    isOpen: externalIsOpen
+    isOpen: externalIsOpen,
+    externalClassesProvided: !!externalClasses
   });
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [userManuallyClosed, setUserManuallyClosed] = useState(false);
   const [selectedClass, setSelectedClass] = useState('');
   const [assigningStudents, setAssigningStudents] = useState(false);
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
-  const [classes, setClasses] = useState([]);
+  const [internalClasses, setInternalClasses] = useState([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
 
   // Use external control if provided, otherwise use internal state
@@ -55,21 +57,35 @@ const SelectedStudentsManager = ({
     }
   }, [selectedStudents.length]);
 
-  // Fetch classes when schoolId or selectedGradeLevel changes
+  // Use external classes if provided, otherwise fetch them
   useEffect(() => {
-    console.log('🔍 SelectedStudentsManager useEffect triggered with:', { schoolId, selectedGradeLevel });
-    
+    console.log('🔍 SelectedStudentsManager useEffect triggered with:', {
+      schoolId,
+      selectedGradeLevel,
+      hasExternalClasses: !!externalClasses,
+      externalClassesCount: externalClasses?.length
+    });
+
+    // If classes are provided externally, use them instead of fetching
+    if (externalClasses && Array.isArray(externalClasses)) {
+      console.log('✅ Using external classes, no fetch needed:', externalClasses.length, 'classes');
+      setInternalClasses(externalClasses);
+      setLoadingClasses(false);
+      return;
+    }
+
+    // Only fetch if no external classes provided
     const fetchClasses = async () => {
       if (!schoolId) {
         console.log('❌ No schoolId provided, skipping class fetch');
-        setClasses([]);
+        setInternalClasses([]);
         return;
       }
 
       try {
         setLoadingClasses(true);
         console.log('🔄 Starting to fetch classes for school:', schoolId, 'grade:', selectedGradeLevel);
-        
+
         // Build query parameters like in ClassesManagement.jsx
         const queryParams = {
           limit: 1000 // Set a high limit to get all classes
@@ -78,25 +94,25 @@ const SelectedStudentsManager = ({
           queryParams.gradeLevel = selectedGradeLevel;
           console.log('🎯 Filtering by grade level:', selectedGradeLevel);
         }
-        
+
         console.log('🌐 Making API call to classService.getBySchool with params:', queryParams);
         const response = await classService.getBySchool(schoolId, queryParams);
         console.log('📚 Raw API response:', response);
-        
+
         if (response && response.success && response.classes) {
-          setClasses(response.classes);
+          setInternalClasses(response.classes);
           console.log('✅ Classes loaded successfully:', response.classes.length, 'classes for grade:', selectedGradeLevel);
           console.log('📝 First class example:', response.classes[0]);
         } else {
           console.warn('⚠️ No classes found in response or response.success is false');
           console.log('🔍 Response structure:', response);
-          setClasses([]);
+          setInternalClasses([]);
         }
       } catch (error) {
         console.error('❌ Error fetching classes:', error);
         console.error('🔍 Error details:', error.message, error.stack);
         showError(t('errorFetchingClasses', 'Failed to load classes'));
-        setClasses([]);
+        setInternalClasses([]);
       } finally {
         setLoadingClasses(false);
         console.log('🏁 Finished fetching classes, loadingClasses set to false');
@@ -104,16 +120,23 @@ const SelectedStudentsManager = ({
     };
 
     fetchClasses();
-  }, [schoolId, selectedGradeLevel, showError, t]);
+  }, [schoolId, selectedGradeLevel, externalClasses, showError, t]);
+
+  // Use external classes if provided, otherwise use internal classes
+  const classes = externalClasses || internalClasses;
 
   // Grade level options using shared helper (includes Kindergarten/grade 0)
   const gradeLevelOptions = useMemo(() => {
     return getSharedGradeLevelOptions(t, true);
   }, [t]);
 
-  // No need for client-side filtering since we're doing server-side filtering
-  // The classes array already contains only the classes for the selected grade level
-  const filteredClasses = classes;
+  // Filter classes by selected grade level (client-side filtering when using external classes)
+  const filteredClasses = useMemo(() => {
+    if (selectedGradeLevel === 'all') {
+      return classes;
+    }
+    return classes.filter(cls => String(cls.gradeLevel) === String(selectedGradeLevel));
+  }, [classes, selectedGradeLevel]);
 
   // Auto-open disabled - now controlled by button click only
 
