@@ -177,8 +177,8 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
     createDetailLine(translate('class', 'Class'), classDisplay);
   }
 
-  // Add blank password field
-  createDetailLine(translate('password', 'Password'), '_________________');
+  // Add password field
+  createDetailLine(translate('password', 'Password'), '');
 
   content.appendChild(detailsDiv);
   element.appendChild(content);
