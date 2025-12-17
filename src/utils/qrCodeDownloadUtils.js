@@ -102,10 +102,10 @@ async function createAndDownloadZip(blobs, cardType) {
     // Create ZIP file data using native Blob API
     const zipBlob = await createZipBlob(blobs);
 
-    // Generate filename with timestamp
-    const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    // Generate filename with date
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     const cardTypeLabel = cardType === 'teacher' ? 'Teachers' : 'Students';
-    const fileName = `QR_Cards_${cardTypeLabel}_${timestamp}.zip`;
+    const fileName = `QR_Cards_${cardTypeLabel}_${today}.zip`;
 
     // Download ZIP file
     const url = URL.createObjectURL(zipBlob);
@@ -574,8 +574,9 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
       }
     }
 
-    // Save PDF
-    const fileName = `${className}.pdf`;
+    // Save PDF with date
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const fileName = `${className}_${today}.pdf`;
     pdf.save(fileName);
     showSuccess(t('pdfDownloadSuccess', `PDF downloaded with ${qrCodes.length} QR codes`));
   } catch (error) {
@@ -615,8 +616,9 @@ export const downloadSingleQRCode = async (qrCode, cardType, t, showError) => {
       if (blob) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
         link.href = url;
-        link.download = `${qrCode.name}_QR_Card.png`;
+        link.download = `${qrCode.name}_QR_Card_${today}.png`;
         link.click();
         URL.revokeObjectURL(url);
       }
