@@ -367,57 +367,68 @@ const AttendanceOverview = () => {
     clearError();
 
     try {
-      // Build params using monthly filters
-      const primaryParams = {};
-      if (monthlyFilters.startDate) primaryParams.startDate = monthlyFilters.startDate;
-      if (monthlyFilters.endDate) primaryParams.endDate = monthlyFilters.endDate;
-      if (monthlyFilters.province) primaryParams.provinceId = parseInt(monthlyFilters.province, 10);
-      if (monthlyFilters.district) primaryParams.districtId = parseInt(monthlyFilters.district, 10);
-      if (monthlyFilters.school) primaryParams.schoolId = parseInt(monthlyFilters.school, 10);
+      // Build params for monthly trends (primary stats and monthly chart)
+      const monthlyParams = {};
+      if (monthlyFilters.startDate) monthlyParams.startDate = monthlyFilters.startDate;
+      if (monthlyFilters.endDate) monthlyParams.endDate = monthlyFilters.endDate;
+      if (monthlyFilters.province) monthlyParams.provinceId = parseInt(monthlyFilters.province, 10);
+      if (monthlyFilters.district) monthlyParams.districtId = parseInt(monthlyFilters.district, 10);
+      if (monthlyFilters.school) monthlyParams.schoolId = parseInt(monthlyFilters.school, 10);
 
-      console.log('Fetching teacher dashboard with params:', primaryParams);
+      // Build params for daily role breakdown (table - use today's date)
+      const dailyParams = {};
+      if (dailyFilters.startDate) {
+        dailyParams.startDate = dailyFilters.startDate;
+        dailyParams.endDate = dailyFilters.startDate; // Same day for daily view
+      }
+      if (dailyFilters.province) dailyParams.provinceId = parseInt(dailyFilters.province, 10);
+      if (dailyFilters.district) dailyParams.districtId = parseInt(dailyFilters.district, 10);
+      if (dailyFilters.school) dailyParams.schoolId = parseInt(dailyFilters.school, 10);
 
-      // Fetch teacher primary dashboard, role breakdown, and monthly trends in parallel
+      console.log('Fetching teacher dashboard - Monthly params:', monthlyParams);
+      console.log('Fetching teacher dashboard - Daily params:', dailyParams);
+
+      // Fetch teacher primary dashboard, role breakdown (daily), and monthly trends in parallel
       const [
         teacherPrimaryResponse,
-        teacherRoleResponse,
+        teacherDailyRoleResponse,
         teacherMonthlyResponse
       ] = await Promise.all([
-        attendanceService.dashboard.getTeacherPrimaryDashboard(primaryParams),
-        attendanceService.dashboard.getTeacherByRoleBreakdown(primaryParams),
-        attendanceService.dashboard.getTeacherMonthlyTrends(primaryParams)
+        attendanceService.dashboard.getTeacherPrimaryDashboard(monthlyParams),
+        attendanceService.dashboard.getTeacherByRoleBreakdown(dailyParams),
+        attendanceService.dashboard.getTeacherMonthlyTrends(monthlyParams)
       ]);
 
       console.log('Teacher Primary Response:', teacherPrimaryResponse);
-      console.log('Teacher Role Response:', teacherRoleResponse);
+      console.log('Teacher Daily Role Response:', teacherDailyRoleResponse);
       console.log('Teacher Monthly Trends Response:', teacherMonthlyResponse);
 
       // Extract data with proper fallbacks
       const primaryData = teacherPrimaryResponse.success ? teacherPrimaryResponse.data : null;
-      const byRoleData = teacherRoleResponse.success ? teacherRoleResponse.data : [];
+      const dailyRoleData = teacherDailyRoleResponse.success ? teacherDailyRoleResponse.data : [];
       const monthlyTrendsData = teacherMonthlyResponse.success ? (Array.isArray(teacherMonthlyResponse.data) ? teacherMonthlyResponse.data : []) : [];
 
       // Debug log the structure
       console.log('Extracted Primary Data:', primaryData);
-      console.log('Extracted byRole Data:', byRoleData);
+      console.log('Extracted Daily Role Data:', dailyRoleData);
       console.log('Monthly Trends Data:', monthlyTrendsData);
       console.log('Primary Data Keys:', primaryData ? Object.keys(primaryData) : 'null');
-      console.log('byRole is Array:', Array.isArray(byRoleData));
-      console.log('byRole length:', Array.isArray(byRoleData) ? byRoleData.length : 'N/A');
+      console.log('Daily Role is Array:', Array.isArray(dailyRoleData));
+      console.log('Daily Role length:', Array.isArray(dailyRoleData) ? dailyRoleData.length : 'N/A');
       console.log('Monthly Trends is Array:', Array.isArray(monthlyTrendsData));
       console.log('Monthly Trends length:', Array.isArray(monthlyTrendsData) ? monthlyTrendsData.length : 'N/A');
 
       // Log first role object structure
-      if (Array.isArray(byRoleData) && byRoleData.length > 0) {
-        console.log('First Role Object:', byRoleData[0]);
-        console.log('First Role Keys:', Object.keys(byRoleData[0]));
-        console.log('Full byRole data:', JSON.stringify(byRoleData, null, 2));
+      if (Array.isArray(dailyRoleData) && dailyRoleData.length > 0) {
+        console.log('First Role Object:', dailyRoleData[0]);
+        console.log('First Role Keys:', Object.keys(dailyRoleData[0]));
+        console.log('Full daily role data:', JSON.stringify(dailyRoleData, null, 2));
       }
 
       // Combine all data
       const combinedData = {
         primary: primaryData,
-        byRole: Array.isArray(byRoleData) ? byRoleData : [],
+        byRole: Array.isArray(dailyRoleData) ? dailyRoleData : [],
         monthly: monthlyTrendsData
       };
 
@@ -434,7 +445,7 @@ const AttendanceOverview = () => {
       setDashboardLoading(false);
       setLoading(false);
     }
-  }, [monthlyFilters, handleError, clearError, t]);
+  }, [monthlyFilters, dailyFilters, handleError, clearError, t]);
 
   // Load provinces on mount
   useEffect(() => {
@@ -448,7 +459,7 @@ const AttendanceOverview = () => {
     } else {
       fetchTeacherAttendanceDashboard();
     }
-  }, [fetchAttendanceDashboard, fetchTeacherAttendanceDashboard, activeTab, monthlyFilters]);
+  }, [fetchAttendanceDashboard, fetchTeacherAttendanceDashboard, activeTab, monthlyFilters, dailyFilters]);
 
   // Clear tab preference from localStorage only when navigating away from this page
   useEffect(() => {
@@ -852,6 +863,8 @@ const AttendanceOverview = () => {
                             <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('total', 'Total')}</th>
                             <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('present', 'Present')}</th>
                             <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('absent', 'Absent')}</th>
+                            <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('late', 'Late')}</th>
+                            <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('leave', 'Leave')}</th>
                             <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('percentage', 'Percentage')}</th>
                           </tr>
                         </thead>
@@ -862,6 +875,8 @@ const AttendanceOverview = () => {
                               <td className="text-right py-3 px-4 text-gray-700">{role.totalStaff || 0}</td>
                               <td className="text-right py-3 px-4 text-green-600 font-medium">{role.distribution?.present || 0}</td>
                               <td className="text-right py-3 px-4 text-red-600 font-medium">{role.distribution?.absent || 0}</td>
+                              <td className="text-right py-3 px-4 text-yellow-600 font-medium">{role.distribution?.late || 0}</td>
+                              <td className="text-right py-3 px-4 text-blue-600 font-medium">{role.distribution?.leave || 0}</td>
                               <td className="text-right py-3 px-4 text-blue-600 font-medium">
                                 {role.attendancePercentage?.toFixed(1) || 0}%
                               </td>
