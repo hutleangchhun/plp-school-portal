@@ -172,7 +172,7 @@ const AttendanceMonthlyTrends = ({
   return (
     <>
       {/* Monthly Trends - Attendance Counts */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+      <div className="bg-white rounded-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">

@@ -613,7 +613,7 @@ const AttendanceOverview = () => {
             </TabsList>
 
             {/* Student Tab Content */}
-            <TabsContent value="student" className="space-y-6">
+            <TabsContent value="student" className="space-y-2 mt-6">
               <StudentAttendanceOverviewTab
                 dashboardLoading={dashboardLoading}
                 dashboardData={dashboardData}
@@ -755,7 +755,7 @@ const AttendanceOverview = () => {
             </TabsContent>
 
           {/* Teacher Tab Content */}
-          <TabsContent value="teacher" className="space-y-6">
+          <TabsContent value="teacher" className="space-y-6 mt-6">
             <TeacherAttendanceOverviewTab
               dashboardLoading={dashboardLoading}
               teacherDashboardData={teacherDashboardData}

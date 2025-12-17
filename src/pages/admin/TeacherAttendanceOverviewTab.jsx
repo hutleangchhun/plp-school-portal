@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/ca
 import { Button } from '../../components/ui/Button';
 import { Filter, RefreshCcw } from 'lucide-react';
 import AttendanceMonthlyTrends from '../../components/charts/AttendanceMonthlyTrends';
+import TeacherAttendanceSummaryCards from '../../components/dashboard/TeacherAttendanceSummaryCards';
 
 const TeacherAttendanceOverviewTab = ({
   dashboardLoading,
@@ -40,48 +41,15 @@ const TeacherAttendanceOverviewTab = ({
 
       {/* Teacher Summary Cards */}
       {!dashboardLoading && teacherDashboardData?.primary && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-blue-900">
-                {teacherDashboardData.primary.totalTeachers || 0}
-              </div>
-              <p className="text-sm text-blue-600 mt-2">{t('totalTeachers', 'Total Teachers')}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-green-900">
-                {teacherDashboardData.primary.teachersWithAttendanceData || 0}
-              </div>
-              <p className="text-sm text-green-600 mt-2">{t('withData', 'With Attendance Data')}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-purple-900">
-                {teacherDashboardData.primary.averageHoursWorked?.toFixed(2) || 0}
-              </div>
-              <p className="text-sm text-purple-600 mt-2">{t('averageHours', 'Average Hours Worked')}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-            <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-orange-900">
-                {teacherDashboardData.primary.overallAttendancePercentage?.toFixed(1) || 0}%
-              </div>
-              <p className="text-sm text-orange-600 mt-2">{t('attendancePercentage', 'Attendance %')}</p>
-            </CardContent>
-          </Card>
-        </div>
+        <TeacherAttendanceSummaryCards
+          dashboardData={teacherDashboardData}
+          dashboardFilters={monthlyFilters}
+        />
       )}
 
       {/* Teacher by Role Breakdown */}
       {!dashboardLoading && teacherDashboardData?.byRole && teacherDashboardData.byRole.length > 0 && (
-        <Card>
+        <Card className="rounded-sm shadow-0">
           <CardHeader>
             <CardTitle>{t('attendanceByRole', 'Attendance by Role')}</CardTitle>
           </CardHeader>
@@ -90,7 +58,7 @@ const TeacherAttendanceOverviewTab = ({
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('role', 'Role')}</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('roles', 'Role')}</th>
                     <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('total', 'Total')}</th>
                     <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('present', 'Present')}</th>
                     <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('absent', 'Absent')}</th>

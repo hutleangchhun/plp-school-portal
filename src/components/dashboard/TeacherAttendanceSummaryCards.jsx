@@ -1,15 +1,15 @@
 import React from 'react';
-import { Users, Calendar, TrendingUp, School } from 'lucide-react';
+import { Users, Clock, TrendingUp, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 /**
- * Attendance Summary Cards Component
- * Displays key attendance statistics in card format
+ * Teacher Attendance Summary Cards Component
+ * Displays key teacher attendance statistics in card format
  *
- * @param {Object} dashboardData - Dashboard data containing attendance statistics
+ * @param {Object} dashboardData - Dashboard data containing teacher attendance statistics
  * @param {Object} dashboardFilters - Current filter values
  */
-const AttendanceSummaryCards = ({ dashboardData, dashboardFilters }) => {
+const TeacherAttendanceSummaryCards = ({ dashboardData, dashboardFilters }) => {
   const { t } = useLanguage();
 
   if (!dashboardData || !dashboardData.primary) {
@@ -17,40 +17,39 @@ const AttendanceSummaryCards = ({ dashboardData, dashboardFilters }) => {
   }
 
   const primaryData = dashboardData.primary;
-  const distribution = primaryData.attendanceDistribution || {};
 
   const cards = [
     {
-      title: t('totalStudents', 'Total Students'),
-      value: (primaryData.totalStudents || 0).toLocaleString(),
-      subtitle: `${(primaryData.studentsWithAttendanceData || 0).toLocaleString()} ${t('withData', 'with data')}`,
+      title: t('totalTeachers', 'Total Teachers'),
+      value: (primaryData.totalTeachers || 0).toLocaleString(),
+      subtitle: `${(primaryData.teachersWithAttendanceData || 0).toLocaleString()} ${t('withData', 'with data')}`,
       icon: Users,
       iconBg: 'bg-blue-100',
       iconColor: 'text-blue-600'
     },
     {
-      title: t('overallAttendance', 'Overall Attendance'),
+      title: t('averageHours', 'Average Hours Worked'),
+      value: `${(primaryData.averageHoursWorked || 0).toFixed(2)} hrs`,
+      subtitle: `${t('perDay', 'per day')}`,
+      icon: Clock,
+      iconBg: 'bg-purple-100',
+      iconColor: 'text-purple-600'
+    },
+    {
+      title: t('attendancePercentage', 'Attendance %'),
       value: `${(primaryData.overallAttendancePercentage || 0).toFixed(2)}%`,
       subtitle: `${(primaryData.totalAttendanceRecords || 0).toLocaleString()} ${t('records', 'records')}`,
       icon: TrendingUp,
+      iconBg: 'bg-orange-100',
+      iconColor: 'text-orange-600'
+    },
+    {
+      title: t('pendingApprovals', 'Pending Approvals'),
+      value: (primaryData.pendingApprovals || 0).toLocaleString(),
+      subtitle: `${t('awaiting', 'awaiting')} ${t('approval', 'approval')}`,
+      icon: CheckCircle,
       iconBg: 'bg-green-100',
       iconColor: 'text-green-600'
-    },
-    {
-      title: t('presentRate', 'Present Rate'),
-      value: `${(distribution.presentPercentage || 0).toFixed(2)}%`,
-      subtitle: `${(distribution.present || 0).toLocaleString()} ${t('students', 'students')}`,
-      icon: School,
-      iconBg: 'bg-emerald-100',
-      iconColor: 'text-emerald-600'
-    },
-    {
-      title: t('absentRate', 'Absent Rate'),
-      value: `${(distribution.absentPercentage || 0).toFixed(2)}%`,
-      subtitle: `${(distribution.absent || 0).toLocaleString()} ${t('students', 'students')}`,
-      icon: Calendar,
-      iconBg: 'bg-red-100',
-      iconColor: 'text-red-600'
     }
   ];
 
@@ -88,4 +87,4 @@ const AttendanceSummaryCards = ({ dashboardData, dashboardFilters }) => {
   );
 };
 
-export default AttendanceSummaryCards;
+export default TeacherAttendanceSummaryCards;
