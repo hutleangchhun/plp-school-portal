@@ -176,11 +176,6 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
     }
     createDetailLine(translate('class', 'Class'), classDisplay);
   }
-
-  // Add blank fields for name and password
-  createDetailLine(translate('name', 'Name'), '_________________');
-  createDetailLine(translate('password', 'Password'), '_________________');
-
   content.appendChild(detailsDiv);
   element.appendChild(content);
 
