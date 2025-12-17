@@ -10,6 +10,7 @@ import { schoolService } from '../../utils/api/services/schoolService';
 import { ArrowLeft, Download, Filter, RefreshCcw } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import AttendanceSummaryCards from '../../components/dashboard/AttendanceSummaryCards';
@@ -607,39 +608,38 @@ const AttendanceOverview = () => {
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex gap-2 mb-6 border-b border-gray-200">
-            <Button
-              variant={activeTab === 'student' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('student')}
-              className="px-4 py-2 rounded-t-lg border-b-2 transition-colors"
-              style={{
-                borderColor: activeTab === 'student' ? 'currentColor' : 'transparent'
-              }}
-            >
-              {t('students', 'Students')}
-            </Button>
-            <Button
-              variant={activeTab === 'teacher' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('teacher')}
-              className="px-4 py-2 rounded-t-lg border-b-2 transition-colors"
-              style={{
-                borderColor: activeTab === 'teacher' ? 'currentColor' : 'transparent'
-              }}
-            >
-              {t('teachers', 'Teachers')}
-            </Button>
-          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full py-4">
+            <TabsList className="grid w-full bg-transparent grid-cols-2 gap-4">
+              <TabsTrigger value="student">{t('students', 'Students')}</TabsTrigger>
+              <TabsTrigger value="teacher">{t('teachers', 'Teachers')}</TabsTrigger>
+            </TabsList>
 
-          {/* Student Tab Content */}
-          {activeTab === 'student' && (
-            <>
-              {/* Summary Statistics Cards */}
-              <AttendanceSummaryCards
-                dashboardData={dashboardData}
-                dashboardFilters={monthlyFilters}
-              />
+            {/* Student Tab Content */}
+            <TabsContent value="student" className="space-y-6">
+            {dashboardLoading && (
+              <div className="flex justify-center items-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-gray-600">{t('loadingData', 'Loading student attendance data...')}</p>
+                </div>
+              </div>
+            )}
+
+            {!dashboardLoading && !dashboardData?.primary && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="pt-6 text-center">
+                  <p className="text-gray-600">{t('noDataAvailable', 'No student attendance data available')}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {!dashboardLoading && dashboardData?.primary && (
+              <>
+                {/* Summary Statistics Cards */}
+                <AttendanceSummaryCards
+                  dashboardData={dashboardData}
+                  dashboardFilters={monthlyFilters}
+                />
 
               {/* Daily Trends with Separate Filters */}
               <AttendanceDailyTrends
@@ -784,12 +784,12 @@ const AttendanceOverview = () => {
                 fetchDistricts={fetchMonthlyDistricts}
                 fetchSchools={fetchMonthlySchools}
               />
-            </>
-          )}
+              </>
+            )}
+          </TabsContent>
 
           {/* Teacher Tab Content */}
-          {activeTab === 'teacher' && (
-            <div className="space-y-6">
+          <TabsContent value="teacher" className="space-y-6">
               {dashboardLoading && (
                 <div className="flex justify-center items-center py-12">
                   <div className="text-center">
@@ -1001,8 +1001,8 @@ const AttendanceOverview = () => {
                   {t('reset', 'Reset')}
                 </Button>
               </div>
-            </div>
-          )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
