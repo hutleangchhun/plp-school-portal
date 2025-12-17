@@ -459,6 +459,75 @@ export const attendanceService = {
       return handleApiResponse(() =>
         apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.APPROVAL_STATUS, { params: queryParams })
       );
+    },
+
+    /**
+     * Get teacher attendance primary dashboard statistics
+     * @param {Object} params - Query parameters
+     * @param {string} [params.startDate] - Start date (YYYY-MM-DD)
+     * @param {string} [params.endDate] - End date (YYYY-MM-DD)
+     * @param {number} [params.provinceId] - Province ID
+     * @param {number} [params.districtId] - District ID
+     * @param {number} [params.schoolId] - School ID
+     * @returns {Promise<Object>} Teacher primary dashboard data with averageHoursWorked, etc.
+     */
+    async getTeacherPrimaryDashboard(params = {}) {
+      const queryParams = {};
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+
+      return handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.TEACHER_PRIMARY, { params: queryParams })
+      );
+    },
+
+    /**
+     * Get teacher attendance by role breakdown
+     * @param {Object} params - Query parameters
+     * @param {string} [params.startDate] - Start date (YYYY-MM-DD)
+     * @param {string} [params.endDate] - End date (YYYY-MM-DD)
+     * @param {number} [params.provinceId] - Province ID
+     * @param {number} [params.districtId] - District ID
+     * @param {number} [params.schoolId] - School ID
+     * @returns {Promise<Array>} Teacher attendance by role data
+     */
+    async getTeacherByRoleBreakdown(params = {}) {
+      const queryParams = {};
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+
+      return handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.TEACHER_BY_ROLE, { params: queryParams })
+      );
+    },
+
+    /**
+     * Get teacher attendance monthly trends
+     * @param {Object} params - Query parameters
+     * @param {string} [params.startDate] - Start date (YYYY-MM-DD)
+     * @param {string} [params.endDate] - End date (YYYY-MM-DD)
+     * @param {number} [params.provinceId] - Province ID
+     * @param {number} [params.districtId] - District ID
+     * @param {number} [params.schoolId] - School ID
+     * @returns {Promise<Array>} Teacher monthly trends data
+     */
+    async getTeacherMonthlyTrends(params = {}) {
+      const queryParams = {};
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+
+      return handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.TEACHER_MONTHLY_TRENDS, { params: queryParams })
+      );
     }
   },
 

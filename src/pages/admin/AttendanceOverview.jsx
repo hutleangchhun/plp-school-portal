@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { PageLoader } from '../../components/ui/DynamicLoader';
@@ -18,11 +19,36 @@ import AttendanceMonthlyTrends from '../../components/charts/AttendanceMonthlyTr
 const AttendanceOverview = () => {
   const { t } = useLanguage();
   const { error, handleError, clearError } = useErrorHandler();
+  const location = useLocation();
+  const previousLocationRef = useRef(location.pathname);
 
   // State management
   const [loading, setLoading] = useState(true);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
+
+  // Initialize activeTab from localStorage if available, otherwise default to 'student'
+  const [activeTab, setActiveTabState] = useState(() => {
+    try {
+      const savedTab = localStorage.getItem('attendanceOverviewTab');
+      return savedTab && (savedTab === 'student' || savedTab === 'teacher') ? savedTab : 'student';
+    } catch {
+      return 'student';
+    }
+  });
+
+  // Wrapper for setActiveTab that also saves to localStorage
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab);
+    try {
+      localStorage.setItem('attendanceOverviewTab', tab);
+    } catch (err) {
+      console.error('Error saving tab preference:', err);
+    }
+  };
+
+  const [teacherDashboardData, setTeacherDashboardData] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Sidebar filter state
 
   // Get current month's start and end dates
   const getCurrentMonthRange = () => {
@@ -335,6 +361,81 @@ const AttendanceOverview = () => {
     }
   }, [dailyFilters, monthlyFilters, handleError, clearError, t]);
 
+  // Fetch teacher attendance dashboard data
+  const fetchTeacherAttendanceDashboard = useCallback(async () => {
+    setDashboardLoading(true);
+    clearError();
+
+    try {
+      // Build params using monthly filters
+      const primaryParams = {};
+      if (monthlyFilters.startDate) primaryParams.startDate = monthlyFilters.startDate;
+      if (monthlyFilters.endDate) primaryParams.endDate = monthlyFilters.endDate;
+      if (monthlyFilters.province) primaryParams.provinceId = parseInt(monthlyFilters.province, 10);
+      if (monthlyFilters.district) primaryParams.districtId = parseInt(monthlyFilters.district, 10);
+      if (monthlyFilters.school) primaryParams.schoolId = parseInt(monthlyFilters.school, 10);
+
+      console.log('Fetching teacher dashboard with params:', primaryParams);
+
+      // Fetch teacher primary dashboard, role breakdown, and monthly trends in parallel
+      const [
+        teacherPrimaryResponse,
+        teacherRoleResponse,
+        teacherMonthlyResponse
+      ] = await Promise.all([
+        attendanceService.dashboard.getTeacherPrimaryDashboard(primaryParams),
+        attendanceService.dashboard.getTeacherByRoleBreakdown(primaryParams),
+        attendanceService.dashboard.getTeacherMonthlyTrends(primaryParams)
+      ]);
+
+      console.log('Teacher Primary Response:', teacherPrimaryResponse);
+      console.log('Teacher Role Response:', teacherRoleResponse);
+      console.log('Teacher Monthly Trends Response:', teacherMonthlyResponse);
+
+      // Extract data with proper fallbacks
+      const primaryData = teacherPrimaryResponse.success ? teacherPrimaryResponse.data : null;
+      const byRoleData = teacherRoleResponse.success ? teacherRoleResponse.data : [];
+      const monthlyTrendsData = teacherMonthlyResponse.success ? (Array.isArray(teacherMonthlyResponse.data) ? teacherMonthlyResponse.data : []) : [];
+
+      // Debug log the structure
+      console.log('Extracted Primary Data:', primaryData);
+      console.log('Extracted byRole Data:', byRoleData);
+      console.log('Monthly Trends Data:', monthlyTrendsData);
+      console.log('Primary Data Keys:', primaryData ? Object.keys(primaryData) : 'null');
+      console.log('byRole is Array:', Array.isArray(byRoleData));
+      console.log('byRole length:', Array.isArray(byRoleData) ? byRoleData.length : 'N/A');
+      console.log('Monthly Trends is Array:', Array.isArray(monthlyTrendsData));
+      console.log('Monthly Trends length:', Array.isArray(monthlyTrendsData) ? monthlyTrendsData.length : 'N/A');
+
+      // Log first role object structure
+      if (Array.isArray(byRoleData) && byRoleData.length > 0) {
+        console.log('First Role Object:', byRoleData[0]);
+        console.log('First Role Keys:', Object.keys(byRoleData[0]));
+        console.log('Full byRole data:', JSON.stringify(byRoleData, null, 2));
+      }
+
+      // Combine all data
+      const combinedData = {
+        primary: primaryData,
+        byRole: Array.isArray(byRoleData) ? byRoleData : [],
+        monthly: monthlyTrendsData
+      };
+
+      setTeacherDashboardData(combinedData);
+
+      console.log('Teacher Dashboard Data set to:', combinedData);
+
+    } catch (err) {
+      console.error('Error fetching teacher dashboard data:', err);
+      handleError(err, {
+        toastMessage: t('failedToLoadAttendanceDashboard', 'Failed to load teacher attendance dashboard')
+      });
+    } finally {
+      setDashboardLoading(false);
+      setLoading(false);
+    }
+  }, [monthlyFilters, handleError, clearError, t]);
+
   // Load provinces on mount
   useEffect(() => {
     fetchProvinces();
@@ -342,34 +443,70 @@ const AttendanceOverview = () => {
 
   // Fetch dashboard on mount or when filters change
   useEffect(() => {
-    fetchAttendanceDashboard();
-  }, [fetchAttendanceDashboard]);
+    if (activeTab === 'student') {
+      fetchAttendanceDashboard();
+    } else {
+      fetchTeacherAttendanceDashboard();
+    }
+  }, [fetchAttendanceDashboard, fetchTeacherAttendanceDashboard, activeTab, monthlyFilters]);
+
+  // Clear tab preference from localStorage only when navigating away from this page
+  useEffect(() => {
+    const currentPathname = location.pathname;
+
+    // Check if we've navigated to a different page
+    if (previousLocationRef.current !== currentPathname && !currentPathname.includes('attendance-overview')) {
+      try {
+        localStorage.removeItem('attendanceOverviewTab');
+        console.log('Cleared tab preference - navigated away from attendance overview');
+      } catch (err) {
+        console.error('Error clearing tab preference:', err);
+      }
+    }
+
+    // Update the ref for next comparison
+    previousLocationRef.current = currentPathname;
+  }, [location.pathname]);
 
   // Export to CSV
   const handleExportCSV = () => {
-    if (!dashboardData || !dashboardData.primary) {
-      handleError(new Error('No data to export'));
-      return;
-    }
-
     try {
-      // Prepare CSV headers
-      const headers = [
-        'Metric',
-        'Value'
-      ];
+      let headers = ['Metric', 'Value'];
+      let rows = [];
 
-      // Prepare CSV rows
-      const rows = [
-        ['Total Students', dashboardData.primary.totalStudents || 0],
-        ['Students with Data', dashboardData.primary.studentsWithAttendanceData || 0],
-        ['Total Records', dashboardData.primary.totalAttendanceRecords || 0],
-        ['Overall Attendance %', dashboardData.primary.overallAttendancePercentage?.toFixed(2) || 0],
-        ['Present', dashboardData.primary.attendanceDistribution?.present || 0],
-        ['Absent', dashboardData.primary.attendanceDistribution?.absent || 0],
-        ['Late', dashboardData.primary.attendanceDistribution?.late || 0],
-        ['Leave', dashboardData.primary.attendanceDistribution?.leave || 0]
-      ];
+      if (activeTab === 'student') {
+        if (!dashboardData || !dashboardData.primary) {
+          handleError(new Error('No data to export'));
+          return;
+        }
+
+        // Prepare student CSV rows
+        rows = [
+          ['Total Students', dashboardData.primary.totalStudents || 0],
+          ['Students with Data', dashboardData.primary.studentsWithAttendanceData || 0],
+          ['Total Records', dashboardData.primary.totalAttendanceRecords || 0],
+          ['Overall Attendance %', dashboardData.primary.overallAttendancePercentage?.toFixed(2) || 0],
+          ['Present', dashboardData.primary.attendanceDistribution?.present || 0],
+          ['Absent', dashboardData.primary.attendanceDistribution?.absent || 0],
+          ['Late', dashboardData.primary.attendanceDistribution?.late || 0],
+          ['Leave', dashboardData.primary.attendanceDistribution?.leave || 0]
+        ];
+      } else {
+        if (!teacherDashboardData || !teacherDashboardData.primary) {
+          handleError(new Error('No data to export'));
+          return;
+        }
+
+        // Prepare teacher CSV rows
+        rows = [
+          ['Total Teachers', teacherDashboardData.primary.totalTeachers || 0],
+          ['Teachers with Data', teacherDashboardData.primary.teachersWithAttendanceData || 0],
+          ['Total Records', teacherDashboardData.primary.totalAttendanceRecords || 0],
+          ['Average Hours Worked', teacherDashboardData.primary.averageHoursWorked?.toFixed(2) || 0],
+          ['Overall Attendance %', teacherDashboardData.primary.overallAttendancePercentage?.toFixed(2) || 0],
+          ['Pending Approvals', teacherDashboardData.primary.pendingApprovals || 0]
+        ];
+      }
 
       // Combine headers and rows
       const csvContent = [
@@ -383,7 +520,7 @@ const AttendanceOverview = () => {
       const url = URL.createObjectURL(blob);
 
       link.setAttribute('href', url);
-      link.setAttribute('download', `attendance-report-${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `${activeTab}-attendance-report-${new Date().toISOString().split('T')[0]}.csv`);
       link.style.visibility = 'hidden';
 
       document.body.appendChild(link);
@@ -450,7 +587,7 @@ const AttendanceOverview = () => {
               variant="primary"
               size="sm"
               onClick={handleExportCSV}
-              disabled={!dashboardData || !dashboardData.primary}
+              disabled={activeTab === 'student' ? (!dashboardData || !dashboardData.primary) : (!teacherDashboardData || !teacherDashboardData.primary)}
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
@@ -458,165 +595,488 @@ const AttendanceOverview = () => {
             </Button>
           </div>
 
-          {/* Summary Statistics Cards */}
-          <AttendanceSummaryCards
-            dashboardData={dashboardData}
-            dashboardFilters={monthlyFilters}
-          />
+          {/* Tab Navigation */}
+          <div className="flex gap-2 mb-6 border-b border-gray-200">
+            <Button
+              variant={activeTab === 'student' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('student')}
+              className="px-4 py-2 rounded-t-lg border-b-2 transition-colors"
+              style={{
+                borderColor: activeTab === 'student' ? 'currentColor' : 'transparent'
+              }}
+            >
+              {t('students', 'Students')}
+            </Button>
+            <Button
+              variant={activeTab === 'teacher' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('teacher')}
+              className="px-4 py-2 rounded-t-lg border-b-2 transition-colors"
+              style={{
+                borderColor: activeTab === 'teacher' ? 'currentColor' : 'transparent'
+              }}
+            >
+              {t('teachers', 'Teachers')}
+            </Button>
+          </div>
 
-          {/* Daily Trends with Separate Filters */}
-          <AttendanceDailyTrends
-            dashboardData={dashboardData}
-            dashboardFilters={dailyFilters}
-            locationOptions={dailyLocationOptions}
-            onFilterChange={(field, value) => {
-              // Handle batch filter update
-              if (field === 'all') {
-                setDailyFilters(value);
-                return;
-              }
+          {/* Student Tab Content */}
+          {activeTab === 'student' && (
+            <>
+              {/* Summary Statistics Cards */}
+              <AttendanceSummaryCards
+                dashboardData={dashboardData}
+                dashboardFilters={monthlyFilters}
+              />
 
-              if (field === 'province') {
-                setDailyFilters(prev => ({
-                  ...prev,
-                  province: value,
-                  district: '',
-                  school: ''
-                }));
-                // Clear districts and schools when province changes
-                setDailyLocationOptions(prev => ({
-                  ...prev,
-                  districts: [],
-                  schools: []
-                }));
-                if (value) {
-                  fetchDailyDistricts(value);
-                }
-              } else if (field === 'district') {
-                setDailyFilters(prev => ({
-                  ...prev,
-                  district: value,
-                  school: ''
-                }));
-                // Clear schools when district changes
-                setDailyLocationOptions(prev => ({
-                  ...prev,
-                  schools: []
-                }));
-                if (value) {
-                  fetchDailySchools(value);
-                }
-              } else if (field === 'school') {
-                setDailyFilters(prev => ({
-                  ...prev,
-                  school: value
-                }));
-              } else if (field === 'startDate') {
-                setDailyFilters(prev => ({
-                  ...prev,
-                  startDate: value
-                }));
-              }
-            }}
-            onClearFilters={() => {
-              const today = new Date().toISOString().split('T')[0];
-              setDailyFilters({
-                startDate: today,
-                province: '',
-                district: '',
-                school: ''
-              });
-              // Clear location options when resetting
-              setDailyLocationOptions({
-                provinces: dailyLocationOptions.provinces,
-                districts: [],
-                schools: []
-              });
-            }}
-            fetchDistricts={fetchDailyDistricts}
-            fetchSchools={fetchDailySchools}
-          />
+              {/* Daily Trends with Separate Filters */}
+              <AttendanceDailyTrends
+                dashboardData={dashboardData}
+                dashboardFilters={dailyFilters}
+                locationOptions={dailyLocationOptions}
+                onFilterChange={(field, value) => {
+                  if (field === 'all') {
+                    setDailyFilters(value);
+                    return;
+                  }
 
-          {/* Monthly Trends with Separate Filters */}
-          <AttendanceMonthlyTrends
-            dashboardData={dashboardData}
-            dashboardFilters={monthlyFilters}
-            locationOptions={monthlyLocationOptions}
-            onFilterChange={(field, value) => {
-              // Handle batch filter update
-              if (field === 'all') {
-                setMonthlyFilters(value);
-                return;
-              }
+                  if (field === 'province') {
+                    setDailyFilters(prev => ({
+                      ...prev,
+                      province: value,
+                      district: '',
+                      school: ''
+                    }));
+                    setDailyLocationOptions(prev => ({
+                      ...prev,
+                      districts: [],
+                      schools: []
+                    }));
+                    if (value) {
+                      fetchDailyDistricts(value);
+                    }
+                  } else if (field === 'district') {
+                    setDailyFilters(prev => ({
+                      ...prev,
+                      district: value,
+                      school: ''
+                    }));
+                    setDailyLocationOptions(prev => ({
+                      ...prev,
+                      schools: []
+                    }));
+                    if (value) {
+                      fetchDailySchools(value);
+                    }
+                  } else if (field === 'school') {
+                    setDailyFilters(prev => ({
+                      ...prev,
+                      school: value
+                    }));
+                  } else if (field === 'startDate') {
+                    setDailyFilters(prev => ({
+                      ...prev,
+                      startDate: value
+                    }));
+                  }
+                }}
+                onClearFilters={() => {
+                  const today = new Date().toISOString().split('T')[0];
+                  setDailyFilters({
+                    startDate: today,
+                    province: '',
+                    district: '',
+                    school: ''
+                  });
+                  setDailyLocationOptions({
+                    provinces: dailyLocationOptions.provinces,
+                    districts: [],
+                    schools: []
+                  });
+                }}
+                fetchDistricts={fetchDailyDistricts}
+                fetchSchools={fetchDailySchools}
+              />
 
-              if (field === 'province') {
-                setMonthlyFilters(prev => ({
-                  ...prev,
-                  province: value,
-                  district: '',
-                  school: ''
-                }));
-                // Clear districts and schools when province changes
-                setMonthlyLocationOptions(prev => ({
-                  ...prev,
-                  districts: [],
-                  schools: []
-                }));
-                if (value) {
-                  fetchMonthlyDistricts(value);
-                }
-              } else if (field === 'district') {
-                setMonthlyFilters(prev => ({
-                  ...prev,
-                  district: value,
-                  school: ''
-                }));
-                // Clear schools when district changes
-                setMonthlyLocationOptions(prev => ({
-                  ...prev,
-                  schools: []
-                }));
-                if (value) {
-                  fetchMonthlySchools(value);
-                }
-              } else if (field === 'school') {
-                setMonthlyFilters(prev => ({
-                  ...prev,
-                  school: value
-                }));
-              } else if (field === 'startDate') {
-                setMonthlyFilters(prev => ({
-                  ...prev,
-                  startDate: value
-                }));
-              } else if (field === 'endDate') {
-                setMonthlyFilters(prev => ({
-                  ...prev,
-                  endDate: value
-                }));
-              }
-            }}
-            onClearFilters={() => {
-              const { startDate, endDate } = getCurrentMonthRange();
-              setMonthlyFilters({
-                startDate,
-                endDate,
-                province: '',
-                district: '',
-                school: ''
-              });
-              // Clear location options when resetting
-              setMonthlyLocationOptions({
-                provinces: monthlyLocationOptions.provinces,
-                districts: [],
-                schools: []
-              });
-            }}
-            fetchDistricts={fetchMonthlyDistricts}
-            fetchSchools={fetchMonthlySchools}
-          />
+              {/* Monthly Trends with Separate Filters */}
+              <AttendanceMonthlyTrends
+                dashboardData={dashboardData}
+                dashboardFilters={monthlyFilters}
+                locationOptions={monthlyLocationOptions}
+                onFilterChange={(field, value) => {
+                  if (field === 'all') {
+                    setMonthlyFilters(value);
+                    return;
+                  }
+
+                  if (field === 'province') {
+                    setMonthlyFilters(prev => ({
+                      ...prev,
+                      province: value,
+                      district: '',
+                      school: ''
+                    }));
+                    setMonthlyLocationOptions(prev => ({
+                      ...prev,
+                      districts: [],
+                      schools: []
+                    }));
+                    if (value) {
+                      fetchMonthlyDistricts(value);
+                    }
+                  } else if (field === 'district') {
+                    setMonthlyFilters(prev => ({
+                      ...prev,
+                      district: value,
+                      school: ''
+                    }));
+                    setMonthlyLocationOptions(prev => ({
+                      ...prev,
+                      schools: []
+                    }));
+                    if (value) {
+                      fetchMonthlySchools(value);
+                    }
+                  } else if (field === 'school') {
+                    setMonthlyFilters(prev => ({
+                      ...prev,
+                      school: value
+                    }));
+                  } else if (field === 'startDate') {
+                    setMonthlyFilters(prev => ({
+                      ...prev,
+                      startDate: value
+                    }));
+                  } else if (field === 'endDate') {
+                    setMonthlyFilters(prev => ({
+                      ...prev,
+                      endDate: value
+                    }));
+                  }
+                }}
+                onClearFilters={() => {
+                  const { startDate, endDate } = getCurrentMonthRange();
+                  setMonthlyFilters({
+                    startDate,
+                    endDate,
+                    province: '',
+                    district: '',
+                    school: ''
+                  });
+                  setMonthlyLocationOptions({
+                    provinces: monthlyLocationOptions.provinces,
+                    districts: [],
+                    schools: []
+                  });
+                }}
+                fetchDistricts={fetchMonthlyDistricts}
+                fetchSchools={fetchMonthlySchools}
+              />
+            </>
+          )}
+
+          {/* Teacher Tab Content */}
+          {activeTab === 'teacher' && (
+            <div className="space-y-6">
+              {dashboardLoading && (
+                <div className="flex justify-center items-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600">{t('loadingData', 'Loading teacher attendance data...')}</p>
+                  </div>
+                </div>
+              )}
+
+              {!dashboardLoading && !teacherDashboardData?.primary && (
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="pt-6 text-center">
+                    <p className="text-gray-600">{t('noDataAvailable', 'No teacher attendance data available')}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Teacher Summary Cards */}
+              {!dashboardLoading && teacherDashboardData?.primary && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                    <CardContent className="pt-6">
+                      <div className="text-3xl font-bold text-blue-900">
+                        {teacherDashboardData.primary.totalTeachers || 0}
+                      </div>
+                      <p className="text-sm text-blue-600 mt-2">{t('totalTeachers', 'Total Teachers')}</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                    <CardContent className="pt-6">
+                      <div className="text-3xl font-bold text-green-900">
+                        {teacherDashboardData.primary.teachersWithAttendanceData || 0}
+                      </div>
+                      <p className="text-sm text-green-600 mt-2">{t('withData', 'With Attendance Data')}</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+                    <CardContent className="pt-6">
+                      <div className="text-3xl font-bold text-purple-900">
+                        {teacherDashboardData.primary.averageHoursWorked?.toFixed(2) || 0}
+                      </div>
+                      <p className="text-sm text-purple-600 mt-2">{t('averageHours', 'Average Hours Worked')}</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+                    <CardContent className="pt-6">
+                      <div className="text-3xl font-bold text-orange-900">
+                        {teacherDashboardData.primary.overallAttendancePercentage?.toFixed(1) || 0}%
+                      </div>
+                      <p className="text-sm text-orange-600 mt-2">{t('attendancePercentage', 'Attendance %')}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Teacher by Role Breakdown */}
+              {!dashboardLoading && teacherDashboardData?.byRole && teacherDashboardData.byRole.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t('attendanceByRole', 'Attendance by Role')}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('role', 'Role')}</th>
+                            <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('total', 'Total')}</th>
+                            <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('present', 'Present')}</th>
+                            <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('absent', 'Absent')}</th>
+                            <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('percentage', 'Percentage')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {teacherDashboardData.byRole.map((role, index) => (
+                            <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                              <td className="py-3 px-4 text-gray-900">{role.roleName || 'N/A'}</td>
+                              <td className="text-right py-3 px-4 text-gray-700">{role.totalStaff || 0}</td>
+                              <td className="text-right py-3 px-4 text-green-600 font-medium">{role.distribution?.present || 0}</td>
+                              <td className="text-right py-3 px-4 text-red-600 font-medium">{role.distribution?.absent || 0}</td>
+                              <td className="text-right py-3 px-4 text-blue-600 font-medium">
+                                {role.attendancePercentage?.toFixed(1) || 0}%
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Teacher Monthly Trends Chart */}
+              {teacherDashboardData?.monthly && (
+                <AttendanceMonthlyTrends
+                  dashboardData={teacherDashboardData}
+                  dashboardFilters={monthlyFilters}
+                  locationOptions={monthlyLocationOptions}
+                  onFilterChange={(field, value) => {
+                    if (field === 'all') {
+                      setMonthlyFilters(value);
+                      return;
+                    }
+
+                    if (field === 'province') {
+                      setMonthlyFilters(prev => ({
+                        ...prev,
+                        province: value,
+                        district: '',
+                        school: ''
+                      }));
+                      setMonthlyLocationOptions(prev => ({
+                        ...prev,
+                        districts: [],
+                        schools: []
+                      }));
+                      if (value) {
+                        fetchMonthlyDistricts(value);
+                      }
+                    } else if (field === 'district') {
+                      setMonthlyFilters(prev => ({
+                        ...prev,
+                        district: value,
+                        school: ''
+                      }));
+                      setMonthlyLocationOptions(prev => ({
+                        ...prev,
+                        schools: []
+                      }));
+                      if (value) {
+                        fetchMonthlySchools(value);
+                      }
+                    } else if (field === 'school') {
+                      setMonthlyFilters(prev => ({
+                        ...prev,
+                        school: value
+                      }));
+                    } else if (field === 'startDate') {
+                      setMonthlyFilters(prev => ({
+                        ...prev,
+                        startDate: value
+                      }));
+                    } else if (field === 'endDate') {
+                      setMonthlyFilters(prev => ({
+                        ...prev,
+                        endDate: value
+                      }));
+                    }
+                  }}
+                  onClearFilters={() => {
+                    const { startDate, endDate } = getCurrentMonthRange();
+                    setMonthlyFilters({
+                      startDate,
+                      endDate,
+                      province: '',
+                      district: '',
+                      school: ''
+                    });
+                    setMonthlyLocationOptions({
+                      provinces: monthlyLocationOptions.provinces,
+                      districts: [],
+                      schools: []
+                    });
+                  }}
+                  fetchDistricts={fetchMonthlyDistricts}
+                  fetchSchools={fetchMonthlySchools}
+                />
+              )}
+
+              {/* Filter Button for Teacher Tab */}
+              <div className="flex gap-2 mb-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSidebarOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Filter className="h-4 w-4" />
+                  {t('filters', 'Filters')}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const { startDate, endDate } = getCurrentMonthRange();
+                    setMonthlyFilters({
+                      startDate,
+                      endDate,
+                      province: '',
+                      district: '',
+                      school: ''
+                    });
+                    setMonthlyLocationOptions({
+                      provinces: monthlyLocationOptions.provinces,
+                      districts: [],
+                      schools: []
+                    });
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCcw className="h-4 w-4" />
+                  {t('reset', 'Reset')}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Sidebar Filter for Teacher Tab */}
+      <SidebarFilter
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        title={t('filterTeacherAttendance', 'Filter Teacher Attendance')}
+        subtitle={t('selectDateAndLocation', 'Select date range and location')}
+        hasFilters={monthlyFilters.province || monthlyFilters.district || monthlyFilters.school}
+        onApply={() => {
+          setSidebarOpen(false);
+        }}
+        onClearFilters={() => {
+          const { startDate, endDate } = getCurrentMonthRange();
+          setMonthlyFilters({
+            startDate,
+            endDate,
+            province: '',
+            district: '',
+            school: ''
+          });
+          setMonthlyLocationOptions({
+            provinces: monthlyLocationOptions.provinces,
+            districts: [],
+            schools: []
+          });
+        }}
+      >
+        {/* Filter Content */}
+        <div className="space-y-4">
+          <SearchableDropdown
+            label={t('province', 'Province')}
+            options={monthlyLocationOptions.provinces}
+            value={monthlyFilters.province}
+            onChange={(value) => {
+              setMonthlyFilters(prev => ({
+                ...prev,
+                province: value,
+                district: '',
+                school: ''
+              }));
+              setMonthlyLocationOptions(prev => ({
+                ...prev,
+                districts: [],
+                schools: []
+              }));
+              if (value) {
+                fetchMonthlyDistricts(value);
+              }
+            }}
+            placeholder={t('selectProvince', 'Select Province')}
+          />
+          <SearchableDropdown
+            label={t('district', 'District')}
+            options={monthlyLocationOptions.districts}
+            value={monthlyFilters.district}
+            onChange={(value) => {
+              setMonthlyFilters(prev => ({
+                ...prev,
+                district: value,
+                school: ''
+              }));
+              setMonthlyLocationOptions(prev => ({
+                ...prev,
+                schools: []
+              }));
+              if (value) {
+                fetchMonthlySchools(value);
+              }
+            }}
+            placeholder={t('selectDistrict', 'Select District')}
+            disabled={!monthlyFilters.province}
+          />
+          <SearchableDropdown
+            label={t('school', 'School')}
+            options={monthlyLocationOptions.schools}
+            value={monthlyFilters.school}
+            onChange={(value) => {
+              setMonthlyFilters(prev => ({
+                ...prev,
+                school: value
+              }));
+            }}
+            placeholder={t('selectSchool', 'Select School')}
+            disabled={!monthlyFilters.district}
+          />
+        </div>
+      </SidebarFilter>
     </div>
   );
 };

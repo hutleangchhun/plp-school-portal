@@ -146,6 +146,9 @@ const ENDPOINTS = {
       DAILY_TRENDS: '/attendance-dashboard/daily-trends',
       MONTHLY_TRENDS: '/attendance-dashboard/monthly-trends',
       APPROVAL_STATUS: '/attendance-dashboard/approval-status',
+      TEACHER_PRIMARY: '/attendance-dashboard/teacher/primary',
+      TEACHER_BY_ROLE: '/attendance-dashboard/teacher/by-role',
+      TEACHER_MONTHLY_TRENDS: '/attendance-dashboard/teacher/monthly-trends',
     },
   },
   GRADES: {
