@@ -9,7 +9,7 @@ import { formatDateKhmer } from '@/utils/formatters';
 
 /**
  * Create a professional QR code card element
- * @param {Object} qrCode - QR code data object 
+ * @param {Object} qrCode - QR code data object
  * @param {string} qrCode.name - Student/Teacher name
  * @param {string} qrCode.username - Username
  * @param {string} qrCode.schoolName - School name
@@ -18,6 +18,7 @@ import { formatDateKhmer } from '@/utils/formatters';
  * @param {string} qrCode.class.gradeLevel - Grade level
  * @param {string} qrCode.class.section - Class section
  * @param {string} qrCode.studentNumber - Student ID number
+ * @param {string} qrCode.role - Role/Position (e.g., 'Student', 'Teacher', 'Director')
  * @param {string} qrCode.qrCode - Base64 encoded QR code image
  * @param {string} cardType - Type of card: 'student' or 'teacher' (defaults to 'student' in minimal context)
  * @param {Function} t - Translation function with signature (key, fallback) => string
@@ -175,6 +176,11 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
       classDisplay = qrCode.className;
     }
     createDetailLine(translate('class', 'Class'), classDisplay);
+  }
+
+  // Add Role Info (for both student and teacher)
+  if (qrCode.role) {
+    createDetailLine(translate('rolesFor', 'Role'), qrCode.role);
   }
 
   // Add password field

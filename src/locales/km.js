@@ -308,6 +308,7 @@ export const km = {
   teacherType: 'ប្រភេទគ្រូ',
   selectTeacherType: 'ជ្រើសរើសប្រភេទគ្រូ',
   selectRole: 'ជ្រើសរើសតួនាទី និងមុខតំណែង',
+  rolesFor: 'តួនាទី',
   subjects: 'មុខវិជ្ជាឯកទេសបណ្តុះបណ្តាល',
   selectSubjects: 'ជ្រើសរើសមុខវិជ្ជា',
   employmentInformation: 'ព័ត៌មានការងារ',

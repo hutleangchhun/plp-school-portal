@@ -166,6 +166,7 @@ export default function TeacherQRCodeManagement({ user }) {
                   email: enrichedStudent.email,
                   hasQrCode: !!userData.qr_code,
                   schoolName: schoolName,
+                  role: t('student', 'Student'),
                   class: {
                     classId: student.class?.id || student.class?.classId,
                     name: student.class?.name || null,

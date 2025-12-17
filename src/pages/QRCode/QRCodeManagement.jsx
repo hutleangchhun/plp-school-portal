@@ -167,6 +167,7 @@ export default function StudentQRCodeGenerator() {
                 email: enrichedStudent.email,
                 hasQrCode: !!userData.qr_code,
                 schoolName: schoolName,
+                role: t('student', 'Student'),
                 class: {
                   classId: student.class?.id || student.class?.classId,
                   name: student.class?.name || null,
@@ -281,7 +282,8 @@ export default function StudentQRCodeGenerator() {
                 email: enrichedTeacher.email,
                 teacherNumber: teacher.teacher_number || teacher.teacherNumber,
                 hasQrCode: !!userData.qr_code,
-                schoolName: schoolName
+                schoolName: schoolName,
+                role: teacher.role || userData.role || t('teacher', 'Teacher')
               });
             }
           } catch (err) {
@@ -371,6 +373,7 @@ export default function StudentQRCodeGenerator() {
                   email: userData.email || student.email,
                   hasQrCode: !!userData.qr_code,
                   schoolName: schoolName,
+                  role: t('student', 'Student'),
                   class: {
                     classId: student.class?.id || student.class?.classId,
                     name: student.class?.name || null,
@@ -442,7 +445,8 @@ export default function StudentQRCodeGenerator() {
                   email: userData.email || teacher.email,
                   teacherNumber: teacher.teacher_number || teacher.teacherNumber,
                   hasQrCode: !!userData.qr_code,
-                  schoolName: schoolName
+                  schoolName: schoolName,
+                  role: teacher.role || userData.role || t('teacher', 'Teacher')
                 });
               }
             } catch (err) {

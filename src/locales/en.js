@@ -107,6 +107,7 @@ export const en = {
   // User info display
   fullName: 'Full name',
   role: 'Role',
+  rolesFor: 'For',
   status: 'Status',
   classes: 'Classes',
   gradeLevels: 'Grade Levels',
