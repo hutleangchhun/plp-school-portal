@@ -307,12 +307,43 @@ export const dashboardService = {
           districtId: school.districtId
         })) : [];
 
-      // Calculate summary statistics
+      // Calculate summary statistics including all role counts
+      let totalDirectors = 0;
+      let totalDeputyPrincipals = 0;
+      let totalSecretaries = 0;
+      let totalTreasurers = 0;
+      let totalLibrarians = 0;
+      let totalWorkshop = 0;
+      let totalSecurity = 0;
+      let totalTeacherIct = 0;
+
+      // Aggregate all role counts from individual schools
+      if (Array.isArray(data)) {
+        data.forEach(school => {
+          totalDirectors += school.directorCount || 0;
+          totalDeputyPrincipals += school.deputyPrincipalCount || 0;
+          totalSecretaries += school.schoolSecretaryCount || 0;
+          totalTreasurers += school.schoolTreasurerCount || 0;
+          totalLibrarians += school.schoolLibrarianCount || 0;
+          totalWorkshop += school.schoolWorkshopCount || 0;
+          totalSecurity += school.schoolSecurityCount || 0;
+          totalTeacherIct += school.teacherIctCount || 0;
+        });
+      }
+
       const summary = {
         totalSchools: totalSchools,
         totalStudents: totalStudents,
         totalTeachers: totalTeachers,
-        totalClasses: totalClasses
+        totalClasses: totalClasses,
+        totalDirectors: totalDirectors,
+        totalDeputyPrincipals: totalDeputyPrincipals,
+        totalSecretaries: totalSecretaries,
+        totalTreasurers: totalTreasurers,
+        totalLibrarians: totalLibrarians,
+        totalWorkshop: totalWorkshop,
+        totalSecurity: totalSecurity,
+        totalTeacherIct: totalTeacherIct
       };
 
       return {
@@ -333,7 +364,15 @@ export const dashboardService = {
           totalSchools: 0,
           totalStudents: 0,
           totalTeachers: 0,
-          totalClasses: 0
+          totalClasses: 0,
+          totalDirectors: 0,
+          totalDeputyPrincipals: 0,
+          totalSecretaries: 0,
+          totalTreasurers: 0,
+          totalLibrarians: 0,
+          totalWorkshop: 0,
+          totalSecurity: 0,
+          totalTeacherIct: 0
         }
       };
     }
