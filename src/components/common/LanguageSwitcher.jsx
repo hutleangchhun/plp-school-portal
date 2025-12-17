@@ -25,7 +25,6 @@ export default function LanguageSwitcher({ className = '' }) {
           className={`flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${className}`}
           title={t('ប្តូរភាសា', 'Switch Language')}
         >
-          <span className="text-lg mr-2">{currentLanguage?.flag}</span>
           <span className="hidden sm:inline mr-1">
             {currentLanguage?.nativeLabel}
           </span>
@@ -49,7 +48,7 @@ export default function LanguageSwitcher({ className = '' }) {
                   : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
               } data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900 data-[highlighted]:outline-none`}
             >
-              <span className="text-lg mr-3">{lang.flag}</span>
+              
               <span className="font-medium">{lang.nativeLabel}</span>
               {language === lang.code && (
                 <span className="ml-auto text-blue-600">✓</span>
