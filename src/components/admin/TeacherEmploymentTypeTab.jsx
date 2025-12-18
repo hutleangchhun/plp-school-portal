@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
@@ -14,13 +14,14 @@ const TeacherEmploymentTypeTab = ({ filters }) => {
   const [employmentStats, setEmploymentStats] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const fetchingRef = useRef(false);
 
-  useEffect(() => {
-    fetchStats();
-  }, [filters]);
+  const fetchStats = useCallback(async () => {
+    // Prevent duplicate requests
+    if (fetchingRef.current) return;
 
-  const fetchStats = async () => {
     try {
+      fetchingRef.current = true;
       setLoading(true);
       clearError();
 
@@ -53,8 +54,13 @@ const TeacherEmploymentTypeTab = ({ filters }) => {
       });
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
-  };
+  }, [filters?.selectedProvince, filters?.selectedDistrict, filters?.selectedSchool, handleError, clearError, t]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   return (
     <div className="space-y-6">

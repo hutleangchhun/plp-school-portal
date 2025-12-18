@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useLoading } from "../../contexts/LoadingContext";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
@@ -46,9 +46,15 @@ const TeacherOverviewDashboard = () => {
 
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
 
+  // Ref to prevent duplicate province fetches
+  const provinceFetchedRef = React.useRef(false);
+
   // Fetch provinces on mount
   useEffect(() => {
-    fetchProvinces();
+    if (!provinceFetchedRef.current) {
+      provinceFetchedRef.current = true;
+      fetchProvinces();
+    }
   }, []);
 
   const fetchProvinces = async () => {
@@ -137,6 +143,16 @@ const TeacherOverviewDashboard = () => {
     setTempDistrict("");
     setTempSchool("");
   };
+
+  // Memoize filters object to prevent recreating on every render
+  const filters = useMemo(
+    () => ({
+      selectedProvince,
+      selectedDistrict,
+      selectedSchool,
+    }),
+    [selectedProvince, selectedDistrict, selectedSchool]
+  );
 
   if (error) {
     return (
@@ -267,13 +283,7 @@ const TeacherOverviewDashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <TeacherEmploymentTypeTab
-                filters={{
-                  selectedProvince,
-                  selectedDistrict,
-                  selectedSchool,
-                }}
-              />
+              <TeacherEmploymentTypeTab filters={filters} />
             </CardContent>
           </Card>
         </FadeInSection>
@@ -290,13 +300,7 @@ const TeacherOverviewDashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <TeacherExtraLearningToolTab
-                filters={{
-                  selectedProvince,
-                  selectedDistrict,
-                  selectedSchool,
-                }}
-              />
+              <TeacherExtraLearningToolTab filters={filters} />
             </CardContent>
           </Card>
         </FadeInSection>
