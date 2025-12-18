@@ -38,10 +38,12 @@ export const downloadQRCodesQueued = async (qrCodes, cardType, t, onProgress, sh
 
         const canvas = await html2canvas(element, {
           backgroundColor: '#ffffff',
-          scale: 2,
+          scale: 3,
           logging: false,
           allowTaint: true,
-          useCORS: true
+          useCORS: true,
+          dpi: 300,
+          imageTimeout: 5000
         });
 
         document.body.removeChild(element);
@@ -488,15 +490,14 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const cardsPerRow = 3;
+    const cardsPerRow = 4;
     const cardWidth = (pageWidth - 20) / cardsPerRow; // 20mm for margins
     const totalCardsWidth = cardWidth * cardsPerRow;
     const leftMargin = (pageWidth - totalCardsWidth) / 2; // Center cards horizontally
     const margin = 10;
-    const rowGap = 12; // Gap between rows
+    const rowGap = 8; // Gap between rows
 
     let cardsInRow = 0;
-    let rowsOnPage = 0;
     let currentY = margin;
     let maxHeightInRow = 0;
 
@@ -511,13 +512,15 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
         // Wait for images to load
         await new Promise(resolve => setTimeout(resolve, 300));
 
-        // Convert to canvas
+        // Convert to canvas with higher scale for better clarity
         const canvas = await html2canvas(element, {
           backgroundColor: '#ffffff',
-          scale: 2,
+          scale: 3,
           logging: false,
           allowTaint: true,
-          useCORS: true
+          useCORS: true,
+          dpi: 300,
+          imageTimeout: 5000
         });
 
         document.body.removeChild(element);
@@ -527,29 +530,18 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
         const imgWidth = cardWidth - 4; // 2mm padding on each side
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        // Check if we need a new row or new page (2 rows per page)
-        if (cardsInRow === 0 && rowsOnPage === 2) {
-          // Add new page after 2 rows
-          pdf.addPage();
-          currentY = margin;
-          rowsOnPage = 0;
-          maxHeightInRow = 0;
-        }
-
         // Check if current card fits in current row
-        if (currentY + imgHeight > pageHeight - margin && cardsInRow > 0) {
+        if (cardsInRow > 0 && currentY + imgHeight > pageHeight - margin) {
           // Move to next row
           currentY += maxHeightInRow + rowGap;
           cardsInRow = 0;
           maxHeightInRow = 0;
-          rowsOnPage++;
         }
 
-        // Check if we need a new page (2 rows limit)
-        if (cardsInRow === 0 && rowsOnPage === 2) {
+        // Check if we need a new page
+        if (cardsInRow === 0 && currentY + imgHeight > pageHeight - margin) {
           pdf.addPage();
           currentY = margin;
-          rowsOnPage = 0;
           maxHeightInRow = 0;
         }
 
@@ -567,7 +559,6 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
           currentY += maxHeightInRow + rowGap;
           cardsInRow = 0;
           maxHeightInRow = 0;
-          rowsOnPage++;
         }
       } catch (err) {
         console.warn(`Failed to add ${qrCode.name} to PDF:`, err);
@@ -604,10 +595,12 @@ export const downloadSingleQRCode = async (qrCode, cardType, t, showError) => {
 
     const canvas = await html2canvas(element, {
       backgroundColor: '#ffffff',
-      scale: 2,
+      scale: 3,
       logging: false,
       allowTaint: true,
-      useCORS: true
+      useCORS: true,
+      dpi: 300,
+      imageTimeout: 5000
     });
 
     document.body.removeChild(element);

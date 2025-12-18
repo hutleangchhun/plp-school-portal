@@ -10,6 +10,7 @@ import TeacherTransferManagement from './pages/admin/TeacherTransferManagement';
 import StudentTransferManagement from './pages/admin/StudentTransferManagement';
 import BMIReport from './pages/admin/BMIReport';
 import AttendanceOverview from './pages/admin/AttendanceOverview';
+import TeacherOverviewDashboard from './pages/admin/TeacherOverviewDashboard';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -226,6 +227,15 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<AttendanceOverview />} />
+          </Route>
+
+          {/* Admin Teacher Overview route - role ID 1 only (enforced by routePermissions) */}
+          <Route path="admin/teacher-overview" element={
+            <ProtectedRoute path="/admin/teacher-overview" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<TeacherOverviewDashboard />} />
           </Route>
 
           <Route path="students" element={

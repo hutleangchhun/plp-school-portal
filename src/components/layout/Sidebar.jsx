@@ -21,7 +21,8 @@ import {
   ArrowRightLeft,
   Activity,
   Heart,
-  ClipboardList
+  ClipboardList,
+  Database
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -66,9 +67,12 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/student-transfer': Users,
     '/admin/bmi-report': Heart,
     '/admin/attendance-overview': ClipboardList,
+    '/admin/teacher-overview': Database,
     'attendance': Calendar, // Parent item for attendance dropdown
     'admin-dashboard': LayoutDashboard,
     'admin-logs': Activity,
+    'teacherManagement': UserStar, // Parent item for teacher management dropdown
+    'teacher-overview': UserStar,
     'teacher-transfer': ArrowRightLeft,
     'student-transfer': ArrowRightLeft,
     'bmi-report': Heart,
@@ -103,9 +107,12 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/student-transfer': 'blue',
     '/admin/bmi-report': 'blue',
     '/admin/attendance-overview': 'blue',
+    '/admin/teacher-overview': 'blue',
     'attendance': 'blue', // Parent item for attendance dropdown
     'admin-dashboard': 'blue',
     'admin-logs': 'blue',
+    'teacherManagement': 'blue', // Parent item for teacher management dropdown
+    'teacher-overview': 'blue',
     'teacher-transfer': 'blue',
     'student-transfer': 'blue',
     'bmi-report': 'blue',

@@ -1656,4 +1656,8 @@ export const km = {
   page: 'ទំព័រ',
   previous: 'មុន',
   next: 'បន្ទាប់',
+
+  //sidebar
+  teacherOverview: 'ព័ត៏មានគ្រូ',
+  teacherOverviewDesc: 'មើលបំណែងចែកទិន្នន័យរបស់គ្រូបង្រៀន',
 };

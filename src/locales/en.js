@@ -1729,4 +1729,8 @@ export const en = {
 
   // Will Be Transferred
   willBeTransferredTo: 'Will Be Transferred To',
+
+  //sidebar
+    teacherOverview: 'Teacher Overview',
+    teacherOverviewDesc: 'View all teachers data distribution in the system',
 };  

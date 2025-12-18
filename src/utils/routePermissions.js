@@ -136,6 +136,10 @@ export const routePermissions = {
   '/admin/attendance-overview': {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'AttendanceOverview'
+  },
+  '/admin/teacher-overview': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'TeacherOverviewDashboard'
   }
 };
 
@@ -385,8 +389,18 @@ export const getNavigationItems = (user, t) => {
       href: '/admin-logs',
     },
     {
-      name: t('teachersManagement', 'Teacher Transfer'),
-      href: '/admin/teacher-transfer',
+      name: t('teachersManagement', 'Teacher Management'),
+      href: '#',
+      children: [
+        {
+          name: t('teacherOverview', 'Teacher Overview'),
+          href: '/admin/teacher-overview',
+        },
+        {
+          name: t('teacherTransfer', 'Teacher Transfer'),
+          href: '/admin/teacher-transfer',
+        },
+      ],
     },
     {
       name: t('studentsManagement', 'Student Transfer'),

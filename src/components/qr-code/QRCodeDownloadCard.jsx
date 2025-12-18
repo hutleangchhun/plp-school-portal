@@ -34,45 +34,105 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
     return defaultText;
   };
 
-  const accentColor = '#733E0A'; // Standard brown/gold accent color for cards
-  const headerBg = '#733E0A';
+  // Helper function to clean school name and add prefix
+  const cleanSchoolName = (schoolName) => {
+    if (!schoolName) return 'ថ្នាលបឋម';
+    // Remove various Khmer school type prefixes
+    let cleaned = schoolName
+      .replace(/^សាលាបឋម\s*/i, '')
+      .replace(/^សាលាបឋមសិក្សា\s*/i, '')
+      .replace(/^សាលាមជ្ឈមណ្ឌលសិក្សា\s*/i, '')
+      .replace(/^សាលាឧត្តមសិក្សា\s*/i, '')
+      .replace(/^សាលា\s*/i, '')
+      .trim();
+    // Add "ថ្នាលបឋម - " as a prefix separator if cleaned name exists
+    return cleaned ? `${cleaned}` : 'ថ្នាលបឋម';
+  };
+
+  const accentColor = '#053463'; // Standard brown/gold accent color for cards
+  const headerBg = '#053463';
+  const mainBorder = '#D6D3D1';
 
   // --- Card Container Setup (Minimal for printing/downloading) ---
   const element = document.createElement('div');
   element.style.position = 'fixed';
   element.style.left = '-9999px';
   element.style.top = '-9999px';
-  element.style.width = '350px'; // Reduced width for an ID card look
+  element.style.width = '180px'; // Compact width for 4 cards per row
+  element.style.display = 'flex';
+  element.style.flexDirection = 'column';
   element.style.backgroundColor = '#ffffff';
   element.style.fontFamily = 'Hanuman, "Khmer OS", "Noto Sans Khmer", sans-serif';
   element.style.overflow = 'hidden';
-  element.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.05)';
-  element.style.border = `2px solid ${accentColor}`; // Main card border with accent color
+  element.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.05)';
+  element.style.border = `0.5px solid ${mainBorder}`; // Main card border with accent color
+  element.style.borderRadius = '3px';
+
 
   // --- Header Section (Logo & School Name) ---
   const header = document.createElement('div');
-  header.style.padding = '15px 10px 20px 10px';
+  header.style.padding = '3px 3px 3px 3px';
   header.style.backgroundColor = headerBg;
   header.style.borderBottom = `1px solid #e0e0e0`;
-  header.style.textAlign = 'center';
   header.style.display = 'flex';
-  header.style.flexDirection = 'column';
-  header.style.alignItems = 'center';
-  header.style.gap = '8px';
+  header.style.alignItems = 'flex-start';
+  header.style.gap = '3px';
 
-  // Add Logo
+  // Add Logo with white background
+  const logoContainer = document.createElement('div');
+  logoContainer.style.width = '28px';
+  logoContainer.style.height = '28px';
+  logoContainer.style.display = 'flex';
+  logoContainer.style.alignItems = 'center';
+  logoContainer.style.justifyContent = 'center';
+  logoContainer.style.backgroundColor = '#ffffff';
+  logoContainer.style.borderRadius = '2px';
+  logoContainer.style.flexShrink = '0';
+
   const logoImg = document.createElement('img');
   logoImg.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='; // Placeholder - will be replaced with actual logo
-  logoImg.style.width = '110px';
-  logoImg.style.height = 'auto';
-  logoImg.style.marginBottom = '8px';
-  header.appendChild(logoImg);
+  logoImg.style.width = '25px';
+  logoImg.style.height = '25px';
+  logoContainer.appendChild(logoImg);
+  header.appendChild(logoContainer);
+
+  // Add School Info Container (right side with ថ្នាលបឋម on top and school name below)
+  const schoolInfoEl = document.createElement('div');
+  schoolInfoEl.style.flex = '1';
+  schoolInfoEl.style.display = 'flex';
+  schoolInfoEl.style.flexDirection = 'column';
+  schoolInfoEl.style.justifyContent = 'center';
+  schoolInfoEl.style.minWidth = '0';
+
+  // Add "ថ្នាលបឋម" label
+  const labelText = document.createElement('p');
+  labelText.textContent = 'ថ្នាលបឋម';
+  labelText.style.fontSize = '4px';
+  labelText.style.fontWeight = '600';
+  labelText.style.color = '#ffffff';
+  labelText.style.margin = '0 0 1px 0';
+  labelText.style.lineHeight = '1';
+  schoolInfoEl.appendChild(labelText);
+
+  // Add School Name
+  const schoolNameText = document.createElement('p');
+  schoolNameText.textContent = cleanSchoolName(qrCode.schoolName) || 'School';
+  schoolNameText.style.fontSize = '5px';
+  schoolNameText.style.fontWeight = '700';
+  schoolNameText.style.color = '#ffffff';
+  schoolNameText.style.margin = '0';
+  schoolNameText.style.lineHeight = '1.1';
+  schoolNameText.style.whiteSpace = 'normal';
+  schoolNameText.style.overflowWrap = 'break-word';
+  schoolNameText.style.wordBreak = 'break-word';
+  schoolInfoEl.appendChild(schoolNameText);
+  header.appendChild(schoolInfoEl);
 
   // Load actual logo image
   const loadLogoImage = () => {
     try {
       // Import the logo dynamically
-      import('../../assets/plp-logo.png').then(module => {
+      import('../../assets/plppp.png').then(module => {
         logoImg.src = module.default || module;
       }).catch(err => {
         console.warn('Could not load PLP logo:', err);
@@ -87,127 +147,92 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
 
   // --- Main Content Section (QR Code & Details) ---
   const content = document.createElement('div');
-  content.style.padding = '25px 30px 30px 30px';
+  content.style.padding = '4px 6px 4px 6px';
   content.style.textAlign = 'center';
+
+  // Name section (primary focus)
+  const nameEl = document.createElement('p');
+  nameEl.textContent = qrCode.name;
+  nameEl.style.fontSize = '9px';
+  nameEl.style.fontWeight = '700';
+  nameEl.style.color = '#1f2937';
+  nameEl.style.margin = '0 0 1px 0';
+  nameEl.style.lineHeight = '1.1';
+  content.appendChild(nameEl);
+
+  // Username (secondary identifier)
+  const usernameEl = document.createElement('p');
+  usernameEl.textContent = `${t('account')} ៖ ${qrCode.username}`;
+  usernameEl.style.fontSize = '7px';
+  usernameEl.style.color = '#6b7280';
+  usernameEl.style.margin = '0 0 1px 0';
+  usernameEl.style.fontWeight = '500';
+  content.appendChild(usernameEl);
+
+  // Password field (above QR code)
+  const passwordEl = document.createElement('p');
+  passwordEl.textContent = `${translate('password', 'Password')} : ________`;
+  passwordEl.style.fontSize = '7px';
+  passwordEl.style.color = '#6b7280';
+  passwordEl.style.margin = '0 0 3px 0';
+  passwordEl.style.fontWeight = '500';
+  passwordEl.style.textAlign = 'center';
+  content.appendChild(passwordEl);
 
   // QR Code section (centered and simple)
   const qrContainer = document.createElement('div');
   qrContainer.style.display = 'flex';
   qrContainer.style.justifyContent = 'center';
   qrContainer.style.alignItems = 'center';
-  qrContainer.style.padding = '10px';
-  qrContainer.style.marginBottom = '20px';
+  qrContainer.style.padding = '2px';
+  qrContainer.style.marginBottom = '3px';
 
   if (qrCode.qrCode) {
     const img = document.createElement('img');
     img.src = qrCode.qrCode;
-    img.style.width = '220px';
-    img.style.height = '220px';
-    img.style.border = `4px solid ${accentColor}`; // Simple color border
-    img.style.borderRadius = '4px';
+    img.style.width = '110px';
+    img.style.height = '110px';
+    img.style.border = `1px solid ${accentColor}`; // Simple color border
+    img.style.borderRadius = '2px';
     img.style.display = 'block';
     qrContainer.appendChild(img);
   }
   content.appendChild(qrContainer);
+  element.appendChild(content);
 
-  // Name section (primary focus)
-  const nameEl = document.createElement('p');
-  nameEl.textContent = qrCode.name;
-  nameEl.style.fontSize = '20px';
-  nameEl.style.fontWeight = '800';
-  nameEl.style.color = '#1f2937';
-  nameEl.style.margin = '0 0 4px 0';
-  content.appendChild(nameEl);
+  // --- Footer Section (Class Name) ---
+  const footer = document.createElement('div');
+  footer.style.padding = '5px 4px 15px 4px';
+  footer.style.backgroundColor = headerBg;
+  footer.style.borderTop = `1px solid #e0e0e0`;
+  footer.style.textAlign = 'center';
+  footer.style.display = 'flex';
+  footer.style.alignItems = 'center';
+  footer.style.justifyContent = 'center';
 
-  // Username (secondary identifier)
-  const usernameEl = document.createElement('p');
-  usernameEl.textContent = `@${qrCode.username}`;
-  usernameEl.style.fontSize = '13px';
-  usernameEl.style.color = '#6b7280';
-  usernameEl.style.margin = '0 0 20px 0';
-  usernameEl.style.fontWeight = '500';
-  content.appendChild(usernameEl);
-
-  // --- Details Section (Stacked for minimalism) ---
-  const detailsDiv = document.createElement('div');
-  detailsDiv.style.textAlign = 'left';
-  detailsDiv.style.padding = '0 10px';
-
-  // Helper function for simple detail lines
-  const createDetailLine = (label, value) => {
-    const item = document.createElement('div');
-    item.style.display = 'flex';
-    item.style.justifyContent = 'space-between';
-    item.style.padding = '8px 0';
-    item.style.borderBottom = '1px dashed #e0e0e0';
-
-    const labelEl = document.createElement('span');
-    labelEl.textContent = label;
-    labelEl.style.fontSize = '12px';
-    labelEl.style.fontWeight = '600';
-    labelEl.style.color = '#6b7280';
-
-    const valueEl = document.createElement('span');
-    valueEl.textContent = value;
-    valueEl.style.fontSize = '14px';
-    valueEl.style.fontWeight = '700';
-    valueEl.style.color = '#1f2937';
-
-    item.appendChild(labelEl);
-    item.appendChild(valueEl);
-    detailsDiv.appendChild(item);
-  };
-
-  // Add School Name to details
-  if (qrCode.schoolName) {
-    createDetailLine(translate('school', 'School'), qrCode.schoolName);
-  }
-
-  // Add Class Info
+  const classNameFooter = document.createElement('p');
+  let footerText = '';
   if (cardType === 'student' && (qrCode.class?.gradeLevel || qrCode.className)) {
-    let classDisplay = '';
     if (qrCode.class?.gradeLevel) {
-      // Convert grade level 0 to Kindergarten display
       const displayGradeLevel = qrCode.class.gradeLevel === 0 || qrCode.class.gradeLevel === '0'
         ? translate('grade0', 'Kindergarten')
         : qrCode.class.gradeLevel;
-      classDisplay = formatClassIdentifier(displayGradeLevel, qrCode.class.section);
+      footerText = formatClassIdentifier(displayGradeLevel, qrCode.class.section);
     } else {
-      classDisplay = qrCode.className;
+      footerText = qrCode.className;
     }
-    createDetailLine(translate('class', 'Class'), classDisplay);
+  } else if (qrCode.className) {
+    footerText = qrCode.className;
   }
 
-  // Add Role Info (for both student and teacher)
-  if (qrCode.role) {
-    createDetailLine(translate('rolesFor', 'Role'), qrCode.role);
-  }
-
-  // Add password field
-  createDetailLine(translate('password', 'Password'), '');
-
-  content.appendChild(detailsDiv);
-  element.appendChild(content);
-
-  // --- Footer Section (Generation Date) ---
-  const footer = document.createElement('div');
-  footer.style.padding = '20px 10px 30px 10px';
-  footer.style.backgroundColor = headerBg;
-  footer.style.textAlign = 'center';
-  footer.style.fontSize = '11px';
-  footer.style.color = '#fff';
-  footer.style.fontWeight = '500';
-
-  const date = new Date();
-  /*
-  const dateStr = date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-  */
-  const generatedText = translate('generatedOn', 'Generated on');
-  footer.textContent = `${generatedText}: ${formatDateKhmer(date)}`;
+  classNameFooter.textContent = footerText ? `${t('class')} ៖ ${footerText}` : '';
+  classNameFooter.style.fontSize = '7px';
+  classNameFooter.style.fontWeight = '700';
+  classNameFooter.style.color = '#ffffff';
+  classNameFooter.style.margin = '0';
+  classNameFooter.style.padding = '0';
+  classNameFooter.style.textAlign = 'center';
+  footer.appendChild(classNameFooter);
   element.appendChild(footer);
 
   return element;

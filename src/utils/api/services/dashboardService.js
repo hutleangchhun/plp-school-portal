@@ -515,5 +515,123 @@ export const dashboardService = {
         data: {}
       };
     }
+  },
+
+  /**
+   * Get teacher employment type statistics
+   * Fetches data from /api/v1/dashboard/teachers/employment-type/stats endpoint
+   * @param {Object} params - Filter parameters
+   * @param {number} [params.provinceId] - Province ID to filter by
+   * @param {number} [params.districtId] - District ID to filter by
+   * @param {number} [params.schoolId] - School ID to filter by
+   * @returns {Promise<Object>} Response with employment type statistics
+   */
+  async getTeacherEmploymentTypeStats(params = {}) {
+    try {
+      console.log('📊 Fetching teacher employment type statistics...', params);
+
+      let url = `${ENDPOINTS.DASHBOARD.BASE}/teachers/employment-type/stats`;
+
+      // Add query parameters for filtering
+      const queryParams = [];
+
+      if (params.provinceId) {
+        queryParams.push(`provinceId=${params.provinceId}`);
+      }
+
+      if (params.districtId) {
+        queryParams.push(`districtId=${params.districtId}`);
+      }
+
+      if (params.schoolId) {
+        queryParams.push(`schoolId=${params.schoolId}`);
+      }
+
+      if (queryParams.length > 0) {
+        url += '?' + queryParams.join('&');
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(url)
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch employment type statistics');
+      }
+
+      const apiData = response.data || {};
+
+      return {
+        success: true,
+        data: apiData
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getTeacherEmploymentTypeStats:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get teacher employment type statistics',
+        data: {}
+      };
+    }
+  },
+
+  /**
+   * Get teacher extra learning tool statistics
+   * Fetches data from /api/v1/dashboard/teachers/extra-learning-tool/stats endpoint
+   * @param {Object} params - Filter parameters
+   * @param {number} [params.provinceId] - Province ID to filter by
+   * @param {number} [params.districtId] - District ID to filter by
+   * @param {number} [params.schoolId] - School ID to filter by
+   * @returns {Promise<Object>} Response with extra learning tool statistics
+   */
+  async getTeacherExtraLearningToolStats(params = {}) {
+    try {
+      console.log('📊 Fetching teacher extra learning tool statistics...', params);
+
+      let url = `${ENDPOINTS.DASHBOARD.BASE}/teachers/extra-learning-tool/stats`;
+
+      // Add query parameters for filtering
+      const queryParams = [];
+
+      if (params.provinceId) {
+        queryParams.push(`provinceId=${params.provinceId}`);
+      }
+
+      if (params.districtId) {
+        queryParams.push(`districtId=${params.districtId}`);
+      }
+
+      if (params.schoolId) {
+        queryParams.push(`schoolId=${params.schoolId}`);
+      }
+
+      if (queryParams.length > 0) {
+        url += '?' + queryParams.join('&');
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(url)
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch extra learning tool statistics');
+      }
+
+      const apiData = response.data || {};
+
+      return {
+        success: true,
+        data: apiData
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getTeacherExtraLearningToolStats:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get teacher extra learning tool statistics',
+        data: {}
+      };
+    }
   }
 };
