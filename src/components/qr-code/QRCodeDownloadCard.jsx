@@ -107,18 +107,20 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
   // Add "ថ្នាលបឋម" label
   const labelText = document.createElement('p');
   labelText.textContent = 'ថ្នាលបឋម';
-  labelText.style.fontSize = '4px';
-  labelText.style.fontWeight = '600';
+  labelText.style.fontSize = '9px';
+  labelText.style.fontWeight = '400';
   labelText.style.color = '#ffffff';
   labelText.style.margin = '0 0 1px 0';
   labelText.style.lineHeight = '1';
+  labelText.style.fontFamily = '"Moul", "Khmer OS", "Noto Sans Khmer", sans-serif';
   schoolInfoEl.appendChild(labelText);
 
   // Add School Name
   const schoolNameText = document.createElement('p');
   schoolNameText.textContent = cleanSchoolName(qrCode.schoolName) || 'School';
-  schoolNameText.style.fontSize = '5px';
-  schoolNameText.style.fontWeight = '700';
+  schoolNameText.style.fontSize = '7px';
+  schoolNameText.style.fontWeight = '600';
+  schoolNameText.style.padding= '3px 0 0 0';
   schoolNameText.style.color = '#ffffff';
   schoolNameText.style.margin = '0';
   schoolNameText.style.lineHeight = '1.1';
@@ -147,8 +149,11 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
 
   // --- Main Content Section (QR Code & Details) ---
   const content = document.createElement('div');
-  content.style.padding = '4px 6px 4px 6px';
+  content.style.padding = '6px 6px 6px 6px';
   content.style.textAlign = 'center';
+  content.style.flex = '1';
+  content.style.display = 'flex';
+  content.style.flexDirection = 'column';
 
   // Name section (primary focus)
   const nameEl = document.createElement('p');
@@ -171,7 +176,7 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
 
   // Password field (above QR code)
   const passwordEl = document.createElement('p');
-  passwordEl.textContent = `${translate('password', 'Password')} : ________`;
+  passwordEl.textContent = `${translate('password', 'Password')} ៖ ________`;
   passwordEl.style.fontSize = '7px';
   passwordEl.style.color = '#6b7280';
   passwordEl.style.margin = '0 0 3px 0';
@@ -184,14 +189,15 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
   qrContainer.style.display = 'flex';
   qrContainer.style.justifyContent = 'center';
   qrContainer.style.alignItems = 'center';
-  qrContainer.style.padding = '2px';
+  qrContainer.style.padding = '3px';
   qrContainer.style.marginBottom = '3px';
+  qrContainer.style.flex = '1';
 
   if (qrCode.qrCode) {
     const img = document.createElement('img');
     img.src = qrCode.qrCode;
-    img.style.width = '110px';
-    img.style.height = '110px';
+    img.style.width = '125px';
+    img.style.height = '125px';
     img.style.border = `1px solid ${accentColor}`; // Simple color border
     img.style.borderRadius = '2px';
     img.style.display = 'block';

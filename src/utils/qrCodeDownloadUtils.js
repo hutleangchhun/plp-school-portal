@@ -1,4 +1,4 @@
-import { createQRCodeDownloadCard } from '../components/qr-code/QRCodeDownloadCard';
+import { createQRCodeDownloadCard } from "../components/qr-code/QRCodeDownloadCard";
 
 /**
  * Download QR codes sequentially as individual PNG files (Option 2)
@@ -10,9 +10,16 @@ import { createQRCodeDownloadCard } from '../components/qr-code/QRCodeDownloadCa
  * @param {Function} showSuccess - Toast success callback
  * @param {Function} showError - Toast error callback
  */
-export const downloadQRCodesQueued = async (qrCodes, cardType, t, onProgress, showSuccess, showError) => {
+export const downloadQRCodesQueued = async (
+  qrCodes,
+  cardType,
+  t,
+  onProgress,
+  showSuccess,
+  showError
+) => {
   if (!qrCodes || qrCodes.length === 0) {
-    showError(t('noQRCodes', 'No QR codes to download'));
+    showError(t("noQRCodes", "No QR codes to download"));
     return;
   }
 
@@ -21,7 +28,7 @@ export const downloadQRCodesQueued = async (qrCodes, cardType, t, onProgress, sh
   let failed = 0;
 
   try {
-    const { default: html2canvas } = await import('html2canvas');
+    const { default: html2canvas } = await import("html2canvas");
 
     // Collect all blobs
     const blobs = [];
@@ -34,38 +41,42 @@ export const downloadQRCodesQueued = async (qrCodes, cardType, t, onProgress, sh
         document.body.appendChild(element);
 
         // Wait for images to load
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
         const canvas = await html2canvas(element, {
-          backgroundColor: '#ffffff',
-          scale: 3,
+          backgroundColor: "#ffffff",
+          scale: 10,
           logging: false,
           allowTaint: true,
           useCORS: true,
           dpi: 300,
-          imageTimeout: 5000
+          imageTimeout: 5000,
+          windowHeight: element.scrollHeight * 10,
+          windowWidth: element.scrollWidth * 10,
+          ignoreElements: (el) => false,
+          useCORS: true,
         });
 
         document.body.removeChild(element);
 
-        // Convert canvas to blob
+        // Convert canvas to blob with maximum quality
         await new Promise((resolve) => {
           canvas.toBlob((blob) => {
             if (blob) {
               blobs.push({
                 name: `${qrCode.name}_QR_Card.png`,
-                blob
+                blob,
               });
             }
             processed++;
             onProgress(processed, total);
             resolve();
-          });
+          }, 'image/png', 1.0);
         });
 
         // Add delay between processing to avoid overwhelming the browser
         if (i < qrCodes.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise((resolve) => setTimeout(resolve, 300));
         }
       } catch (err) {
         console.warn(`Failed to process QR code for ${qrCode.name}:`, err);
@@ -81,14 +92,19 @@ export const downloadQRCodesQueued = async (qrCodes, cardType, t, onProgress, sh
     }
 
     if (processed > 0) {
-      showSuccess(t('downloadedQRCodes', `Downloaded ${processed - failed}/${total} QR codes`));
+      showSuccess(
+        t(
+          "downloadedQRCodes",
+          `Downloaded ${processed - failed}/${total} QR codes`
+        )
+      );
     }
     if (failed > 0) {
-      showError(t('failedQRCodes', `Failed to process ${failed} QR codes`));
+      showError(t("failedQRCodes", `Failed to process ${failed} QR codes`));
     }
   } catch (error) {
-    console.error('Error in batch download:', error);
-    showError(t('batchDownloadError', 'Error downloading QR codes'));
+    console.error("Error in batch download:", error);
+    showError(t("batchDownloadError", "Error downloading QR codes"));
   }
 };
 
@@ -105,13 +121,13 @@ async function createAndDownloadZip(blobs, cardType) {
     const zipBlob = await createZipBlob(blobs);
 
     // Generate filename with date
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const cardTypeLabel = cardType === 'teacher' ? 'Teachers' : 'Students';
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+    const cardTypeLabel = cardType === "teacher" ? "Teachers" : "Students";
     const fileName = `QR_Cards_${cardTypeLabel}_${today}.zip`;
 
     // Download ZIP file
     const url = URL.createObjectURL(zipBlob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = fileName;
     document.body.appendChild(link);
@@ -119,7 +135,7 @@ async function createAndDownloadZip(blobs, cardType) {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   } catch (error) {
-    console.error('Error creating ZIP file:', error);
+    console.error("Error creating ZIP file:", error);
     throw error;
   }
 }
@@ -159,12 +175,15 @@ async function createZipBlob(files) {
       fileSize: fileBytes.length,
       headerOffset: localHeader.offset,
       headerLength: localHeader.buffer.byteLength,
-      crc32: calculateCRC32(fileBytes)
+      crc32: calculateCRC32(fileBytes),
     });
   }
 
   // Create central directory
-  const centralDirectory = createCentralDirectory(centralDirectoryHeaders, offset);
+  const centralDirectory = createCentralDirectory(
+    centralDirectoryHeaders,
+    offset
+  );
   buffers.push(centralDirectory.buffer);
 
   // Create end of central directory record
@@ -176,7 +195,7 @@ async function createZipBlob(files) {
   buffers.push(endOfCentralDirectory);
 
   // Combine all buffers into single ZIP blob
-  return new Blob(buffers, { type: 'application/zip' });
+  return new Blob(buffers, { type: "application/zip" });
 }
 
 /**
@@ -257,7 +276,7 @@ function createLocalFileHeader(fileName, fileData, offset) {
     crc32: crc32,
     compressedSize: compressedSize,
     uncompressedSize: uncompressedSize,
-    fileName: fileName
+    fileName: fileName,
   };
 }
 
@@ -365,7 +384,7 @@ function createCentralDirectory(files, startOffset) {
   return {
     buffer: combined.buffer,
     size: totalSize,
-    startOffset: startOffset
+    startOffset: startOffset,
   };
 }
 
@@ -376,7 +395,11 @@ function createCentralDirectory(files, startOffset) {
  * @param {Number} centralDirOffset - Offset of central directory
  * @returns {Uint8Array} End of central directory record
  */
-function createEndOfCentralDirectory(fileCount, centralDirSize, centralDirOffset) {
+function createEndOfCentralDirectory(
+  fileCount,
+  centralDirSize,
+  centralDirOffset
+) {
   const record = new Uint8Array(22);
   const view = new DataView(record.buffer);
 
@@ -429,7 +452,7 @@ function calculateCRC32(data) {
   for (let i = 0; i < data.length; i++) {
     crc ^= data[i];
     for (let j = 0; j < 8; j++) {
-      crc = (crc >>> 1) ^ ((crc & 1) ? poly : 0);
+      crc = (crc >>> 1) ^ (crc & 1 ? poly : 0);
     }
   }
 
@@ -443,10 +466,11 @@ function calculateCRC32(data) {
  */
 function getZipTime(date) {
   return (
-    (date.getHours() << 11) |
-    (date.getMinutes() << 5) |
-    (date.getSeconds() >> 1)
-  ) & 0xffff;
+    ((date.getHours() << 11) |
+      (date.getMinutes() << 5) |
+      (date.getSeconds() >> 1)) &
+    0xffff
+  );
 }
 
 /**
@@ -456,10 +480,11 @@ function getZipTime(date) {
  */
 function getZipDate(date) {
   return (
-    ((date.getFullYear() - 1980) << 9) |
-    ((date.getMonth() + 1) << 5) |
-    date.getDate()
-  ) & 0xffff;
+    (((date.getFullYear() - 1980) << 9) |
+      ((date.getMonth() + 1) << 5) |
+      date.getDate()) &
+    0xffff
+  );
 }
 
 /**
@@ -471,21 +496,28 @@ function getZipDate(date) {
  * @param {Function} showError - Toast error callback
  * @param {String} className - Class name for PDF filename
  */
-export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, showError, className = 'QR_Codes') => {
+export const downloadQRCodesAsPDF = async (
+  qrCodes,
+  cardType,
+  t,
+  showSuccess,
+  showError,
+  className = "QR_Codes"
+) => {
   if (!qrCodes || qrCodes.length === 0) {
-    showError(t('noQRCodes', 'No QR codes to download'));
+    showError(t("noQRCodes", "No QR codes to download"));
     return;
   }
 
   try {
-    const { default: html2canvas } = await import('html2canvas');
-    const { jsPDF } = await import('jspdf');
+    const { default: html2canvas } = await import("html2canvas");
+    const { jsPDF } = await import("jspdf");
 
     // Create PDF with custom dimensions
     const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
     });
 
     const pageWidth = pdf.internal.pageSize.getWidth();
@@ -510,23 +542,25 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
         document.body.appendChild(element);
 
         // Wait for images to load
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
         // Convert to canvas with higher scale for better clarity
         const canvas = await html2canvas(element, {
-          backgroundColor: '#ffffff',
-          scale: 3,
+          backgroundColor: "#ffffff",
+          scale: 6,
           logging: false,
           allowTaint: true,
           useCORS: true,
           dpi: 300,
-          imageTimeout: 5000
+          imageTimeout: 5000,
+          windowHeight: element.scrollHeight * 6,
+          windowWidth: element.scrollWidth * 6,
         });
 
         document.body.removeChild(element);
 
         // Convert canvas to image
-        const imgData = canvas.toDataURL('image/png');
+        const imgData = canvas.toDataURL("image/png");
         const imgWidth = cardWidth - 4; // 2mm padding on each side
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
@@ -546,10 +580,10 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
         }
 
         // Calculate position (centered horizontally)
-        const currentX = leftMargin + (cardsInRow * cardWidth);
+        const currentX = leftMargin + cardsInRow * cardWidth;
 
         // Add image to PDF
-        pdf.addImage(imgData, 'PNG', currentX, currentY, imgWidth, imgHeight);
+        pdf.addImage(imgData, "PNG", currentX, currentY, imgWidth, imgHeight);
 
         // Track max height in current row
         maxHeightInRow = Math.max(maxHeightInRow, imgHeight);
@@ -566,13 +600,15 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
     }
 
     // Save PDF with date
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
     const fileName = `${className}_${today}.pdf`;
     pdf.save(fileName);
-    showSuccess(t('pdfDownloadSuccess', `PDF downloaded with ${qrCodes.length} QR codes`));
+    showSuccess(
+      t("pdfDownloadSuccess", `PDF downloaded with ${qrCodes.length} QR codes`)
+    );
   } catch (error) {
-    console.error('Error generating PDF:', error);
-    showError(t('pdfDownloadError', 'Error downloading PDF'));
+    console.error("Error generating PDF:", error);
+    showError(t("pdfDownloadError", "Error downloading PDF"));
   }
 };
 
@@ -585,22 +621,28 @@ export const downloadQRCodesAsPDF = async (qrCodes, cardType, t, showSuccess, sh
  */
 export const downloadSingleQRCode = async (qrCode, cardType, t, showError) => {
   try {
-    const { default: html2canvas } = await import('html2canvas');
-    const { createQRCodeDownloadCard } = await import('../components/qr-code/QRCodeDownloadCard');
+    const { default: html2canvas } = await import("html2canvas");
+    const { createQRCodeDownloadCard } = await import(
+      "../components/qr-code/QRCodeDownloadCard"
+    );
 
     const element = createQRCodeDownloadCard(qrCode, cardType, t);
     document.body.appendChild(element);
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     const canvas = await html2canvas(element, {
-      backgroundColor: '#ffffff',
-      scale: 3,
+      backgroundColor: "#ffffff",
+      scale: 10,
       logging: false,
       allowTaint: true,
       useCORS: true,
       dpi: 300,
-      imageTimeout: 5000
+      imageTimeout: 5000,
+      windowHeight: element.scrollHeight * 10,
+      windowWidth: element.scrollWidth * 10,
+      ignoreElements: (el) => false,
+      useCORS: true,
     });
 
     document.body.removeChild(element);
@@ -608,16 +650,16 @@ export const downloadSingleQRCode = async (qrCode, cardType, t, showError) => {
     canvas.toBlob((blob) => {
       if (blob) {
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        const link = document.createElement("a");
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
         link.href = url;
         link.download = `${qrCode.name}_QR_Card_${today}.png`;
         link.click();
         URL.revokeObjectURL(url);
       }
-    });
+    }, 'image/png', 1.0);
   } catch (error) {
-    console.error('Error downloading QR code:', error);
-    showError(t('downloadError', 'Error downloading QR code'));
+    console.error("Error downloading QR code:", error);
+    showError(t("downloadError", "Error downloading QR code"));
   }
 };
