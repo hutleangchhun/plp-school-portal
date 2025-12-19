@@ -167,6 +167,7 @@ export default function StudentQRCodeGenerator() {
                 email: enrichedStudent.email,
                 hasQrCode: !!userData.qr_code,
                 schoolName: schoolName,
+                schoolId: schoolId,
                 role: t('student', 'Student'),
                 class: {
                   classId: student.class?.id || student.class?.classId,
@@ -283,6 +284,7 @@ export default function StudentQRCodeGenerator() {
                 teacherNumber: teacher.teacher_number || teacher.teacherNumber,
                 hasQrCode: !!userData.qr_code,
                 schoolName: schoolName,
+                schoolId: schoolId,
                 role: teacher.role || userData.role || t('teacher', 'Teacher')
               });
             }

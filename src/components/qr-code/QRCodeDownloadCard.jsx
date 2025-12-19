@@ -17,6 +17,7 @@ import { formatDateKhmer } from '@/utils/formatters';
  * @param {Object} qrCode.class - Class object (preferred for student card)
  * @param {string} qrCode.class.gradeLevel - Grade level
  * @param {string} qrCode.class.section - Class section
+ * @param {string} qrCode.schoolId - School ID
  * @param {string} qrCode.studentNumber - Student ID number
  * @param {string} qrCode.role - Role/Position (e.g., 'Student', 'Teacher', 'Director')
  * @param {string} qrCode.qrCode - Base64 encoded QR code image
@@ -221,10 +222,15 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
   let footerText = '';
   if (cardType === 'student' && (qrCode.class?.gradeLevel || qrCode.className)) {
     if (qrCode.class?.gradeLevel) {
-      const displayGradeLevel = qrCode.class.gradeLevel === 0 || qrCode.class.gradeLevel === '0'
-        ? translate('grade0', 'Kindergarten')
-        : qrCode.class.gradeLevel;
-      footerText = formatClassIdentifier(displayGradeLevel, qrCode.class.section);
+      // Check if schoolId is 103780, if so use className instead of formatClassIdentifier
+      if (qrCode.schoolId === 103780 || qrCode.schoolId === '103780') {
+        footerText = qrCode.className || qrCode.class?.name || '';
+      } else {
+        const displayGradeLevel = qrCode.class.gradeLevel === 0 || qrCode.class.gradeLevel === '0'
+          ? translate('grade0', 'Kindergarten')
+          : qrCode.class.gradeLevel;
+        footerText = formatClassIdentifier(displayGradeLevel, qrCode.class.section);
+      }
     } else {
       footerText = qrCode.className;
     }
