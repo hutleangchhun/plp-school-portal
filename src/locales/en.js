@@ -1776,6 +1776,7 @@ export const en = {
   endTimeAfterStart: 'End time must be after start time',
   morningHoursOnly: 'Morning shift only allows times between 7am-12pm',
   afternoonHoursOnly: 'Afternoon shift only allows times between 1pm-5pm',
+  classRequired: 'Class is required',
   morningShift: 'Morning Shift',
   afternoonShift: 'Afternoon Shift',
   noShift: 'No Shift (Flexible)',

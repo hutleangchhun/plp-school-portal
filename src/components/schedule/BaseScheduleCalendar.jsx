@@ -95,7 +95,7 @@ const BaseScheduleCalendar = ({
     return [
       { value: "morning", label: t("morningShift", "Morning (7am-12pm)") },
       { value: "afternoon", label: t("afternoonShift", "Afternoon (1pm-5pm)") },
-      { value: "noshift", label: t("noShift", "No Shift (Flexible)") },
+      { value: null, label: t("noShift", "No Shift (Flexible)") },
     ];
   };
 

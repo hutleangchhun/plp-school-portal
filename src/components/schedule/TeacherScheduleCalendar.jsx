@@ -133,9 +133,9 @@ const TeacherScheduleCalendar = () => {
       // Build filter parameters
       const filters = {};
 
-      // Add optional filters
-      if (selectedShift) {
-        filters.shift = selectedShift;
+      // Add optional filters - add shift (can be null, convert null to string "null" for API)
+      if (selectedShift !== undefined) {
+        filters.shift = selectedShift === null ? 'null' : selectedShift;
       }
 
       if (selectedAcademicYear) {

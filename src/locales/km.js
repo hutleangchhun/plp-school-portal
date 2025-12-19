@@ -1711,6 +1711,7 @@ export const km = {
   endTimeAfterStart: 'ម៉ោងបញ្ចប់ត្រូវតែក្រោយម៉ោងចាប់ផ្តើម',
   morningHoursOnly: 'វេនព្រឹកអនុញ្ញាតតែពេលវេលារវាង 7:00-12:00',
   afternoonHoursOnly: 'វេនរសៀលអនុញ្ញាតតែពេលវេលារវាង 13:00-17:00',
+  classRequired: 'ត្រូវការថ្នាក់',
   shift: 'វេន',
   allShifts: 'វេនទាំងអស់',
   selectShift: 'ជ្រើសរើសវេន',

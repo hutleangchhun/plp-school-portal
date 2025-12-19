@@ -40,6 +40,7 @@ const ScheduleFormModal = ({ isOpen, onClose, onSubmit, schedule = null, selecte
     location: '',
     status: 'ACTIVE',
     notes: '',
+    shift: selectedShift,
   });
 
   useEffect(() => {
@@ -63,16 +64,18 @@ const ScheduleFormModal = ({ isOpen, onClose, onSubmit, schedule = null, selecte
             location: schedule.location || '',
             status: schedule.status || 'ACTIVE',
             notes: schedule.notes || '',
+            shift: schedule.shift !== undefined ? schedule.shift : selectedShift,
           };
           console.log('📝 Form data to set:', formDataToSet);
           setFormData(formDataToSet);
         } else {
           resetForm();
-          // Auto-populate classId from selectedClass when creating new schedule
+          // Auto-populate classId and shift from props when creating new schedule
           if (selectedClass) {
             setFormData(prev => ({
               ...prev,
-              classId: String(selectedClass)
+              classId: String(selectedClass),
+              shift: selectedShift
             }));
           }
         }
@@ -107,6 +110,7 @@ const ScheduleFormModal = ({ isOpen, onClose, onSubmit, schedule = null, selecte
       location: '',
       status: 'ACTIVE',
       notes: '',
+      shift: selectedShift,
     });
   };
 
@@ -205,8 +209,18 @@ const ScheduleFormModal = ({ isOpen, onClose, onSubmit, schedule = null, selecte
 
     try {
       console.log('📋 Form data at submit time:', formData);
+      console.log('📋 selectedClass prop:', selectedClass);
+
+      // Use selectedClass prop as fallback if formData.classId is empty
+      const classIdToUse = formData.classId || selectedClass;
+
+      if (!classIdToUse) {
+        setError(t('classRequired', 'Class is required'));
+        return;
+      }
+
       const submitData = {
-        classId: parseInt(formData.classId),
+        classId: parseInt(classIdToUse),
         subjectId: parseInt(formData.subjectId),
         academicYear: formData.academicYear,
         schoolId: parseInt(schoolId),
@@ -217,6 +231,7 @@ const ScheduleFormModal = ({ isOpen, onClose, onSubmit, schedule = null, selecte
         location: formData.location || '',
         status: formData.status || 'ACTIVE',
         notes: formData.notes || '',
+        shift: formData.shift !== undefined ? formData.shift : (selectedShift || null),
       };
 
       console.log('📤 Submitting schedule data:', submitData);
