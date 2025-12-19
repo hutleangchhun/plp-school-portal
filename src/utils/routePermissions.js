@@ -81,6 +81,14 @@ export const routePermissions = {
     allowedRoles: [ROLES.TEACHER_ONLY],
     component: 'TeacherReports'
   },
+  '/my-schedule': {
+    allowedRoles: [ROLES.TEACHER_ONLY],
+    component: 'WeeklySchedule'
+  },
+  '/school-schedule': {
+    allowedRoles: [ROLES.DIRECTOR],
+    component: 'DirectorSchedule'
+  },
   '/students/bulk-import': {
     allowedRoles: [ROLES.ROLE1_ONLY, ROLES.DIRECTOR],
     component: 'BulkStudentImport'
@@ -297,6 +305,11 @@ export const getNavigationItems = (user, t) => {
       name: t('classes') || 'ថ្នាក់រៀន',
       href: '/classes',
     },
+    // TEMPORARILY HIDDEN: School Schedule route
+    // {
+    //   name: t('schoolSchedule', 'School Schedule'),
+    //   href: '/school-schedule',
+    // },
     {
       name: t('students') || 'សិស្ស',
       href: '/students',
@@ -363,6 +376,11 @@ export const getNavigationItems = (user, t) => {
         },
       ],
     },
+    // TEMPORARILY HIDDEN: My Schedule route
+    // {
+    //   name: t('mySchedule', 'My Schedule'),
+    //   href: '/my-schedule',
+    // },
     {
       name: t('QRCodeManangement', 'QR Codes Management'),
       href: '/qr-codes',

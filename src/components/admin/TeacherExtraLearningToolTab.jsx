@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/ca
 import { dashboardService } from '../../utils/api/services/dashboardService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Users } from 'lucide-react';
+import DynamicLoader from '../ui/DynamicLoader';
 
 const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 
@@ -69,6 +70,17 @@ const TeacherExtraLearningToolTab = ({ filters }) => {
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
+
+  // Show loading state
+  if (loading && !toolStats) {
+    return (
+      <DynamicLoader
+        type="skeleton"
+        lines={8}
+        className="w-full"
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -185,13 +197,13 @@ const TeacherExtraLearningToolTab = ({ filters }) => {
       )}
 
       {/* Empty State */}
-      {!toolStats && (loading || (filters.selectedSchool || filters.selectedDistrict || filters.selectedProvince)) && (
+      {!toolStats && !loading && (
         <Card className="border border-gray-200 shadow-sm rounded-md">
           <CardContent className="py-12">
             <div className="text-center">
               <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <p className="text-gray-600">
-                {loading ? t('loading', 'Loading...') : t('noData', 'No data available')}
+                {t('noData', 'No data available')}
               </p>
             </div>
           </CardContent>

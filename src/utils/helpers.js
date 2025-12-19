@@ -291,8 +291,10 @@ export const getGradeLevelOptions = (t, includeAllOption = true) => {
  * @returns {string} Formatted identifier like "1-A" or "1"
  */
 export const formatClassIdentifier = (gradeLevel, section) => {
-  if (!gradeLevel) return '';
-  return section ? `${gradeLevel}-${section}` : gradeLevel;
+  if (!gradeLevel && gradeLevel !== 0) return '';
+  // Handle grade level 0 (Kindergarten) - show as "មត្តេយ្យ​"
+  const displayGrade = gradeLevel === 0 ? 'មត្តេយ្យ​' : gradeLevel;
+  return section ? `${displayGrade}-${section}` : displayGrade;
 };
 
 /**

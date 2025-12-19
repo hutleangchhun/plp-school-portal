@@ -22,7 +22,8 @@ import {
   Activity,
   Heart,
   ClipboardList,
-  Database
+  Database,
+  CalendarDays
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -56,6 +57,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/teacher-dashboard': LayoutDashboard,
     '/my-students': Users,
     '/my-attendance': UserRoundCheck,
+    '/my-schedule': CalendarDays,
+    '/school-schedule': CalendarDays,
     '/qr-codes': QrCode,
     '/exam-records': Award,
     '/my-students-exams': Award,
@@ -96,6 +99,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/teacher-dashboard': 'blue',
     '/my-students': 'blue',
     '/my-attendance': 'blue',
+    '/my-schedule': 'blue',
+    '/school-schedule': 'blue',
     '/qr-codes': 'blue',
     '/exam-records': 'blue',
     '/my-students-exams': 'blue',

@@ -4,6 +4,8 @@ import StudentAttendance from './pages/teachers/StudentAttendance';
 import TeacherDashboard from './pages/teachers/TeacherDashboard';
 import TeacherQRCodeManagement from './pages/teachers/TeacherQRCodeManagement';
 import TeacherReports from './pages/teachers/TeacherReports';
+import TeacherScheduleCalendar from './components/schedule/TeacherScheduleCalendar';
+import DirectorScheduleCalendar from './components/director/DirectorScheduleCalendar';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserActivityLogs from './pages/admin/UserActivityLogs';
 import TeacherTransferManagement from './pages/admin/TeacherTransferManagement';
@@ -356,6 +358,21 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<TeacherReports user={user} />} />
+          </Route>
+          <Route path="my-schedule" element={
+            <ProtectedRoute path="/my-schedule" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<TeacherScheduleCalendar />} />
+          </Route>
+
+          <Route path="school-schedule" element={
+            <ProtectedRoute path="/school-schedule" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<DirectorScheduleCalendar />} />
           </Route>
 
           <Route path="attendance/approval" element={
