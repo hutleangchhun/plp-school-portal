@@ -152,9 +152,6 @@ const TeacherScheduleCalendar = () => {
       if (selectedClass) {
         console.log("📊 Using class-based endpoint for classId:", selectedClass);
         response = await scheduleService.getClassScheduleFiltered(selectedClass, filters);
-      } else {
-        console.log("📊 Using teacher-based endpoint for teacherId:", user.teacherId || user.id);
-        response = await scheduleService.getTeacherScheduleFiltered(user.teacherId || user.id, filters);
       }
 
       console.log("📊 Raw API Response:", response);
