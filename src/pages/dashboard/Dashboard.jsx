@@ -1,4 +1,4 @@
-import { User, Edit, Edit2, Building2, Users, BookOpen, Award, Shield, Briefcase } from 'lucide-react';
+import { User, Edit, Edit2, Building2, Users, BookOpen, Award, Shield, Briefcase, Lock } from 'lucide-react';
 import SchoolOverviewChart from '../../components/ui/SchoolOverviewChart';
 import StudentDemographicsChart from '../../components/ui/StudentDemographicsChart';
 import BMIPieChart from '../../components/ui/BMIPieChart';
@@ -13,6 +13,7 @@ import classService from '../../utils/api/services/classService';
 import { teacherService } from '../../utils/api/services/teacherService';
 import schoolService from '../../utils/api/services/schoolService';
 import { studentService } from '../../utils/api/services/studentService';
+import { dashboardService } from '../../utils/api/services/dashboardService';
 import Badge from '@/components/ui/Badge';
 import { useStableCallback } from '../../utils/reactOptimization';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -31,7 +32,14 @@ export default function Dashboard({ user: initialUser }) {
     totalClasses: 0,
     totalStudents: 0,
     totalTeachers: 0,
-    totalDirectors: 0
+    totalDirectors: 0,
+    totalDeputyPrincipals: 0,
+    totalSecretaries: 0,
+    totalTreasurers: 0,
+    totalLibrarians: 0,
+    totalWorkshop: 0,
+    totalSecurity: 0,
+    totalTeacherIct: 0
   });
   const [schoolInfo, setSchoolInfo] = useState(null);
 
@@ -125,55 +133,105 @@ export default function Dashboard({ user: initialUser }) {
             console.log('✅ Dashboard school info:', schoolResponse.data);
           }
 
-          // Get classes count - fetch all classes without limit
-          const classesResponse = await classService.getBySchool(accountData.school_id, {
-            page: 1,
-            limit: 9999 // No practical limit - fetch all classes
-          });
-          const totalClasses = classesResponse?.classes?.length || 0;
+          // For directors, use the optimized getSchoolDistribution endpoint
+          if (userData?.roleId === 14) {
+            console.log('📊 Fetching director dashboard data via getSchoolDistribution...');
+            const distributionResponse = await dashboardService.getSchoolDistribution({
+              schoolId: accountData.school_id
+            });
 
-          // Get total students count - fetch all students without pagination
-          const studentsResponse = await studentService.getStudentsBySchoolClasses(accountData.school_id, {
-            page: 1,
-            limit: 9999 // No practical limit - fetch all students
-          });
+            if (distributionResponse.success && distributionResponse.raw && distributionResponse.raw.length > 0) {
+              const schoolData = distributionResponse.raw[0];
+              setSchoolStats({
+                totalClasses: schoolData.classCount || 0,
+                totalStudents: schoolData.studentCount || 0,
+                totalTeachers: schoolData.teacherCount || 0,
+                totalDirectors: schoolData.directorCount || 0,
+                totalDeputyPrincipals: schoolData.deputyPrincipalCount || 0,
+                totalSecretaries: schoolData.schoolSecretaryCount || 0,
+                totalTreasurers: schoolData.schoolTreasurerCount || 0,
+                totalLibrarians: schoolData.schoolLibrarianCount || 0,
+                totalWorkshop: schoolData.schoolWorkshopCount || 0,
+                totalSecurity: schoolData.schoolSecurityCount || 0,
+                totalTeacherIct: schoolData.teacherIctCount || 0
+              });
 
-          // Use pagination.total if available (server-side count), otherwise use data length
-          const totalStudents = studentsResponse?.pagination?.total || studentsResponse?.data?.length || 0;
+              console.log('✅ Director dashboard school stats:', {
+                totalClasses: schoolData.classCount,
+                totalStudents: schoolData.studentCount,
+                totalTeachers: schoolData.teacherCount,
+                totalDirectors: schoolData.directorCount,
+                totalDeputyPrincipals: schoolData.deputyPrincipalCount,
+                totalSecretaries: schoolData.schoolSecretaryCount,
+                totalTreasurers: schoolData.schoolTreasurerCount,
+                totalLibrarians: schoolData.schoolLibrarianCount,
+                totalWorkshop: schoolData.schoolWorkshopCount,
+                totalSecurity: schoolData.schoolSecurityCount,
+                totalTeacherIct: schoolData.teacherIctCount
+              });
+            } else {
+              throw new Error('Failed to fetch school distribution data');
+            }
+          } else {
+            // For non-directors, use the original approach
+            // Get classes count - fetch all classes without limit
+            const classesResponse = await classService.getBySchool(accountData.school_id, {
+              page: 1,
+              limit: 9999 // No practical limit - fetch all classes
+            });
+            const totalClasses = classesResponse?.classes?.length || 0;
 
-          // Get teachers count from the teachers endpoint - fetch all teachers
-          const teachersResponse = await teacherService.getTeachersBySchool(accountData.school_id, {
-            page: 1,
-            limit: 200 // API max limit is 100
-          });
+            // Get total students count - fetch all students without pagination
+            const studentsResponse = await studentService.getStudentsBySchoolClasses(accountData.school_id, {
+              page: 1,
+              limit: 9999 // No practical limit - fetch all students
+            });
 
-          // Count based on roleId: directors are roleId = 14
-          const allTeachers = teachersResponse?.data || [];
-          const regularTeachers = allTeachers.filter(teacher => teacher.roleId !== 14);
-          const directors = allTeachers.filter(teacher => teacher.roleId === 14);
+            // Use pagination.total if available (server-side count), otherwise use data length
+            const totalStudents = studentsResponse?.pagination?.total || studentsResponse?.data?.length || 0;
 
-          const totalTeachers = regularTeachers.length;
-          const totalDirectors = directors.length;
+            // Get teachers count from the teachers endpoint - fetch all teachers
+            const teachersResponse = await teacherService.getTeachersBySchool(accountData.school_id, {
+              page: 1,
+              limit: 200 // API max limit is 100
+            });
 
-          setSchoolStats({
-            totalClasses,
-            totalStudents,
-            totalTeachers,
-            totalDirectors
-          });
+            // Count based on roleId: directors are roleId = 14
+            const allTeachers = teachersResponse?.data || [];
+            const regularTeachers = allTeachers.filter(teacher => teacher.roleId !== 14);
+            const directors = allTeachers.filter(teacher => teacher.roleId === 14);
 
-          console.log('✅ Dashboard school stats:', {
-            totalClasses,
-            totalStudents,
-            totalTeachers,
-            totalDirectors
-          });
+            const totalTeachers = regularTeachers.length;
+            const totalDirectors = directors.length;
+
+            setSchoolStats({
+              totalClasses,
+              totalStudents,
+              totalTeachers,
+              totalDirectors
+            });
+
+            console.log('✅ Dashboard school stats:', {
+              totalClasses,
+              totalStudents,
+              totalTeachers,
+              totalDirectors
+            });
+          }
         } catch (error) {
           console.warn('Failed to fetch school statistics:', error);
           setSchoolStats({
             totalClasses: 0,
             totalStudents: 0,
-            totalTeachers: 0
+            totalTeachers: 0,
+            totalDirectors: 0,
+            totalDeputyPrincipals: 0,
+            totalSecretaries: 0,
+            totalTreasurers: 0,
+            totalLibrarians: 0,
+            totalWorkshop: 0,
+            totalSecurity: 0,
+            totalTeacherIct: 0
           });
         }
       }
@@ -337,6 +395,86 @@ export default function Dashboard({ user: initialUser }) {
             gradientFrom="from-orange-500"
             gradientTo="to-orange-600"
             hoverColor="hover:border-orange-200"
+            responsive={true}
+          />
+        </FadeInSection>
+
+        {/* Additional Staff Roles Statistics */}
+        <FadeInSection delay={250} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+          <StatsCard
+            title={t('totalDeputyPrincipals', 'Deputy Principals')}
+            value={schoolStats.totalDeputyPrincipals}
+            icon={User}
+            enhanced={true}
+            gradientFrom="from-pink-500"
+            gradientTo="to-pink-600"
+            hoverColor="hover:border-pink-200"
+            responsive={true}
+          />
+
+          <StatsCard
+            title={t('totalSecretaries', 'Secretaries')}
+            value={schoolStats.totalSecretaries}
+            icon={Briefcase}
+            enhanced={true}
+            gradientFrom="from-cyan-500"
+            gradientTo="to-cyan-600"
+            hoverColor="hover:border-cyan-200"
+            responsive={true}
+          />
+
+          <StatsCard
+            title={t('totalTreasurers', 'Treasurers')}
+            value={schoolStats.totalTreasurers}
+            icon={Briefcase}
+            enhanced={true}
+            gradientFrom="from-teal-500"
+            gradientTo="to-teal-600"
+            hoverColor="hover:border-teal-200"
+            responsive={true}
+          />
+
+          <StatsCard
+            title={t('totalLibrarians', 'Librarians')}
+            value={schoolStats.totalLibrarians}
+            icon={BookOpen}
+            enhanced={true}
+            gradientFrom="from-indigo-500"
+            gradientTo="to-indigo-600"
+            hoverColor="hover:border-indigo-200"
+            responsive={true}
+          />
+
+          <StatsCard
+            title={t('totalWorkshop', 'Workshop Staff')}
+            value={schoolStats.totalWorkshop}
+            icon={Briefcase}
+            enhanced={true}
+            gradientFrom="from-amber-500"
+            gradientTo="to-amber-600"
+            hoverColor="hover:border-amber-200"
+            responsive={true}
+          />
+
+          <StatsCard
+            title={t('totalSecurity', 'Security Staff')}
+            value={schoolStats.totalSecurity}
+            icon={Shield}
+            enhanced={true}
+            gradientFrom="from-slate-500"
+            gradientTo="to-slate-600"
+            hoverColor="hover:border-slate-200"
+            responsive={true}
+          />
+
+          <StatsCard
+            title={t('totalTeacherIct', 'ICT Teachers')}
+            value={schoolStats.totalTeacherIct}
+            icon={User}
+            enhanced={true}
+            gradientFrom="from-lime-500"
+            gradientTo="to-lime-600"
+            hoverColor="hover:border-lime-200"
             responsive={true}
           />
         </FadeInSection>
