@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
 import { Users, Accessibility } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -18,6 +18,8 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const displayBothTabs = showBothTabs || !defaultTab;
+  const fetchingRef = useRef(false);
+  const hasFetchedRef = useRef(false);
 
   const COLORS = useMemo(() => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'], []);
 
@@ -34,10 +36,17 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
       return;
     }
 
+    // Prevent duplicate fetches
+    if (fetchingRef.current) {
+      console.log('⏸️ StudentDemographicsChart: Fetch already in progress, skipping');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
+      fetchingRef.current = true;
       startLoading('fetchDemographics', t('loadingChartData', 'Loading chart data...'));
 
       console.log('📊 StudentDemographicsChart: Fetching demographics for schoolId:', schoolId);
@@ -108,12 +117,17 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
     } finally {
       stopLoading('fetchDemographics');
       setLoading(false);
+      fetchingRef.current = false;
     }
   }, [schoolId]);
 
   useEffect(() => {
-    fetchStudentDemographics();
-  }, [schoolId]);
+    // Only fetch once when component mounts or schoolId changes
+    if (schoolId && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchStudentDemographics();
+    }
+  }, [schoolId, fetchStudentDemographics]);
 
   const chartData = activeTab === 'ethnic' ? ethnicGroupData : accessibilityData;
 

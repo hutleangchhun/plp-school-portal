@@ -29,6 +29,7 @@ export default function Dashboard({ user: initialUser }) {
   const [showWelcome, setShowWelcome] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const fetchingRef = useRef(false);
+  const hasInitializedRef = useRef(false);
   const [schoolStats, setSchoolStats] = useState({
     totalClasses: 0,
     totalStudents: 0,
@@ -116,6 +117,12 @@ export default function Dashboard({ user: initialUser }) {
       // Fetch school information and statistics if we have school ID
       if (accountData && accountData.school_id) {
         try {
+          console.log('📊 Dashboard: Account data:', {
+            roleId: accountData.roleId,
+            role_id: accountData.role_id,
+            schoolId: accountData.school_id
+          });
+
           // Get school information
           const schoolResponse = await schoolService.getSchoolInfo(accountData.school_id);
           if (schoolResponse?.data) {
@@ -124,14 +131,18 @@ export default function Dashboard({ user: initialUser }) {
           }
 
           // For directors, use the optimized getSchoolDistribution endpoint
-          if (userData?.roleId === 14) {
+          if (accountData?.roleId === 14 || accountData?.role_id === 14) {
             console.log('📊 Fetching director dashboard data via getSchoolDistribution...');
             const distributionResponse = await dashboardService.getSchoolDistribution({
               schoolId: accountData.school_id
             });
 
+            console.log('📊 Distribution response:', distributionResponse);
+
             if (distributionResponse.success && distributionResponse.raw && distributionResponse.raw.length > 0) {
               const schoolData = distributionResponse.raw[0];
+              console.log('📊 School data from distribution:', schoolData);
+
               setSchoolStats({
                 totalClasses: schoolData.classCount || 0,
                 totalStudents: schoolData.studentCount || 0,
@@ -146,23 +157,13 @@ export default function Dashboard({ user: initialUser }) {
                 totalTeacherIct: schoolData.teacherIctCount || 0
               });
 
-              console.log('✅ Director dashboard school stats:', {
-                totalClasses: schoolData.classCount,
-                totalStudents: schoolData.studentCount,
-                totalTeachers: schoolData.teacherCount,
-                totalDirectors: schoolData.directorCount,
-                totalDeputyPrincipals: schoolData.deputyPrincipalCount,
-                totalSecretaries: schoolData.schoolSecretaryCount,
-                totalTreasurers: schoolData.schoolTreasurerCount,
-                totalLibrarians: schoolData.schoolLibrarianCount,
-                totalWorkshop: schoolData.schoolWorkshopCount,
-                totalSecurity: schoolData.schoolSecurityCount,
-                totalTeacherIct: schoolData.teacherIctCount
-              });
+              console.log('✅ Director dashboard school stats set successfully');
             } else {
+              console.error('❌ Invalid distribution response structure:', distributionResponse);
               throw new Error('Failed to fetch school distribution data');
             }
           } else {
+            console.log('📊 Fetching non-director dashboard data (teachers/others)...');
             // For non-directors, use the original approach
             // Get classes count - fetch all classes without limit
             const classesResponse = await classService.getBySchool(accountData.school_id, {
@@ -170,6 +171,7 @@ export default function Dashboard({ user: initialUser }) {
               limit: 9999 // No practical limit - fetch all classes
             });
             const totalClasses = classesResponse?.classes?.length || 0;
+            console.log('📊 Total classes:', totalClasses);
 
             // Get total students count - fetch all students without pagination
             const studentsResponse = await studentService.getStudentsBySchoolClasses(accountData.school_id, {
@@ -179,6 +181,7 @@ export default function Dashboard({ user: initialUser }) {
 
             // Use pagination.total if available (server-side count), otherwise use data length
             const totalStudents = studentsResponse?.pagination?.total || studentsResponse?.data?.length || 0;
+            console.log('📊 Total students:', totalStudents);
 
             // Get teachers count from the teachers endpoint - fetch all teachers
             const teachersResponse = await teacherService.getTeachersBySchool(accountData.school_id, {
@@ -201,7 +204,7 @@ export default function Dashboard({ user: initialUser }) {
               totalDirectors
             });
 
-            console.log('✅ Dashboard school stats:', {
+            console.log('✅ Non-director dashboard school stats:', {
               totalClasses,
               totalStudents,
               totalTeachers,
@@ -239,7 +242,8 @@ export default function Dashboard({ user: initialUser }) {
 
   // Initial data fetch - only run once when component mounts
   useEffect(() => {
-    if (authUser?.id) {
+    if (authUser?.id && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
       fetchUserData();
     }
   }, []);

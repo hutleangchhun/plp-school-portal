@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -14,6 +14,8 @@ export default function BMIPieChart({ schoolId, className = "" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [totalStudents, setTotalStudents] = useState(0);
+  const fetchingRef = useRef(false);
+  const hasFetchedRef = useRef(false);
 
   // BMI Category Colors - Distinct and vibrant
   // Uses Khmer keys to match bmiService.utils.getBmiCategory() output
@@ -41,7 +43,14 @@ export default function BMIPieChart({ schoolId, className = "" }) {
 
   const fetchBMIData = useStableCallback(async () => {
     if (!schoolId) {
+      console.warn('⚠️ BMIPieChart: No schoolId provided');
       setLoading(false);
+      return;
+    }
+
+    // Prevent duplicate fetches
+    if (fetchingRef.current) {
+      console.log('⏸️ BMIPieChart: Fetch already in progress, skipping');
       return;
     }
 
@@ -49,7 +58,10 @@ export default function BMIPieChart({ schoolId, className = "" }) {
     setError(null);
 
     try {
+      fetchingRef.current = true;
       startLoading('fetchBMIData', t('loadingBMIData', 'Loading BMI data...'));
+
+      console.log('📊 BMIPieChart: Fetching BMI data for schoolId:', schoolId);
 
       // Get current academic year (e.g., "2024-2025")
       const currentYear = new Date().getFullYear();
@@ -59,6 +71,8 @@ export default function BMIPieChart({ schoolId, className = "" }) {
       const response = await dashboardService.getBMIDistribution(schoolId, {
         academicYear: academicYear
       });
+
+      console.log('📊 BMIPieChart: BMI response:', response);
 
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch BMI data');
@@ -87,18 +101,25 @@ export default function BMIPieChart({ schoolId, className = "" }) {
 
       setTotalStudents(summary.totalStudents || 0);
       setBmiCategoryData(chartDataWithLabels);
+
+      console.log('✅ BMIPieChart: Data set successfully');
     } catch (err) {
-      console.error('Failed to fetch BMI data:', err);
+      console.error('❌ BMIPieChart: Failed to fetch BMI data:', err);
       setError(err.message);
     } finally {
       stopLoading('fetchBMIData');
       setLoading(false);
+      fetchingRef.current = false;
     }
   }, [schoolId]);
 
   useEffect(() => {
-    fetchBMIData();
-  }, [schoolId]);
+    // Only fetch once when component mounts or schoolId changes
+    if (schoolId && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchBMIData();
+    }
+  }, [schoolId, fetchBMIData]);
 
   if (loading) {
     return (
