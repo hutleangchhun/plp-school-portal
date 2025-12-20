@@ -1735,4 +1735,6 @@ export const km = {
   exportFailed: 'បរាជ័យក្នុងការនាំចេញកាលវិភាគ',
   created: 'បានបង្កើត',
   create: 'បង្កើត',
+  noEthnicGroupData: 'មិនមានទិន្នន័យជនជាតិ',
+  noAccessibilityData: 'មិនមានទិន្នន័យពិការភាព',
 };

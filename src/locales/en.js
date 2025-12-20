@@ -1803,4 +1803,6 @@ export const en = {
   exportFailed: 'Failed to export schedule',
   created: 'Created',
   create: 'Create',
+  noEthnicGroupData: 'No ethnic group data available',
+  noAccessibilityData: 'No accessibility data available',
 };  

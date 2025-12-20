@@ -2,7 +2,7 @@ import { User, Edit, Edit2, Building2, Users, BookOpen, Award, Shield, Briefcase
 import SchoolOverviewChart from '../../components/ui/SchoolOverviewChart';
 import StudentDemographicsChart from '../../components/ui/StudentDemographicsChart';
 import BMIPieChart from '../../components/ui/BMIPieChart';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import WelcomeAlert from '../../components/ui/WelcomeAlert';
@@ -28,6 +28,7 @@ export default function Dashboard({ user: initialUser }) {
   const [user, setUserData] = useState(initialUser);
   const [showWelcome, setShowWelcome] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const fetchingRef = useRef(false);
   const [schoolStats, setSchoolStats] = useState({
     totalClasses: 0,
     totalStudents: 0,
@@ -88,37 +89,26 @@ export default function Dashboard({ user: initialUser }) {
   }, []);
   // Fetch user data and school statistics
   const fetchUserData = useStableCallback(async () => {
+    // Prevent duplicate fetches
+    if (fetchingRef.current) {
+      console.log('⏸️ Dashboard: fetchUserData already in progress, skipping');
+      return;
+    }
+
     console.log('🔄 Dashboard: fetchUserData called at', new Date().toISOString());
     clearError();
 
     try {
+      fetchingRef.current = true;
       startLoading('fetchUserData', t('loadingDashboard', 'Loading dashboard...'));
-      // Fetch detailed user data with school information
-      let userData = null;
-
-      // First try to get detailed user data with school info
-      if (authUser?.id) {
-        try {
-          const detailedResponse = await userService.getUserByID(authUser.id);
-          userData = detailedResponse?.data || detailedResponse;
-          console.log('Detailed user data with school:', userData);
-        } catch (error) {
-          console.warn('Failed to fetch detailed user data, falling back to getMyAccount:', error);
-        }
-      }
 
       // Always get account data from my-account endpoint
       const accountResponse = await userService.getMyAccount();
       const accountData = accountResponse?.data || accountResponse;
       console.log('📥 Dashboard my-account response:', accountData);
 
-      // Use accountData as fallback for userData if needed
-      if (!userData && accountData) {
-        userData = accountData;
-      }
-
-      if (userData && (userData.username || userData.fullname || userData.email)) {
-        setUserData(userData);
+      if (accountData && (accountData.username || accountData.fullname || accountData.email)) {
+        setUserData(accountData);
       } else {
         throw new Error(t('noValidUserData', 'No valid user data received from API'));
       }
@@ -243,15 +233,16 @@ export default function Dashboard({ user: initialUser }) {
     } finally {
       stopLoading('fetchUserData');
       setInitialLoading(false);
+      fetchingRef.current = false;
     }
-  }, [authUser?.id]);
+  }, []);
 
-  // Initial data fetch - only run once when component mounts or authUser.id changes
+  // Initial data fetch - only run once when component mounts
   useEffect(() => {
     if (authUser?.id) {
       fetchUserData();
     }
-  }, [authUser?.id]);
+  }, []);
 
   // Profile picture URL is handled by ProfileImage component
 

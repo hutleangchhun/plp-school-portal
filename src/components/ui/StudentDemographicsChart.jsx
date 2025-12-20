@@ -29,6 +29,7 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
 
   const fetchStudentDemographics = useStableCallback(async () => {
     if (!schoolId) {
+      console.warn('⚠️ StudentDemographicsChart: No schoolId provided');
       setLoading(false);
       return;
     }
@@ -39,127 +40,68 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
     try {
       startLoading('fetchDemographics', t('loadingChartData', 'Loading chart data...'));
 
-      // Fetch ALL students with demographics in ONE call to avoid duplicate API requests
-      console.log('📊 Fetching all students demographics for dashboard charts');
-      const demographicsData = await dashboardService.fetchAllStudentsDemographics(schoolId);
+      console.log('📊 StudentDemographicsChart: Fetching demographics for schoolId:', schoolId);
 
-      const ethnicStudents = demographicsData.ethnic;
-      const accessibilityStudents = demographicsData.accessibility;
+      // Fetch ethnic group and accessibility data in parallel using new endpoints
+      const [ethnicResponse, accessibilityResponse] = await Promise.all([
+        dashboardService.getStudentEthnicGroupDistribution({ schoolId, roleId: 9 }),
+        dashboardService.getStudentAccessibilityDistribution({ schoolId, roleId: 9 })
+      ]);
 
-      console.log(`✅ Dashboard: Fetched ${ethnicStudents.length} ethnic minority students`);
+      console.log('📊 StudentDemographicsChart: Ethnic group response:', ethnicResponse);
+      console.log('📊 StudentDemographicsChart: Accessibility response:', accessibilityResponse);
 
-      // Process ethnic group data - group by ethnic_group field
-      // Create map of value -> label for proper display
-      const ethnicGroupLabelMap = {};
-      ethnicGroupOptions.forEach(option => {
-        ethnicGroupLabelMap[option.value] = option.label;
-      });
+      // Process ethnic group data
+      // API response structure: { totalStudents, ethnicGroupDistribution: [...], filters }
+      if (ethnicResponse.success && ethnicResponse.data) {
+        const ethnicDistribution = ethnicResponse.data.ethnicGroupDistribution || [];
 
-      // Count students in each ethnic group
-      const ethnicGroupCountMap = {};
-      let ethnicGroupsFound = 0;
+        // Create map of value -> label for proper display
+        const ethnicGroupLabelMap = {};
+        ethnicGroupOptions.forEach(option => {
+          ethnicGroupLabelMap[option.value] = option.label;
+        });
 
-      ethnicStudents.forEach((student, index) => {
-        // Check multiple possible field locations - direct fields first since that's where they are
-        let ethnicGroup = student.ethnic_group ||
-                          student.ethnicGroup ||
-                          student.user?.ethnic_group ||
-                          student.student?.ethnic_group ||
-                          student.user?.ethnicGroup ||
-                          '';
+        console.log('📊 Ethnic distribution array:', ethnicDistribution);
 
-        // Handle empty arrays or invalid values
-        if (Array.isArray(ethnicGroup) && ethnicGroup.length > 0) {
-          ethnicGroup = ethnicGroup[0]; // Take first item if it's an array
-        }
+        // API returns data in format: [{ ethnicGroup: 'ខ្មែរ', count: 10 }, ...]
+        const ethnicData = ethnicDistribution
+          .map(item => ({
+            name: ethnicGroupLabelMap[item.ethnicGroup] || item.ethnicGroup,
+            count: parseInt(item.count) || 0
+          }))
+          .filter(item => item.count > 0)
+          .sort((a, b) => b.count - a.count);
 
-        if (ethnicGroup && ethnicGroup !== '' && ethnicGroup !== 'null' && ethnicGroup !== 'none' && ethnicGroup !== 'None') {
-          if (ethnicGroupLabelMap.hasOwnProperty(ethnicGroup)) {
-            ethnicGroupCountMap[ethnicGroup] = (ethnicGroupCountMap[ethnicGroup] || 0) + 1;
-            ethnicGroupsFound++;
-          } else {
-            if (index < 3) {
-              console.warn(`⚠️ Ethnic group "${ethnicGroup}" not found in label map. Available keys:`, Object.keys(ethnicGroupLabelMap));
-            }
-          }
-        }
-      });
+        console.log('✅ Processed ethnic data:', ethnicData);
+        setEthnicGroupData(ethnicData);
+      } else {
+        console.warn('⚠️ Invalid ethnic group response:', ethnicResponse);
+        setEthnicGroupData([]);
+      }
 
-      const ethnicData = Object.entries(ethnicGroupCountMap)
-        .map(([groupValue, count]) => ({
-          name: ethnicGroupLabelMap[groupValue],  // Use label for display
-          count: count
-        }))
-        .filter(item => item.count > 0)  // Only show groups with students
-        .sort((a, b) => b.count - a.count);
+      // Process accessibility data
+      // API response structure: { totalStudents, studentsWithAccessibilityNeeds, accessibilityDistribution: [...], filters }
+      if (accessibilityResponse.success && accessibilityResponse.data) {
+        const accessibilityDistribution = accessibilityResponse.data.accessibilityDistribution || [];
 
-      setEthnicGroupData(ethnicData);
+        console.log('📊 Accessibility distribution array:', accessibilityDistribution);
 
-      console.log(`✅ Dashboard: Fetched ${accessibilityStudents.length} students with accessibility needs`);
+        // API returns data in format: [{ accessibilityType: 'ពិបាកក្នុងការធ្វើចលនា', count: 5 }, ...]
+        const accessData = accessibilityDistribution
+          .map(item => ({
+            name: item.accessibilityType,
+            count: parseInt(item.count) || 0
+          }))
+          .filter(item => item.count > 0)
+          .sort((a, b) => b.count - a.count);
 
-      // Process accessibility data - group by accessibility field
-      // Initialize map with all accessibility options (count = 0)
-      const accessibilityMap = {};
-      accessibilityOptions.forEach(option => {
-        accessibilityMap[option.label] = 0;
-      });
-
-      // Count students in each accessibility need
-      let accessibilityNeedsFound = 0;
-
-      accessibilityStudents.forEach((student, index) => {
-        // Check multiple possible field locations - direct fields first since that's where they are
-        let accessibility = student.accessibility ||
-                            student.specialNeeds ||
-                            student.user?.accessibility ||
-                            student.student?.accessibility ||
-                            student.user?.specialNeeds ||
-                            student.special_needs ||
-                            student.user?.special_needs ||
-                            null;
-
-        // Skip empty arrays
-        if (Array.isArray(accessibility) && accessibility.length === 0) {
-          accessibility = null;
-        }
-
-        if (accessibility && accessibility !== '' && accessibility !== 'null' && accessibility !== 'none' && accessibility !== 'None') {
-          // Handle array of accessibility needs
-          if (Array.isArray(accessibility)) {
-            accessibility.forEach(need => {
-              if (need && need !== '' && need !== 'null' && need !== 'none' && need !== 'None') {
-                if (accessibilityMap.hasOwnProperty(need)) {
-                  accessibilityMap[need]++;
-                  accessibilityNeedsFound++;
-                } else {
-                  if (index < 3) {
-                    console.warn(`⚠️ Accessibility need "${need}" not found in map. Available needs:`, Object.keys(accessibilityMap));
-                  }
-                }
-              }
-            });
-          } else {
-            if (accessibilityMap.hasOwnProperty(accessibility)) {
-              accessibilityMap[accessibility]++;
-              accessibilityNeedsFound++;
-            } else {
-              if (index < 3) {
-                console.warn(`⚠️ Accessibility "${accessibility}" not found in map. Available needs:`, Object.keys(accessibilityMap));
-              }
-            }
-          }
-        }
-      });
-
-      const accessData = Object.entries(accessibilityMap)
-        .map(([need, count]) => ({
-          name: need,
-          count: count
-        }))
-        .filter(item => item.count > 0)  // Only show needs with students
-        .sort((a, b) => b.count - a.count);
-
-      setAccessibilityData(accessData);
+        console.log('✅ Processed accessibility data:', accessData);
+        setAccessibilityData(accessData);
+      } else {
+        console.warn('⚠️ Invalid accessibility response:', accessibilityResponse);
+        setAccessibilityData([]);
+      }
     } catch (err) {
       console.error('Failed to fetch student demographics:', err);
       setError(err.message);
@@ -189,11 +131,22 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
   }
 
   if (error) {
+    console.error('❌ StudentDemographicsChart: Error occurred:', error);
     return null;
   }
 
-  if (chartData.length === 0) {
-    return null;
+  // When showing both tabs, check if BOTH datasets are empty
+  if (displayBothTabs) {
+    if (ethnicGroupData.length === 0 && accessibilityData.length === 0) {
+      console.log('ℹ️ StudentDemographicsChart: No data available for both charts');
+      return null;
+    }
+  } else {
+    // When showing single tab, check if current tab's data is empty
+    if (chartData.length === 0) {
+      console.log('ℹ️ StudentDemographicsChart: No data available for current tab');
+      return null;
+    }
   }
 
   // Render both charts side-by-side when showBothTabs=true
@@ -216,31 +169,37 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
             </div>
           </div>
           <div className="overflow-y-auto">
-            <ChartContainer config={chartConfig} className="w-full h-auto" style={{ height: `${ethnicGroupData.length * 50 + 50}px` }}>
-              <BarChart
-                data={ethnicGroupData}
-                margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
-                layout="vertical"
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 12 }} />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  width={80}
-                  tick={{ fontSize: 12 }}
-                />
-                <ChartTooltip
-                  cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
-                  content={<ChartTooltipContent hideLabel />}
-                />
-                <Bar dataKey="count" fill="#3b82f6" radius={[0, 8, 8, 0]} barSize={40}>
-                  {ethnicGroupData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ChartContainer>
+            {ethnicGroupData.length === 0 ? (
+              <div className="flex items-center justify-center h-40">
+                <p className="text-gray-500 text-sm">{t('noEthnicGroupData', 'No ethnic group data available')}</p>
+              </div>
+            ) : (
+              <ChartContainer config={chartConfig} className="w-full h-auto" style={{ height: `${ethnicGroupData.length * 50 + 50}px` }}>
+                <BarChart
+                  data={ethnicGroupData}
+                  margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
+                  layout="vertical"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 12 }} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={80}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <ChartTooltip
+                    cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Bar dataKey="count" fill="#3b82f6" radius={[0, 8, 8, 0]} barSize={40}>
+                    {ethnicGroupData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            )}
           </div>
         </div>
 
@@ -260,31 +219,37 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
             </div>
           </div>
           <div className="overflow-y-auto">
-            <ChartContainer config={chartConfig} className="w-full h-auto" style={{ height: `${accessibilityData.length * 50 + 50}px` }}>
-              <BarChart
-                data={accessibilityData}
-                margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
-                layout="vertical"
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 12 }} />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  width={100}
-                  tick={{ fontSize: 12 }}
-                />
-                <ChartTooltip
-                  cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
-                  content={<ChartTooltipContent hideLabel />}
-                />
-                <Bar dataKey="count" fill="#10b981" radius={[0, 8, 8, 0]} barSize={40}>
-                  {accessibilityData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ChartContainer>
+            {accessibilityData.length === 0 ? (
+              <div className="flex items-center justify-center h-40">
+                <p className="text-gray-500 text-sm">{t('noAccessibilityData', 'No accessibility data available')}</p>
+              </div>
+            ) : (
+              <ChartContainer config={chartConfig} className="w-full h-auto" style={{ height: `${accessibilityData.length * 50 + 50}px` }}>
+                <BarChart
+                  data={accessibilityData}
+                  margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
+                  layout="vertical"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 12 }} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={100}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <ChartTooltip
+                    cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Bar dataKey="count" fill="#10b981" radius={[0, 8, 8, 0]} barSize={40}>
+                    {accessibilityData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            )}
           </div>
         </div>
       </div>

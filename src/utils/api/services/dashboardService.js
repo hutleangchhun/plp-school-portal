@@ -228,6 +228,7 @@ export const dashboardService = {
    * Get school distribution data for admin dashboard
    * Fetches data from /api/v1/dashboard/distribution/schools endpoint
    * @param {Object} params - Filter parameters
+   * @param {number} [params.schoolId] - School ID to filter by (for director dashboard)
    * @param {number} [params.zoneId] - Zone ID to filter by
    * @param {number} [params.provinceId] - Province ID to filter by
    * @param {number} [params.districtId] - District ID to filter by
@@ -243,6 +244,10 @@ export const dashboardService = {
 
       // Add query parameters for filtering and sorting
       const queryParams = [];
+
+      if (params.schoolId) {
+        queryParams.push(`schoolId=${params.schoolId}`);
+      }
 
       if (params.zoneId) {
         queryParams.push(`zoneId=${params.zoneId}`);
@@ -631,6 +636,94 @@ export const dashboardService = {
         success: false,
         error: error.message || 'Failed to get teacher extra learning tool statistics',
         data: {}
+      };
+    }
+  },
+
+  /**
+   * Get student ethnic group distribution
+   * Fetches data from /api/v1/dashboard/students/ethnic-group endpoint
+   * @param {Object} params - Filter parameters
+   * @param {number} params.schoolId - School ID (required)
+   * @param {number} [params.roleId=9] - Role ID (default: 9 for students)
+   * @returns {Promise<Object>} Response with ethnic group distribution
+   */
+  async getStudentEthnicGroupDistribution(params = {}) {
+    try {
+      console.log('📊 Fetching student ethnic group distribution...', params);
+
+      const queryParams = {
+        schoolId: params.schoolId,
+        roleId: params.roleId || 9
+      };
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(`${ENDPOINTS.DASHBOARD.BASE}/students/ethnic-group`, {
+          params: queryParams
+        })
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch ethnic group distribution');
+      }
+
+      const apiData = response.data || [];
+
+      return {
+        success: true,
+        data: apiData
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getStudentEthnicGroupDistribution:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get ethnic group distribution',
+        data: []
+      };
+    }
+  },
+
+  /**
+   * Get student accessibility needs distribution
+   * Fetches data from /api/v1/dashboard/students/accessibility endpoint
+   * @param {Object} params - Filter parameters
+   * @param {number} params.schoolId - School ID (required)
+   * @param {number} [params.roleId=9] - Role ID (default: 9 for students)
+   * @returns {Promise<Object>} Response with accessibility distribution
+   */
+  async getStudentAccessibilityDistribution(params = {}) {
+    try {
+      console.log('📊 Fetching student accessibility distribution...', params);
+
+      const queryParams = {
+        schoolId: params.schoolId,
+        roleId: params.roleId || 9
+      };
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(`${ENDPOINTS.DASHBOARD.BASE}/students/accessibility`, {
+          params: queryParams
+        })
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch accessibility distribution');
+      }
+
+      const apiData = response.data || [];
+
+      return {
+        success: true,
+        data: apiData
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getStudentAccessibilityDistribution:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get accessibility distribution',
+        data: []
       };
     }
   }
