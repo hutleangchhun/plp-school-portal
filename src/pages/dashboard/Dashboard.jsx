@@ -423,6 +423,7 @@ export default function Dashboard({ user: initialUser }) {
                       </div>
 
                       {/* Info Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
                         {/* School Code */}
                         {schoolInfo.code && (
                           <div className="flex items-center gap-2 bg-gray-50 rounded-sm px-3 py-2">
