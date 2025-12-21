@@ -185,7 +185,7 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
                 <p className="text-gray-500 text-sm">{t('noEthnicGroupData', 'No ethnic group data available')}</p>
               </div>
             ) : (
-              <ChartContainer config={chartConfig} className="w-full h-auto" style={{ height: `${ethnicGroupData.length * 50 + 50}px` }}>
+              <ChartContainer config={chartConfig} className="w-full h-auto" style={{ height: `${ethnicGroupData.length * 36 + 40}px` }}>
                 <BarChart
                   data={ethnicGroupData}
                   margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
@@ -203,7 +203,7 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
                     cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
                     content={<ChartTooltipContent hideLabel />}
                   />
-                  <Bar dataKey="count" fill="#3b82f6" radius={[0, 8, 8, 0]} barSize={40}>
+                  <Bar dataKey="count" fill="#3b82f6" radius={[0, 6, 6, 0]} barSize={24}>
                     {ethnicGroupData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
@@ -232,7 +232,7 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
                 <p className="text-gray-500 text-sm">{t('noAccessibilityData', 'No accessibility data available')}</p>
               </div>
             ) : (
-              <ChartContainer config={chartConfig} className="w-full h-auto" style={{ height: `${accessibilityData.length * 50 + 50}px` }}>
+              <ChartContainer config={chartConfig} className="w-full h-auto" style={{ height: `${accessibilityData.length * 36 + 40}px` }}>
                 <BarChart
                   data={accessibilityData}
                   margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
@@ -250,7 +250,7 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
                     cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
                     content={<ChartTooltipContent hideLabel />}
                   />
-                  <Bar dataKey="count" fill="#10b981" radius={[0, 8, 8, 0]} barSize={40}>
+                  <Bar dataKey="count" fill="#10b981" radius={[0, 6, 6, 0]} barSize={24}>
                     {accessibilityData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
@@ -319,7 +319,7 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
 
       {/* Chart */}
       <div className="overflow-y-auto">
-        <ChartContainer config={chartConfig} className="w-full h-auto" style={{ height: `${chartData.length * 50 + 50}px` }}>
+        <ChartContainer config={chartConfig} className="w-full h-auto" style={{ height: `${chartData.length * 36 + 40}px` }}>
           <BarChart
             data={chartData}
             margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
@@ -337,7 +337,7 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
               cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
               content={<ChartTooltipContent hideLabel />}
             />
-            <Bar dataKey="count" fill="#3b82f6" radius={[0, 8, 8, 0]} barSize={40}>
+            <Bar dataKey="count" fill="#3b82f6" radius={[0, 6, 6, 0]} barSize={24}>
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
