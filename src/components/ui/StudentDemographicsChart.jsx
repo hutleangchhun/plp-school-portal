@@ -204,7 +204,7 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
                     tick={{ fontSize: 11 }}
                     angle={360}
                     textAnchor="end"
-                    height={80}
+                    height={10}
                     interval={0}
                   />
                   <YAxis type="number" tick={{ fontSize: 12 }} />
