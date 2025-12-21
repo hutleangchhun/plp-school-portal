@@ -75,6 +75,14 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
 
         // API returns data in format: [{ ethnicGroup: 'ខ្មែរ', count: 10 }, ...]
         const ethnicData = ethnicDistribution
+          .filter(item => {
+            // Filter out unknown/null/empty ethnic groups
+            const group = item.ethnicGroup;
+            if (!group || group === 'null' || group === 'undefined' || group === '' || group.toLowerCase() === 'unknown') {
+              return false;
+            }
+            return true;
+          })
           .map(item => ({
             name: ethnicGroupLabelMap[item.ethnicGroup] || item.ethnicGroup,
             count: parseInt(item.count) || 0
@@ -179,31 +187,32 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
               </p>
             </div>
           </div>
-          <div className="overflow-y-auto">
+          <div className="overflow-x-auto">
             {ethnicGroupData.length === 0 ? (
               <div className="flex items-center justify-center h-40">
                 <p className="text-gray-500 text-sm">{t('noEthnicGroupData', 'No ethnic group data available')}</p>
               </div>
             ) : (
-              <ChartContainer config={chartConfig} className="w-full h-auto" style={{ height: `${ethnicGroupData.length * 36 + 40}px` }}>
+              <ChartContainer config={chartConfig} className="w-full" style={{ height: '280px' }}>
                 <BarChart
                   data={ethnicGroupData}
-                  margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
-                  layout="vertical"
+                  margin={{ top: 10, right: 10, left: 10, bottom: 60 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 12 }} />
-                  <YAxis
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                  <XAxis
                     dataKey="name"
-                    type="category"
-                    width={80}
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11 }}
+                    angle={360}
+                    textAnchor="end"
+                    height={80}
+                    interval={0}
                   />
+                  <YAxis type="number" tick={{ fontSize: 12 }} />
                   <ChartTooltip
                     cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
-                    content={<ChartTooltipContent hideLabel />}
+                    content={<ChartTooltipContent />}
                   />
-                  <Bar dataKey="count" fill="#3b82f6" radius={[0, 6, 6, 0]} barSize={24}>
+                  <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={32}>
                     {ethnicGroupData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
