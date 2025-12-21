@@ -133,7 +133,7 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
 
   if (loading) {
     return (
-      <div className="bg-white rounded-md border border-gray-200 p-6">
+      <div className="bg-white rounded-sm border border-gray-200 p-6">
         <div className="flex items-center justify-center h-80">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -168,7 +168,7 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Ethnic Groups Chart */}
-        <div className="bg-white rounded-md border border-gray-200 p-6">
+        <div className="bg-white rounded-sm border border-gray-200 p-6">
           <div className="flex flex-row gap-3 items-center mb-6">
             <div className="grid gap-1">
               <h3 className="text-md font-bold text-gray-900">
@@ -215,7 +215,7 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
         </div>
 
         {/* Accessibility Needs Chart */}
-        <div className="bg-white rounded-md border border-gray-200 p-6">
+        <div className="bg-white rounded-sm border border-gray-200 p-6">
           <div className="flex flex-row gap-3 items-center mb-6">
             <div className="grid gap-1">
               <h3 className="text-md font-bold text-gray-900">
@@ -266,13 +266,13 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
 
   // Single tab view (original behavior)
   return (
-    <div className="bg-white rounded-md border border-gray-200 p-6">
+    <div className="bg-white rounded-sm border border-gray-200 p-6">
       {/* Header with Icon and Dropdown */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <div className="flex sm:flex-row flex-col items-start sm:items-center justify-start sm:justify-between w-full gap-3">
           {/* Icon and Title */}
           <div className="flex flex-row gap-3 items-center">
-            <div className={`w-12 h-12 rounded-md flex items-center justify-center ${
+            <div className={`w-12 h-12 rounded-sm flex items-center justify-center ${
               activeTab === 'ethnic' ? 'bg-blue-600' : 'bg-green-600'
             }`}>
               {activeTab === 'ethnic' ? (
