@@ -1016,7 +1016,7 @@ export const km = {
   avgPerClass: 'ជាមធ្យមក្នុងមួយថ្នាក់',
   yourClassesInSchool: 'ថ្នាក់របស់អ្នកនៅក្នុងសាលារៀន',
   noClassesAssigned: 'មិនមានថ្នាក់រៀនដែលបានកំណត់',
-  welcomeToDashboard: 'សូមស្វាគមន៍មកកាន់ផ្ទាំងគ្រប់គ្រងប្រព័ន្ធគ្រូបង្រៀនរបស់អ្នក',
+  welcomeToDashboard: 'សូមស្វាគមន៍មកកាន់ផ្ទាំងគ្រប់គ្រង',
   yourAccountDetails: 'ព័ត៌មានគណនីរបស់អ្នក',
   yourSchoolDetails: 'ព័ត៌មានសាលារៀនរបស់អ្នក',
   totalDirectors: 'នាយក',

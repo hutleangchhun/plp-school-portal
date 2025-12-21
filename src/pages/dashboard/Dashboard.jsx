@@ -1,4 +1,4 @@
-import { Shield, Briefcase, MapPinned, Hash, School } from "lucide-react";
+import { Shield, Briefcase, MapPinned, Hash, Building } from "lucide-react";
 import SchoolOverviewChart from "../../components/ui/SchoolOverviewChart";
 import StudentDemographicsChart from "../../components/ui/StudentDemographicsChart";
 import BMIPieChart from "../../components/ui/BMIPieChart";
@@ -372,111 +372,120 @@ export default function Dashboard({ user: initialUser }) {
   return (
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-3 sm:p-6">
-        {/* School Statistics - Combined */}
-        <FadeInSection delay={200} className="mb-6">
-          <div className="bg-white rounded-sm border border-gray-200 shadow-sm p-4 sm:p-6">
-            {/* School Information Card */}
-            {schoolInfo && (
-              <FadeInSection delay={100} className="mb-6">
-                <div className="">
-                  <div className="flex flex-col sm:flex-row items-center gap-4">
-                    {/* School Profile Image */}
-                    <div className="w-20 h-20 sm:w-32 sm:h-32 flex-shrink-0 rounded-sm shadow-lg overflow-hidden ring-2 ring-white">
-                      {schoolInfo.profile && !schoolImageError ? (
-                        <img
-                          src={getFullImageUrl(schoolInfo.profile)}
-                          alt={schoolInfo.name || "School"}
-                          className="w-full h-full object-cover"
-                          onError={() => setSchoolImageError(true)}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex justify-center items-center bg-gradient-to-br from-blue-500 to-indigo-600">
-                          <School className="h-10 w-10 text-white" />
-                        </div>
-                      )}
+        {/* School Information Card */}
+        {schoolInfo && (
+          <FadeInSection delay={100} className="mb-6">
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div className="p-6 sm:p-8">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+                      <Building className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                     </div>
-
-                    {/* School Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
-                        <div>
-                          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
-                            {schoolInfo.name ||
-                              t("schoolInformation", "School Information")}
-                          </h2>
-                        </div>
-                        <div>
-                          {getUserRole() && (
-                            <Badge
-                              variant="solid"
-                              color={getUserRole().color}
-                              size="sm"
-                              className="inline-flex items-center gap-1.5 mt-1"
-                            >
-                              {(() => {
-                                const role = getUserRole();
-                                const IconComponent = role.Icon;
-                                return (
-                                  <>
-                                    <IconComponent className="w-3.5 h-3.5" />
-                                    {role.label}
-                                  </>
-                                );
-                              })()}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Info Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
-                        {/* School Code */}
-                        {schoolInfo.code && (
-                          <div className="flex items-center gap-3 bg-gray-50 rounded-sm px-3 py-2 border-gray-100 border-2">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100">
-                              <Hash className="w-4 h-4 text-green-600" />
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500">
-                                {t("schoolCode", "School Code")}
-                              </p>
-                              <p className="text-sm font-semibold text-gray-800">
-                                {schoolInfo.code}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Location */}
-                        {(schoolInfo.place || schoolInfo.placeObject) && (
-                          <div className="flex items-center gap-3 bg-gray-50 rounded-sm px-3 py-2 border-gray-100 border-2">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100">
-                              <MapPinned className="w-4 h-4 text-green-600" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs text-gray-500">
-                                {t("location", "Location")}
-                              </p>
-                              <p className="text-sm font-semibold text-gray-800 truncate">
-                                {schoolInfo.place ||
-                                  (schoolInfo.placeObject &&
-                                    [
-                                      schoolInfo.placeObject.commune_name_kh,
-                                      schoolInfo.placeObject.district_name_kh,
-                                      schoolInfo.placeObject.province_name_kh,
-                                    ]
-                                      .filter(Boolean)
-                                      .join(", "))}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900 mb-1">
+                        {schoolInfo.name || t("schoolInformation", "School Information")}
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        {t("welcomeToDashboard", "Welcome To Dashboard")}
+                      </p>
                     </div>
                   </div>
+                  {getUserRole() && (
+                    <Badge
+                      variant="outline"
+                      color={getUserRole().color}
+                      size="md"
+                      className="inline-flex items-center gap-2"
+                    >
+                      {(() => {
+                        const role = getUserRole();
+                        const IconComponent = role.Icon;
+                        return (
+                          <>
+                            <IconComponent className="w-4 h-4" />
+                            {role.label}
+                          </>
+                        );
+                      })()}
+                    </Badge>
+                  )}
                 </div>
-              </FadeInSection>
-            )}
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+                  {/* School Code */}
+                  {schoolInfo.code && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1.5">
+                        {t("schoolCode", "School Code")}
+                      </p>
+                      <p className="text-base font-medium text-gray-900">
+                        {schoolInfo.code}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* School Type */}
+                  {schoolInfo.schoolType && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1.5">
+                        {t("schoolType", "School Type")}
+                      </p>
+                      <p className="text-base font-medium text-gray-900">
+                        {schoolInfo.schoolType}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Project Type */}
+                  {schoolInfo.projectType && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1.5">
+                        {t("projectType", "Project Type")}
+                      </p>
+                      <p className="text-base font-medium text-gray-900">
+                        {schoolInfo.projectType.name || schoolInfo.projectType.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Location */}
+                  {(schoolInfo.place || schoolInfo.placeObject) && (
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-500 mb-1.5">
+                        {t("location", "Location")}
+                      </p>
+                      <p className="text-base font-medium text-gray-900 break-words">
+                        {(() => {
+                          const placeData = schoolInfo.place || schoolInfo.placeObject;
+                          if (typeof placeData === 'string') {
+                            return placeData;
+                          }
+                          if (placeData && typeof placeData === 'object') {
+                            return [
+                              placeData.commune_name_kh,
+                              placeData.district_name_kh,
+                              placeData.province_name_kh,
+                            ]
+                              .filter(Boolean)
+                              .join(", ");
+                          }
+                          return '';
+                        })()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </FadeInSection>
+        )}
+
+        {/* School Statistics - Combined */}
+        <FadeInSection delay={200} className="mb-6">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               {t("schoolStatistics", "School Statistics")}
             </h3>
