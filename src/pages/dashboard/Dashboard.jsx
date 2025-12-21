@@ -1,4 +1,4 @@
-import { Shield, Briefcase, MapPin, Hash, School } from "lucide-react";
+import { Shield, Briefcase, MapPinned, Hash, School } from "lucide-react";
 import SchoolOverviewChart from "../../components/ui/SchoolOverviewChart";
 import StudentDemographicsChart from "../../components/ui/StudentDemographicsChart";
 import BMIPieChart from "../../components/ui/BMIPieChart";
@@ -53,10 +53,13 @@ export default function Dashboard({ user: initialUser }) {
   // Construct full image URL from relative path
   const getFullImageUrl = useCallback((relativePath) => {
     if (!relativePath) return null;
-    if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+    if (
+      relativePath.startsWith("http://") ||
+      relativePath.startsWith("https://")
+    ) {
       return relativePath;
     }
-    if (relativePath.startsWith('data:')) {
+    if (relativePath.startsWith("data:")) {
       return relativePath;
     }
     const baseUrl = getStaticAssetBaseUrl();
@@ -376,7 +379,7 @@ export default function Dashboard({ user: initialUser }) {
             {schoolInfo && (
               <FadeInSection delay={100} className="mb-6">
                 <div className="">
-                  <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
                     {/* School Profile Image */}
                     <div className="w-20 h-20 sm:w-32 sm:h-32 flex-shrink-0 rounded-sm shadow-lg overflow-hidden ring-2 ring-white">
                       {schoolInfo.profile && !schoolImageError ? (
@@ -395,11 +398,14 @@ export default function Dashboard({ user: initialUser }) {
 
                     {/* School Details */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
                         <div>
                           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
-                            {schoolInfo.name || t("schoolInformation", "School Information")}
+                            {schoolInfo.name ||
+                              t("schoolInformation", "School Information")}
                           </h2>
+                        </div>
+                        <div>
                           {getUserRole() && (
                             <Badge
                               variant="solid"
@@ -426,25 +432,31 @@ export default function Dashboard({ user: initialUser }) {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
                         {/* School Code */}
                         {schoolInfo.code && (
-                          <div className="flex items-center gap-2 bg-gray-50 rounded-sm px-3 py-2">
+                          <div className="flex items-center gap-3 bg-gray-50 rounded-sm px-3 py-2 border-gray-100 border-2">
                             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100">
                               <Hash className="w-4 h-4 text-green-600" />
                             </div>
                             <div>
-                              <p className="text-xs text-gray-500">{t("schoolCode", "School Code")}</p>
-                              <p className="text-sm font-semibold text-gray-800">{schoolInfo.code}</p>
+                              <p className="text-xs text-gray-500">
+                                {t("schoolCode", "School Code")}
+                              </p>
+                              <p className="text-sm font-semibold text-gray-800">
+                                {schoolInfo.code}
+                              </p>
                             </div>
                           </div>
                         )}
 
                         {/* Location */}
                         {(schoolInfo.place || schoolInfo.placeObject) && (
-                          <div className="flex items-center gap-2 bg-gray-50 rounded-sm px-3 py-2">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-sm">
-                              <MapPin className="w-4 h-4 text-orange-600" />
+                          <div className="flex items-center gap-3 bg-gray-50 rounded-sm px-3 py-2 border-gray-100 border-2">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100">
+                              <MapPinned className="w-4 h-4 text-green-600" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-xs text-gray-500">{t("location", "Location")}</p>
+                              <p className="text-xs text-gray-500">
+                                {t("location", "Location")}
+                              </p>
                               <p className="text-sm font-semibold text-gray-800 truncate">
                                 {schoolInfo.place ||
                                   (schoolInfo.placeObject &&
