@@ -90,6 +90,7 @@ export const km = {
   commune: 'ឃុំ/សង្កាត់',
   district: 'ស្រុក/ខណ្ឌ/ក្រុង',
   province: 'ខេត្ត',
+  gpsCoordinates: 'កូអរដោនេ GPS',
   selectProvince: 'ជ្រើសរើសខេត្ត',
   selectDistrict: 'ជ្រើសរើសស្រុក/ខណ្ឌ/ក្រុង',
   selectCommune: 'ជ្រើសរើសឃុំ/សង្កាត់',
@@ -1018,7 +1019,14 @@ export const km = {
   welcomeToDashboard: 'សូមស្វាគមន៍មកកាន់ផ្ទាំងគ្រប់គ្រងប្រព័ន្ធគ្រូបង្រៀនរបស់អ្នក',
   yourAccountDetails: 'ព័ត៌មានគណនីរបស់អ្នក',
   yourSchoolDetails: 'ព័ត៌មានសាលារៀនរបស់អ្នក',
-  totalDirectors: 'នាយកសរុប',
+  totalDirectors: 'នាយក',
+  totalDeputyPrincipals: 'នាយករង',
+  totalSecretaries: 'លេខាធិកា',
+  totalTreasurers: 'ហេរញ្ញិក',
+  totalLibrarians: 'បណ្ណារក្ស',
+  totalWorkshop: 'រោងជាង',
+  totalSecurity: 'ឆ្មាំសាលារៀន',
+  totalTeacherIct: 'គ្រូបច្ចេកវិទ្យាព័ត៌មាន',
   dashboardGreeting: 'សូមស្វាគមន៍មកកាន់ប្រព័ន្ធរដ្ធបាលសាលារៀន',
   loadingAttendance: 'កំពុងទាញយកវត្តមាន...',
   noAttendanceData: 'មិនមានទិន្នន័យវត្តមាន',
@@ -1033,6 +1041,8 @@ export const km = {
   schoolDistributionDesc: 'ស្ថិតិសាលារៀន​ បែងចែកតាមតម្រងច្រើនប្រភេទ',
   systemOverview: 'ទិន្នន័យសរុបរបស់ប្រព័ន្ធគ្រប់គ្រងសាលារៀន',
   systemOverviewDesc: 'ទិដ្ឋភាពទូទៅនៃទិន្នន័យរបស់ប្រព័ន្ធគ្រប់គ្រងសាលារៀន',
+  schoolStatistics: 'ស្ថិតិទូទៅក្នុងសាលារៀន',
+  staffRoles: 'ស្ថិតិបុគ្គលិកក្នុងសាលារៀន',
 
 
   // Student management with master-class endpoint

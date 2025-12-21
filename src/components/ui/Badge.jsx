@@ -48,7 +48,7 @@ const Badge = ({
     lg: 'px-3 py-1.5 text-sm'
   };
 
-  const baseClasses = 'inline-flex items-center pt-1 font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const baseClasses = 'inline-flex items-center pt-1 font-medium rounded-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
   
   const colorClass = colorClasses[color]?.[variant] || colorClasses.blue.filled;
   const sizeClass = sizeClasses[size] || sizeClasses.sm;

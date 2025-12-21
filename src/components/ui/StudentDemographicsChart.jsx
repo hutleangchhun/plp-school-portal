@@ -170,9 +170,6 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
         {/* Ethnic Groups Chart */}
         <div className="bg-white rounded-md border border-gray-200 p-6">
           <div className="flex flex-row gap-3 items-center mb-6">
-            <div className="w-12 h-12 rounded-md flex items-center justify-center bg-blue-600">
-              <Users className="h-5 w-5 text-white" />
-            </div>
             <div className="grid gap-1">
               <h3 className="text-md font-bold text-gray-900">
                 {t('studentEthnicGroupDistribution', 'Student Ethnic Group Distribution')}
@@ -220,9 +217,6 @@ export default function StudentDemographicsChart({ schoolId, className = "", def
         {/* Accessibility Needs Chart */}
         <div className="bg-white rounded-md border border-gray-200 p-6">
           <div className="flex flex-row gap-3 items-center mb-6">
-            <div className="w-12 h-12 rounded-md flex items-center justify-center bg-green-600">
-              <Accessibility className="h-5 w-5 text-white" />
-            </div>
             <div className="grid gap-1">
               <h3 className="text-md font-bold text-gray-900">
                 {t('studentAccessibilityDistribution', 'Student Accessibility Needs')}

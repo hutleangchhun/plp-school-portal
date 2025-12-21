@@ -57,6 +57,7 @@ export const en = {
   commune: 'Commune',
   district: 'District',
   province: 'Province',
+  gpsCoordinates: 'GPS Coordinates',
   selectProvince: 'Select Province',
   selectDistrict: 'Select District', 
   selectCommune: 'Select Commune',
@@ -536,6 +537,14 @@ export const en = {
   'Active Today': 'Active Today',
   'Average Load': 'Average Load',
   totalClasses: 'Total Classes',
+  totalDirectors: 'Directors',
+  totalDeputyPrincipals: 'Deputy Principals',
+  totalSecretaries: 'Secretaries',
+  totalTreasurers: 'Treasurers',
+  totalLibrarians: 'Librarians',
+  totalWorkshop: 'Workshop Staff',
+  totalSecurity: 'Security Staff',
+  totalTeacherIct: 'ICT Teachers',
   activeToday: 'Active Today',
   averageLoad: 'Average Load',
   
@@ -1318,6 +1327,8 @@ export const en = {
   // Dashboard
   dashboardGreeting: 'Welcome to School Management System',
   welcomeToDashboard: 'Welcome To Dashboard',
+  schoolStatistics: 'School Statistics',
+  staffRoles: 'Staff Statistics',
 
   // Delete Operations
   deleteParents: 'Delete Parents',

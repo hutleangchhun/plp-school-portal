@@ -286,7 +286,11 @@ export const schoolService = {
                 placeObject: school.place, // Keep original place object for reference
                 establishedYear: school.established_year,
                 createdAt: school.createdAt,
-                updatedAt: school.updatedAt
+                updatedAt: school.updatedAt,
+                schoolType: school.schoolType,
+                projectType: school.projectType,
+                projectTypeId: school.projectTypeId,
+                profile: school.profile
             };
         },
     },

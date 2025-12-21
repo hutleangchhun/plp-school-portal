@@ -146,9 +146,6 @@ export default function BMIPieChart({ schoolId, className = "" }) {
     <div className="bg-white rounded-md border border-gray-200 p-6">
       {/* Header with Icon and Title */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-md flex items-center justify-center bg-purple-600">
-          <Activity className="h-5 w-5 text-white" />
-        </div>
         <div className="grid gap-1">
           <h3 className="text-md font-bold text-gray-900">
             {t('studentBMIDistribution', 'Student BMI Distribution')}
