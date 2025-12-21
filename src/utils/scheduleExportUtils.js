@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { formatDateKhmer } from './formatters';
 import { formatClassIdentifier } from './helpers';
 
@@ -287,5 +288,172 @@ export const exportScheduleToCSV = (schedules = [], options = {}, filename = 'sc
   link.click();
   URL.revokeObjectURL(link.href);
 
+  return true;
+};
+
+/**
+ * Export schedule data to Excel
+ * @param {Array} schedules - Array of schedule objects
+ * @param {Object} options - Export options
+ * @param {Function} options.t - Translation function
+ * @param {Object} options.classInfo - Class information for the header
+ * @param {string} options.teacherName - Teacher name for the header
+ * @param {string} options.academicYear - Academic year
+ * @param {string} options.shift - Shift (morning/afternoon/all)
+ * @param {string} filename - Output filename
+ */
+export const exportScheduleToExcel = (schedules = [], options = {}, filename = 'schedule.xlsx') => {
+  const { t, classInfo, teacherName, academicYear, shift } = options;
+
+  // Define day order
+  const dayOrder = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
+  // Get day label translation
+  const getDayLabel = (day) => {
+    const labels = {
+      MONDAY: t ? t('monday', 'Monday') : 'Monday',
+      TUESDAY: t ? t('tuesday', 'Tuesday') : 'Tuesday',
+      WEDNESDAY: t ? t('wednesday', 'Wednesday') : 'Wednesday',
+      THURSDAY: t ? t('thursday', 'Thursday') : 'Thursday',
+      FRIDAY: t ? t('friday', 'Friday') : 'Friday',
+      SATURDAY: t ? t('saturday', 'Saturday') : 'Saturday',
+      SUNDAY: t ? t('sunday', 'Sunday') : 'Sunday',
+    };
+    return labels[day] || day;
+  };
+
+  // Format time
+  const formatTime = (time) => {
+    if (!time) return '';
+    return time.substring(0, 5);
+  };
+
+  // Prepare header information
+  const headerInfo = [];
+  headerInfo.push([t ? t('weeklySchedule', 'Weekly Schedule') : 'Weekly Schedule']);
+  headerInfo.push([]); // Empty row
+
+  if (teacherName) {
+    headerInfo.push([`${t ? t('teacher', 'Teacher') : 'Teacher'}:`, teacherName]);
+  }
+
+  if (classInfo) {
+    const classDisplay = formatClassIdentifier(classInfo.gradeLevel, classInfo.section);
+    headerInfo.push([`${t ? t('class', 'Class') : 'Class'}:`, classDisplay]);
+  }
+
+  if (academicYear) {
+    headerInfo.push([`${t ? t('academicYear', 'Academic Year') : 'Academic Year'}:`, academicYear]);
+  }
+
+  if (shift && shift !== 'all') {
+    const shiftLabel = shift === 'morning'
+      ? (t ? t('morningShift', 'Morning Shift') : 'Morning Shift')
+      : shift === 'afternoon'
+      ? (t ? t('afternoonShift', 'Afternoon Shift') : 'Afternoon Shift')
+      : (t ? t('noShift', 'No Shift') : 'No Shift');
+    headerInfo.push([`${t ? t('shift', 'Shift') : 'Shift'}:`, shiftLabel]);
+  }
+
+  headerInfo.push([`${t ? t('generated', 'Generated') : 'Generated'}:`, formatDateKhmer(new Date(), 'short')]);
+  headerInfo.push([]); // Empty row
+
+  // Prepare table headers
+  const tableHeaders = [
+    t ? t('day', 'Day') : 'Day',
+    t ? t('time', 'Time') : 'Time',
+    t ? t('subject', 'Subject') : 'Subject',
+    t ? t('class', 'Class') : 'Class',
+    t ? t('room', 'Room') : 'Room',
+    t ? t('location', 'Location') : 'Location',
+    t ? t('status', 'Status') : 'Status'
+  ];
+
+  // Group schedules by day
+  const schedulesByDay = {};
+  dayOrder.forEach(day => {
+    schedulesByDay[day] = schedules
+      .filter(s => s.dayOfWeek === day)
+      .sort((a, b) => {
+        const timeA = a.startTime || '';
+        const timeB = b.startTime || '';
+        return timeA.localeCompare(timeB);
+      });
+  });
+
+  // Prepare table data
+  const tableData = [];
+
+  dayOrder.forEach(day => {
+    const daySchedules = schedulesByDay[day];
+    if (daySchedules && daySchedules.length > 0) {
+      daySchedules.forEach((schedule, index) => {
+        const subjectName = schedule.subject?.khmer_name ||
+                           schedule.subject?.name ||
+                           schedule.subject?.subject_name_en ||
+                           t ? t('notAvailable', 'N/A') : 'N/A';
+
+        const className = schedule.class?.gradeLevel
+          ? formatClassIdentifier(schedule.class.gradeLevel, schedule.class.section)
+          : '';
+
+        const timeRange = `${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}`;
+        const room = schedule.room || '';
+        const location = schedule.location || '';
+        const status = schedule.status || 'ACTIVE';
+
+        tableData.push([
+          index === 0 ? getDayLabel(day) : '', // Only show day name for first entry
+          timeRange,
+          subjectName,
+          className,
+          room,
+          location,
+          status
+        ]);
+      });
+    } else {
+      // Add empty row for days with no schedules
+      tableData.push([
+        getDayLabel(day),
+        t ? t('noSchedule', 'No schedule') : 'No schedule',
+        '',
+        '',
+        '',
+        '',
+        ''
+      ]);
+    }
+  });
+
+  // Combine all data
+  const worksheetData = [
+    ...headerInfo,
+    tableHeaders,
+    ...tableData,
+    [], // Empty row
+    [`${t ? t('totalSchedules', 'Total Schedules') : 'Total Schedules'}:`, schedules.length]
+  ];
+
+  // Create worksheet
+  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+  // Set column widths
+  worksheet['!cols'] = [
+    { wch: 15 }, // Day
+    { wch: 18 }, // Time
+    { wch: 25 }, // Subject
+    { wch: 12 }, // Class
+    { wch: 12 }, // Room
+    { wch: 20 }, // Location
+    { wch: 12 }  // Status
+  ];
+
+  // Create workbook
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, t ? t('weeklySchedule', 'Weekly Schedule') : 'Schedule');
+
+  // Save file
+  XLSX.writeFile(workbook, filename);
   return true;
 };

@@ -1812,6 +1812,8 @@ export const en = {
   noScheduleToExport: 'No schedule to export',
   exportSuccess: 'Schedule exported successfully',
   exportFailed: 'Failed to export schedule',
+  exportSuccessExcel: 'Schedule exported to Excel successfully',
+  exportFailedExcel: 'Failed to export schedule to Excel',
   created: 'Created',
   create: 'Create',
   noEthnicGroupData: 'No ethnic group data available',

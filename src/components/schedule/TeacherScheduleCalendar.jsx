@@ -17,7 +17,7 @@ import scheduleService from "../../utils/api/services/scheduleService";
 import { userUtils } from "../../utils/api/services/userService";
 import { subjectService } from "../../utils/api/services/subjectService";
 import { getCurrentAcademicYear } from "../../utils/academicYear";
-import { exportScheduleToPDF, getScheduleFilename } from "../../utils/scheduleExportUtils";
+import { exportScheduleToPDF, exportScheduleToExcel, getScheduleFilename } from "../../utils/scheduleExportUtils";
 
 /**
  * TeacherScheduleCalendar - Standalone page component for teacher schedule management
@@ -327,42 +327,52 @@ const TeacherScheduleCalendar = () => {
     return time?.substring(0, 5) || time;
   };
 
+  const getExportOptions = () => {
+    // Get the selected class info for the header
+    const classInfo = selectedClass
+      ? storedClasses.find((c) => c.classId === selectedClass)
+      : null;
+
+    // Get teacher name
+    const teacherName = user?.firstName && user?.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : user?.username || '';
+
+    // Prepare export options
+    return {
+      t,
+      classInfo: classInfo ? {
+        gradeLevel: classInfo.gradeLevel,
+        section: classInfo.section,
+        name: getClassDisplayName(selectedClass)
+      } : null,
+      teacherName,
+      academicYear: selectedAcademicYear,
+      shift: selectedShift
+    };
+  };
+
   const handleExportPDF = () => {
     try {
-      // Get the selected class info for the header
-      const classInfo = selectedClass
-        ? storedClasses.find((c) => c.classId === selectedClass)
-        : null;
-
-      // Get teacher name
-      const teacherName = user?.firstName && user?.lastName
-        ? `${user.firstName} ${user.lastName}`
-        : user?.username || '';
-
-      // Prepare export options
-      const exportOptions = {
-        t,
-        classInfo: classInfo ? {
-          gradeLevel: classInfo.gradeLevel,
-          section: classInfo.section,
-          name: getClassDisplayName(selectedClass)
-        } : null,
-        teacherName,
-        academicYear: selectedAcademicYear,
-        shift: selectedShift
-      };
-
-      // Generate filename
+      const exportOptions = getExportOptions();
       const filename = getScheduleFilename('teacher_schedule', 'pdf');
-
-      // Export to PDF
       exportScheduleToPDF(schedules, exportOptions, filename);
-
-      // Show success message
       showSuccess(t("exportSuccess", "Schedule exported successfully"));
     } catch (error) {
-      console.error('Error exporting schedule:', error);
+      console.error('Error exporting schedule to PDF:', error);
       showError(t("exportFailed", "Failed to export schedule"));
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const exportOptions = getExportOptions();
+      const filename = getScheduleFilename('teacher_schedule', 'xlsx');
+      exportScheduleToExcel(schedules, exportOptions, filename);
+      showSuccess(t("exportSuccessExcel", "Schedule exported to Excel successfully"));
+    } catch (error) {
+      console.error('Error exporting schedule to Excel:', error);
+      showError(t("exportFailedExcel", "Failed to export schedule to Excel"));
     }
   };
 
@@ -397,7 +407,18 @@ const TeacherScheduleCalendar = () => {
                 disabled={loading || schedules.length === 0}
                 title={schedules.length === 0 ? t("noScheduleToExport", "No schedule to export") : t("exportToPDF", "Export to PDF")}
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-4 w-4 mr-1" />
+                PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportExcel}
+                disabled={loading || schedules.length === 0}
+                title={schedules.length === 0 ? t("noScheduleToExport", "No schedule to export") : t("exportToExcel", "Export to Excel")}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Excel
               </Button>
               <Button
                 variant="primary"
