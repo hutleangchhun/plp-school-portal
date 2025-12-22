@@ -137,6 +137,10 @@ export const routePermissions = {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'StudentTransferManagement'
   },
+  '/admin/student-demographics': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'AdminStudentDemographic'
+  },
   '/admin/bmi-report': {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'BMIReport'
@@ -421,8 +425,17 @@ export const getNavigationItems = (user, t) => {
       ],
     },
     {
-      name: t('studentsManagement', 'Student Transfer'),
-      href: '/admin/student-transfer',
+      name: t('studentsManagement', 'Students Management'),
+      children: [
+        {
+          name: t('studentTransfer', 'Student Transfer'),
+          href: '/admin/student-transfer',
+        },
+        {
+          name: t('studentDemographics', 'Student Demographics'),
+          href: '/admin/student-demographics',
+        },
+      ],
     },
     {
       name: t('bmiAnalysis', 'BMI Analysis'),

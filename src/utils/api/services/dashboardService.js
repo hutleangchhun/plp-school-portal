@@ -644,7 +644,9 @@ export const dashboardService = {
    * Get student ethnic group distribution
    * Fetches data from /api/v1/dashboard/students/ethnic-group endpoint
    * @param {Object} params - Filter parameters
-   * @param {number} params.schoolId - School ID (required)
+   * @param {number} [params.provinceId] - Province ID (optional)
+   * @param {number} [params.districtId] - District ID (optional)
+   * @param {number} [params.schoolId] - School ID (optional - omit for all schools)
    * @param {number} [params.roleId=9] - Role ID (default: 9 for students)
    * @returns {Promise<Object>} Response with ethnic group distribution
    */
@@ -653,9 +655,19 @@ export const dashboardService = {
       console.log('📊 Fetching student ethnic group distribution...', params);
 
       const queryParams = {
-        schoolId: params.schoolId,
         roleId: params.roleId || 9
       };
+
+      // Add location filters if provided
+      if (params.provinceId) {
+        queryParams.provinceId = params.provinceId;
+      }
+      if (params.districtId) {
+        queryParams.districtId = params.districtId;
+      }
+      if (params.schoolId) {
+        queryParams.schoolId = params.schoolId;
+      }
 
       const response = await handleApiResponse(() =>
         apiClient_.get(`${ENDPOINTS.DASHBOARD.BASE}/students/ethnic-group`, {
@@ -688,7 +700,9 @@ export const dashboardService = {
    * Get student accessibility needs distribution
    * Fetches data from /api/v1/dashboard/students/accessibility endpoint
    * @param {Object} params - Filter parameters
-   * @param {number} params.schoolId - School ID (required)
+   * @param {number} [params.provinceId] - Province ID (optional)
+   * @param {number} [params.districtId] - District ID (optional)
+   * @param {number} [params.schoolId] - School ID (optional - omit for all schools)
    * @param {number} [params.roleId=9] - Role ID (default: 9 for students)
    * @returns {Promise<Object>} Response with accessibility distribution
    */
@@ -697,9 +711,19 @@ export const dashboardService = {
       console.log('📊 Fetching student accessibility distribution...', params);
 
       const queryParams = {
-        schoolId: params.schoolId,
         roleId: params.roleId || 9
       };
+
+      // Add location filters if provided
+      if (params.provinceId) {
+        queryParams.provinceId = params.provinceId;
+      }
+      if (params.districtId) {
+        queryParams.districtId = params.districtId;
+      }
+      if (params.schoolId) {
+        queryParams.schoolId = params.schoolId;
+      }
 
       const response = await handleApiResponse(() =>
         apiClient_.get(`${ENDPOINTS.DASHBOARD.BASE}/students/accessibility`, {
