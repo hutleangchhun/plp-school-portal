@@ -923,21 +923,6 @@ const StudentSelection = () => {
               </div>
             )}
 
-            {/* Debug Info - Shows total vs selectable count */}
-            {!listLoading && students.length > 0 && (
-              <div className="px-6 py-2 bg-yellow-50 border-b border-yellow-200">
-                <p className="text-xs text-yellow-800">
-                  <strong>Debug:</strong> Showing {students.length} students total.{" "}
-                  {students.filter(s => !!(s.class?.name || s.class_name || s.class?.id || s.class_id)).length > 0 && (
-                    <span className="text-red-600">
-                      {students.filter(s => !!(s.class?.name || s.class_name || s.class?.id || s.class_id)).length} student(s) have class data and cannot be selected.
-                    </span>
-                  )}
-                  {" "}Selectable: {students.filter(s => !(s.class?.name || s.class_name || s.class?.id || s.class_id)).length}
-                </p>
-              </div>
-            )}
-
             {listLoading ? (
               <div className="w-full flex items-center justify-center py-8">
                 <LoadingSpinner size="default" variant="primary" />

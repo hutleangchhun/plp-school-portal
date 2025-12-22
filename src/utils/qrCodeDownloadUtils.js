@@ -33,60 +33,73 @@ export const downloadQRCodesQueued = async (
     // Collect all blobs
     const blobs = [];
 
-    for (let i = 0; i < qrCodes.length; i++) {
-      const qrCode = qrCodes[i];
+    // Process in smaller batches to avoid memory issues
+    const BATCH_SIZE = 10;
+    const batches = [];
+    for (let i = 0; i < qrCodes.length; i += BATCH_SIZE) {
+      batches.push(qrCodes.slice(i, i + BATCH_SIZE));
+    }
 
-      try {
-        const element = createQRCodeDownloadCard(qrCode, cardType, t);
-        document.body.appendChild(element);
+    for (const batch of batches) {
+      // Process batch items sequentially but clear memory between batches
+      for (const qrCode of batch) {
+        try {
+          const element = createQRCodeDownloadCard(qrCode, cardType, t);
+          document.body.appendChild(element);
 
-        // Wait for images to load
-        await new Promise((resolve) => setTimeout(resolve, 300));
+          // Wait for images to load
+          await new Promise((resolve) => setTimeout(resolve, 200));
 
-        const canvas = await html2canvas(element, {
-          backgroundColor: "#ffffff",
-          scale: 8, // Increased to 8 for ultra-high quality (400px base * 8 = 3200px output)
-          logging: false,
-          allowTaint: true,
-          useCORS: true,
-          dpi: 600, // Increased DPI for better print quality
-          imageTimeout: 10000, // Increased timeout for larger images
-          windowHeight: element.scrollHeight * 8,
-          windowWidth: element.scrollWidth * 8,
-          ignoreElements: (el) => false,
-        });
+          // Use more reasonable quality settings to prevent memory issues
+          const canvas = await html2canvas(element, {
+            backgroundColor: "#ffffff",
+            scale: 4, // Reduced from 8 to 4 for better performance (400px * 4 = 1600px)
+            logging: false,
+            allowTaint: true,
+            useCORS: true,
+            imageTimeout: 5000,
+            windowHeight: element.scrollHeight * 4,
+            windowWidth: element.scrollWidth * 4,
+          });
 
-        document.body.removeChild(element);
+          document.body.removeChild(element);
 
-        // Convert canvas to blob with maximum quality
-        // Apply anti-aliasing for better quality
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+          // Convert canvas to blob with high quality
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
 
-        await new Promise((resolve) => {
-          canvas.toBlob((blob) => {
-            if (blob) {
-              blobs.push({
-                name: `${qrCode.name}_QR_Card.png`,
-                blob,
-              });
-            }
-            processed++;
-            onProgress(processed, total);
-            resolve();
-          }, 'image/png', 1.0); // Maximum quality PNG
-        });
+          await new Promise((resolve) => {
+            canvas.toBlob((blob) => {
+              if (blob) {
+                blobs.push({
+                  name: `${qrCode.name}_QR_Card.png`,
+                  blob,
+                });
+              }
+              processed++;
+              onProgress(processed, total);
+              resolve();
+            }, 'image/png', 0.95); // Slightly reduced quality for better file size
+          });
 
-        // Add delay between processing to avoid overwhelming the browser
-        if (i < qrCodes.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 300));
+          // Clear canvas to free memory
+          canvas.width = 0;
+          canvas.height = 0;
+
+          // Shorter delay between items
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        } catch (err) {
+          console.warn(`Failed to process QR code for ${qrCode.name}:`, err);
+          failed++;
+          processed++;
+          onProgress(processed, total);
         }
-      } catch (err) {
-        console.warn(`Failed to process QR code for ${qrCode.name}:`, err);
-        failed++;
-        processed++;
-        onProgress(processed, total);
+      }
+
+      // Force garbage collection between batches by adding a small delay
+      if (batches.indexOf(batch) < batches.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
 
@@ -633,19 +646,18 @@ export const downloadSingleQRCode = async (qrCode, cardType, t, showError) => {
     const element = createQRCodeDownloadCard(qrCode, cardType, t);
     document.body.appendChild(element);
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
+    // Use balanced quality settings for single download
     const canvas = await html2canvas(element, {
       backgroundColor: "#ffffff",
-      scale: 8, // Increased to 8 for ultra-high quality (400px base * 8 = 3200px output)
+      scale: 5, // Reduced from 8 to 5 for faster processing (400px * 5 = 2000px)
       logging: false,
       allowTaint: true,
       useCORS: true,
-      dpi: 600, // Increased DPI for better print quality
-      imageTimeout: 10000, // Increased timeout for larger images
-      windowHeight: element.scrollHeight * 8,
-      windowWidth: element.scrollWidth * 8,
-      ignoreElements: (el) => false,
+      imageTimeout: 5000,
+      windowHeight: element.scrollHeight * 5,
+      windowWidth: element.scrollWidth * 5,
     });
 
     document.body.removeChild(element);
@@ -665,7 +677,7 @@ export const downloadSingleQRCode = async (qrCode, cardType, t, showError) => {
         link.click();
         URL.revokeObjectURL(url);
       }
-    }, 'image/png', 1.0); // Maximum quality PNG
+    }, 'image/png', 0.95); // High quality PNG with slightly smaller file size
   } catch (error) {
     console.error("Error downloading QR code:", error);
     showError(t("downloadError", "Error downloading QR code"));
