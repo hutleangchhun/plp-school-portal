@@ -9,7 +9,7 @@ import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import { api, utils } from '../../utils/api';
 import Footer from '../../components/layout/Footer';
-import plpLogo from '../../assets/ptom-scs.png';
+import plpLogo from '../../assets/plppp.png';
 import moeysLogo from '../../assets/moeys-logo.png';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
