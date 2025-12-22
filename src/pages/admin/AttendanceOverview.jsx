@@ -14,6 +14,7 @@ import SearchableDropdown from '../../components/ui/SearchableDropdown';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import StudentAttendanceOverviewTab from './StudentAttendanceOverviewTab';
 import TeacherAttendanceOverviewTab from './TeacherAttendanceOverviewTab';
+import SchoolCoverageTable from '../../components/attendance/SchoolCoverageTable';
 
 const AttendanceOverview = () => {
   const { t } = useLanguage();
@@ -48,6 +49,23 @@ const AttendanceOverview = () => {
 
   const [teacherDashboardData, setTeacherDashboardData] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false); // Sidebar filter state
+
+  // Combined stats state (students + teachers)
+  const [combinedStatsData, setCombinedStatsData] = useState(null);
+  const [combinedStatsLoading, setCombinedStatsLoading] = useState(false);
+  const [schoolCoverageData, setSchoolCoverageData] = useState([]);
+
+  // Combined stats filters (province and district only)
+  const [combinedFilters, setCombinedFilters] = useState({
+    province: '',
+    district: ''
+  });
+
+  // Location options for combined stats
+  const [combinedLocationOptions, setCombinedLocationOptions] = useState({
+    provinces: [],
+    districts: []
+  });
 
   // Get current month's start and end dates
   const getCurrentMonthRange = () => {
@@ -127,6 +145,10 @@ const AttendanceOverview = () => {
           provinces
         }));
         setMonthlyLocationOptions(prev => ({
+          ...prev,
+          provinces
+        }));
+        setCombinedLocationOptions(prev => ({
           ...prev,
           provinces
         }));
@@ -255,6 +277,44 @@ const AttendanceOverview = () => {
     }
   }, []);
 
+  // Fetch districts for combined stats
+  const fetchCombinedDistricts = useCallback(async (provinceId) => {
+    if (!provinceId) {
+      setCombinedLocationOptions(prev => ({
+        ...prev,
+        districts: []
+      }));
+      return;
+    }
+
+    try {
+      const numericProvinceId = parseInt(provinceId, 10);
+      const response = await locationService.getDistrictsByProvince(numericProvinceId);
+      console.log('Combined Districts response:', response);
+
+      // Handle different response formats
+      let districtsList = [];
+      if (response && response.data) {
+        districtsList = Array.isArray(response.data) ? response.data : response.data.data || [];
+      } else if (Array.isArray(response)) {
+        districtsList = response;
+      }
+
+      if (districtsList.length > 0) {
+        const districts = districtsList.map(d => ({
+          value: (d.id || d.district_id).toString(),
+          label: d.district_name_kh || d.district_name_en || d.name || d.district_name || 'Unknown'
+        }));
+        setCombinedLocationOptions(prev => ({
+          ...prev,
+          districts
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching combined districts:', err);
+    }
+  }, []);
+
   // Fetch schools for monthly trends
   const fetchMonthlySchools = useCallback(async (districtId) => {
     if (!districtId) {
@@ -292,6 +352,69 @@ const AttendanceOverview = () => {
       console.error('Error fetching schools:', err);
     }
   }, []);
+
+  // Fetch combined stats (students + teachers) for the overview section
+  const fetchCombinedStats = useCallback(async () => {
+    setCombinedStatsLoading(true);
+
+    try {
+      const params = {};
+      if (combinedFilters.province) params.provinceId = parseInt(combinedFilters.province, 10);
+      if (combinedFilters.district) params.districtId = parseInt(combinedFilters.district, 10);
+
+      console.log('Fetching combined stats with params:', params);
+
+      const response = await attendanceService.dashboard.getSchoolsCoverage(params);
+
+      if (response.success && response.data) {
+        const schools = Array.isArray(response.data) ? response.data : [];
+
+        // Store raw school data for the table
+        setSchoolCoverageData(schools);
+
+        // Aggregate totals from all schools for the summary cards
+        const totals = schools.reduce(
+          (acc, school) => ({
+            totalStudents: acc.totalStudents + (school.studentAttendanceCount || 0),
+            totalTeachers: acc.totalTeachers + (school.teacherAttendanceCount || 0),
+            schoolsWithStudentData: acc.schoolsWithStudentData + (school.hasStudentAttendance ? 1 : 0),
+            schoolsWithTeacherData: acc.schoolsWithTeacherData + (school.hasTeacherAttendance ? 1 : 0),
+          }),
+          {
+            totalStudents: 0,
+            totalTeachers: 0,
+            schoolsWithStudentData: 0,
+            schoolsWithTeacherData: 0,
+          }
+        );
+
+        const totalUsers = totals.totalStudents + totals.totalTeachers;
+        const totalSchoolsWithData = Math.max(totals.schoolsWithStudentData, totals.schoolsWithTeacherData);
+
+        // Calculate overall attendance percentage (simple average for now)
+        // This is a simplified calculation - you may want to fetch actual attendance rates
+        const overallAttendancePercentage = schools.length > 0 ? 85 : 0; // Placeholder
+
+        setCombinedStatsData({
+          totalUsers,
+          usersWithData: totalUsers, // All users in the coverage have data
+          totalRecords: totalUsers,
+          overallAttendancePercentage,
+          breakdown: {
+            students: totals.totalStudents,
+            teachers: totals.totalTeachers,
+            schools: schools.length,
+            schoolsWithData: totalSchoolsWithData,
+          },
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching combined stats:', err);
+      // Don't show error to user, just log it
+    } finally {
+      setCombinedStatsLoading(false);
+    }
+  }, [combinedFilters]);
 
   // Fetch attendance dashboard data (primary + approval status)
   const fetchAttendanceDashboard = useCallback(async () => {
@@ -451,6 +574,11 @@ const AttendanceOverview = () => {
     fetchProvinces();
   }, [fetchProvinces]);
 
+  // Fetch combined stats when filters change
+  useEffect(() => {
+    fetchCombinedStats();
+  }, [fetchCombinedStats]);
+
   // Fetch dashboard on mount or when filters change
   useEffect(() => {
     if (activeTab === 'student') {
@@ -603,6 +731,59 @@ const AttendanceOverview = () => {
               <Download className="h-4 w-4" />
               {t('export', 'Export')}
             </Button>
+          </div>
+
+          {/* Combined Stats Overview with Filters */}
+          <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {t('overallStatistics', 'Overall Statistics')}
+              </h2>
+              <div className="flex gap-3">
+                <SearchableDropdown
+                  options={combinedLocationOptions.provinces}
+                  value={combinedFilters.province}
+                  onValueChange={(value) => {
+                    setCombinedFilters(prev => ({
+                      ...prev,
+                      province: value,
+                      district: ''
+                    }));
+                    setCombinedLocationOptions(prev => ({
+                      ...prev,
+                      districts: []
+                    }));
+                    if (value) {
+                      fetchCombinedDistricts(value);
+                    }
+                  }}
+                  placeholder={t('allProvinces', 'All Provinces')}
+                  className="w-56"
+                />
+                <SearchableDropdown
+                  options={combinedLocationOptions.districts}
+                  value={combinedFilters.district}
+                  onValueChange={(value) => {
+                    setCombinedFilters(prev => ({
+                      ...prev,
+                      district: value
+                    }));
+                  }}
+                  placeholder={t('allDistricts', 'All Districts')}
+                  disabled={!combinedFilters.province}
+                  className="w-56"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* School Coverage Table */}
+          <div className="mb-6">
+            <SchoolCoverageTable
+              data={schoolCoverageData}
+              loading={combinedStatsLoading}
+              filters={combinedFilters}
+            />
           </div>
 
           {/* Tab Navigation */}

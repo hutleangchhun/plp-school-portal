@@ -528,6 +528,23 @@ export const attendanceService = {
       return handleApiResponse(() =>
         apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.TEACHER_MONTHLY_TRENDS, { params: queryParams })
       );
+    },
+
+    /**
+     * Get schools coverage (combined student + teacher attendance data)
+     * @param {Object} params - Query parameters
+     * @param {number} [params.provinceId] - Province ID
+     * @param {number} [params.districtId] - District ID
+     * @returns {Promise<Array>} Schools coverage data with both student and teacher counts
+     */
+    async getSchoolsCoverage(params = {}) {
+      const queryParams = {};
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+
+      return handleApiResponse(() =>
+        apiClient_.get(`${ENDPOINTS.ATTENDANCE.DASHBOARD.BASE}/schools/coverage`, { params: queryParams })
+      );
     }
   },
 

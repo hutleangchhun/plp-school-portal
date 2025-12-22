@@ -138,6 +138,7 @@ const ENDPOINTS = {
   ATTENDANCE: {
     BASE: '/attendance',
     DASHBOARD: {
+      BASE: '/attendance-dashboard',
       PRIMARY: '/attendance-dashboard/primary',
       GENDER_COMPARISON: '/attendance-dashboard/gender-comparison',
       GRADE_BREAKDOWN: '/attendance-dashboard/grade-breakdown',
