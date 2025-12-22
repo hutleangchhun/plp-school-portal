@@ -72,27 +72,11 @@ ssh ${SERVER_USER}@${SERVER_IP} bash -c "
     git fetch origin main
     git reset --hard origin/main
 
-    log_step 'Stopping old container'
-    docker-compose down -v --remove-orphans || true
+    log_step 'Building Docker image (this may take a few minutes)'
+    docker-compose build
 
-    # Clean up any dangling containers
-    echo 'Cleaning up any dangling containers...'
-    docker ps -a | grep teacher-portal-frontend | awk '{print \\\$1}' | xargs -r docker rm -f || true
-
-    # Wait for port to be released
-    echo 'Waiting for port 3001 to be released...'
-    sleep 3
-
-    # Force kill any process using port 3001
-    sudo lsof -ti:3001 | xargs -r sudo kill -9 || true
-    sleep 2
-
-    # Verify port is free
-    if sudo lsof -i:3001 > /dev/null 2>&1; then
-        echo '⚠️  Warning: Port 3001 is still in use. Forcing cleanup...'
-        sudo lsof -ti:3001 | xargs -r sudo kill -9 || true
-        sleep 3
-    fi
+    log-step 'Stopping Old Contianer'
+    docker-compose down || true
 
     log_step 'Building Docker image (this may take a few minutes)'
     docker-compose build
