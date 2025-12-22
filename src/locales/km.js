@@ -78,7 +78,7 @@ export const km = {
   userUpdates: 'ការធ្វើបច្ចុប្បន្នភាពអ្នកប្រើប្រាស់',
   userDeletions: 'ការលុបអ្នកប្រើប្រាស់',
   failedToLoadActivityCounts: 'បរាជ័យក្នុងការផ្ទុកចំនួនសកម្មភាព',
-  studentTransfer: 'ផ្ទេរសិស្សានុសិស្ស',
+  studentTransfer: 'គ្រប់គ្រងទិន្នន័យសិស្ស',
 
   // Profile
   profileInformation: 'ព័ត៌មានផ្ទាល់ខ្លួន',
@@ -1597,7 +1597,7 @@ export const km = {
   generatedOn: 'បង្កើតថ្ងៃ',
 
   //teacher transfer
-  teacherTransfer: 'ផ្ទេរគ្រូ',
+  teacherTransfer: 'គ្រប់គ្រងទិន្នន័យគ្រូ',
   transferTeachersDesc: 'គ្រប់គ្រង និងផ្ទេរមន្ត្រីរាជការក្រោមកម្រិតសាលារៀន',
   selectTeachers: 'ជ្រើសរើសគ្រូបង្រៀន',
   selectTargetSchool: 'ជ្រើសរើសសាលាដែលត្រូវផ្ទេរ',
@@ -1668,9 +1668,9 @@ export const km = {
   next: 'បន្ទាប់',
 
   //sidebar
-  teacherOverview: 'ព័ត៏មានគ្រូ',
+  teacherOverview: 'ព័ត៏មានបុគ្គលិកមន្ត្រីរាជការ',
   teacherOverviewDesc: 'មើលបំណែងចែកទិន្នន័យរបស់គ្រូបង្រៀន',
-
+  studentDataOverview: 'ព័ត៏មានសិស្ស',
   //schedule
   noSchedule: 'មិនមានការកំណត់',
   breaktime: 'ម៉ោងសម្រាក',

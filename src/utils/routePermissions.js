@@ -432,7 +432,7 @@ export const getNavigationItems = (user, t) => {
           href: '/admin/student-transfer',
         },
         {
-          name: t('studentDemographics', 'Student Demographics'),
+          name: t('studentDataOverview', 'Student Data Overview'),
           href: '/admin/student-demographics',
         },
       ],

@@ -70,6 +70,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/student-transfer': Users,
     '/admin/bmi-report': Heart,
     '/admin/attendance-overview': ClipboardList,
+    '/admin/student-demographics': Database,
     '/admin/teacher-overview': Database,
     'attendance': Calendar, // Parent item for attendance dropdown
     'admin-dashboard': LayoutDashboard,
