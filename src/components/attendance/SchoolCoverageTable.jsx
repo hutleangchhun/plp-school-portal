@@ -37,8 +37,13 @@ const SchoolCoverageTable = ({ data, loading, filters = {} }) => {
     let aValue = a[sortConfig.key];
     let bValue = b[sortConfig.key];
 
+    // Handle null/undefined values
+    if (aValue == null && bValue == null) return 0;
+    if (aValue == null) return 1;
+    if (bValue == null) return -1;
+
     // Handle string comparison
-    if (typeof aValue === 'string') {
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
       aValue = aValue.toLowerCase();
       bValue = bValue.toLowerCase();
     }
