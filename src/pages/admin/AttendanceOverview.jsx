@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { PageLoader } from '../../components/ui/DynamicLoader';
@@ -19,33 +18,14 @@ import SchoolCoverageTable from '../../components/attendance/SchoolCoverageTable
 const AttendanceOverview = () => {
   const { t } = useLanguage();
   const { error, handleError, clearError } = useErrorHandler();
-  const location = useLocation();
-  const previousLocationRef = useRef(location.pathname);
 
   // State management
   const [loading, setLoading] = useState(true);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
 
-  // Initialize activeTab from localStorage if available, otherwise default to 'student'
-  const [activeTab, setActiveTabState] = useState(() => {
-    try {
-      const savedTab = localStorage.getItem('attendanceOverviewTab');
-      return savedTab && (savedTab === 'student' || savedTab === 'teacher') ? savedTab : 'student';
-    } catch {
-      return 'student';
-    }
-  });
-
-  // Wrapper for setActiveTab that also saves to localStorage
-  const setActiveTab = (tab) => {
-    setActiveTabState(tab);
-    try {
-      localStorage.setItem('attendanceOverviewTab', tab);
-    } catch (err) {
-      console.error('Error saving tab preference:', err);
-    }
-  };
+  // Initialize activeTab - always default to 'teacher' (don't use localStorage)
+  const [activeTab, setActiveTab] = useState('teacher');
 
   const [teacherDashboardData, setTeacherDashboardData] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false); // Sidebar filter state
@@ -579,32 +559,24 @@ const AttendanceOverview = () => {
     fetchCombinedStats();
   }, [fetchCombinedStats]);
 
-  // Fetch dashboard on mount or when filters change
+  // Fetch student dashboard when student tab is active
   useEffect(() => {
+    console.log('Student useEffect triggered, activeTab:', activeTab);
     if (activeTab === 'student') {
+      console.log('Fetching student dashboard...');
       fetchAttendanceDashboard();
-    } else {
+    }
+  }, [activeTab, fetchAttendanceDashboard]);
+
+  // Fetch teacher dashboard when teacher tab is active
+  useEffect(() => {
+    console.log('Teacher useEffect triggered, activeTab:', activeTab);
+    if (activeTab === 'teacher') {
+      console.log('Fetching teacher dashboard...');
       fetchTeacherAttendanceDashboard();
     }
-  }, [fetchAttendanceDashboard, fetchTeacherAttendanceDashboard, activeTab, monthlyFilters, dailyFilters]);
+  }, [activeTab, fetchTeacherAttendanceDashboard]);
 
-  // Clear tab preference from localStorage only when navigating away from this page
-  useEffect(() => {
-    const currentPathname = location.pathname;
-
-    // Check if we've navigated to a different page
-    if (previousLocationRef.current !== currentPathname && !currentPathname.includes('attendance-overview')) {
-      try {
-        localStorage.removeItem('attendanceOverviewTab');
-        console.log('Cleared tab preference - navigated away from attendance overview');
-      } catch (err) {
-        console.error('Error clearing tab preference:', err);
-      }
-    }
-
-    // Update the ref for next comparison
-    previousLocationRef.current = currentPathname;
-  }, [location.pathname]);
 
   // Export to CSV
   const handleExportCSV = () => {
