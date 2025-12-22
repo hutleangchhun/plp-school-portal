@@ -72,10 +72,7 @@ ssh ${SERVER_USER}@${SERVER_IP} bash -c "
     git fetch origin main
     git reset --hard origin/main
 
-    log_step 'Building Docker image (this may take a few minutes)'
-    docker-compose build
-
-    log-step 'Stopping Old Contianer'
+    log_step 'Stopping old container (if any)'
     docker-compose down || true
 
     log_step 'Building Docker image (this may take a few minutes)'
