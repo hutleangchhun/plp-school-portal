@@ -138,7 +138,7 @@ const Pagination = ({
           {showLimitSelector && onLimitChange && (
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-gray-700">
-                {t ? t('perPage', 'Per page') : 'Per page'}:
+                {t ? t('show', 'Shoe') : 'Show'}:
               </label>
               <Select value={String(limit)} onValueChange={(value) => onLimitChange(Number(value))}>
                 <SelectTrigger className="h-8 w-[70px]">
@@ -152,6 +152,9 @@ const Pagination = ({
                   ))}
                 </SelectContent>
               </Select>
+              <label className="text-sm font-medium text-gray-700">
+                {t('perPage', 'Per page')}
+              </label>
             </div>
           )}
         </div>

@@ -494,6 +494,34 @@ export default function TeacherStudentsManagement({ user }) {
             </div>
           </div>
 
+          {/* Active Filters Display */}
+          {selectedClassId !== 'all' && (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-blue-900">{t('activeFilters', 'Active Filters')}:</span>
+              <Badge color="purple" variant="outline" size="sm">
+                {t('class', 'Class')}: {
+                  (() => {
+                    const selectedClass = classes.find(cls => (cls.classId || cls.id).toString() === selectedClassId);
+                    if (selectedClass) {
+                      const rawGradeLevel =
+                        typeof selectedClass.gradeLevel !== 'undefined' && selectedClass.gradeLevel !== null
+                          ? String(selectedClass.gradeLevel)
+                          : '';
+
+                      const displayGradeLevel =
+                        rawGradeLevel === '0'
+                          ? t('grade0', 'Kindergarten')
+                          : rawGradeLevel;
+
+                      return formatClassIdentifier(displayGradeLevel, selectedClass.section);
+                    }
+                    return selectedClassId;
+                  })()
+                }
+              </Badge>
+            </div>
+          )}
+
           {/* Mobile Filters Sidebar */}
           <SidebarFilter
             isOpen={showMobileFilters}

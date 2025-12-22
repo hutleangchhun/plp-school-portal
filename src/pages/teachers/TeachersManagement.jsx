@@ -970,7 +970,7 @@ export default function TeachersManagement() {
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-wrap sm:space-x-2">
+          <div className="flex items-center gap-2 sm:space-x-2">
             {/* Add Teacher Button */}
             <Button
               onClick={handleAddTeacherClick}
@@ -1017,6 +1017,16 @@ export default function TeachersManagement() {
 
           </div>
         </div>
+
+        {/* Active Filters Display */}
+        {selectedGradeLevel && (
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-blue-900">{t('activeFilters', 'Active Filters')}:</span>
+            <Badge color="green" variant="outline" size="sm">
+              {t('gradeLevel', 'Grade Level')}: {getSharedGradeLevelOptions(t, false).find(g => g.value === selectedGradeLevel)?.label || selectedGradeLevel}
+            </Badge>
+          </div>
+        )}
 
         {/* Mobile Filters Sidebar */}
         <SidebarFilter

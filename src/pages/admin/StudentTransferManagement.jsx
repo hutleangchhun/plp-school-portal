@@ -90,6 +90,14 @@ const StudentTransferManagement = () => {
     pages: 1
   });
 
+  // Limit options for pagination
+  const limitOptions = [
+    { value: 9, label: '9' },
+    { value: 20, label: '20' },
+    { value: 50, label: '50' },
+    { value: 100, label: '100' }
+  ];
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -109,14 +117,15 @@ const StudentTransferManagement = () => {
     init();
   }, [clearError, handleError, selectedGradeLevel, t]);
 
-  const fetchStudentsGlobal = useCallback(async (page = 1, search = '') => {
+  const fetchStudentsGlobal = useCallback(async (page = 1, search = '', limit = studentPagination.limit) => {
     try {
       setFetchingStudents(true);
       clearError();
 
+      const actualLimit = typeof limit === 'number' ? limit : parseInt(limit);
       const response = await studentService.getStudents({
         page,
-        limit: 9,
+        limit: actualLimit,
         search: search.trim() || '',
         gradeLevel: selectedGradeLevel && selectedGradeLevel !== 'all' ? selectedGradeLevel : undefined,
       });
@@ -174,16 +183,16 @@ const StudentTransferManagement = () => {
 
       const pagination = response.pagination || {
         page,
-        limit: 9,
+        limit: actualLimit,
         total: studentsWithSchoolInfo.length,
-        pages: Math.max(1, Math.ceil(studentsWithSchoolInfo.length / 9)),
+        pages: Math.max(1, Math.ceil(studentsWithSchoolInfo.length / actualLimit)),
       };
 
       setStudentPagination({
         page: pagination.page,
-        limit: pagination.limit,
+        limit: actualLimit,
         total: pagination.total,
-        pages: pagination.pages,
+        pages: pagination.pages || Math.ceil(pagination.total / actualLimit),
       });
     } catch (err) {
       handleError(err, {
@@ -195,10 +204,11 @@ const StudentTransferManagement = () => {
     }
   }, [clearError, handleError, selectedGradeLevel, t]);
 
-  const fetchStudentsForSchool = useCallback(async (schoolId, page = 1, search = '') => {
+  const fetchStudentsForSchool = useCallback(async (schoolId, page = 1, search = '', limit = studentPagination.limit) => {
     if (!schoolId) {
       setStudents([]);
-      setStudentPagination({ page: 1, limit: 9, total: 0, pages: 1 });
+      const actualLimit = typeof limit === 'number' ? limit : parseInt(limit);
+      setStudentPagination({ page: 1, limit: actualLimit, total: 0, pages: 1 });
       return;
     }
 
@@ -206,9 +216,10 @@ const StudentTransferManagement = () => {
       setFetchingStudents(true);
       clearError();
 
+      const actualLimit = typeof limit === 'number' ? limit : parseInt(limit);
       const response = await studentService.getStudentsBySchool(schoolId, {
         page,
-        limit: 9,
+        limit: actualLimit,
         search: search.trim() || undefined,
         gradeLevel: selectedGradeLevel && selectedGradeLevel !== 'all' ? selectedGradeLevel : undefined,
       });
@@ -272,14 +283,16 @@ const StudentTransferManagement = () => {
         setStudentPagination(prev => ({
           ...prev,
           page,
+          limit: actualLimit,
           total: response.pagination.total,
-          pages: response.pagination.pages || response.pagination.totalPages || Math.ceil(response.pagination.total / 9),
+          pages: response.pagination.pages || response.pagination.totalPages || Math.ceil(response.pagination.total / actualLimit),
         }));
       } else {
-        const totalPages = Math.ceil((studentsWithSchoolInfo?.length || 0) / 9);
+        const totalPages = Math.ceil((studentsWithSchoolInfo?.length || 0) / actualLimit);
         setStudentPagination(prev => ({
           ...prev,
           page,
+          limit: actualLimit,
           total: studentsWithSchoolInfo?.length || 0,
           pages: totalPages,
         }));
@@ -305,9 +318,9 @@ const StudentTransferManagement = () => {
     setStudentPagination(prev => ({ ...prev, page: 1 }));
 
     if (selectedSourceSchool) {
-      fetchStudentsForSchool(selectedSourceSchool, 1, searchQuery);
+      fetchStudentsForSchool(selectedSourceSchool, 1, searchQuery, studentPagination.limit);
     } else {
-      fetchStudentsGlobal(1, searchQuery);
+      fetchStudentsGlobal(1, searchQuery, studentPagination.limit);
     }
 
     if (searchInputRef.current) {
@@ -410,7 +423,7 @@ const StudentTransferManagement = () => {
 
   const handleApplySourceFilters = () => {
     if (selectedSourceSchool) {
-      fetchStudentsForSchool(selectedSourceSchool, 1, searchQuery);
+      fetchStudentsForSchool(selectedSourceSchool, 1, searchQuery, studentPagination.limit);
     }
     setIsSourceFilterOpen(false);
   };
@@ -419,10 +432,19 @@ const StudentTransferManagement = () => {
     if (newPage >= 1 && newPage <= studentPagination.pages) {
       setStudentPagination(prev => ({ ...prev, page: newPage }));
       if (selectedSourceSchool) {
-        fetchStudentsForSchool(selectedSourceSchool, newPage, searchQuery);
+        fetchStudentsForSchool(selectedSourceSchool, newPage, searchQuery, studentPagination.limit);
       } else {
-        fetchStudentsGlobal(newPage, searchQuery);
+        fetchStudentsGlobal(newPage, searchQuery, studentPagination.limit);
       }
+    }
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setStudentPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+    if (selectedSourceSchool) {
+      fetchStudentsForSchool(selectedSourceSchool, 1, searchQuery, newLimit);
+    } else {
+      fetchStudentsGlobal(1, searchQuery, newLimit);
     }
   };
 
@@ -1198,18 +1220,20 @@ const StudentTransferManagement = () => {
                       ))}
                     </div>
 
-                    {studentPagination.pages > 1 && (
-                      <Pagination
-                        currentPage={studentPagination.page}
-                        totalPages={studentPagination.pages}
-                        total={studentPagination.total}
-                        limit={studentPagination.limit}
-                        onPageChange={handleStudentPageChange}
-                        t={t}
-                        showFirstLast={true}
-                        showInfo={true}
-                      />
-                    )}
+                    {/* Pagination Component with built-in Limit Selector */}
+                    <Pagination
+                      currentPage={studentPagination.page}
+                      totalPages={studentPagination.pages}
+                      total={studentPagination.total}
+                      limit={studentPagination.limit}
+                      onPageChange={handleStudentPageChange}
+                      onLimitChange={handleLimitChange}
+                      limitOptions={limitOptions.map(opt => opt.value)}
+                      showLimitSelector={true}
+                      t={t}
+                      showFirstLast={true}
+                      showInfo={true}
+                    />
                   </>
                 )}
               </CardContent>

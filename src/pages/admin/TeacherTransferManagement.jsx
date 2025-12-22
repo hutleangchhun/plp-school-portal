@@ -93,6 +93,14 @@ const TeacherTransferManagement = () => {
     pages: 1
   });
 
+  // Limit options for pagination
+  const limitOptions = [
+    { value: 9, label: '9' },
+    { value: 20, label: '20' },
+    { value: 50, label: '50' },
+    { value: 100, label: '100' }
+  ];
+
   // Fetch provinces and all teachers on component mount
   useEffect(() => {
     fetchProvinces();
@@ -113,13 +121,14 @@ const TeacherTransferManagement = () => {
     }
   };
 
-  const fetchAllTeachers = async (page = 1, search = '') => {
+  const fetchAllTeachers = async (page = 1, search = '', limit = teacherPagination.limit) => {
     try {
       setFetchingTeachers(true);
       clearError();
+      const actualLimit = typeof limit === 'number' ? limit : parseInt(limit);
       const response = await api.teacher.getAllTeachers({
         page: page,
-        limit: 9,
+        limit: actualLimit,
         search: search.trim() || undefined
       });
 
@@ -180,15 +189,17 @@ const TeacherTransferManagement = () => {
         setTeacherPagination(prev => ({
           ...prev,
           page: page,
+          limit: actualLimit,
           total: response.pagination.total,
-          pages: response.pagination.pages || response.pagination.totalPages || Math.ceil(response.pagination.total / 9)
+          pages: response.pagination.pages || response.pagination.totalPages || Math.ceil(response.pagination.total / actualLimit)
         }));
       } else {
         // Fallback
-        const totalPages = Math.ceil((response.data?.length || 0) / 9);
+        const totalPages = Math.ceil((response.data?.length || 0) / actualLimit);
         setTeacherPagination(prev => ({
           ...prev,
           page: page,
+          limit: actualLimit,
           total: response.data?.length || 0,
           pages: totalPages
         }));
@@ -204,7 +215,7 @@ const TeacherTransferManagement = () => {
     }
   };
 
-  const fetchTeachersForSchool = useCallback(async (schoolId, page = 1, search = '') => {
+  const fetchTeachersForSchool = useCallback(async (schoolId, page = 1, search = '', limit = teacherPagination.limit) => {
     if (!schoolId) {
       setTeachers([]);
       return;
@@ -213,9 +224,10 @@ const TeacherTransferManagement = () => {
     try {
       setFetchingTeachers(true);
       clearError();
+      const actualLimit = typeof limit === 'number' ? limit : parseInt(limit);
       const response = await api.teacher.getTeachersBySchool(schoolId, {
         page: page,
-        limit: 9,
+        limit: actualLimit,
         search: search.trim() || undefined
       });
 
@@ -269,15 +281,17 @@ const TeacherTransferManagement = () => {
         setTeacherPagination(prev => ({
           ...prev,
           page: page,
+          limit: actualLimit,
           total: response.pagination.total,
-          pages: response.pagination.pages || response.pagination.totalPages || Math.ceil(response.pagination.total / 50)
+          pages: response.pagination.pages || response.pagination.totalPages || Math.ceil(response.pagination.total / actualLimit)
         }));
       } else {
         // Fallback
-        const totalPages = Math.ceil((teachersWithSchoolInfo?.length || 0) / 50);
+        const totalPages = Math.ceil((teachersWithSchoolInfo?.length || 0) / actualLimit);
         setTeacherPagination(prev => ({
           ...prev,
           page: page,
+          limit: actualLimit,
           total: teachersWithSchoolInfo?.length || 0,
           pages: totalPages
         }));
@@ -305,9 +319,9 @@ const TeacherTransferManagement = () => {
     setTeacherPagination(prev => ({ ...prev, page: 1 }));
 
     if (selectedSourceSchool) {
-      fetchTeachersForSchool(selectedSourceSchool, 1, searchQuery);
+      fetchTeachersForSchool(selectedSourceSchool, 1, searchQuery, teacherPagination.limit);
     } else {
-      fetchAllTeachers(1, searchQuery);
+      fetchAllTeachers(1, searchQuery, teacherPagination.limit);
     }
 
     if (searchInputRef.current) {
@@ -413,10 +427,10 @@ const TeacherTransferManagement = () => {
   const handleApplySourceFilters = () => {
     // Only fetch when a source school is selected
     if (selectedSourceSchool) {
-      fetchTeachersForSchool(selectedSourceSchool, 1, searchQuery);
+      fetchTeachersForSchool(selectedSourceSchool, 1, searchQuery, teacherPagination.limit);
     } else {
       // If no specific school is chosen, fall back to all teachers
-      fetchAllTeachers(1, searchQuery);
+      fetchAllTeachers(1, searchQuery, teacherPagination.limit);
     }
     // Close the sidebar after applying filters
     setIsSourceFilterOpen(false);
@@ -426,10 +440,19 @@ const TeacherTransferManagement = () => {
     if (newPage >= 1 && newPage <= teacherPagination.pages) {
       setTeacherPagination(prev => ({ ...prev, page: newPage }));
       if (selectedSourceSchool) {
-        fetchTeachersForSchool(selectedSourceSchool, newPage, searchQuery);
+        fetchTeachersForSchool(selectedSourceSchool, newPage, searchQuery, teacherPagination.limit);
       } else {
-        fetchAllTeachers(newPage, searchQuery);
+        fetchAllTeachers(newPage, searchQuery, teacherPagination.limit);
       }
+    }
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setTeacherPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+    if (selectedSourceSchool) {
+      fetchTeachersForSchool(selectedSourceSchool, 1, searchQuery, newLimit);
+    } else {
+      fetchAllTeachers(1, searchQuery, newLimit);
     }
   };
 
@@ -1100,19 +1123,20 @@ const TeacherTransferManagement = () => {
                     ))}
                   </div>
 
-                  {/* Pagination Component */}
-                  {teacherPagination.pages > 1 && (
-                    <Pagination
-                      currentPage={teacherPagination.page}
-                      totalPages={teacherPagination.pages}
-                      total={teacherPagination.total}
-                      limit={teacherPagination.limit}
-                      onPageChange={handleTeacherPageChange}
-                      t={t}
-                      showFirstLast={true}
-                      showInfo={true}
-                    />
-                  )}
+                  {/* Pagination Component with built-in Limit Selector */}
+                  <Pagination
+                    currentPage={teacherPagination.page}
+                    totalPages={teacherPagination.pages}
+                    total={teacherPagination.total}
+                    limit={teacherPagination.limit}
+                    onPageChange={handleTeacherPageChange}
+                    onLimitChange={handleLimitChange}
+                    limitOptions={limitOptions.map(opt => opt.value)}
+                    showLimitSelector={true}
+                    t={t}
+                    showFirstLast={true}
+                    showInfo={true}
+                  />
                 </>
               )}
             </CardContent>
