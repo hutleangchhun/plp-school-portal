@@ -374,6 +374,24 @@ const StudentSelection = () => {
           `Loaded ${studentsResponse.data.length} students from school ${schoolId} for selection`
         );
 
+        // Debug: Check if any students have class data when filtering for "null" class
+        if (filters.classId === "null") {
+          const studentsWithClass = studentsResponse.data.filter(s =>
+            !!(s.class?.name || s.class_name || s.class?.id || s.class_id)
+          );
+          if (studentsWithClass.length > 0) {
+            console.warn("⚠️ WARNING: Found students with class data when filtering for students WITHOUT class:");
+            studentsWithClass.forEach(s => {
+              console.log(`  - Student ID ${s.id} (${s.username}):`, {
+                class_name: s.class_name,
+                class_id: s.class_id,
+                'class?.name': s.class?.name,
+                'class?.id': s.class?.id
+              });
+            });
+          }
+        }
+
         if (studentsResponse.pagination) {
           console.log("Pagination data:", studentsResponse.pagination);
           setPagination((prev) => ({
@@ -902,6 +920,21 @@ const StudentSelection = () => {
                     />
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Debug Info - Shows total vs selectable count */}
+            {!listLoading && students.length > 0 && (
+              <div className="px-6 py-2 bg-yellow-50 border-b border-yellow-200">
+                <p className="text-xs text-yellow-800">
+                  <strong>Debug:</strong> Showing {students.length} students total.{" "}
+                  {students.filter(s => !!(s.class?.name || s.class_name || s.class?.id || s.class_id)).length > 0 && (
+                    <span className="text-red-600">
+                      {students.filter(s => !!(s.class?.name || s.class_name || s.class?.id || s.class_id)).length} student(s) have class data and cannot be selected.
+                    </span>
+                  )}
+                  {" "}Selectable: {students.filter(s => !(s.class?.name || s.class_name || s.class?.id || s.class_id)).length}
+                </p>
               </div>
             )}
 
