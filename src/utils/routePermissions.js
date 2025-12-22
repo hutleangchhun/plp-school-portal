@@ -149,6 +149,10 @@ export const routePermissions = {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'AttendanceOverview'
   },
+  '/admin/school-attendance': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'SchoolAttendanceList'
+  },
   '/admin/teacher-overview': {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'TeacherOverviewDashboard'
@@ -442,8 +446,18 @@ export const getNavigationItems = (user, t) => {
       href: '/admin/bmi-report',
     },
     {
-      name: t('attendanceOverview', 'Attendance Overview'),
-      href: '/admin/attendance-overview',
+      name: t('attendanceManagement', 'Attendance Management'),
+      href: '#',
+      children: [
+        {
+          name: t('attendanceOverview', 'Attendance Overview'),
+          href: '/admin/attendance-overview',
+        },
+        {
+          name: t('schoolAttendanceList', 'School Attendance'),
+          href: '/admin/school-attendance',
+        },
+      ],
     },
   ];
 

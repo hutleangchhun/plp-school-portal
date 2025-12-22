@@ -13,6 +13,7 @@ import StudentTransferManagement from './pages/admin/StudentTransferManagement';
 import StudentDemographicsDashboard from './pages/admin/StudentDemographicsDashboard';
 import BMIReport from './pages/admin/BMIReport';
 import AttendanceOverview from './pages/admin/AttendanceOverview';
+import SchoolAttendanceList from './pages/admin/SchoolAttendanceList';
 import TeacherOverviewDashboard from './pages/admin/TeacherOverviewDashboard';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -239,6 +240,15 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<AttendanceOverview />} />
+          </Route>
+
+          {/* Admin School Attendance List route - role ID 1 only (enforced by routePermissions) */}
+          <Route path="admin/school-attendance" element={
+            <ProtectedRoute path="/admin/school-attendance" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<SchoolAttendanceList />} />
           </Route>
 
           {/* Admin Teacher Overview route - role ID 1 only (enforced by routePermissions) */}

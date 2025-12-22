@@ -1,15 +1,29 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '../ui/Button';
 
 /**
  * School Coverage Table Component
  * Shows which schools have attendance data
- * Filters by province, district, school from parent
+ * Filters by province, district from parent
  */
-const SchoolCoverageTable = ({ data, loading, filters = {} }) => {
+const SchoolCoverageTable = ({
+  data = [],
+  loading,
+  pagination = {},
+  onPageChange = () => {},
+  onLimitChange = () => {}
+}) => {
   const { t } = useLanguage();
   const [sortConfig, setSortConfig] = useState({ key: 'schoolName', direction: 'asc' });
+
+  const {
+    page = 1,
+    limit = 10,
+    totalPages = 1,
+    totalSchools = 0
+  } = pagination;
 
   if (loading) {
     return (
@@ -57,39 +71,11 @@ const SchoolCoverageTable = ({ data, loading, filters = {} }) => {
     return 0;
   });
 
-  // Group schools by province (if province data is available)
-  const groupedByProvince = sortedData.reduce((acc, school) => {
-    const province = school.provinceName || t('unknown', 'Unknown');
-    if (!acc[province]) {
-      acc[province] = [];
-    }
-    acc[province].push(school);
-    return {};
-  }, {});
-
   const handleSort = (key) => {
     setSortConfig({
       key,
       direction: sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc',
     });
-  };
-
-  const toggleProvince = (province) => {
-    const newExpanded = new Set(expandedProvinces);
-    if (newExpanded.has(province)) {
-      newExpanded.delete(province);
-    } else {
-      newExpanded.add(province);
-    }
-    setExpandedProvinces(newExpanded);
-  };
-
-  // Calculate summary stats
-  const stats = {
-    total: sortedData.length,
-    withStudentData: sortedData.filter((s) => s.hasStudentAttendance).length,
-    withTeacherData: sortedData.filter((s) => s.hasTeacherAttendance).length,
-    withBothData: sortedData.filter((s) => s.hasStudentAttendance && s.hasTeacherAttendance).length,
   };
 
   const SortableHeader = ({ label, sortKey }) => (
@@ -110,13 +96,78 @@ const SchoolCoverageTable = ({ data, loading, filters = {} }) => {
     </th>
   );
 
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxPagesToShow = 5;
+
+    if (totalPages <= maxPagesToShow) {
+      // Show all pages if total is small
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show first page, last page, and pages around current page
+      const leftSide = Math.max(1, page - 1);
+      const rightSide = Math.min(totalPages, page + 1);
+
+      if (leftSide > 2) {
+        pages.push(1);
+        pages.push('...');
+      } else {
+        for (let i = 1; i < leftSide; i++) {
+          pages.push(i);
+        }
+      }
+
+      for (let i = leftSide; i <= rightSide; i++) {
+        pages.push(i);
+      }
+
+      if (rightSide < totalPages - 1) {
+        pages.push('...');
+        pages.push(totalPages);
+      } else {
+        for (let i = rightSide + 1; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      }
+    }
+
+    return pages;
+  };
+
+  const pageNumbers = getPageNumbers();
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">
-          {t('schoolCoverageList', 'Schools with Attendance Data')}
-        </h3>
+      {/* Header with Limit Selector */}
+      <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {t('schoolCoverageList', 'Schools with Attendance Data')}
+          </h3>
+          <p className="text-sm text-gray-500 mt-1">
+            {t('showing', 'Showing')} {((page - 1) * limit) + 1} - {Math.min(page * limit, totalSchools)} {t('of', 'of')} {totalSchools} {t('schools', 'schools')}
+          </p>
+        </div>
+
+        {/* Items per page selector */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">
+            {t('itemsPerPage', 'Items per page')}:
+          </label>
+          <select
+            value={limit}
+            onChange={(e) => onLimitChange(Number(e.target.value))}
+            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
       </div>
 
       {/* Table */}
@@ -199,6 +250,63 @@ const SchoolCoverageTable = ({ data, loading, filters = {} }) => {
         </table>
       </div>
 
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(page - 1)}
+              disabled={page === 1}
+              className="flex items-center gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              {t('previous', 'Previous')}
+            </Button>
+          </div>
+
+          {/* Page numbers */}
+          <div className="flex items-center gap-1">
+            {pageNumbers.map((pageNum, index) => {
+              if (pageNum === '...') {
+                return (
+                  <span key={`ellipsis-${index}`} className="px-3 py-1 text-gray-500">
+                    ...
+                  </span>
+                );
+              }
+
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => onPageChange(pageNum)}
+                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                    page === pageNum
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page === totalPages}
+              className="flex items-center gap-1"
+            >
+              {t('next', 'Next')}
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

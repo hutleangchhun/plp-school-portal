@@ -35,6 +35,14 @@ const AttendanceOverview = () => {
   const [combinedStatsLoading, setCombinedStatsLoading] = useState(false);
   const [schoolCoverageData, setSchoolCoverageData] = useState([]);
 
+  // Pagination state for school coverage
+  const [schoolCoveragePagination, setSchoolCoveragePagination] = useState({
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    totalSchools: 0
+  });
+
   // Combined stats filters (province and district only)
   const [combinedFilters, setCombinedFilters] = useState({
     province: '',
@@ -338,7 +346,10 @@ const AttendanceOverview = () => {
     setCombinedStatsLoading(true);
 
     try {
-      const params = {};
+      const params = {
+        page: schoolCoveragePagination.page,
+        limit: schoolCoveragePagination.limit
+      };
       if (combinedFilters.province) params.provinceId = parseInt(combinedFilters.province, 10);
       if (combinedFilters.district) params.districtId = parseInt(combinedFilters.district, 10);
 
@@ -347,10 +358,19 @@ const AttendanceOverview = () => {
       const response = await attendanceService.dashboard.getSchoolsCoverage(params);
 
       if (response.success && response.data) {
-        const schools = Array.isArray(response.data) ? response.data : [];
+        const data = response.data;
+        const schools = Array.isArray(data.schools) ? data.schools : (Array.isArray(data) ? data : []);
 
         // Store raw school data for the table
         setSchoolCoverageData(schools);
+
+        // Update pagination state
+        setSchoolCoveragePagination({
+          page: data.page || 1,
+          limit: data.limit || 10,
+          totalPages: data.totalPages || 1,
+          totalSchools: data.totalSchools || schools.length
+        });
 
         // Aggregate totals from all schools for the summary cards
         const totals = schools.reduce(
@@ -394,7 +414,7 @@ const AttendanceOverview = () => {
     } finally {
       setCombinedStatsLoading(false);
     }
-  }, [combinedFilters]);
+  }, [combinedFilters, schoolCoveragePagination.page, schoolCoveragePagination.limit]);
 
   // Fetch attendance dashboard data (primary + approval status)
   const fetchAttendanceDashboard = useCallback(async () => {
@@ -754,7 +774,20 @@ const AttendanceOverview = () => {
             <SchoolCoverageTable
               data={schoolCoverageData}
               loading={combinedStatsLoading}
-              filters={combinedFilters}
+              pagination={schoolCoveragePagination}
+              onPageChange={(newPage) => {
+                setSchoolCoveragePagination(prev => ({
+                  ...prev,
+                  page: newPage
+                }));
+              }}
+              onLimitChange={(newLimit) => {
+                setSchoolCoveragePagination(prev => ({
+                  ...prev,
+                  limit: newLimit,
+                  page: 1 // Reset to first page when limit changes
+                }));
+              }}
             />
           </div>
 

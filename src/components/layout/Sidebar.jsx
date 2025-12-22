@@ -70,9 +70,12 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/student-transfer': Users,
     '/admin/bmi-report': Heart,
     '/admin/attendance-overview': ClipboardList,
+    '/admin/school-attendance': CalendarCheck,
     '/admin/student-demographics': Database,
     '/admin/teacher-overview': Database,
     'attendance': Calendar, // Parent item for attendance dropdown
+    'attendanceManagement': ClipboardList, // Parent item for attendance management dropdown
+    'attendance-management': ClipboardList,
     'admin-dashboard': LayoutDashboard,
     'admin-logs': Activity,
     'teacherManagement': UserStar, // Parent item for teacher management dropdown
@@ -113,8 +116,11 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/student-transfer': 'blue',
     '/admin/bmi-report': 'blue',
     '/admin/attendance-overview': 'blue',
+    '/admin/school-attendance': 'blue',
     '/admin/teacher-overview': 'blue',
     'attendance': 'blue', // Parent item for attendance dropdown
+    'attendanceManagement': 'blue', // Parent item for attendance management dropdown
+    'attendance-management': 'blue',
     'admin-dashboard': 'blue',
     'admin-logs': 'blue',
     'teacherManagement': 'blue', // Parent item for teacher management dropdown
