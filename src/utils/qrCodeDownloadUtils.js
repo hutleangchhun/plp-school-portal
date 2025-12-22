@@ -530,104 +530,174 @@ export const downloadQRCodesAsPDF = async (
     const { default: html2canvas } = await import("html2canvas");
     const { jsPDF } = await import("jspdf");
 
-    // Create PDF with custom dimensions
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
+    // For large batches, split into multiple PDFs
+    const MAX_CARDS_PER_PDF = 50;
+    const needsMultiplePDFs = qrCodes.length > MAX_CARDS_PER_PDF;
 
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const cardsPerRow = 4;
-    const cardWidth = (pageWidth - 20) / cardsPerRow; // 20mm for margins
-    const totalCardsWidth = cardWidth * cardsPerRow;
-    const leftMargin = (pageWidth - totalCardsWidth) / 2; // Center cards horizontally
-    const margin = 10;
-    const rowGap = 8; // Gap between rows
-
-    let cardsInRow = 0;
-    let currentY = margin;
-    let maxHeightInRow = 0;
-
-    for (let i = 0; i < qrCodes.length; i++) {
-      const qrCode = qrCodes[i];
-
-      try {
-        // Create card element
-        const element = createQRCodeDownloadCard(qrCode, cardType, t);
-        document.body.appendChild(element);
-
-        // Wait for images to load
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
-        // Convert to canvas with higher scale for better clarity
-        const canvas = await html2canvas(element, {
-          backgroundColor: "#ffffff",
-          scale: 6,
-          logging: false,
-          allowTaint: true,
-          useCORS: true,
-          dpi: 300,
-          imageTimeout: 5000,
-          windowHeight: element.scrollHeight * 6,
-          windowWidth: element.scrollWidth * 6,
-        });
-
-        document.body.removeChild(element);
-
-        // Convert canvas to image
-        const imgData = canvas.toDataURL("image/png");
-        const imgWidth = cardWidth - 4; // 2mm padding on each side
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        // Check if current card fits in current row
-        if (cardsInRow > 0 && currentY + imgHeight > pageHeight - margin) {
-          // Move to next row
-          currentY += maxHeightInRow + rowGap;
-          cardsInRow = 0;
-          maxHeightInRow = 0;
-        }
-
-        // Check if we need a new page
-        if (cardsInRow === 0 && currentY + imgHeight > pageHeight - margin) {
-          pdf.addPage();
-          currentY = margin;
-          maxHeightInRow = 0;
-        }
-
-        // Calculate position (centered horizontally)
-        const currentX = leftMargin + cardsInRow * cardWidth;
-
-        // Add image to PDF
-        pdf.addImage(imgData, "PNG", currentX, currentY, imgWidth, imgHeight);
-
-        // Track max height in current row
-        maxHeightInRow = Math.max(maxHeightInRow, imgHeight);
-
-        cardsInRow++;
-        if (cardsInRow >= cardsPerRow) {
-          currentY += maxHeightInRow + rowGap;
-          cardsInRow = 0;
-          maxHeightInRow = 0;
-        }
-      } catch (err) {
-        console.warn(`Failed to add ${qrCode.name} to PDF:`, err);
+    if (needsMultiplePDFs) {
+      // Process in chunks
+      const chunks = [];
+      for (let i = 0; i < qrCodes.length; i += MAX_CARDS_PER_PDF) {
+        chunks.push(qrCodes.slice(i, i + MAX_CARDS_PER_PDF));
       }
-    }
 
-    // Save PDF with date
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
-    const fileName = `${className}_${today}.pdf`;
-    pdf.save(fileName);
-    showSuccess(
-      t("pdfDownloadSuccess", `PDF downloaded with ${qrCodes.length} QR codes`)
-    );
+      for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+        await generatePDFForChunk(
+          chunks[chunkIndex],
+          cardType,
+          t,
+          html2canvas,
+          jsPDF,
+          className,
+          chunkIndex + 1,
+          chunks.length
+        );
+      }
+
+      showSuccess(
+        t("pdfDownloadSuccess", `Downloaded ${chunks.length} PDF files with ${qrCodes.length} QR codes total`)
+      );
+    } else {
+      // Single PDF for smaller batches
+      await generatePDFForChunk(
+        qrCodes,
+        cardType,
+        t,
+        html2canvas,
+        jsPDF,
+        className
+      );
+
+      showSuccess(
+        t("pdfDownloadSuccess", `PDF downloaded with ${qrCodes.length} QR codes`)
+      );
+    }
   } catch (error) {
     console.error("Error generating PDF:", error);
     showError(t("pdfDownloadError", "Error downloading PDF"));
   }
 };
+
+/**
+ * Generate a single PDF file for a chunk of QR codes
+ * @private
+ */
+async function generatePDFForChunk(
+  qrCodes,
+  cardType,
+  t,
+  html2canvas,
+  jsPDF,
+  className,
+  chunkNumber = null,
+  totalChunks = null
+) {
+  // Create PDF with custom dimensions
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+    compress: true, // Enable compression
+  });
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const cardsPerRow = 4;
+  const cardWidth = (pageWidth - 20) / cardsPerRow; // 20mm for margins
+  const totalCardsWidth = cardWidth * cardsPerRow;
+  const leftMargin = (pageWidth - totalCardsWidth) / 2; // Center cards horizontally
+  const margin = 10;
+  const rowGap = 8; // Gap between rows
+
+  let cardsInRow = 0;
+  let currentY = margin;
+  let maxHeightInRow = 0;
+
+  for (let i = 0; i < qrCodes.length; i++) {
+    const qrCode = qrCodes[i];
+
+    try {
+      // Create card element
+      const element = createQRCodeDownloadCard(qrCode, cardType, t);
+      document.body.appendChild(element);
+
+      // Wait for images to load
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // Use lower scale to reduce memory usage - PDF will still look good when printed
+      const canvas = await html2canvas(element, {
+        backgroundColor: "#ffffff",
+        scale: 3, // Reduced from 6 to 3 for much smaller data URLs
+        logging: false,
+        allowTaint: true,
+        useCORS: true,
+        imageTimeout: 3000,
+        windowHeight: element.scrollHeight * 3,
+        windowWidth: element.scrollWidth * 3,
+      });
+
+      document.body.removeChild(element);
+
+      // Use JPEG with compression instead of PNG to reduce base64 string size
+      const imgData = canvas.toDataURL("image/jpeg", 0.85);
+      const imgWidth = cardWidth - 4; // 2mm padding on each side
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      // Clear canvas to free memory
+      canvas.width = 0;
+      canvas.height = 0;
+
+      // Check if current card fits in current row
+      if (cardsInRow > 0 && currentY + imgHeight > pageHeight - margin) {
+        // Move to next row
+        currentY += maxHeightInRow + rowGap;
+        cardsInRow = 0;
+        maxHeightInRow = 0;
+      }
+
+      // Check if we need a new page
+      if (cardsInRow === 0 && currentY + imgHeight > pageHeight - margin) {
+        pdf.addPage();
+        currentY = margin;
+        maxHeightInRow = 0;
+      }
+
+      // Calculate position (centered horizontally)
+      const currentX = leftMargin + cardsInRow * cardWidth;
+
+      // Add image to PDF
+      pdf.addImage(imgData, "JPEG", currentX, currentY, imgWidth, imgHeight);
+
+      // Track max height in current row
+      maxHeightInRow = Math.max(maxHeightInRow, imgHeight);
+
+      cardsInRow++;
+      if (cardsInRow >= cardsPerRow) {
+        currentY += maxHeightInRow + rowGap;
+        cardsInRow = 0;
+        maxHeightInRow = 0;
+      }
+
+      // Add small delay to prevent browser freezing
+      if (i % 10 === 0 && i > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    } catch (err) {
+      console.warn(`Failed to add ${qrCode.name} to PDF:`, err);
+    }
+  }
+
+  // Save PDF with date
+  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+  const fileNameParts = [className];
+  if (chunkNumber !== null) {
+    fileNameParts.push(`Part_${chunkNumber}_of_${totalChunks}`);
+  }
+  fileNameParts.push(today);
+  const fileName = `${fileNameParts.join("_")}.pdf`;
+
+  pdf.save(fileName);
+}
 
 /**
  * Download single QR code as image
