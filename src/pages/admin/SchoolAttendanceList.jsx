@@ -22,6 +22,10 @@ const SchoolAttendanceList = () => {
   const [loading, setLoading] = useState(true);
   const [schoolsData, setSchoolsData] = useState([]);
   const [schoolDetails, setSchoolDetails] = useState({}); // Map of schoolId -> school details
+  const [schoolSummary, setSchoolSummary] = useState({
+    schoolsWithStudentAttendance: 0,
+    schoolsWithTeacherAttendance: 0
+  });
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -102,18 +106,31 @@ const SchoolAttendanceList = () => {
       console.log('School IDs response:', response);
 
       if (response.success && response.data) {
-        const { schoolIds, totalSchools, page: currentPage, totalPages } = response.data;
+        const {
+          schoolIds,
+          totalSchools,
+          schoolsWithStudentAttendance = 0,
+          schoolsWithTeacherAttendance = 0,
+          page: currentPage,
+          totalPages
+        } = response.data;
 
-        // Filter out null school IDs
         const validSchoolIds = schoolIds.filter(id => id !== null);
 
         setPagination(prev => ({
           ...prev,
           page: currentPage || page,
+          // Preserve the UI-selected limit
           limit: effectiveLimit,
           totalPages: totalPages || 1,
           totalSchools: totalSchools || 0
         }));
+
+        // Store overall summary counts from the API (not just current page)
+        setSchoolSummary({
+          schoolsWithStudentAttendance,
+          schoolsWithTeacherAttendance
+        });
 
         // Fetch school details for each ID
         if (validSchoolIds.length > 0) {
@@ -298,7 +315,7 @@ const SchoolAttendanceList = () => {
 
           <StatsCard
             title={t('withStudentData', 'With Student Data')}
-            value={schoolsData.filter(s => s.studentAttendanceCount > 0).length}
+            value={schoolSummary.schoolsWithStudentAttendance}
             icon={Users}
             enhanced
             responsive
@@ -308,7 +325,7 @@ const SchoolAttendanceList = () => {
 
           <StatsCard
             title={t('withTeacherData', 'With Teacher Data')}
-            value={schoolsData.filter(s => s.teacherAttendanceCount > 0).length}
+            value={schoolSummary.schoolsWithTeacherAttendance}
             icon={Users}
             enhanced
             responsive
@@ -323,7 +340,32 @@ const SchoolAttendanceList = () => {
             <CardTitle>{t('schools', 'Schools')}</CardTitle>
           </CardHeader>
           <CardContent>
-            {schoolsData.length === 0 ? (
+            {loading ? (
+              // Loading skeleton cards while fetching a new page
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-4 border border-gray-100 rounded-lg bg-gray-50 animate-pulse h-full"
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="p-3 bg-gray-200 rounded-lg">
+                        <div className="h-6 w-6 bg-gray-300 rounded" />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-3/4" />
+                        <div className="flex gap-3 mt-2">
+                          <div className="h-3 bg-gray-200 rounded w-20" />
+                          <div className="h-3 bg-gray-200 rounded w-20" />
+                          <div className="h-3 bg-gray-200 rounded w-24" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="h-5 w-5 bg-gray-200 rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : schoolsData.length === 0 ? (
               <div className="text-center py-12">
                 <School className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">{t('noSchoolsFound', 'No schools found')}</p>
