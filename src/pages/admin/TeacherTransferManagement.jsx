@@ -963,6 +963,28 @@ const TeacherTransferManagement = () => {
                 )}
               </div>
 
+              {/* Active Filters Display */}
+              {(selectedSourceProvince || selectedSourceDistrict || selectedSourceSchool) && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold text-blue-900">{t('activeFilters', 'Active Filters')}:</span>
+                    {selectedSourceProvince && (
+                      <Badge color="blue" variant="filled" size="sm">
+                        {t('province', 'Province')}: {sourceProvinces.find(p => p.id.toString() === selectedSourceProvince)?.province_name_kh || sourceProvinces.find(p => p.id.toString() === selectedSourceProvince)?.province_name_en}
+                      </Badge>
+                    )}
+                    {selectedSourceDistrict && (
+                      <Badge color="blue" variant="filled" size="sm">
+                        {t('district', 'District')}: {sourceDistricts.find(d => d.district_code === selectedSourceDistrict)?.district_name_kh || sourceDistricts.find(d => d.district_code === selectedSourceDistrict)?.district_name_en}
+                      </Badge>
+                    )}
+                    {selectedSourceSchool && (
+                      <Badge color="green" variant="filled" size="sm">
+                        {t('school', 'School')}: {sourceSchools.find(s => s.id.toString() === selectedSourceSchool)?.name}
+                      </Badge>
+                    )}
+                  </div>
+              )}
+
               {/* Search Input */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
