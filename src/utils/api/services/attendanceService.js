@@ -533,12 +533,17 @@ export const attendanceService = {
     /**
      * Get schools coverage (combined student + teacher attendance data)
      * @param {Object} params - Query parameters
+     * @param {number} [params.page=1] - Page number
+     * @param {number} [params.limit=10] - Items per page
      * @param {number} [params.provinceId] - Province ID
      * @param {number} [params.districtId] - District ID
-     * @returns {Promise<Array>} Schools coverage data with both student and teacher counts
+     * @returns {Promise<Object>} Schools coverage data with pagination
      */
     async getSchoolsCoverage(params = {}) {
-      const queryParams = {};
+      const queryParams = {
+        page: params.page || 1,
+        limit: params.limit || 10
+      };
       if (params.provinceId) queryParams.provinceId = params.provinceId;
       if (params.districtId) queryParams.districtId = params.districtId;
 

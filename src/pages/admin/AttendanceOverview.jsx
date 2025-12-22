@@ -365,12 +365,16 @@ const AttendanceOverview = () => {
         setSchoolCoverageData(schools);
 
         // Update pagination state
-        setSchoolCoveragePagination({
-          page: data.page || 1,
-          limit: data.limit || 10,
+        // Keep using the UI-selected limit (schoolCoveragePagination.limit)
+        // and only take page/total information from the API
+        setSchoolCoveragePagination(prev => ({
+          ...prev,
+          page: data.page || prev.page || 1,
+          // Preserve the existing limit that comes from the UI selector
+          limit: prev.limit || params.limit || 10,
           totalPages: data.totalPages || 1,
           totalSchools: data.totalSchools || schools.length
-        });
+        }));
 
         // Aggregate totals from all schools for the summary cards
         const totals = schools.reduce(

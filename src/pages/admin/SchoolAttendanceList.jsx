@@ -8,6 +8,8 @@ import schoolService from '../../utils/api/services/schoolService';
 import locationService from '../../utils/api/services/locationService';
 import { School, Users, ChevronRight, Filter } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import Pagination from '../../components/ui/Pagination';
+import StatsCard from '../../components/ui/StatsCard';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
 import SidebarFilter from '../../components/ui/SidebarFilter';
@@ -22,7 +24,7 @@ const SchoolAttendanceList = () => {
   const [schoolDetails, setSchoolDetails] = useState({}); // Map of schoolId -> school details
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20,
+    limit: 10,
     totalPages: 1,
     totalSchools: 0
   });
@@ -79,14 +81,16 @@ const SchoolAttendanceList = () => {
   };
 
   // Fetch schools with attendance data
-  const fetchSchools = useCallback(async (page = 1) => {
+  const fetchSchools = useCallback(async (page = 1, limitOverride = null) => {
     setLoading(true);
     clearError();
 
     try {
+      const effectiveLimit = limitOverride ?? pagination.limit;
+
       const params = {
         page,
-        limit: pagination.limit
+        limit: effectiveLimit
       };
 
       if (filters.province) params.provinceId = parseInt(filters.province, 10);
@@ -98,17 +102,18 @@ const SchoolAttendanceList = () => {
       console.log('School IDs response:', response);
 
       if (response.success && response.data) {
-        const { schoolIds, totalSchools, page: currentPage, limit, totalPages } = response.data;
+        const { schoolIds, totalSchools, page: currentPage, totalPages } = response.data;
 
         // Filter out null school IDs
         const validSchoolIds = schoolIds.filter(id => id !== null);
 
-        setPagination({
-          page: currentPage,
-          limit,
-          totalPages,
-          totalSchools
-        });
+        setPagination(prev => ({
+          ...prev,
+          page: currentPage || page,
+          limit: effectiveLimit,
+          totalPages: totalPages || 1,
+          totalSchools: totalSchools || 0
+        }));
 
         // Fetch school details for each ID
         if (validSchoolIds.length > 0) {
@@ -249,8 +254,8 @@ const SchoolAttendanceList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-white p-3 sm:p-4">
+      <div className="p-4 sm:p-6">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
@@ -280,60 +285,36 @@ const SchoolAttendanceList = () => {
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    {t('totalSchools', 'Total Schools')}
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
-                    {pagination.totalSchools}
-                  </p>
-                </div>
-                <div className="p-3 bg-blue-500 rounded-lg">
-                  <School className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <StatsCard
+            title={t('totalSchools', 'Total Schools')}
+            value={pagination.totalSchools}
+            icon={School}
+            enhanced
+            responsive
+            gradientFrom="from-blue-500"
+            gradientTo="to-blue-600"
+          />
 
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    {t('withStudentData', 'With Student Data')}
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
-                    {schoolsData.filter(s => s.studentAttendanceCount > 0).length}
-                  </p>
-                </div>
-                <div className="p-3 bg-green-500 rounded-lg">
-                  <Users className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatsCard
+            title={t('withStudentData', 'With Student Data')}
+            value={schoolsData.filter(s => s.studentAttendanceCount > 0).length}
+            icon={Users}
+            enhanced
+            responsive
+            gradientFrom="from-green-500"
+            gradientTo="to-green-600"
+          />
 
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    {t('withTeacherData', 'With Teacher Data')}
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
-                    {schoolsData.filter(s => s.teacherAttendanceCount > 0).length}
-                  </p>
-                </div>
-                <div className="p-3 bg-purple-500 rounded-lg">
-                  <Users className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatsCard
+            title={t('withTeacherData', 'With Teacher Data')}
+            value={schoolsData.filter(s => s.teacherAttendanceCount > 0).length}
+            icon={Users}
+            enhanced
+            responsive
+            gradientFrom="from-purple-500"
+            gradientTo="to-purple-600"
+          />
         </div>
 
         {/* Schools List */}
@@ -348,12 +329,12 @@ const SchoolAttendanceList = () => {
                 <p className="text-gray-600">{t('noSchoolsFound', 'No schools found')}</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {schoolsData.map((school) => (
                   <div
                     key={school.schoolId}
                     onClick={() => handleSchoolClick(school)}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 cursor-pointer transition-all"
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 cursor-pointer transition-all h-full"
                   >
                     <div className="flex items-center gap-4 flex-1">
                       <div className="p-3 bg-blue-100 rounded-lg">
@@ -361,7 +342,7 @@ const SchoolAttendanceList = () => {
                       </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900">{school.schoolName}</h3>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 flex-wrap">
                           <span className="flex items-center gap-1">
                             <Users className="h-4 w-4" />
                             {school.studentAttendanceCount} {t('students', 'Students')}
@@ -383,31 +364,30 @@ const SchoolAttendanceList = () => {
             )}
 
             {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                <div className="text-sm text-gray-600">
-                  {t('page', 'Page')} {pagination.page} {t('of', 'of')} {pagination.totalPages}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(pagination.page - 1)}
-                    disabled={pagination.page === 1}
-                  >
-                    {t('previous', 'Previous')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={pagination.page === pagination.totalPages}
-                  >
-                    {t('next', 'Next')}
-                  </Button>
-                </div>
-              </div>
-            )}
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              total={pagination.totalSchools}
+              limit={pagination.limit}
+              onPageChange={(newPage) => {
+                if (newPage < 1 || newPage > pagination.totalPages) return;
+                fetchSchools(newPage);
+              }}
+              onLimitChange={(newLimit) => {
+                // When limit changes, restart from page 1 with new limit
+                setPagination(prev => ({
+                  ...prev,
+                  limit: newLimit,
+                  page: 1
+                }));
+                fetchSchools(1, newLimit);
+              }}
+              limitOptions={[10, 20, 50, 100]}
+              showLimitSelector={true}
+              t={t}
+              showFirstLast={true}
+              showInfo={true}
+            />
           </CardContent>
         </Card>
       </div>
