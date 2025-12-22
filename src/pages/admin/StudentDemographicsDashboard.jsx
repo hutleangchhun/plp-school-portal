@@ -14,16 +14,13 @@ import {
 import ErrorDisplay from "../../components/ui/ErrorDisplay";
 import SearchableDropdown from "../../components/ui/SearchableDropdown";
 import SidebarFilter from "../../components/ui/SidebarFilter";
-import TeacherEmploymentTypeTab from "../../components/admin/TeacherEmploymentTypeTab";
-import TeacherExtraLearningToolTab from "../../components/admin/TeacherExtraLearningToolTab";
-import AdminUserDemographic from "./AdminUserDemographic";
+import SystemWideStudentStats from "../../components/admin/SystemWideStudentStats";
 import locationService from "../../utils/api/services/locationService";
 import schoolService from "../../utils/api/services/schoolService";
 import { Button } from "@/components/ui/Button";
 import { ListFilter } from "lucide-react";
-import { roleOptions } from "../../utils/formOptions";
 
-const TeacherOverviewDashboard = () => {
+const StudentDemographicsDashboard = () => {
   const { t } = useLanguage();
   const { error, handleError, clearError } = useErrorHandler();
 
@@ -36,13 +33,11 @@ const TeacherOverviewDashboard = () => {
   const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedSchool, setSelectedSchool] = useState("");
-  const [selectedRole, setSelectedRole] = useState("8"); // Default to teachers
 
   // Temporary filters (while sidebar is open)
   const [tempProvince, setTempProvince] = useState("");
   const [tempDistrict, setTempDistrict] = useState("");
   const [tempSchool, setTempSchool] = useState("");
-  const [tempRole, setTempRole] = useState("8");
 
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
 
@@ -75,7 +70,6 @@ const TeacherOverviewDashboard = () => {
     setTempProvince(selectedProvince);
     setTempDistrict(selectedDistrict);
     setTempSchool(selectedSchool);
-    setTempRole(selectedRole);
     setIsFilterSidebarOpen(true);
   };
 
@@ -89,7 +83,6 @@ const TeacherOverviewDashboard = () => {
     setSelectedProvince(tempProvince);
     setSelectedDistrict(tempDistrict);
     setSelectedSchool(tempSchool);
-    setSelectedRole(tempRole);
     setIsFilterSidebarOpen(false);
   };
 
@@ -137,38 +130,14 @@ const TeacherOverviewDashboard = () => {
     setTempSchool(school);
   };
 
-  const handleRoleChange = (role) => {
-    setTempRole(role);
-  };
-
   const handleReset = () => {
     setSelectedProvince("");
     setSelectedDistrict("");
     setSelectedSchool("");
-    setSelectedRole("8");
     setTempProvince("");
     setTempDistrict("");
     setTempSchool("");
-    setTempRole("8");
   };
-
-  // Prepare role options with Students at the top
-  const allRoleOptions = [
-    { value: '9', label: t('students', 'Students') },
-    { value: '8', label: t('teachers', 'Teachers') },
-    ...roleOptions.filter(r => r.value !== '8').map(role => ({ value: role.value, label: role.label }))
-  ];
-
-  // Memoize filters object to prevent recreating on every render
-  const filters = useMemo(
-    () => ({
-      selectedProvince,
-      selectedDistrict,
-      selectedSchool,
-      selectedRole,
-    }),
-    [selectedProvince, selectedDistrict, selectedSchool, selectedRole]
-  );
 
   if (error) {
     return (
@@ -189,12 +158,12 @@ const TeacherOverviewDashboard = () => {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h1 className="text-xl font-bold text-gray-900">
-                  {t("teacherOverview", "Teacher Overview")}
+                  {t("studentDemographics", "Student Demographics")}
                 </h1>
                 <p className="text-sm text-gray-500">
                   {t(
-                    "teacherOverviewDesc",
-                    "View all teachers data distribution in the system"
+                    "viewStudentDemographics",
+                    "View student ethnic groups and accessibility needs across all schools"
                   )}
                 </p>
               </div>
@@ -206,14 +175,13 @@ const TeacherOverviewDashboard = () => {
                 >
                   <ListFilter className="h-5 w-5 mr-2" />
                   {t("filters", "Filters")}
-                  {(selectedProvince || selectedDistrict || selectedSchool || selectedRole !== '8') && (
+                  {(selectedProvince || selectedDistrict || selectedSchool) && (
                     <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-white text-blue-600 rounded-full">
                       {
                         [
                           selectedProvince,
                           selectedDistrict,
                           selectedSchool,
-                          selectedRole !== '8' ? selectedRole : null,
                         ].filter(Boolean).length
                       }
                     </span>
@@ -229,9 +197,9 @@ const TeacherOverviewDashboard = () => {
           isOpen={isFilterSidebarOpen}
           onClose={handleCloseSidebar}
           title={t("filters", "Filters")}
-          subtitle={t("filterDescription", "Select location and role to filter data")}
+          subtitle={t("filterDescription", "Select location to filter data")}
           hasFilters={
-            !!(selectedProvince || selectedDistrict || selectedSchool || selectedRole !== '8')
+            !!(selectedProvince || selectedDistrict || selectedSchool)
           }
           onClearFilters={handleReset}
           onApply={handleApplyFilters}
@@ -289,70 +257,26 @@ const TeacherOverviewDashboard = () => {
                 minWidth="w-full"
               />
             </div>
-
-            {/* Role Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                {t("role", "Role")}
-              </label>
-              <SearchableDropdown
-                options={allRoleOptions}
-                value={tempRole}
-                onValueChange={handleRoleChange}
-                placeholder={t("selectRole", "Select Role")}
-                searchPlaceholder={t("searchRole", "Search role...")}
-                minWidth="w-full"
-              />
-            </div>
           </div>
         </SidebarFilter>
 
-        {/* Teacher Demographics Section */}
+        {/* Student Demographics */}
         <FadeInSection delay={300} className="mb-6">
           <Card className="border border-gray-200 shadow-sm rounded-md">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-semibold">
-                {t("teacherDemographics", "Teacher Demographics")}
+                {t("studentDemographics", "Student Demographics")}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <AdminUserDemographic
-                fixedRole={8}
-                showPageWrapper={false}
-                filters={filters}
-                useGlobalFilters={true}
+              <SystemWideStudentStats
+                roleId={9}
+                provinceId={selectedProvince}
+                districtId={selectedDistrict}
+                schoolId={selectedSchool}
+                showOwnFilters={false}
+                key={`9-${selectedProvince}-${selectedDistrict}-${selectedSchool}`}
               />
-            </CardContent>
-          </Card>
-        </FadeInSection>
-
-        {/* Employment Type Statistics */}
-        <FadeInSection delay={400} className="mb-6">
-          <Card className="border border-gray-200 shadow-sm rounded-md">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold">
-                {t("employmentType", "Teacher Employment Type Statistics")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TeacherEmploymentTypeTab filters={filters} />
-            </CardContent>
-          </Card>
-        </FadeInSection>
-
-        {/* Extra Learning Tools Statistics */}
-        <FadeInSection delay={500} className="mb-6">
-          <Card className="border border-gray-200 shadow-sm rounded-md">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold">
-                {t(
-                  "extraLearningTools",
-                  "Teacher Extra Learning Tools Statistics"
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TeacherExtraLearningToolTab filters={filters} />
             </CardContent>
           </Card>
         </FadeInSection>
@@ -361,4 +285,4 @@ const TeacherOverviewDashboard = () => {
   );
 };
 
-export default TeacherOverviewDashboard;
+export default StudentDemographicsDashboard;

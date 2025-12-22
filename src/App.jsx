@@ -10,7 +10,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import UserActivityLogs from './pages/admin/UserActivityLogs';
 import TeacherTransferManagement from './pages/admin/TeacherTransferManagement';
 import StudentTransferManagement from './pages/admin/StudentTransferManagement';
-import AdminStudentDemographic from './pages/admin/AdminStudentDemographic';
+import StudentDemographicsDashboard from './pages/admin/StudentDemographicsDashboard';
 import BMIReport from './pages/admin/BMIReport';
 import AttendanceOverview from './pages/admin/AttendanceOverview';
 import TeacherOverviewDashboard from './pages/admin/TeacherOverviewDashboard';
@@ -220,7 +220,7 @@ function AppContent() {
               <DashboardLayout user={user} onLogout={handleLogout} />
             </ProtectedRoute>
           }>
-            <Route index element={<AdminStudentDemographic />} />
+            <Route index element={<StudentDemographicsDashboard />} />
           </Route>
 
           {/* Admin BMI report route - role ID 1 only (enforced by routePermissions) */}
