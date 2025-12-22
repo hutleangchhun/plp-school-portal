@@ -1358,6 +1358,9 @@ const StudentEditModal = () => {
                                 reading_material_package: {
                                   ...(prev.extraLearningTool.reading_material_package || {}),
                                   _hasPackage: checked,
+                                  // Clear status and providedBy if unchecking
+                                  status: checked ? (prev.extraLearningTool.reading_material_package?.status || '') : '',
+                                  providedBy: checked ? (prev.extraLearningTool.reading_material_package?.providedBy || '') : '',
                                 },
                               },
                             }));
@@ -1366,66 +1369,70 @@ const StudentEditModal = () => {
                       </span>
                     </label>
 
-                    {/* Status dropdown */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {t('statusBook', 'ស្ថានភាពសៀវភៅ')}
-                      </label>
-                      <Dropdown
-                        options={[
-                          { value: '', label: t('selectOption', 'ជ្រើសរើស') },
-                          ...extraLearningStatusOptions
-                        ]}
-                        value={reading.status || ''}
-                        onValueChange={(value) => {
-                          setEditForm(prev => ({
-                            ...prev,
-                            extraLearningTool: {
-                              ...prev.extraLearningTool,
-                              reading_material_package: {
-                                ...(prev.extraLearningTool.reading_material_package || {}),
-                                status: value,
+                    {/* Status dropdown - only show if hasPackage is true */}
+                    {hasPackage && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t('statusBook', 'ស្ថានភាពសៀវភៅ')}
+                        </label>
+                        <Dropdown
+                          options={[
+                            { value: '', label: t('selectOption', 'ជ្រើសរើស') },
+                            ...extraLearningStatusOptions
+                          ]}
+                          value={reading.status || ''}
+                          onValueChange={(value) => {
+                            setEditForm(prev => ({
+                              ...prev,
+                              extraLearningTool: {
+                                ...prev.extraLearningTool,
+                                reading_material_package: {
+                                  ...(prev.extraLearningTool.reading_material_package || {}),
+                                  status: value,
+                                },
                               },
-                            },
-                          }));
-                        }}
-                        placeholder={t('selectOption', 'ជ្រើសរើស')}
-                        contentClassName="max-h-[200px] overflow-y-auto"
-                        disabled={false}
-                        className='w-full'
-                      />
-                    </div>
+                            }));
+                          }}
+                          placeholder={t('selectOption', 'ជ្រើសរើស')}
+                          contentClassName="max-h-[200px] overflow-y-auto"
+                          disabled={false}
+                          className='w-full'
+                        />
+                      </div>
+                    )}
 
-                    {/* ProvidedBy dropdown */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {t('providedBy', 'Provided By')}
-                      </label>
-                      <Dropdown
-                        options={[
-                          { value: '', label: t('selectOption', 'ជ្រើសរើស') },
-                          { value: 'មាតាបិតាទិញឱ្យ', label: 'មាតាបិតាទិញឱ្យ' },
-                          { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
-                        ]}
-                        value={reading.providedBy || ''}
-                        onValueChange={(value) => {
-                          setEditForm(prev => ({
-                            ...prev,
-                            extraLearningTool: {
-                              ...prev.extraLearningTool,
-                              reading_material_package: {
-                                ...(prev.extraLearningTool.reading_material_package || {}),
-                                providedBy: value,
+                    {/* ProvidedBy dropdown - only show if hasPackage is true */}
+                    {hasPackage && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t('providedBy', 'Provided By')}
+                        </label>
+                        <Dropdown
+                          options={[
+                            { value: '', label: t('selectOption', 'ជ្រើសរើស') },
+                            { value: 'មាតាបិតាទិញឱ្យ', label: 'មាតាបិតាទិញឱ្យ' },
+                            { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
+                          ]}
+                          value={reading.providedBy || ''}
+                          onValueChange={(value) => {
+                            setEditForm(prev => ({
+                              ...prev,
+                              extraLearningTool: {
+                                ...prev.extraLearningTool,
+                                reading_material_package: {
+                                  ...(prev.extraLearningTool.reading_material_package || {}),
+                                  providedBy: value,
+                                },
                               },
-                            },
-                          }));
-                        }}
-                        placeholder={t('selectOption', 'ជ្រើសរើស')}
-                        contentClassName="max-h-[200px] overflow-y-auto"
-                        disabled={false}
-                        className='w-full'
-                      />
-                    </div>
+                            }));
+                          }}
+                          placeholder={t('selectOption', 'ជ្រើសរើស')}
+                          contentClassName="max-h-[200px] overflow-y-auto"
+                          disabled={false}
+                          className='w-full'
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -1462,6 +1469,9 @@ const StudentEditModal = () => {
                                 math_grade1_package: {
                                   ...(prev.extraLearningTool.math_grade1_package || {}),
                                   _hasPackage: checked,
+                                  // Clear status and providedBy if unchecking
+                                  status: checked ? (prev.extraLearningTool.math_grade1_package?.status || '') : '',
+                                  providedBy: checked ? (prev.extraLearningTool.math_grade1_package?.providedBy || '') : '',
                                 },
                               },
                             }));
@@ -1470,66 +1480,70 @@ const StudentEditModal = () => {
                       </span>
                     </label>
 
-                    {/* Status dropdown */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {t('statusBook', 'ស្ថានភាពសៀវភៅ')}
-                      </label>
-                      <Dropdown
-                        options={[
-                          { value: '', label: t('selectOption', 'ជ្រើសរើស') },
-                          ...extraLearningStatusOptions
-                        ]}
-                        value={math.status || ''}
-                        onValueChange={(value) => {
-                          setEditForm(prev => ({
-                            ...prev,
-                            extraLearningTool: {
-                              ...prev.extraLearningTool,
-                              math_grade1_package: {
-                                ...(prev.extraLearningTool.math_grade1_package || {}),
-                                status: value,
+                    {/* Status dropdown - only show if hasPackage is true */}
+                    {hasPackage && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t('statusBook', 'ស្ថានភាពសៀវភៅ')}
+                        </label>
+                        <Dropdown
+                          options={[
+                            { value: '', label: t('selectOption', 'ជ្រើសរើស') },
+                            ...extraLearningStatusOptions
+                          ]}
+                          value={math.status || ''}
+                          onValueChange={(value) => {
+                            setEditForm(prev => ({
+                              ...prev,
+                              extraLearningTool: {
+                                ...prev.extraLearningTool,
+                                math_grade1_package: {
+                                  ...(prev.extraLearningTool.math_grade1_package || {}),
+                                  status: value,
+                                },
                               },
-                            },
-                          }));
-                        }}
-                        placeholder={t('selectOption', 'ជ្រើសរើស')}
-                        contentClassName="max-h-[200px] overflow-y-auto"
-                        disabled={false}
-                        className='w-full'
-                      />
-                    </div>
+                            }));
+                          }}
+                          placeholder={t('selectOption', 'ជ្រើសរើស')}
+                          contentClassName="max-h-[200px] overflow-y-auto"
+                          disabled={false}
+                          className='w-full'
+                        />
+                      </div>
+                    )}
 
-                    {/* ProvidedBy dropdown */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {t('providedBy', 'Provided By')}
-                      </label>
-                      <Dropdown
-                        options={[
-                          { value: '', label: t('selectOption', 'ជ្រើសរើស') },
-                          { value: 'មាតាបិតាទិញឱ្យ', label: 'មាតាបិតាទិញឱ្យ' },
-                          { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
-                        ]}
-                        value={math.providedBy || ''}
-                        onValueChange={(value) => {
-                          setEditForm(prev => ({
-                            ...prev,
-                            extraLearningTool: {
-                              ...prev.extraLearningTool,
-                              math_grade1_package: {
-                                ...(prev.extraLearningTool.math_grade1_package || {}),
-                                providedBy: value,
+                    {/* ProvidedBy dropdown - only show if hasPackage is true */}
+                    {hasPackage && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t('providedBy', 'Provided By')}
+                        </label>
+                        <Dropdown
+                          options={[
+                            { value: '', label: t('selectOption', 'ជ្រើសរើស') },
+                            { value: 'មាតាបិតាទិញឱ្យ', label: 'មាតាបិតាទិញឱ្យ' },
+                            { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
+                          ]}
+                          value={math.providedBy || ''}
+                          onValueChange={(value) => {
+                            setEditForm(prev => ({
+                              ...prev,
+                              extraLearningTool: {
+                                ...prev.extraLearningTool,
+                                math_grade1_package: {
+                                  ...(prev.extraLearningTool.math_grade1_package || {}),
+                                  providedBy: value,
+                                },
                               },
-                            },
-                          }));
-                        }}
-                        placeholder={t('selectOption', 'Select option')}
-                        contentClassName="max-h-[200px] overflow-y-auto"
-                        disabled={false}
-                        className='w-full'
-                      />
-                    </div>
+                            }));
+                          }}
+                          placeholder={t('selectOption', 'ជ្រើសរើស')}
+                          contentClassName="max-h-[200px] overflow-y-auto"
+                          disabled={false}
+                          className='w-full'
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               );

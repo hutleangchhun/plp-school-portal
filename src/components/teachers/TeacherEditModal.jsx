@@ -1859,6 +1859,8 @@ const TeacherEditModal = () => {
                                     [category]: {
                                       ...(prev.teacherExtraLearningTool[category] || {}),
                                       _hasPackage: checked,
+                                      // Clear detail checkbox if unchecking hasPackage
+                                      ...(detailKey && !checked ? { [detailKey]: false } : {})
                                     },
                                   },
                                 }));
@@ -1868,8 +1870,8 @@ const TeacherEditModal = () => {
                           </span>
                         </label>
 
-                        {/* Detail tool checkbox */}
-                        {detailKey && (
+                        {/* Detail tool checkbox - only show if hasPackage is true */}
+                        {detailKey && hasPackage && (
                           <label className="flex items-center justify-between cursor-pointer">
                             <span className="text-gray-700">
                               {getDetailLabel(detailKey)}
