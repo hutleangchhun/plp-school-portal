@@ -1758,5 +1758,6 @@ export const km = {
   searchRole: 'ស្វែងរកតួនាទី...',
   teacherDemographics: 'ប្រជាសាស្ត្រគ្រូបង្រៀន',
   viewTeacherDemographics: 'មើលជនជាតិ និងតម្រូវការពិការភាពរបស់គ្រូបង្រៀននៅគ្រប់សាលារៀនទាំងអស់',
-  activeFilters: 'តម្រងសកម្ម',
+  activeFilters: 'តម្រងបានជ្រើសរើស',
+  perPage: 'មួយទំព័រ',
 };

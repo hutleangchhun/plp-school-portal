@@ -690,6 +690,17 @@ export default function StudentsManagement() {
     console.log(`=== END PAGINATION CHANGE DEBUG ===`);
   };
 
+  // Handle limit change
+  const handleLimitChange = (newLimit) => {
+    setPagination(prev => ({
+      ...prev,
+      limit: newLimit,
+      page: 1 // Reset to first page when changing limit
+    }));
+    // Scroll to top when changing limit
+    window.scrollTo(0, 0);
+  };
+
   // Reset pagination to page 1 when filters change
   const prevFiltersRef = useRef({ selectedClassId, academicYearFilter: debouncedAcademicYear, poorCardId: poorCardIdFilter });
   useEffect(() => {
@@ -1946,6 +1957,9 @@ export default function StudentsManagement() {
                 showPagination={students.length > 0}
                 pagination={pagination}
                 onPageChange={handlePageChange}
+                onLimitChange={handleLimitChange}
+                limitOptions={[10, 25, 50]}
+                showLimitSelector={true}
                 t={t}
                 disabled={paginationLoading}
               />

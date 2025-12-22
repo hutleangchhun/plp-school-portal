@@ -238,6 +238,17 @@ export default function TeacherStudentsManagement({ user }) {
     setPagination(prev => ({ ...prev, page: newPage }));
   };
 
+  // Handle limit change
+  const handleLimitChange = (newLimit) => {
+    setPagination(prev => ({
+      ...prev,
+      limit: newLimit,
+      page: 1 // Reset to first page when changing limit
+    }));
+    // Scroll to top when changing limit
+    window.scrollTo(0, 0);
+  };
+
   // Export handlers - Export in BulkStudentImport template format
   const handleExportExcel = async () => {
     const selectedClass = selectedClassId !== 'all'
@@ -556,6 +567,9 @@ export default function TeacherStudentsManagement({ user }) {
               showPagination={true}
               pagination={pagination}
               onPageChange={handlePageChange}
+              onLimitChange={handleLimitChange}
+              limitOptions={[10, 25, 50]}
+              showLimitSelector={true}
               t={t}
             />
           )}

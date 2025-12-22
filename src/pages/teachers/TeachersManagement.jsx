@@ -404,6 +404,17 @@ export default function TeachersManagement() {
     }
   };
 
+  // Handle limit change
+  const handleLimitChange = (newLimit) => {
+    setPagination(prev => ({
+      ...prev,
+      limit: newLimit,
+      page: 1 // Reset to first page when changing limit
+    }));
+    // Scroll to top when changing limit
+    window.scrollTo(0, 0);
+  };
+
   // Handle delete teacher
   const handleDeleteTeacher = async () => {
     showSuccess(t('featureComingSoon', 'This feature is coming soon'));
@@ -1144,6 +1155,9 @@ export default function TeachersManagement() {
             showPagination={true}
             pagination={pagination}
             onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+            limitOptions={[10, 25, 50]}
+            showLimitSelector={true}
             rowClassName="hover:bg-blue-50"
             t={t}
             disabled={paginationLoading}

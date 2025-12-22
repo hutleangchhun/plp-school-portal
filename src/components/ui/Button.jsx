@@ -4,7 +4,7 @@ import { cva } from 'class-variance-authority';
 import { cn } from '../../utils/cn';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center rounded-md font-medium transition-all duration-300 ease-out transform hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:transform-none touch-manipulation',
+  'inline-flex items-center justify-center rounded-sm font-medium transition-all duration-300 ease-out transform hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:transform-none touch-manipulation',
   {
     variants: {
       variant: {

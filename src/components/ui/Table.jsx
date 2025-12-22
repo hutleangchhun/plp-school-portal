@@ -2,6 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { Button } from './Button';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Database } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './select';
 
 const Table = ({
   columns = [],
@@ -12,6 +19,9 @@ const Table = ({
   showPagination = false,
   pagination = null,
   onPageChange = null,
+  onLimitChange = null,
+  limitOptions = [10, 25, 50],
+  showLimitSelector = false,
   rowClassName = "",
   onRowClick = null,
   t = null,
@@ -165,6 +175,9 @@ const Table = ({
         <Pagination
           pagination={pagination}
           onPageChange={onPageChange}
+          onLimitChange={onLimitChange}
+          limitOptions={limitOptions}
+          showLimitSelector={showLimitSelector}
           t={t}
         />
       )}
@@ -208,7 +221,7 @@ const renderCellValue = (value) => {
 };
 
 // Advanced Pagination component
-const Pagination = ({ pagination, onPageChange, t }) => {
+const Pagination = ({ pagination, onPageChange, onLimitChange = null, limitOptions = [10, 25, 50], showLimitSelector = false, t }) => {
   const { page, pages, total, limit } = pagination;
   const showFirstLast = true;
 
@@ -300,23 +313,46 @@ const Pagination = ({ pagination, onPageChange, t }) => {
 
       {/* Desktop pagination */}
       <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-        {true && (
-          <div>
-            <p className="text-sm text-gray-700">
-              {t ? t('showing', 'Showing') : 'Showing'}{' '}
-              <span className="font-medium">
-                {total === 0 ? 0 : (page - 1) * limit + 1}
-              </span>{' '}
-              {t ? t('to', 'to') : 'to'}{' '}
-              <span className="font-medium">
-                {Math.min(page * limit, total)}
-              </span>{' '}
-              {t ? t('of', 'of') : 'of'}{' '}
-              <span className="font-medium">{total}</span>{' '}
-              {t ? t('results', 'results') : 'results'}
-            </p>
-          </div>
-        )}
+        <div className="flex items-center gap-4">
+          {true && (
+            <div>
+              <p className="text-sm text-gray-700">
+                {t ? t('showing', 'Showing') : 'Showing'}{' '}
+                <span className="font-medium">
+                  {total === 0 ? 0 : (page - 1) * limit + 1}
+                </span>{' '}
+                {t ? t('to', 'to') : 'to'}{' '}
+                <span className="font-medium">
+                  {Math.min(page * limit, total)}
+                </span>{' '}
+                {t ? t('of', 'of') : 'of'}{' '}
+                <span className="font-medium">{total}</span>{' '}
+                {t ? t('results', 'results') : 'results'}
+              </p>
+            </div>
+          )}
+
+          {/* Limit selector */}
+          {showLimitSelector && onLimitChange && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">
+                {t ? t('perPage', 'Per page') : 'Per page'}:
+              </label>
+              <Select value={String(limit)} onValueChange={(value) => onLimitChange(Number(value))}>
+                <SelectTrigger className="h-8 w-[70px] rounded-sm">
+                  <SelectValue placeholder={String(limit)} />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {limitOptions.map((option) => (
+                    <SelectItem key={option} value={String(option)} className="rounded-sm">
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
 
         <div>
           <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label={t ? t('pagination', 'Pagination') : 'Pagination'}>
@@ -421,7 +457,7 @@ const MobileCards = ({
       {data.map((item, index) => (
         <div
           key={item.id || index}
-          className={`bg-white border rounded-lg p-4 mb-3 shadow-sm hover:shadow-md transition-all duration-200 ${cardClassName} ${
+          className={`bg-white border rounded-sm p-4 mb-3 shadow-sm hover:shadow-md transition-all duration-200 ${cardClassName} ${
             onCardClick ? 'cursor-pointer' : ''
           }`}
           style={{ animationDelay: `${index * 50}ms` }}

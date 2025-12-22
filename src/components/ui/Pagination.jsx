@@ -1,13 +1,23 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Button } from './Button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './select';
 
-const Pagination = ({ 
-  currentPage = 1, 
-  totalPages = 1, 
-  total = 0, 
+const Pagination = ({
+  currentPage = 1,
+  totalPages = 1,
+  total = 0,
   limit = 10,
-  onPageChange, 
+  onPageChange,
+  onLimitChange = null,
+  limitOptions = [10, 25, 50],
+  showLimitSelector = false,
   t = null,
   className = "",
   showFirstLast = true,
@@ -105,26 +115,49 @@ const Pagination = ({
 
       {/* Desktop pagination */}
       <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-        {showInfo && (
-          <div>
-            <p className="text-sm text-gray-700">
-              {t ? t('showing', 'Showing') : 'Showing'}{' '}
-              <span className="font-medium">
-                {total === 0 ? 0 : (currentPage - 1) * limit + 1}
-              </span>{' '}
-              {t ? t('to', 'to') : 'to'}{' '}
-              <span className="font-medium">
-                {Math.min(currentPage * limit, total)}
-              </span>{' '}
-              {t ? t('of', 'of') : 'of'}{' '}
-              <span className="font-medium">{total}</span>{' '}
-              {t ? t('results', 'results') : 'results'}
-            </p>
-          </div>
-        )}
-        
+        <div className="flex items-center gap-4">
+          {showInfo && (
+            <div>
+              <p className="text-sm text-gray-700">
+                {t ? t('showing', 'Showing') : 'Showing'}{' '}
+                <span className="font-medium">
+                  {total === 0 ? 0 : (currentPage - 1) * limit + 1}
+                </span>{' '}
+                {t ? t('to', 'to') : 'to'}{' '}
+                <span className="font-medium">
+                  {Math.min(currentPage * limit, total)}
+                </span>{' '}
+                {t ? t('of', 'of') : 'of'}{' '}
+                <span className="font-medium">{total}</span>{' '}
+                {t ? t('results', 'results') : 'results'}
+              </p>
+            </div>
+          )}
+
+          {/* Limit selector */}
+          {showLimitSelector && onLimitChange && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">
+                {t ? t('perPage', 'Per page') : 'Per page'}:
+              </label>
+              <Select value={String(limit)} onValueChange={(value) => onLimitChange(Number(value))}>
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue placeholder={String(limit)} />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {limitOptions.map((option) => (
+                    <SelectItem key={option} value={String(option)}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+
         <div>
-          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label={t ? t('pagination', 'Pagination') : 'Pagination'}>
+          <nav className="relative z-0 inline-flex rounded-sm shadow-sm -space-x-px" aria-label={t ? t('pagination', 'Pagination') : 'Pagination'}>
             {/* First page button */}
             {showFirstLast && (
               <Button
@@ -132,7 +165,7 @@ const Pagination = ({
                 disabled={currentPage === 1}
                 variant="outline"
                 size="sm"
-                className="rounded-l-md rounded-r-none border-r-0"
+                className="rounded-l-sm rounded-r-none border-r-0"
                 title={t ? t('firstPage', 'First page') : 'First page'}
               >
                 <span className="sr-only">First</span>
@@ -146,7 +179,7 @@ const Pagination = ({
               disabled={currentPage === 1}
               variant="outline"
               size="sm"
-              className={`${showFirstLast ? 'rounded-none border-r-0' : 'rounded-l-md rounded-r-none border-r-0'}`}
+              className={`${showFirstLast ? 'rounded-none border-r-0' : 'rounded-l-sm rounded-r-none border-r-0'}`}
               title={t ? t('previousPage', 'Previous page') : 'Previous page'}
             >
               <span className="sr-only">Previous</span>
@@ -186,7 +219,7 @@ const Pagination = ({
               disabled={currentPage >= totalPages}
               variant="outline"
               size="sm"
-              className={`${showFirstLast ? 'rounded-none border-r-0' : 'rounded-r-md rounded-l-none'}`}
+              className={`${showFirstLast ? 'rounded-none border-r-0' : 'rounded-r-sm rounded-l-none'}`}
               title={t ? t('nextPage', 'Next page') : 'Next page'}
             >
               <span className="sr-only">Next</span>
@@ -200,7 +233,7 @@ const Pagination = ({
                 disabled={currentPage >= totalPages}
                 variant="outline"
                 size="sm"
-                className="rounded-r-md rounded-l-none"
+                className="rounded-r-sm rounded-l-none"
                 title={`${t ? t('lastPage', 'Last page') : 'Last page'} (${totalPages})`}
               >
                 <span className="sr-only">Last</span>
