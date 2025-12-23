@@ -9,6 +9,7 @@ import schoolService from '../../utils/api/services/schoolService';
 import StatsCard from '../../components/ui/StatsCard';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Users, Filter, Calendar, BarChart3 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '../../components/ui/Button';
 import { roleOptions, gradeLevelOptions } from '../../utils/formOptions';
 import { DatePickerWithDropdowns } from '@/components/ui/date-picker-with-dropdowns';
@@ -58,6 +59,11 @@ const UserRegistrationDashboard = () => {
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [schools, setSchools] = useState([]);
+  const [gradeLevel, setGradeLevel] = useState(gradeLevelOptions);
+  const [roleLevel, setRoleLevel] = useState(roleOptions);
+  const [startDate, setStartDate] = useState(defaultStartDate);
+  const [endDate, setEndDate] = useState(today);
+  const [excludeSchoolIdsText, setExcludeSchoolIdsText] = useState('');
 
   const [filters, setFilters] = useState({
     roleId: DEFAULT_ROLE_ID,
@@ -212,15 +218,22 @@ const UserRegistrationDashboard = () => {
 
   const totalGenderCount = stats.genderDistribution.reduce((sum, g) => sum + (g.count || 0), 0) || 0;
 
+  // Prefer filters returned by the API (stats.filters) but fall back to the local filters state.
+  // This ensures the UI labels always reflect the effective filters used for the stats.
+  const effectiveFilters = {
+    ...filters,
+    ...(stats.filters || {}),
+  };
+
   const hasActiveFilters =
-    filters.roleId !== DEFAULT_ROLE_ID ||
-    filters.gradeLevel !== (gradeLevelOptions[0]?.value || '0') ||
-    filters.startDate !== defaultStartDate ||
-    filters.endDate !== today ||
-    !!filters.excludeSchoolIdsText ||
-    !!filters.province ||
-    !!filters.district ||
-    !!filters.school;
+    effectiveFilters.roleId !== DEFAULT_ROLE_ID ||
+    effectiveFilters.gradeLevel !== (gradeLevelOptions[0]?.value || '0') ||
+    effectiveFilters.startDate !== defaultStartDate ||
+    effectiveFilters.endDate !== today ||
+    !!effectiveFilters.excludeSchoolIdsText ||
+    !!effectiveFilters.province ||
+    !!effectiveFilters.district ||
+    !!effectiveFilters.school;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
@@ -265,6 +278,52 @@ const UserRegistrationDashboard = () => {
             )}
           </Button>
         </div>
+        {hasActiveFilters ? (
+          <div className='flex pb-4'>
+            {gradeLevelOptions.find(gl => gl.value === effectiveFilters.gradeLevel) && (
+              <Badge className="mr-2">
+                {t('gradeLevel', 'Grade Level')}: {gradeLevelOptions.find(gl => gl.value === effectiveFilters.gradeLevel)?.label}
+              </Badge>
+            )}
+            {roleOptions.find(ro => ro.value === effectiveFilters.roleId) && (
+              <Badge className="mr-2">
+                {t('role', 'Role')}: {roleOptions.find(ro => ro.value === effectiveFilters.roleId)?.label}
+              </Badge>
+            )}
+            {effectiveFilters.startDate && (
+              <Badge className="mr-2">
+                {t('startDate', 'Start Date')}: {effectiveFilters.startDate}
+              </Badge>
+            )}
+            {effectiveFilters.endDate && (
+              <Badge className="mr-2">
+                {t('endDate', 'End Date')}: {effectiveFilters.endDate}
+              </Badge>
+            )}
+            {effectiveFilters.province && (
+              <Badge className="mr-2">
+                {t('province', 'Province')}: {provinces.find(p => String(p.id ?? p.province_id) === String(effectiveFilters.province))?.province_name_en || effectiveFilters.province}
+              </Badge>
+            )}
+            {effectiveFilters.district && (
+              <Badge className="mr-2">
+                {t('district', 'District')}: {districts.find(d => String(d.id ?? d.district_id) === String(effectiveFilters.district))?.district_name_en || effectiveFilters.district}
+              </Badge>
+            )}
+            {effectiveFilters.school && (
+              <Badge className="mr-2">
+                {t('school', 'School')}: {schools.find(s => String(s.id ?? s.school_id) === String(effectiveFilters.school))?.school_name_en || effectiveFilters.school}
+              </Badge>
+            )}
+            {effectiveFilters.excludeSchoolIdsText && (
+              <Badge className="mr-2">
+                {t('excludedSchoolIds', 'Excluded School IDs')}: {effectiveFilters.excludeSchoolIdsText}
+              </Badge>
+            )}
+          </div>
+        ) 
+        : null}
+
 
         {/* Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
