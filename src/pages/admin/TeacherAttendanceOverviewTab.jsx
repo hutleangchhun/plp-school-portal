@@ -100,37 +100,6 @@ const TeacherAttendanceOverviewTab = ({
           fetchSchools={fetchMonthlySchools}
         />
       )}
-
-      {/* Filter Button for Teacher Tab */}
-      <div className="flex gap-2 mb-6">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onSidebarOpen}
-          className="flex items-center gap-2"
-        >
-          <Filter className="h-4 w-4" />
-          {t('filters', 'Filters')}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            const { startDate, endDate } = getCurrentMonthRange();
-            onMonthlyFiltersClear({
-              startDate,
-              endDate,
-              province: '',
-              district: '',
-              school: ''
-            });
-          }}
-          className="flex items-center gap-2"
-        >
-          <RefreshCcw className="h-4 w-4" />
-          {t('reset', 'Reset')}
-        </Button>
-      </div>
     </>
   );
 };

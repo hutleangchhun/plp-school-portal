@@ -3,6 +3,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { X, Users, School, TrendingUp } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/card';
+import StatsCard from '../ui/StatsCard';
 
 /**
  * School Attendance Detail Modal
@@ -74,30 +75,19 @@ const SchoolAttendanceDetailModal = ({ isOpen, onClose, school }) => {
           {/* Content */}
           <div className="p-6">
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
               {stats.map((stat, index) => {
                 const Icon = stat.icon;
                 return (
-                  <Card
-                    key={index}
-                    className={`bg-gradient-to-br ${stat.bgGradient} border-0`}
-                  >
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-gray-600 mb-2">
-                            {stat.label}
-                          </p>
-                          <p className="text-3xl font-bold text-gray-900">
-                            {stat.value.toLocaleString()}
-                          </p>
-                        </div>
-                        <div className={`p-3 rounded-lg bg-gradient-to-br ${stat.gradient}`}>
-                          <Icon className="h-6 w-6 text-white" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <StatsCard 
+                      title={stat.label}
+                      value={stat.value}
+                      icon={Icon}
+                      gradientFrom="from-blue-500"
+                      gradientTo="to-blue-600"
+                      hoverColor="hover:border-blue-200"
+                      responsive={true}
+                  />
                 );
               })}
             </div>
