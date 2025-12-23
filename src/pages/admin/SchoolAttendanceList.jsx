@@ -424,7 +424,7 @@ const SchoolAttendanceList = () => {
                 }));
                 fetchSchools(1, newLimit);
               }}
-              limitOptions={[10, 20, 50, 100]}
+              limitOptions={[10, 20, 50]}
               showLimitSelector={true}
               t={t}
               showFirstLast={true}
