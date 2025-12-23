@@ -210,6 +210,10 @@ export const en = {
   teachers: 'Teachers',
   manageTeacherRecords: 'Manage teacher records for your school',
   createTeacher: 'Create Teacher',
+  toolDistribution: 'Extra Learning Tool Distribution',
+  extraLearningTools: 'Extra Learning Tools',
+  teacherDistribution: 'ការបែងចែកស្ថិតិប្រភេទក្របខ័ណ្ឌ',
+  teacherEmploymentTypes: 'Teacher Employment Types',
 
   // Parent Management
   parents: 'Parents',

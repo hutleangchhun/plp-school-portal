@@ -275,7 +275,7 @@ const SystemWideStudentStats = ({
   if (loading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="border border-gray-200 shadow-sm rounded-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -289,7 +289,7 @@ const SystemWideStudentStats = ({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-gray-200 shadow-sm rounded-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Accessibility className="h-5 w-5" />
@@ -434,7 +434,7 @@ const SystemWideStudentStats = ({
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Ethnic Group Distribution Chart */}
-      <Card>
+      <Card className="border border-gray-200 shadow-sm rounded-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {t('ethnicGroupDistribution', 'Ethnic Group Distribution')}
@@ -475,7 +475,7 @@ const SystemWideStudentStats = ({
       </Card>
 
       {/* Accessibility Needs Chart */}
-      <Card>
+      <Card className="border border-gray-200 shadow-sm rounded-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {t('accessibilityNeeds', 'Accessibility Needs')}

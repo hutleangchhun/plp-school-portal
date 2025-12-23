@@ -154,9 +154,11 @@ const TeacherOverviewDashboard = () => {
 
   // Prepare role options with Students at the top
   const allRoleOptions = [
-    { value: '9', label: t('students', 'Students') },
-    { value: '8', label: t('teachers', 'Teachers') },
-    ...roleOptions.filter(r => r.value !== '8').map(role => ({ value: role.value, label: role.label }))
+    { value: "9", label: t("students", "Students") },
+    { value: "8", label: t("teachers", "Teachers") },
+    ...roleOptions
+      .filter((r) => r.value !== "8")
+      .map((role) => ({ value: role.value, label: role.label })),
   ];
 
   // Memoize filters object to prevent recreating on every render
@@ -181,45 +183,46 @@ const TeacherOverviewDashboard = () => {
   }
 
   return (
-    <PageTransition variant="fade" className="flex-1 bg-gray-50">
-      <div className="p-3 sm:p-6">
+    <PageTransition variant="fade" className="flex-1 bg-gray-50 p-3 sm:p-4">
+      <div className="p-4 sm:p-6">
         {/* Header */}
         <FadeInSection delay={100} className="mb-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center justify-between gap-3">
+          <div className="">
+            <div className="flex items-center justify-between gap-5">
               <div>
                 <h1 className="text-xl font-bold text-gray-900">
                   {t("teacherOverview", "Teacher Overview")}
                 </h1>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 mt-1">
                   {t(
                     "teacherOverviewDesc",
                     "View all teachers data distribution in the system"
                   )}
                 </p>
               </div>
-              <div>
-                <Button
-                  onClick={handleOpenFilterSidebar}
-                  variant="primary"
-                  size="sm"
-                >
-                  <ListFilter className="h-5 w-5 mr-2" />
-                  {t("filters", "Filters")}
-                  {(selectedProvince || selectedDistrict || selectedSchool || selectedRole !== '8') && (
-                    <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-white text-blue-600 rounded-full">
-                      {
-                        [
-                          selectedProvince,
-                          selectedDistrict,
-                          selectedSchool,
-                          selectedRole !== '8' ? selectedRole : null,
-                        ].filter(Boolean).length
-                      }
-                    </span>
-                  )}
-                </Button>
-              </div>
+              <Button
+                onClick={handleOpenFilterSidebar}
+                variant="primary"
+                size="sm"
+              >
+                <ListFilter className="h-5 w-5 mr-2" />
+                {t("filters", "Filters")}
+                {(selectedProvince ||
+                  selectedDistrict ||
+                  selectedSchool ||
+                  selectedRole !== "8") && (
+                  <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-white text-blue-600 rounded-full">
+                    {
+                      [
+                        selectedProvince,
+                        selectedDistrict,
+                        selectedSchool,
+                        selectedRole !== "8" ? selectedRole : null,
+                      ].filter(Boolean).length
+                    }
+                  </span>
+                )}
+              </Button>
             </div>
           </div>
         </FadeInSection>
@@ -229,9 +232,17 @@ const TeacherOverviewDashboard = () => {
           isOpen={isFilterSidebarOpen}
           onClose={handleCloseSidebar}
           title={t("filters", "Filters")}
-          subtitle={t("filterDescription", "Select location and role to filter data")}
+          subtitle={t(
+            "filterDescription",
+            "Select location and role to filter data"
+          )}
           hasFilters={
-            !!(selectedProvince || selectedDistrict || selectedSchool || selectedRole !== '8')
+            !!(
+              selectedProvince ||
+              selectedDistrict ||
+              selectedSchool ||
+              selectedRole !== "8"
+            )
           }
           onClearFilters={handleReset}
           onApply={handleApplyFilters}

@@ -20,6 +20,7 @@ import {
 } from "recharts";
 import { Users } from "lucide-react";
 import DynamicLoader from "../ui/DynamicLoader";
+import StatsCard from "../ui/StatsCard";
 
 const colors = [
   "#3b82f6",
@@ -122,34 +123,30 @@ const TeacherEmploymentTypeTab = ({ filters }) => {
       {/* Stats Summary */}
       {employmentStats && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="border border-gray-200 shadow-sm rounded-md">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">
-                {t("totalTeachers", "Total Teachers")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-600">
-                {employmentStats.overall?.totalTeachers || 0}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border border-gray-200 shadow-sm rounded-md">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">
-                {t("employmentTypes", "Employment Types")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-600">
-                {Object.keys(employmentStats.employmentTypeCounts || {}).length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatsCard
+            title={t("totalTeachers", "Total Teachers")}
+            value={employmentStats.overall?.totalTeachers || 0}
+            iconBgColor="bg-blue-100"
+            iconColor="text-blue-600"
+            valueColor="text-blue-600"
+            enhanced
+            responsive
+          />
+          
+          <StatsCard
+            title={t("employmentTypes", "Employment Types")}
+            value={
+              Object.keys(employmentStats.employmentTypeCounts || {}).length
+            }
+            iconBgColor="bg-green-100"
+            iconColor="text-green-600"
+            valueColor="text-green-600"
+            hoverColor="hover:border-green-300"
+            enhanced
+            responsive
+          />
         </div>
       )}
-
       <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Chart */}
         {chartData.length > 0 && (

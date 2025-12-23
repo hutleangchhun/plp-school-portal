@@ -150,11 +150,11 @@ const StudentDemographicsDashboard = () => {
   }
 
   return (
-    <PageTransition variant="fade" className="flex-1 bg-gray-50">
-      <div className="p-3 sm:p-6">
+    <PageTransition variant="fade" className="flex-1 bg-gray-50 p-3 sm:p-4">
+      <div className="p-4 sm:p-6">
         {/* Header */}
         <FadeInSection delay={100} className="mb-6">
-          <div className="flex items-center justify-between gap-4">
+          <div className="">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h1 className="text-xl font-bold text-gray-900">
@@ -262,7 +262,7 @@ const StudentDemographicsDashboard = () => {
 
         {/* Student Demographics */}
         <FadeInSection delay={300} className="mb-6">
-          <Card className="border border-gray-200 shadow-sm rounded-md">
+          <Card className="border border-gray-200 shadow-sm rounded-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-semibold">
                 {t("studentDemographics", "Student Demographics")}

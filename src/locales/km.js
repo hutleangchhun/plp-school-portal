@@ -343,6 +343,11 @@ export const km = {
   teacherNumberAvailable: 'អត្តលេខមន្ត្រីរាជការអាចប្រើប្រាស់បាន',
   teacherBooks: 'ជ្រើសរើសសៀវភៅសម្រាប់គ្រួ',
   enterTeacherNumber: 'អត្តលេខមន្ត្រីរាជការ',
+  toolDistribution: 'ការបែងចែកស្ថិតិសម្ភារៈជួយសិស្ស',
+  extraLearningTools: 'កញ្ចប់សម្ភារៈជួយសិស្ស',
+  teacherDistribution: 'ការបែងចែកស្ថិតិប្រភេទក្របខ័ណ្ឌ',
+  ethnicGroupDistribution: 'ការបែងចែកស្ថិតិជនជាតិ',
+  accessibilityNeeds: 'ការបែងចែកស្ថិតិប្រភេទពការភាព',
 
 
 
@@ -1765,14 +1770,14 @@ export const km = {
   create: 'បង្កើត',
   noEthnicGroupData: 'មិនមានទិន្នន័យជនជាតិ',
   noAccessibilityData: 'មិនមានទិន្នន័យពិការភាព',
-  studentDemographics: 'ប្រជាសាស្ត្រសិស្ស',
+  studentDemographics: 'ព័ត៏មានសិស្ស',
   viewStudentDemographics: 'មើលជនជាតិ និងតម្រូវការពិការភាពរបស់សិស្សនៅគ្រប់សាលារៀនទាំងអស់',
   userDemographics: 'ប្រជាសាស្ត្រអ្នកប្រើប្រាស់',
   viewUserDemographics: 'មើលជនជាតិ និងតម្រូវការពិការភាពរបស់អ្នកប្រើប្រាស់នៅគ្រប់សាលារៀនទាំងអស់',
   selectRole: 'ជ្រើសរើសតួនាទី',
   filterByRole: 'ជ្រើសរើសតួនាទីដើម្បីតម្រងទិន្នន័យប្រជាសាស្ត្រ',
   searchRole: 'ស្វែងរកតួនាទី...',
-  teacherDemographics: 'ប្រជាសាស្ត្រគ្រូបង្រៀន',
+  teacherDemographics: 'ស្ថិតិជនជាតិភាគតិច និង ប្រភេទពិការភាព',
   viewTeacherDemographics: 'មើលជនជាតិ និងតម្រូវការពិការភាពរបស់គ្រូបង្រៀននៅគ្រប់សាលារៀនទាំងអស់',
   activeFilters: 'តម្រងបានជ្រើសរើស',
   perPage: 'មួយទំព័រ',
