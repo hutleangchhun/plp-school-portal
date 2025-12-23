@@ -750,5 +750,49 @@ export const dashboardService = {
         data: []
       };
     }
+  },
+
+  /**
+   * Get user registration statistics for dashboard
+   * Wraps /dashboard/users/registration-stats
+   * @param {Object} params - Filter parameters
+   * @param {number} [params.roleId] - Role ID to filter by (e.g. 9 for students)
+   * @param {string|number} [params.gradeLevel] - Grade level enum value (e.g. 0 for all)
+   * @param {string} [params.startDate] - Start date (YYYY-MM-DD)
+   * @param {string} [params.endDate] - End date (YYYY-MM-DD)
+   * @param {number[]} [params.excludeSchoolIds] - List of school IDs to exclude
+   * @param {number} [params.provinceId] - Province ID (optional)
+   * @param {number} [params.districtId] - District ID (optional)
+   * @param {number} [params.schoolId] - School ID (optional - omit for all schools)
+   * @returns {Promise<Object>} Registration stats response
+   */
+  async getUserRegistrationStats(params = {}) {
+    try {
+      const queryParams = {};
+
+      if (params.roleId != null) queryParams.roleId = params.roleId;
+      if (params.gradeLevel != null) queryParams.gradeLevel = params.gradeLevel;
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.provinceId) queryParams.provinceId = params.provinceId;
+      if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+      if (Array.isArray(params.excludeSchoolIds) && params.excludeSchoolIds.length > 0) {
+        queryParams.excludeSchoolIds = params.excludeSchoolIds.join(',');
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.DASHBOARD.USER_REGISTRATION_STATS, { params: queryParams })
+      );
+
+      return response;
+    } catch (error) {
+      console.error('❌ Error in getUserRegistrationStats:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch user registration stats',
+        data: null
+      };
+    }
   }
 };

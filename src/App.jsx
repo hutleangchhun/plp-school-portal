@@ -15,6 +15,7 @@ import BMIReport from './pages/admin/BMIReport';
 import AttendanceOverview from './pages/admin/AttendanceOverview';
 import SchoolAttendanceList from './pages/admin/SchoolAttendanceList';
 import TeacherOverviewDashboard from './pages/admin/TeacherOverviewDashboard';
+import UserRegistrationDashboard from './pages/admin/UserRegistrationDashboard';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -258,6 +259,15 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<TeacherOverviewDashboard />} />
+          </Route>
+
+          {/* Admin User Registration Dashboard route - role ID 1 only (enforced by routePermissions) */}
+          <Route path="admin/user-registration" element={
+            <ProtectedRoute path="/admin/user-registration" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<UserRegistrationDashboard />} />
           </Route>
 
           <Route path="students" element={

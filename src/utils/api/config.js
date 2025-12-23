@@ -193,6 +193,7 @@ const ENDPOINTS = {
   DASHBOARD: {
     BASE: '/dashboard',
     SCHOOL_BMI: (schoolId) => `/dashboard/school/${schoolId}/bmi`,
+    USER_REGISTRATION_STATS: '/dashboard/users/registration-stats',
   },
   USER_ACTIVITY_LOGS: {
     BASE: '/user-activity-logs',
