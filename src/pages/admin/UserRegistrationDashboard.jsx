@@ -223,8 +223,8 @@ const UserRegistrationDashboard = () => {
     !!filters.school;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      <div className="p-3 sm:p-4">
         {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
