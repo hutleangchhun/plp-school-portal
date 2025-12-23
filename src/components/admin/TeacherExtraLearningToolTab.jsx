@@ -21,6 +21,7 @@ import {
 import { Users } from "lucide-react";
 import DynamicLoader from "../ui/DynamicLoader";
 import StatsCard from "../ui/StatsCard";
+import CustomTooltip from "../ui/TooltipChart";
 
 const colors = [
   "#3b82f6",
@@ -160,19 +161,24 @@ const TeacherExtraLearningToolTab = ({ filters }) => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="w-full h-96">
+              <div className="w-full" style={{ height: '280px' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={toolChartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                  <BarChart data={toolChartData} margin={{ top: 10, right: 10, left: 10, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                     <XAxis
                       dataKey="name"
-                      angle={-45}
+                      tick={{ fontSize: 11 }}
+                      angle={360}
                       textAnchor="end"
-                      height={80}
+                      height={10}
+                      interval={0}
                     />
-                    <YAxis />
-                    <Tooltip formatter={(value) => value.toLocaleString()} />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]}>
+                    <YAxis type="number" tick={{ fontSize: 12 }} />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
+                      content={<CustomTooltip />}
+                    />
+                    <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={32}>
                       {toolChartData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}

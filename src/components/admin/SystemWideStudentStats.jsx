@@ -451,9 +451,9 @@ const SystemWideStudentStats = ({
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={ethnicGroupData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false}/>
                 <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={120} />
+                <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 12 }} />
                 <Tooltip
                   cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
                   contentStyle={{
@@ -492,9 +492,9 @@ const SystemWideStudentStats = ({
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={accessibilityData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                 <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={150} />
+                <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
                 <Tooltip
                   cursor={{ fill: 'rgba(16, 185, 129, 0.1)' }}
                   contentStyle={{

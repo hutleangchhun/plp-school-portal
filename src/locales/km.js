@@ -347,7 +347,7 @@ export const km = {
   extraLearningTools: 'កញ្ចប់សម្ភារៈជួយសិស្ស',
   teacherDistribution: 'ការបែងចែកស្ថិតិប្រភេទក្របខ័ណ្ឌ',
   ethnicGroupDistribution: 'ការបែងចែកស្ថិតិជនជាតិ',
-  accessibilityNeeds: 'ការបែងចែកស្ថិតិប្រភេទពការភាព',
+  accessibilityNeeds: 'ការបែងចែកស្ថិតិប្រភេទពិការភាព',
 
 
 
