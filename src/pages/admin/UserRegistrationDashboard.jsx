@@ -9,7 +9,7 @@ import schoolService from '../../utils/api/services/schoolService';
 import StatsCard from '../../components/ui/StatsCard';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Users, Filter, Calendar, BarChart3 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { roleOptions, gradeLevelOptions } from '../../utils/formOptions';
 import { DatePickerWithDropdowns } from '@/components/ui/date-picker-with-dropdowns';
