@@ -94,6 +94,7 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
     }
 
     // Prepare export data with calendar layout
+    console.log('Export teachers data:', teachers);
     const exportData = teachers.map((teacher, index) => {
       const teacherUserId = Number(teacher.id);
       const row = {
