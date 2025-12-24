@@ -177,4 +177,31 @@ export const teacherService = {
             error: response.error
         };
     },
+
+    // Fetch classes for a specific teacher using GET /classes/teacher/:teacherId route
+    // API response format: { message, classes: [...], total, teacherInfo }
+    getTeacherClasses: async (teacherId) => {
+        const response = await handleApiResponse(() =>
+            apiClient_.get(ENDPOINTS.TEACHERS.CLASSES(teacherId))
+        );
+
+        console.log('getTeacherClasses - Full response:', response);
+
+        // Extract data from response
+        // handleApiResponse wraps the response, so response.data contains the actual API response
+        const apiResponse = response?.data;
+        console.log('getTeacherClasses - API response data:', apiResponse);
+
+        // Classes are in apiResponse.classes property
+        const classes = apiResponse?.classes && Array.isArray(apiResponse.classes) ? apiResponse.classes : [];
+        console.log('getTeacherClasses - Extracted classes:', classes);
+
+        return {
+            success: response.success,
+            data: classes,
+            total: apiResponse?.total || classes.length,
+            teacherInfo: apiResponse?.teacherInfo,
+            error: response.error
+        };
+    },
 };

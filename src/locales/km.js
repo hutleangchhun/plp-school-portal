@@ -351,7 +351,7 @@ export const km = {
   teacherDistribution: 'ការបែងចែកស្ថិតិប្រភេទក្របខ័ណ្ឌ',
   ethnicGroupDistribution: 'ការបែងចែកស្ថិតិជនជាតិ',
   accessibilityNeeds: 'ការបែងចែកស្ថិតិប្រភេទពិការភាព',
-
+  currentClassesTeaching: 'ថ្នាក់ដែលកំពុងបង្រៀន',
 
 
 

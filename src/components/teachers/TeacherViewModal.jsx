@@ -6,11 +6,13 @@ import { Badge } from '../ui/Badge';
 import ProfileImage from '../ui/ProfileImage';
 import { Button } from '../ui/Button';
 import { formatDateKhmer, genderToKhmer, calculateExperience } from '../../utils/formatters';
+import { formatClassIdentifier } from '../../utils/helpers';
 import { userService } from '../../utils/api/services/userService';
 import salaryTypeService from '../../utils/api/services/salaryTypeService';
 import { bookService } from '../../utils/api/services/bookService';
 import { subjectService } from '../../utils/api/services/subjectService';
-import { apiClient_, handleApiResponse } from '../../utils/api/client.js';
+import { teacherService } from '../../utils/api/services/teacherService';
+import { handleApiResponse } from '../../utils/api/client.js';
 import { getGradeLabel } from '../../constants/grades';
 import { useState, useEffect } from 'react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -29,6 +31,8 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
   const [loadingBooks, setLoadingBooks] = useState(false);
   const [bookCategories, setBookCategories] = useState([]);
   const [subjects, setSubjects] = useState([]);
+  const [teacherClasses, setTeacherClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
 
   // Fetch categories and subjects on mount
   useEffect(() => {
@@ -149,6 +153,49 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
       fetchBooksByIds(src.bookIds);
     }
   }, [isOpen, fullTeacherData, teacher?.bookIds]);
+
+  // Fetch teacher's classes when modal opens
+  useEffect(() => {
+    const fetchTeacherClasses = async () => {
+      const src = fullTeacherData || teacher;
+      // IMPORTANT: Use teacherId from the teacher object, not the user ID
+      // fullTeacherData might have id as userId, so we need teacherId from original teacher prop
+      const teacherId = teacher?.teacherId || src?.teacherId || teacher?.id;
+
+      if (!isOpen || !teacherId) {
+        setTeacherClasses([]);
+        return;
+      }
+
+      try {
+        setLoadingClasses(true);
+        console.log('🎓 TeacherViewModal - Fetching classes for teacher ID:', teacherId);
+
+        const response = await teacherService.getTeacherClasses(teacherId);
+
+        console.log('🎓 TeacherViewModal - Teacher classes response:', response);
+        console.log('🎓 TeacherViewModal - Response success:', response.success);
+        console.log('🎓 TeacherViewModal - Response data:', response.data);
+        console.log('🎓 TeacherViewModal - Is data an array?', Array.isArray(response.data));
+
+        if (response.success && response.data) {
+          const classesArray = Array.isArray(response.data) ? response.data : [];
+          console.log('🎓 TeacherViewModal - Setting classes array with', classesArray.length, 'items');
+          setTeacherClasses(classesArray);
+        } else {
+          console.log('🎓 TeacherViewModal - Response not successful or no data');
+          setTeacherClasses([]);
+        }
+      } catch (error) {
+        console.error('🎓 TeacherViewModal - Error fetching teacher classes:', error);
+        setTeacherClasses([]);
+      } finally {
+        setLoadingClasses(false);
+      }
+    };
+
+    fetchTeacherClasses();
+  }, [isOpen, teacher?.teacherId, teacher?.id]);
 
   const fetchBooksByIds = async (bookIds) => {
     setLoadingBooks(true);
@@ -925,6 +972,65 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             </div>
           </div>
         )}
+
+        {/* Current Classes Teaching (from API) */}
+        {teacherClasses.length > 0 || loadingClasses ? (
+          <div className="border-t pt-4">
+            <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
+              <div className='bg-blue-500 p-2 rounded-sm'>
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="ml-2">
+                {t('currentClassesTeaching', 'Current Classes Teaching')}
+              </div>
+            </div>
+            {loadingClasses ? (
+              <div className="flex items-center justify-center py-8">
+                <LoadingSpinner size="sm" variant="primary">
+                  {t('loading', 'Loading...')}
+                </LoadingSpinner>
+              </div>
+            ) : teacherClasses.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {teacherClasses.map((classItem, index) => (
+                  <div
+                    key={classItem.classId || index}
+                    className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 truncate">
+                          {classItem.name || `${classItem.gradeLevel}${classItem.section}`}
+                        </h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {t('gradeLevel', 'Grade Level')}: {getGradeLabel(String(classItem.gradeLevel), t)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">{t('class', 'Class')}:</span>
+                        <span className="text-gray-900 font-medium">
+                          {formatClassIdentifier(classItem.gradeLevel, classItem.section)}
+                        </span>
+                      </div>
+                      {classItem.maxStudents && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">{t('maxStudents', 'Max Students')}:</span>
+                          <span className="text-gray-900 font-medium">{classItem.maxStudents}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+                {t('noClasses', 'No classes found')}
+              </div>
+            )}
+          </div>
+        ) : null}
 
         {/* Accessibility Information */}
         {displayTeacher.accessibility && displayTeacher.accessibility.length > 0 && (
