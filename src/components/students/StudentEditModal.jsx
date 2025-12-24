@@ -18,7 +18,7 @@ import BookSelectionModal from '../modals/BookSelectionModal';
 import SelectedBooksDisplay from '../modals/SelectedBooksDisplay';
 import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
-import { gradeLevelOptions, ethnicGroupOptions, accessibilityOptions, getAcademicYearOptions, poorCardGradeOptions, extraLearningStatusOptions } from '../../utils/formOptions';
+import { gradeLevelOptions, ethnicGroupOptions, accessibilityOptions, getAcademicYearOptions, poorCardGradeOptions, extraLearningStatusOptions, extraLearningProvidedByOptions } from '../../utils/formOptions';
 import { utils } from '../../utils/api';
 
 const StudentEditModal = () => {
@@ -1410,8 +1410,7 @@ const StudentEditModal = () => {
                         <Dropdown
                           options={[
                             { value: '', label: t('selectOption', 'ជ្រើសរើស') },
-                            { value: 'មាតាបិតាទិញឱ្យ', label: 'មាតាបិតាទិញឱ្យ' },
-                            { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
+                            ...extraLearningProvidedByOptions
                           ]}
                           value={reading.providedBy || ''}
                           onValueChange={(value) => {
@@ -1521,8 +1520,7 @@ const StudentEditModal = () => {
                         <Dropdown
                           options={[
                             { value: '', label: t('selectOption', 'ជ្រើសរើស') },
-                            { value: 'មាតាបិតាទិញឱ្យ', label: 'មាតាបិតាទិញឱ្យ' },
-                            { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
+                            ...extraLearningProvidedByOptions
                           ]}
                           value={math.providedBy || ''}
                           onValueChange={(value) => {

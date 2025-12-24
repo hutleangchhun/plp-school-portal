@@ -334,6 +334,12 @@ export const extraLearningStatusOptions = [
   { value: 'old', label: 'មានពីឆ្នាំសិក្សាចាស់' }
 ];
 
+// Extra Learning Tool provided by options (used for reading material and math grade 1 packages)
+export const extraLearningProvidedByOptions = [
+  { value: 'មាតាបិតាទិញឱ្យ', label: 'មាតាបិតាទិញឱ្យ' },
+  { value: 'សាលាផ្តល់ជូន', label: 'សាលាផ្តល់ជូន' }
+];
+
 // Academic Year options (dynamically generated based on current year)
 export const getAcademicYearOptions = () => {
   const currentYear = new Date().getFullYear();
