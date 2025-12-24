@@ -99,7 +99,7 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
       const row = {
         'ល.រ': index + 1,
         'អត្តលេខ': teacher.teacherNumber || teacher.teacher_number || teacher.id || '',
-        'ឈ្មោះ': getFullName(teacher),
+        'ឈ្មោះ': teacher.name || getFullName(teacher),
       };
 
       let absentCount = 0;
