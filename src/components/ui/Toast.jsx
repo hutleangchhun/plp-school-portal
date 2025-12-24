@@ -61,7 +61,7 @@ export default function ToastComponent({
       duration={duration}
       className={`
         ${config.bgColor} ${config.borderColor} ${config.textColor}
-        border rounded-lg shadow-lg p-3 sm:p-4 w-full max-w-xs sm:max-w-md pointer-events-auto mx-2 sm:mx-0
+        border rounded-sm shadow-lg p-3 sm:p-4 w-full max-w-xs sm:max-w-md pointer-events-auto mx-2 sm:mx-0
         backdrop-blur-sm transition-all duration-500 ease-out
         data-[state=open]:animate-in data-[state=closed]:animate-out
         data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)]
@@ -84,7 +84,7 @@ export default function ToastComponent({
         <div className="ml-1 sm:ml-2 flex-shrink-0 flex">
           <Toast.Close asChild>
             <button
-              className={`rounded-full inline-flex ${config.textColor} hover:bg-gray-200 hover:${config.iconColor} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 p-0.5 sm:p-1 border border-transparent hover:border-gray-300`}
+              className={`rounded-full inline-flex ${config.textColor} hover:scale-150 hover:${config.iconColor} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 p-0.5 sm:p-1 border border-transparent`}
               title={t('closeNotification')}
               aria-label={t('closeNotification')}
             >

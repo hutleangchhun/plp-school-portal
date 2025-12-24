@@ -46,6 +46,8 @@ export default function Dashboard({ user: initialUser }) {
     totalWorkshop: 0,
     totalSecurity: 0,
     totalTeacherIct: 0,
+    totalStudentsCount: 0,
+    studentsNoClassCount: 0,
   });
   const [schoolInfo, setSchoolInfo] = useState(null);
   const [schoolImageError, setSchoolImageError] = useState(false);
@@ -203,6 +205,8 @@ export default function Dashboard({ user: initialUser }) {
                 totalWorkshop: schoolData.schoolWorkshopCount || 0,
                 totalSecurity: schoolData.schoolSecurityCount || 0,
                 totalTeacherIct: schoolData.teacherIctCount || 0,
+                totalStudentsCount: schoolData.totalStudentsCount || 0,
+                studentsNoClassCount: schoolData.studentsNoClassCount || 0,
               });
 
               console.log(
@@ -297,6 +301,8 @@ export default function Dashboard({ user: initialUser }) {
             totalWorkshop: 0,
             totalSecurity: 0,
             totalTeacherIct: 0,
+            totalStudentsCount: 0,
+            studentsNoClassCount: 0,
           });
         }
       }
@@ -385,7 +391,8 @@ export default function Dashboard({ user: initialUser }) {
                     </div>
                     <div>
                       <h2 className="text-xl font-bold text-gray-900 mb-1">
-                        {schoolInfo.name || t("schoolInformation", "School Information")}
+                        {schoolInfo.name ||
+                          t("schoolInformation", "School Information")}
                       </h2>
                       <p className="text-sm text-gray-500">
                         {t("welcomeToDashboard", "Welcome To Dashboard")}
@@ -446,7 +453,8 @@ export default function Dashboard({ user: initialUser }) {
                         {t("projectType", "Project Type")}
                       </p>
                       <p className="text-base font-medium text-gray-900">
-                        {schoolInfo.projectType.name || schoolInfo.projectType.description}
+                        {schoolInfo.projectType.name ||
+                          schoolInfo.projectType.description}
                       </p>
                     </div>
                   )}
@@ -459,11 +467,12 @@ export default function Dashboard({ user: initialUser }) {
                       </p>
                       <p className="text-base font-medium text-gray-900 break-words">
                         {(() => {
-                          const placeData = schoolInfo.place || schoolInfo.placeObject;
-                          if (typeof placeData === 'string') {
+                          const placeData =
+                            schoolInfo.place || schoolInfo.placeObject;
+                          if (typeof placeData === "string") {
                             return placeData;
                           }
-                          if (placeData && typeof placeData === 'object') {
+                          if (placeData && typeof placeData === "object") {
                             return [
                               placeData.commune_name_kh,
                               placeData.district_name_kh,
@@ -472,7 +481,7 @@ export default function Dashboard({ user: initialUser }) {
                               .filter(Boolean)
                               .join(", ");
                           }
-                          return '';
+                          return "";
                         })()}
                       </p>
                     </div>
@@ -504,7 +513,7 @@ export default function Dashboard({ user: initialUser }) {
 
               <StatsCard
                 title={t("totalStudents") || "Total Students"}
-                value={schoolStats.totalStudents}
+                value={`${schoolStats.totalStudents} / ${schoolStats.totalStudentsCount}`}
                 enhanced={true}
                 gradientFrom="from-green-500"
                 gradientTo="to-green-600"

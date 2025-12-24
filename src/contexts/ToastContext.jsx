@@ -25,7 +25,8 @@ export const ToastProvider = ({ children }) => {
       isVisible: true
     };
 
-    setToasts(prev => [...prev, toast]);
+    // Clear previous toasts and show only the new one
+    setToasts([toast]);
     return id;
   }, []);
 

@@ -78,18 +78,29 @@ export default function Login({ setUser }) {
         // Handle error response from authService
         let errorMessage = response.error || utils.auth.getErrorMessage(response, t);
 
-        // Use translation if error matches known message
-        if (errorMessage.includes('Only authorized users')) {
+        console.log('📊 Login error response:', { response, errorMessage });
+
+        // Use translation if error matches known message (case-insensitive)
+        const msgLower = errorMessage?.toLowerCase() || '';
+        if (msgLower.includes('only authorized users')) {
           errorMessage = t('unauthorizedAccess', 'Only authorized users can access this portal. Please contact your administrator.');
+        } else if (msgLower.includes('no response') || msgLower.includes('service unavailable') || msgLower.includes('cannot connect')) {
+          errorMessage = t('networkError', 'Network Error. Please check your internet connection and try again.');
+        } else if (msgLower.includes('invalid') && (msgLower.includes('username') || msgLower.includes('password') || msgLower.includes('credentials'))) {
+          errorMessage = t('invalidUsernameAndPassword', 'Invalid Username And Password');
         }
 
         showError(errorMessage);
       }
     } catch (err) {
       const errorMessage = utils.auth.getErrorMessage(err, t);
+      // Show connection/network errors as toast, not error display
+      const isAuthError = err.response?.status === 401;
+      const isNetworkError = !err.response; // No response means network/connection error
+
       handleError(err, {
         toastMessage: errorMessage,
-        setError: err.response?.status === 401 ? false : true // Don't show error display for auth errors, just toast
+        setError: !isAuthError && !isNetworkError // Only show error display for server errors
       });
       console.error('Login error:', err);
     } finally {
@@ -133,9 +144,19 @@ export default function Login({ setUser }) {
         // Handle error response from authService
         let errorMessage = response.error || utils.auth.getErrorMessage(response, t);
 
-        // Use translation if error matches known message
-        if (errorMessage.includes('Only authorized users')) {
+        console.log('📊 Account selection error response:', { response, errorMessage });
+
+        // Use translation if error matches known message (case-insensitive)
+        const msgLower = errorMessage?.toLowerCase() || '';
+        if (msgLower.includes('only authorized users')) {
           errorMessage = t('unauthorizedAccess', 'Only authorized users can access this system');
+        } else if (msgLower.includes('no response') || msgLower.includes('service unavailable') || msgLower.includes('cannot connect')) {
+          errorMessage = t('networkError', 'Network Error. Please check your internet connection and try again.');
+        } else if (msgLower.includes('invalid') && (msgLower.includes('username') || msgLower.includes('password') || msgLower.includes('credentials'))) {
+          errorMessage = t('invalidUsernameAndPassword', 'Invalid Username And Password');
+        } else if (msgLower.includes('bad request') || msgLower.includes('property') || msgLower.includes('must be')) {
+          // Handle validation errors from the API
+          errorMessage = t('invalidUsernameAndPassword', 'Invalid Username And Password');
         }
 
         showError(errorMessage);
@@ -316,7 +337,7 @@ export default function Login({ setUser }) {
               variant="primary"
               disabled={!selectedAccountId || loading}
             >
-              {loading ? t('signingIn', 'Signing in...') : t('continue', 'Continue')}
+              {loading ? t('signingIn', 'Signing in...') : t('signIn', 'Sign In')}
             </Button>
           </div>
         }
@@ -326,15 +347,15 @@ export default function Login({ setUser }) {
             {t('multipleAccountsMessage', 'Multiple accounts found. Please select one to continue.')}
           </p>
 
-          <div className="space-y-2 grid grid-cols-2 gap-4 overflow-y-auto">
+          <div className="space-y-2 grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4 overflow-y-auto">
             {availableAccounts.map((account) => (
               <div
                 key={account.id}
                 onClick={() => setSelectedAccountId(account.id)}
                 className={`
-                  p-4 border-2 rounded-lg cursor-pointer transition-all
+                  p-4 border rounded-sm cursor-pointer transition-all
                   ${selectedAccountId === account.id
-                    ? 'border-blue-500 bg-blue-50'
+                    ? 'border-blue-500'
                     : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }
                 `}
@@ -343,7 +364,7 @@ export default function Login({ setUser }) {
                   {/* Radio button indicator */}
                   <div className="flex-shrink-0 mt-1">
                     <div className={`
-                      w-5 h-5 rounded-full border-2 flex items-center justify-center
+                      w-4 h-4 rounded-full border-2 flex items-center justify-center
                       ${selectedAccountId === account.id
                         ? 'border-blue-500 bg-blue-500'
                         : 'border-gray-300'
@@ -373,9 +394,9 @@ export default function Login({ setUser }) {
                         </Badge>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600">{account.username}</p>
+                    <p className="text-sm text-gray-600">{t('username', 'Username')} {account.username}</p>
                     {account.email && (
-                      <p className="text-xs text-gray-500 mt-1 truncate">{account.email}</p>
+                      <p className="text-sm text-gray-500 mt-1 truncate">{t('email', 'Email')} {account.email}</p>
                     )}
                   </div>
                 </div>

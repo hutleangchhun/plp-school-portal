@@ -268,16 +268,14 @@ export const authService = {
 
   /**
    * Select account after multiple accounts were found
-   * @param {string} accountId - Selected account ID
-   * @param {string} username - Original username from login
+   * @param {string|number} userId - Selected user ID
    * @param {string} password - Original password from login
    * @returns {Promise<Object>} Login response with token and user data
    */
-  selectAccount: async (accountId, username, password) => {
+  selectAccount: async (userId, password) => {
     const response = await handleApiResponse(() =>
       apiClient_.post(ENDPOINTS.AUTH.SELECT_ACCOUNT, {
-        accountId,
-        username,
+        userId: Number(userId),
         password
       })
     );
@@ -444,22 +442,46 @@ export const authUtils = {
    */
   getErrorMessage: (error, t) => {
     const defaultMessage = t('loginFailed', 'បរាជ័យក្នុងការចូល');
-    
+
     if (!error) return defaultMessage;
-    
-    // Handle specific error cases
-    if (error.status === 401) {
+
+    // Handle network/connection errors (no response from server)
+    if (error.code === 'ECONNABORTED' || error.message === 'timeout of' || error.message?.includes('timeout')) {
+      return t('requestTimeout', 'Request timed out. Please try again.');
+    }
+
+    if (!error.response) {
+      // Network error (no internet or API not reachable)
+      if (error.message?.includes('Network') || error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+        return t('connectionError', 'Connection Error. Please check your internet connection and try again.');
+      }
+      // Generic network error
+      return t('networkError', 'Network Error. Please check your internet connection and try again.');
+    }
+
+    // Handle specific HTTP status codes
+    if (error.response?.status === 401) {
       return t('invalidUsernameAndPassword', 'Invalid username or password');
     }
-    
-    if (error.status === 403) {
+
+    if (error.response?.status === 403) {
       return t('permissionDenied', 'Access denied');
     }
-    
-    if (error.status >= 500) {
+
+    if (error.response?.status >= 500) {
       return t('serverError', 'Server error');
     }
-    
-    return error.message || defaultMessage;
+
+    // Fallback to error message from response or error object
+    const message = error.response?.data?.message || error.message || defaultMessage;
+    console.log('📊 authUtils.getErrorMessage - Raw message:', message);
+
+    // Check if it's a connection/response error message
+    const msgLower = (message || '').toLowerCase();
+    if (msgLower.includes('no response') || msgLower.includes('service unavailable') || msgLower.includes('cannot connect')) {
+      return t('networkError', 'Network Error. Please check your internet connection and try again.');
+    }
+
+    return message;
   }
 };
