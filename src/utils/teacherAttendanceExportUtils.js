@@ -98,7 +98,7 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
       const teacherUserId = Number(teacher.id);
       const row = {
         'ល.រ': index + 1,
-        'អត្តលេខ': teacher.teacherNumber || teacher.teacher_number || teacher.id || '',
+        'អត្តលេខ': teacher.teacherNumber || teacher.teacher_number || '',
         'ឈ្មោះ': teacher.name || getFullName(teacher),
       };
 
