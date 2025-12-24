@@ -98,8 +98,8 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
       const teacherUserId = Number(teacher.id);
       const row = {
         'ល.រ': index + 1,
-        'អត្តលេខ': teacher.id || '',
-        'ឈ្មោះ': getFullName(teacher, teacher.username || ''),
+        'អត្តលេខ': teacher.teacherNumber || teacher.teacher_number || teacher.id || '',
+        'ឈ្មោះ': getFullName(teacher),
       };
 
       let absentCount = 0;
