@@ -14,6 +14,7 @@ import moeysLogo from '../../assets/moeys-logo.png';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { getFullName } from '../../utils/usernameUtils';
+import { trackLogin } from '../../utils/analytics/ga4Analytics';
 
 export default function Login({ setUser }) {
   const { t } = useLanguage();
@@ -67,6 +68,10 @@ export default function Login({ setUser }) {
         // Get fresh user data that authService saved to localStorage (includes latest school_id)
         const freshUser = utils.user.getUserData();
         console.log('Setting user with fresh data from localStorage:', freshUser);
+
+        // Track login event to GA4 with role information
+        trackLogin(freshUser);
+
         setUser(freshUser);
         showSuccess(t('loginSuccessful', 'Login successful!'));
       } else {
@@ -116,6 +121,10 @@ export default function Login({ setUser }) {
 
       if (response.success) {
         const freshUser = utils.user.getUserData();
+
+        // Track login event to GA4 with role information
+        trackLogin(freshUser);
+
         setUser(freshUser);
         showSuccess(t('loginSuccessful', 'Login successful!'));
         setShowAccountSelection(false);
