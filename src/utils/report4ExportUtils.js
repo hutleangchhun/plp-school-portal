@@ -377,17 +377,19 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     templateData.push([...emptyFooterRow]);
     const emptyRowAfterDatesIndex = footerStartRow + 4;
 
-    const signatureRow = [...emptyFooterRow];
-    signatureRow[2] = 'បានឃើញ';
-    signatureRow[33] = 'គ្រូប្រចាំថ្នាក់';
-    templateData.push(signatureRow);
-    const signatureRowIndex = footerStartRow + 5;
+    // Signature row 1: បានឃើញ (Seen/Approved) for នាយកសាលា
+    const signatureRow1 = [...emptyFooterRow];
+    signatureRow1[2] = 'បានឃើញ';
+    signatureRow1[30] = 'នាយកសាលា';
+    templateData.push(signatureRow1);
+    const signatureRow1Index = footerStartRow + 5;
 
-    const positionRow = [...emptyFooterRow];
-    positionRow[2] = 'នាយកសាលា';
-    positionRow[30] = 'គ្រូប្រចាំថ្នាក់';
-    templateData.push(positionRow);
-    const positionRowIndex = footerStartRow + 6;
+    // Signature row 2: បានឃើញ (Seen/Approved) for គ្រូប្រចាំថ្នាក់
+    const signatureRow2 = [...emptyFooterRow];
+    signatureRow2[2] = 'បានឃើញ';
+    signatureRow2[31] = 'គ្រូប្រចាំថ្នាក់';
+    templateData.push(signatureRow2);
+    const signatureRow2Index = footerStartRow + 6;
 
     templateData.push([...emptyFooterRow]);
     templateData.push([...emptyFooterRow]);
@@ -419,8 +421,8 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     // Set row heights for better spacing
     const rowHeights = [];
     for (let i = 0; i < templateData.length; i++) {
-      if (i === signatureRowIndex || i === positionRowIndex) {
-        // Larger height for signature/position rows (with space for signatures)
+      if (i === signatureRow1Index || i === signatureRow2Index) {
+        // Larger height for signature rows (with space for signatures)
         rowHeights.push({ hpt: 50 });
       } else if (i >= summaryRow1Index && i <= summaryRow2Index) {
         // Moderate height for summary rows
@@ -542,7 +544,20 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
             alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
-        } else if (R >= summaryRow1Index && R <= positionRowIndex) {
+        } else if (R === signatureRow1Index) {
+          // Signature row 1: align to start (left)
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            font: { name: 'Khmer OS', sz: 10 }
+          };
+        } else if (R === signatureRow2Index) {
+          // Signature row 2: left aligned for col 2, center aligned for AE section
+          const alignment = C >= 31 ? 'center' : 'left';
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: alignment, wrapText: true },
+            font: { name: 'Khmer OS', sz: 10 }
+          };
+        } else if (R >= summaryRow1Index && R <= signatureRow2Index) {
           // Footer rows styling with proper Khmer font support (center aligned)
           ws[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
@@ -583,11 +598,11 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
       // dateRow1 and dateRow2: Start at column 30 (AD) and span to end
       { s: { r: dateRow1Index, c: 30 }, e: { r: dateRow1Index, c: totalColumns - 1 } },
       { s: { r: dateRow2Index, c: 30 }, e: { r: dateRow2Index, c: totalColumns - 1 } },
-      // signatureRow and positionRow: Column C (2) and span
-      { s: { r: signatureRowIndex, c: 2 }, e: { r: signatureRowIndex, c: 10 } },
-      { s: { r: signatureRowIndex, c: 33 }, e: { r: signatureRowIndex, c: totalColumns - 1 } },
-      { s: { r: positionRowIndex, c: 2 }, e: { r: positionRowIndex, c: 10 } },
-      { s: { r: positionRowIndex, c: 30 }, e: { r: positionRowIndex, c: totalColumns - 1 } },
+      // signatureRow1 and signatureRow2: Column C (2) and Column AD/AE merges
+      { s: { r: signatureRow1Index, c: 2 }, e: { r: signatureRow1Index, c: 10 } },
+      { s: { r: signatureRow1Index, c: 30 }, e: { r: signatureRow1Index, c: totalColumns - 1 } },
+      { s: { r: signatureRow2Index, c: 2 }, e: { r: signatureRow2Index, c: 10 } },
+      { s: { r: signatureRow2Index, c: 31 }, e: { r: signatureRow2Index, c: totalColumns - 1 } },
     ];
 
     // Create workbook
