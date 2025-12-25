@@ -1017,8 +1017,8 @@ export const exportStudentListWithParents = async (
     wsData.push(['ការិយាល័យអប់រំ យុវជន និងកីឡារដ្ឋបាលក្រុង/ស្រុក/ខណ្ឌ..........................']); // Row 3: Office
     wsData.push([`សាលា: ${schoolName}`]); // Row 4: School name
     wsData.push([reportName]); // Row 5: Report title
-    wsData.push([className ? `ថ្នាក់: ${className}` : periodInfo]); // Row 6: Class name or period info
-    wsData.push([className ? periodInfo : '']); // Row 7: Period info (if class is selected) or empty
+    wsData.push([className ? `ថ្នាក់: ${className}` : `ឆ្នាំសិក្សា: ${periodInfo}`]); // Row 6: Class name or academic year
+    wsData.push([className ? `ឆ្នាំសិក្សា: ${periodInfo}` : '']); // Row 7: Academic year (if class is selected) or empty
 
     // Main header row (row 8)
     wsData.push([
@@ -1187,16 +1187,17 @@ export const exportStudentListWithParents = async (
             font: { name: 'Khmer OS', sz: 11, bold: true }
           };
         }
-        // Period info (row 6) or Class name (row 6)
+        // Period info or Class name (row 6)
         else if (R === 6) {
           worksheet[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
         }
-        // Empty row (row 7) - no borders
+        // Academic year info (row 7) - styled like class name row
         else if (R === 7) {
           worksheet[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
         }
@@ -1330,7 +1331,7 @@ export const exportAbsenceReportToExcel = async (
     // Signature row
     const numCols = 9;
     const signatureRow = new Array(numCols).fill('');
-    signatureRow[1] = 'បានឃើើញ'; // Left: Seen by
+    signatureRow[1] = 'បានឃើញ'; // Left: Seen by
     signatureRow[7] = 'គ្រូប្រចាំថ្នាក់'; // Right: Class teacher
     wsData.push(signatureRow);
 
