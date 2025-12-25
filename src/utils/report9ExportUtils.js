@@ -139,8 +139,8 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     // Date row (column F-G merged, center aligned)
     const dateRowIndex = templateData.length;
     const dateRow = [...emptyRow];
-    const currentDate = formatDateKhmer(new Date(), 'short');
-    dateRow[5] = `ថ្ងៃ ${currentDate}`;
+    const currentDate = formatDateKhmer(new Date(), 'formal');
+    dateRow[5] = currentDate;
     templateData.push(dateRow);
 
     // Signature label row (column F-G merged, center aligned)

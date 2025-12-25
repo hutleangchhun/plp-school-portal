@@ -23,7 +23,7 @@ export const formatDate = (date, formatStr = 'MMM dd, yyyy') => {
 /**
  * Format a date in Khmer
  * @param {Date|string} date - Date to format
- * @param {string} formatType - Format type: 'full', 'short', 'monthYear', 'dateOnly'
+ * @param {string} formatType - Format type: 'full', 'short', 'monthYear', 'dateOnly', 'formal'
  * @returns {string} Formatted date string in Khmer
  */
 export const formatDateKhmer = (date, formatType = 'full') => {
@@ -43,6 +43,9 @@ export const formatDateKhmer = (date, formatType = 'full') => {
       case 'short':
         // Format: ១៥ មករា ២០២៥
         return `${day} ${MONTH_NAMES_KH[month]} ${year}`;
+      case 'formal':
+        // Format: ថ្ងៃ ១៥ , ខែ មករា, ឆ្នាំ ២០២៥
+        return `ថ្ងៃ ${day} , ខែ ${MONTH_NAMES_KH[month]}, ឆ្នាំ ${year}`;
       case 'monthYear':
         // Format: មករា ២០២៥
         return `${MONTH_NAMES_KH[month]} ${year}`;
