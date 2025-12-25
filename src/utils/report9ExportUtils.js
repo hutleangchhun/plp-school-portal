@@ -3,6 +3,9 @@
  * Exports ethnic minority student data in traditional Excel format with Khmer headers
  */
 
+import { getFullName } from './usernameUtils';
+import { formatClassIdentifier } from './helpers';
+
 /**
  * Export Report 9 (Ethnic Minority Students) to Excel with traditional format
  *
@@ -23,7 +26,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     const XLSXStyleModule = await import('xlsx-js-style');
     const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
 
-    const totalColumns = 1; // Only 1 column for ethnic group
+    const totalColumns = 6; // ល.រ, អត្តលេខសិស្ស, ឈ្មោះសិស្ស, ភេទ, ថ្នាក់, ជនជាតិដើមភាគតិច
 
     // Build template data
     const templateData = [];
@@ -49,14 +52,44 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     // Row 6: Empty row
     templateData.push(['']);
 
-    // Row 7-8: Headers - Only ethnic group column
-    templateData.push(['ជនជាតិដើមភាគតិច']);
-    templateData.push(['(១)']);
+    // Row 7-8: Headers
+    const headerRow1 = Array(totalColumns).fill('');
+    headerRow1[0] = 'ល.រ';
+    headerRow1[1] = 'អត្តលេខសិស្ស';
+    headerRow1[2] = 'ឈ្មោះសិស្ស';
+    headerRow1[3] = 'ភេទ';
+    headerRow1[4] = 'ថ្នាក់';
+    headerRow1[5] = 'ជនជាតិដើមភាគតិច';
+    templateData.push(headerRow1);
+
+    const headerRow2 = Array(totalColumns).fill('');
+    headerRow2[0] = '(១)';
+    headerRow2[1] = '(២)';
+    headerRow2[2] = '(៣)';
+    headerRow2[3] = '(៤)';
+    headerRow2[4] = '(៥)';
+    headerRow2[5] = '(៦)';
+    templateData.push(headerRow2);
 
     // Data rows
-    ethnicMinorityStudents.forEach((student) => {
-      const ethnicGroup = student.ethnicGroup || student.ethnic_group || '';
-      templateData.push([ethnicGroup]);
+    ethnicMinorityStudents.forEach((student, index) => {
+      const dataRow = Array(totalColumns).fill('');
+      dataRow[0] = index + 1;
+      dataRow[1] = student.student?.studentNumber || student.studentNumber || student.studentId || student.id || '';
+      dataRow[2] = getFullName(student, '');
+      dataRow[3] = student.gender === 'MALE' ? 'ប្រុស' : student.gender === 'FEMALE' ? 'ស្រី' : '';
+
+      // Format class
+      if (student.class?.gradeLevel !== undefined && student.class?.gradeLevel !== null) {
+        const gradeLevel = String(student.class.gradeLevel);
+        const displayGradeLevel = gradeLevel === '0' ? 'មត្តេយ្យ' : gradeLevel;
+        dataRow[4] = formatClassIdentifier(displayGradeLevel, student.class?.section);
+      } else {
+        dataRow[4] = student.class?.name || '';
+      }
+
+      dataRow[5] = student.ethnicGroup || student.ethnic_group || '';
+      templateData.push(dataRow);
     });
 
     // Footer section
@@ -82,8 +115,16 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     // Create worksheet
     const ws = XLSXStyle.utils.aoa_to_sheet(templateData);
 
-    // Set column widths - Only ethnic group column is very wide
-    ws['!cols'] = [{ wch: 80 }];
+    // Set column widths
+    const colWidths = [
+      { wch: 5 },    // ល.រ
+      { wch: 15 },   // អត្តលេខសិស្ស
+      { wch: 25 },   // ឈ្មោះសិស្ស
+      { wch: 8 },    // ភេទ
+      { wch: 8 },    // ថ្នាក់
+      { wch: 25 }    // ជនជាតិដើមភាគតិច
+    ];
+    ws['!cols'] = colWidths;
 
     // Set row heights
     const rowHeights = [];
@@ -139,6 +180,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
           };
         } else if (R >= 9 && R <= dataEndRow) {
           // Data rows
+          const isNumericCol = C === 0 || C === 3 || C === 4; // ល.រ, ភេទ, ថ្នាក់
           ws[cellAddress].s = {
             border: {
               top: { style: 'thin', color: { rgb: '000000' } },
@@ -148,7 +190,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
             },
             alignment: {
               vertical: 'center',
-              horizontal: 'left'
+              horizontal: isNumericCol ? 'center' : 'left'
             },
             font: { name: 'Khmer OS Battambang', sz: 10 }
           };
@@ -181,19 +223,24 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
 
     // Merge cells
     ws['!merges'] = [
-      // Header merges
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 0 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 0 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 0 } },
-      { s: { r: 3, c: 0 }, e: { r: 3, c: 0 } },
-      { s: { r: 4, c: 0 }, e: { r: 4, c: 0 } },
-      { s: { r: 5, c: 0 }, e: { r: 5, c: 0 } }, // Title row - center aligned
-      // Header column merge
+      // Header merges - span across all columns
+      { s: { r: 0, c: 0 }, e: { r: 0, c: totalColumns - 1 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: totalColumns - 1 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: totalColumns - 1 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: totalColumns - 1 } },
+      { s: { r: 4, c: 0 }, e: { r: 4, c: totalColumns - 1 } },
+      { s: { r: 5, c: 0 }, e: { r: 5, c: totalColumns - 1 } }, // Title row - center aligned
+      // Header columns merge (rows 7-8 for each column)
       { s: { r: 7, c: 0 }, e: { r: 8, c: 0 } },
+      { s: { r: 7, c: 1 }, e: { r: 8, c: 1 } },
+      { s: { r: 7, c: 2 }, e: { r: 8, c: 2 } },
+      { s: { r: 7, c: 3 }, e: { r: 8, c: 3 } },
+      { s: { r: 7, c: 4 }, e: { r: 8, c: 4 } },
+      { s: { r: 7, c: 5 }, e: { r: 8, c: 5 } },
       // Footer merges
-      { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: 0 } },
+      { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: totalColumns - 1 } },
       // Date row merge
-      { s: { r: dateRowIndex, c: 0 }, e: { r: dateRowIndex, c: 0 } }
+      { s: { r: dateRowIndex, c: 0 }, e: { r: dateRowIndex, c: totalColumns - 1 } }
     ];
 
     // Create workbook
