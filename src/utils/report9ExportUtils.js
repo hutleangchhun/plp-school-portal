@@ -159,13 +159,13 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
 
     // Set column widths
     const colWidths = [
-      { wch: 5 },    // ល.រ
-      { wch: 15 },   // អត្តលេខសិស្ស
-      { wch: 25 },   // ឈ្មោះសិស្ស
-      { wch: 8 },    // ភេទ
-      { wch: 15 },   // ថ្ងៃខែឆ្នាំកំណើត
-      { wch: 8 },    // ថ្នាក់
-      { wch: 25 }    // ជនជាតិដើមភាគតិច
+      { wch: 6 },    // ល.រ
+      { wch: 18 },   // អត្តលេខសិស្ស
+      { wch: 30 },   // ឈ្មោះសិស្ស
+      { wch: 10 },   // ភេទ
+      { wch: 18 },   // ថ្ងៃខែឆ្នាំកំណើត
+      { wch: 10 },   // ថ្នាក់
+      { wch: 30 }    // ជនជាតិដើមភាគតិច
     ];
     ws['!cols'] = colWidths;
 
