@@ -1010,17 +1010,17 @@ export const exportStudentListWithParents = async (
     // Build worksheet data
     const wsData = [];
 
-    // Traditional Khmer header (rows 0-7) - matching Report 9 format
+    // Traditional Khmer header (rows 0-6) - matching Report 9 format
     wsData.push(['ព្រះរាជាណាចក្រកម្ពុជា']); // Row 0: Kingdom
     wsData.push(['ជាតិ     សាសនា     ព្រះមហាក្សត្រ']); // Row 1: Nation/Religion/King
     wsData.push(['មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............']); // Row 2: Department
     wsData.push(['ការិយាល័យអប់រំ យុវជន និងកីឡារដ្ឋបាលក្រុង/ស្រុក/ខណ្ឌ..........................']); // Row 3: Office
     wsData.push([`សាលា: ${schoolName}`]); // Row 4: School name
     wsData.push([reportName]); // Row 5: Report title
-    wsData.push([periodInfo]); // Row 6: Period info
-    wsData.push([]); // Row 7: Empty
+    wsData.push([className ? `ថ្នាក់: ${className}` : periodInfo]); // Row 6: Class name or period info
+    wsData.push([className ? periodInfo : '']); // Row 7: Period info (if class is selected) or empty
 
-    // Main header row (row 9)
+    // Main header row (row 8)
     wsData.push([
       '#',
       'ព័ត៌មានសិស្ស', '', '', '', '', '', '', '', '',
@@ -1107,23 +1107,23 @@ export const exportStudentListWithParents = async (
     summaryRow[0] = `សរុប: ${totalStudents} នាក់  ប្រុស: ${maleStudents} នាក់  ស្រី: ${femaleStudents} នាក់`;
     wsData.push(summaryRow);
 
-    // Date row (column A-B merged, center aligned)
+    // Date row (column V merged, center aligned)
     const dateRowIndex = wsData.length;
     const dateRow = new Array(24).fill('');
     const currentDate = formatDateKhmer(new Date(), 'formal');
-    dateRow[0] = currentDate;
+    dateRow[21] = currentDate; // Column V (index 21)
     wsData.push(dateRow);
 
-    // Signature label row (column A-B merged, center aligned)
+    // Signature label row (column V merged, center aligned)
     const signatureLabelRowIndex = wsData.length;
     const signatureLabelRow = new Array(24).fill('');
-    signatureLabelRow[0] = 'បានឃើញ';
+    signatureLabelRow[21] = 'បានឃើញ';
     wsData.push(signatureLabelRow);
 
-    // Signature role row (column A-B merged, center aligned)
+    // Signature role row (column V merged, center aligned)
     const signatureRoleRowIndex = wsData.length;
     const signatureRoleRow = new Array(24).fill('');
-    signatureRoleRow[0] = 'នាយកសាលា';
+    signatureRoleRow[21] = 'នាយកសាលា';
     wsData.push(signatureRoleRow);
 
     // Create worksheet
@@ -1147,17 +1147,16 @@ export const exportStudentListWithParents = async (
       { s: { r: 4, c: 0 }, e: { r: 4, c: 22 } },
       { s: { r: 5, c: 0 }, e: { r: 5, c: 22 } },
       { s: { r: 6, c: 0 }, e: { r: 6, c: 22 } },
-      { s: { r: 7, c: 0 }, e: { r: 7, c: 22 } },
-      // Main header merges
+      // Main header merges (row 8 is main header, row 9 is subheader)
       { s: { r: 8, c: 1 }, e: { r: 8, c: 9 } },   // ព័ត៌មានសិស្ស (9 columns)
       { s: { r: 8, c: 10 }, e: { r: 8, c: 15 } }, // ព័ត៌មានឪពុក (6 columns)
       { s: { r: 8, c: 16 }, e: { r: 8, c: 21 } }, // ព័ត៌មានម្តាយ (6 columns)
       { s: { r: 8, c: 22 }, e: { r: 8, c: 23 } }, // សេចក្ដីផ្សេងៗ (2 columns)
       // Footer merges
       { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: 23 } },
-      { s: { r: dateRowIndex, c: 0 }, e: { r: dateRowIndex, c: 1 } },
-      { s: { r: signatureLabelRowIndex, c: 0 }, e: { r: signatureLabelRowIndex, c: 1 } },
-      { s: { r: signatureRoleRowIndex, c: 0 }, e: { r: signatureRoleRowIndex, c: 1 } }
+      { s: { r: dateRowIndex, c: 21 }, e: { r: dateRowIndex, c: 22 } },
+      { s: { r: signatureLabelRowIndex, c: 21 }, e: { r: signatureLabelRowIndex, c: 22 } },
+      { s: { r: signatureRoleRowIndex, c: 21 }, e: { r: signatureRoleRowIndex, c: 22 } }
     ];
 
     // Apply styling
@@ -1188,10 +1187,16 @@ export const exportStudentListWithParents = async (
             font: { name: 'Khmer OS', sz: 11, bold: true }
           };
         }
-        // Period info (row 6)
+        // Period info (row 6) or Class name (row 6)
         else if (R === 6) {
           worksheet[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            font: { name: 'Khmer OS', sz: 10 }
+          };
+        }
+        // Empty row (row 7) - no borders
+        else if (R === 7) {
+          worksheet[cellAddress].s = {
             font: { name: 'Khmer OS', sz: 10 }
           };
         }
