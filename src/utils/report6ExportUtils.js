@@ -334,12 +334,12 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
       { s: { r: 4, c: 0 }, e: { r: 4, c: totalColumns - 1 } },
       { s: { r: 5, c: 0 }, e: { r: 5, c: totalColumns - 1 } }, // Title row
       { s: { r: 6, c: 0 }, e: { r: 6, c: totalColumns - 1 } }, // Academic year row
-      // Category header row merge - fixed columns (rows 8-9) and accessibility section (row 8 only)
-      { s: { r: 8, c: 0 }, e: { r: 9, c: 0 } },
-      { s: { r: 8, c: 1 }, e: { r: 9, c: 1 } },
-      { s: { r: 8, c: 2 }, e: { r: 9, c: 2 } },
-      { s: { r: 8, c: 3 }, e: { r: 9, c: 3 } },
-      { s: { r: 8, c: 4 }, e: { r: 9, c: 4 } },
+      // Category header row merge - fixed columns (rows 8-10) and accessibility section (row 8 only)
+      { s: { r: 8, c: 0 }, e: { r: 10, c: 0 } },
+      { s: { r: 8, c: 1 }, e: { r: 10, c: 1 } },
+      { s: { r: 8, c: 2 }, e: { r: 10, c: 2 } },
+      { s: { r: 8, c: 3 }, e: { r: 10, c: 3 } },
+      { s: { r: 8, c: 4 }, e: { r: 10, c: 4 } },
       // Merge accessibility category header across all accessibility columns (row 8 only)
       { s: { r: 8, c: fixedColumns }, e: { r: 8, c: totalColumns - 1 } },
       // Merge accessibility headers (9-10) for each column
