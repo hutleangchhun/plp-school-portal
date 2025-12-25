@@ -85,13 +85,28 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     headerRow1[3] = 'ភេទ';
     headerRow1[4] = 'ថ្នាក់';
 
-    // Add accessibility type headers - remove "ពិបាក" prefix to shorten text
+    // Add accessibility type headers - shorten by removing prefixes
     accessibilityOptions.forEach((option, index) => {
       let label = option.label;
-      // Remove "ពិបាក" prefix and trim
-      if (label.startsWith('ពិបាក')) {
-        label = label.replace(/^ពិបាក/, '').trim();
+
+      // Exception: Keep ពិការសរីរាង្គខាងក្នុង as is (don't shorten)
+      if (label === 'ពិការសរីរាង្គខាងក្នុង') {
+        // Keep as is
+      } else {
+        // Remove "ពិបាក" prefix first
+        if (label.startsWith('ពិបាក')) {
+          label = label.replace(/^ពិបាក/, '').trim();
+        }
+        // Then remove "ក្នុង" prefix from what remains
+        if (label.startsWith('ក្នុង')) {
+          label = label.replace(/^ក្នុង/, '').trim();
+        }
+        // Then remove "ពិការ" prefix from what remains
+        if (label.startsWith('ពិការ')) {
+          label = label.replace(/^ពិការ/, '').trim();
+        }
       }
+
       headerRow1[fixedColumns + index] = label;
     });
     templateData.push(headerRow1);
