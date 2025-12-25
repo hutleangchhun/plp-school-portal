@@ -247,8 +247,11 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     // Row 5: Title
     templateData.push([periodTitle, ...Array(totalColumns - 1).fill('')]);
 
-    // Row 6: Section with class
-    templateData.push([`${periodTitle.replace('បញ្ជីអវត្តមានសិស្ស', 'ផ្នែកអវត្តមាន')} - ${className}`, ...Array(totalColumns - 1).fill('')]);
+    // Row 6: Section with class (include month name for monthly reports)
+    const sectionTitle = period === 'month'
+      ? `${periodTitle.replace('បញ្ជីអវត្តមានសិស្ស', 'ផ្នែកអវត្តមានប្រចាំខែ')} ${periodSubtitle.replace('ខែ: ', '')} - ${className}`
+      : `${periodTitle.replace('បញ្ជីអវត្តមានសិស្ស', 'ផ្នែកអវត្តមាន')} - ${className}`;
+    templateData.push([sectionTitle, ...Array(totalColumns - 1).fill('')]);
 
     // Row 7: Period subtitle
     templateData.push([periodSubtitle, ...Array(totalColumns - 1).fill('')]);
@@ -258,9 +261,16 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
 
     // Row 9: Info row with student counts
     const infoRow = [...emptyRow];
-    infoRow[0] = `ប្រចាំខែ:............................. ឆ្នាំសិក្សា............................`;
-    infoRow[24] = `សិស្សសរុប: ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
-    templateData.push(infoRow);
+    // Include month name for monthly reports in the info row
+    const monthDisplay = period === 'month' ? periodSubtitle.replace('ខែ: ', '') : '';
+    infoRow[0] = `ប្រចាំខែ:${monthDisplay}....... ឆ្នាំសិក្សា............................`;
+    infoRow[24] = `សិស្ lászló្រុប: ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
+    // Only add info row for monthly reports
+    if (period === 'month') {
+      templateData.push(infoRow);
+    } else {
+      templateData.push([...emptyRow]);
+    }
 
     // Row 10: First header row
     const summaryStartCol = 4 + numPeriodColumns;
