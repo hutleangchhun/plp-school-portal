@@ -52,7 +52,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
 
     // Row 3: Office
     const officeRow = [...emptyRow];
-    officeRow[0] = 'ការិយាល័យអប់រំ/ការិយាល័យប្រឹក្សាភិបាល............';
+    officeRow[0] = 'ការិយាល័យអប់រំ យុវជន និងកីឡារដ្ឋបាលក្រុង/ស្រុក/ខណ្ឌ..........................';
     templateData.push(officeRow);
 
     // Row 4: School name
@@ -241,7 +241,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
             },
             alignment: {
               vertical: 'center',
-              horizontal: isNumericCol ? 'center' : 'left'
+              horizontal: isNumericCol = 'center'
             },
             font: { name: 'Khmer OS Battambang', sz: 10 }
           };

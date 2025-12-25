@@ -45,7 +45,7 @@ export const formatDateKhmer = (date, formatType = 'full') => {
         return `${day} ${MONTH_NAMES_KH[month]} ${year}`;
       case 'formal':
         // Format: ថ្ងៃ ១៥ , ខែ មករា, ឆ្នាំ ២០២៥
-        return `ថ្ងៃ ${day} , ខែ ${MONTH_NAMES_KH[month]}, ឆ្នាំ ${year}`;
+        return `ថ្ងៃ ${day} ខែ ${MONTH_NAMES_KH[month]} ឆ្នាំ ${year}`;
       case 'monthYear':
         // Format: មករា ២០២៥
         return `${MONTH_NAMES_KH[month]} ${year}`;
