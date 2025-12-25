@@ -380,14 +380,14 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     // Signature label row: បានឃើញ on left and right (same row)
     const signatureLabelRow = [...emptyFooterRow];
     signatureLabelRow[2] = 'បានឃើញ';
-    signatureLabelRow[31] = 'បានឃើញ';
+    signatureLabelRow[30] = 'បានឃើញ';
     templateData.push(signatureLabelRow);
     const signatureLabelRowIndex = footerStartRow + 5;
 
     // Signature role row: នាយកសាលា on left and គ្រូប្រចាំថ្នាក់ on right (same row)
     const signatureRoleRow = [...emptyFooterRow];
     signatureRoleRow[2] = 'នាយកសាលា';
-    signatureRoleRow[31] = 'គ្រូប្រចាំថ្នាក់';
+    signatureRoleRow[30] = 'គ្រូប្រចាំថ្នាក់';
     templateData.push(signatureRoleRow);
     const signatureRoleRowIndex = footerStartRow + 6;
 
@@ -588,11 +588,11 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
       // dateRow1 and dateRow2: Start at column 30 (AD) and span to end
       { s: { r: dateRow1Index, c: 30 }, e: { r: dateRow1Index, c: totalColumns - 1 } },
       { s: { r: dateRow2Index, c: 30 }, e: { r: dateRow2Index, c: totalColumns - 1 } },
-      // Signature label and role rows: Column C (2) to Column J (10) on left, Column AE (31+) on right
+      // Signature label and role rows: Column C (2) to Column J (10) on left, Column AD (30+) on right
       { s: { r: signatureLabelRowIndex, c: 2 }, e: { r: signatureLabelRowIndex, c: 10 } },
-      { s: { r: signatureLabelRowIndex, c: 31 }, e: { r: signatureLabelRowIndex, c: totalColumns - 1 } },
+      { s: { r: signatureLabelRowIndex, c: 30 }, e: { r: signatureLabelRowIndex, c: totalColumns - 1 } },
       { s: { r: signatureRoleRowIndex, c: 2 }, e: { r: signatureRoleRowIndex, c: 10 } },
-      { s: { r: signatureRoleRowIndex, c: 31 }, e: { r: signatureRoleRowIndex, c: totalColumns - 1 } },
+      { s: { r: signatureRoleRowIndex, c: 30 }, e: { r: signatureRoleRowIndex, c: totalColumns - 1 } },
     ];
 
     // Create workbook
