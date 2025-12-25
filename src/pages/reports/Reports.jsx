@@ -1434,7 +1434,7 @@ export default function Reports() {
           </div>
           <Button
             onClick={handleExportReport}
-            disabled={loading || (selectedReport === 'report4' && (!selectedClass || selectedClass === 'all'))}
+            disabled={loading || (['report1', 'report4'].includes(selectedReport) && (!selectedClass || selectedClass === 'all'))}
             size="sm"
             variant="default"
           >
@@ -1505,7 +1505,7 @@ export default function Reports() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Filter className="h-4 w-4 inline mr-1" />
                   {t('selectClass') || 'Select Class'}
-                  {selectedReport === 'report4' && <span className="text-red-500 ml-1">*</span>}
+                  {['report1', 'report4'].includes(selectedReport) && <span className="text-red-500 ml-1">*</span>}
                 </label>
                 <Dropdown
                   value={selectedClass}

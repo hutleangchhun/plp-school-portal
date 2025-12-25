@@ -1147,6 +1147,7 @@ export const exportStudentListWithParents = async (
       { s: { r: 4, c: 0 }, e: { r: 4, c: 22 } },
       { s: { r: 5, c: 0 }, e: { r: 5, c: 22 } },
       { s: { r: 6, c: 0 }, e: { r: 6, c: 22 } },
+      { s: { r: 7, c: 0 }, e: { r: 7, c: 22 } },
       // Main header merges (row 8 is main header, row 9 is subheader)
       { s: { r: 8, c: 1 }, e: { r: 8, c: 9 } },   // ព័ត៌មានសិស្ស (9 columns)
       { s: { r: 8, c: 10 }, e: { r: 8, c: 15 } }, // ព័ត៌មានឪពុក (6 columns)
