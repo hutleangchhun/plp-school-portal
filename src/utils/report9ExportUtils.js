@@ -31,26 +31,41 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     // Build template data
     const templateData = [];
 
+    // Create empty row template
+    const emptyRow = Array(totalColumns).fill('');
+
     // Row 0: Kingdom header
-    templateData.push(['ព្រះរាជាណាចក្រកម្ពុជា']);
+    const headerRow0 = [...emptyRow];
+    headerRow0[0] = 'ព្រះរាជាណាចក្រកម្ពុជា';
+    templateData.push(headerRow0);
 
     // Row 1: Nation/Religion/King
-    templateData.push(['ជាតិ     សាសនា     ព្រះមហាក្សត្រ']);
+    const headerRow1Header = [...emptyRow];
+    headerRow1Header[0] = 'ជាតិ     សាសនា     ព្រះមហាក្សត្រ';
+    templateData.push(headerRow1Header);
 
     // Row 2: Department
-    templateData.push(['មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............']);
+    const deptRow = [...emptyRow];
+    deptRow[0] = 'មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............';
+    templateData.push(deptRow);
 
     // Row 3: Office
-    templateData.push(['ការិយាល័យអប់រំ/ការិយាល័យប្រឹក្សាភិបាល............']);
+    const officeRow = [...emptyRow];
+    officeRow[0] = 'ការិយាល័យអប់រំ/ការិយាល័យប្រឹក្សាភិបាល............';
+    templateData.push(officeRow);
 
     // Row 4: School name
-    templateData.push([`សាលា: ${schoolName}`]);
+    const schoolRow = [...emptyRow];
+    schoolRow[0] = `សាលា: ${schoolName}`;
+    templateData.push(schoolRow);
 
     // Row 5: Report title
-    templateData.push(['បញ្ជីឈ្មោះសិស្ស ជនជាតិដើមភាគតិច']);
+    const titleRow = [...emptyRow];
+    titleRow[0] = 'បញ្ជីឈ្មោះសិស្ស ជនជាតិដើមភាគតិច';
+    templateData.push(titleRow);
 
     // Row 6: Empty row
-    templateData.push(['']);
+    templateData.push([...emptyRow]);
 
     // Row 7-8: Headers
     const headerRow1 = Array(totalColumns).fill('');
@@ -93,24 +108,32 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     });
 
     // Footer section
-    templateData.push(['']);
+    templateData.push([...emptyRow]);
 
     // Summary row
     const summaryRowIndex = templateData.length;
-    templateData.push([`សរុប: ${ethnicMinorityStudents.length} នាក់`]);
+    const summaryRow = [...emptyRow];
+    summaryRow[0] = `សរុប: ${ethnicMinorityStudents.length} នាក់`;
+    templateData.push(summaryRow);
 
     // Date row
     const dateRowIndex = templateData.length;
-    templateData.push(['ថ្ងៃ........... ខែ ......... ឆ្នាំ......']);
+    const dateRow = [...emptyRow];
+    dateRow[0] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ......';
+    templateData.push(dateRow);
 
-    templateData.push(['']);
+    templateData.push([...emptyRow]);
 
     // Signature rows
     const signatureLabelRowIndex = templateData.length;
-    templateData.push(['បានឃើញ']);
+    const signatureLabelRow = [...emptyRow];
+    signatureLabelRow[0] = 'បានឃើញ';
+    templateData.push(signatureLabelRow);
 
     const signatureRoleRowIndex = templateData.length;
-    templateData.push(['នាយកសាលា']);
+    const signatureRoleRow = [...emptyRow];
+    signatureRoleRow[0] = 'នាយកសាលា';
+    templateData.push(signatureRoleRow);
 
     // Create worksheet
     const ws = XLSXStyle.utils.aoa_to_sheet(templateData);
