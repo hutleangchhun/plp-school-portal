@@ -247,10 +247,8 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     // Row 5: Title
     templateData.push([periodTitle, ...Array(totalColumns - 1).fill('')]);
 
-    // Row 6: Section with class (include month name for monthly reports)
-    const sectionTitle = period === 'month'
-      ? `${periodTitle.replace('បញ្ជីអវត្តមានសិស្ស', 'ផ្នែកអវត្តមានប្រចាំខែ')} ${periodSubtitle.replace('ខែ: ', '')} - ${className}`
-      : `${periodTitle.replace('បញ្ជីអវត្តមានសិស្ស', 'ផ្នែកអវត្តមាន')} - ${className}`;
+    // Row 6: Section with class name only
+    const sectionTitle = `ផ្នែកអវត្តមានប្រចាំខែ - ${className}`;
     templateData.push([sectionTitle, ...Array(totalColumns - 1).fill('')]);
 
     // Row 7: Period subtitle
