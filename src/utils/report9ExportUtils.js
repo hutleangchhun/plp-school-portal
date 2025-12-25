@@ -163,7 +163,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
       { wch: 18 },   // អត្តលេខសិស្ស
       { wch: 30 },   // ឈ្មោះសិស្ស
       { wch: 10 },   // ភេទ
-      { wch: 18 },   // ថ្ងៃខែឆ្នាំកំណើត
+      { wch: 25 },   // ថ្ងៃខែឆ្នាំកំណើត
       { wch: 10 },   // ថ្នាក់
       { wch: 30 }    // ជនជាតិដើមភាគតិច
     ];
