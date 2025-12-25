@@ -355,22 +355,22 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     const footerStartRow = templateData.length;
 
     const summaryRow1 = [...emptyFooterRow];
-    summaryRow1[0] = `- ចំនួនសិស្សក្នុងបញ្ជី..${totalStudents}..នាក់ ប្រុស..${maleStudents}..នាក់ ស្រី..${femaleStudents}..នាក់ ចំនួនពេលដែលសិស្សត្រូវមករៀន..... ចំនួនពេលអវត្តមាន...... ចំនួនពេលដែលសិស្សមករៀនពិតប្រាកដ........... គណនាភាគរយៈ x100 = .............. %`;
+    summaryRow1[0] = `ចំនួនសិស្សក្នុងបញ្ជី..${totalStudents}..នាក់ ប្រុស..${maleStudents}..នាក់ ស្រី..${femaleStudents}..នាក់ ចំនួនពេលដែលសិស្សត្រូវមករៀន..... ចំនួនពេលអវត្តមាន...... ចំនួនពេលដែលសិស្សមករៀនពិតប្រាកដ........... គណនាភាគរយៈ x100 = .............. %`;
     templateData.push(summaryRow1);
     const summaryRow1Index = footerStartRow;
 
     const summaryRow2 = [...emptyFooterRow];
-    summaryRow2[0] = `- បញ្ឈប់បញ្ជីក្នុងខែនេះនូវចំនួន..........ពេល`;
+    summaryRow2[0] = `បញ្ឈប់បញ្ជីក្នុងខែនេះនូវចំនួន..........ពេល`;
     templateData.push(summaryRow2);
     const summaryRow2Index = footerStartRow + 1;
 
     const dateRow1 = [...emptyFooterRow];
-    dateRow1[33] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ...... ព.ស.២៥...........';
+    dateRow1[32] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ...... ព.ស.២៥...........';
     templateData.push(dateRow1);
     const dateRow1Index = footerStartRow + 2;
 
     const dateRow2 = [...emptyFooterRow];
-    dateRow2[33] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
+    dateRow2[32] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
     templateData.push(dateRow2);
     const dateRow2Index = footerStartRow + 3;
 
@@ -385,6 +385,7 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
 
     const positionRow = [...emptyFooterRow];
     positionRow[2] = 'នាយកសាលា';
+    positionRow[32] = 'គ្រូប្រចាំថ្នាក់';
     templateData.push(positionRow);
     const positionRowIndex = footerStartRow + 6;
 
@@ -414,6 +415,22 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     colWidths.push({ wch: 20 }); // ផ្សេងៗ
 
     ws['!cols'] = colWidths;
+
+    // Set row heights for better spacing
+    const rowHeights = [];
+    for (let i = 0; i < templateData.length; i++) {
+      if (i === signatureRowIndex || i === positionRowIndex) {
+        // Larger height for signature rows
+        rowHeights.push({ hpt: 30 });
+      } else if (i >= summaryRow1Index && i <= summaryRow2Index) {
+        // Moderate height for summary rows
+        rowHeights.push({ hpt: 25 });
+      } else {
+        // Default height
+        rowHeights.push({ hpt: 15 });
+      }
+    }
+    ws['!rows'] = rowHeights;
 
     // Apply styling
     const totalRows = templateData.length;
@@ -516,8 +533,14 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
             alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
+        } else if (R === summaryRow1Index || R === summaryRow2Index) {
+          // Summary rows: align to start (left)
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            font: { name: 'Khmer OS', sz: 10 }
+          };
         } else if (R >= summaryRow1Index && R <= positionRowIndex) {
-          // Footer rows styling with proper Khmer font support
+          // Footer rows styling with proper Khmer font support (center aligned)
           ws[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
@@ -554,12 +577,14 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
       // Footer section merges - merge long text rows across columns
       { s: { r: summaryRow1Index, c: 0 }, e: { r: summaryRow1Index, c: totalColumns - 1 } },
       { s: { r: summaryRow2Index, c: 0 }, e: { r: summaryRow2Index, c: totalColumns - 1 } },
-      // dateRow1 and dateRow2: Start at column 33 (AH) and span to end
-      { s: { r: dateRow1Index, c: 33 }, e: { r: dateRow1Index, c: totalColumns - 1 } },
-      { s: { r: dateRow2Index, c: 33 }, e: { r: dateRow2Index, c: totalColumns - 1 } },
+      // dateRow1 and dateRow2: Start at column 32 (AF) and span to end
+      { s: { r: dateRow1Index, c: 32 }, e: { r: dateRow1Index, c: totalColumns - 1 } },
+      { s: { r: dateRow2Index, c: 32 }, e: { r: dateRow2Index, c: totalColumns - 1 } },
       // signatureRow and positionRow: Column C (2) and span
       { s: { r: signatureRowIndex, c: 2 }, e: { r: signatureRowIndex, c: 10 } },
+      { s: { r: signatureRowIndex, c: 32 }, e: { r: signatureRowIndex, c: totalColumns - 1 } },
       { s: { r: positionRowIndex, c: 2 }, e: { r: positionRowIndex, c: 10 } },
+      { s: { r: positionRowIndex, c: 32 }, e: { r: positionRowIndex, c: totalColumns - 1 } },
     ];
 
     // Create workbook
