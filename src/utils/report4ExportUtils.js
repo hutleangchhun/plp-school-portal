@@ -40,6 +40,9 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     endDate = null
   } = options;
 
+  console.log('📊 exportReport4ToExcel - Received className:', className);
+  console.log('📊 exportReport4ToExcel - Options:', options);
+
   try {
     // Dynamically import xlsx-js-style
     const XLSXStyleModule = await import('xlsx-js-style');
@@ -260,6 +263,7 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     // Row 9: Info row with student counts
     const infoRow = [...emptyRow];
     infoRow[0] =`សិស្សសរុប: ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
+    const infoRowIndex = 9;
     // Only add info row for monthly reports
     if (period === 'month') {
       templateData.push(infoRow);
@@ -351,32 +355,42 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     const emptyFooterRow = Array(totalColumns).fill('');
     templateData.push([...emptyFooterRow]);
 
+    // Track footer row numbers for merging
+    const footerStartRow = templateData.length;
+
     const summaryRow1 = [...emptyFooterRow];
     summaryRow1[0] = `- ចំនួនសិស្សក្នុងបញ្ជី..${totalStudents}..នាក់ ប្រុស..${maleStudents}..នាក់ ស្រី..${femaleStudents}..នាក់ ចំនួនពេលដែលសិស្សត្រូវមករៀន..... ចំនួនពេលអវត្តមាន...... ចំនួនពេលដែលសិស្សមករៀនពិតប្រាកដ........... គណនាភាគរយៈ  x100  = .............. %`;
     templateData.push(summaryRow1);
+    const summaryRow1Index = footerStartRow;
 
     const summaryRow2 = [...emptyFooterRow];
     summaryRow2[0] = '- បញ្ឈប់បញ្ជីក្នុងខែនេះនូវចំនួន..........ពេល';
     templateData.push(summaryRow2);
+    const summaryRow2Index = footerStartRow + 1;
 
     const dateRow1 = [...emptyFooterRow];
-    dateRow1[30] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ...... ព.ស.២៥...........';
+    dateRow1[0] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ...... ព.ស.២៥...........';
     templateData.push(dateRow1);
+    const dateRow1Index = footerStartRow + 2;
 
     const dateRow2 = [...emptyFooterRow];
-    dateRow2[30] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
+    dateRow2[0] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
     templateData.push(dateRow2);
+    const dateRow2Index = footerStartRow + 3;
 
     templateData.push([...emptyFooterRow]);
+    const emptyRowAfterDatesIndex = footerStartRow + 4;
 
     const signatureRow = [...emptyFooterRow];
     signatureRow[5] = 'បានឃើញ';
     signatureRow[33] = 'គ្រូប្រចាំថ្នាក់';
     templateData.push(signatureRow);
+    const signatureRowIndex = footerStartRow + 5;
 
     const positionRow = [...emptyFooterRow];
     positionRow[4] = 'នាយកសាលា';
     templateData.push(positionRow);
+    const positionRowIndex = footerStartRow + 6;
 
     templateData.push([...emptyFooterRow]);
     templateData.push([...emptyFooterRow]);
@@ -440,8 +454,8 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
           };
         } else if (R === 9) {
           ws[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'left' },
-            font: { name: 'Khmer OS Battambang', sz: 10 }
+            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            font: { name: 'Khmer OS Battambang', sz: 10, bold: true }
           };
         } else if (R === 10 || R === 11) {
           // Check if weekend column (only for monthly reports)
@@ -511,7 +525,9 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
 
     // Merge cells
     ws['!merges'] = [
+      // Header section merges
       { s: { r: 0, c: 0 }, e: { r: 0, c: totalColumns - 1 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: totalColumns - 1 } },
       { s: { r: 2, c: 0 }, e: { r: 2, c: totalColumns - 1 } },
       { s: { r: 3, c: 0 }, e: { r: 3, c: totalColumns - 1 } },
       { s: { r: 4, c: 0 }, e: { r: 4, c: totalColumns - 1 } },
@@ -519,12 +535,21 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
       { s: { r: 6, c: 0 }, e: { r: 6, c: totalColumns - 1 } },
       { s: { r: 7, c: 0 }, e: { r: 7, c: totalColumns - 1 } },
       { s: { r: 8, c: 0 }, e: { r: 8, c: totalColumns - 1 } },
+      { s: { r: infoRowIndex, c: 0 }, e: { r: infoRowIndex, c: totalColumns - 1 } },
+      // Column headers merges
       { s: { r: 10, c: 0 }, e: { r: 11, c: 0 } },
       { s: { r: 10, c: 1 }, e: { r: 11, c: 1 } },
       { s: { r: 10, c: 2 }, e: { r: 11, c: 2 } },
       { s: { r: 10, c: 3 }, e: { r: 11, c: 3 } },
       { s: { r: 10, c: summaryStartCol }, e: { r: 10, c: summaryStartCol + 2 } },
       { s: { r: 10, c: summaryStartCol + 3 }, e: { r: 11, c: summaryStartCol + 3 } },
+      // Footer section merges - merge long text rows across columns
+      { s: { r: summaryRow1Index, c: 0 }, e: { r: summaryRow1Index, c: totalColumns - 1 } },
+      { s: { r: summaryRow2Index, c: 0 }, e: { r: summaryRow2Index, c: totalColumns - 1 } },
+      { s: { r: dateRow1Index, c: 0 }, e: { r: dateRow1Index, c: totalColumns - 1 } },
+      { s: { r: dateRow2Index, c: 0 }, e: { r: dateRow2Index, c: totalColumns - 1 } },
+      { s: { r: signatureRowIndex, c: 0 }, e: { r: signatureRowIndex, c: totalColumns - 1 } },
+      { s: { r: positionRowIndex, c: 0 }, e: { r: positionRowIndex, c: totalColumns - 1 } },
     ];
 
     // Create workbook

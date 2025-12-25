@@ -900,11 +900,13 @@ export default function Reports() {
       // Get class name for report1 and report4
       let className = '';
       if (['report1', 'report4'].includes(selectedReport) && selectedClass && selectedClass !== 'all') {
-        const classOption = availableClasses.find(c => c.value === selectedClass);
+        const classOptions = getClassOptions();
+        const classOption = classOptions.find(c => c.value === selectedClass);
         className = classOption?.label || '';
       }
 
       console.log(`📥 Exporting report: ${reportName} with ${reportData.length} records`);
+      console.log(`📚 Selected class: ${selectedClass}, Class name: ${className}`);
 
       // Special handling for Report 4 (Absence Report) - use calendar format
       let result;
