@@ -359,12 +359,12 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     const footerStartRow = templateData.length;
 
     const summaryRow1 = [...emptyFooterRow];
-    summaryRow1[0] = `- ចំនួនសិស្សក្នុងបញ្ជី..${totalStudents}..នាក់ ប្រុស..${maleStudents}..នាក់ ស្រី..${femaleStudents}..នាក់ ចំនួនពេលដែលសិស្សត្រូវមករៀន..... ចំនួនពេលអវត្តមាន...... ចំនួនពេលដែលសិស្សមករៀនពិតប្រាកដ........... គណនាភាគរយៈ  x100  = .............. %`;
+    summaryRow1[0] = `- ចំនួនសិស្សក្នុងបញ្ជី..${totalStudents}..នាក់ ប្រុស..${maleStudents}..នាក់ ស្រី..${femaleStudents}..នាក់ ចំនួនពេលដែលសិស្សត្រូវមករៀន..... ចំនួនពេលអវត្តមាន...... ចំនួនពេលដែលសិស្សមករៀនពិតប្រាកដ........... គណនាភាគរយៈ x100 = .............. %`;
     templateData.push(summaryRow1);
     const summaryRow1Index = footerStartRow;
 
     const summaryRow2 = [...emptyFooterRow];
-    summaryRow2[0] = '- បញ្ឈប់បញ្ជីក្នុងខែនេះនូវចំនួន..........ពេល';
+    summaryRow2[0] = `- បញ្ឈប់បញ្ជីក្នុងខែនេះនូវចំនួន..........ពេល`;
     templateData.push(summaryRow2);
     const summaryRow2Index = footerStartRow + 1;
 
@@ -513,6 +513,12 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
               sz: 10,
               color: isWeekendCol ? { rgb: 'FF0000' } : undefined
             }
+          };
+        } else if (R >= summaryRow1Index && R <= positionRowIndex) {
+          // Footer rows styling with proper Khmer font support
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            font: { name: 'Khmer OS', sz: 10 }
           };
         } else {
           ws[cellAddress].s = {
