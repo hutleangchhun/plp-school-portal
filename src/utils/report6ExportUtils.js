@@ -97,27 +97,24 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     headerRow1[3] = 'ភេទ';
     headerRow1[4] = 'ថ្នាក់';
 
-    // Add accessibility type headers - shorten by removing prefixes
+    // Add accessibility type headers - shorten to most concise form
     accessibilityOptions.forEach((option, index) => {
       let label = option.label;
 
-      // Exception: Shorten ពិការសរីរាង្គខាងក្នុង to សរីរាង្គខាងក្នុង (remove ពិការ prefix only)
-      if (label === 'ពិការសរីរាង្គខាងក្នុង') {
-        label = 'សរីរាង្គខាងក្នុង';
-      } else {
-        // Remove "ពិបាក" prefix first
-        if (label.startsWith('ពិបាក')) {
-          label = label.replace(/^ពិបាក/, '').trim();
-        }
-        // Then remove "ក្នុង" prefix from what remains
-        if (label.startsWith('ក្នុង')) {
-          label = label.replace(/^ក្នុង/, '').trim();
-        }
-        // Then remove "ពិការ" prefix from what remains
-        if (label.startsWith('ពិការ')) {
-          label = label.replace(/^ពិការ/, '').trim();
-        }
-      }
+      // Map to shorter headers for better space utilization
+      const shortLabels = {
+        'ពិបាកក្នុងការធ្វើចលនា': 'ធ្វើចលនា',
+        'ពិបាកក្នុងការស្ដាប់': 'ស្ដាប់',
+        'ពិបាកក្នុងការនិយាយ': 'និយាយ',
+        'ពិបាកក្នុងការមើល': 'មើល',
+        'ពិការសរីរាង្គខាងក្នុង': 'សរីរាង្គខាងក្នុង',
+        'ពិការសតិបញ្ញា': 'សតិបញ្ញា',
+        'ពិការផ្លូវចិត្ត': 'ផ្លូវចិត្ត',
+        'ពិការផ្សេងៗ': 'ផ្សេងៗ'
+      };
+
+      // Use shortened label if available, otherwise use original
+      label = shortLabels[label] || label;
 
       headerRow1[fixedColumns + index] = label;
     });
@@ -216,9 +213,9 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
       { wch: 15 }    // ថ្នាក់
     ];
 
-    // Add column widths for accessibility columns
+    // Add column widths for accessibility columns (narrow width for tick marks only)
     for (let i = 0; i < accessibilityColumns; i++) {
-      colWidths.push({ wch: 20 });
+      colWidths.push({ wch: 8 });
     }
 
     ws['!cols'] = colWidths;
@@ -357,7 +354,7 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
 
     // Create workbook
     const wb = XLSXStyle.utils.book_new();
-    XLSXStyle.utils.book_append_sheet(wb, ws, 'សិស្សឧបសគ្គ');
+    XLSXStyle.utils.book_append_sheet(wb, ws, 'សិស្សមានពិការភាព');
 
     // Set page setup for A4 landscape
     ws['!pageSetup'] = {
@@ -375,9 +372,9 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     };
 
     wb.Props = {
-      Title: `បញ្ជីសិស្សឧបសគ្គ - ${schoolName}`,
-      Subject: 'សិស្សឧបសគ្គ',
-      Author: 'PLP School Portal',
+      Title: `បញ្ជីសិស្សមានពុិការភាព - ${schoolName}`,
+      Subject: 'សិស្សមានពិការភាព',
+      Author: 'PLP SMS',
       CreatedDate: new Date()
     };
 
