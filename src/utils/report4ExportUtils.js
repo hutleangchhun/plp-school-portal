@@ -421,17 +421,14 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     // Set row heights for better spacing
     const rowHeights = [];
     for (let i = 0; i < templateData.length; i++) {
-      if (i === signatureRow1Index || i === signatureRow2Index) {
-        // Larger height for signature rows (with space for signatures)
-        rowHeights.push({ hpt: 50 });
-      } else if (i >= summaryRow1Index && i <= summaryRow2Index) {
+      if (i >= summaryRow1Index && i <= summaryRow2Index) {
         // Moderate height for summary rows
         rowHeights.push({ hpt: 25 });
       } else if (i === dateRow1Index || i === dateRow2Index) {
         // Height for date rows
         rowHeights.push({ hpt: 20 });
       } else {
-        // Default height
+        // Default height for all other rows including signature rows
         rowHeights.push({ hpt: 15 });
       }
     }
