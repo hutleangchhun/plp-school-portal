@@ -54,52 +54,25 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
 
     // Row 5: Report title
     const titleRow = [...Array(totalColumns).fill('')];
-    titleRow[0] = 'បញ្ជីឈ្មោះសិស្ស / សិស្សី ជាជនជាតិដើមភាគតិច';
+    titleRow[0] = 'បញ្ជីឈ្មោះសិស្ស ជនជាតិដើមភាគតិច';
     templateData.push(titleRow);
 
     // Row 6: Empty row
     templateData.push([...Array(totalColumns).fill('')]);
 
-    // Row 7-8: Headers
+    // Row 7-8: Headers - Only show ethnic group column
     const headerRow1 = [...Array(totalColumns).fill('')];
-    headerRow1[0] = 'ល.រ';
-    headerRow1[1] = 'អត្តលេខសិស្ស';
-    headerRow1[2] = 'ឈ្មោះសិស្ស';
-    headerRow1[3] = 'ភេទ';
-    headerRow1[4] = 'ថ្នាក់';
-    headerRow1[5] = 'ជនជាតិដើមភាគតិច';
-    headerRow1[6] = 'ភាសាម្តាយ';
+    headerRow1[0] = 'ជនជាតិដើមភាគតិច';
     templateData.push(headerRow1);
 
     const headerRow2 = [...Array(totalColumns).fill('')];
     headerRow2[0] = '(១)';
-    headerRow2[1] = '(២)';
-    headerRow2[2] = '(៣)';
-    headerRow2[3] = '(៤)';
-    headerRow2[4] = '(៥)';
-    headerRow2[5] = '(៦)';
-    headerRow2[6] = '(៧)';
     templateData.push(headerRow2);
 
     // Data rows
     ethnicMinorityStudents.forEach((student, index) => {
       const dataRow = [...Array(totalColumns).fill('')];
-      dataRow[0] = index + 1;
-      dataRow[1] = student.studentId || student.id || '';
-      dataRow[2] = getFullName(student, '');
-      dataRow[3] = student.gender === 'MALE' ? 'ប្រុស' : student.gender === 'FEMALE' ? 'ស្រី' : '';
-
-      // Format class
-      if (student.class?.gradeLevel !== undefined && student.class?.gradeLevel !== null) {
-        const gradeLevel = String(student.class.gradeLevel);
-        const displayGradeLevel = gradeLevel === '0' ? 'មត្តេយ្យ' : gradeLevel;
-        dataRow[4] = formatClassIdentifier(displayGradeLevel, student.class?.section);
-      } else {
-        dataRow[4] = student.class?.name || '';
-      }
-
-      dataRow[5] = student.ethnicGroup || student.ethnic_group || '';
-      dataRow[6] = student.nativeLanguage || student.native_language || '';
+      dataRow[0] = student.ethnicGroup || student.ethnic_group || '';
 
       templateData.push(dataRow);
     });
@@ -192,9 +165,9 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
             font: { name: 'Khmer OS', sz: 10 }
           };
         } else if (R === 5) {
-          // Report title
+          // Report title - center aligned
           ws[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS', sz: 11, bold: true }
           };
         } else if (R === 7 || R === 8) {
@@ -260,15 +233,9 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
       { s: { r: 2, c: 0 }, e: { r: 2, c: totalColumns - 1 } },
       { s: { r: 3, c: 0 }, e: { r: 3, c: totalColumns - 1 } },
       { s: { r: 4, c: 0 }, e: { r: 4, c: totalColumns - 1 } },
-      { s: { r: 5, c: 0 }, e: { r: 5, c: totalColumns - 1 } },
-      // Header column merges
+      { s: { r: 5, c: 0 }, e: { r: 5, c: totalColumns - 1 } }, // Title row - center aligned
+      // Header column merge - only ethnic group column
       { s: { r: 7, c: 0 }, e: { r: 8, c: 0 } },
-      { s: { r: 7, c: 1 }, e: { r: 8, c: 1 } },
-      { s: { r: 7, c: 2 }, e: { r: 8, c: 2 } },
-      { s: { r: 7, c: 3 }, e: { r: 8, c: 3 } },
-      { s: { r: 7, c: 4 }, e: { r: 8, c: 4 } },
-      { s: { r: 7, c: 5 }, e: { r: 8, c: 5 } },
-      { s: { r: 7, c: 6 }, e: { r: 8, c: 6 } },
       // Footer merges
       { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: totalColumns - 1 } },
       // Date row merge
