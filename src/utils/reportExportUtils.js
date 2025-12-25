@@ -1009,16 +1009,15 @@ export const exportStudentListWithParents = async (
     // Build worksheet data
     const wsData = [];
 
-    // Traditional Khmer header (rows 0-8)
-    wsData.push(['ព្រះរាជាណាចក្រកម្ពុជា']);
-    wsData.push(['ជាតិ       សាសនា       ព្រះមហាក្សត្រ']);
-    wsData.push([schoolName || 'សាលាបឋមសិក្សា ...........']);
-    wsData.push([reportName]);
-    wsData.push([periodInfo]);
-    wsData.push([]);
-    wsData.push([]);
-    wsData.push([]);
-    wsData.push([]);
+    // Traditional Khmer header (rows 0-7) - matching Report 9 format
+    wsData.push(['ព្រះរាជាណាចក្រកម្ពុជា']); // Row 0: Kingdom
+    wsData.push(['ជាតិ     សាសនា     ព្រះមហាក្សត្រ']); // Row 1: Nation/Religion/King
+    wsData.push(['មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............']); // Row 2: Department
+    wsData.push(['ការិយាល័យអប់រំ យុវជន និងកីឡារដ្ឋបាលក្រុង/ស្រុក/ខណ្ឌ..........................']); // Row 3: Office
+    wsData.push([`សាលា: ${schoolName}`]); // Row 4: School name
+    wsData.push([reportName]); // Row 5: Report title
+    wsData.push([periodInfo]); // Row 6: Period info
+    wsData.push([]); // Row 7: Empty
 
     // Main header row (row 9)
     wsData.push([
@@ -1044,20 +1043,21 @@ export const exportStudentListWithParents = async (
     ]);
 
     // Data rows
+    let dataStartRow = wsData.length;
     transformedData.forEach((student, index) => {
       const gender = student.gender === 'ប្រុស' ? 'ប្រុស' : student.gender === 'ស្រី' ? 'ស្រី' : '';
-      
+
       const studentAddress = student.fullAddress || '';
-      
+
       const fatherData = student.fatherInfo || {};
       const motherData = student.motherInfo || {};
-      
+
       console.log(`📝 Excel row ${index + 1}:`, {
         studentNumber: student.studentNumber,
         ethnicGroup: student.ethnicGroup,
         specialNeeds: student.specialNeeds
       });
-      
+
       wsData.push([
         index + 1,
         student.studentNumber || '',
@@ -1089,6 +1089,42 @@ export const exportStudentListWithParents = async (
       ]);
     });
 
+    // Footer section
+    wsData.push([]); // Empty row
+
+    // Calculate student counts
+    const totalStudents = transformedData.length;
+    const femaleStudents = transformedData.filter(s => {
+      const genderVal = s.gender === 'ប្រុស' ? 'ប្រុស' : s.gender === 'ស្រី' ? 'ស្រី' : '';
+      return genderVal === 'ស្រី';
+    }).length;
+    const maleStudents = totalStudents - femaleStudents;
+
+    // Summary row
+    const summaryRowIndex = wsData.length;
+    const summaryRow = new Array(24).fill('');
+    summaryRow[0] = `សរុប: ${totalStudents} នាក់  ប្រុស: ${maleStudents} នាក់  ស្រី: ${femaleStudents} នាក់`;
+    wsData.push(summaryRow);
+
+    // Date row (column A-B merged, center aligned)
+    const dateRowIndex = wsData.length;
+    const dateRow = new Array(24).fill('');
+    const currentDate = new Date().toLocaleDateString('km-KH', { year: 'numeric', month: 'long', day: 'numeric' });
+    dateRow[0] = currentDate;
+    wsData.push(dateRow);
+
+    // Signature label row (column A-B merged, center aligned)
+    const signatureLabelRowIndex = wsData.length;
+    const signatureLabelRow = new Array(24).fill('');
+    signatureLabelRow[0] = 'បានឃើញ';
+    wsData.push(signatureLabelRow);
+
+    // Signature role row (column A-B merged, center aligned)
+    const signatureRoleRowIndex = wsData.length;
+    const signatureRoleRow = new Array(24).fill('');
+    signatureRoleRow[0] = 'នាយកសាលា';
+    wsData.push(signatureRoleRow);
+
     // Create worksheet
     const worksheet = XLSX.utils.aoa_to_sheet(wsData);
 
@@ -1111,12 +1147,16 @@ export const exportStudentListWithParents = async (
       { s: { r: 5, c: 0 }, e: { r: 5, c: 22 } },
       { s: { r: 6, c: 0 }, e: { r: 6, c: 22 } },
       { s: { r: 7, c: 0 }, e: { r: 7, c: 22 } },
-      { s: { r: 8, c: 0 }, e: { r: 8, c: 22 } },
       // Main header merges
-      { s: { r: 9, c: 1 }, e: { r: 9, c: 9 } },   // ព័ត៌មានសិស្ស (9 columns)
-      { s: { r: 9, c: 10 }, e: { r: 9, c: 15 } }, // ព័ត៌មានឪពុក (6 columns)
-      { s: { r: 9, c: 16 }, e: { r: 9, c: 21 } }, // ព័ត៌មានម្តាយ (6 columns)
-      { s: { r: 9, c: 22 }, e: { r: 9, c: 23 } }  // សេចក្ដីផ្សេងៗ (2 columns)
+      { s: { r: 8, c: 1 }, e: { r: 8, c: 9 } },   // ព័ត៌មានសិស្ស (9 columns)
+      { s: { r: 8, c: 10 }, e: { r: 8, c: 15 } }, // ព័ត៌មានឪពុក (6 columns)
+      { s: { r: 8, c: 16 }, e: { r: 8, c: 21 } }, // ព័ត៌មានម្តាយ (6 columns)
+      { s: { r: 8, c: 22 }, e: { r: 8, c: 23 } }, // សេចក្ដីផ្សេងៗ (2 columns)
+      // Footer merges
+      { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: 23 } },
+      { s: { r: dateRowIndex, c: 0 }, e: { r: dateRowIndex, c: 1 } },
+      { s: { r: signatureLabelRowIndex, c: 0 }, e: { r: signatureLabelRowIndex, c: 1 } },
+      { s: { r: signatureRoleRowIndex, c: 0 }, e: { r: signatureRoleRowIndex, c: 1 } }
     ];
 
     // Apply styling
@@ -1126,15 +1166,15 @@ export const exportStudentListWithParents = async (
         const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
         if (!worksheet[cellAddress]) worksheet[cellAddress] = { t: 's', v: '' };
 
-        // Header rows (0-8)
-        if (R < 9) {
+        // Header rows (0-7)
+        if (R < 8) {
           worksheet[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'center' },
             font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
           };
         }
-        // Main header and subheader rows (9-10)
-        else if (R === 9 || R === 10) {
+        // Main header and subheader rows (8-9)
+        else if (R === 8 || R === 9) {
           worksheet[cellAddress].s = {
             fill: { fgColor: { rgb: 'E0E0E0' } },
             font: { name: 'Khmer OS Battambang', sz: 10, bold: true },
@@ -1145,6 +1185,13 @@ export const exportStudentListWithParents = async (
               left: { style: 'thin', color: { rgb: '000000' } },
               right: { style: 'thin', color: { rgb: '000000' } }
             }
+          };
+        }
+        // Footer rows
+        else if (R === summaryRowIndex || R === dateRowIndex || R === signatureLabelRowIndex || R === signatureRoleRowIndex) {
+          worksheet[cellAddress].s = {
+            font: { name: 'Khmer OS Battambang', sz: 10 },
+            alignment: { horizontal: 'center', vertical: 'center' }
           };
         }
         // Data rows
