@@ -85,9 +85,14 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     headerRow1[3] = 'ភេទ';
     headerRow1[4] = 'ថ្នាក់';
 
-    // Add accessibility type headers
+    // Add accessibility type headers - remove "ពិបាក" prefix to shorten text
     accessibilityOptions.forEach((option, index) => {
-      headerRow1[fixedColumns + index] = option.label;
+      let label = option.label;
+      // Remove "ពិបាក" prefix and trim
+      if (label.startsWith('ពិបាក')) {
+        label = label.replace(/^ពិបាក/, '').trim();
+      }
+      headerRow1[fixedColumns + index] = label;
     });
     templateData.push(headerRow1);
 
