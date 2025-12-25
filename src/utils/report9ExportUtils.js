@@ -231,7 +231,6 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
           };
         } else if (R >= 10 && R <= dataEndRow) {
           // Data rows
-          const isNumericCol = C === 0 || C === 3 || C === 4; // ល.រ, ភេទ, ថ្ងៃខែឆ្នាំកំណើត
           ws[cellAddress].s = {
             border: {
               top: { style: 'thin', color: { rgb: '000000' } },
@@ -241,7 +240,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
             },
             alignment: {
               vertical: 'center',
-              horizontal: isNumericCol = 'center'
+              horizontal: 'center'
             },
             font: { name: 'Khmer OS Battambang', sz: 10 }
           };
