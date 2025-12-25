@@ -225,12 +225,8 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     // Row 0: Kingdom header
     templateData.push(['ព្រះរាជាណាចក្រកម្ពុជា', ...Array(totalColumns - 1).fill('')]);
 
-    // Row 1: Nation/Religion/King
-    const nationRow = [...emptyRow];
-    nationRow[10] = 'ជាតិ';
-    nationRow[18] = 'សាសនា';
-    nationRow[28] = 'ព្រះមហាក្សត្រ';
-    templateData.push(nationRow);
+    // Row 1: Nation/Religion/King (merged and centered like Kingdom header)
+    templateData.push(['ជាតិ     សាសនា     ព្រះមហាក្សត្រ', ...Array(totalColumns - 1).fill('')]);
 
     // Row 2: Department
     const deptRow = [...emptyRow];
@@ -369,12 +365,12 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     const summaryRow2Index = footerStartRow + 1;
 
     const dateRow1 = [...emptyFooterRow];
-    dateRow1[0] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ...... ព.ស.២៥...........';
+    dateRow1[33] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ...... ព.ស.២៥...........';
     templateData.push(dateRow1);
     const dateRow1Index = footerStartRow + 2;
 
     const dateRow2 = [...emptyFooterRow];
-    dateRow2[0] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
+    dateRow2[33] = 'ធ្វើនៅ.........................ថ្ងៃទី.......... ខែ............. ឆ្នាំ២០.......';
     templateData.push(dateRow2);
     const dateRow2Index = footerStartRow + 3;
 
@@ -382,13 +378,13 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     const emptyRowAfterDatesIndex = footerStartRow + 4;
 
     const signatureRow = [...emptyFooterRow];
-    signatureRow[5] = 'បានឃើញ';
+    signatureRow[2] = 'បានឃើញ';
     signatureRow[33] = 'គ្រូប្រចាំថ្នាក់';
     templateData.push(signatureRow);
     const signatureRowIndex = footerStartRow + 5;
 
     const positionRow = [...emptyFooterRow];
-    positionRow[4] = 'នាយកសាលា';
+    positionRow[2] = 'នាយកសាលា';
     templateData.push(positionRow);
     const positionRowIndex = footerStartRow + 6;
 
@@ -514,10 +510,16 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
               color: isWeekendCol ? { rgb: 'FF0000' } : undefined
             }
           };
+        } else if (R === dateRow1Index || R === dateRow2Index) {
+          // Date rows: center aligned
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            font: { name: 'Khmer OS', sz: 10 }
+          };
         } else if (R >= summaryRow1Index && R <= positionRowIndex) {
           // Footer rows styling with proper Khmer font support
           ws[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
         } else {
@@ -552,10 +554,12 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
       // Footer section merges - merge long text rows across columns
       { s: { r: summaryRow1Index, c: 0 }, e: { r: summaryRow1Index, c: totalColumns - 1 } },
       { s: { r: summaryRow2Index, c: 0 }, e: { r: summaryRow2Index, c: totalColumns - 1 } },
-      { s: { r: dateRow1Index, c: 0 }, e: { r: dateRow1Index, c: totalColumns - 1 } },
-      { s: { r: dateRow2Index, c: 0 }, e: { r: dateRow2Index, c: totalColumns - 1 } },
-      { s: { r: signatureRowIndex, c: 0 }, e: { r: signatureRowIndex, c: totalColumns - 1 } },
-      { s: { r: positionRowIndex, c: 0 }, e: { r: positionRowIndex, c: totalColumns - 1 } },
+      // dateRow1 and dateRow2: Start at column 33 (AH) and span to end
+      { s: { r: dateRow1Index, c: 33 }, e: { r: dateRow1Index, c: totalColumns - 1 } },
+      { s: { r: dateRow2Index, c: 33 }, e: { r: dateRow2Index, c: totalColumns - 1 } },
+      // signatureRow and positionRow: Column C (2) and span
+      { s: { r: signatureRowIndex, c: 2 }, e: { r: signatureRowIndex, c: 10 } },
+      { s: { r: positionRowIndex, c: 2 }, e: { r: positionRowIndex, c: 10 } },
     ];
 
     // Create workbook
