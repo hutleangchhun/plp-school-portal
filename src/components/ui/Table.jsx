@@ -108,7 +108,7 @@ const Table = ({
     : 'bg-white';
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+    <div className="rounded-sm border border-gray-200 bg-white overflow-hidden">
       <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
         <table className={`w-full text-sm min-w-full ${className}`} {...props}>
           <thead className={`${headerBase} border-b border-gray-200`}>

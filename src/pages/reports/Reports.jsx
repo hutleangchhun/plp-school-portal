@@ -21,7 +21,7 @@ import { useReport1Data, Report1Preview } from './report1/indexReport1';
 import { useReport4Data, Report4Preview, exportReport4ToExcel } from './report4/indexReport4';
 import { useReport6Data, Report6Preview } from './report6/indexReport6';
 import { useReport8Data, Report8Preview } from './report8/indexReport8';
-import { useReport9Data, Report9Preview } from './report9/indexReport9';
+import { useReport9Data, Report9Preview, exportReport9ToExcel } from './report9/indexReport9';
 import { 
   BarChart, 
   Bar, 
@@ -976,6 +976,11 @@ export default function Reports() {
             endDate
           });
         }
+      } else if (selectedReport === 'report9') {
+        // Special handling for Report 9 (Ethnic Minority Students) - use traditional Excel format
+        result = await exportReport9ToExcel(reportData, {
+          schoolName
+        });
       } else {
         // Process and export other reports with standard format
         result = await processAndExportReport(
