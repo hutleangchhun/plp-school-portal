@@ -7,6 +7,7 @@
 import { getFullName } from './usernameUtils';
 import { formatClassIdentifier } from './helpers';
 import { accessibilityOptions } from './formOptions';
+import { formatDateKhmer } from './formatters';
 
 /**
  * Export Report 6 (Students with Disabilities) to Excel with traditional format
@@ -173,6 +174,25 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     summaryRow[0] = `សរុប: ${studentsWithDisabilities.length} នាក់`;
     templateData.push(summaryRow);
 
+    // Date row (column F-G merged, center aligned)
+    const dateRowIndex = templateData.length;
+    const dateRow = [...emptyRow];
+    const currentDate = formatDateKhmer(new Date(), 'formal');
+    dateRow[5] = currentDate;
+    templateData.push(dateRow);
+
+    // Signature label row (column F-G merged, center aligned)
+    const signatureLabelRowIndex = templateData.length;
+    const signatureLabelRow = [...emptyRow];
+    signatureLabelRow[5] = 'បានឃើញ';
+    templateData.push(signatureLabelRow);
+
+    // Signature role row (column F-G merged, center aligned)
+    const signatureRoleRowIndex = templateData.length;
+    const signatureRoleRow = [...emptyRow];
+    signatureRoleRow[5] = 'នាយកសាលា';
+    templateData.push(signatureRoleRow);
+
     // Create worksheet
     const ws = XLSXStyle.utils.aoa_to_sheet(templateData);
 
@@ -272,6 +292,18 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
             alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
+        } else if (R === dateRowIndex) {
+          // Date row - center aligned, columns F-G merged
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            font: { name: 'Khmer OS', sz: 10 }
+          };
+        } else if (R === signatureLabelRowIndex || R === signatureRoleRowIndex) {
+          // Signature rows - center aligned, columns F-G merged
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            font: { name: 'Khmer OS', sz: 10 }
+          };
         } else {
           ws[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'left' },
@@ -302,7 +334,12 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
         ({ s: { r: 8, c: fixedColumns + i }, e: { r: 9, c: fixedColumns + i } })
       ),
       // Summary row merge
-      { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: totalColumns - 1 } }
+      { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: totalColumns - 1 } },
+      // Date row merge - columns F-G (5-6) merged, center aligned
+      { s: { r: dateRowIndex, c: 5 }, e: { r: dateRowIndex, c: 6 } },
+      // Signature rows merge - columns F-G (5-6) merged, center aligned
+      { s: { r: signatureLabelRowIndex, c: 5 }, e: { r: signatureLabelRowIndex, c: 6 } },
+      { s: { r: signatureRoleRowIndex, c: 5 }, e: { r: signatureRoleRowIndex, c: 6 } }
     ];
 
     // Create workbook
