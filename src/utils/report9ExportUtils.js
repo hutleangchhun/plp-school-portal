@@ -135,23 +135,23 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     summaryRow[0] = `សរុប: ${ethnicMinorityStudents.length} នាក់`;
     templateData.push(summaryRow);
 
-    // Date row (left aligned)
+    // Date row (column F-G merged, center aligned)
     const dateRowIndex = templateData.length;
     const dateRow = [...emptyRow];
-    dateRow[0] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ......';
+    dateRow[5] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ......';
     templateData.push(dateRow);
 
     templateData.push([...emptyRow]);
 
-    // Signature rows (merged across all columns, left aligned)
+    // Signature rows (column F-G merged, center aligned)
     const signatureLabelRowIndex = templateData.length;
     const signatureLabelRow = [...emptyRow];
-    signatureLabelRow[0] = 'បានឃើញ';
+    signatureLabelRow[5] = 'បានឃើញ';
     templateData.push(signatureLabelRow);
 
     const signatureRoleRowIndex = templateData.length;
     const signatureRoleRow = [...emptyRow];
-    signatureRoleRow[0] = 'នាយកសាលា';
+    signatureRoleRow[5] = 'នាយកសាលា';
     templateData.push(signatureRoleRow);
 
     // Create worksheet
@@ -212,7 +212,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
         } else if (R === 6) {
           // Academic year row - left aligned
           ws[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
         } else if (R === 8 || R === 9) {
@@ -251,15 +251,15 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
             font: { name: 'Khmer OS', sz: 10 }
           };
         } else if (R === dateRowIndex) {
-          // Date row - left aligned
+          // Date row - center aligned, columns F-G merged
           ws[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
         } else if (R === signatureLabelRowIndex || R === signatureRoleRowIndex) {
-          // Signature rows - left aligned, merged across columns
+          // Signature rows - center aligned, columns F-G merged
           ws[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
         } else {
@@ -291,11 +291,11 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
       { s: { r: 8, c: 6 }, e: { r: 9, c: 6 } },
       // Footer merges
       { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: totalColumns - 1 } },
-      // Date row merge - left aligned
-      { s: { r: dateRowIndex, c: 0 }, e: { r: dateRowIndex, c: totalColumns - 1 } },
-      // Signature rows merge - left aligned
-      { s: { r: signatureLabelRowIndex, c: 0 }, e: { r: signatureLabelRowIndex, c: totalColumns - 1 } },
-      { s: { r: signatureRoleRowIndex, c: 0 }, e: { r: signatureRoleRowIndex, c: totalColumns - 1 } }
+      // Date row merge - columns F-G (5-6) merged, center aligned
+      { s: { r: dateRowIndex, c: 5 }, e: { r: dateRowIndex, c: 6 } },
+      // Signature rows merge - columns F-G (5-6) merged, center aligned
+      { s: { r: signatureLabelRowIndex, c: 5 }, e: { r: signatureLabelRowIndex, c: 6 } },
+      { s: { r: signatureRoleRowIndex, c: 5 }, e: { r: signatureRoleRowIndex, c: 6 } }
     ];
 
     // Create workbook
