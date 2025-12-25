@@ -6,6 +6,7 @@
 import * as XLSX from 'xlsx-js-style';
 import { formatClassIdentifier } from './helpers';
 import { getFullName } from './usernameUtils';
+import { formatDateKhmer } from './formatters';
 
 /**
  * Report 1: Student Name List (បញ្ជីហៅឈ្មោះសិស្ស)
@@ -1109,7 +1110,7 @@ export const exportStudentListWithParents = async (
     // Date row (column A-B merged, center aligned)
     const dateRowIndex = wsData.length;
     const dateRow = new Array(24).fill('');
-    const currentDate = new Date().toLocaleDateString('km-KH', { year: 'numeric', month: 'long', day: 'numeric' });
+    const currentDate = formatDateKhmer(new Date(), 'formal');
     dateRow[0] = currentDate;
     wsData.push(dateRow);
 
@@ -1166,17 +1167,38 @@ export const exportStudentListWithParents = async (
         const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
         if (!worksheet[cellAddress]) worksheet[cellAddress] = { t: 's', v: '' };
 
-        // Header rows (0-7)
-        if (R < 8) {
+        // Kingdom and nation header (rows 0-1)
+        if (R === 0 || R === 1) {
           worksheet[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'center' },
-            font: { name: 'Khmer OS Battambang', sz: 11, bold: true }
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            font: { name: 'Khmer OS', sz: 11, bold: true }
+          };
+        }
+        // Department, office, school rows (rows 2-4)
+        else if (R === 2 || R === 3 || R === 4) {
+          worksheet[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            font: { name: 'Khmer OS', sz: 10 }
+          };
+        }
+        // Report title (row 5)
+        else if (R === 5) {
+          worksheet[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            font: { name: 'Khmer OS', sz: 11, bold: true }
+          };
+        }
+        // Period info (row 6)
+        else if (R === 6) {
+          worksheet[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            font: { name: 'Khmer OS', sz: 10 }
           };
         }
         // Main header and subheader rows (8-9)
         else if (R === 8 || R === 9) {
           worksheet[cellAddress].s = {
-            fill: { fgColor: { rgb: 'E0E0E0' } },
+            fill: { fgColor: { rgb: 'D3D3D3' } },
             font: { name: 'Khmer OS Battambang', sz: 10, bold: true },
             alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
             border: {
@@ -1187,11 +1209,25 @@ export const exportStudentListWithParents = async (
             }
           };
         }
-        // Footer rows
-        else if (R === summaryRowIndex || R === dateRowIndex || R === signatureLabelRowIndex || R === signatureRoleRowIndex) {
+        // Summary row
+        else if (R === summaryRowIndex) {
           worksheet[cellAddress].s = {
-            font: { name: 'Khmer OS Battambang', sz: 10 },
-            alignment: { horizontal: 'center', vertical: 'center' }
+            font: { name: 'Khmer OS', sz: 10 },
+            alignment: { horizontal: 'left', vertical: 'center', wrapText: true }
+          };
+        }
+        // Date row
+        else if (R === dateRowIndex) {
+          worksheet[cellAddress].s = {
+            font: { name: 'Khmer OS', sz: 10 },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+          };
+        }
+        // Signature rows
+        else if (R === signatureLabelRowIndex || R === signatureRoleRowIndex) {
+          worksheet[cellAddress].s = {
+            font: { name: 'Khmer OS', sz: 10 },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
           };
         }
         // Data rows
@@ -1200,10 +1236,10 @@ export const exportStudentListWithParents = async (
             font: { name: 'Khmer OS Battambang', sz: 10 },
             alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
             border: {
-              top: { style: 'thin', color: { rgb: 'D0D0D0' } },
-              bottom: { style: 'thin', color: { rgb: 'D0D0D0' } },
-              left: { style: 'thin', color: { rgb: 'D0D0D0' } },
-              right: { style: 'thin', color: { rgb: 'D0D0D0' } }
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } }
             }
           };
         }
