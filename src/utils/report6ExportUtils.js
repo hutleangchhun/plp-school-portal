@@ -19,7 +19,7 @@ import { formatDateKhmer } from './formatters';
  */
 export const exportReport6ToExcel = async (studentsWithDisabilities, options = {}) => {
   const {
-    schoolName = 'សាលា'
+    schoolName = ''
   } = options;
 
   console.log('📊 exportReport6ToExcel - Received data:', studentsWithDisabilities.length, 'students');
@@ -67,7 +67,7 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
 
     // Row 5: Report title
     const titleRow = [...emptyRow];
-    titleRow[0] = 'បញ្ជីសិស្ស ដែលមានឧបសគ្គ/ពិការ';
+    titleRow[0] = 'បញ្ជីឈ្មោះសិស្សដែលមានពិការភាព';
     templateData.push(titleRow);
 
     // Row 6: Academic year
@@ -78,7 +78,18 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     // Row 7: Empty row
     templateData.push([...emptyRow]);
 
-    // Row 8: Main headers
+    // Row 8: Category headers (main headers for fixed columns and accessibility section)
+    const categoryRow = Array(totalColumns).fill('');
+    categoryRow[0] = 'ល.រ';
+    categoryRow[1] = 'អត្តលេខសិស្ស';
+    categoryRow[2] = 'ឈ្មោះសិស្ស';
+    categoryRow[3] = 'ភេទ';
+    categoryRow[4] = 'ថ្នាក់';
+    // Add accessibility category header (will span from column 5 onwards)
+    categoryRow[5] = 'ឧបសគ្គ/ពិការ';
+    templateData.push(categoryRow);
+
+    // Row 9: Main headers (sub-headers for accessibility types)
     const headerRow1 = Array(totalColumns).fill('');
     headerRow1[0] = 'ល.រ';
     headerRow1[1] = 'អត្តលេខសិស្ស';
@@ -112,7 +123,7 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     });
     templateData.push(headerRow1);
 
-    // Row 9: Column numbers
+    // Row 10: Column numbers
     const headerRow2 = Array(totalColumns).fill('');
     headerRow2[0] = '(១)';
     headerRow2[1] = '(២)';
@@ -228,7 +239,7 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
 
     // Apply styling
     const totalRows = templateData.length;
-    const dataEndRow = 10 + studentsWithDisabilities.length;
+    const dataEndRow = 11 + studentsWithDisabilities.length; // Updated for new header row
 
     for (let R = 0; R < totalRows; R++) {
       for (let C = 0; C < totalColumns; C++) {
@@ -258,8 +269,8 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
             alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
-        } else if (R === 8 || R === 9) {
-          // Header rows (now at 8-9)
+        } else if (R === 8 || R === 9 || R === 10) {
+          // Header rows (now at 8-10, with new category header row)
           ws[cellAddress].s = {
             fill: { fgColor: { rgb: 'D3D3D3' } },
             border: {
@@ -271,7 +282,7 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
             alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS Battambang', sz: 10, bold: true }
           };
-        } else if (R >= 10 && R <= dataEndRow) {
+        } else if (R >= 11 && R <= dataEndRow) {
           // Data rows
           ws[cellAddress].s = {
             border: {
@@ -323,15 +334,17 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
       { s: { r: 4, c: 0 }, e: { r: 4, c: totalColumns - 1 } },
       { s: { r: 5, c: 0 }, e: { r: 5, c: totalColumns - 1 } }, // Title row
       { s: { r: 6, c: 0 }, e: { r: 6, c: totalColumns - 1 } }, // Academic year row
-      // Header columns merge (rows 8-9 for each column)
+      // Category header row merge - fixed columns (rows 8-9) and accessibility section (row 8 only)
       { s: { r: 8, c: 0 }, e: { r: 9, c: 0 } },
       { s: { r: 8, c: 1 }, e: { r: 9, c: 1 } },
       { s: { r: 8, c: 2 }, e: { r: 9, c: 2 } },
       { s: { r: 8, c: 3 }, e: { r: 9, c: 3 } },
       { s: { r: 8, c: 4 }, e: { r: 9, c: 4 } },
-      // Merge accessibility headers (8-9) for each column
+      // Merge accessibility category header across all accessibility columns (row 8 only)
+      { s: { r: 8, c: fixedColumns }, e: { r: 8, c: totalColumns - 1 } },
+      // Merge accessibility headers (9-10) for each column
       ...Array.from({ length: accessibilityColumns }, (_, i) =>
-        ({ s: { r: 8, c: fixedColumns + i }, e: { r: 9, c: fixedColumns + i } })
+        ({ s: { r: 9, c: fixedColumns + i }, e: { r: 10, c: fixedColumns + i } })
       ),
       // Summary row merge
       { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: totalColumns - 1 } },
@@ -369,7 +382,7 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     };
 
     // Generate filename
-    const filename = `បញ្ជីសិស្សឧបសគ្គ_${schoolName.replace(/\\s+/g, '_')}.xlsx`;
+    const filename = `បញ្ជីសិស្សមានពិការភាព_${schoolName.replace(/\\s+/g, '_')}.xlsx`;
 
     // Export file
     XLSXStyle.writeFile(wb, filename, {
