@@ -5,6 +5,7 @@
 
 import { getFullName } from './usernameUtils';
 import { formatClassIdentifier } from './helpers';
+import { formatDateKhmer } from './formatters';
 
 /**
  * Export Report 9 (Ethnic Minority Students) to Excel with traditional format
@@ -138,17 +139,17 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     // Date row (column F-G merged, center aligned)
     const dateRowIndex = templateData.length;
     const dateRow = [...emptyRow];
-    dateRow[5] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ......';
+    const currentDate = formatDateKhmer(new Date(), 'short');
+    dateRow[5] = `ថ្ងៃ ${currentDate}`;
     templateData.push(dateRow);
 
-    templateData.push([...emptyRow]);
-
-    // Signature rows (column F-G merged, center aligned)
+    // Signature label row (column F-G merged, center aligned)
     const signatureLabelRowIndex = templateData.length;
     const signatureLabelRow = [...emptyRow];
     signatureLabelRow[5] = 'បានឃើញ';
     templateData.push(signatureLabelRow);
 
+    // Signature role row (column F-G merged, center aligned)
     const signatureRoleRowIndex = templateData.length;
     const signatureRoleRow = [...emptyRow];
     signatureRoleRow[5] = 'នាយកសាលា';
