@@ -255,6 +255,8 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
             ? { vertical: 'center', horizontal: 'center', wrapText: false }  // Row 9: accessibility headers - single line
             : { vertical: 'center', horizontal: 'center', wrapText: true };   // Row 8, 10: category and column numbers - allow wrap
 
+          const fontSize = R === 9 ? 8 : 10;  // Row 9: smaller font for accessibility headers
+
           ws[cellAddress].s = {
             fill: { fgColor: { rgb: 'D3D3D3' } },
             border: {
@@ -264,7 +266,7 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
               right: { style: 'thin', color: { rgb: '000000' } }
             },
             alignment: alignment,
-            font: { name: 'Khmer OS Battambang', sz: 10, bold: true }
+            font: { name: 'Khmer OS Battambang', sz: fontSize, bold: true }
           };
         } else if (R >= 11 && R <= dataEndRow) {
           // Data rows
