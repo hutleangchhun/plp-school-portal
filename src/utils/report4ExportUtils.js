@@ -529,6 +529,12 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
               color: isWeekendCol ? { rgb: 'FF0000' } : undefined
             }
           };
+        } else if (R === signatureLabelRowIndex || R === signatureRoleRowIndex) {
+          // Signature rows: align to start (left) - must be before general footer styling
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            font: { name: 'Khmer OS', sz: 10 }
+          };
         } else if (R === dateRow1Index || R === dateRow2Index) {
           // Date rows: center aligned
           ws[cellAddress].s = {
@@ -537,12 +543,6 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
           };
         } else if (R === summaryRow1Index || R === summaryRow2Index) {
           // Summary rows: align to start (left)
-          ws[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
-            font: { name: 'Khmer OS', sz: 10 }
-          };
-        } else if (R === signatureLabelRowIndex || R === signatureRoleRowIndex) {
-          // Signature rows: align to start (left)
           ws[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
@@ -588,11 +588,11 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
       // dateRow1 and dateRow2: Start at column 30 (AD) and span to end
       { s: { r: dateRow1Index, c: 30 }, e: { r: dateRow1Index, c: totalColumns - 1 } },
       { s: { r: dateRow2Index, c: 30 }, e: { r: dateRow2Index, c: totalColumns - 1 } },
-      // Signature label and role rows: Column C (2) to Column J (10) on left, Column AD/AE (30+) on right
+      // Signature label and role rows: Column C (2) to Column J (10) on left, Column AE (31+) on right
       { s: { r: signatureLabelRowIndex, c: 2 }, e: { r: signatureLabelRowIndex, c: 10 } },
-      { s: { r: signatureLabelRowIndex, c: 30 }, e: { r: signatureLabelRowIndex, c: totalColumns - 1 } },
+      { s: { r: signatureLabelRowIndex, c: 31 }, e: { r: signatureLabelRowIndex, c: totalColumns - 1 } },
       { s: { r: signatureRoleRowIndex, c: 2 }, e: { r: signatureRoleRowIndex, c: 10 } },
-      { s: { r: signatureRoleRowIndex, c: 30 }, e: { r: signatureRoleRowIndex, c: totalColumns - 1 } },
+      { s: { r: signatureRoleRowIndex, c: 31 }, e: { r: signatureRoleRowIndex, c: totalColumns - 1 } },
     ];
 
     // Create workbook
