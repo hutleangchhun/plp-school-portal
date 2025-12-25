@@ -97,26 +97,9 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     headerRow1[3] = 'ភេទ';
     headerRow1[4] = 'ថ្នាក់';
 
-    // Add accessibility type headers - shorten to most concise form
+    // Add accessibility type headers - use full labels
     accessibilityOptions.forEach((option, index) => {
-      let label = option.label;
-
-      // Map to shorter headers for better space utilization
-      const shortLabels = {
-        'ពិបាកក្នុងការធ្វើចលនា': 'ធ្វើចលនា',
-        'ពិបាកក្នុងការស្ដាប់': 'ស្ដាប់',
-        'ពិបាកក្នុងការនិយាយ': 'និយាយ',
-        'ពិបាកក្នុងការមើល': 'មើល',
-        'ពិការសរីរាង្គខាងក្នុង': 'សរីរាង្គខាងក្នុង',
-        'ពិការសតិបញ្ញា': 'សតិបញ្ញា',
-        'ពិការផ្លូវចិត្ត': 'ផ្លូវចិត្ត',
-        'ពិការផ្សេងៗ': 'ផ្សេងៗ'
-      };
-
-      // Use shortened label if available, otherwise use original
-      label = shortLabels[label] || label;
-
-      headerRow1[fixedColumns + index] = label;
+      headerRow1[fixedColumns + index] = option.label;
     });
     templateData.push(headerRow1);
 
@@ -268,6 +251,10 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
           };
         } else if (R === 8 || R === 9 || R === 10) {
           // Header rows (now at 8-10, with new category header row)
+          const alignment = R === 9
+            ? { vertical: 'center', horizontal: 'center', wrapText: false }  // Row 9: accessibility headers - single line
+            : { vertical: 'center', horizontal: 'center', wrapText: true };   // Row 8, 10: category and column numbers - allow wrap
+
           ws[cellAddress].s = {
             fill: { fgColor: { rgb: 'D3D3D3' } },
             border: {
@@ -276,7 +263,7 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
               left: { style: 'thin', color: { rgb: '000000' } },
               right: { style: 'thin', color: { rgb: '000000' } }
             },
-            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            alignment: alignment,
             font: { name: 'Khmer OS Battambang', sz: 10, bold: true }
           };
         } else if (R >= 11 && R <= dataEndRow) {
