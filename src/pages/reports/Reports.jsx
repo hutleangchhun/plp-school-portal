@@ -43,7 +43,7 @@ export default function Reports() {
   const { showSuccess, showError } = useToast();
   const [selectedReport, setSelectedReport] = useState('report1');
   const [selectedPeriod, setSelectedPeriod] = useState('month');
-  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(`${new Date().getMonth() + 1}`);
   const [selectedYear, setSelectedYear] = useState(`${new Date().getFullYear()}-${new Date().getFullYear() + 1}`);
   const [selectedSemesterStartDate, setSelectedSemesterStartDate] = useState(null);
   const [selectedSemesterEndDate, setSelectedSemesterEndDate] = useState(null);
@@ -1422,7 +1422,7 @@ export default function Reports() {
           </div>
           <Button
             onClick={handleExportReport}
-            disabled={loading}
+            disabled={loading || (selectedReport === 'report4' && (!selectedClass || selectedClass === 'all'))}
             size="sm"
             variant="default"
           >
@@ -1449,6 +1449,11 @@ export default function Reports() {
                   // Reset class filter when changing report type
                   if (value !== 'report4') {
                     setSelectedClass('all');
+                  }
+                  // Auto-select current month for Report 4
+                  if (value === 'report4') {
+                    setSelectedMonth(`${new Date().getMonth() + 1}`);
+                    setSelectedPeriod('month');
                   }
                 }}
                 options={reportTypes}

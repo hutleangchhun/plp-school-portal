@@ -259,7 +259,7 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
 
     // Row 9: Info row with student counts
     const infoRow = [...emptyRow];
-    infoRow[0] =`សិស្ lászló្រុប: ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
+    infoRow[0] =`សិស្សសរុប: ................${totalStudents}នាក់  ប្រុស...............${maleStudents}នាក់ ស្រី.................${femaleStudents}នាក់`;
     // Only add info row for monthly reports
     if (period === 'month') {
       templateData.push(infoRow);
