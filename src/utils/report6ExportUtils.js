@@ -86,7 +86,7 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     categoryRow[3] = 'ភេទ';
     categoryRow[4] = 'ថ្នាក់';
     // Add accessibility category header (will span from column 5 onwards)
-    categoryRow[5] = 'ឧបសគ្គ/ពិការ';
+    categoryRow[5] = 'ប្រភេទពិការភាព';
     templateData.push(categoryRow);
 
     // Row 9: Main headers (sub-headers for accessibility types)
@@ -101,9 +101,9 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     accessibilityOptions.forEach((option, index) => {
       let label = option.label;
 
-      // Exception: Keep ពិការសរីរាង្គខាងក្នុង as is (don't shorten)
+      // Exception: Shorten ពិការសរីរាង្គខាងក្នុង to សរីរាង្គខាងក្នុង (remove ពិការ prefix only)
       if (label === 'ពិការសរីរាង្គខាងក្នុង') {
-        // Keep as is
+        label = 'សរីរាង្គខាងក្នុង';
       } else {
         // Remove "ពិបាក" prefix first
         if (label.startsWith('ពិបាក')) {
@@ -185,23 +185,23 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     summaryRow[0] = `សរុប: ${studentsWithDisabilities.length} នាក់`;
     templateData.push(summaryRow);
 
-    // Date row (column F-G merged, center aligned)
+    // Date row (columns K-M merged, center aligned)
     const dateRowIndex = templateData.length;
     const dateRow = [...emptyRow];
     const currentDate = formatDateKhmer(new Date(), 'formal');
-    dateRow[5] = currentDate;
+    dateRow[10] = currentDate;
     templateData.push(dateRow);
 
-    // Signature label row (column F-G merged, center aligned)
+    // Signature label row (columns K-M merged, center aligned)
     const signatureLabelRowIndex = templateData.length;
     const signatureLabelRow = [...emptyRow];
-    signatureLabelRow[5] = 'បានឃើញ';
+    signatureLabelRow[10] = 'បានឃើញ';
     templateData.push(signatureLabelRow);
 
-    // Signature role row (column F-G merged, center aligned)
+    // Signature role row (columns K-M merged, center aligned)
     const signatureRoleRowIndex = templateData.length;
     const signatureRoleRow = [...emptyRow];
-    signatureRoleRow[5] = 'នាយកសាលា';
+    signatureRoleRow[10] = 'នាយកសាលា';
     templateData.push(signatureRoleRow);
 
     // Create worksheet
@@ -348,11 +348,11 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
       ),
       // Summary row merge
       { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: totalColumns - 1 } },
-      // Date row merge - columns F-G (5-6) merged, center aligned
-      { s: { r: dateRowIndex, c: 5 }, e: { r: dateRowIndex, c: 6 } },
-      // Signature rows merge - columns F-G (5-6) merged, center aligned
-      { s: { r: signatureLabelRowIndex, c: 5 }, e: { r: signatureLabelRowIndex, c: 6 } },
-      { s: { r: signatureRoleRowIndex, c: 5 }, e: { r: signatureRoleRowIndex, c: 6 } }
+      // Date row merge - columns K-M (10-12) merged, center aligned
+      { s: { r: dateRowIndex, c: 10 }, e: { r: dateRowIndex, c: 12 } },
+      // Signature rows merge - columns K-M (10-12) merged, center aligned
+      { s: { r: signatureLabelRowIndex, c: 10 }, e: { r: signatureLabelRowIndex, c: 12 } },
+      { s: { r: signatureRoleRowIndex, c: 10 }, e: { r: signatureRoleRowIndex, c: 12 } }
     ];
 
     // Create workbook
