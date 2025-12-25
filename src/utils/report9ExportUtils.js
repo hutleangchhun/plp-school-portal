@@ -26,7 +26,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     const XLSXStyleModule = await import('xlsx-js-style');
     const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
 
-    const totalColumns = 6; // ល.រ, អត្តលេខសិស្ស, ឈ្មោះសិស្ស, ភេទ, ថ្នាក់, ជនជាតិដើមភាគតិច
+    const totalColumns = 7; // ល.រ, អត្តលេខសិស្ស, ឈ្មោះសិស្ស, ភេទ, ថ្ងៃខែឆ្នាំកំណើត, ថ្នាក់, ជនជាតិដើមភាគតិច
 
     // Build template data
     const templateData = [];
@@ -78,8 +78,9 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     headerRow1[1] = 'អត្តលេខសិស្ស';
     headerRow1[2] = 'ឈ្មោះសិស្ស';
     headerRow1[3] = 'ភេទ';
-    headerRow1[4] = 'ថ្នាក់';
-    headerRow1[5] = 'ជនជាតិដើមភាគតិច';
+    headerRow1[4] = 'ថ្ងៃខែឆ្នាំកំណើត';
+    headerRow1[5] = 'ថ្នាក់';
+    headerRow1[6] = 'ជនជាតិដើមភាគតិច';
     templateData.push(headerRow1);
 
     const headerRow2 = Array(totalColumns).fill('');
@@ -89,6 +90,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     headerRow2[3] = '(៤)';
     headerRow2[4] = '(៥)';
     headerRow2[5] = '(៦)';
+    headerRow2[6] = '(៧)';
     templateData.push(headerRow2);
 
     // Data rows
@@ -99,16 +101,28 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
       dataRow[2] = getFullName(student, '');
       dataRow[3] = student.gender === 'MALE' ? 'ប្រុស' : student.gender === 'FEMALE' ? 'ស្រី' : '';
 
+      // Format date of birth
+      if (student.dateOfBirth || student.date_of_birth) {
+        const dob = student.dateOfBirth || student.date_of_birth;
+        const dobDate = new Date(dob);
+        const day = String(dobDate.getDate()).padStart(2, '0');
+        const month = String(dobDate.getMonth() + 1).padStart(2, '0');
+        const year = dobDate.getFullYear();
+        dataRow[4] = `${day}/${month}/${year}`;
+      } else {
+        dataRow[4] = '';
+      }
+
       // Format class
       if (student.class?.gradeLevel !== undefined && student.class?.gradeLevel !== null) {
         const gradeLevel = String(student.class.gradeLevel);
         const displayGradeLevel = gradeLevel === '0' ? 'មត្តេយ្យ' : gradeLevel;
-        dataRow[4] = formatClassIdentifier(displayGradeLevel, student.class?.section);
+        dataRow[5] = formatClassIdentifier(displayGradeLevel, student.class?.section);
       } else {
-        dataRow[4] = student.class?.name || '';
+        dataRow[5] = student.class?.name || '';
       }
 
-      dataRow[5] = student.ethnicGroup || student.ethnic_group || '';
+      dataRow[6] = student.ethnicGroup || student.ethnic_group || '';
       templateData.push(dataRow);
     });
 
@@ -149,6 +163,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
       { wch: 15 },   // អត្តលេខសិស្ស
       { wch: 25 },   // ឈ្មោះសិស្ស
       { wch: 8 },    // ភេទ
+      { wch: 15 },   // ថ្ងៃខែឆ្នាំកំណើត
       { wch: 8 },    // ថ្នាក់
       { wch: 25 }    // ជនជាតិដើមភាគតិច
     ];
@@ -215,7 +230,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
           };
         } else if (R >= 10 && R <= dataEndRow) {
           // Data rows
-          const isNumericCol = C === 0 || C === 3 || C === 4; // ល.រ, ភេទ, ថ្នាក់
+          const isNumericCol = C === 0 || C === 3 || C === 4; // ល.រ, ភេទ, ថ្ងៃខែឆ្នាំកំណើត
           ws[cellAddress].s = {
             border: {
               top: { style: 'thin', color: { rgb: '000000' } },
@@ -273,6 +288,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
       { s: { r: 8, c: 3 }, e: { r: 9, c: 3 } },
       { s: { r: 8, c: 4 }, e: { r: 9, c: 4 } },
       { s: { r: 8, c: 5 }, e: { r: 9, c: 5 } },
+      { s: { r: 8, c: 6 }, e: { r: 9, c: 6 } },
       // Footer merges
       { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: totalColumns - 1 } },
       // Date row merge - left aligned
