@@ -3,9 +3,6 @@
  * Exports ethnic minority student data in traditional Excel format with Khmer headers
  */
 
-import { getFullName } from './usernameUtils';
-import { formatClassIdentifier } from './helpers';
-
 /**
  * Export Report 9 (Ethnic Minority Students) to Excel with traditional format
  *
@@ -26,110 +23,67 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     const XLSXStyleModule = await import('xlsx-js-style');
     const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
 
-    const totalColumns = 34; // AH columns
+    const totalColumns = 1; // Only 1 column for ethnic group
 
     // Build template data
     const templateData = [];
 
     // Row 0: Kingdom header
-    templateData.push(['ព្រះរាជាណាចក្រកម្ពុជា', ...Array(totalColumns - 1).fill('')]);
+    templateData.push(['ព្រះរាជាណាចក្រកម្ពុជា']);
 
     // Row 1: Nation/Religion/King
-    templateData.push(['ជាតិ     សាសនា     ព្រះមហាក្សត្រ', ...Array(totalColumns - 1).fill('')]);
+    templateData.push(['ជាតិ     សាសនា     ព្រះមហាក្សត្រ']);
 
     // Row 2: Department
-    const deptRow = [...Array(totalColumns).fill('')];
-    deptRow[0] = 'មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............';
-    templateData.push(deptRow);
+    templateData.push(['មន្ទីរអប់រំ យុវជន និងកីឡា រាជធានី/ខេត្ត............']);
 
     // Row 3: Office
-    const officeRow = [...Array(totalColumns).fill('')];
-    officeRow[0] = 'ការិយាល័យអប់រំ/ការិយាល័យប្រឹក្សាភិបាល............';
-    templateData.push(officeRow);
+    templateData.push(['ការិយាល័យអប់រំ/ការិយាល័យប្រឹក្សាភិបាល............']);
 
     // Row 4: School name
-    const schoolRow = [...Array(totalColumns).fill('')];
-    schoolRow[0] = `សាលា: ${schoolName}`;
-    templateData.push(schoolRow);
+    templateData.push([`សាលា: ${schoolName}`]);
 
     // Row 5: Report title
-    const titleRow = [...Array(totalColumns).fill('')];
-    titleRow[0] = 'បញ្ជីឈ្មោះសិស្ស ជនជាតិដើមភាគតិច';
-    templateData.push(titleRow);
+    templateData.push(['បញ្ជីឈ្មោះសិស្ស ជនជាតិដើមភាគតិច']);
 
     // Row 6: Empty row
-    templateData.push([...Array(totalColumns).fill('')]);
+    templateData.push(['']);
 
-    // Row 7-8: Headers - Only show ethnic group column
-    const headerRow1 = [...Array(totalColumns).fill('')];
-    headerRow1[0] = 'ជនជាតិដើមភាគតិច';
-    templateData.push(headerRow1);
-
-    const headerRow2 = [...Array(totalColumns).fill('')];
-    headerRow2[0] = '(១)';
-    templateData.push(headerRow2);
+    // Row 7-8: Headers - Only ethnic group column
+    templateData.push(['ជនជាតិដើមភាគតិច']);
+    templateData.push(['(១)']);
 
     // Data rows
-    ethnicMinorityStudents.forEach((student, index) => {
-      const dataRow = [...Array(totalColumns).fill('')];
-      dataRow[0] = student.ethnicGroup || student.ethnic_group || '';
-
-      templateData.push(dataRow);
+    ethnicMinorityStudents.forEach((student) => {
+      const ethnicGroup = student.ethnicGroup || student.ethnic_group || '';
+      templateData.push([ethnicGroup]);
     });
 
     // Footer section
-    const emptyFooterRow = Array(totalColumns).fill('');
-    templateData.push([...emptyFooterRow]);
+    templateData.push(['']);
 
     // Summary row
-    const footerStartRow = templateData.length;
-    const summaryRow = [...emptyFooterRow];
-    summaryRow[0] = `សរុប: ${ethnicMinorityStudents.length} នាក់`;
-    templateData.push(summaryRow);
-    const summaryRowIndex = footerStartRow;
+    const summaryRowIndex = templateData.length;
+    templateData.push([`សរុប: ${ethnicMinorityStudents.length} នាក់`]);
 
-    // Date and signature rows
-    const dateRow = [...emptyFooterRow];
-    dateRow[30] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ......';
-    templateData.push(dateRow);
-    const dateRowIndex = footerStartRow + 1;
+    // Date row
+    const dateRowIndex = templateData.length;
+    templateData.push(['ថ្ងៃ........... ខែ ......... ឆ្នាំ......']);
 
-    templateData.push([...emptyFooterRow]);
+    templateData.push(['']);
 
     // Signature rows
-    const signatureLabelRow = [...emptyFooterRow];
-    signatureLabelRow[2] = 'បានឃើញ';
-    signatureLabelRow[30] = 'បានឃើញ';
-    templateData.push(signatureLabelRow);
-    const signatureLabelRowIndex = footerStartRow + 3;
+    const signatureLabelRowIndex = templateData.length;
+    templateData.push(['បានឃើញ']);
 
-    const signatureRoleRow = [...emptyFooterRow];
-    signatureRoleRow[2] = 'នាយកសាលា';
-    signatureRoleRow[30] = 'គ្រូប្រចាំថ្នាក់';
-    templateData.push(signatureRoleRow);
-    const signatureRoleRowIndex = footerStartRow + 4;
+    const signatureRoleRowIndex = templateData.length;
+    templateData.push(['នាយកសាលា']);
 
     // Create worksheet
     const ws = XLSXStyle.utils.aoa_to_sheet(templateData);
 
-    // Set column widths
-    const colWidths = [];
-    for (let i = 0; i < totalColumns; i++) {
-      if (i === 0) {
-        colWidths.push({ wch: 5 });  // ល.រ
-      } else if (i === 1) {
-        colWidths.push({ wch: 12 }); // អត្តលេខ
-      } else if (i === 2) {
-        colWidths.push({ wch: 20 }); // ឈ្មោះ
-      } else if (i === 3 || i === 4) {
-        colWidths.push({ wch: 8 });  // ភេទ, ថ្នាក់
-      } else if (i === 5 || i === 6) {
-        colWidths.push({ wch: 15 }); // ជនជាតិដើម, ភាសា
-      } else {
-        colWidths.push({ wch: 3 });
-      }
-    }
-    ws['!cols'] = colWidths;
+    // Set column widths - Only ethnic group column is very wide
+    ws['!cols'] = [{ wch: 80 }];
 
     // Set row heights
     const rowHeights = [];
@@ -194,7 +148,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
             },
             alignment: {
               vertical: 'center',
-              horizontal: C === 0 ? 'center' : 'left'
+              horizontal: 'left'
             },
             font: { name: 'Khmer OS Battambang', sz: 10 }
           };
@@ -228,23 +182,18 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     // Merge cells
     ws['!merges'] = [
       // Header merges
-      { s: { r: 0, c: 0 }, e: { r: 0, c: totalColumns - 1 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: totalColumns - 1 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: totalColumns - 1 } },
-      { s: { r: 3, c: 0 }, e: { r: 3, c: totalColumns - 1 } },
-      { s: { r: 4, c: 0 }, e: { r: 4, c: totalColumns - 1 } },
-      { s: { r: 5, c: 0 }, e: { r: 5, c: totalColumns - 1 } }, // Title row - center aligned
-      // Header column merge - only ethnic group column
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 0 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 0 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 0 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 0 } },
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 0 } },
+      { s: { r: 5, c: 0 }, e: { r: 5, c: 0 } }, // Title row - center aligned
+      // Header column merge
       { s: { r: 7, c: 0 }, e: { r: 8, c: 0 } },
       // Footer merges
-      { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: totalColumns - 1 } },
+      { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: 0 } },
       // Date row merge
-      { s: { r: dateRowIndex, c: 30 }, e: { r: dateRowIndex, c: totalColumns - 1 } },
-      // Signature rows
-      { s: { r: signatureLabelRowIndex, c: 2 }, e: { r: signatureLabelRowIndex, c: 10 } },
-      { s: { r: signatureLabelRowIndex, c: 30 }, e: { r: signatureLabelRowIndex, c: totalColumns - 1 } },
-      { s: { r: signatureRoleRowIndex, c: 2 }, e: { r: signatureRoleRowIndex, c: 10 } },
-      { s: { r: signatureRoleRowIndex, c: 30 }, e: { r: signatureRoleRowIndex, c: totalColumns - 1 } }
+      { s: { r: dateRowIndex, c: 0 }, e: { r: dateRowIndex, c: 0 } }
     ];
 
     // Create workbook
