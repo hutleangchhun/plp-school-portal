@@ -377,31 +377,19 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
     templateData.push([...emptyFooterRow]);
     const emptyRowAfterDatesIndex = footerStartRow + 4;
 
-    // Signature label row 1: បានឃើញ for នាយកសាលា
-    const signatureLabelRow1 = [...emptyFooterRow];
-    signatureLabelRow1[2] = 'បានឃើញ';
-    signatureLabelRow1[30] = 'បានឃើញ';
-    templateData.push(signatureLabelRow1);
-    const signatureLabelRow1Index = footerStartRow + 5;
+    // Signature label row: បានឃើញ on left and right (same row)
+    const signatureLabelRow = [...emptyFooterRow];
+    signatureLabelRow[2] = 'បានឃើញ';
+    signatureLabelRow[31] = 'បានឃើញ';
+    templateData.push(signatureLabelRow);
+    const signatureLabelRowIndex = footerStartRow + 5;
 
-    // Signature role row 1: នាយកសាលា
-    const signatureRoleRow1 = [...emptyFooterRow];
-    signatureRoleRow1[2] = 'នាយកសាលា';
-    signatureRoleRow1[30] = 'នាយកសាលា';
-    templateData.push(signatureRoleRow1);
-    const signatureRoleRow1Index = footerStartRow + 6;
-
-    // Signature label row 2: បានឃើញ for គ្រូប្រចាំថ្នាក់
-    const signatureLabelRow2 = [...emptyFooterRow];
-    signatureLabelRow2[31] = 'បានឃើញ';
-    templateData.push(signatureLabelRow2);
-    const signatureLabelRow2Index = footerStartRow + 7;
-
-    // Signature role row 2: គ្រូប្រចាំថ្នាក់
-    const signatureRoleRow2 = [...emptyFooterRow];
-    signatureRoleRow2[31] = 'គ្រូប្រចាំថ្នាក់';
-    templateData.push(signatureRoleRow2);
-    const signatureRoleRow2Index = footerStartRow + 8;
+    // Signature role row: នាយកសាលា on left and គ្រូប្រចាំថ្នាក់ on right (same row)
+    const signatureRoleRow = [...emptyFooterRow];
+    signatureRoleRow[2] = 'នាយកសាលា';
+    signatureRoleRow[31] = 'គ្រូប្រចាំថ្នាក់';
+    templateData.push(signatureRoleRow);
+    const signatureRoleRowIndex = footerStartRow + 6;
 
     templateData.push([...emptyFooterRow]);
     templateData.push([...emptyFooterRow]);
@@ -553,13 +541,13 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
             alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
-        } else if (R === signatureLabelRow1Index || R === signatureRoleRow1Index || R === signatureLabelRow2Index || R === signatureRoleRow2Index) {
+        } else if (R === signatureLabelRowIndex || R === signatureRoleRowIndex) {
           // Signature rows: align to start (left)
           ws[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
-        } else if (R >= summaryRow1Index && R <= signatureRoleRow2Index) {
+        } else if (R >= summaryRow1Index && R <= signatureRoleRowIndex) {
           // Footer rows styling with proper Khmer font support (center aligned)
           ws[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
@@ -600,13 +588,11 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
       // dateRow1 and dateRow2: Start at column 30 (AD) and span to end
       { s: { r: dateRow1Index, c: 30 }, e: { r: dateRow1Index, c: totalColumns - 1 } },
       { s: { r: dateRow2Index, c: 30 }, e: { r: dateRow2Index, c: totalColumns - 1 } },
-      // Signature label and role rows: Column C (2) and Column AD/AE merges
-      { s: { r: signatureLabelRow1Index, c: 2 }, e: { r: signatureLabelRow1Index, c: 10 } },
-      { s: { r: signatureLabelRow1Index, c: 30 }, e: { r: signatureLabelRow1Index, c: totalColumns - 1 } },
-      { s: { r: signatureRoleRow1Index, c: 2 }, e: { r: signatureRoleRow1Index, c: 10 } },
-      { s: { r: signatureRoleRow1Index, c: 30 }, e: { r: signatureRoleRow1Index, c: totalColumns - 1 } },
-      { s: { r: signatureLabelRow2Index, c: 31 }, e: { r: signatureLabelRow2Index, c: totalColumns - 1 } },
-      { s: { r: signatureRoleRow2Index, c: 31 }, e: { r: signatureRoleRow2Index, c: totalColumns - 1 } },
+      // Signature label and role rows: Column C (2) to Column J (10) on left, Column AD/AE (30+) on right
+      { s: { r: signatureLabelRowIndex, c: 2 }, e: { r: signatureLabelRowIndex, c: 10 } },
+      { s: { r: signatureLabelRowIndex, c: 30 }, e: { r: signatureLabelRowIndex, c: totalColumns - 1 } },
+      { s: { r: signatureRoleRowIndex, c: 2 }, e: { r: signatureRoleRowIndex, c: 10 } },
+      { s: { r: signatureRoleRowIndex, c: 30 }, e: { r: signatureRoleRowIndex, c: totalColumns - 1 } },
     ];
 
     // Create workbook
