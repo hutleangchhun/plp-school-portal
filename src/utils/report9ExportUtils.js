@@ -64,10 +64,15 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     titleRow[0] = 'បញ្ជីឈ្មោះសិស្ស ជនជាតិដើមភាគតិច';
     templateData.push(titleRow);
 
-    // Row 6: Empty row
+    // Row 6: Academic year
+    const academicYearRow = [...emptyRow];
+    academicYearRow[0] = 'ឆ្នាំសិក្សា: ________________';
+    templateData.push(academicYearRow);
+
+    // Row 7: Empty row
     templateData.push([...emptyRow]);
 
-    // Row 7-8: Headers
+    // Row 8-9: Headers
     const headerRow1 = Array(totalColumns).fill('');
     headerRow1[0] = 'ល.រ';
     headerRow1[1] = 'អត្តលេខសិស្ស';
@@ -116,7 +121,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     summaryRow[0] = `សរុប: ${ethnicMinorityStudents.length} នាក់`;
     templateData.push(summaryRow);
 
-    // Date row
+    // Date row (left aligned)
     const dateRowIndex = templateData.length;
     const dateRow = [...emptyRow];
     dateRow[0] = 'ថ្ងៃ........... ខែ ......... ឆ្នាំ......';
@@ -124,7 +129,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
 
     templateData.push([...emptyRow]);
 
-    // Signature rows
+    // Signature rows (merged across all columns, left aligned)
     const signatureLabelRowIndex = templateData.length;
     const signatureLabelRow = [...emptyRow];
     signatureLabelRow[0] = 'បានឃើញ';
@@ -154,7 +159,8 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     for (let i = 0; i < templateData.length; i++) {
       if (i === 0 || i === 1 || i === 5) {
         rowHeights.push({ hpt: 20 });
-      } else if (i === 7 || i === 8) {
+      } else if (i === 8 || i === 9) {
+        // Headers are now at rows 8-9
         rowHeights.push({ hpt: 18 });
       } else {
         rowHeights.push({ hpt: 15 });
@@ -164,7 +170,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
 
     // Apply styling
     const totalRows = templateData.length;
-    const dataEndRow = 9 + ethnicMinorityStudents.length;
+    const dataEndRow = 10 + ethnicMinorityStudents.length;
 
     for (let R = 0; R < totalRows; R++) {
       for (let C = 0; C < totalColumns; C++) {
@@ -188,8 +194,14 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
             alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS', sz: 11, bold: true }
           };
-        } else if (R === 7 || R === 8) {
-          // Header rows
+        } else if (R === 6) {
+          // Academic year row - left aligned
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            font: { name: 'Khmer OS', sz: 10 }
+          };
+        } else if (R === 8 || R === 9) {
+          // Header rows (now at 8-9)
           ws[cellAddress].s = {
             fill: { fgColor: { rgb: 'D3D3D3' } },
             border: {
@@ -201,7 +213,7 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
             alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS Battambang', sz: 10, bold: true }
           };
-        } else if (R >= 9 && R <= dataEndRow) {
+        } else if (R >= 10 && R <= dataEndRow) {
           // Data rows
           const isNumericCol = C === 0 || C === 3 || C === 4; // ល.រ, ភេទ, ថ្នាក់
           ws[cellAddress].s = {
@@ -224,15 +236,15 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
             font: { name: 'Khmer OS', sz: 10 }
           };
         } else if (R === dateRowIndex) {
-          // Date row
+          // Date row - left aligned
           ws[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
         } else if (R === signatureLabelRowIndex || R === signatureRoleRowIndex) {
-          // Signature rows
+          // Signature rows - left aligned, merged across columns
           ws[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
         } else {
@@ -253,17 +265,21 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
       { s: { r: 3, c: 0 }, e: { r: 3, c: totalColumns - 1 } },
       { s: { r: 4, c: 0 }, e: { r: 4, c: totalColumns - 1 } },
       { s: { r: 5, c: 0 }, e: { r: 5, c: totalColumns - 1 } }, // Title row - center aligned
-      // Header columns merge (rows 7-8 for each column)
-      { s: { r: 7, c: 0 }, e: { r: 8, c: 0 } },
-      { s: { r: 7, c: 1 }, e: { r: 8, c: 1 } },
-      { s: { r: 7, c: 2 }, e: { r: 8, c: 2 } },
-      { s: { r: 7, c: 3 }, e: { r: 8, c: 3 } },
-      { s: { r: 7, c: 4 }, e: { r: 8, c: 4 } },
-      { s: { r: 7, c: 5 }, e: { r: 8, c: 5 } },
+      { s: { r: 6, c: 0 }, e: { r: 6, c: totalColumns - 1 } }, // Academic year row - left aligned
+      // Header columns merge (rows 8-9 for each column)
+      { s: { r: 8, c: 0 }, e: { r: 9, c: 0 } },
+      { s: { r: 8, c: 1 }, e: { r: 9, c: 1 } },
+      { s: { r: 8, c: 2 }, e: { r: 9, c: 2 } },
+      { s: { r: 8, c: 3 }, e: { r: 9, c: 3 } },
+      { s: { r: 8, c: 4 }, e: { r: 9, c: 4 } },
+      { s: { r: 8, c: 5 }, e: { r: 9, c: 5 } },
       // Footer merges
       { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: totalColumns - 1 } },
-      // Date row merge
-      { s: { r: dateRowIndex, c: 0 }, e: { r: dateRowIndex, c: totalColumns - 1 } }
+      // Date row merge - left aligned
+      { s: { r: dateRowIndex, c: 0 }, e: { r: dateRowIndex, c: totalColumns - 1 } },
+      // Signature rows merge - left aligned
+      { s: { r: signatureLabelRowIndex, c: 0 }, e: { r: signatureLabelRowIndex, c: totalColumns - 1 } },
+      { s: { r: signatureRoleRowIndex, c: 0 }, e: { r: signatureRoleRowIndex, c: totalColumns - 1 } }
     ];
 
     // Create workbook
