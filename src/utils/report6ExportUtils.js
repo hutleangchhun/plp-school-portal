@@ -163,23 +163,11 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
     const maleCount = studentsWithDisabilities.filter(s => s.gender === 'MALE').length;
     const femaleCount = studentsWithDisabilities.filter(s => s.gender === 'FEMALE').length;
 
-    // Summary rows with formatted layout
+    // Summary row with all information on one line
     const summaryRowIndex = templateData.length;
-
-    // Total students row
     const summaryRow = [...emptyRow];
-    summaryRow[0] = `សិស្សសរុប: ................${studentsWithDisabilities.length}នាក់`;
+    summaryRow[0] = `សិស្សសរុប: ................${studentsWithDisabilities.length}នាក់  ប្រុស...............${maleCount}នាក់ ស្រី.................${femaleCount}នាក់`;
     templateData.push(summaryRow);
-
-    // Male students row
-    const maleRow = [...emptyRow];
-    maleRow[0] = `ប្រុស...............${maleCount}នាក់`;
-    templateData.push(maleRow);
-
-    // Female students row
-    const femaleRow = [...emptyRow];
-    femaleRow[0] = `ស្រី.................${femaleCount}នាក់`;
-    templateData.push(femaleRow);
 
     // Date row (columns K-M merged, center aligned)
     const dateRowIndex = templateData.length;
@@ -268,8 +256,8 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
         } else if (R === 8 || R === 9 || R === 10) {
           // Header rows (now at 8-10, with new category header row)
           const alignment = R === 9
-            ? { vertical: 'center', horizontal: 'center', wrapText: false }  // Row 9: accessibility headers - single line
-            : { vertical: 'center', horizontal: 'center', wrapText: true };   // Row 8, 10: category and column numbers - allow wrap
+            ? { vertical: 'center', horizontal: 'left', wrapText: false }  // Row 9: accessibility headers - left-aligned, single line
+            : { vertical: 'center', horizontal: 'center', wrapText: true };   // Row 8, 10: category and column numbers - center-aligned
 
           const fontSize = R === 9 ? 8 : 10;  // Row 9: smaller font for accessibility headers
 
@@ -299,8 +287,8 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
             },
             font: { name: 'Khmer OS Battambang', sz: 10 }
           };
-        } else if (R >= summaryRowIndex && R <= summaryRowIndex + 2) {
-          // Summary rows (total, male, female)
+        } else if (R === summaryRowIndex) {
+          // Summary row (total, male, female on one line)
           ws[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
@@ -348,10 +336,8 @@ export const exportReport6ToExcel = async (studentsWithDisabilities, options = {
       ...Array.from({ length: accessibilityColumns }, (_, i) =>
         ({ s: { r: 9, c: fixedColumns + i }, e: { r: 10, c: fixedColumns + i } })
       ),
-      // Summary rows merge (total, male, female)
+      // Summary row merge (total, male, female on one line)
       { s: { r: summaryRowIndex, c: 0 }, e: { r: summaryRowIndex, c: totalColumns - 1 } },
-      { s: { r: summaryRowIndex + 1, c: 0 }, e: { r: summaryRowIndex + 1, c: totalColumns - 1 } },
-      { s: { r: summaryRowIndex + 2, c: 0 }, e: { r: summaryRowIndex + 2, c: totalColumns - 1 } },
       // Date row merge - columns K-M (10-12) merged, center aligned
       { s: { r: dateRowIndex, c: 10 }, e: { r: dateRowIndex, c: 12 } },
       // Signature rows merge - columns K-M (10-12) merged, center aligned
