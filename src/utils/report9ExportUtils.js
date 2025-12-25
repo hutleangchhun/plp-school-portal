@@ -270,6 +270,21 @@ export const exportReport9ToExcel = async (ethnicMinorityStudents, options = {})
     const wb = XLSXStyle.utils.book_new();
     XLSXStyle.utils.book_append_sheet(wb, ws, 'សិស្សជនជាតិដើម');
 
+    // Set page setup for A4 landscape
+    ws['!pageSetup'] = {
+      paperSize: ws['!pageSetup']?.paperSize || 9, // 9 = A4
+      orientation: 'landscape',
+      fitToHeight: 1,
+      fitToWidth: 1
+    };
+
+    // Set print options
+    ws['!printOptions'] = {
+      horizontalCentered: false,
+      verticalCentered: false,
+      printGridLines: false
+    };
+
     wb.Props = {
       Title: `បញ្ជីឈ្មោះសិស្សជាជនជាតិដើមភាគតិច - ${schoolName}`,
       Subject: 'សិស្សជនជាតិដើម',
