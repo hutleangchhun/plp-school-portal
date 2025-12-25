@@ -530,9 +530,9 @@ export const exportReport4ToExcel = async (studentsWithAttendance, options = {})
             }
           };
         } else if (R === signatureLabelRowIndex || R === signatureRoleRowIndex) {
-          // Signature rows: align to start (left) - must be before general footer styling
+          // Signature rows: center aligned - must be before general footer styling
           ws[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'left', wrapText: true },
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: { name: 'Khmer OS', sz: 10 }
           };
         } else if (R === dateRow1Index || R === dateRow2Index) {
