@@ -199,163 +199,168 @@ const StudentExtraLearningToolTab = ({ filters }) => {
         </div>
       )}
 
-      {/* Combined Tools Distribution Chart */}
-      {toolsChartData.length > 0 && (
-        <Card className="border border-gray-200 shadow-sm rounded-sm">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              {t("toolDistribution", "Learning Tools Statistics by Status and Total")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="w-full" style={{ height: '450px' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={toolsChartData} margin={{ top: 10, right: 10, left: 10, bottom: 60 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 11 }}
-                    angle={0}
-                    textAnchor="end"
-                    height={30}
-                  />
-                  <YAxis type="number" tick={{ fontSize: 12 }} />
-                  <Tooltip
-                    cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
-                    content={<CustomTooltip />}
-                    formatter={(value) => value.toLocaleString()}
-                  />
-                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                  <Bar
-                    dataKey="newYear"
-                    name={t("newYear", "ឆ្នាំថ្មី")}
-                    fill="#10b981"
-                    radius={[6, 6, 0, 0]}
-                  />
-                  <Bar
-                    dataKey="oldYear"
-                    name={t("oldYear", "ឆ្នាំចាស់")}
-                    fill="#f59e0b"
-                    radius={[6, 6, 0, 0]}
-                  />
-                  <Bar
-                    dataKey="total"
-                    name={t("totalWithPackages", "Total with Packages")}
-                    fill="#3b82f6"
-                    radius={[6, 6, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Chart and Table Grid - Responsive Layout */}
+      {(toolsChartData.length > 0 || (toolStats?.tools && toolStats.tools.length > 0)) && (
+        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Combined Tools Distribution Chart */}
+          {toolsChartData.length > 0 && (
+            <Card className="border border-gray-200 shadow-sm rounded-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">
+                  {t("toolDistribution", "Learning Tools Statistics by Status and Total")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="w-full" style={{ height: '450px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={toolsChartData} margin={{ top: 10, right: 10, left: 10, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11 }}
+                        angle={0}
+                        textAnchor="end"
+                        height={30}
+                      />
+                      <YAxis type="number" tick={{ fontSize: 12 }} />
+                      <Tooltip
+                        cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
+                        content={<CustomTooltip />}
+                        formatter={(value) => value.toLocaleString()}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                      <Bar
+                        dataKey="newYear"
+                        name={t("newYear", "ឆ្នាំថ្មី")}
+                        fill="#10b981"
+                        radius={[6, 6, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="oldYear"
+                        name={t("oldYear", "ឆ្នាំចាស់")}
+                        fill="#f59e0b"
+                        radius={[6, 6, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="total"
+                        name={t("totalWithPackages", "Total with Packages")}
+                        fill="#3b82f6"
+                        radius={[6, 6, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-      {/* Status & Provider Breakdown Table */}
-      {toolStats?.tools && toolStats.tools.length > 0 && (
-        <Card className="border border-gray-200 shadow-sm rounded-sm">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              {t("statusAndProviderBreakdown", "Status & Provider Breakdown by Tool")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                      {t("toolName", "Tool Name")}
-                    </th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">
-                      {t("totalWithPackages", "Total with Packages")}
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                      {t("status", "Status")}
-                    </th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">
-                      {t("count", "Count")}
-                    </th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">
-                      {t("percentage", "Percentage")}
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                      {t("provider", "Provider")}
-                    </th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">
-                      {t("count", "Count")}
-                    </th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">
-                      {t("percentage", "Percentage")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {toolStats.tools.map((tool, toolIndex) => {
-                    const statusEntries = Object.entries(tool.byStatus || {});
-                    const providerEntries = Object.entries(tool.byProvider || {});
-                    const maxRows = Math.max(statusEntries.length, providerEntries.length);
+          {/* Status & Provider Breakdown Table */}
+          {toolStats?.tools && toolStats.tools.length > 0 && (
+            <Card className="border border-gray-200 shadow-sm rounded-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">
+                  {t("statusAndProviderBreakdown", "Status & Provider Breakdown by Tool")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50">
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                          {t("toolName", "Tool Name")}
+                        </th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">
+                          {t("totalWithPackages", "Total with Packages")}
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                          {t("status", "Status")}
+                        </th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">
+                          {t("count", "Count")}
+                        </th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">
+                          {t("percentage", "Percentage")}
+                        </th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                          {t("provider", "Provider")}
+                        </th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">
+                          {t("count", "Count")}
+                        </th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">
+                          {t("percentage", "Percentage")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {toolStats.tools.map((tool, toolIndex) => {
+                        const statusEntries = Object.entries(tool.byStatus || {});
+                        const providerEntries = Object.entries(tool.byProvider || {});
+                        const maxRows = Math.max(statusEntries.length, providerEntries.length);
 
-                    // Calculate percentages
-                    const statusTotal = statusEntries.reduce((sum, [, count]) => sum + count, 0);
-                    const providerTotal = providerEntries.reduce((sum, [, count]) => sum + count, 0);
+                        // Calculate percentages
+                        const statusTotal = statusEntries.reduce((sum, [, count]) => sum + count, 0);
+                        const providerTotal = providerEntries.reduce((sum, [, count]) => sum + count, 0);
 
-                    return statusEntries.length > 0 || providerEntries.length > 0 ? (
-                      Array.from({ length: maxRows }).map((_, rowIndex) => {
-                        const [statusName, statusCount] = statusEntries[rowIndex] || [null, 0];
-                        const [providerName, providerCount] = providerEntries[rowIndex] || [null, 0];
-                        const statusPercentage = statusTotal > 0 ? (statusCount / statusTotal * 100) : 0;
-                        const providerPercentage = providerTotal > 0 ? (providerCount / providerTotal * 100) : 0;
+                        return statusEntries.length > 0 || providerEntries.length > 0 ? (
+                          Array.from({ length: maxRows }).map((_, rowIndex) => {
+                            const [statusName, statusCount] = statusEntries[rowIndex] || [null, 0];
+                            const [providerName, providerCount] = providerEntries[rowIndex] || [null, 0];
+                            const statusPercentage = statusTotal > 0 ? (statusCount / statusTotal * 100) : 0;
+                            const providerPercentage = providerTotal > 0 ? (providerCount / providerTotal * 100) : 0;
 
-                        return (
-                          <tr
-                            key={`${toolIndex}-${rowIndex}`}
-                            className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                          >
-                            {rowIndex === 0 && (
-                              <td
-                                className="px-4 py-3 text-gray-900 font-semibold"
-                                rowSpan={maxRows}
+                            return (
+                              <tr
+                                key={`${toolIndex}-${rowIndex}`}
+                                className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
                               >
-                                {getToolLabel(tool.packageName)}
-                              </td>
-                            )}
-                            {rowIndex === 0 && (
-                              <td
-                                className="px-4 py-3 text-right text-gray-900 font-semibold bg-blue-50"
-                                rowSpan={maxRows}
-                              >
-                                {tool.hasPackage.toLocaleString()}
-                              </td>
-                            )}
-                            <td className="px-4 py-3 text-gray-700">
-                              {statusName ? getStatusLabel(statusName) : '-'}
-                            </td>
-                            <td className="px-4 py-3 text-right text-gray-600 font-semibold">
-                              {statusName ? statusCount.toLocaleString() : '-'}
-                            </td>
-                            <td className="px-4 py-3 text-right text-gray-600">
-                              {statusName ? statusPercentage.toFixed(2) : '-'}%
-                            </td>
-                            <td className="px-4 py-3 text-gray-700">
-                              {providerName ? getProviderLabel(providerName) : '-'}
-                            </td>
-                            <td className="px-4 py-3 text-right text-gray-600 font-semibold">
-                              {providerName ? providerCount.toLocaleString() : '-'}
-                            </td>
-                            <td className="px-4 py-3 text-right text-gray-600">
-                              {providerName ? providerPercentage.toFixed(2) : '-'}%
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : null;
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                                {rowIndex === 0 && (
+                                  <td
+                                    className="px-4 py-3 text-gray-900 font-semibold"
+                                    rowSpan={maxRows}
+                                  >
+                                    {getToolLabel(tool.packageName)}
+                                  </td>
+                                )}
+                                {rowIndex === 0 && (
+                                  <td
+                                    className="px-4 py-3 text-right text-gray-900 font-semibold bg-blue-50"
+                                    rowSpan={maxRows}
+                                  >
+                                    {tool.hasPackage.toLocaleString()}
+                                  </td>
+                                )}
+                                <td className="px-4 py-3 text-gray-700">
+                                  {statusName ? getStatusLabel(statusName) : '-'}
+                                </td>
+                                <td className="px-4 py-3 text-right text-gray-600 font-semibold">
+                                  {statusName ? statusCount.toLocaleString() : '-'}
+                                </td>
+                                <td className="px-4 py-3 text-right text-gray-600">
+                                  {statusName ? statusPercentage.toFixed(2) : '-'}%
+                                </td>
+                                <td className="px-4 py-3 text-gray-700">
+                                  {providerName ? getProviderLabel(providerName) : '-'}
+                                </td>
+                                <td className="px-4 py-3 text-right text-gray-600 font-semibold">
+                                  {providerName ? providerCount.toLocaleString() : '-'}
+                                </td>
+                                <td className="px-4 py-3 text-right text-gray-600">
+                                  {providerName ? providerPercentage.toFixed(2) : '-'}%
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : null;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
       {/* Empty State */}
