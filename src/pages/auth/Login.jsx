@@ -14,7 +14,7 @@ import moeysLogo from '../../assets/moeys-logo.png';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { getFullName } from '../../utils/usernameUtils';
-import { trackLogin } from '../../utils/analytics/ga4Analytics';
+import { trackLogin, trackLoginFailed } from '../../utils/analytics/ga4Analytics';
 
 export default function Login({ setUser }) {
   const { t } = useLanguage();
@@ -77,6 +77,7 @@ export default function Login({ setUser }) {
       } else {
         // Handle error response from authService
         let errorMessage = response.error || utils.auth.getErrorMessage(response, t);
+        let failureReason = 'unknown_error';
 
         console.log('📊 Login error response:', { response, errorMessage });
 
@@ -84,11 +85,21 @@ export default function Login({ setUser }) {
         const msgLower = errorMessage?.toLowerCase() || '';
         if (msgLower.includes('only authorized users')) {
           errorMessage = t('unauthorizedAccess', 'Only authorized users can access this portal. Please contact your administrator.');
+          failureReason = 'unauthorized_access';
         } else if (msgLower.includes('no response') || msgLower.includes('service unavailable') || msgLower.includes('cannot connect')) {
           errorMessage = t('networkError', 'Network Error. Please check your internet connection and try again.');
+          failureReason = 'network_error';
         } else if (msgLower.includes('invalid') && (msgLower.includes('username') || msgLower.includes('password') || msgLower.includes('credentials'))) {
           errorMessage = t('invalidUsernameAndPassword', 'Invalid Username And Password');
+          failureReason = 'invalid_credentials';
         }
+
+        // Track login failure to GA4
+        trackLoginFailed({
+          reason: failureReason,
+          username: formData.username,
+          errorMessage: response.error || 'Unknown error'
+        });
 
         showError(errorMessage);
       }
@@ -97,6 +108,25 @@ export default function Login({ setUser }) {
       // Show connection/network errors as toast, not error display
       const isAuthError = err.response?.status === 401;
       const isNetworkError = !err.response; // No response means network/connection error
+
+      // Determine failure reason based on error type
+      let failureReason = 'server_error';
+      if (isNetworkError) {
+        failureReason = 'network_error';
+      } else if (isAuthError) {
+        failureReason = 'invalid_credentials';
+      } else if (err.response?.status === 403) {
+        failureReason = 'forbidden_access';
+      } else if (err.response?.status >= 500) {
+        failureReason = 'server_error';
+      }
+
+      // Track login failure to GA4
+      trackLoginFailed({
+        reason: failureReason,
+        username: formData.username,
+        errorMessage: errorMessage
+      });
 
       handleError(err, {
         toastMessage: errorMessage,
@@ -143,6 +173,7 @@ export default function Login({ setUser }) {
       } else {
         // Handle error response from authService
         let errorMessage = response.error || utils.auth.getErrorMessage(response, t);
+        let failureReason = 'account_selection_failed';
 
         console.log('📊 Account selection error response:', { response, errorMessage });
 
@@ -150,19 +181,49 @@ export default function Login({ setUser }) {
         const msgLower = errorMessage?.toLowerCase() || '';
         if (msgLower.includes('only authorized users')) {
           errorMessage = t('unauthorizedAccess', 'Only authorized users can access this system');
+          failureReason = 'unauthorized_access';
         } else if (msgLower.includes('no response') || msgLower.includes('service unavailable') || msgLower.includes('cannot connect')) {
           errorMessage = t('networkError', 'Network Error. Please check your internet connection and try again.');
+          failureReason = 'network_error';
         } else if (msgLower.includes('invalid') && (msgLower.includes('username') || msgLower.includes('password') || msgLower.includes('credentials'))) {
           errorMessage = t('invalidUsernameAndPassword', 'Invalid Username And Password');
+          failureReason = 'invalid_credentials';
         } else if (msgLower.includes('bad request') || msgLower.includes('property') || msgLower.includes('must be')) {
           // Handle validation errors from the API
           errorMessage = t('invalidUsernameAndPassword', 'Invalid Username And Password');
+          failureReason = 'invalid_credentials';
         }
+
+        // Track account selection failure to GA4
+        trackLoginFailed({
+          reason: failureReason,
+          username: formData.username,
+          errorMessage: response.error || 'Unknown error'
+        });
 
         showError(errorMessage);
       }
     } catch (err) {
       const errorMessage = utils.auth.getErrorMessage(err, t);
+
+      // Determine failure reason based on error type
+      let failureReason = 'account_selection_failed';
+      const isNetworkError = !err.response;
+      if (isNetworkError) {
+        failureReason = 'network_error';
+      } else if (err.response?.status === 401) {
+        failureReason = 'invalid_credentials';
+      } else if (err.response?.status >= 500) {
+        failureReason = 'server_error';
+      }
+
+      // Track account selection failure to GA4
+      trackLoginFailed({
+        reason: failureReason,
+        username: formData.username,
+        errorMessage: errorMessage
+      });
+
       showError(errorMessage || t('accountSelectionFailed', 'Failed to select account'));
       console.error('Account selection error:', err);
     } finally {
