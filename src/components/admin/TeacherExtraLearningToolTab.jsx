@@ -16,7 +16,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 import { Users } from "lucide-react";
 import DynamicLoader from "../ui/DynamicLoader";
@@ -71,23 +70,27 @@ const TeacherExtraLearningToolTab = ({ filters }) => {
       const data = response.data;
       setToolStats(data);
 
-      // Transform tool data for chart
+      // Transform tool data for chart with nested values
       if (data.toolCounts) {
         const toolData = Object.entries(data.toolCounts)
           .map(([toolName, toolDetails]) => {
+            const item = { name: toolName };
             let totalCount = 0;
             if (typeof toolDetails === "object") {
-              totalCount = Object.values(toolDetails).reduce((sum, val) => {
-                return sum + (typeof val === "number" ? val : 0);
-              }, 0);
+              Object.entries(toolDetails)
+                .filter(([key]) => key !== "_hasPackage")
+                .forEach(([key, val]) => {
+                  if (typeof val === "number") {
+                    item[key] = val;
+                    totalCount += val;
+                  }
+                });
             }
-            return {
-              name: toolName,
-              count: totalCount,
-            };
+            item.total = totalCount;
+            return item;
           })
-          .filter((item) => item.count > 0)
-          .sort((a, b) => b.count - a.count);
+          .filter((item) => item.total > 0)
+          .sort((a, b) => b.total - a.total);
 
         setToolChartData(toolData);
       }
@@ -178,14 +181,18 @@ const TeacherExtraLearningToolTab = ({ filters }) => {
                       cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
                       content={<CustomTooltip />}
                     />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={32}>
-                      {toolChartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={colors[index % colors.length]}
+                    {toolChartData.length > 0 && Object.keys(toolChartData[0])
+                      .filter(key => key !== "name" && key !== "total")
+                      .map((key, idx) => (
+                        <Bar
+                          key={key}
+                          dataKey={key}
+                          stackId="stack"
+                          fill={colors[idx % colors.length]}
+                          radius={idx === 0 ? [6, 6, 0, 0] : [0, 0, 0, 0]}
                         />
-                      ))}
-                    </Bar>
+                      ))
+                    }
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -222,7 +229,7 @@ const TeacherExtraLearningToolTab = ({ filters }) => {
                       const percentage =
                         toolStats.overall?.totalTeachers > 0
                           ? (
-                              (item.count / toolStats.overall.totalTeachers) *
+                              (item.total / toolStats.overall.totalTeachers) *
                               100
                             ).toFixed(2)
                           : 0;
@@ -235,7 +242,7 @@ const TeacherExtraLearningToolTab = ({ filters }) => {
                             {item.name}
                           </td>
                           <td className="px-4 py-3 text-right text-gray-600 font-semibold">
-                            {item.count.toLocaleString()}
+                            {item.total.toLocaleString()}
                           </td>
                           <td className="px-4 py-3 text-right text-gray-600">
                             {percentage}%
