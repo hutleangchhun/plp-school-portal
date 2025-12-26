@@ -67,9 +67,9 @@ const StudentGradeAndKindergartenDashboard = ({ filters = {} }) => {
 
       // Build params object with active filters
       const params = {};
-      if (filters.selectedProvince) params.provinceId = parseInt(filters.selectedProvince, 10);
-      if (filters.selectedDistrict) params.districtId = parseInt(filters.selectedDistrict, 10);
-      if (filters.selectedSchool) params.schoolId = parseInt(filters.selectedSchool, 10);
+      if (filters?.selectedProvince) params.provinceId = parseInt(filters.selectedProvince, 10);
+      if (filters?.selectedDistrict) params.districtId = parseInt(filters.selectedDistrict, 10);
+      if (filters?.selectedSchool) params.schoolId = parseInt(filters.selectedSchool, 10);
 
       // Fetch both datasets in parallel
       const [poorCardResponse, kindergartenResponse] = await Promise.all([

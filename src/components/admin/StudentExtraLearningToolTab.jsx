@@ -95,11 +95,11 @@ const StudentExtraLearningToolTab = ({ filters }) => {
       clearError();
 
       const params = {};
-      if (filters.selectedProvince)
+      if (filters?.selectedProvince)
         params.provinceId = parseInt(filters.selectedProvince, 10);
-      if (filters.selectedDistrict)
+      if (filters?.selectedDistrict)
         params.districtId = parseInt(filters.selectedDistrict, 10);
-      if (filters.selectedSchool)
+      if (filters?.selectedSchool)
         params.schoolId = parseInt(filters.selectedSchool, 10);
 
       const response = await dashboardService.getStudentExtraLearningToolStats(
