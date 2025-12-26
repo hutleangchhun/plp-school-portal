@@ -22,7 +22,6 @@ import { Users } from "lucide-react";
 import DynamicLoader from "../ui/DynamicLoader";
 import StatsCard from "../ui/StatsCard";
 import CustomTooltip from "../ui/TooltipChart";
-import Badge from "../ui/Badge";
 
 const colors = [
   "#3b82f6",
@@ -54,12 +53,35 @@ const StudentExtraLearningToolTab = ({ filters }) => {
 
   const getStatusLabel = (status) => {
     switch(status) {
-      case "newStatusCount":
-        return t("new", "ថ្មី");
-      case "oldStatusCount":
-        return t("old", "ចាស់");
+      case "new":
+        return t("newYear", "ឆ្នាំថ្មី");
+      case "old":
+        return t("oldYear", "ឆ្នាំចាស់");
+      case "សាលាផ្តល់ជូន":
+        return t("schoolProvided", "សាលាផ្តល់ជូន");
+      case "មាតាបិតា​ទិញឱ្យ":
+      case "មាតាបិតាទិញឱ្យ":
+        return t("parentPurchased", "មាតាបិតាទិញឱ្យ");
+      case "unspecified":
+        return t("unspecified", "Unspecified");
       default:
         return status;
+    }
+  };
+
+  const getProviderLabel = (provider) => {
+    switch(provider) {
+      case "unspecified":
+        return t("unspecified", "Unspecified");
+      case "សាលាផ្តល់ជូន":
+        return t("schoolProvided", "សាលាផ្តល់ជូន");
+      case "មាតាបិតាទិញឱ្យ":
+      case "មាតាបិតា​ទិញឱ្យ":
+        return t("parentPurchased", "មាតាបិតាទិញឱ្យ");
+      case "អាណាព្យាបាល":
+        return t("other", "អាណាព្យាបាល");
+      default:
+        return provider;
     }
   };
 
@@ -122,12 +144,16 @@ const StudentExtraLearningToolTab = ({ filters }) => {
   }
 
   // Prepare chart data for tools and status breakdown
-  const toolsChartData = toolStats?.tools?.map(tool => ({
-    name: getToolLabel(tool.packageName),
-    [t("new", "ថ្មី")]: tool.newStatusCount,
-    [t("old", "ចាស់")]: tool.oldStatusCount,
-    total: tool.totalStudents
-  })) || [];
+  const toolsChartData = toolStats?.tools?.map(tool => {
+    const newCount = tool.byStatus?.new || 0;
+    const oldCount = tool.byStatus?.old || 0;
+    return {
+      name: getToolLabel(tool.packageName),
+      newYear: newCount,
+      oldYear: oldCount,
+      total: tool.hasPackage
+    };
+  }) || [];
 
   return (
     <div className="space-y-6">
@@ -173,17 +199,16 @@ const StudentExtraLearningToolTab = ({ filters }) => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-        {/* Tools Breakdown Chart */}
+      {/* Combined Tools Distribution Chart */}
       {toolsChartData.length > 0 && (
         <Card className="border border-gray-200 shadow-sm rounded-sm">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">
-              {t("toolDistribution", "Student Distribution by Learning Tools")}
+              {t("toolDistribution", "Learning Tools Statistics by Status and Total")}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="w-full" style={{ height: '400px' }}>
+            <div className="w-full" style={{ height: '450px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={toolsChartData} margin={{ top: 10, right: 10, left: 10, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
@@ -200,15 +225,23 @@ const StudentExtraLearningToolTab = ({ filters }) => {
                     content={<CustomTooltip />}
                     formatter={(value) => value.toLocaleString()}
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
                   <Bar
-                    dataKey={t("new", "ថ្មី")}
+                    dataKey="newYear"
+                    name={t("newYear", "ឆ្នាំថ្មី")}
                     fill="#10b981"
                     radius={[6, 6, 0, 0]}
                   />
                   <Bar
-                    dataKey={t("old", "ចាស់")}
+                    dataKey="oldYear"
+                    name={t("oldYear", "ឆ្នាំចាស់")}
                     fill="#f59e0b"
+                    radius={[6, 6, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="total"
+                    name={t("totalWithPackages", "Total with Packages")}
+                    fill="#3b82f6"
                     radius={[6, 6, 0, 0]}
                   />
                 </BarChart>
@@ -218,12 +251,12 @@ const StudentExtraLearningToolTab = ({ filters }) => {
         </Card>
       )}
 
-      {/* Provider Breakdown Table */}
+      {/* Status & Provider Breakdown Table */}
       {toolStats?.tools && toolStats.tools.length > 0 && (
         <Card className="border border-gray-200 shadow-sm rounded-sm">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">
-              {t("providerBreakdown", "Provider Breakdown by Tool")}
+              {t("statusAndProviderBreakdown", "Status & Provider Breakdown by Tool")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -234,8 +267,11 @@ const StudentExtraLearningToolTab = ({ filters }) => {
                     <th className="px-4 py-3 text-left font-semibold text-gray-700">
                       {t("toolName", "Tool Name")}
                     </th>
+                    <th className="px-4 py-3 text-right font-semibold text-gray-700">
+                      {t("totalWithPackages", "Total with Packages")}
+                    </th>
                     <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                      {t("providerName", "Provider Name")}
+                      {t("status", "Status")}
                     </th>
                     <th className="px-4 py-3 text-right font-semibold text-gray-700">
                       {t("count", "Count")}
@@ -243,83 +279,84 @@ const StudentExtraLearningToolTab = ({ filters }) => {
                     <th className="px-4 py-3 text-right font-semibold text-gray-700">
                       {t("percentage", "Percentage")}
                     </th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-700">
-                      {t("status", "Status")}
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                      {t("provider", "Provider")}
                     </th>
                     <th className="px-4 py-3 text-right font-semibold text-gray-700">
-                      {t("statusCount", "Count")}
+                      {t("count", "Count")}
                     </th>
                     <th className="px-4 py-3 text-right font-semibold text-gray-700">
-                      {t("statusPercentage", "Percentage")}
+                      {t("percentage", "Percentage")}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {toolStats.tools.map((tool, toolIndex) =>
-                    tool.providerBreakdown.map((provider, providerIndex) =>
-                      provider.statusBreakdown.map((status, statusIndex) => (
-                        <tr
-                          key={`${toolIndex}-${providerIndex}-${statusIndex}`}
-                          className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                        >
-                          {providerIndex === 0 && statusIndex === 0 && (
-                            <td
-                              className="px-4 py-3 text-gray-900 font-semibold"
-                              rowSpan={tool.providerBreakdown.reduce((sum, p) => sum + p.statusBreakdown.length, 0)}
-                            >
-                              {getToolLabel(tool.packageName)}
+                  {toolStats.tools.map((tool, toolIndex) => {
+                    const statusEntries = Object.entries(tool.byStatus || {});
+                    const providerEntries = Object.entries(tool.byProvider || {});
+                    const maxRows = Math.max(statusEntries.length, providerEntries.length);
+
+                    // Calculate percentages
+                    const statusTotal = statusEntries.reduce((sum, [, count]) => sum + count, 0);
+                    const providerTotal = providerEntries.reduce((sum, [, count]) => sum + count, 0);
+
+                    return statusEntries.length > 0 || providerEntries.length > 0 ? (
+                      Array.from({ length: maxRows }).map((_, rowIndex) => {
+                        const [statusName, statusCount] = statusEntries[rowIndex] || [null, 0];
+                        const [providerName, providerCount] = providerEntries[rowIndex] || [null, 0];
+                        const statusPercentage = statusTotal > 0 ? (statusCount / statusTotal * 100) : 0;
+                        const providerPercentage = providerTotal > 0 ? (providerCount / providerTotal * 100) : 0;
+
+                        return (
+                          <tr
+                            key={`${toolIndex}-${rowIndex}`}
+                            className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                          >
+                            {rowIndex === 0 && (
+                              <td
+                                className="px-4 py-3 text-gray-900 font-semibold"
+                                rowSpan={maxRows}
+                              >
+                                {getToolLabel(tool.packageName)}
+                              </td>
+                            )}
+                            {rowIndex === 0 && (
+                              <td
+                                className="px-4 py-3 text-right text-gray-900 font-semibold bg-blue-50"
+                                rowSpan={maxRows}
+                              >
+                                {tool.hasPackage.toLocaleString()}
+                              </td>
+                            )}
+                            <td className="px-4 py-3 text-gray-700">
+                              {statusName ? getStatusLabel(statusName) : '-'}
                             </td>
-                          )}
-                          {statusIndex === 0 && (
-                            <td
-                              className="px-4 py-3 text-gray-700 font-medium"
-                              rowSpan={provider.statusBreakdown.length}
-                            >
-                              {provider.providerName}
+                            <td className="px-4 py-3 text-right text-gray-600 font-semibold">
+                              {statusName ? statusCount.toLocaleString() : '-'}
                             </td>
-                          )}
-                          {statusIndex === 0 && (
-                            <td
-                              className="px-4 py-3 text-right text-gray-600 font-semibold"
-                              rowSpan={provider.statusBreakdown.length}
-                            >
-                              {provider.count.toLocaleString()}
+                            <td className="px-4 py-3 text-right text-gray-600">
+                              {statusName ? statusPercentage.toFixed(2) : '-'}%
                             </td>
-                          )}
-                          {statusIndex === 0 && (
-                            <td
-                              className="px-4 py-3 text-right text-gray-600"
-                              rowSpan={provider.statusBreakdown.length}
-                            >
-                              {provider.percentage?.toFixed(2)}%
+                            <td className="px-4 py-3 text-gray-700">
+                              {providerName ? getProviderLabel(providerName) : '-'}
                             </td>
-                          )}
-                          <td className="px-4 py-3 text-right text-gray-600">
-                            <Badge
-                              color={status.status === 'new' ? 'green' : 'orange'}
-                              variant="outline"
-                              size="sm"
-                            >
-                              {status.status === 'new' ? t("newYear", "ឆ្នាំថ្មី") : t("oldYear", "ឆ្នាំចាស់")}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 text-right text-gray-600 font-semibold">
-                            {status.count}
-                          </td>
-                          <td className="px-4 py-3 text-right text-gray-600">
-                            {status.percentage?.toFixed(2)}%
-                          </td>
-                        </tr>
-                      ))
-                    )
-                  )}
+                            <td className="px-4 py-3 text-right text-gray-600 font-semibold">
+                              {providerName ? providerCount.toLocaleString() : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-right text-gray-600">
+                              {providerName ? providerPercentage.toFixed(2) : '-'}%
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : null;
+                  })}
                 </tbody>
               </table>
             </div>
           </CardContent>
         </Card>
       )}
-      </div>
 
       {/* Empty State */}
       {!toolStats && !loading && (
