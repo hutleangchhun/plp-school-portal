@@ -15,6 +15,8 @@ import ErrorDisplay from "../../components/ui/ErrorDisplay";
 import SearchableDropdown from "../../components/ui/SearchableDropdown";
 import SidebarFilter from "../../components/ui/SidebarFilter";
 import SystemWideStudentStats from "../../components/admin/SystemWideStudentStats";
+import StudentExtraLearningToolTab from "../../components/admin/StudentExtraLearningToolTab";
+import StudentGradeAndKindergartenDashboard from "../../components/admin/StudentGradeAndKindergartenDashboard";
 import locationService from "../../utils/api/services/locationService";
 import schoolService from "../../utils/api/services/schoolService";
 import { Button } from "@/components/ui/Button";
@@ -276,6 +278,48 @@ const StudentDemographicsDashboard = () => {
                 schoolId={selectedSchool}
                 showOwnFilters={false}
                 key={`9-${selectedProvince}-${selectedDistrict}-${selectedSchool}`}
+              />
+            </CardContent>
+          </Card>
+        </FadeInSection>
+
+        {/* Student Extra Learning Tools */}
+        <FadeInSection delay={400} className="mb-6">
+          <Card className="border border-gray-200 shadow-sm rounded-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold">
+                {t("extraLearningTools", "Extra Learning Tools")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <StudentExtraLearningToolTab
+                filters={{
+                  selectedProvince,
+                  selectedDistrict,
+                  selectedSchool
+                }}
+                key={`student-tools-${selectedProvince}-${selectedDistrict}-${selectedSchool}`}
+              />
+            </CardContent>
+          </Card>
+        </FadeInSection>
+
+        {/* Student Grade & Kindergarten Dashboard */}
+        <FadeInSection delay={500} className="mb-6">
+          <Card className="border border-gray-200 shadow-sm rounded-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold">
+                {t("studentAcademicMetrics", "Student Academic Metrics")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <StudentGradeAndKindergartenDashboard
+                filters={{
+                  selectedProvince,
+                  selectedDistrict,
+                  selectedSchool
+                }}
+                key={`grade-kindergarten-${selectedProvince}-${selectedDistrict}-${selectedSchool}`}
               />
             </CardContent>
           </Card>

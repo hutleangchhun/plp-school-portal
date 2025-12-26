@@ -794,5 +794,182 @@ export const dashboardService = {
         data: null
       };
     }
+  },
+
+  /**
+   * Get student extra learning tool statistics
+   * Fetches data from /api/v1/dashboard/students/extra-learning-tools/stats endpoint
+   * @param {Object} params - Filter parameters
+   * @param {number} [params.provinceId] - Province ID to filter by
+   * @param {number} [params.districtId] - District ID to filter by
+   * @param {number} [params.schoolId] - School ID to filter by
+   * @returns {Promise<Object>} Response with extra learning tool statistics
+   */
+  async getStudentExtraLearningToolStats(params = {}) {
+    try {
+      console.log('📊 Fetching student extra learning tool statistics...', params);
+
+      let url = `${ENDPOINTS.DASHBOARD.BASE}/students/extra-learning-tools/stats`;
+
+      // Add query parameters for filtering
+      const queryParams = [];
+
+      if (params.provinceId) {
+        queryParams.push(`provinceId=${params.provinceId}`);
+      }
+
+      if (params.districtId) {
+        queryParams.push(`districtId=${params.districtId}`);
+      }
+
+      if (params.schoolId) {
+        queryParams.push(`schoolId=${params.schoolId}`);
+      }
+
+      if (queryParams.length > 0) {
+        url += '?' + queryParams.join('&');
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(url)
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch extra learning tool statistics');
+      }
+
+      const apiData = response.data || {};
+
+      return {
+        success: true,
+        data: apiData
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getStudentExtraLearningToolStats:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get student extra learning tool statistics',
+        data: {}
+      };
+    }
+  },
+
+  /**
+   * Get student poor card grade statistics
+   * Fetches data from /api/v1/dashboard/students/poor-card-grade endpoint
+   * @param {Object} params - Filter parameters
+   * @param {number} [params.provinceId] - Province ID to filter by
+   * @param {number} [params.districtId] - District ID to filter by
+   * @param {number} [params.schoolId] - School ID to filter by
+   * @returns {Promise<Object>} Response with poor card grade statistics
+   */
+  async getStudentPoorCardGradeStats(params = {}) {
+    try {
+      console.log('📊 Fetching student poor card grade statistics...', params);
+
+      let url = `${ENDPOINTS.DASHBOARD.BASE}/students/poor-card-grade`;
+
+      // Add query parameters for filtering
+      const queryParams = [];
+
+      if (params.provinceId) {
+        queryParams.push(`provinceId=${params.provinceId}`);
+      }
+
+      if (params.districtId) {
+        queryParams.push(`districtId=${params.districtId}`);
+      }
+
+      if (params.schoolId) {
+        queryParams.push(`schoolId=${params.schoolId}`);
+      }
+
+      if (queryParams.length > 0) {
+        url += '?' + queryParams.join('&');
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(url)
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch poor card grade statistics');
+      }
+
+      const apiData = response.data || {};
+
+      return {
+        success: true,
+        data: apiData
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getStudentPoorCardGradeStats:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get student poor card grade statistics',
+        data: {}
+      };
+    }
+  },
+
+  /**
+   * Get student kindergarten statistics
+   * Fetches data from /api/v1/dashboard/students/kindergarten endpoint
+   * @param {Object} params - Filter parameters
+   * @param {number} [params.provinceId] - Province ID to filter by
+   * @param {number} [params.districtId] - District ID to filter by
+   * @param {number} [params.schoolId] - School ID to filter by
+   * @returns {Promise<Object>} Response with kindergarten statistics
+   */
+  async getStudentKindergartenStats(params = {}) {
+    try {
+      console.log('📊 Fetching student kindergarten statistics...', params);
+
+      let url = `${ENDPOINTS.DASHBOARD.BASE}/students/kindergarten`;
+
+      // Add query parameters for filtering
+      const queryParams = [];
+
+      if (params.provinceId) {
+        queryParams.push(`provinceId=${params.provinceId}`);
+      }
+
+      if (params.districtId) {
+        queryParams.push(`districtId=${params.districtId}`);
+      }
+
+      if (params.schoolId) {
+        queryParams.push(`schoolId=${params.schoolId}`);
+      }
+
+      if (queryParams.length > 0) {
+        url += '?' + queryParams.join('&');
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(url)
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch kindergarten statistics');
+      }
+
+      const apiData = response.data || {};
+
+      return {
+        success: true,
+        data: apiData
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getStudentKindergartenStats:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get student kindergarten statistics',
+        data: {}
+      };
+    }
   }
 };

@@ -195,6 +195,9 @@ const ENDPOINTS = {
     BASE: '/dashboard',
     SCHOOL_BMI: (schoolId) => `/dashboard/school/${schoolId}/bmi`,
     USER_REGISTRATION_STATS: '/dashboard/users/registration-stats',
+    STUDENT_EXTRA_LEARNING_TOOLS: '/dashboard/students/extra-learning-tools/stats',
+    STUDENT_POOR_CARD_GRADE: '/dashboard/students/poor-card-grade',
+    STUDENT_KINDERGARTEN: '/dashboard/students/kindergarten',
   },
   USER_ACTIVITY_LOGS: {
     BASE: '/user-activity-logs',

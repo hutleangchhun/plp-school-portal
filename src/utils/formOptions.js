@@ -325,7 +325,8 @@ export const spouseJobOptions = [
 // Poor Card Grade options
 export const poorCardGradeOptions = [
   { value: '1', label: 'កម្រិត 1' },
-  { value: '2', label: 'កម្រិត 2' }
+  { value: '2', label: 'កម្រិត 2' },
+  { value: 'ហានិភ័យ', label: 'បណ្ណហានិភ័យ' },
 ];
 
 // Extra Learning Tool status options (used for student extraLearningTool.status)
