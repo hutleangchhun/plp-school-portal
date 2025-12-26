@@ -325,7 +325,7 @@ const StudentExtraLearningToolTab = ({ filters }) => {
                                 )}
                                 {rowIndex === 0 && (
                                   <td
-                                    className="px-4 py-3 text-right text-gray-900 font-semibold bg-blue-50"
+                                    className="px-4 py-3 text-center text-gray-900 font-semibold"
                                     rowSpan={maxRows}
                                   >
                                     {tool.hasPackage.toLocaleString()}
