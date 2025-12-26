@@ -178,7 +178,7 @@ const StudentGradeAndKindergartenDashboard = ({ filters = {} }) => {
         <CardContent className="pt-6">
           <div className="text-center text-red-500">
             <p>{t('errorLoadingData', 'Error loading data')}</p>
-            <p className="text-sm mt-2">{error}</p>
+            <p className="text-sm mt-2">{typeof error === 'string' ? error : error?.message || 'An error occurred'}</p>
           </div>
         </CardContent>
       </Card>
