@@ -215,6 +215,8 @@ export const en = {
   teacherDistribution: 'ការបែងចែកស្ថិតិប្រភេទក្របខ័ណ្ឌ',
   teacherEmploymentTypes: 'Teacher Employment Types',
   currentClassesTeaching: 'Current Classes Teaching',
+  toolName: 'Extra Learning Tool Name',
+  field: 'Field',
 
   // Parent Management
   parents: 'Parents',

@@ -72,19 +72,47 @@ const TeacherExtraLearningToolTab = ({ filters }) => {
 
       // Transform tool data for chart with nested values
       if (data.toolCounts) {
+        const allowedTools = ["math_grade1_package", "reading_material_package"];
+        const getToolLabel = (toolName) => {
+          switch(toolName) {
+            case "math_grade1_package":
+              return t("math_grade1_package", "គណិតវិទ្យាថ្នាក់ដំបូង");
+            case "reading_material_package":
+              return t("reading_material_package", "កញ្ចប់សម្ភារៈអំណាន");
+            default:
+              return toolName;
+          }
+        };
+
+        const getFieldLabel = (fieldName) => {
+          switch(fieldName) {
+            case "manipulatives":
+              return t("manipulatives", "សម្ភារឧបទេស");
+            case "picture_cards":
+              return t("picture_cards", "ប័ណ្ឌរូបភាព");
+            case "_hasPackage":
+              return t("hasPackage", "មានកញ្ចប់");
+            default:
+              return fieldName;
+          }
+        };
+
         const toolData = Object.entries(data.toolCounts)
+          .filter(([toolName]) => allowedTools.includes(toolName))
           .map(([toolName, toolDetails]) => {
-            const item = { name: toolName };
+            const item = {
+              name: toolName,
+              displayName: getToolLabel(toolName)
+            };
             let totalCount = 0;
             if (typeof toolDetails === "object") {
-              Object.entries(toolDetails)
-                .filter(([key]) => key !== "_hasPackage")
-                .forEach(([key, val]) => {
-                  if (typeof val === "number") {
-                    item[key] = val;
-                    totalCount += val;
-                  }
-                });
+              Object.entries(toolDetails).forEach(([key, val]) => {
+                if (typeof val === "number") {
+                  item[key] = val;
+                  item[`${key}_label`] = getFieldLabel(key);
+                  totalCount += val;
+                }
+              });
             }
             item.total = totalCount;
             return item;
@@ -169,7 +197,7 @@ const TeacherExtraLearningToolTab = ({ filters }) => {
                   <BarChart data={toolChartData} margin={{ top: 10, right: 10, left: 10, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                     <XAxis
-                      dataKey="name"
+                      dataKey="displayName"
                       tick={{ fontSize: 11 }}
                       angle={360}
                       textAnchor="end"
@@ -180,18 +208,28 @@ const TeacherExtraLearningToolTab = ({ filters }) => {
                     <Tooltip
                       cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
                       content={<CustomTooltip />}
+                      labelFormatter={(value) => value}
+                      formatter={(value, name) => {
+                        const dataItem = toolChartData[0];
+                        const label = dataItem[`${name}_label`] || name;
+                        return [value.toLocaleString(), label];
+                      }}
                     />
                     {toolChartData.length > 0 && Object.keys(toolChartData[0])
-                      .filter(key => key !== "name" && key !== "total")
-                      .map((key, idx) => (
-                        <Bar
-                          key={key}
-                          dataKey={key}
-                          stackId="stack"
-                          fill={colors[idx % colors.length]}
-                          radius={idx === 0 ? [6, 6, 0, 0] : [0, 0, 0, 0]}
-                        />
-                      ))
+                      .filter(key => !key.endsWith("_label") && key !== "name" && key !== "displayName" && key !== "total")
+                      .map((key, idx) => {
+                        const label = toolChartData[0][`${key}_label`] || key;
+                        return (
+                          <Bar
+                            key={key}
+                            dataKey={key}
+                            name={label}
+                            stackId="stack"
+                            fill={colors[idx % colors.length]}
+                            radius={idx === 0 ? [6, 6, 0, 0] : [0, 0, 0, 0]}
+                          />
+                        );
+                      })
                     }
                   </BarChart>
                 </ResponsiveContainer>
@@ -216,8 +254,11 @@ const TeacherExtraLearningToolTab = ({ filters }) => {
                       <th className="px-4 py-3 text-left font-semibold text-gray-700">
                         {t("toolName", "Tool Name")}
                       </th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                        {t("field", "Field")}
+                      </th>
                       <th className="px-4 py-3 text-right font-semibold text-gray-700">
-                        {t("count", "Count")}
+                        {t("count", "Teachers")}
                       </th>
                       <th className="px-4 py-3 text-right font-semibold text-gray-700">
                         {t("percentage", "Percentage")}
@@ -225,30 +266,45 @@ const TeacherExtraLearningToolTab = ({ filters }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {toolChartData.map((item, index) => {
-                      const percentage =
-                        toolStats.overall?.totalTeachers > 0
-                          ? (
-                              (item.total / toolStats.overall.totalTeachers) *
-                              100
-                            ).toFixed(2)
-                          : 0;
-                      return (
-                        <tr
-                          key={index}
-                          className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-4 py-3 text-gray-900">
-                            {item.name}
-                          </td>
-                          <td className="px-4 py-3 text-right text-gray-600 font-semibold">
-                            {item.total.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-3 text-right text-gray-600">
-                            {percentage}%
-                          </td>
-                        </tr>
+                    {toolChartData.map((item, itemIndex) => {
+                      const nestedFields = Object.keys(item).filter(
+                        (key) => !key.endsWith("_label") && key !== "name" && key !== "displayName" && key !== "total"
                       );
+                      return nestedFields.map((field, fieldIndex) => {
+                        const count = item[field];
+                        const fieldLabel = item[`${field}_label`] || field;
+                        const percentage =
+                          toolStats.overall?.totalTeachers > 0
+                            ? (
+                                (count / toolStats.overall.totalTeachers) *
+                                100
+                              ).toFixed(2)
+                            : 0;
+                        return (
+                          <tr
+                            key={`${itemIndex}-${fieldIndex}`}
+                            className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                          >
+                            {fieldIndex === 0 && (
+                              <td
+                                className="px-4 py-3 text-gray-900 font-semibold"
+                                rowSpan={nestedFields.length}
+                              >
+                                {item.displayName}
+                              </td>
+                            )}
+                            <td className="px-4 py-3 text-gray-700">
+                              {fieldLabel}
+                            </td>
+                            <td className="px-4 py-3 text-right text-gray-600 font-semibold">
+                              {count.toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3 text-right text-gray-600">
+                              {percentage}%
+                            </td>
+                          </tr>
+                        );
+                      });
                     })}
                   </tbody>
                 </table>

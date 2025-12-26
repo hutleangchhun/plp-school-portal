@@ -352,6 +352,8 @@ export const km = {
   ethnicGroupDistribution: 'ការបែងចែកស្ថិតិជនជាតិ',
   accessibilityNeeds: 'ការបែងចែកស្ថិតិប្រភេទពិការភាព',
   currentClassesTeaching: 'ថ្នាក់ដែលកំពុងបង្រៀន',
+  toolName: 'កញ្ចប់សម្ភារៈ',
+  field: 'ប្រភេទទិន្នន័យ',
 
 
 
