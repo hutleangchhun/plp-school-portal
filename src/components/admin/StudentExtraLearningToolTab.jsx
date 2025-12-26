@@ -259,7 +259,7 @@ const StudentExtraLearningToolTab = ({ filters }) => {
             <Card className="border border-gray-200 shadow-sm rounded-sm">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">
-                  {t("statusAndProviderBreakdown", "Status & Provider Breakdown by Tool")}
+                  {t("providerBreakdown", "Status & Provider Breakdown by Tool")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
