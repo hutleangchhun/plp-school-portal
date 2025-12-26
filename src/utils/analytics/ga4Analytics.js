@@ -67,6 +67,39 @@ export const trackLogin = (userData) => {
 };
 
 /**
+ * Track user login failed event to GA4
+ * @param {Object} failureData - Login failure data object
+ * @param {string} failureData.reason - Reason for login failure (e.g., 'invalid_credentials', 'account_locked', 'network_error', etc.)
+ * @param {string} failureData.email - User's email (optional, for tracking purposes)
+ * @param {string} failureData.username - User's username (optional, for tracking purposes)
+ * @param {string} failureData.errorMessage - Error message from API
+ */
+export const trackLoginFailed = (failureData = {}) => {
+  if (typeof window === 'undefined' || !window.gtag) {
+    console.warn('GA4 not initialized');
+    return;
+  }
+
+  const eventPayload = {
+    'failure_reason': failureData.reason || 'unknown',
+    'error_message': failureData.errorMessage || 'unknown',
+    'timestamp': new Date().toISOString()
+  };
+
+  // Add optional identifiers if provided
+  if (failureData.email) {
+    eventPayload['user_email'] = failureData.email;
+  }
+  if (failureData.username) {
+    eventPayload['username'] = failureData.username;
+  }
+
+  window.gtag('event', 'login_failed', eventPayload);
+
+  console.log('GA4 Login failed tracked:', eventPayload);
+};
+
+/**
  * Track user logout event to GA4
  */
 export const trackLogout = () => {
@@ -152,6 +185,7 @@ export const trackFeatureUsage = (featureName, roleId, additionalData = {}) => {
 
 export default {
   trackLogin,
+  trackLoginFailed,
   trackLogout,
   trackPageView,
   trackEvent,
