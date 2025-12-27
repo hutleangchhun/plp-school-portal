@@ -991,9 +991,57 @@ export default function BulkStudentImport() {
       );
 
       // For Director users, auto-populate schoolId from their account
-      const directorStudents = studentsWithAvailability.map(student => {
-        // If schoolId is not set and we have a schoolId from the Director's account, add it
-        if ((!student.schoolId || student.schoolId === '') && schoolId) {
+      console.log('🔍 Excel Import - Current schoolId state:', { schoolId, type: typeof schoolId });
+      console.log('🔍 Excel Import - First student before population:', {
+        schoolId: studentsWithAvailability[0]?.schoolId,
+        hasSchoolId: !!studentsWithAvailability[0]?.schoolId
+      });
+
+      // Get roleId directly from localStorage to avoid async timing issues
+      let userRoleId = userRole;
+      let directorSchoolId = null;
+
+      if (!userRoleId) {
+        try {
+          const userData = localStorage.getItem('user');
+          const userObj = userData ? JSON.parse(userData) : null;
+          userRoleId = userObj?.roleId;
+          console.log('📦 Fallback roleId from localStorage:', { userRoleId });
+        } catch (err) {
+          console.error('❌ Error reading roleId from localStorage:', err);
+        }
+      }
+
+      // For Director role (roleId = 14), override all schoolIds with Director's school
+      const isDirector = userRoleId === 14;
+
+      if (isDirector) {
+        // Fallback to localStorage if state schoolId is not yet initialized
+        directorSchoolId = schoolId;
+        if (!directorSchoolId) {
+          try {
+            const userData = localStorage.getItem('user');
+            const userObj = userData ? JSON.parse(userData) : null;
+            directorSchoolId = userObj?.schoolId || userObj?.school_id || userObj?.school?.id;
+            console.log('📦 Fallback schoolId from localStorage:', { directorSchoolId, userObj: userObj ? { schoolId: userObj.schoolId, school_id: userObj.school_id, school: userObj.school } : null });
+          } catch (err) {
+            console.error('❌ Error reading schoolId from localStorage:', err);
+          }
+        }
+      }
+
+      const processedStudents = studentsWithAvailability.map((student, idx) => {
+        // Only override schoolId for Director users
+        if (isDirector && directorSchoolId) {
+          console.log(`📝 Director: Setting schoolId for student ${idx}:`, directorSchoolId.toString(), 'Previous:', student.schoolId);
+          return {
+            ...student,
+            schoolId: directorSchoolId.toString()
+          };
+        }
+        // For Admin users, only populate if empty
+        if (!isDirector && (!student.schoolId || student.schoolId === '') && schoolId) {
+          console.log(`📝 Admin: Populating empty schoolId for student ${idx}:`, schoolId.toString());
           return {
             ...student,
             schoolId: schoolId.toString()
@@ -1002,7 +1050,15 @@ export default function BulkStudentImport() {
         return student;
       });
 
-      setStudents(directorStudents);
+      console.log('🔍 Excel Import - Processing complete:', {
+        isDirector,
+        usedDirectorOverride: isDirector && !!directorSchoolId,
+        firstStudentSchoolId: processedStudents[0]?.schoolId,
+        userRoleId,
+        userRole
+      });
+
+      setStudents(processedStudents);
       setExcelImportProgress(100);
       // Close modal after brief delay
       setTimeout(() => {
