@@ -191,17 +191,17 @@ export default function BulkStudentImport() {
     // Father phone validation - optional field, only validate format if provided
     if (columnKey === 'fatherPhone') {
       // Empty phone is OK (optional field)
-      if (!value || value === '') return false;
+      if (!value || value.toString().trim() === '') return false;
       const phoneRegex = /^0\d{8,}$/;
-      return !phoneRegex.test(value.replace(/\s/g, ''));
+      return !phoneRegex.test(value.toString().replace(/\s/g, ''));
     }
 
     // Mother phone validation - optional field, only validate format if provided
     if (columnKey === 'motherPhone') {
       // Empty phone is OK (optional field)
-      if (!value || value === '') return false;
+      if (!value || value.toString().trim() === '') return false;
       const phoneRegex = /^0\d{8,}$/;
-      return !phoneRegex.test(value.replace(/\s/g, ''));
+      return !phoneRegex.test(value.toString().replace(/\s/g, ''));
     }
 
     // Date validation (dd/mm/yyyy format)
@@ -341,7 +341,8 @@ export default function BulkStudentImport() {
 
         // For Directors: Auto-populate school ID from account
         if (isDirector) {
-          const userSchoolId = userData?.schoolId || userData?.school_id;
+          const userSchoolId = userData?.schoolId || userData?.school_id || userData?.school?.id;
+          console.log('🔍 Director user school ID:', { userSchoolId, userData });
           if (userSchoolId) {
             setSchoolId(userSchoolId);
 
@@ -363,6 +364,8 @@ export default function BulkStudentImport() {
             } catch (err) {
               console.error('Error fetching school details:', err);
             }
+          } else {
+            console.warn('⚠️ Director user has no school ID in userData:', userData);
           }
         } else if (isAdmin) {
           // For Admins: Load provinces for cascading selection
@@ -987,7 +990,19 @@ export default function BulkStudentImport() {
         })
       );
 
-      setStudents(studentsWithAvailability);
+      // For Director users, auto-populate schoolId from their account
+      const directorStudents = studentsWithAvailability.map(student => {
+        // If schoolId is not set and we have a schoolId from the Director's account, add it
+        if ((!student.schoolId || student.schoolId === '') && schoolId) {
+          return {
+            ...student,
+            schoolId: schoolId.toString()
+          };
+        }
+        return student;
+      });
+
+      setStudents(directorStudents);
       setExcelImportProgress(100);
       // Close modal after brief delay
       setTimeout(() => {
@@ -1543,6 +1558,27 @@ export default function BulkStudentImport() {
     hasAtLeastOneValidStudent &&
     !hasInvalidDates &&
     !hasInvalidCells;
+
+  // Debug logging for canSubmit conditions
+  useEffect(() => {
+    console.log('🔍 BulkStudentImport canSubmit debug:', {
+      schoolId: schoolId,
+      '!!schoolId': !!schoolId,
+      loading,
+      '!loading': !loading,
+      isImporting,
+      '!isImporting': !isImporting,
+      'students.length': students.length,
+      'students.length > 0': students.length > 0,
+      'students.length <= MAX_STUDENTS': students.length <= MAX_STUDENTS,
+      hasAtLeastOneValidStudent,
+      hasInvalidDates,
+      '!hasInvalidDates': !hasInvalidDates,
+      hasInvalidCells,
+      '!hasInvalidCells': !hasInvalidCells,
+      canSubmit
+    });
+  }, [schoolId, loading, isImporting, students.length, hasAtLeastOneValidStudent, hasInvalidDates, hasInvalidCells, canSubmit]);
 
   if (initialLoading) {
     return (
