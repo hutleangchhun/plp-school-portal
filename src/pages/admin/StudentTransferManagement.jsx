@@ -239,27 +239,25 @@ const StudentTransferManagement = () => {
         phone: student.phone,
         gradeLevel: student.gradeLevel,
         class: student.class,
+        classId: student.class?.classId || student.class?.id,
         schoolId: schoolId,
         // Extract school name from nested school object or use default
         schoolName: student.school?.name,
         rawStudent: student // Keep raw for school fetch
       }));
 
-      // Fetch school details if not already available
+      // Fetch school details and class info if needed
       const studentsWithSchoolInfo = await Promise.all(
         mappedStudents.map(async (student) => {
-          // If we already have schoolName, use it
-          if (student.schoolName) {
-            return student;
-          }
+          let updatedStudent = student;
 
-          // Otherwise, fetch school info by schoolId
-          if (student.schoolId) {
+          // Fetch school info if not already available
+          if (!student.schoolName && student.schoolId) {
             try {
               const schoolResponse = await schoolService.getSchoolById(student.schoolId);
               if (schoolResponse && schoolResponse.data) {
-                return {
-                  ...student,
+                updatedStudent = {
+                  ...updatedStudent,
                   schoolName: schoolResponse.data.name || ''
                 };
               }
@@ -268,7 +266,20 @@ const StudentTransferManagement = () => {
             }
           }
 
-          return student;
+          // Fetch class info if student has a classId
+          if (student.classId) {
+            try {
+              const classResponse = await classService.getClassById(student.classId);
+              updatedStudent = {
+                ...updatedStudent,
+                currentClass: classResponse
+              };
+            } catch (err) {
+              console.error(`Failed to fetch class info for student ${student.id}:`, err);
+            }
+          }
+
+          return updatedStudent;
         })
       );
 
@@ -1188,11 +1199,20 @@ const StudentTransferManagement = () => {
                               <div className="text-xs text-gray-500">
                                 {student.username}
                               </div>
-                              <div className="text-xs text-gray-500">
-                                {student.class?.gradeLevel || student.class?.name
-                                  ? formatClassIdentifier(student.class?.gradeLevel, student.class?.section) || student.class?.name || 'មិនមាន'
-                                  : 'មិនមាន'}
-                              </div>
+                              {/* Display current class if available */}
+                              {student.currentClass && student.currentClass.gradeLevel !== undefined && student.currentClass.gradeLevel !== null ? (
+                                <div className="text-xs text-gray-600 font-medium mt-1">
+                                  {t('class', 'Class')}: {formatClassIdentifier(student.currentClass.gradeLevel, student.currentClass.section)}
+                                </div>
+                              ) : student.classId ? (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {t('loadingClass', 'Loading class...')}
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {t('noClassAssigned', 'No class assigned')}
+                                </div>
+                              )}
                               {student.schoolName && (
                                 <div className="text-xs text-gray-500 mt-1">
                                   {student.schoolName}
