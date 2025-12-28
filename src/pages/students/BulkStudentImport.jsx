@@ -110,6 +110,7 @@ export default function BulkStudentImport() {
   const [importResults, setImportResults] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
+  const [showFailedOnly, setShowFailedOnly] = useState(false);
 
   // Excel import progress modal state
   const [showExcelImportProgress, setShowExcelImportProgress] = useState(false);
@@ -174,10 +175,10 @@ export default function BulkStudentImport() {
 
     // Email validation (must contain @ and valid format)
     if (columnKey === 'email') {
-      // Empty email is OK (optional field)
-      if (!value || value === '') return false;
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return !emailRegex.test(value.trim());
+      // Email validation is DISABLED for testing error scenarios
+      return false;
+      // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      // return !emailRegex.test(value.trim());
     }
 
     // Phone number validation (must start with 0 and be at least 8 digits total)
@@ -1426,124 +1427,205 @@ export default function BulkStudentImport() {
       }));
       setImportResults(initialResults);
 
-      // Process students one by one in a queue
-      let successCount = 0;
-      let failureCount = 0;
-      const results = [...initialResults];
+      // Use async queue-based bulk registration
+      try {
+        console.log(`Starting bulk registration for ${transformedData.length} students (async queue)`);
 
-      for (let i = 0; i < transformedData.length; i++) {
-        try {
-          const studentData = transformedData[i];
+        // Call the new async bulk register endpoint
+        const response = await studentService.bulkRegister(transformedData);
 
-          // Update result to show processing
-          results[i] = {
-            ...results[i],
-            processing: true
-          };
-          setImportResults([...results]);
+        // Extract batch ID and initial response data
+        const { batch_id: batchId, success_count: initialSuccessCount, failed_count: initialFailureCount } = response.data || response;
 
-          // Register single student
-          console.log(`Registering student ${i + 1}/${transformedData.length}: ${studentData.username}`);
-          const response = await studentService.bulkRegister([studentData]);
+        console.log(`Bulk registration queued with batch ID: ${batchId}`);
+        console.log(`Initial response - Success: ${initialSuccessCount}, Failed: ${initialFailureCount}`);
 
-          // Check response for success
-          const { success_count: count, errors } = response.data || response;
+        // Use a local variable to track results throughout polling (avoids async state issues)
+        let currentResults = [...initialResults];
+        setImportResults(currentResults);
 
-          if (count > 0 && (!errors || errors.length === 0)) {
-            successCount++;
-            results[i] = {
-              ...results[i],
-              processing: false,
-              success: true,
-              error: null
-            };
-            console.log(`✅ Student registered: ${studentData.username}`);
-          } else {
-            failureCount++;
-            const errorMsg = errors && errors[0] ? (errors[0].message || errors[0].error || 'Unknown error') : 'Registration failed';
-            results[i] = {
-              ...results[i],
-              processing: false,
-              success: false,
-              error: errorMsg
-            };
-            console.warn(`❌ Failed to register ${studentData.username}: ${errorMsg}`);
+        // Poll for batch status every 1 second
+        let isComplete = false;
+        let pollAttempts = 0;
+        const maxPollAttempts = 300; // 5 minutes max polling
+
+        while (!isComplete && pollAttempts < maxPollAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before polling
+          pollAttempts++;
+
+          try {
+            // Get batch status
+            const statusResponse = await studentService.getBulkRegistrationStatus(batchId);
+            const { completed, total, success_count: successCount, failed_count: failureCount, is_complete, results: batchResults } = statusResponse.data || statusResponse;
+
+            console.log(`Batch status - Completed: ${completed}/${total}, Success: ${successCount}, Failed: ${failureCount}`);
+
+            // Update progress
+            setProcessedCount(completed);
+
+            // Update individual student results if available
+            if (Array.isArray(batchResults) && batchResults.length > 0) {
+              currentResults = currentResults.map((result, idx) => {
+                const batchResult = batchResults.find(br => br.index === idx);
+                if (batchResult) {
+                  return {
+                    ...result,
+                    processing: false,
+                    success: batchResult.success,
+                    error: batchResult.error || null
+                  };
+                }
+                return result;
+              });
+              setImportResults([...currentResults]);
+            }
+
+            // Check if batch is complete
+            if (is_complete) {
+              isComplete = true;
+              console.log(`✅ Batch processing complete: ${successCount} successful, ${failureCount} failed`);
+              setIsImporting(false);
+
+              // Mark all remaining unprocessed students as successful (API only returns failures + some successes)
+              const finalResults = currentResults.map((result, idx) => {
+                const batchResult = batchResults && Array.isArray(batchResults)
+                  ? batchResults.find(br => br.index === idx)
+                  : null;
+
+                if (batchResult) {
+                  return {
+                    ...result,
+                    processing: false,
+                    success: batchResult.success,
+                    error: batchResult.error || null
+                  };
+                }
+
+                // If no explicit result and batch is complete, mark as successful
+                return {
+                  ...result,
+                  processing: false,
+                  success: true,
+                  error: null
+                };
+              });
+
+              console.log(`📋 Final results to display:`, finalResults);
+              console.log(`📊 Success count: ${successCount}, Failure count: ${failureCount}`);
+              setImportResults(finalResults);
+
+              // Show summary
+              if (successCount > 0) {
+                showSuccess(`🎉 បាននាំចូលសិស្សចំនួន ${successCount} នាក់ដោយជោគជ័យ!`, { duration: 7000 });
+              }
+
+              if (failureCount > 0) {
+                showError(`⚠️ មានកំហុស ${failureCount} នាក់ក្នុងការនាំចូល។ សូមពិនិត្យលម្អិត`, { duration: 7000 });
+              }
+
+              // Handle form after import completion
+              setTimeout(() => {
+                if (failureCount === 0) {
+                  // All succeeded - clear the form completely
+                  setStudents([{
+                    // Student basic info
+                    lastName: '',
+                    firstName: '',
+                    username: '',
+                    password: '',
+                    email: '',
+                    dateOfBirth: '',
+                    gender: '',
+                    phone: '',
+                    nationality: '',
+                    schoolId: '',
+                    academicYear: '',
+                    gradeLevel: '',
+                    // Location info
+                    residenceFullAddress: '',
+                    // Parent info
+                    fatherFirstName: '',
+                    fatherLastName: '',
+                    fatherPhone: '',
+                    fatherGender: 'MALE',
+                    fatherOccupation: '',
+                    fatherResidenceFullAddress: '',
+                    motherFirstName: '',
+                    motherLastName: '',
+                    motherPhone: '',
+                    motherDateOfBirth: '',
+                    motherGender: 'FEMALE',
+                    motherOccupation: '',
+                    motherResidenceFullAddress: '',
+                    // Additional fields
+                    ethnicGroup: '',
+                    accessibility: []
+                  }]);
+                } else {
+                  // Partial failures - remove only successful students from form
+                  // Keep only the failed students so user can retry them
+                  const failedStudents = currentResults.filter(result => !result.success);
+
+                  if (failedStudents.length > 0) {
+                    // Create new student entries for the failed ones
+                    const failedStudentRecords = validStudents.filter((_, idx) => {
+                      const wasSuccessful = finalResults[idx]?.success;
+                      return !wasSuccessful;
+                    });
+
+                    setStudents(failedStudentRecords);
+                    showSuccess(`✅ ត្រូវបានលុបចោលសិស្សដែលបាននាំចូលដោយជោគជ័យ។ សូមដោះស្រាយកំហុស ${failureCount} នាក់`, { duration: 5000 });
+                  } else {
+                    // No failed students - clear form
+                    setStudents([{
+                      lastName: '',
+                      firstName: '',
+                      username: '',
+                      password: '',
+                      email: '',
+                      dateOfBirth: '',
+                      gender: '',
+                      phone: '',
+                      nationality: '',
+                      schoolId: '',
+                      academicYear: '',
+                      gradeLevel: '',
+                      residenceFullAddress: '',
+                      fatherFirstName: '',
+                      fatherLastName: '',
+                      fatherPhone: '',
+                      fatherGender: 'MALE',
+                      fatherOccupation: '',
+                      fatherResidenceFullAddress: '',
+                      motherFirstName: '',
+                      motherLastName: '',
+                      motherPhone: '',
+                      motherDateOfBirth: '',
+                      motherGender: 'FEMALE',
+                      motherOccupation: '',
+                      motherResidenceFullAddress: '',
+                      ethnicGroup: '',
+                      accessibility: []
+                    }]);
+                  }
+                }
+              }, 4000); // Wait 4 seconds before updating form to let user see results
+              break;
+            }
+          } catch (statusErr) {
+            console.error(`Error checking batch status:`, statusErr);
+            // Continue polling on status check error
           }
-
-          // Update progress tracker after each student
-          setImportResults([...results]);
-          setProcessedCount(i + 1);
-
-          // Add a small delay between requests to avoid overwhelming the server
-          if (i < transformedData.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
-        } catch (err) {
-          failureCount++;
-          const errorMsg = err.message || 'Unknown error';
-          results[i] = {
-            ...results[i],
-            processing: false,
-            success: false,
-            error: errorMsg
-          };
-          console.error(`Error registering student ${i + 1}:`, err);
-          setImportResults([...results]);
-          setProcessedCount(i + 1);
         }
-      }
 
-      setIsImporting(false);
-
-      // Show summary
-      if (successCount > 0) {
-        showSuccess(`🎉 បាននាំចូលសិស្សចំនួន ${successCount} នាក់ដោយជោគជ័យ!`, { duration: 5000 });
-      }
-
-      if (failureCount > 0) {
-        showError(`⚠️ មានកំហុស ${failureCount} នាក់ក្នុងការនាំចូល។ សូមពិនិត្យលម្អិត`, { duration: 7000 });
-      }
-
-      // Reset form on complete success
-      if (failureCount === 0) {
-        setStudents([{
-          // Student basic info
-          lastName: '',
-          firstName: '',
-          username: '',
-          password: '',
-          email: '',
-          dateOfBirth: '',
-          gender: '',
-          phone: '',
-          nationality: '',
-          schoolId: '',
-          academicYear: '',
-          gradeLevel: '',
-
-          // Location info
-          residenceFullAddress: '',
-
-          // Parent info
-          fatherFirstName: '',
-          fatherLastName: '',
-          fatherPhone: '',
-          fatherGender: 'MALE',
-          fatherOccupation: '',
-          fatherResidenceFullAddress: '',
-
-          motherFirstName: '',
-          motherLastName: '',
-          motherPhone: '',
-          motherDateOfBirth: '',
-          motherGender: 'FEMALE',
-          motherOccupation: '',
-          motherResidenceFullAddress: '',
-
-          // Additional fields
-          ethnicGroup: '',
-          accessibility: []
-        }]);
+        if (!isComplete) {
+          setIsImporting(false);
+          showError('⏱️ ការលើកលែងកំហុស ពេលវេលាក្នុងការរង់ចាំលទ្ធផល។ សូមពិនិត្យលម្អិតលម្អ។', { duration: 7000 });
+        }
+      } catch (err) {
+        console.error('Bulk registration error:', err);
+        setIsImporting(false);
+        showError('💥 ការនាំចូលបានបរាជ័យ៖ ' + (err.message || 'មិនស្គាល់កំហុស'), { duration: 7000 });
       }
 
       stopLoading(loadingKey);

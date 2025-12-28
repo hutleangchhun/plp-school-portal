@@ -5,6 +5,47 @@ import { API_BASE_URL } from './config';
 // Flag to prevent multiple simultaneous redirects
 let isRedirecting = false;
 
+// Debug mode for testing error scenarios
+let debugMode = {
+  enabled: false,
+  failBulkRegister: false,
+  failBulkStatus: false,
+  simulatePartialFailure: null // null, 'half', 'quarter', 'all'
+};
+
+// Expose debug mode to window for console access
+if (typeof window !== 'undefined') {
+  window.__DEBUG_API = {
+    toggleDebugMode: () => {
+      debugMode.enabled = !debugMode.enabled;
+      console.log('🐛 Debug mode:', debugMode.enabled ? 'ENABLED' : 'DISABLED');
+    },
+    failBulkRegister: () => {
+      debugMode.failBulkRegister = true;
+      console.log('❌ Bulk register will fail on next attempt. Reset with: window.__DEBUG_API.resetErrors()');
+    },
+    failBulkStatus: () => {
+      debugMode.failBulkStatus = true;
+      console.log('❌ Bulk status check will fail on next attempt. Reset with: window.__DEBUG_API.resetErrors()');
+    },
+    simulatePartialFailure: (type = 'half') => {
+      debugMode.simulatePartialFailure = type; // 'half', 'quarter', 'all'
+      console.log(`📊 Simulating ${type} failure rate on next bulk register. Reset with: window.__DEBUG_API.resetErrors()`);
+    },
+    resetErrors: () => {
+      debugMode.failBulkRegister = false;
+      debugMode.failBulkStatus = false;
+      debugMode.simulatePartialFailure = null;
+      console.log('✅ All debug errors reset');
+    },
+    getDebugState: () => {
+      console.log('🐛 Debug State:', debugMode);
+      return debugMode;
+    }
+  };
+  console.log('🐛 Debug API available at window.__DEBUG_API');
+}
+
 // Create axios instance with default config
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

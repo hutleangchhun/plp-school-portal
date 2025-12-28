@@ -126,8 +126,90 @@ export const studentService = {
    */
   async bulkRegister(studentsData) {
     console.log('🚀 Bulk register request data:', JSON.stringify({ students: studentsData }, null, 2));
+
+    // Check for debug mode errors
+    if (typeof window !== 'undefined' && window.__DEBUG_API) {
+      const debugState = window.__DEBUG_API.getDebugState?.() || {};
+
+      if (debugState.failBulkRegister) {
+        console.warn('🐛 DEBUG: Simulating bulk register failure');
+        return Promise.reject({
+          status: 500,
+          message: 'Server error: Failed to queue bulk registration',
+          errors: ['Internal server error while processing bulk registration']
+        });
+      }
+
+      if (debugState.simulatePartialFailure) {
+        console.warn(`🐛 DEBUG: Simulating ${debugState.simulatePartialFailure} failure rate`);
+        // Return successful batch with results showing some failures
+        const failureRate = debugState.simulatePartialFailure === 'half' ? 0.5 :
+                           debugState.simulatePartialFailure === 'quarter' ? 0.25 : 1;
+        const failCount = Math.ceil(studentsData.length * failureRate);
+
+        return Promise.resolve({
+          success: true,
+          data: {
+            batch_id: `debug_batch_${Date.now()}`,
+            total: studentsData.length,
+            success_count: studentsData.length - failCount,
+            failed_count: failCount,
+            message: 'Batch queued for processing'
+          }
+        });
+      }
+    }
+
     return handleApiResponse(() =>
       apiClient_.post(ENDPOINTS.STUDENTS.BULK_REGISTER, { students: studentsData })
+    );
+  },
+
+  /**
+   * Get the status of a bulk registration batch
+   * @param {string} batchId - The batch ID from the bulk register response
+   * @returns {Promise<Object>} Batch status with completed count, results, etc.
+   */
+  async getBulkRegistrationStatus(batchId) {
+    console.log(`📊 Checking bulk registration status for batch: ${batchId}`);
+
+    // Check for debug mode errors
+    if (typeof window !== 'undefined' && window.__DEBUG_API && batchId.startsWith('debug_batch_')) {
+      const debugState = window.__DEBUG_API.getDebugState?.() || {};
+
+      if (debugState.failBulkStatus) {
+        console.warn('🐛 DEBUG: Simulating bulk status check failure');
+        return Promise.reject({
+          status: 500,
+          message: 'Server error: Failed to check batch status',
+          errors: ['Internal server error while checking batch status']
+        });
+      }
+
+      // Simulate completed batch with some failures
+      console.log('🐛 DEBUG: Returning simulated batch completion status');
+      return Promise.resolve({
+        success: true,
+        data: {
+          batch_id: batchId,
+          completed: 5, // Simulate 5 students completed
+          total: 5,
+          success_count: 3,
+          failed_count: 2,
+          is_complete: true,
+          results: [
+            { index: 0, success: true, data: { id: 1, username: 'student1' } },
+            { index: 1, success: true, data: { id: 2, username: 'student2' } },
+            { index: 2, success: true, data: { id: 3, username: 'student3' } },
+            { index: 3, success: false, error: 'Email already exists' },
+            { index: 4, success: false, error: 'Username already taken' }
+          ]
+        }
+      });
+    }
+
+    return handleApiResponse(() =>
+      apiClient_.get(ENDPOINTS.STUDENTS.BULK_REGISTER_STATUS(batchId))
     );
   },
 

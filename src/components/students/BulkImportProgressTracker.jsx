@@ -1,5 +1,5 @@
-import React from 'react';
-import { CheckCircle, XCircle, Loader2, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle, XCircle, Loader2, User, Filter } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -12,6 +12,7 @@ const BulkImportProgressTracker = ({
   processedCount = 0
 }) => {
   const { t } = useLanguage();
+  const [showFailedOnly, setShowFailedOnly] = useState(false);
 
   const successCount = importResults.filter(r => r.success).length;
   const failureCount = importResults.filter(r => !r.success).length;
@@ -84,6 +85,22 @@ const BulkImportProgressTracker = ({
       stickyFooter={true}
     >
       <div className="space-y-4">
+        {/* Summary Stats */}
+        <div className="grid grid-cols-3 gap-3 mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">{totalStudents}</div>
+            <div className="text-xs text-gray-600">{t('total', 'សរុប')}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">{successCount}</div>
+            <div className="text-xs text-gray-600">{t('successful', 'ជោគជ័យ')}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-600">{failureCount}</div>
+            <div className="text-xs text-gray-600">{t('failed', 'បរាជ័យ')}</div>
+          </div>
+        </div>
+
         {/* Progress Bar */}
         {isProcessing && (
           <div className="mb-6">
@@ -104,6 +121,27 @@ const BulkImportProgressTracker = ({
           </div>
         )}
 
+        {/* Filter Button - Show only when processing is complete */}
+        {!isProcessing && failureCount > 0 && (
+          <div className="flex justify-between items-center mb-4">
+            <button
+              onClick={() => setShowFailedOnly(!showFailedOnly)}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
+                showFailedOnly
+                  ? 'bg-red-50 border-red-300 text-red-700'
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <Filter className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                {showFailedOnly
+                  ? t('showingFailed', 'បង្ហាញដែលបរាជ័យ') + ` (${failureCount})`
+                  : t('showAll', 'បង្ហាញទាំងអស់') + ` (${totalStudents})`}
+              </span>
+            </button>
+          </div>
+        )}
+
         {/* Import Results List */}
         <div className="space-y-2 max-h-[400px] overflow-y-auto">
           {importResults.length === 0 ? (
@@ -112,35 +150,37 @@ const BulkImportProgressTracker = ({
               <p>{t('noResultsYet', 'មិនទាន់មានលទ្ធផលនៅឡើយ')}</p>
             </div>
           ) : (
-            importResults.map((result, index) => (
-              <div
-                key={index}
-                className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                  result.processing
-                    ? 'bg-blue-50 border-blue-200'
-                    : result.success
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-red-50 border-red-200'
-                }`}
-              >
-                <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  {getStatusIcon(result)}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {result.studentName || t('unknownStudent', 'មិនស្គាល់ឈ្មោះ')}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {result.studentId && `ID: ${result.studentId}`}
-                      {result.studentId && result.username && ' • '}
-                      {result.username && `Username: ${result.username}`}
-                    </p>
+            importResults
+              .filter(result => !showFailedOnly || !result.success)
+              .map((result, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                    result.processing
+                      ? 'bg-blue-50 border-blue-200'
+                      : result.success
+                      ? 'bg-green-50 border-green-200'
+                      : 'bg-red-50 border-red-200'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    {getStatusIcon(result)}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {result.studentName || t('unknownStudent', 'មិនស្គាល់ឈ្មោះ')}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {result.studentId && `ID: ${result.studentId}`}
+                        {result.studentId && result.username && ' • '}
+                        {result.username && `Username: ${result.username}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    {getStatusText(result)}
                   </div>
                 </div>
-                <div className="ml-3">
-                  {getStatusText(result)}
-                </div>
-              </div>
-            ))
+              ))
           )}
         </div>
 
