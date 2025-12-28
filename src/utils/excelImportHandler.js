@@ -415,6 +415,25 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
         return grade;
       };
 
+      // Normalize phone numbers: auto-prefix 0 if missing, blank if only "0"
+      const normalizePhoneNumber = (phone) => {
+        if (!phone || phone === '') return '';
+
+        // Remove all whitespace and special characters except digits
+        const digitsOnly = String(phone).replace(/\D/g, '');
+
+        if (!digitsOnly) return ''; // No digits found
+
+        // If only "0", treat as blank
+        if (digitsOnly === '0') return '';
+
+        // If already starts with 0, keep as is
+        if (digitsOnly.startsWith('0')) return digitsOnly;
+
+        // If doesn't start with 0, add it
+        return '0' + digitsOnly;
+      };
+
       // Handle dynamic column detection for files without headers
       if (!hasHeaders) {
         const firstCellValue = String(row[0] || '').trim();
@@ -566,7 +585,7 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
         password: columnIndices.password >= 0 ? getValue(columnIndices.password) : '',
         dateOfBirth: columnIndices.dob >= 0 ? normalizeDateForDisplay(getValue(columnIndices.dob)) : '',
         gender: columnIndices.gender >= 0 ? mapGender(getValue(columnIndices.gender)) : '',
-        phone: columnIndices.phone >= 0 ? getValue(columnIndices.phone) : '',
+        phone: columnIndices.phone >= 0 ? normalizePhoneNumber(getValue(columnIndices.phone)) : '',
         nationality: columnIndices.nationality >= 0 ? getValue(columnIndices.nationality) : '',
         schoolId: columnIndices.schoolId >= 0 ? getValue(columnIndices.schoolId) : '',
         academicYear: columnIndices.academicYear >= 0 ? getValue(columnIndices.academicYear) : '',
@@ -578,14 +597,14 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
         // Parent info
         fatherFirstName: columnIndices.fatherFirstName >= 0 ? getValue(columnIndices.fatherFirstName) : '',
         fatherLastName: columnIndices.fatherLastName >= 0 ? getValue(columnIndices.fatherLastName) : '',
-        fatherPhone: columnIndices.fatherPhone >= 0 ? getValue(columnIndices.fatherPhone) : '',
+        fatherPhone: columnIndices.fatherPhone >= 0 ? normalizePhoneNumber(getValue(columnIndices.fatherPhone)) : '',
         fatherGender: 'MALE',
         fatherOccupation: columnIndices.fatherOccupation >= 0 ? getValue(columnIndices.fatherOccupation) : '',
         fatherResidenceFullAddress: columnIndices.fatherResidenceFullAddress >= 0 ? getValue(columnIndices.fatherResidenceFullAddress) : '',
 
         motherFirstName: columnIndices.motherFirstName >= 0 ? getValue(columnIndices.motherFirstName) : '',
         motherLastName: columnIndices.motherLastName >= 0 ? getValue(columnIndices.motherLastName) : '',
-        motherPhone: columnIndices.motherPhone >= 0 ? getValue(columnIndices.motherPhone) : '',
+        motherPhone: columnIndices.motherPhone >= 0 ? normalizePhoneNumber(getValue(columnIndices.motherPhone)) : '',
         motherGender: 'FEMALE',
         motherOccupation: columnIndices.motherOccupation >= 0 ? getValue(columnIndices.motherOccupation) : '',
         motherResidenceFullAddress: columnIndices.motherResidenceFullAddress >= 0 ? getValue(columnIndices.motherResidenceFullAddress) : '',

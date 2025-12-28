@@ -175,34 +175,44 @@ export default function BulkStudentImport() {
 
     // Email validation (must contain @ and valid format)
     if (columnKey === 'email') {
-      // Email validation is DISABLED for testing error scenarios
-      return false;
-      // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      // return !emailRegex.test(value.trim());
+      // Empty email is OK (optional field)
+      if (!value || value === '') return false;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return !emailRegex.test(value.trim());
     }
 
-    // Phone number validation (must start with 0 and be at least 8 digits total)
+    // Phone number validation (must be at least 8 digits, auto-prefixed with 0 if needed)
     if (columnKey === 'phone') {
       // Empty phone is OK (optional field)
       if (!value || value === '') return false;
-      const phoneRegex = /^0\d{8,}$/;
-      return !phoneRegex.test(value.replace(/\s/g, ''));
+      // Accept numbers with or without 0 prefix - validation will pass
+      // Normalization will add 0 if missing
+      const phoneDigitsOnly = value.replace(/\s/g, '');
+      // Must have at least 8 digits (or 9 if prefixed with 0)
+      const phoneRegex = /^\d{8,}$/;
+      return !phoneRegex.test(phoneDigitsOnly);
     }
 
     // Father phone validation - optional field, only validate format if provided
     if (columnKey === 'fatherPhone') {
       // Empty phone is OK (optional field)
       if (!value || value.toString().trim() === '') return false;
-      const phoneRegex = /^0\d{8,}$/;
-      return !phoneRegex.test(value.toString().replace(/\s/g, ''));
+      // Accept numbers with or without 0 prefix
+      const phoneDigitsOnly = value.toString().replace(/\s/g, '');
+      // Must have at least 8 digits
+      const phoneRegex = /^\d{8,}$/;
+      return !phoneRegex.test(phoneDigitsOnly);
     }
 
     // Mother phone validation - optional field, only validate format if provided
     if (columnKey === 'motherPhone') {
       // Empty phone is OK (optional field)
       if (!value || value.toString().trim() === '') return false;
-      const phoneRegex = /^0\d{8,}$/;
-      return !phoneRegex.test(value.toString().replace(/\s/g, ''));
+      // Accept numbers with or without 0 prefix
+      const phoneDigitsOnly = value.toString().replace(/\s/g, '');
+      // Must have at least 8 digits
+      const phoneRegex = /^\d{8,}$/;
+      return !phoneRegex.test(phoneDigitsOnly);
     }
 
     // Date validation (dd/mm/yyyy format)
@@ -1314,6 +1324,25 @@ export default function BulkStudentImport() {
         return undefined;
       };
 
+      // Helper function to normalize phone numbers
+      const normalizePhoneNumber = (phone) => {
+        if (!phone || phone === '') return '';
+
+        // Remove all whitespace and special characters except digits
+        const digitsOnly = phone.toString().replace(/\D/g, '');
+
+        if (!digitsOnly) return ''; // No digits found
+
+        // If only "0", treat as blank
+        if (digitsOnly === '0') return '';
+
+        // If already starts with 0, keep as is
+        if (digitsOnly.startsWith('0')) return digitsOnly;
+
+        // If doesn't start with 0, add it
+        return '0' + digitsOnly;
+      };
+
       // Transform data for API - match the expected format with required/optional fields
       const transformedData = validStudents.map(student => {
         // Build the base student object with required fields
@@ -1333,8 +1362,10 @@ export default function BulkStudentImport() {
           studentData.email = student.email.trim();
         }
 
-        if (student.phone && student.phone.trim()) {
-          studentData.phone = student.phone.trim();
+        // Normalize phone number: auto-prefix 0 if missing, blank if only "0"
+        const normalizedPhone = normalizePhoneNumber(student.phone);
+        if (normalizedPhone) {
+          studentData.phone = normalizedPhone;
         }
 
         // Temporarily remove nationality - API may not expect this field
@@ -1375,10 +1406,11 @@ export default function BulkStudentImport() {
 
         // Add father if father info is provided
         if (student.fatherFirstName && student.fatherFirstName.trim()) {
+          const normalizedFatherPhone = normalizePhoneNumber(student.fatherPhone);
           parents.push({
             first_name: student.fatherFirstName.trim(),
             last_name: student.fatherLastName.trim() || '',
-            phone: student.fatherPhone.trim() || undefined,
+            phone: normalizedFatherPhone || undefined,
             gender: 'MALE',
             occupation: student.fatherOccupation.trim() || undefined,
             residence: student.fatherResidenceFullAddress && student.fatherResidenceFullAddress.trim() ? {
@@ -1390,10 +1422,11 @@ export default function BulkStudentImport() {
 
         // Add mother if mother info is provided
         if (student.motherFirstName && student.motherFirstName.trim()) {
+          const normalizedMotherPhone = normalizePhoneNumber(student.motherPhone);
           parents.push({
             first_name: student.motherFirstName.trim(),
             last_name: student.motherLastName.trim() || '',
-            phone: student.motherPhone.trim() || undefined,
+            phone: normalizedMotherPhone || undefined,
             gender: 'FEMALE',
             occupation: student.motherOccupation.trim() || undefined,
             residence: student.motherResidenceFullAddress && student.motherResidenceFullAddress.trim() ? {
