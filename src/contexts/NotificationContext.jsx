@@ -14,6 +14,8 @@ export function NotificationProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastFetch, setLastFetch] = useState(null);
+  const [isDisabled, setIsDisabled] = useState(false);
+  const [disableUntil, setDisableUntil] = useState(null);
 
   /**
    * Fetch notifications from API
@@ -197,30 +199,73 @@ export function NotificationProvider({ children }) {
   }, [notifications]);
 
   /**
+   * Disable notifications for a specified duration (in milliseconds)
+   * @param {number} duration - Duration in milliseconds (default: 5 minutes)
+   */
+  const disableNotificationsFor = useCallback((duration = 5 * 60 * 1000) => {
+    setIsDisabled(true);
+    const disableUntilTime = new Date(Date.now() + duration);
+    setDisableUntil(disableUntilTime);
+
+    // Auto-enable after duration
+    const timeout = setTimeout(() => {
+      setIsDisabled(false);
+      setDisableUntil(null);
+    }, duration);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
+  /**
+   * Manually enable notifications
+   */
+  const enableNotifications = useCallback(() => {
+    setIsDisabled(false);
+    setDisableUntil(null);
+  }, []);
+
+  /**
+   * Check if notifications are currently disabled
+   */
+  const areNotificationsDisabled = useCallback(() => {
+    if (!isDisabled) return false;
+
+    // Check if disable time has passed
+    if (disableUntil && new Date() > disableUntil) {
+      setIsDisabled(false);
+      setDisableUntil(null);
+      return false;
+    }
+
+    return isDisabled;
+  }, [isDisabled, disableUntil]);
+
+  /**
    * Initial fetch and setup polling
+   * DISABLED - Notification fetching is disabled
    */
   useEffect(() => {
-    // Fetch notifications and unread count on mount if authenticated
-    if (authService.isAuthenticated()) {
-      refreshNotifications();
+    // Notifications polling is disabled
+    // if (authService.isAuthenticated()) {
+    //   refreshNotifications();
 
-      // Set up polling interval (check every 30 seconds)
-      const pollInterval = setInterval(() => {
-        // Re-check auth on each poll to avoid calling API after logout
-        if (authService.isAuthenticated()) {
-          refreshNotifications();
-        } else {
-          setNotifications([]);
-          setUnreadCount(0);
-        }
-      }, 30 * 1000);
+    //   // Set up polling interval (check every 30 seconds)
+    //   const pollInterval = setInterval(() => {
+    //     // Re-check auth on each poll to avoid calling API after logout
+    //     if (authService.isAuthenticated()) {
+    //       refreshNotifications();
+    //     } else {
+    //       setNotifications([]);
+    //       setUnreadCount(0);
+    //     }
+    //   }, 30 * 1000);
 
-      return () => clearInterval(pollInterval);
-    } else {
-      // Ensure state is clean when not authenticated
-      setNotifications([]);
-      setUnreadCount(0);
-    }
+    //   return () => clearInterval(pollInterval);
+    // } else {
+    //   // Ensure state is clean when not authenticated
+    //   setNotifications([]);
+    //   setUnreadCount(0);
+    // }
   }, [refreshNotifications]);
 
   const value = {
@@ -230,6 +275,8 @@ export function NotificationProvider({ children }) {
     loading,
     error,
     lastFetch,
+    isDisabled,
+    disableUntil,
 
     // Methods
     fetchNotifications,
@@ -241,7 +288,10 @@ export function NotificationProvider({ children }) {
     deleteAllRead,
     refreshNotifications,
     getUnreadNotifications,
-    getNotificationsByType
+    getNotificationsByType,
+    disableNotificationsFor,
+    enableNotifications,
+    areNotificationsDisabled
   };
 
   return (
@@ -265,12 +315,17 @@ export function useNotification() {
       unreadCount: 0,
       loading: false,
       error: null,
+      isDisabled: false,
+      disableUntil: null,
       fetchNotifications: async () => {},
       fetchUnreadCount: async () => {},
       markAsRead: async () => {},
       markAllAsRead: async () => {},
       deleteNotification: async () => {},
-      handleNotificationClick: () => {}
+      handleNotificationClick: () => {},
+      disableNotificationsFor: () => {},
+      enableNotifications: () => {},
+      areNotificationsDisabled: () => false
     };
   }
 

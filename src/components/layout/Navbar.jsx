@@ -4,7 +4,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useLanguage } from '../../contexts/LanguageContext';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import ProfileImage from '../ui/ProfileImage';
-import NotificationDropdown from '../notifications/NotificationDropdown';
+// import NotificationDropdown from '../notifications/NotificationDropdown';
 import { getFullName } from '../../utils/usernameUtils';
 
 const getPageTitle = (pathname) => {
@@ -68,8 +68,8 @@ const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1
               <LanguageSwitcher />
             </div>
 
-            {/* Notification Dropdown */}
-            <NotificationDropdown />
+            {/* Notification Dropdown - Disabled */}
+            {/* <NotificationDropdown /> */}
 
             {/* Profile Dropdown */}
             <DropdownMenu.Root>
