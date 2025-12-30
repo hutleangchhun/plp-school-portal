@@ -99,12 +99,7 @@ export default function TeacherStudentsManagement({ user }) {
 
           if (mounted) {
             setClasses(teacherClasses);
-
-            // If teacher has only one class, auto-select it
-            if (teacherClasses.length === 1) {
-              setSelectedClassId(teacherClasses[0].classId || teacherClasses[0].id);
-              console.log('Auto-selected single class:', teacherClasses[0].name);
-            }
+            // Keep selectedClassId as 'all' - user must manually select a class
           }
         } else {
           console.warn('⚠️ Teacher has no classIds assigned');
@@ -460,7 +455,7 @@ export default function TeacherStudentsManagement({ user }) {
                 </div>
                 <input
                   type="text"
-                  className="text-sm w-full pl-10 pr-8 py-2 border border-gray-200 rounded-lg leading-5 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
+                  className="text-sm w-full pl-10 pr-8 py-2 border border-gray-200 rounded-sm leading-5 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
                   placeholder={t('searchStudents', 'Search students...')}
                   value={searchInput}
                   onChange={(e) => handleSearchChange(e.target.value)}
@@ -477,10 +472,12 @@ export default function TeacherStudentsManagement({ user }) {
               </div>
 
               {/* Filter Button - Responsive (works on all screen sizes) */}
-              <button
+              <Button
                 onClick={() => setShowMobileFilters(true)}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-2.5 sm:py-2 px-4 sm:px-3 rounded-lg shadow-lg flex items-center justify-center sm:justify-start gap-2 transition-all duration-200 active:scale-95 text-sm whitespace-nowrap"
+                variant="primary"
+                size="sm"
                 title={t('filters', 'Filters & Actions')}
+                className="flex items-center justify-center sm:justify-start gap-2 whitespace-nowrap shadow-lg"
               >
                 <Filter className="h-4 w-4" />
                 <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
@@ -490,7 +487,7 @@ export default function TeacherStudentsManagement({ user }) {
                     1
                   </span>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -498,7 +495,7 @@ export default function TeacherStudentsManagement({ user }) {
           {selectedClassId !== 'all' && (
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold text-blue-900">{t('activeFilters', 'Active Filters')}:</span>
-              <Badge color="purple" variant="outline" size="sm">
+              <Badge color="blue" variant="filled" size="sm">
                 {t('class', 'Class')}: {
                   (() => {
                     const selectedClass = classes.find(cls => (cls.classId || cls.id).toString() === selectedClassId);
@@ -515,7 +512,7 @@ export default function TeacherStudentsManagement({ user }) {
 
                       return formatClassIdentifier(displayGradeLevel, selectedClass.section);
                     }
-                    return selectedClassId;
+                    return '';
                   })()
                 }
               </Badge>

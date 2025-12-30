@@ -16,6 +16,7 @@ import { formatDateKhmer } from '../../utils/formatters';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { classService } from '../../utils/api/services/classService';
 import { isToday } from '../attendance/utils';
+import { canAccessTeacherFeatures } from '../../utils/routePermissions';
 
 /**
  * TeacherSelfAttendance Component
@@ -72,7 +73,7 @@ export default function TeacherSelfAttendance() {
   });
 
   const userId = user?.id;
-  const isTeacher = user?.roleId === 8;
+  const isTeacher = canAccessTeacherFeatures(user);
 
   // Load teacher's classes from localStorage (already fetched during login)
   useEffect(() => {
@@ -737,8 +738,8 @@ export default function TeacherSelfAttendance() {
   };
 
   return (
-    <PageTransition variant="fade" className="flex-1 bg-gray-50 p-3 sm:p-6">
-      <div className="p-6">
+    <PageTransition variant="fade" className="flex-1 bg-gray-50 p-3 sm:p-4">
+      <div className="p-4 sm:p-6">
         {/* Header - Full Width */}
         <FadeInSection className="mb-6 mx-auto">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -760,7 +761,7 @@ export default function TeacherSelfAttendance() {
         </FadeInSection>
 
         {/* Full Width Layout */}
-        <FadeInSection className="mx-auto grid grid-cols-2 gap-4">
+        <FadeInSection className="mx-auto grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
           <div className='grid grid-cols-1 gap-4'>
             {/* Quick Submit Section */}
             {isCurrentMonth && (

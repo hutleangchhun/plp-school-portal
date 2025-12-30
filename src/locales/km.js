@@ -154,8 +154,8 @@ export const km = {
   roles: 'តួនាទី​​/មុខតំណែង',
   status: 'ស្ថានភាព',
   classes: 'ថ្នាក់',
-  myClasses: 'ថ្នាក់របស់ខ្ញុំ',
-  myStudents: 'សិស្សរបស់ខ្ញុំ',
+  myClasses: 'ថ្នាក់ដែលបង្រៀន',
+  myStudents: 'សិស្សក្នុងថ្នាក់',
   manageYourStudents: 'មើល និងគ្រប់គ្រងសិស្សក្នុងថ្នាក់របស់អ្នក',
   noStudentsYet: 'មិនទាន់មានសិស្សក្នុងថ្នាក់របស់អ្នកនៅឡើយទេ',
   failedToFetchClasses: 'បរាជ័យក្នុងការទាញយកថ្នាក់',
@@ -395,6 +395,7 @@ export const km = {
   studentAcademicMetrics: 'ទិន្នន័យសិក្សារបស់សិស្ស',
   poorCardGradeStatistics: 'ស្ថិតិកម្រិតប័ណ្ណក្រីក្រ',
   failedToLoadStats: 'បរាជ័យក្នុងការផ្ទុកស្ថិតិ',
+  myTeachingClass: 'ថ្នាក់ដែលបង្រៀន',
 
   // Parent Management
   parents: 'អាណាព្យាបាល',
@@ -559,6 +560,7 @@ export const km = {
   attendanceRate: 'អត្រាវត្តមាន',
   todayAttendanceOverview: 'ទិដ្ឋភាពទូទៅនៃវត្តមានថ្ងៃនេះ',
   cannotMarkFutureAttendance: 'ការបញ្ជូនវត្តមានសិស្សបានសម្រាប់តែថ្ងៃនេះ',
+  checkIn: 'ចុះវត្តមាន',
 
   // Reports & Analytics
   academicPerformance: 'ការអនុវត្តន៍សិក្សា',
@@ -870,7 +872,7 @@ export const km = {
 
   // Navigation items that might be missing  
   myGrades: 'ពិន្ទុរបស់ខ្ញុំ',
-  myAttendance: 'វត្តមានរបស់ខ្ញុំ',
+  myAttendance: 'វត្តមានផ្ទាល់ខ្លួន',
   myAssignments: 'កិច្ចការរបស់ខ្ញុំ',
 
   // Additional fallback text that might appear
@@ -1824,5 +1826,6 @@ export const km = {
   teacherDemographics: 'ស្ថិតិជនជាតិភាគតិច និង ប្រភេទពិការភាព',
   viewTeacherDemographics: 'មើលជនជាតិ និងតម្រូវការពិការភាពរបស់គ្រូបង្រៀននៅគ្រប់សាលារៀនទាំងអស់',
   activeFilters: 'តម្រងបានជ្រើសរើស',
+  autoSelected: 'បានជ្រើសរើសដោយស្វయ័ត',
   perPage: 'មួយទំព័រ',
 };

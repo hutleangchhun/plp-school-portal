@@ -55,6 +55,7 @@ import { api, utils } from './utils/api';
 import { ProtectedRoute } from './components/common/DynamicRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import { setToastContext } from './utils/notificationHelper';
+import { canAccessTeacherFeatures } from './utils/routePermissions';
 
 function AppContent() {
   const { t } = useLanguage();
@@ -343,7 +344,7 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={
-              user && user.roleId === 8
+              user && canAccessTeacherFeatures(user)
                 ? <StudentAttendance user={user} />
                 : <Attendance />
             } />

@@ -4,21 +4,28 @@ import { userUtils } from './userService.js';
 import { classService } from './classService.js';
 
 /**
- * Helper function to fetch and store teacher's classes (for roleId = 8)
+ * Helper function to fetch and store teacher's classes (for roleId = 8 or directors with classIds)
  * @param {Object} user - User object
  */
 const fetchAndStoreTeacherClasses = async (user) => {
-  // Only for teachers (roleId = 8)
-  if (!user || user.roleId !== 8) {
+  // For teachers (roleId = 8) or directors with assigned classes
+  if (!user) {
+    return;
+  }
+
+  const isTeacher = user.roleId === 8;
+  const isDirectorWithClasses = user.roleId === 14 && user.classIds && user.classIds.length > 0;
+
+  if (!isTeacher && !isDirectorWithClasses) {
     return;
   }
 
   try {
-    console.log('📚 Fetching classes for teacher:', user.id);
+    console.log(`📚 Fetching classes for ${isTeacher ? 'teacher' : 'director with teaching duties'}:`, user.id);
     const response = await classService.getClassByUser(user.id);
 
     if (response.success && response.classes && response.classes.length > 0) {
-      console.log('✅ Found', response.classes.length, 'classes for teacher');
+      console.log('✅ Found', response.classes.length, 'classes');
 
       // Store classes in localStorage
       localStorage.setItem('teacherClasses', JSON.stringify(response.classes));
@@ -35,12 +42,12 @@ const fetchAndStoreTeacherClasses = async (user) => {
         console.log('✅ Using existing selected class:', currentClassId);
       }
     } else {
-      console.warn('⚠️ No classes found for teacher');
+      console.warn('⚠️ No classes found');
       localStorage.removeItem('teacherClasses');
       localStorage.removeItem('currentClassId');
     }
   } catch (error) {
-    console.error('❌ Error fetching teacher classes:', error);
+    console.error('❌ Error fetching classes:', error);
     // Don't fail login if class fetch fails
   }
 };
@@ -380,6 +387,50 @@ export const authUtils = {
    */
   isTeacher: (user) => {
     return user && user.roleId === 8;
+  },
+
+  /**
+   * Check if user has teaching duties (assigned classes)
+   * Works for any role with classIds
+   * @param {Object} user - User object
+   * @returns {boolean} Whether user has teaching duties
+   */
+  hasTeachingDuties: (user) => {
+    if (!user) {
+      return false;
+    }
+    return user.classIds && user.classIds.length > 0;
+  },
+
+  /**
+   * Check if director has teaching duties (assigned classes)
+   * Deprecated: Use hasTeachingDuties instead for any role
+   * @param {Object} user - User object
+   * @returns {boolean} Whether director has teaching duties
+   */
+  isDirectorWithTeachingDuties: (user) => {
+    if (!user || user.roleId !== 14) {
+      return false;
+    }
+    return authUtils.hasTeachingDuties(user);
+  },
+
+  /**
+   * Check if user can access teacher features
+   * Teachers (roleId=8) OR any user with teaching duties can access teacher features
+   * @param {Object} user - User object
+   * @returns {boolean} Whether user can access teacher features
+   */
+  canAccessTeacherFeatures: (user) => {
+    if (!user) {
+      return false;
+    }
+    // Direct teacher
+    if (user.roleId === 8) {
+      return true;
+    }
+    // Any user with teaching assignments
+    return authUtils.hasTeachingDuties(user);
   },
 
   /**

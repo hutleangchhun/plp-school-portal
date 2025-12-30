@@ -20,6 +20,7 @@ import { useLocationData } from '../../hooks/useLocationData';
 import { userService } from '../../utils/api/services/userService';
 import { gradeLevelOptions, ethnicGroupOptions, accessibilityOptions, getAcademicYearOptions, poorCardGradeOptions, extraLearningStatusOptions, extraLearningProvidedByOptions } from '../../utils/formOptions';
 import { utils } from '../../utils/api';
+import { canAccessTeacherFeatures } from '../../utils/routePermissions';
 
 const StudentEditModal = () => {
   const { t } = useLanguage();
@@ -423,9 +424,9 @@ const StudentEditModal = () => {
 
   const handleClose = () => {
     resetForm();
-    // Redirect based on user role
+    // Redirect based on user role (teacher or director with teaching duties go to /my-students)
     const currentUser = utils.user.getUserData();
-    const redirectPath = currentUser?.roleId === 8 ? '/my-students' : '/students';
+    const redirectPath = canAccessTeacherFeatures(currentUser) ? '/my-students' : '/students';
     navigate(redirectPath, { replace: true });
   };
 
@@ -937,7 +938,7 @@ const StudentEditModal = () => {
         // Redirect back to appropriate students list based on user role
         setTimeout(() => {
           const currentUser = utils.user.getUserData();
-          const redirectPath = currentUser?.roleId === 8 ? '/my-students' : '/students';
+          const redirectPath = canAccessTeacherFeatures(currentUser) ? '/my-students' : '/students';
           navigate(redirectPath, { replace: true });
         }, 1500);
       } else {

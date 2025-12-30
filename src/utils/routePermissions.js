@@ -164,9 +164,56 @@ export const routePermissions = {
 };
 
 /**
+ * Helper function to check if a user has teaching duties (has assigned classes)
+ * Works for any role that has classIds
+ * @param {Object} user - User object with roleId and classIds
+ * @returns {boolean} Whether user has teaching duties
+ */
+export const hasTeachingDuties = (user) => {
+  if (!user) {
+    return false;
+  }
+  return user.classIds && user.classIds.length > 0;
+};
+
+/**
+ * Helper function to check if a director has teaching duties (has assigned classes)
+ * Deprecated: Use hasTeachingDuties instead for any role
+ * @param {Object} user - User object with roleId and classIds
+ * @returns {boolean} Whether director has teaching duties
+ */
+export const isDirectorWithTeachingDuties = (user) => {
+  if (!user || user.roleId !== ROLES.DIRECTOR_ROLE) {
+    return false;
+  }
+  return hasTeachingDuties(user);
+};
+
+/**
+ * Helper function to check if user can access teacher features
+ * Teachers (roleId=8) OR any user with classIds can access teacher features
+ * @param {Object} user - User object with roleId and classIds
+ * @returns {boolean} Whether user can access teacher features
+ */
+export const canAccessTeacherFeatures = (user) => {
+  if (!user) {
+    return false;
+  }
+  // Direct teacher
+  if (user.roleId === ROLES.TEACHER) {
+    return true;
+  }
+  // Any user with teaching assignments
+  if (hasTeachingDuties(user)) {
+    return true;
+  }
+  return false;
+};
+
+/**
  * Check if user has access to a route
  * @param {string} path - Route path
- * @param {Object} user - User object with roleId
+ * @param {Object} user - User object with roleId and classIds
  * @returns {boolean} Whether user has access
  */
 export const hasRouteAccess = (path, user) => {
@@ -214,7 +261,16 @@ export const hasRouteAccess = (path, user) => {
     // If route specifies allowed roles, check if director is allowed
     if (routeConfig.allowedRoles && routeConfig.allowedRoles.length > 0) {
       // Director can access routes that have ROLES.DIRECTOR in allowedRoles
-      return routeConfig.allowedRoles.includes(ROLES.DIRECTOR);
+      const canAccessAsDirector = routeConfig.allowedRoles.includes(ROLES.DIRECTOR);
+
+      // User with teaching duties can also access teacher-only routes
+      const hasTeaching = hasTeachingDuties(user);
+      const canAccessAsTeacher = hasTeaching && (
+        routeConfig.allowedRoles.includes(ROLES.TEACHER_ONLY) ||
+        routeConfig.allowedRoles.includes(ROLES.TEACHER)
+      );
+
+      return canAccessAsDirector || canAccessAsTeacher;
     }
 
     // If no allowedRoles specified, deny access
@@ -261,6 +317,7 @@ export const hasRouteAccess = (path, user) => {
   }
 
   // Restricted Roles: roleId = 15-21 (can access only /profile and /my-attendance)
+  // But if they have teaching duties, they can also access teacher features
   if (user.roleId >= ROLES.ROLE15 && user.roleId <= ROLES.ROLE21) {
     const routeConfig = findRouteConfig(path);
 
@@ -271,7 +328,17 @@ export const hasRouteAccess = (path, user) => {
 
     // If route specifies allowed roles, check if restricted role can access
     if (routeConfig.allowedRoles && routeConfig.allowedRoles.length > 0) {
-      return routeConfig.allowedRoles.includes(ROLES.RESTRICTED_ROLES_ONLY);
+      // Can access restricted roles routes
+      const canAccessRestricted = routeConfig.allowedRoles.includes(ROLES.RESTRICTED_ROLES_ONLY);
+
+      // If user has teaching duties, can also access teacher routes
+      const hasTeaching = hasTeachingDuties(user);
+      const canAccessAsTeacher = hasTeaching && (
+        routeConfig.allowedRoles.includes(ROLES.TEACHER_ONLY) ||
+        routeConfig.allowedRoles.includes(ROLES.TEACHER)
+      );
+
+      return canAccessRestricted || canAccessAsTeacher;
     }
 
     // If no allowedRoles specified, deny access
@@ -484,6 +551,29 @@ export const getNavigationItems = (user, t) => {
 
   // Director: roleId = 14
   if (user.roleId === 14) {
+    // Check if director has teaching duties (assigned classes)
+    if (isDirectorWithTeachingDuties(user)) {
+      // Add teacher features to director navigation
+      const directorWithTeacherItems = [
+        ...directorItems,
+        {
+          name: t('myTeachingClass', 'My Class'),
+          href: '#',
+          children: [
+            {
+              name: t('myStudents', 'My Students'),
+              href: '/my-students',
+            },
+            {
+              name: t('studentAttendance') || 'វត្តមានសិស្ស',
+              href: '/attendance',
+            },
+          ],
+        },
+      ];
+      return directorWithTeacherItems;
+    }
+    // Director without teaching duties - show standard director items
     return directorItems;
   }
 
@@ -495,6 +585,28 @@ export const getNavigationItems = (user, t) => {
   // Restricted Roles: roleId = 15-21 (Deputy Principal, School Secretary, etc.)
   // These roles can access /profile and /my-attendance with sidebar navigation
   if (user.roleId >= 15 && user.roleId <= 21) {
+    // Check if restricted role has teaching duties (assigned classes)
+    if (hasTeachingDuties(user)) {
+      // Add teacher features to restricted role navigation
+      const restrictedWithTeacherItems = [
+        ...restrictedRolesItems,
+        {
+          name: t('myTeachingClass', 'My Class'),
+          href: '#',
+          children: [
+            {
+              name: t('myStudents', 'My Students'),
+              href: '/my-students',
+            },
+            {
+              name: t('studentAttendance') || 'វត្តមានសិស្ស',
+              href: '/attendance',
+            },
+          ],
+        },
+      ];
+      return restrictedWithTeacherItems;
+    }
     return restrictedRolesItems;
   }
 

@@ -20,6 +20,7 @@ import DynamicLoader from '../../components/ui/DynamicLoader';
 import StatsCard from '../../components/ui/StatsCard';
 import Badge from '../../components/ui/Badge';
 import { formatClassIdentifier } from '../../utils/helpers';
+import { canAccessTeacherFeatures } from '../../utils/routePermissions';
 
 export default function TeacherDashboard({ user }) {
   const { t } = useLanguage();
@@ -67,10 +68,10 @@ export default function TeacherDashboard({ user }) {
           }
         }
 
-        // Fetch classes - use localStorage cache for teachers (roleId = 8)
+        // Fetch classes - use localStorage cache for teachers and directors with teaching duties
         let teacherClasses = [];
 
-        if (user.roleId === 8) {
+        if (canAccessTeacherFeatures(user)) {
           // Try to load from localStorage first (cached during login)
           try {
             const storedClasses = localStorage.getItem('teacherClasses');
@@ -83,13 +84,13 @@ export default function TeacherDashboard({ user }) {
           }
         }
 
-        // Fallback: fetch from API if not in localStorage or not a teacher
+        // Fallback: fetch from API if not in localStorage
         if (teacherClasses.length === 0) {
           const classesResponse = await classService.getClassByUser(userId);
           teacherClasses = classesResponse.success ? classesResponse.classes || [] : [];
 
-          // Cache for teachers
-          if (user.roleId === 8 && teacherClasses.length > 0) {
+          // Cache for teachers and directors with teaching duties
+          if (canAccessTeacherFeatures(user) && teacherClasses.length > 0) {
             localStorage.setItem('teacherClasses', JSON.stringify(teacherClasses));
           }
         }
@@ -247,6 +248,14 @@ export default function TeacherDashboard({ user }) {
 
     // Director: roleId = 14
     if (user.roleId === 14) {
+      // Director or director with teaching duties
+      if (canAccessTeacherFeatures(user)) {
+        return {
+          label: t('directorTeacher', 'Director + Teacher'),
+          color: 'cyan',
+          Icon: Briefcase
+        };
+      }
       return {
         label: t('director') || 'Director',
         color: 'purple',
