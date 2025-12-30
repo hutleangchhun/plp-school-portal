@@ -11,8 +11,8 @@ set -e
 
 # Configuration
 SERVER_USER="admin_moeys"
-SERVER_IP="192.168.155.122"
-DEPLOYMENT_DIR="/opt/plp-school-portal"
+SERVER_IP="192.168.155.115"
+DEPLOYMENT_DIR="/home/admin_moeys/plp-school-portal"
 REPO_URL="https://github.com/hutleangchhun/plp-school-portal.git"
 
 # Color codes
@@ -105,7 +105,7 @@ log_info ""
 log_info "📋 Next steps to complete deployment:"
 log_info ""
 log_info "1️⃣  SET UP NGINX REVERSE PROXY (HTTP Only):"
-log_info "   sudo cp /opt/plp-school-portal/nginx-reverse-proxy.conf /etc/nginx/sites-available/plp-sms"
+log_info "   sudo cp /home/admin_moeys/nginx-reverse-proxy.conf /etc/nginx/sites-available/plp-sms"
 log_info "   sudo ln -s /etc/nginx/sites-available/plp-sms /etc/nginx/sites-enabled/plp-sms"
 log_info "   sudo rm -f /etc/nginx/sites-enabled/default"
 log_info "   sudo nginx -t"
