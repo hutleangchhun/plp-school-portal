@@ -32,6 +32,10 @@ const StudentEditModal = () => {
   const encryptedStudentId = searchParams.get('id');
   const mode = searchParams.get('mode') || 'edit'; // 'create' or 'edit'
 
+  // Track if we've already fetched the student data to prevent duplicate requests
+  const fetchedRef = useRef(false);
+  const abortControllerRef = useRef(null);
+
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pageLoading, setPageLoading] = useState(false);
@@ -140,6 +144,11 @@ const StudentEditModal = () => {
 
   // Fetch student data if editing
   useEffect(() => {
+    // Prevent duplicate requests in React Strict Mode
+    if (fetchedRef.current) {
+      return;
+    }
+
     const fetchStudentData = async () => {
       try {
         // For edit mode, validate and decrypt the student ID
@@ -184,8 +193,9 @@ const StudentEditModal = () => {
       console.error('Error getting school ID:', err);
     }
 
+    fetchedRef.current = true;
     fetchStudentData();
-  }, [encryptedStudentId, t, handleError]);
+  }, [encryptedStudentId]);
 
   // Initialize form data when student changes
   useEffect(() => {
@@ -220,25 +230,9 @@ const StudentEditModal = () => {
     try {
       setLoading(true);
 
-      const userId = student.userId || student.user_id || student.id;
-
-      // Start with student data from the list
-      let fullData = student;
-
-      // Fetch full user details including nested student object
-      if (userId) {
-        try {
-          const resp = await userService.getUserByID(userId);
-          const fetchedUserData = resp?.data || resp;
-
-          if (fetchedUserData) {
-            fullData = fetchedUserData;
-          }
-        } catch (error) {
-          console.warn('Failed to fetch full user data:', error);
-          // Continue with list data
-        }
-      }
+      // Use student data already fetched in useEffect
+      // No need to fetch again - avoid duplicate API call
+      const fullData = student;
 
       // Extract student object - API returns nested student object with camelCase fields
       const studentObj = fullData.student || fullData;

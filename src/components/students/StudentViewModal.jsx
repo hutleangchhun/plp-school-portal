@@ -7,91 +7,34 @@ import ProfileImage from '../ui/ProfileImage';
 import { Button } from '../ui/Button';
 import BookCard from '../books/BookCard';
 import { formatDateKhmer, genderToKhmer, bmiStatusToKhmer } from '../../utils/formatters';
-import { bookService } from '../../utils/api/services/bookService';
-import { subjectService } from '../../utils/api/services/subjectService';
-import { apiClient_, handleApiResponse } from '../../utils/api/client.js';
+import { useBookCategories } from '../../hooks/useBookCategories';
+import { useAllBooks } from '../../hooks/useAllBooks';
 
 /**
  * StudentViewModal - Read-only modal to display student details
  */
 export default function StudentViewModal({ isOpen, onClose, student }) {
   const { t } = useLanguage();
+  // Use shared hooks to fetch book categories and subjects, and all books (prevents duplicates)
+  const { bookCategories, subjects } = useBookCategories();
+  const { allBooks, loading: loadingAllBooks } = useAllBooks();
+
   const [books, setBooks] = useState([]);
-  const [loadingBooks, setLoadingBooks] = useState(false);
-  const [bookCategories, setBookCategories] = useState([]);
-  const [subjects, setSubjects] = useState([]);
 
-  // Fetch categories and subjects on mount
-  useEffect(() => {
-    const fetchCategoriesAndSubjects = async () => {
-      try {
-        // Fetch categories
-        const categoriesResponse = await handleApiResponse(() =>
-          apiClient_.get('book-categories?status=ACTIVE')
-        );
-
-        if (categoriesResponse.success && categoriesResponse.data) {
-          const categoriesData = Array.isArray(categoriesResponse.data) ? categoriesResponse.data :
-                                 Array.isArray(categoriesResponse.data.data) ? categoriesResponse.data.data : [];
-          setBookCategories(categoriesData);
-        }
-
-        // Fetch subjects
-        const subjectsResponse = await subjectService.getAll({ limit: 100 });
-        if (subjectsResponse.success && subjectsResponse.data) {
-          setSubjects(subjectsResponse.data);
-        }
-      } catch (error) {
-        console.error('Error fetching categories and subjects:', error);
-      }
-    };
-
-    fetchCategoriesAndSubjects();
-  }, []);
-
-  // Fetch books by IDs when modal opens and student has bookIds
+  // Filter books by IDs when modal opens and allBooks are loaded
   useEffect(() => {
     console.log('StudentViewModal - student object:', student);
     console.log('StudentViewModal - bookIds:', student?.bookIds);
-    if (isOpen && student?.bookIds && Array.isArray(student.bookIds) && student.bookIds.length > 0) {
-      console.log('Fetching books for IDs:', student.bookIds);
-      fetchBooksByIds(student.bookIds);
-    }
-  }, [isOpen, student?.bookIds]);
-
-  const fetchBooksByIds = async (bookIds) => {
-    setLoadingBooks(true);
-    try {
-      // Fetch books from all grade levels (1-6) to ensure we get all selected books
-      // Selected books may be from different grade levels
-      let allBooks = [];
-
-      for (let grade = 1; grade <= 6; grade++) {
-        console.log('Fetching books for grade level:', grade);
-        const response = await bookService.getBooksByGradeLevel(String(grade), 1, 100);
-        console.log('Books API response for grade', grade, ':', response);
-
-        if (response.success && response.data) {
-          allBooks = [...allBooks, ...response.data];
-        }
-      }
-
-      // Remove duplicates by book ID
-      const uniqueBooks = Array.from(
-        new Map(allBooks.map(book => [book.id, book])).values()
-      );
-
+    if (isOpen && student?.bookIds && Array.isArray(student.bookIds) && student.bookIds.length > 0 && allBooks.length > 0) {
+      console.log('Filtering books for IDs:', student.bookIds);
       // Filter books to only include those in bookIds array
-      const filteredBooks = uniqueBooks.filter(book => bookIds.includes(book.id));
+      const filteredBooks = allBooks.filter(book => student.bookIds.includes(book.id));
       console.log('Filtered books:', filteredBooks);
       setBooks(filteredBooks);
-    } catch (error) {
-      console.error('Error fetching books:', error);
+    } else if (!isOpen || !student?.bookIds?.length) {
       setBooks([]);
-    } finally {
-      setLoadingBooks(false);
     }
-  };
+  }, [isOpen, student?.bookIds, allBooks]);
 
   if (!student) return null;
 
@@ -479,7 +422,7 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
                 {t('selectedBooks', 'Selected Books')}
               </div>
             </div>
-            {loadingBooks ? (
+            {loadingAllBooks ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-sm text-gray-500">{t('loading', 'Loading...')}</div>
               </div>

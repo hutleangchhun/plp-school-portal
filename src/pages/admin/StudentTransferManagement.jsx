@@ -465,19 +465,9 @@ const StudentTransferManagement = () => {
       return;
     }
 
-    try {
-      setShowTransferModal(true);
-      setTargetLoading(true);
-      const response = await locationService.getProvinces();
-      const provincesData = response.data || response;
-      setTargetProvinces(provincesData);
-    } catch (err) {
-      handleError(err, {
-        toastMessage: t('failedToLoadProvinces', 'Failed to load provinces'),
-      });
-    } finally {
-      setTargetLoading(false);
-    }
+    // Provinces already loaded in initial useEffect - no need to fetch again
+    // targetProvinces is already set, just open the modal
+    setShowTransferModal(true);
   };
 
   const handleCreateMasterClass = async () => {

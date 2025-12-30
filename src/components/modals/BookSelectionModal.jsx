@@ -5,9 +5,8 @@ import BookCard from '../books/BookCard';
 import Dropdown from '../ui/Dropdown';
 import { Button } from '../ui/Button';
 import { bookService } from '../../utils/api/services/bookService';
-import { subjectService } from '../../utils/api/services/subjectService';
-import { apiClient_, handleApiResponse } from '../../utils/api/client.js';
 import { gradeLevelOptions } from '../../utils/formOptions';
+import { useBookCategories } from '../../hooks/useBookCategories';
 
 const BookSelectionModal = ({
   isOpen,
@@ -17,62 +16,14 @@ const BookSelectionModal = ({
   t,
   allowedCategoryIds = [] // Array of allowed category IDs to filter by
 }) => {
+  // Use shared hook to fetch book categories and subjects (prevents duplicates)
+  const { bookCategories, subjects, loading: categoriesLoading } = useBookCategories();
+
   const [availableBooks, setAvailableBooks] = useState([]);
   const [booksLoading, setBooksLoading] = useState(false);
-  const [bookCategories, setBookCategories] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
-  const [subjects, setSubjects] = useState([]);
-  const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
   const [selectedGradeFilter, setSelectedGradeFilter] = useState('');
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('');
-
-  // Fetch book categories and subjects on mount
-  useEffect(() => {
-    const fetchCategoriesAndSubjects = async () => {
-      try {
-        // Fetch categories
-        setCategoriesLoading(true);
-        const categoriesResponse = await handleApiResponse(() =>
-          apiClient_.get('book-categories?status=ACTIVE')
-        );
-
-        if (categoriesResponse.success && categoriesResponse.data) {
-          const categoriesData = Array.isArray(categoriesResponse.data) ? categoriesResponse.data :
-                                 Array.isArray(categoriesResponse.data.data) ? categoriesResponse.data.data : [];
-          setBookCategories(categoriesData);
-        } else {
-          console.warn('Failed to fetch book categories:', categoriesResponse.error);
-          setBookCategories([]);
-        }
-      } catch (error) {
-        console.error('Error fetching book categories:', error);
-        setBookCategories([]);
-      } finally {
-        setCategoriesLoading(false);
-      }
-
-      try {
-        // Fetch subjects
-        setSubjectsLoading(true);
-        const subjectsResponse = await subjectService.getAll({ limit: 100 });
-
-        if (subjectsResponse.success && subjectsResponse.data) {
-          setSubjects(subjectsResponse.data);
-        } else {
-          console.warn('Failed to fetch subjects:', subjectsResponse.error);
-          setSubjects([]);
-        }
-      } catch (error) {
-        console.error('Error fetching subjects:', error);
-        setSubjects([]);
-      } finally {
-        setSubjectsLoading(false);
-      }
-    };
-
-    fetchCategoriesAndSubjects();
-  }, []);
 
   // Fetch books when filters change
   useEffect(() => {
@@ -227,7 +178,7 @@ const BookSelectionModal = ({
             <label className="text-sm font-medium text-gray-700 block mb-2">
               {t('subject', 'Subject')}
             </label>
-            {subjectsLoading ? (
+            {categoriesLoading ? (
               <div className="text-xs text-gray-500 p-2 border border-gray-300 rounded bg-gray-50">
                 {t('loadingSubjects', 'Loading subjects...')}
               </div>

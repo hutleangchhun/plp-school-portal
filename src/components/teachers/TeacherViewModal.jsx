@@ -9,14 +9,14 @@ import { formatDateKhmer, genderToKhmer, calculateExperience } from '../../utils
 import { formatClassIdentifier } from '../../utils/helpers';
 import { userService } from '../../utils/api/services/userService';
 import salaryTypeService from '../../utils/api/services/salaryTypeService';
-import { bookService } from '../../utils/api/services/bookService';
-import { subjectService } from '../../utils/api/services/subjectService';
 import { teacherService } from '../../utils/api/services/teacherService';
 import { handleApiResponse } from '../../utils/api/client.js';
 import { getGradeLabel } from '../../constants/grades';
 import { useState, useEffect } from 'react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import BookCard from '../books/BookCard';
+import { useBookCategories } from '../../hooks/useBookCategories';
+import { useAllBooks } from '../../hooks/useAllBooks';
 
 /**
  * TeacherViewModal - Read-only modal to display teacher details
@@ -24,43 +24,16 @@ import BookCard from '../books/BookCard';
 export default function TeacherViewModal({ isOpen, onClose, teacher }) {
   const { t } = useLanguage();
   const { showError } = useToast();
+  // Use shared hooks to fetch book categories, subjects, and all books (prevents duplicates)
+  const { bookCategories, subjects } = useBookCategories();
+  const { allBooks, loading: loadingAllBooks } = useAllBooks();
+
   const [fullTeacherData, setFullTeacherData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [salaryTypeName, setSalaryTypeName] = useState(null);
   const [books, setBooks] = useState([]);
-  const [loadingBooks, setLoadingBooks] = useState(false);
-  const [bookCategories, setBookCategories] = useState([]);
-  const [subjects, setSubjects] = useState([]);
   const [teacherClasses, setTeacherClasses] = useState([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
-
-  // Fetch categories and subjects on mount
-  useEffect(() => {
-    const fetchCategoriesAndSubjects = async () => {
-      try {
-        // Fetch categories
-        const categoriesResponse = await handleApiResponse(() =>
-          apiClient_.get('book-categories?status=ACTIVE')
-        );
-
-        if (categoriesResponse.success && categoriesResponse.data) {
-          const categoriesData = Array.isArray(categoriesResponse.data) ? categoriesResponse.data :
-                                 Array.isArray(categoriesResponse.data.data) ? categoriesResponse.data.data : [];
-          setBookCategories(categoriesData);
-        }
-
-        // Fetch subjects
-        const subjectsResponse = await subjectService.getAll({ limit: 100 });
-        if (subjectsResponse.success && subjectsResponse.data) {
-          setSubjects(subjectsResponse.data);
-        }
-      } catch (error) {
-        console.error('Error fetching categories and subjects:', error);
-      }
-    };
-
-    fetchCategoriesAndSubjects();
-  }, []);
 
   // Fetch full teacher data when modal opens
   useEffect(() => {
@@ -143,16 +116,21 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
     }
   }, [isOpen, fullTeacherData, teacher]);
 
-  // Fetch books by IDs when modal opens and teacher has bookIds
+  // Filter books by IDs when modal opens and allBooks are loaded
   useEffect(() => {
     const src = fullTeacherData || teacher;
     console.log('TeacherViewModal - teacher object:', src);
     console.log('TeacherViewModal - bookIds:', src?.bookIds);
-    if (isOpen && src?.bookIds && Array.isArray(src.bookIds) && src.bookIds.length > 0) {
-      console.log('Fetching books for IDs:', src.bookIds);
-      fetchBooksByIds(src.bookIds);
+    if (isOpen && src?.bookIds && Array.isArray(src.bookIds) && src.bookIds.length > 0 && allBooks.length > 0) {
+      console.log('Filtering books for IDs:', src.bookIds);
+      // Filter books to only include those in bookIds array
+      const filteredBooks = allBooks.filter(book => src.bookIds.includes(book.id));
+      console.log('Filtered books:', filteredBooks);
+      setBooks(filteredBooks);
+    } else if (!isOpen || !src?.bookIds?.length) {
+      setBooks([]);
     }
-  }, [isOpen, fullTeacherData, teacher?.bookIds]);
+  }, [isOpen, fullTeacherData, teacher?.bookIds, allBooks]);
 
   // Fetch teacher's classes when modal opens
   useEffect(() => {
@@ -196,48 +174,6 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
 
     fetchTeacherClasses();
   }, [isOpen, teacher?.teacherId, teacher?.id]);
-
-  const fetchBooksByIds = async (bookIds) => {
-    setLoadingBooks(true);
-    try {
-      // Fetch books from all available grade levels and filter by the bookIds we need
-      console.log('Fetching all books from all grade levels');
-      const allBooks = [];
-      const seenIds = new Set();
-      const gradeLevels = ['0', '1', '2', '3', '4', '5', '6'];
-
-      // Fetch books from each grade level
-      for (const gradeLevel of gradeLevels) {
-        try {
-          const response = await bookService.getBooksByGradeLevel(gradeLevel, 1, 100);
-          if (response.success && response.data) {
-            for (const book of response.data) {
-              // Only add book if we haven't seen this ID before
-              if (!seenIds.has(book.id)) {
-                allBooks.push(book);
-                seenIds.add(book.id);
-              }
-            }
-          }
-        } catch (error) {
-          // Skip grade levels that have errors
-          console.warn(`Error fetching books for grade level ${gradeLevel}:`, error);
-        }
-      }
-
-      console.log('All books fetched (deduplicated):', allBooks);
-
-      // Filter books to only include those in bookIds array
-      const filteredBooks = allBooks.filter(book => bookIds.includes(book.id));
-      console.log('Filtered books:', filteredBooks);
-      setBooks(filteredBooks);
-    } catch (error) {
-      console.error('Error fetching books:', error);
-      setBooks([]);
-    } finally {
-      setLoadingBooks(false);
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -732,7 +668,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
                 {t('selectedBooks', 'Selected Books')}
               </div>
             </div>
-            {loadingBooks ? (
+            {loadingAllBooks ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-sm text-gray-500">{t('loading', 'Loading...')}</div>
               </div>

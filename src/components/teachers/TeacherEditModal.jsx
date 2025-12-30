@@ -34,6 +34,10 @@ const TeacherEditModal = () => {
   const encryptedTeacherId = searchParams.get('id');
   const mode = searchParams.get('mode') || 'edit'; // 'create' or 'edit'
 
+  // Track if we've already fetched the teacher data to prevent duplicate requests
+  const fetchedRef = useRef(false);
+  const abortControllerRef = useRef(null);
+
   const [teacher, setTeacher] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pageLoading, setPageLoading] = useState(false);
@@ -165,6 +169,11 @@ const TeacherEditModal = () => {
 
   // Fetch teacher data if editing
   useEffect(() => {
+    // Prevent duplicate requests in React Strict Mode
+    if (fetchedRef.current) {
+      return;
+    }
+
     const fetchTeacherData = async () => {
       try {
         if (mode === 'create') {
@@ -215,8 +224,9 @@ const TeacherEditModal = () => {
       console.error('Error getting school ID:', err);
     }
 
+    fetchedRef.current = true;
     fetchTeacherData();
-  }, [mode, encryptedTeacherId, t, handleError]);
+  }, [mode, encryptedTeacherId]);
 
   // Initialize form data when teacher changes
   useEffect(() => {
@@ -248,17 +258,9 @@ const TeacherEditModal = () => {
     try {
       setLoading(true);
 
-      const userId = teacher.userId || teacher.user_id || teacher.id;
-      let fullData = teacher;
-
-      if (userId) {
-        try {
-          const resp = await userService.getUserByID(userId);
-          fullData = resp?.data || resp || teacher;
-        } catch (error) {
-          console.warn('Failed to fetch full user data:', error);
-        }
-      }
+      // Use teacher data already fetched in useEffect
+      // No need to fetch again - avoid duplicate API call
+      const fullData = teacher;
 
       // Calculate BMI from weight and height if available
       const calcBMI = (weight, height) => {
