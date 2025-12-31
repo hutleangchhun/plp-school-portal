@@ -61,21 +61,10 @@ const BulkImportProgressTracker = ({
       showCloseButton={!isProcessing}
       footer={
         !isProcessing && (
-          <div className="flex justify-between items-center w-full">
-            <div className="flex space-x-4 text-sm">
-              <span className="text-green-600 font-medium">
-                {t('successful', 'ជោគជ័យ')}: {successCount}
-              </span>
-              <span className="text-red-600 font-medium">
-                {t('failed', 'បរាជ័យ')}: {failureCount}
-              </span>
-              <span className="text-gray-600 font-medium">
-                {t('total', 'សរុប')}: {totalStudents}
-              </span>
-            </div>
+          <div className="flex justify-end items-center w-full">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
             >
               {t('close', 'បិទ')}
             </button>

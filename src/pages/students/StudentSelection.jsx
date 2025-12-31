@@ -164,6 +164,7 @@ const StudentSelection = () => {
     dateOfBirth: null, // Date object for DatePicker
     gradeLevel: "",
     classId: "any", // Filter by class assignment: 'any', 'null', or specific class ID
+    createdAt: null, // Date object for specific creation date
   });
   const [showSelectedStudentsSidebar, setShowSelectedStudentsSidebar] =
     useState(false);
@@ -355,6 +356,17 @@ const StudentSelection = () => {
         filterParams.classId = filters.classId; // 'null' for no class, or specific class ID
       }
 
+      // Add createdAt filter
+      if (filters.createdAt) {
+        const year = filters.createdAt.getFullYear();
+        const month = String(filters.createdAt.getMonth() + 1).padStart(2, "0");
+        const day = String(filters.createdAt.getDate()).padStart(2, "0");
+        filterParams.createdAt = `${year}-${month}-${day}`;
+      }
+
+      console.log("Filter params being sent to API:", filterParams);
+      console.log("Filters state:", filters);
+
       // Use the master-class endpoint to get all students from the school with filters
       const studentsResponse = await studentService.getStudentsBySchool(
         schoolId,
@@ -437,6 +449,7 @@ const StudentSelection = () => {
     filters.dateOfBirth,
     filters.gradeLevel,
     filters.classId,
+    filters.createdAt,
     showError,
     t,
   ]);
@@ -460,6 +473,7 @@ const StudentSelection = () => {
     filters.dateOfBirth,
     filters.gradeLevel,
     filters.classId,
+    filters.createdAt,
   ]);
 
   // Handle page change
@@ -651,13 +665,15 @@ const StudentSelection = () => {
                   filters.gender ||
                   filters.dateOfBirth ||
                   filters.gradeLevel !== "" ||
-                  filters.classId !== "any") && (
+                  filters.classId !== "any" ||
+                  filters.createdAt) && (
                   <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
                     {(filters.academicYear ? 1 : 0) +
                       (filters.gender ? 1 : 0) +
                       (filters.dateOfBirth ? 1 : 0) +
                       (filters.gradeLevel !== "" ? 1 : 0) +
-                      (filters.classId !== "any" ? 1 : 0)}
+                      (filters.classId !== "any" ? 1 : 0) +
+                      (filters.createdAt ? 1 : 0)}
                   </span>
                 )}
               </Button>
@@ -668,7 +684,8 @@ const StudentSelection = () => {
               filters.gender ||
               filters.dateOfBirth ||
               filters.gradeLevel !== "" ||
-              filters.classId !== "any") && (
+              filters.classId !== "any" ||
+              filters.createdAt) && (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-blue-900">
                   {t("activeFilters", "Active Filters")}:
@@ -720,6 +737,12 @@ const StudentSelection = () => {
                     {formatDateKhmer(filters.dateOfBirth, "short")}
                   </Badge>
                 )}
+                {filters.createdAt && (
+                  <Badge color="red" variant="outline" size="sm">
+                    {t("createdDate", "Created Date")}:{" "}
+                    {formatDateKhmer(filters.createdAt, "short")}
+                  </Badge>
+                )}
                 {filters.gradeLevel !== "" && (
                   <Badge color="green" variant="outline" size="sm">
                     {t("gradeLevel", "Grade Level")}:{" "}
@@ -748,7 +771,8 @@ const StudentSelection = () => {
             filters.gender ||
             filters.dateOfBirth ||
             filters.gradeLevel !== "" ||
-            filters.classId !== "any"
+            filters.classId !== "any" ||
+            filters.createdAt
           }
           onClearFilters={() => {
             handleFilterChange({
@@ -758,6 +782,7 @@ const StudentSelection = () => {
               dateOfBirth: null,
               gradeLevel: "",
               classId: "any",
+              createdAt: null,
             });
           }}
           onApply={() => {
@@ -878,6 +903,20 @@ const StudentSelection = () => {
                   placeholder={t("selectGradeLevel", "Select Grade Level")}
                   minWidth="w-full"
                   triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
+                />
+              </div>
+
+              {/* Created Date Filter */}
+              <div>
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">
+                  {t("createdDate", "Created Date")}
+                </label>
+                <DatePickerWithDropdowns
+                  value={filters.createdAt}
+                  onChange={(date) =>
+                    handleFilterChange({ ...filters, createdAt: date })
+                  }
+                  placeholder={t("selectDate", "Select Date")}
                 />
               </div>
             </>
@@ -1114,7 +1153,8 @@ const StudentSelection = () => {
                     filters.gender ||
                     filters.dateOfBirth ||
                     filters.gradeLevel ||
-                    filters.classId !== "any") && (
+                    filters.classId !== "any" ||
+                    filters.createdAt) && (
                     <Button
                       onClick={() =>
                         handleFilterChange({
@@ -1124,6 +1164,7 @@ const StudentSelection = () => {
                           dateOfBirth: null,
                           gradeLevel: "",
                           classId: "any",
+                          createdAt: null,
                         })
                       }
                       variant="outline"

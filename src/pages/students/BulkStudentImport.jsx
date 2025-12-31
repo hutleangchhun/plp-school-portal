@@ -1480,8 +1480,11 @@ export default function BulkStudentImport() {
         // Poll for batch status every 2 seconds
         let isComplete = false;
         let pollAttempts = 0;
+        let lastCompletedCount = 0;
+        let noProgressAttempts = 0;
         const maxPollAttempts = 600; // 20 minutes max polling (600 attempts * 2 seconds)
         const pollIntervalMs = 2000; // Poll every 2 seconds instead of 1
+        const noProgressThreshold = 15; // Force completion after 15 polls with no progress (30 seconds)
 
         while (!isComplete && pollAttempts < maxPollAttempts) {
           await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
@@ -1505,6 +1508,15 @@ export default function BulkStudentImport() {
             const successCount = batchResults.filter(r => r.success).length || apiSuccessCount;
             const failureCount = batchResults.filter(r => !r.success).length || apiFailureCount;
 
+            // Check if we're making progress
+            if (completed === lastCompletedCount) {
+              noProgressAttempts++;
+              console.log(`⚠️ No progress detected: ${noProgressAttempts}/${noProgressThreshold} attempts`);
+            } else {
+              noProgressAttempts = 0; // Reset counter when progress is made
+              lastCompletedCount = completed;
+            }
+
             console.log(`Batch status - Completed: ${completed}/${total}, Success: ${successCount}, Failed: ${failureCount}, Is Complete: ${is_complete}`);
 
             // Update progress
@@ -1527,12 +1539,22 @@ export default function BulkStudentImport() {
               setImportResults([...currentResults]);
             }
 
-            // Check if batch is complete
-            if (is_complete) {
+            // Force completion if no progress for too long (batch might be stuck)
+            if (noProgressAttempts >= noProgressThreshold) {
+              isComplete = true;
+              console.log(`⏱️ Force completing batch due to no progress for ${noProgressThreshold * 2} seconds`);
+              console.log(`✅ Batch processing complete (forced): ${successCount} successful, ${failureCount} failed`);
+              setIsImporting(false);
+            }
+            // Check if batch is complete (normal completion)
+            else if (is_complete) {
               isComplete = true;
               console.log(`✅ Batch processing complete: ${successCount} successful, ${failureCount} failed`);
               setIsImporting(false);
+            }
 
+            // Process final results if batch is now complete (either way)
+            if (isComplete) {
               // Mark all remaining unprocessed students as successful (API only returns failures + some successes)
               const finalResults = currentResults.map((result, idx) => {
                 const batchResult = batchResults && Array.isArray(batchResults)
@@ -1665,6 +1687,10 @@ export default function BulkStudentImport() {
                   }
                 }
               }, 4000); // Wait 4 seconds before updating form to let user see results
+            }
+
+            // Break out of polling loop when batch is complete
+            if (isComplete) {
               break;
             }
           } catch (statusErr) {

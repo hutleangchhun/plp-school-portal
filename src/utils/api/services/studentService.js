@@ -214,6 +214,30 @@ export const studentService = {
   },
 
   /**
+   * Clear batch data on the server after processing completes
+   * @param {string} batchId - The batch ID from the bulk register response
+   * @returns {Promise<Object>} Clear batch response
+   */
+  async clearBulkRegistrationBatch(batchId) {
+    console.log(`🧹 Clearing batch data for batch: ${batchId}`);
+
+    // Check for debug mode
+    if (typeof window !== 'undefined' && window.__DEBUG_API && batchId.startsWith('debug_batch_')) {
+      console.log('🐛 DEBUG: Simulating batch clear (debug mode)');
+      return Promise.resolve({
+        success: true,
+        data: {
+          message: 'Batch data cleared successfully'
+        }
+      });
+    }
+
+    return handleApiResponse(() =>
+      apiClient_.post(ENDPOINTS.STUDENTS.BULK_REGISTER_CLEAR(batchId))
+    );
+  },
+
+  /**
    * Register a single student (same format as bulk register)
    * @param {Object} studentData - Single student data object
    * @returns {Promise<Object>} Registration response
@@ -824,6 +848,7 @@ export const studentService = {
         gender,
         dateOfBirth,
         gradeLevel,
+        createdAt,
         hasAccessibility,
         isEthnicMinority
       } = params;
@@ -850,7 +875,8 @@ export const studentService = {
       if (gender) apiParams.gender = gender;
       if (dateOfBirth) apiParams.dateOfBirth = dateOfBirth;
       if (gradeLevel) apiParams.gradeLevel = gradeLevel;
-      
+      if (createdAt) apiParams.createdAt = createdAt;
+
       // Add report-specific filters for performance optimization
       if (hasAccessibility === true) apiParams.hasAccessibility = true;
       if (isEthnicMinority === true) apiParams.isEthnicMinority = true;

@@ -221,7 +221,8 @@ export const classService = {
         academicYear,
         gender,
         dateOfBirth,
-        gradeLevel
+        gradeLevel,
+        createdAt
       } = params;
 
       // Build query params for the master-class endpoint
@@ -245,6 +246,7 @@ export const classService = {
       if (gender) queryParams.gender = gender;
       if (dateOfBirth) queryParams.dateOfBirth = dateOfBirth;
       if (gradeLevel) queryParams.gradeLevel = gradeLevel;
+      if (createdAt) queryParams.createdAt = createdAt;
 
       console.log('Sending master classes API request for school', schoolId, 'with queryParams:', queryParams);
 
