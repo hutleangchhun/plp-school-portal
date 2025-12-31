@@ -1464,7 +1464,7 @@ export default function BulkStudentImport() {
       try {
         console.log(`Starting bulk registration for ${transformedData.length} students (async queue)`);
 
-        // Call the new async bulk register endpoint
+        // Call the new async bulk register endpoint (pass array directly, service will wrap it)
         const response = await studentService.bulkRegister(transformedData);
 
         // Extract batch ID and initial response data
@@ -1477,21 +1477,35 @@ export default function BulkStudentImport() {
         let currentResults = [...initialResults];
         setImportResults(currentResults);
 
-        // Poll for batch status every 1 second
+        // Poll for batch status every 2 seconds
         let isComplete = false;
         let pollAttempts = 0;
-        const maxPollAttempts = 300; // 5 minutes max polling
+        const maxPollAttempts = 600; // 20 minutes max polling (600 attempts * 2 seconds)
+        const pollIntervalMs = 2000; // Poll every 2 seconds instead of 1
 
         while (!isComplete && pollAttempts < maxPollAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before polling
+          await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
           pollAttempts++;
 
           try {
             // Get batch status
             const statusResponse = await studentService.getBulkRegistrationStatus(batchId);
-            const { completed, total, success_count: successCount, failed_count: failureCount, is_complete, results: batchResults } = statusResponse.data || statusResponse;
+            const statusData = statusResponse.data || statusResponse;
 
-            console.log(`Batch status - Completed: ${completed}/${total}, Success: ${successCount}, Failed: ${failureCount}`);
+            const {
+              results: batchResults = [],
+              completed = 0,
+              total = 0,
+              is_complete = false,
+              success_count: apiSuccessCount = 0,
+              failed_count: apiFailureCount = 0
+            } = statusData;
+
+            // Calculate success and failure counts from results
+            const successCount = batchResults.filter(r => r.success).length || apiSuccessCount;
+            const failureCount = batchResults.filter(r => !r.success).length || apiFailureCount;
+
+            console.log(`Batch status - Completed: ${completed}/${total}, Success: ${successCount}, Failed: ${failureCount}, Is Complete: ${is_complete}`);
 
             // Update progress
             setProcessedCount(completed);
@@ -1504,7 +1518,7 @@ export default function BulkStudentImport() {
                   return {
                     ...result,
                     processing: false,
-                    success: batchResult.success,
+                    success: batchResult.success === true,
                     error: batchResult.error || null
                   };
                 }
@@ -1529,7 +1543,7 @@ export default function BulkStudentImport() {
                   return {
                     ...result,
                     processing: false,
-                    success: batchResult.success,
+                    success: batchResult.success === true,
                     error: batchResult.error || null
                   };
                 }
@@ -1554,6 +1568,14 @@ export default function BulkStudentImport() {
 
               if (failureCount > 0) {
                 showError(`⚠️ មានកំហុស ${failureCount} នាក់ក្នុងការនាំចូល។ សូមពិនិត្យលម្អិត`, { duration: 7000 });
+              }
+
+              // Clear batch data on the server after completion
+              try {
+                await studentService.clearBulkRegistrationBatch(batchId);
+                console.log(`✅ Batch data cleared successfully`);
+              } catch (clearErr) {
+                console.warn(`⚠️ Failed to clear batch data, but import completed:`, clearErr);
               }
 
               // Handle form after import completion
@@ -1597,7 +1619,7 @@ export default function BulkStudentImport() {
                 } else {
                   // Partial failures - remove only successful students from form
                   // Keep only the failed students so user can retry them
-                  const failedStudents = currentResults.filter(result => !result.success);
+                  const failedStudents = finalResults.filter(result => !result.success);
 
                   if (failedStudents.length > 0) {
                     // Create new student entries for the failed ones
