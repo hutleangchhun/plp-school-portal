@@ -76,10 +76,44 @@ const SchoolManagement = () => {
 
   // Load provinces and all schools on component mount
   useEffect(() => {
-    loadProvinces();
-    loadAllSchools();
-    loadProjectTypes();
+    const abortController = new AbortController();
+
+    const loadInitialData = async () => {
+      try {
+        await Promise.all([
+          loadProvinces(),
+          loadAllSchools(),
+          loadProjectTypes()
+        ]);
+      } catch (error) {
+        // Ignore abort errors
+        if (error.name !== 'AbortError') {
+          console.error('Error loading initial data:', error);
+        }
+      }
+    };
+
+    loadInitialData();
+
+    // Cleanup: cancel pending requests on unmount
+    return () => {
+      abortController.abort();
+    };
   }, []);
+
+  // Cleanup on component unmount - close any open modals and dialogs
+  useEffect(() => {
+    return () => {
+      // Close modals when navigating away
+      if (isModalOpen) {
+        closeModal();
+      }
+      // Close confirm dialog when navigating away
+      if (confirmDialog.isOpen) {
+        handleCloseConfirmDialog();
+      }
+    };
+  }, [isModalOpen, confirmDialog.isOpen]);
 
   // Debug: Log when projectTypes changes
   useEffect(() => {
@@ -883,7 +917,8 @@ const SchoolManagement = () => {
     setConfirmDialog({ isOpen: false, schoolToDelete: null, isDeleting: false });
   };
 
-  if (loading && !provinces.length) {
+  // Show loading on initial page load (loading provinces or schools)
+  if ((loading || schoolsLoading) && !showSchools && !provinces.length) {
     return (
       <PageLoader
         message={t('loadingProvinces', 'Loading provinces...')}
