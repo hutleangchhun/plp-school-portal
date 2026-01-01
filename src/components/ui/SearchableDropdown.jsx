@@ -98,7 +98,7 @@ export default function SearchableDropdown({
       <DropdownMenu.Trigger asChild>
         <button
           onMouseDown={(e) => e.preventDefault()}
-          className={`inline-flex items-center justify-between rounded px-4 py-2 text-sm bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 ${minWidth} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${triggerClassName}`}
+          className={`w-full inline-flex items-center justify-between rounded px-4 py-2 text-sm bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${triggerClassName}`}
           disabled={disabled}
         >
           <span className="truncate flex-1 text-left">{displayValue}</span>
@@ -110,7 +110,7 @@ export default function SearchableDropdown({
         <DropdownMenu.Content
           onClick={(e) => e.stopPropagation()}
           onWheel={(e) => e.stopPropagation()}
-          className={`bg-white rounded-md shadow-lg border border-gray-200 p-1 z-[9999] ${minWidth} flex flex-col ${contentClassName}`}
+          className={`bg-white rounded-md shadow-lg border border-gray-200 p-1 z-[9999] w-[var(--radix-dropdown-menu-trigger-width)] flex flex-col ${contentClassName}`}
           sideOffset={4}
         >
           {/* Search Input */}

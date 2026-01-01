@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { useToast } from '../../contexts/ToastContext';
@@ -74,11 +74,22 @@ const SchoolManagement = () => {
     isDeleting: false
   });
 
+  // Use ref to prevent duplicate API calls in React StrictMode
+  // Note: This tracks initialization within a single mount cycle, not across unmounts
+  const hasInitialized = useRef(false);
+
   // Load provinces and all schools on component mount
   useEffect(() => {
-    const abortController = new AbortController();
+    // Reset initialization flag on mount to allow reloading when component remounts
+    hasInitialized.current = false;
+
+    let isMounted = true;
 
     const loadInitialData = async () => {
+      // Skip if already initialized during this mount cycle (prevents StrictMode double-call)
+      if (hasInitialized.current) return;
+      hasInitialized.current = true;
+
       try {
         await Promise.all([
           loadProvinces(),
@@ -86,8 +97,7 @@ const SchoolManagement = () => {
           loadProjectTypes()
         ]);
       } catch (error) {
-        // Ignore abort errors
-        if (error.name !== 'AbortError') {
+        if (isMounted) {
           console.error('Error loading initial data:', error);
         }
       }
@@ -95,30 +105,13 @@ const SchoolManagement = () => {
 
     loadInitialData();
 
-    // Cleanup: cancel pending requests on unmount
+    // Cleanup on unmount
     return () => {
-      abortController.abort();
+      isMounted = false;
+      // Reset flag when component unmounts so it reloads next time
+      hasInitialized.current = false;
     };
   }, []);
-
-  // Cleanup on component unmount - close any open modals and dialogs
-  useEffect(() => {
-    return () => {
-      // Close modals when navigating away
-      if (isModalOpen) {
-        closeModal();
-      }
-      // Close confirm dialog when navigating away
-      if (confirmDialog.isOpen) {
-        handleCloseConfirmDialog();
-      }
-    };
-  }, [isModalOpen, confirmDialog.isOpen]);
-
-  // Debug: Log when projectTypes changes
-  useEffect(() => {
-    console.log('📦 projectTypes state updated:', projectTypes);
-  }, [projectTypes]);
 
   const loadProjectTypes = async () => {
     setProjectTypesLoading(true);
@@ -571,33 +564,39 @@ const SchoolManagement = () => {
     }
   };
 
-  // Filter schools by search query
+  // Filter schools by search query only (API already handles location filtering)
   const filteredSchools = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return schools;
+    let result = schools;
+
+    // Filter by search query only
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(school => {
+        const name = (school.name || '').toLowerCase();
+        const code = (school.code || '').toLowerCase();
+        return name.includes(query) || code.includes(query);
+      });
     }
 
-    const query = searchQuery.toLowerCase().trim();
-    return schools.filter(school => {
-      const name = (school.name || '').toLowerCase();
-      const code = (school.code || '').toLowerCase();
-      return name.includes(query) || code.includes(query);
-    });
+    return result;
   }, [schools, searchQuery]);
 
   // Paginate filtered schools
   const paginatedSchools = useMemo(() => {
     const start = (currentPage - 1) * pageLimit;
     const end = start + pageLimit;
-    const totalFilteredPages = Math.ceil(filteredSchools.length / pageLimit);
-
-    // Update total pages and schools count based on filtered results
-    if (filteredSchools.length !== totalSchools || totalFilteredPages !== totalPages) {
-      setTotalPages(totalFilteredPages);
-    }
-
     return filteredSchools.slice(start, end);
-  }, [filteredSchools, currentPage, pageLimit, totalSchools, totalPages]);
+  }, [filteredSchools, currentPage, pageLimit]);
+
+  // Update total pages when filtered schools change
+  useEffect(() => {
+    const totalFilteredPages = Math.ceil(filteredSchools.length / pageLimit);
+    setTotalPages(totalFilteredPages);
+    // Reset to page 1 if current page exceeds new total pages
+    if (currentPage > totalFilteredPages && totalFilteredPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [filteredSchools.length, pageLimit]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -917,11 +916,11 @@ const SchoolManagement = () => {
     setConfirmDialog({ isOpen: false, schoolToDelete: null, isDeleting: false });
   };
 
-  // Show loading on initial page load (loading provinces or schools)
+  // Show loading on initial page load (loading provinces and schools)
   if ((loading || schoolsLoading) && !showSchools && !provinces.length) {
     return (
       <PageLoader
-        message={t('loadingProvinces', 'Loading provinces...')}
+        message={t('loadingData', 'Loading data...')}
         className="min-h-screen bg-gray-50"
       />
     );
@@ -1104,7 +1103,7 @@ const SchoolManagement = () => {
         </div>
 
         {/* Schools Section */}
-        {showSchools && (
+        {(showSchools || schoolsLoading) && (
           <div className="space-y-4">
             {/* Table with total schools count */}
             <Table
