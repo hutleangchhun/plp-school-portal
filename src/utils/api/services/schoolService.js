@@ -253,6 +253,62 @@ export const schoolService = {
         }
     },
 
+    async createSchool(data) {
+        try {
+            console.log('➕ Creating new school with data:', data);
+            const response = await handleApiResponse(() =>
+                apiClient_.post(ENDPOINTS.SCHOOLS.BASE, data)
+            );
+
+            console.log('➕ Create school response:', response);
+
+            if (response?.success || response?.data || Object.keys(response || {}).length > 0) {
+                return {
+                    success: true,
+                    data: response?.data || response
+                };
+            }
+            return {
+                success: false,
+                error: 'Failed to create school'
+            };
+        } catch (error) {
+            console.error('Error creating school:', error);
+            return {
+                success: false,
+                error: error.message || 'Failed to create school'
+            };
+        }
+    },
+
+    async deleteSchool(schoolId) {
+        try {
+            console.log('🗑️ Deleting school with ID:', schoolId);
+            const response = await handleApiResponse(() =>
+                apiClient_.delete(`${ENDPOINTS.SCHOOLS.BASE}/${schoolId}`)
+            );
+
+            console.log('🗑️ Delete school response:', response);
+
+            if (response?.success || response?.message || Object.keys(response || {}).length > 0) {
+                return {
+                    success: true,
+                    data: response?.data || response
+                };
+            }
+            return {
+                success: false,
+                error: 'Failed to delete school'
+            };
+        } catch (error) {
+            console.error('Error deleting school:', error);
+            return {
+                success: false,
+                error: error.message || 'Failed to delete school'
+            };
+        }
+    },
+
     utils: {
         formatSchoolData(school) {
             // Format school data with correct field mapping

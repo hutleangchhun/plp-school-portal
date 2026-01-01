@@ -16,6 +16,7 @@ import AttendanceOverview from './pages/admin/AttendanceOverview';
 import SchoolAttendanceList from './pages/admin/SchoolAttendanceList';
 import TeacherOverviewDashboard from './pages/admin/TeacherOverviewDashboard';
 import UserRegistrationDashboard from './pages/admin/UserRegistrationDashboard';
+import SchoolManagement from './pages/admin/SchoolManagement';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -56,6 +57,7 @@ import { ProtectedRoute } from './components/common/DynamicRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import { setToastContext } from './utils/notificationHelper';
 import { canAccessTeacherFeatures } from './utils/routePermissions';
+import TelegramFloatingButton from './components/common/TelegramFloatingButton';
 
 function AppContent() {
   const { t } = useLanguage();
@@ -125,6 +127,7 @@ function AppContent() {
   return (
     <>
       <Router>
+        {user && <TelegramFloatingButton />}
         <Routes>
         <Route
           path="/login"
@@ -269,6 +272,15 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<UserRegistrationDashboard />} />
+          </Route>
+
+          {/* Admin School Management route - role ID 1 only (enforced by routePermissions) */}
+          <Route path="admin/schools" element={
+            <ProtectedRoute path="/admin/schools" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<SchoolManagement />} />
           </Route>
 
           <Route path="students" element={

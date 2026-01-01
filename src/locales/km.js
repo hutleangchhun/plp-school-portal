@@ -1534,6 +1534,27 @@ export const km = {
   poorCardGrade: 'ប្រភេទបណ្ណសមធម៌(ប្រសិនបើមាន)',
   selectPoorCardGrade: 'ជ្រើសរើសប្រភេទបណ្ណសមធម៌',
   schoolInfo: 'ព័ត៌មានសាលារៀន',
+  schoolManagementPage: 'គ្រប់គ្រងសាលារៀន',
+  schoolManagementPageDescription: 'ស្វែងរក កែប្រែ បន្ថែម និងលុបសាលារៀន',
+  schoolList: 'បញ្ជីសាលារៀន',
+  createSchool: 'បន្ថែមសាលារៀនថ្មី',
+  editSchool: 'កែប្រែសាលារៀន',
+  deleteSchool: 'លុបសាលារៀន',
+  confirmDeleteSchool: 'តើអ្នកប្រាកដថាចង់លុបសាលារៀននេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+  schoolCreatedSuccessfully: 'សាលារៀនបានបង្កើតដោយជោគជ័យ',
+  schoolUpdatedSuccessfully: 'សាលារៀនបានកែប្រែដោយជោគជ័យ',
+  schoolDeletedSuccessfully: 'សាលារៀនបានលុបដោយជោគជ័យ',
+  failedToCreateSchool: 'បរាជ័យក្នុងការបង្កើតសាលារៀន',
+  failedToUpdateSchool: 'បរាជ័យក្នុងការកែប្រែសាលារៀន',
+  failedToDeleteSchool: 'បរាជ័យក្នុងការលុបសាលារៀន',
+  errorDeletingSchool: 'បរាជ័យក្នុងការលុបសាលារៀន',
+  manageSchools: 'គ្រប់គ្រងសាលារៀន',
+  loadingSchools: 'កំពុងផ្ទុកសាលារៀន...',
+  errorFetchingSchools: 'បរាជ័យក្នុងការទាញយកសាលារៀន',
+  showAll: 'បង្ហាញទាំងអស់',
+
+
+
   // QR Code Generator
   studentQRCode: 'លេខកូដ QR សិស្ស',
   student: 'ឧបករណ៍បង្កើត QR Code សម្រាប់សិស្ស',

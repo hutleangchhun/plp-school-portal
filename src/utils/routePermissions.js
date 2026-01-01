@@ -160,6 +160,10 @@ export const routePermissions = {
   '/admin/user-registration': {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'UserRegistrationDashboard'
+  },
+  '/admin/schools': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'SchoolManagement'
   }
 };
 
@@ -533,6 +537,10 @@ export const getNavigationItems = (user, t) => {
     {
       name: t('userRegistrationDashboard', 'User Registration'),
       href: '/admin/user-registration',
+    },
+    {
+      name: t('schoolManagement', 'School Management'),
+      href: '/admin/schools',
     },
   ];
 
