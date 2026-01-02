@@ -345,8 +345,8 @@ export const extraLearningProvidedByOptions = [
 export const getAcademicYearOptions = () => {
   const currentYear = new Date().getFullYear();
   return [
+    { value: `${currentYear - 1}-${currentYear}`, label: `${currentYear - 1}-${currentYear}` },
     { value: `${currentYear}-${currentYear + 1}`, label: `${currentYear}-${currentYear + 1}` },
-    { value: `${currentYear + 1}-${currentYear + 2}`, label: `${currentYear + 1}-${currentYear + 2}` },
-    { value: `${currentYear + 2}-${currentYear + 3}`, label: `${currentYear + 2}-${currentYear + 3}` }
+    { value: `${currentYear + 1}-${currentYear + 2}`, label: `${currentYear + 1}-${currentYear + 2}` }
   ];
 };
