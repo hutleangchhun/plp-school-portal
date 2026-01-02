@@ -49,7 +49,7 @@ const BulkImportTable = ({
     let additionalInfoCount = 0;
 
     nonActionColumns.forEach(col => {
-      if (['lastName', 'firstName', 'username', 'password', 'email', 'dateOfBirth', 'gender', 'phone', 'nationality', 'schoolId', 'academicYear', 'gradeLevel', 'residenceFullAddress'].includes(col.key)) {
+      if (['lastName', 'firstName', 'username', 'password', 'email', 'dateOfBirth', 'gender', 'phone', 'nationality', 'schoolId', 'academicYear', 'gradeLevel', 'classId', 'residenceFullAddress'].includes(col.key)) {
         studentInfoCount++;
       } else if (['fatherFirstName', 'fatherLastName', 'fatherPhone', 'fatherOccupation', 'fatherDateOfBirth', 'fatherResidenceFullAddress'].includes(col.key)) {
         fatherInfoCount++;

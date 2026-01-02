@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -19,6 +19,7 @@ import { templateDownloader } from '../../utils/templateDownloader';
 import { excelImportHandler } from '../../utils/excelImportHandler';
 import { genderOptions, nationalityOptions, ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, getAcademicYearOptions } from '../../utils/formOptions';
 import { getFullName } from '../../utils/usernameUtils';
+import { formatClassIdentifier } from '../../utils/helpers';
 import locationService from '../../utils/api/services/locationService';
 import { classService } from '../../utils/api/services/classService';
 import Dropdown from '../../components/ui/Dropdown';
@@ -137,11 +138,14 @@ export default function BulkStudentImport() {
   // Get academic year options (current year and next 2 years)
   const academicYearOptions = getAcademicYearOptions();
 
-  // Translate grade level options with translation keys
-  const translatedGradeLevelOptions = gradeLevelOptions.map(option => ({
-    ...option,
-    label: option.translationKey ? t(option.translationKey, option.label) : option.label
-  }));
+  // Translate grade level options with translation keys (memoized to prevent recreating on every render)
+  const translatedGradeLevelOptions = useMemo(() =>
+    gradeLevelOptions.map(option => ({
+      ...option,
+      label: option.translationKey ? t(option.translationKey, option.label) : option.label
+    })),
+    [t]
+  );
 
   // Validation function to check if a cell value is invalid
   const isCellInvalid = (student, columnKey) => {
@@ -297,6 +301,18 @@ export default function BulkStudentImport() {
     return false; // Default: field is valid
   };
 
+  const classOptions = useMemo(() => availableClasses.map(cls => ({
+    value: cls.id?.toString() || cls.classId?.toString(),
+    label: formatClassIdentifier(cls.gradeLevel || cls.grade_level, cls.section)
+  })), [availableClasses]);
+
+  const gradeOptions = useMemo(() => {
+    // Filter translated grade level options to only include those in availableGradeLevels
+    return translatedGradeLevelOptions.filter(option =>
+      availableGradeLevels.includes(option.value)
+    );
+  }, [availableGradeLevels, translatedGradeLevelOptions]);
+
   const columns = [
     // Student Basic Info
     { key: 'lastName', header: 'គោត្តនាម *', width: 'min-w-[100px]' },
@@ -311,7 +327,7 @@ export default function BulkStudentImport() {
     { key: 'schoolId', header: 'លេខសាលា *', width: 'min-w-[200px]' },
     { key: 'academicYear', header: 'ឆ្នាំសិក្សា', width: 'min-w-[150px]', type: 'select', options: academicYearOptions },
     { key: 'gradeLevel', header: 'កម្រិតថ្នាក់', width: 'min-w-[120px]', type: 'select', options: translatedGradeLevelOptions },
-    { key: 'classId', header: 'ថ្នាក់', width: 'min-w-[150px]', type: 'select', options: availableClasses.map(cls => ({ value: cls.id?.toString() || cls.classId?.toString(), label: cls.name || cls.className })) },
+    { key: 'classId', header: 'ថ្នាក់', width: 'min-w-[150px]', type: 'select', options: classOptions },
 
     // Student Address
     { key: 'residenceFullAddress', header: 'អាសយដ្ឋានពេញ', width: 'min-w-[320px]' },
@@ -550,32 +566,20 @@ export default function BulkStudentImport() {
     fetchSchoolDetails();
   }, [selectedSchool, schools, showError]);
 
-  // Load grade levels when school is selected
+  // Set grade levels from formOptions (static list, not from API)
   useEffect(() => {
-    const loadGradeLevels = async () => {
-      if (!schoolId) {
-        setAvailableGradeLevels([]);
-        setSelectedGradeLevel('');
-        setAvailableClasses([]);
-        setSelectedClass('');
-        return;
-      }
+    if (!schoolId) {
+      setAvailableGradeLevels([]);
+      setSelectedGradeLevel('');
+      setAvailableClasses([]);
+      setSelectedClass('');
+      return;
+    }
 
-      try {
-        setLoadingGradeLevels(true);
-        const response = await classService.getGradeLevelsBySchool(schoolId);
-        if (response.success && Array.isArray(response.data)) {
-          setAvailableGradeLevels(response.data);
-        }
-      } catch (error) {
-        console.error('Error loading grade levels:', error);
-        setAvailableGradeLevels([]);
-      } finally {
-        setLoadingGradeLevels(false);
-      }
-    };
-
-    loadGradeLevels();
+    // Use grade levels from formOptions directly
+    const gradeValues = gradeLevelOptions.map(option => option.value);
+    setAvailableGradeLevels(gradeValues);
+    setLoadingGradeLevels(false);
   }, [schoolId]);
 
   // Load classes when school and grade level are selected
@@ -592,6 +596,8 @@ export default function BulkStudentImport() {
         const response = await classService.getClassesByGradeLevel(schoolId, selectedGradeLevel);
         if (response.success && Array.isArray(response.data)) {
           setAvailableClasses(response.data);
+        } else {
+          setAvailableClasses([]);
         }
       } catch (error) {
         console.error('Error loading classes:', error);
@@ -1931,70 +1937,158 @@ export default function BulkStudentImport() {
 
               {/* For Admins: Show Cascading Selection */}
               {userRole === 1 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Province Dropdown */}
-                  <div className="w-full">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('province', 'Province')}
-                    </label>
-                    <Dropdown
-                      value={selectedProvince}
-                      onValueChange={setSelectedProvince}
-                      options={provinces.map(province => ({
-                        value: province.id.toString(),
-                        label: province.province_name_kh || province.province_name_en
-                      }))}
-                      placeholder={t('selectProvince', 'Select Province')}
-                      disabled={loadingProvinces}
-                      className="w-full"
-                      triggerClassName="w-full"
-                    />
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    {/* Province Dropdown */}
+                    <div className="w-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('province', 'Province')}
+                      </label>
+                      <Dropdown
+                        value={selectedProvince}
+                        onValueChange={setSelectedProvince}
+                        options={provinces.map(province => ({
+                          value: province.id.toString(),
+                          label: province.province_name_kh || province.province_name_en
+                        }))}
+                        placeholder={t('selectProvince', 'Select Province')}
+                        disabled={loadingProvinces}
+                        className="w-full"
+                        triggerClassName="w-full"
+                      />
+                    </div>
+
+                    {/* District Dropdown */}
+                    <div className="w-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('district', 'District')}
+                      </label>
+                      <Dropdown
+                        value={selectedDistrict}
+                        onValueChange={setSelectedDistrict}
+                        options={districts.map(district => ({
+                          value: district.district_code,
+                          label: district.district_name_kh || district.district_name_en
+                        }))}
+                        placeholder={t('selectDistrict', 'Select District')}
+                        disabled={!selectedProvince || loadingDistricts}
+                        className="w-full"
+                        triggerClassName="w-full"
+                      />
+                    </div>
+
+                    {/* School SearchableDropdown */}
+                    <div className="w-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('school', 'School')} <span className="text-red-500">*</span>
+                      </label>
+                      <SearchableDropdown
+                        value={selectedSchool}
+                        onValueChange={setSelectedSchool}
+                        options={schools.map(school => ({
+                          value: school.id?.toString() || '',
+                          label: school.name || school.school_name || '',
+                          code: school.code || school.school_code || '' // Add school code
+                        }))}
+                        placeholder={t('selectSchool') || 'ជ្រើសរើgorgeមមាលា'}
+                        searchPlaceholder={t('searchSchool') || 'វាយបញ្ចូលនាមសាលា...'}
+                        disabled={!selectedDistrict || loadingSchools || schools.length === 0}
+                        isLoading={loadingSchools}
+                        emptyMessage={t('noSchools') || 'គ្មានសាលាទេ'}
+                        minWidth="w-full"
+                        triggerClassName="w-full"
+                        showSecondaryInfo={true}
+                        secondaryInfoKey="code"
+                      />
+                    </div>
                   </div>
 
-                  {/* District Dropdown */}
-                  <div className="w-full">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('district', 'District')}
-                    </label>
-                    <Dropdown
-                      value={selectedDistrict}
-                      onValueChange={setSelectedDistrict}
-                      options={districts.map(district => ({
-                        value: district.district_code,
-                        label: district.district_name_kh || district.district_name_en
-                      }))}
-                      placeholder={t('selectDistrict', 'Select District')}
-                      disabled={!selectedProvince || loadingDistricts}
-                      className="w-full"
-                      triggerClassName="w-full"
-                    />
-                  </div>
+                  {/* Grade Level and Class Selection for Admins - Show after school selection */}
+                  {schoolId && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Grade Level Dropdown */}
+                      <div className="w-full">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t('gradeLevel', 'Grade Level')}
+                        </label>
+                        <Dropdown
+                          value={selectedGradeLevel}
+                          onValueChange={setSelectedGradeLevel}
+                          options={gradeOptions}
+                          placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                          disabled={!schoolId || loadingGradeLevels}
+                          className="w-full"
+                          triggerClassName="w-full"
+                        />
+                      </div>
 
-                  {/* School SearchableDropdown */}
-                  <div className="w-full">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('school', 'School')} <span className="text-red-500">*</span>
-                    </label>
-                    <SearchableDropdown
-                      value={selectedSchool}
-                      onValueChange={setSelectedSchool}
-                      options={schools.map(school => ({
-                        value: school.id?.toString() || '',
-                        label: school.name || school.school_name || '',
-                        code: school.code || school.school_code || '' // Add school code
-                      }))}
-                      placeholder={t('selectSchool') || 'ជ្រើសរើសសាលា'}
-                      searchPlaceholder={t('searchSchool') || 'វាយបញ្ចូលនាមសាលា...'}
-                      disabled={!selectedDistrict || loadingSchools || schools.length === 0}
-                      isLoading={loadingSchools}
-                      emptyMessage={t('noSchools') || 'គ្មានសាលាទេ'}
-                      minWidth="w-full"
-                      triggerClassName="w-full"
-                      showSecondaryInfo={true}
-                      secondaryInfoKey="code"
-                    />
-                  </div>
-                </div>
+                      {/* Class Dropdown */}
+                      <div className="w-full">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t('class', 'Class')}
+                        </label>
+                        <SearchableDropdown
+                          value={selectedClass?.toString() || ''}
+                          onValueChange={(value) => setSelectedClass(value ? parseInt(value) : '')}
+                          options={availableClasses.map(cls => ({
+                            value: (cls.id || cls.classId)?.toString() || '',
+                            label: formatClassIdentifier(cls.gradeLevel || cls.grade_level, cls.section),
+                            section: cls.section || ''
+                          }))}
+                          placeholder={t('selectClass') || 'ជ្រើសរើសថ្នាក់'}
+                          searchPlaceholder={t('searchClass') || 'វាយបញ្ចូលឈ្មោះថ្នាក់...'}
+                          disabled={!selectedGradeLevel || loadingClasses || availableClasses.length === 0}
+                          isLoading={loadingClasses}
+                          emptyMessage={t('noClasses') || 'គ្មានថ្នាក់ទេ'}
+                          minWidth="w-full"
+                          triggerClassName="w-full"
+                          showSecondaryInfo={true}
+                          secondaryInfoKey="section"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Clear Class Selection */}
+                  {selectedClass && (
+                    <div className="mt-3">
+                      <button
+                        onClick={() => {
+                          setSelectedClass('');
+                          setSelectedGradeLevel('');
+                          setStudents(prevStudents =>
+                            prevStudents.map(student => ({
+                              ...student,
+                              classId: ''
+                            }))
+                          );
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        {t('clearClassSelection', 'មិនបង្ហាញថ្នាក់')}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Selected Class Info for Admins */}
+                  {selectedClass && (
+                    <div className="mt-4">
+                      {(() => {
+                        const selectedClassObj = availableClasses.find(c => (c.id || c.classId)?.toString() === selectedClass?.toString());
+                        const classIdentifier = selectedClassObj
+                          ? formatClassIdentifier(selectedClassObj.gradeLevel || selectedClassObj.grade_level, selectedClassObj.section)
+                          : `Class ${selectedClass}`;
+                        return (
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                            <p className="text-sm text-gray-700">
+                              <span className="font-medium">ថ្នាក់ដែលបានជ្រើស:</span> {classIdentifier}
+                            </p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </>
               )}
 
               {/* For Admins: Show selected school info after selection */}
@@ -2015,8 +2109,8 @@ export default function BulkStudentImport() {
                 </div>
               )}
 
-              {/* Class Selection (Optional) - Show when school is selected */}
-              {schoolId && (
+              {/* Class Selection (Optional) for Directors - Show when school is selected */}
+              {userRole === 14 && schoolId && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <h4 className="text-md font-semibold text-gray-900 mb-4">
                     {t('classAssignment') || 'ការផ្តល់ឯកសារថ្នាក់ (ស្ថិតក្នុងលក្ខណៈស្ម័គ្រចិត្ត)'}
@@ -2031,10 +2125,7 @@ export default function BulkStudentImport() {
                       <Dropdown
                         value={selectedGradeLevel}
                         onValueChange={setSelectedGradeLevel}
-                        options={availableGradeLevels.map(level => ({
-                          value: level.toString(),
-                          label: `ថ្នាក់ទី${level}` // e.g., ថ្នាក់ទី1
-                        }))}
+                        options={gradeOptions}
                         placeholder={t('selectGradeLevel', 'Select Grade Level')}
                         disabled={!schoolId || loadingGradeLevels}
                         className="w-full"
@@ -2052,7 +2143,7 @@ export default function BulkStudentImport() {
                         onValueChange={(value) => setSelectedClass(value ? parseInt(value) : '')}
                         options={availableClasses.map(cls => ({
                           value: (cls.id || cls.classId)?.toString() || '',
-                          label: cls.name || cls.className || '',
+                          label: formatClassIdentifier(cls.gradeLevel || cls.grade_level, cls.section),
                           section: cls.section || ''
                         }))}
                         placeholder={t('selectClass') || 'ជ្រើសរើសថ្នាក់'}
@@ -2090,13 +2181,16 @@ export default function BulkStudentImport() {
                   )}
 
                   {/* Selected Class Info */}
-                  {selectedClass && availableClasses.find(c => (c.id || c.classId).toString() === selectedClass?.toString()) && (
-                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                      <p className="text-sm text-gray-700">
-                        <span className="font-medium">ថ្នាក់ដែលបានជ្រើស:</span> {availableClasses.find(c => (c.id || c.classId).toString() === selectedClass?.toString())?.name}
-                      </p>
-                    </div>
-                  )}
+                  {selectedClass && (() => {
+                    const selectedClassObj = availableClasses.find(c => (c.id || c.classId).toString() === selectedClass?.toString());
+                    return selectedClassObj ? (
+                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                        <p className="text-sm text-gray-700">
+                          <span className="font-medium">ថ្នាក់ដែលបានជ្រើស:</span> {formatClassIdentifier(selectedClassObj.gradeLevel || selectedClassObj.grade_level, selectedClassObj.section)}
+                        </p>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               )}
             </div>

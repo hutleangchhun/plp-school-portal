@@ -15,6 +15,14 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['xlsx-js-style'],
   },
+  build: {
+    minify: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
   server: {
     host: '0.0.0.0', // Listen on all network interfaces
     port: 3001, // Use port 3001

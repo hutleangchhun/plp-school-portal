@@ -618,10 +618,14 @@ export const classService = {
         limit: 1000
       });
 
+      // getClassesWithFilters returns { success, data: [], classes: [], total, ... }
+      // We need to extract the data array from the response
+      const classesData = Array.isArray(response.data) ? response.data : (Array.isArray(response.classes) ? response.classes : []);
+
       return {
         success: true,
-        data: response.data || [],
-        total: response.total || 0,
+        data: classesData,
+        total: response.total || classesData.length,
         gradeLevel: gradeLevel
       };
     } catch (error) {
