@@ -1451,6 +1451,9 @@ export const km = {
   noAbsences: 'មិនមានអវត្តមាន',
   noLeaves: 'មិនមានច្ប',
   selectYear: 'ជ្រើសរើសឆ្នាំ',
+  classAssignment: 'ការកំណត់ថ្នាក់',
+
+  // Report 6 - Students with Disabilities
 
   // Chart Titles
   studentsWithDisabilities: 'សិស្សមានពិការភាព',

@@ -303,8 +303,8 @@ export default function BulkStudentImport() {
 
   const classOptions = useMemo(() => availableClasses.map(cls => ({
     value: cls.id?.toString() || cls.classId?.toString(),
-    label: formatClassIdentifier(cls.gradeLevel || cls.grade_level, cls.section)
-  })), [availableClasses]);
+    label: formatClassIdentifier(cls.gradeLevel || cls.grade_level, cls.section, t)
+  })), [availableClasses, t]);
 
   const gradeOptions = useMemo(() => {
     // Filter translated grade level options to only include those in availableGradeLevels
@@ -1928,270 +1928,211 @@ export default function BulkStudentImport() {
         </FadeInSection>
 
         {/* School Info Display - Conditional based on role */}
-        {(userRole === 1 || (userRole === 14 && schoolId && schoolName)) && (
+        {(userRole === 1 || userRole === 14) && (
           <FadeInSection delay={25} className="mb-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {t('schoolInfo') || 'ព័ត៌មានសាលា'}
-              </h3>
-
-              {/* For Admins: Show Cascading Selection */}
+              {/* For Admins: Show Cascading Selection with 2-Column Layout */}
               {userRole === 1 && (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    {/* Province Dropdown */}
-                    <div className="w-full">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('province', 'Province')}
-                      </label>
-                      <Dropdown
-                        value={selectedProvince}
-                        onValueChange={setSelectedProvince}
-                        options={provinces.map(province => ({
-                          value: province.id.toString(),
-                          label: province.province_name_kh || province.province_name_en
-                        }))}
-                        placeholder={t('selectProvince', 'Select Province')}
-                        disabled={loadingProvinces}
-                        className="w-full"
-                        triggerClassName="w-full"
-                      />
-                    </div>
+                  {/* Main 2-Column Grid: School Selection (Left) | Grade & Class (Right) */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+                    {/* Column 1: School Selection */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-semibold text-gray-800 mb-3">
+                        {t('selectSchool') || 'ជ្រើសរើសសាលា'}
+                      </h4>
 
-                    {/* District Dropdown */}
-                    <div className="w-full">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('district', 'District')}
-                      </label>
-                      <Dropdown
-                        value={selectedDistrict}
-                        onValueChange={setSelectedDistrict}
-                        options={districts.map(district => ({
-                          value: district.district_code,
-                          label: district.district_name_kh || district.district_name_en
-                        }))}
-                        placeholder={t('selectDistrict', 'Select District')}
-                        disabled={!selectedProvince || loadingDistricts}
-                        className="w-full"
-                        triggerClassName="w-full"
-                      />
-                    </div>
-
-                    {/* School SearchableDropdown */}
-                    <div className="w-full">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('school', 'School')} <span className="text-red-500">*</span>
-                      </label>
-                      <SearchableDropdown
-                        value={selectedSchool}
-                        onValueChange={setSelectedSchool}
-                        options={schools.map(school => ({
-                          value: school.id?.toString() || '',
-                          label: school.name || school.school_name || '',
-                          code: school.code || school.school_code || '' // Add school code
-                        }))}
-                        placeholder={t('selectSchool') || 'ជ្រើសរើgorgeមមាលា'}
-                        searchPlaceholder={t('searchSchool') || 'វាយបញ្ចូលនាមសាលា...'}
-                        disabled={!selectedDistrict || loadingSchools || schools.length === 0}
-                        isLoading={loadingSchools}
-                        emptyMessage={t('noSchools') || 'គ្មានសាលាទេ'}
-                        minWidth="w-full"
-                        triggerClassName="w-full"
-                        showSecondaryInfo={true}
-                        secondaryInfoKey="code"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Grade Level and Class Selection for Admins - Show after school selection */}
-                  {schoolId && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Grade Level Dropdown */}
+                      {/* Province Dropdown */}
                       <div className="w-full">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {t('gradeLevel', 'Grade Level')}
+                          {t('province', 'Province')}
                         </label>
                         <Dropdown
-                          value={selectedGradeLevel}
-                          onValueChange={setSelectedGradeLevel}
-                          options={gradeOptions}
-                          placeholder={t('selectGradeLevel', 'Select Grade Level')}
-                          disabled={!schoolId || loadingGradeLevels}
+                          value={selectedProvince}
+                          onValueChange={setSelectedProvince}
+                          options={provinces.map(province => ({
+                            value: province.id.toString(),
+                            label: province.province_name_kh || province.province_name_en
+                          }))}
+                          placeholder={t('selectProvince', 'Select Province')}
+                          disabled={loadingProvinces}
                           className="w-full"
                           triggerClassName="w-full"
                         />
                       </div>
 
-                      {/* Class Dropdown */}
+                      {/* District Dropdown */}
                       <div className="w-full">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {t('class', 'Class')}
+                          {t('district', 'District')}
+                        </label>
+                        <Dropdown
+                          value={selectedDistrict}
+                          onValueChange={setSelectedDistrict}
+                          options={districts.map(district => ({
+                            value: district.district_code,
+                            label: district.district_name_kh || district.district_name_en
+                          }))}
+                          placeholder={t('selectDistrict', 'Select District')}
+                          disabled={!selectedProvince || loadingDistricts}
+                          className="w-full"
+                          triggerClassName="w-full"
+                        />
+                      </div>
+
+                      {/* School SearchableDropdown */}
+                      <div className="w-full">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t('school', 'School')} <span className="text-red-500">*</span>
                         </label>
                         <SearchableDropdown
-                          value={selectedClass?.toString() || ''}
-                          onValueChange={(value) => setSelectedClass(value ? parseInt(value) : '')}
-                          options={availableClasses.map(cls => ({
-                            value: (cls.id || cls.classId)?.toString() || '',
-                            label: formatClassIdentifier(cls.gradeLevel || cls.grade_level, cls.section),
-                            section: cls.section || ''
+                          value={selectedSchool}
+                          onValueChange={setSelectedSchool}
+                          options={schools.map(school => ({
+                            value: school.id?.toString() || '',
+                            label: school.name || school.school_name || '',
+                            code: school.code || school.school_code || ''
                           }))}
-                          placeholder={t('selectClass') || 'ជ្រើសរើសថ្នាក់'}
-                          searchPlaceholder={t('searchClass') || 'វាយបញ្ចូលឈ្មោះថ្នាក់...'}
-                          disabled={!selectedGradeLevel || loadingClasses || availableClasses.length === 0}
-                          isLoading={loadingClasses}
-                          emptyMessage={t('noClasses') || 'គ្មានថ្នាក់ទេ'}
+                          placeholder={t('selectSchool') || 'ជ្រើសរើងម្សាលា'}
+                          searchPlaceholder={t('searchSchool') || 'វាយបញ្ចូលនាមសាលា...'}
+                          disabled={!selectedDistrict || loadingSchools || schools.length === 0}
+                          isLoading={loadingSchools}
+                          emptyMessage={t('noSchools') || 'គ្មានសាលាទេ'}
                           minWidth="w-full"
                           triggerClassName="w-full"
                           showSecondaryInfo={true}
-                          secondaryInfoKey="section"
+                          secondaryInfoKey="code"
                         />
                       </div>
-                    </div>
-                  )}
 
-                  {/* Clear Class Selection */}
-                  {selectedClass && (
-                    <div className="mt-3">
-                      <button
-                        onClick={() => {
-                          setSelectedClass('');
-                          setSelectedGradeLevel('');
-                          setStudents(prevStudents =>
-                            prevStudents.map(student => ({
-                              ...student,
-                              classId: ''
-                            }))
-                          );
-                        }}
-                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        {t('clearClassSelection', 'មិនបង្ហាញថ្នាក់')}
-                      </button>
+                      {/* Selected School Info */}
+                      {schoolId && schoolName && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                          <p className="text-sm text-gray-700">
+                            <span className="font-medium">ឈ្មោះសាលាដែលបានជ្រើស:</span> {schoolName}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  {/* Selected Class Info for Admins */}
-                  {selectedClass && (
-                    <div className="mt-4">
-                      {(() => {
-                        const selectedClassObj = availableClasses.find(c => (c.id || c.classId)?.toString() === selectedClass?.toString());
-                        const classIdentifier = selectedClassObj
-                          ? formatClassIdentifier(selectedClassObj.gradeLevel || selectedClassObj.grade_level, selectedClassObj.section)
-                          : `Class ${selectedClass}`;
-                        return (
-                          <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                            <p className="text-sm text-gray-700">
-                              <span className="font-medium">ថ្នាក់ដែលបានជ្រើស:</span> {classIdentifier}
-                            </p>
+                    {/* Column 2: Grade Level and Class Selection */}
+                    {schoolId && (
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-semibold text-gray-800 mb-3">
+                          {t('classAssignment') || 'ការផ្តល់ឯកសារថ្នាក់ (ស្ថិតក្នុងលក្ខណៈស្ម័គ្រចិត្ត)'}
+                        </h4>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Grade Level Dropdown */}
+                          <div className="w-full">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              {t('gradeLevel', 'Grade Level')}
+                            </label>
+                            <Dropdown
+                              value={selectedGradeLevel}
+                              onValueChange={setSelectedGradeLevel}
+                              options={gradeOptions}
+                              placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                              disabled={!schoolId || loadingGradeLevels}
+                              className="w-full"
+                              triggerClassName="w-full"
+                            />
                           </div>
-                        );
-                      })()}
-                    </div>
-                  )}
+
+                          {/* Class Dropdown */}
+                          <div className="w-full">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              {t('class', 'Class')}
+                            </label>
+                            <SearchableDropdown
+                              value={selectedClass?.toString() || ''}
+                              onValueChange={(value) => setSelectedClass(value ? parseInt(value) : '')}
+                              options={availableClasses.map(cls => ({
+                                value: (cls.id || cls.classId)?.toString() || '',
+                                label: formatClassIdentifier(cls.gradeLevel || cls.grade_level, cls.section, t)
+                              }))}
+                              placeholder={t('selectClass') || 'ជ្រើសរើសថ្នាក់'}
+                              searchPlaceholder={`${t('search', 'ស្វាគមន៍')}...`}
+                              disabled={!selectedGradeLevel || loadingClasses || availableClasses.length === 0}
+                              isLoading={loadingClasses}
+                              emptyMessage={t('noClasses') || 'គ្មានថ្នាក់ទេ'}
+                              minWidth="w-full"
+                              triggerClassName="w-full"
+                            />
+                          </div>
+                        </div>
+
+
+
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
 
-              {/* For Admins: Show selected school info after selection */}
-              {userRole === 1 && schoolId && schoolName && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-sm text-gray-700">
-                    <span className="font-medium">ឈ្មោះសាលាដែលបានជ្រើស:</span> {schoolName}
-                  </p>
-                </div>
-              )}
-
-              {/* For Directors: Show auto-populated school info only */}
-              {userRole === 14 && schoolId && schoolName && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-sm text-gray-700">
-                    <span className="font-medium">ឈ្មោះសាលា:</span> {schoolName}
-                  </p>
-                </div>
-              )}
-
-              {/* Class Selection (Optional) for Directors - Show when school is selected */}
+              {/* For Directors: Show auto-populated school info with 2-Column Layout */}
               {userRole === 14 && schoolId && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h4 className="text-md font-semibold text-gray-900 mb-4">
-                    {t('classAssignment') || 'ការផ្តល់ឯកសារថ្នាក់ (ស្ថិតក្នុងលក្ខណៈស្ម័គ្រចិត្ត)'}
-                  </h4>
+                <>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Column 1: School Info */}
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-gray-800 mb-2">
+                        {t('school') || 'សាលារៀន'}
+                      </h4>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Grade Level Dropdown */}
-                    <div className="w-full">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('gradeLevel', 'Grade Level')}
-                      </label>
-                      <Dropdown
-                        value={selectedGradeLevel}
-                        onValueChange={setSelectedGradeLevel}
-                        options={gradeOptions}
-                        placeholder={t('selectGradeLevel', 'Select Grade Level')}
-                        disabled={!schoolId || loadingGradeLevels}
-                        className="w-full"
-                        triggerClassName="w-full"
-                      />
-                    </div>
-
-                    {/* Class Dropdown */}
-                    <div className="w-full">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('class', 'Class')}
-                      </label>
-                      <SearchableDropdown
-                        value={selectedClass?.toString() || ''}
-                        onValueChange={(value) => setSelectedClass(value ? parseInt(value) : '')}
-                        options={availableClasses.map(cls => ({
-                          value: (cls.id || cls.classId)?.toString() || '',
-                          label: formatClassIdentifier(cls.gradeLevel || cls.grade_level, cls.section),
-                          section: cls.section || ''
-                        }))}
-                        placeholder={t('selectClass') || 'ជ្រើសរើសថ្នាក់'}
-                        searchPlaceholder={t('searchClass') || 'វាយបញ្ចូលឈ្មោះថ្នាក់...'}
-                        disabled={!selectedGradeLevel || loadingClasses || availableClasses.length === 0}
-                        isLoading={loadingClasses}
-                        emptyMessage={t('noClasses') || 'គ្មានថ្នាក់ទេ'}
-                        minWidth="w-full"
-                        triggerClassName="w-full"
-                        showSecondaryInfo={true}
-                        secondaryInfoKey="section"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Clear Class Selection */}
-                  {selectedClass && (
-                    <div className="mt-3">
-                      <button
-                        onClick={() => {
-                          setSelectedClass('');
-                          setSelectedGradeLevel('');
-                          setStudents(prevStudents =>
-                            prevStudents.map(student => ({
-                              ...student,
-                              classId: ''
-                            }))
-                          );
-                        }}
-                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        {t('clearClassSelection', 'មិនបង្ហាញថ្នាក់')}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Selected Class Info */}
-                  {selectedClass && (() => {
-                    const selectedClassObj = availableClasses.find(c => (c.id || c.classId).toString() === selectedClass?.toString());
-                    return selectedClassObj ? (
-                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                      <div className="p-2 bg-blue-50 border border-blue-200 rounded-sm">
                         <p className="text-sm text-gray-700">
-                          <span className="font-medium">ថ្នាក់ដែលបានជ្រើស:</span> {formatClassIdentifier(selectedClassObj.gradeLevel || selectedClassObj.grade_level, selectedClassObj.section)}
+                          <span className="font-medium">ឈ្មោះសាលា:</span> {schoolName}
                         </p>
                       </div>
-                    ) : null;
-                  })()}
-                </div>
+                    </div>
+
+                    {/* Column 2: Grade Level and Class Selection for Directors */}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Grade Level Dropdown */}
+                        <div className="w-full">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {t('gradeLevel', 'Grade Level')}
+                          </label>
+                          <Dropdown
+                            value={selectedGradeLevel}
+                            onValueChange={setSelectedGradeLevel}
+                            options={gradeOptions}
+                            placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                            disabled={!schoolId || loadingGradeLevels}
+                            className="w-full"
+                            triggerClassName="w-full"
+                          />
+                        </div>
+
+                        {/* Class Dropdown */}
+                        <div className="w-full">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {t('class', 'Class')}
+                          </label>
+                          <SearchableDropdown
+                            value={selectedClass?.toString() || ''}
+                            onValueChange={(value) => setSelectedClass(value ? parseInt(value) : '')}
+                            options={availableClasses.map(cls => ({
+                              value: (cls.id || cls.classId)?.toString() || '',
+                              label: formatClassIdentifier(cls.gradeLevel || cls.grade_level, cls.section, t)
+                            }))}
+                            placeholder={t('selectClass') || 'ជ្រើសរើសថ្នាក់'}
+                            searchPlaceholder={`${t('search', 'ស្វាគមន៍')}...`}
+                            disabled={!selectedGradeLevel || loadingClasses || availableClasses.length === 0}
+                            isLoading={loadingClasses}
+                            emptyMessage={t('noClasses') || 'គ្មានថ្នាក់ទេ'}
+                            minWidth="w-full"
+                            triggerClassName="w-full"
+                          />
+                        </div>
+                      </div>
+
+
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </FadeInSection>

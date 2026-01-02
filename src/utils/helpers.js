@@ -288,13 +288,21 @@ export const getGradeLevelOptions = (t, includeAllOption = true) => {
  * Format class identifier combining grade level and section
  * @param {string|number} gradeLevel - Grade level
  * @param {string} section - Class section (optional)
- * @returns {string} Formatted identifier like "1-A" or "1"
+ * @param {Function} t - Optional translation function (if not provided, returns identifier without "class" prefix)
+ * @returns {string} Formatted identifier like "ថ្នាក់ 1-A" or "ថ្នាក់ មត្តេយ្យ"
  */
-export const formatClassIdentifier = (gradeLevel, section) => {
+export const formatClassIdentifier = (gradeLevel, section, t = null) => {
   if (!gradeLevel && gradeLevel !== 0) return '';
-  // Handle grade level 0 (Kindergarten) - show as "មត្តេយ្យ​"
-  const displayGrade = gradeLevel === 0 ? 'មត្តេយ្យ​' : gradeLevel;
-  return section ? `${displayGrade}-${section}` : displayGrade;
+  // Handle grade level 0 (Kindergarten) - show as "មត្តេយ្យ"
+  const displayGrade = (gradeLevel === 0 || gradeLevel === '0') ? 'មត្តេយ្យ' : gradeLevel;
+  const identifier = section ? `${displayGrade}-${section}` : displayGrade;
+
+  // If translation function is provided, prepend the translated "class" keyword
+  if (t) {
+    return `${t('class', 'ថ្នាក់')} ${identifier}`;
+  }
+
+  return identifier;
 };
 
 /**
