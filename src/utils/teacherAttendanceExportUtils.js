@@ -69,26 +69,48 @@ export const exportTeacherAttendanceToExcel = async (teachers, schoolId, options
       const startDate = formatDateToString(new Date(year, month, 1));
       const endDate = formatDateToString(new Date(year, month + 1, 0));
 
-      const attendanceResponse = await attendanceService.getAttendance({
-        startDate,
-        endDate
+      // Fetch attendance for each teacher
+      const attendancePromises = teachers.map(async (teacher) => {
+        try {
+          const response = await attendanceService.getAttendance({
+            userId: Number(teacher.id),
+            startDate,
+            endDate,
+            limit: 400
+          });
+
+          if (response?.success && response?.data && Array.isArray(response.data)) {
+            return response.data;
+          }
+          return [];
+        } catch (err) {
+          console.warn(`Failed to fetch attendance for teacher ${teacher.id}:`, err);
+          return [];
+        }
       });
 
-      if (attendanceResponse?.success && attendanceResponse?.data) {
-        attendanceResponse.data.forEach(record => {
-          const userId = record.userId;
-          const date = record.date;
+      const allAttendanceRecords = await Promise.all(attendancePromises);
+      const flattenedRecords = allAttendanceRecords.flat();
 
-          if (!monthlyAttendance[userId]) {
-            monthlyAttendance[userId] = {};
-          }
+      flattenedRecords.forEach(record => {
+        const userId = Number(record.userId || record.user_id);
+        const dateStr = record.date ? record.date.split('T')[0] : null;
 
-          monthlyAttendance[userId][date] = {
-            status: record.status,
-            reason: record.reason
-          };
-        });
-      }
+        if (!userId || !dateStr) {
+          return;
+        }
+
+        if (!monthlyAttendance[userId]) {
+          monthlyAttendance[userId] = {};
+        }
+
+        monthlyAttendance[userId][dateStr] = {
+          status: record.status,
+          reason: record.reason
+        };
+      });
+
+      console.log('Monthly attendance data fetched:', monthlyAttendance);
     } catch (err) {
       console.warn('Failed to fetch monthly teacher attendance:', err);
     }
