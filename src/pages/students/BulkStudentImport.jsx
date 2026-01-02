@@ -20,6 +20,7 @@ import { excelImportHandler } from '../../utils/excelImportHandler';
 import { genderOptions, nationalityOptions, ethnicGroupOptions, accessibilityOptions, gradeLevelOptions, getAcademicYearOptions } from '../../utils/formOptions';
 import { getFullName } from '../../utils/usernameUtils';
 import locationService from '../../utils/api/services/locationService';
+import { classService } from '../../utils/api/services/classService';
 import Dropdown from '../../components/ui/Dropdown';
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
 
@@ -55,10 +56,18 @@ export default function BulkStudentImport() {
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedSchool, setSelectedSchool] = useState('');
 
+  // Class selection states (optional)
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
+  const [selectedClass, setSelectedClass] = useState('');
+  const [availableGradeLevels, setAvailableGradeLevels] = useState([]);
+  const [availableClasses, setAvailableClasses] = useState([]);
+
   // Loading states for cascading filters
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingSchools, setLoadingSchools] = useState(false);
+  const [loadingGradeLevels, setLoadingGradeLevels] = useState(false);
+  const [loadingClasses, setLoadingClasses] = useState(false);
 
   const [students, setStudents] = useState([
     {
@@ -75,6 +84,7 @@ export default function BulkStudentImport() {
       schoolId: '',
       academicYear: '',
       gradeLevel: '',
+      classId: '', // Optional - for direct class assignment
 
       // Location info
       residenceFullAddress: '',
@@ -301,6 +311,7 @@ export default function BulkStudentImport() {
     { key: 'schoolId', header: 'លេខសាលា *', width: 'min-w-[200px]' },
     { key: 'academicYear', header: 'ឆ្នាំសិក្សា', width: 'min-w-[150px]', type: 'select', options: academicYearOptions },
     { key: 'gradeLevel', header: 'កម្រិតថ្នាក់', width: 'min-w-[120px]', type: 'select', options: translatedGradeLevelOptions },
+    { key: 'classId', header: 'ថ្នាក់', width: 'min-w-[150px]', type: 'select', options: availableClasses.map(cls => ({ value: cls.id?.toString() || cls.classId?.toString(), label: cls.name || cls.className })) },
 
     // Student Address
     { key: 'residenceFullAddress', header: 'អាសយដ្ឋានពេញ', width: 'min-w-[320px]' },
@@ -538,6 +549,72 @@ export default function BulkStudentImport() {
 
     fetchSchoolDetails();
   }, [selectedSchool, schools, showError]);
+
+  // Load grade levels when school is selected
+  useEffect(() => {
+    const loadGradeLevels = async () => {
+      if (!schoolId) {
+        setAvailableGradeLevels([]);
+        setSelectedGradeLevel('');
+        setAvailableClasses([]);
+        setSelectedClass('');
+        return;
+      }
+
+      try {
+        setLoadingGradeLevels(true);
+        const response = await classService.getGradeLevelsBySchool(schoolId);
+        if (response.success && Array.isArray(response.data)) {
+          setAvailableGradeLevels(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading grade levels:', error);
+        setAvailableGradeLevels([]);
+      } finally {
+        setLoadingGradeLevels(false);
+      }
+    };
+
+    loadGradeLevels();
+  }, [schoolId]);
+
+  // Load classes when school and grade level are selected
+  useEffect(() => {
+    const loadClasses = async () => {
+      if (!schoolId || !selectedGradeLevel) {
+        setAvailableClasses([]);
+        setSelectedClass('');
+        return;
+      }
+
+      try {
+        setLoadingClasses(true);
+        const response = await classService.getClassesByGradeLevel(schoolId, selectedGradeLevel);
+        if (response.success && Array.isArray(response.data)) {
+          setAvailableClasses(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading classes:', error);
+        setAvailableClasses([]);
+      } finally {
+        setLoadingClasses(false);
+      }
+    };
+
+    loadClasses();
+  }, [schoolId, selectedGradeLevel]);
+
+  // Auto-populate classId for new rows when class is selected
+  useEffect(() => {
+    if (selectedClass) {
+      setStudents(prevStudents =>
+        prevStudents.map(student => ({
+          ...student,
+          classId: selectedClass.toString()
+        }))
+      );
+    }
+  }, [selectedClass]);
 
 
   // Cell update function - must be defined before callbacks that use it
@@ -1123,6 +1200,7 @@ export default function BulkStudentImport() {
       schoolId: schoolId?.toString() || '', // Auto-populate with user's school
       academicYear: '',
       gradeLevel: '',
+      classId: selectedClass?.toString() || '', // Auto-populate with selected class if any
 
       // Location info
       residenceFullAddress: '',
@@ -1170,6 +1248,7 @@ export default function BulkStudentImport() {
           schoolId: schoolId?.toString() || '', // Auto-populate with user's school
           academicYear: '',
           gradeLevel: '',
+          classId: selectedClass?.toString() || '', // Auto-populate with selected class if any
 
           // Location info
           residenceFullAddress: '',
@@ -1380,6 +1459,11 @@ export default function BulkStudentImport() {
 
         if (student.gradeLevel && student.gradeLevel.trim()) {
           studentData.grade_level = parseInt(student.gradeLevel.trim());
+        }
+
+        // Add class ID if provided (optional direct class assignment)
+        if (student.classId && student.classId.toString().trim()) {
+          studentData.class_id = parseInt(student.classId.toString().trim());
         }
 
         if (student.residenceFullAddress && student.residenceFullAddress.trim()) {
@@ -1928,6 +2012,91 @@ export default function BulkStudentImport() {
                   <p className="text-sm text-gray-700">
                     <span className="font-medium">ឈ្មោះសាលា:</span> {schoolName}
                   </p>
+                </div>
+              )}
+
+              {/* Class Selection (Optional) - Show when school is selected */}
+              {schoolId && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h4 className="text-md font-semibold text-gray-900 mb-4">
+                    {t('classAssignment') || 'ការផ្តល់ឯកសារថ្នាក់ (ស្ថិតក្នុងលក្ខណៈស្ម័គ្រចិត្ត)'}
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Grade Level Dropdown */}
+                    <div className="w-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('gradeLevel', 'Grade Level')}
+                      </label>
+                      <Dropdown
+                        value={selectedGradeLevel}
+                        onValueChange={setSelectedGradeLevel}
+                        options={availableGradeLevels.map(level => ({
+                          value: level.toString(),
+                          label: `ថ្នាក់ទី${level}` // e.g., ថ្នាក់ទី1
+                        }))}
+                        placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                        disabled={!schoolId || loadingGradeLevels}
+                        className="w-full"
+                        triggerClassName="w-full"
+                      />
+                    </div>
+
+                    {/* Class Dropdown */}
+                    <div className="w-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t('class', 'Class')}
+                      </label>
+                      <SearchableDropdown
+                        value={selectedClass?.toString() || ''}
+                        onValueChange={(value) => setSelectedClass(value ? parseInt(value) : '')}
+                        options={availableClasses.map(cls => ({
+                          value: (cls.id || cls.classId)?.toString() || '',
+                          label: cls.name || cls.className || '',
+                          section: cls.section || ''
+                        }))}
+                        placeholder={t('selectClass') || 'ជ្រើសរើសថ្នាក់'}
+                        searchPlaceholder={t('searchClass') || 'វាយបញ្ចូលឈ្មោះថ្នាក់...'}
+                        disabled={!selectedGradeLevel || loadingClasses || availableClasses.length === 0}
+                        isLoading={loadingClasses}
+                        emptyMessage={t('noClasses') || 'គ្មានថ្នាក់ទេ'}
+                        minWidth="w-full"
+                        triggerClassName="w-full"
+                        showSecondaryInfo={true}
+                        secondaryInfoKey="section"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Clear Class Selection */}
+                  {selectedClass && (
+                    <div className="mt-3">
+                      <button
+                        onClick={() => {
+                          setSelectedClass('');
+                          setSelectedGradeLevel('');
+                          setStudents(prevStudents =>
+                            prevStudents.map(student => ({
+                              ...student,
+                              classId: ''
+                            }))
+                          );
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        {t('clearClassSelection', 'មិនបង្ហាញថ្នាក់')}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Selected Class Info */}
+                  {selectedClass && availableClasses.find(c => (c.id || c.classId).toString() === selectedClass?.toString()) && (
+                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">ថ្នាក់ដែលបានជ្រើស:</span> {availableClasses.find(c => (c.id || c.classId).toString() === selectedClass?.toString())?.name}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

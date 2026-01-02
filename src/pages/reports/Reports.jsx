@@ -6,6 +6,7 @@ import DynamicLoader from '../../components/ui/DynamicLoader';
 import Dropdown from '../../components/ui/Dropdown';
 import EmptyState from '../../components/ui/EmptyState';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
+import { YearPicker } from '../../components/ui/year-picker';
 import { processAndExportReport } from '../../utils/reportExportUtils';
 import { exportReport4SemesterToExcel } from '../../utils/report4SemesterExportUtils';
 import { studentService } from '../../utils/api/services/studentService';
@@ -44,7 +45,7 @@ export default function Reports() {
   const [selectedReport, setSelectedReport] = useState('report1');
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [selectedMonth, setSelectedMonth] = useState(`${new Date().getMonth() + 1}`);
-  const [selectedYear, setSelectedYear] = useState(`${new Date().getFullYear()}-${new Date().getFullYear() + 1}`);
+  const [selectedYear, setSelectedYear] = useState(`${new Date().getFullYear()}`);
   const [selectedSemesterStartDate, setSelectedSemesterStartDate] = useState(null);
   const [selectedSemesterEndDate, setSelectedSemesterEndDate] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -98,17 +99,6 @@ export default function Reports() {
     { value: '12', label: t('december', 'ធ្នូ') }
   ];
 
-  // Academic Year Options (2 years before, current year, and 2 years after)
-  const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 5 }, (_, i) => {
-    const startYear = currentYear - 2 + i; // Start from 2 years ago
-    const endYear = startYear + 1;
-    const academicYear = `${startYear}-${endYear}`;
-    return {
-      value: academicYear,
-      label: academicYear
-    };
-  });
 
   useEffect(() => {
     fetchReportData();
@@ -1519,21 +1509,19 @@ export default function Reports() {
               </div>
             )}
 
-            {/* Step 3a: Academic Year Filter - Shown for report8 */}
+            {/* Step 3a: Year Filter - Shown for report8 */}
             {selectedReport === 'report8' && (
-              <div className="flex-shrink-0 min-w-[200px]">
+              <div className="flex-shrink-0 min-w-[250px]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="h-4 w-4 inline mr-1" />
-                  {t('selectAcademicYear') || 'Academic Year'}
+                  {t('selectYear') || 'Select Year'}
                 </label>
-                <Dropdown
+                <YearPicker
                   value={selectedYear}
-                  onValueChange={setSelectedYear}
-                  options={yearOptions}
-                  placeholder={t('chooseYear', 'Choose academic year...')}
-                  minWidth="w-full"
-                  maxHeight="max-h-40"
-                  itemsToShow={5}
+                  onChange={setSelectedYear}
+                  placeholder={t('chooseYear', 'Choose year...')}
+                  fromYear={1900}
+                  toYear={3000}
                 />
               </div>
             )}
@@ -1606,20 +1594,18 @@ export default function Reports() {
                   </>
                 )}
 
-                {/* Year Dropdown */}
-                <div className="flex-shrink-0 min-w-[200px]">
+                {/* Year Picker */}
+                <div className="flex-shrink-0 min-w-[250px]">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Calendar className="h-4 w-4 inline mr-1" />
-                    {t('selectAcademicYear') || 'Select Year'}
+                    {t('selectYear') || 'Select Year'}
                   </label>
-                  <Dropdown
+                  <YearPicker
                     value={selectedYear}
-                    onValueChange={setSelectedYear}
-                    options={yearOptions}
+                    onChange={setSelectedYear}
                     placeholder={t('chooseYear', 'Choose year...')}
-                    minWidth="w-full"
-                    maxHeight="max-h-40"
-                    itemsToShow={5}
+                    fromYear={1900}
+                    toYear={3000}
                   />
                 </div>
               </>
@@ -1664,20 +1650,18 @@ export default function Reports() {
                   </div>
                 )}
 
-                {/* Year Dropdown */}
-                <div className="flex-shrink-0 min-w-[200px]">
+                {/* Year Picker */}
+                <div className="flex-shrink-0 min-w-[250px]">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Calendar className="h-4 w-4 inline mr-1" />
-                    {t('selectAcademicYear') || 'Select Year'}
+                    {t('selectYear') || 'Select Year'}
                   </label>
-                  <Dropdown
+                  <YearPicker
                     value={selectedYear}
-                    onValueChange={setSelectedYear}
-                    options={yearOptions}
+                    onChange={setSelectedYear}
                     placeholder={t('chooseYear', 'Choose year...')}
-                    minWidth="w-full"
-                    maxHeight="max-h-40"
-                    itemsToShow={5}
+                    fromYear={1900}
+                    toYear={3000}
                   />
                 </div>
               </>

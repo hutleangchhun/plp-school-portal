@@ -1450,6 +1450,7 @@ export const km = {
   exportToSeeAll: 'នាំចេញដើម្បីមើលទិន្នន័យទាំងអស់',
   noAbsences: 'មិនមានអវត្តមាន',
   noLeaves: 'មិនមានច្ប',
+  selectYear: 'ជ្រើសរើសឆ្នាំ',
 
   // Chart Titles
   studentsWithDisabilities: 'សិស្សមានពិការភាព',
