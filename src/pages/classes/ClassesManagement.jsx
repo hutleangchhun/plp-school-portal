@@ -736,6 +736,12 @@ export default function ClassesManagement() {
         return;
       }
 
+      // Validate that a teacher is selected
+      if (!formData.teacherId || parseInt(formData.teacherId) === 0) {
+        showError(t('classMustHaveTeacher') || 'Class must have a teacher assigned. Please select a teacher.');
+        return;
+      }
+
       if (showAddModal) {
         const response = await classService.createClass(classData);
         if (response.success) {
@@ -771,7 +777,54 @@ export default function ClassesManagement() {
       }
     } catch (error) {
       console.error('Error saving class:', error);
-      showError(error.message || t('errorSavingClass') || 'Error saving class');
+      console.error('Error details - errors field:', error.errors);
+
+      // Provide specific error messages based on the error
+      let displayMessage = error.message || t('errorSavingClass') || 'Error saving class';
+      let hasDetailedErrors = false;
+
+      // Check for detailed errors from API response
+      if (error.errors && Object.keys(error.errors).length > 0) {
+        const errorList = [];
+
+        // Check for class name duplicate error
+        if (error.errors.name) {
+          errorList.push(`- ${t('classNameDuplicate') || 'ឈ្មោះថ្នាក់មិនគួរស្ថិតក្នុងលក្ខណៈដូច្នេះទេ'}`);
+          hasDetailedErrors = true;
+        }
+
+        // Check for teacher requirement error
+        if (error.errors.teacherId) {
+          errorList.push(`- ${t('classTeacherRequired') || 'ថ្នាក់ត្រូវតែមានគ្រូបង្រៀន'}`);
+          hasDetailedErrors = true;
+        }
+
+        // If we found specific errors, show them
+        if (errorList.length > 0) {
+          const header = t('pleaseCheck') || 'សូមពិនិត្យ';
+          displayMessage = header + '\n' + errorList.join('\n');
+        }
+      }
+
+      // Fallback to keyword matching if no detailed errors were found
+      if (!hasDetailedErrors) {
+        const errorStr = error.message?.toLowerCase() || '';
+
+        // If we get a generic server error (500), show the validation checks
+        if (errorStr.includes('internal server error') || errorStr.includes('error')) {
+          const header = t('pleaseCheck') || 'សូមពិនិត្យ';
+          const nameError = `- ${t('classNameDuplicate') || 'ឈ្មោះថ្នាក់មិនគួរស្ថិតក្នុងលក្ខណៈដូច្នេះទេ'}`;
+          const teacherError = `- ${t('classTeacherRequired') || 'ថ្នាក់ត្រូវតែមានគ្រូបង្រៀន'}`;
+          displayMessage = header + '\n' + nameError + '\n' + teacherError;
+        } else if (errorStr.includes('duplicate') || errorStr.includes('already exists') || errorStr.includes('name')) {
+          const header = t('pleaseCheck') || 'សូមពិនិត្យ';
+          displayMessage = header + '\n- ' + (t('classNameDuplicate') || 'ឈ្មោះថ្នាក់មិនគួរស្ថិតក្នុងលក្ខណៈដូច្នេះទេ');
+        } else if (errorStr.includes('teacher') || errorStr.includes('invalid teacher')) {
+          displayMessage = '- ' + (t('classTeacherRequired') || 'ថ្នាក់ត្រូវតែមានគ្រូបង្រៀន');
+        }
+      }
+
+      showError(displayMessage);
     } finally {
       setLoading(false);
     }

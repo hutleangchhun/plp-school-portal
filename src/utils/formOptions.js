@@ -81,7 +81,7 @@ export const accessibilityOptions = [
 
 // Grade Level options (with translation keys for i18n)
 export const gradeLevelOptions = [
-  { value: '0', label: 'ថ្នាក់មត្តេយ្យ', translationKey: 'kindergarten' },
+  { value: '0', label: 'មត្តេយ្យ', translationKey: 'grade0' },
   { value: '1', label: 'ថ្នាក់ទី1', translationKey: 'grade1' },
   { value: '2', label: 'ថ្នាក់ទី2', translationKey: 'grade2' },
   { value: '3', label: 'ថ្នាក់ទី3', translationKey: 'grade3' },

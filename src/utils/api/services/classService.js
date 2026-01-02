@@ -142,6 +142,16 @@ export const classService = {
       const response = await handleApiResponse(() =>
         apiClient_.post(ENDPOINTS.CLASSES.BASE, classData)
       );
+
+      // Check if response indicates failure
+      if (!response.success) {
+        const errorMessage = response.error || 'Failed to create class';
+        const error = new Error(errorMessage);
+        error.status = response.status;
+        error.errors = response.errors || {}; // Pass detailed error information
+        throw error;
+      }
+
       return {
         success: true,
         data: classService.utils.formatClassData(response.data)
@@ -163,6 +173,16 @@ export const classService = {
       const response = await handleApiResponse(() =>
         apiClient_.patch(`${ENDPOINTS.CLASSES.BASE}/${classId}`, classData)
       );
+
+      // Check if response indicates failure
+      if (!response.success) {
+        const errorMessage = response.error || 'Failed to update class';
+        const error = new Error(errorMessage);
+        error.status = response.status;
+        error.errors = response.errors || {}; // Pass detailed error information
+        throw error;
+      }
+
       return {
         success: true,
         data: classService.utils.formatClassData(response.data)

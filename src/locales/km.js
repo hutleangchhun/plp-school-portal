@@ -1300,6 +1300,9 @@ export const km = {
   enterClassName: 'បញ្ចូលឈ្មោះថ្នាក់រៀន',
   selectAcademicYear: 'ជ្រើសរើសឆ្នាំសិក្សា',
   maxStudents: 'ចំនួនសិស្សក្នុងថ្នាក់',
+  classNameDuplicate: 'ឈ្មោះថ្នាក់មិនអាចដូចគ្នាបានទេ',
+  classTeacherRequired: 'ថ្នាក់ត្រូវតែមានគ្រូបង្រៀន',
+  pleaseCheck: 'សូមពិនិត្យ',
 
   // ProfileUpdate specific translations
   selectDate: 'ជ្រើសរើសកាលបរិច្ឆេទ',

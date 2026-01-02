@@ -9,6 +9,7 @@ import Dropdown from '../ui/Dropdown';
 import classService from '../../utils/api/services/classService';
 import { formatClassIdentifier } from '../../utils/helpers';
 import { getFullName } from '../../utils/usernameUtils';
+import { gradeLevelOptions } from '../../utils/formOptions';
 
 const StudentActionsModal = ({
   isOpen,
@@ -82,22 +83,20 @@ const StudentActionsModal = ({
   }, [isOpen, classes]);
 
   // Get unique grade levels from all available classes
-  const getGradeLevelOptions = () => {
+  const getGradeLevelOptionsFiltered = () => {
     const uniqueLevels = new Set();
     classes.forEach(cls => {
       if (cls.gradeLevel) {
-        uniqueLevels.add(cls.gradeLevel);
+        uniqueLevels.add(String(cls.gradeLevel));
       }
     });
 
+    // Filter gradeLevelOptions to only include levels present in available classes
+    const availableOptions = gradeLevelOptions.filter(opt => uniqueLevels.has(opt.value));
+
     return [
       { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
-      ...Array.from(uniqueLevels)
-        .sort((a, b) => Number(a) - Number(b))
-        .map(level => ({
-          value: level,
-          label: t(`Grade ${level}`, `Grade ${level}`)
-        }))
+      ...availableOptions
     ];
   };
 
@@ -221,7 +220,7 @@ const StudentActionsModal = ({
               <Dropdown
                 value={selectedGradeLevel}
                 onValueChange={setSelectedGradeLevel}
-                options={getGradeLevelOptions()}
+                options={getGradeLevelOptionsFiltered()}
                 placeholder={t('chooseGradeLevel', 'Choose grade level...')}
                 minWidth="w-full"
                 disabled={loadingClasses}
@@ -238,7 +237,7 @@ const StudentActionsModal = ({
                 onValueChange={setTargetClassId}
                 options={filteredClasses.map(cls => ({
                   value: cls.classId.toString(),
-                  label: `${t('class') || 'Class'} ${formatClassIdentifier(cls.gradeLevel, cls.section)} - ${cls.academicYear}`
+                  label: `${formatClassIdentifier(cls.gradeLevel, cls.section, t)} - ${cls.academicYear}`
                 }))}
                 placeholder={loadingClasses ? (t('loadingClasses') || 'Loading classes...') : (filteredClasses.length === 0 ? t('noClassesAvailable', 'No classes available') : t('selectTargetClass', 'Select Target Class'))}
                 minWidth="w-full"
@@ -260,9 +259,9 @@ const StudentActionsModal = ({
                       {studentsArray.length} {studentsArray.length === 1 ? t('student', 'student') : t('students', 'students')} {' '}
                       {t('willBeTransferredTo', 'will be transferred to')}{' '}
                       <span className="font-semibold">
-                        {t('class') || 'Class'} {(() => {
+                        {(() => {
                           const targetClass = classes.find(c => c.classId.toString() === targetClassId);
-                          return formatClassIdentifier(targetClass?.gradeLevel, targetClass?.section);
+                          return formatClassIdentifier(targetClass?.gradeLevel, targetClass?.section, t);
                         })()}
                       </span>
                     </p>

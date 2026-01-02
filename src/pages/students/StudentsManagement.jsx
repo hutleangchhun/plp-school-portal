@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, MinusCircle, Edit2, Users, Download, X, ArrowRightLeft, Eye, Filter } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, Users, X, ArrowRightLeft, Eye, Filter } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -14,7 +14,6 @@ import { useStableCallback, useRenderTracker } from '../../utils/reactOptimizati
 import useSelectedStudents from '../../hooks/useSelectedStudents';
 import { Badge } from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
-import { exportStudentsToExcel } from '../../utils/studentExportUtils';
 import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
 import { encryptId } from '../../utils/encryption';
 import { getFullName } from '../../utils/usernameUtils';
@@ -106,7 +105,6 @@ export default function StudentsManagement() {
 
   // State for current user's school ID (fetched from my-account endpoint)
   const [schoolId, setSchoolId] = useState(null);
-  const [schoolName, setSchoolName] = useState('');
 
   // State for students list and pagination
   const [students, setStudents] = useState([]);
@@ -155,7 +153,6 @@ export default function StudentsManagement() {
     clearAll,
     isSelected
   } = useSelectedStudents();
-  const [selectingAll, setSelectingAll] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [dataFetched, setDataFetched] = useState(false);
   const [paginationLoading, setPaginationLoading] = useState(false);
@@ -287,7 +284,6 @@ export default function StudentsManagement() {
       if (accountData && accountData.school_id) {
         console.log('✅ School ID fetched from account:', accountData.school_id);
         setSchoolId(accountData.school_id);
-        setSchoolName(accountData.school?.name || '');
         return accountData.school_id;
       } else {
         console.error('No school_id found in account data:', accountData);
@@ -1378,29 +1374,8 @@ export default function StudentsManagement() {
   };
 
 
-  // Export handlers - Export in BulkStudentImport template format
-  const handleExportExcel = async () => {
-    const selectedClass = selectedClassId !== 'all'
-      ? classes.find(c => c.classId.toString() === selectedClassId)
-      : null;
-
-    await exportStudentsToExcel(students, {
-      selectedClass,
-      schoolName,
-      onSuccess: () => {
-        showSuccess(t('exportSuccess', 'Data exported successfully'));
-        setShowExportDropdown(false);
-      },
-      onError: () => {
-        showError(t('exportError', 'Failed to export data'));
-      }
-    });
-  };
-
   // Handle select all students on current page only
   const handleSelectAllCurrentPage = async () => {
-    if (selectingAll) return;
-
     // If all current page students are already selected, deselect all current page
     if (selectedStudents.length === students.length && students.length > 0) {
       // Only deselect students from current page
@@ -1413,8 +1388,6 @@ export default function StudentsManagement() {
 
     // Otherwise, select all students on current page
     try {
-      setSelectingAll(true);
-
       // Select students in batches to avoid blocking the UI
       const batchSize = 50;
       let selectedCount = 0;
@@ -1445,86 +1418,6 @@ export default function StudentsManagement() {
     } catch (error) {
       console.error('Error selecting all students:', error);
       showError(t('errorSelectingAllStudents', 'Failed to select all students'));
-    } finally {
-      setSelectingAll(false);
-    }
-  };
-
-  // Handle select all filtered students (all pages) - for toolbar button
-  const handleSelectAllFiltered = async () => {
-    if (selectingAll) return;
-
-    // If all students are already selected, deselect all
-    if (selectedStudents.length === pagination.total && pagination.total > 0) {
-      clearAll(); // Deselect all
-      showSuccess(t('deselectedAllStudents', 'All students deselected'));
-      return;
-    }
-
-    // Otherwise, fetch and select all filtered students with loading animation
-    try {
-      setSelectingAll(true);
-
-      // Build request params with current filters (same as fetchStudents)
-      const requestParams = {
-        page: 1,
-        limit: pagination.total || 1000 // Fetch all results
-      };
-
-      // Add search parameter if provided
-      if (searchTerm && searchTerm.trim()) {
-        requestParams.search = searchTerm.trim();
-      }
-
-      // Add class filter if selected (server-side filtering)
-      if (selectedClassId && selectedClassId !== 'all') {
-        requestParams.classId = selectedClassId;
-      }
-
-      console.log('Fetching all filtered students with params:', requestParams);
-
-      // Fetch all students with current filters
-      const response = await studentService.getStudentsBySchoolClasses(schoolId, requestParams);
-
-      if (!response || !response.success) {
-        throw new Error(response?.error || 'Failed to fetch all students');
-      }
-
-      let allFilteredStudents = response.data || [];
-      console.log(`Fetched ${allFilteredStudents.length} total filtered students`);
-
-      // Select all fetched students in batches to avoid blocking the UI
-      const batchSize = 50;
-      let selectedCount = 0;
-
-      for (let i = 0; i < allFilteredStudents.length; i += batchSize) {
-        const batch = allFilteredStudents.slice(i, i + batchSize);
-
-        // Use setTimeout to yield control to the UI between batches
-        await new Promise(resolve => {
-          setTimeout(() => {
-            batch.forEach(student => {
-              if (!isSelected(student.id)) {
-                handleSelectStudent(student);
-                selectedCount++;
-              }
-            });
-            resolve();
-          }, 0);
-        });
-      }
-
-      if (selectedCount > 0) {
-        showSuccess(
-          t('selectedAllStudents') ||
-          `Selected ${selectedCount} student${selectedCount !== 1 ? 's' : ''}`
-        );
-      }
-    } catch (error) {
-      console.error('Error selecting all students:', error);
-      showError(t('errorSelectingAllStudents', 'Failed to select all students'));
-    } finally {
-      setSelectingAll(false);
     }
   };
 
@@ -1533,20 +1426,13 @@ export default function StudentsManagement() {
     {
       key: 'select',
       header: (
-        <div className="flex items-center">
-          {selectingAll ? (
-            <DynamicLoader type="spinner" size="sm" variant="primary" />
-          ) : (
-            <input
-              type="checkbox"
-              checked={selectedStudents.length === students.length && students.length > 0}
-              onChange={handleSelectAllCurrentPage}
-              disabled={selectingAll}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              title={t('selectAllOnPage', 'Select all on this page')}
-            />
-          )}
-        </div>
+        <input
+          type="checkbox"
+          checked={selectedStudents.length === students.length && students.length > 0}
+          onChange={handleSelectAllCurrentPage}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          title={t('selectAllOnPage', 'Select all on this page')}
+        />
       ),
       headerClassName: 'w-12',
       cellClassName: 'w-12',
@@ -1749,6 +1635,16 @@ export default function StudentsManagement() {
               </div>
             </div>
           </div>
+          {/* Add Student Button in Header */}
+          <Button
+            onClick={handleAddStudentClick}
+            size="sm"
+            variant="success"
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>{t('addStudent', 'Add Student')}</span>
+          </Button>
         </div>
         {/* Search Bar and Filter Controls */}
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center mb-4">
@@ -1777,18 +1673,6 @@ export default function StudentsManagement() {
 
           {/* Buttons Group */}
           <div className="flex gap-2 items-stretch sm:items-center">
-            {/* Add Student Button */}
-            <Button
-              onClick={() => {
-                handleAddStudentClick();
-                setShowMobileFilters(false);
-              }}
-              size="sm"
-              variant="success"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              <span className="flex-1 text-left">{t('addStudent', 'Add Student')}</span>
-            </Button>
             {/* Filter Button - Responsive (works on all screen sizes) */}
             <Button
               onClick={() => setShowMobileFilters(true)}
@@ -1808,36 +1692,6 @@ export default function StudentsManagement() {
             </Button>
           </div>
           <div className='flex gap-2 items-center justify-end'>
-
-            {/* Select All / Deselect All Button - Outside Sidebar (Selects all filtered students across all pages) */}
-            {students.length > 0 && (
-              <Button
-                onClick={handleSelectAllFiltered}
-                variant={selectedStudents.length > 0 ? "danger" : "primary"}
-                size="sm"
-                disabled={selectingAll}
-                className=" flex items-center justify-center sm:justify-start gap-2"
-                title={selectedStudents.length > 0 ? t('deselectAllFiltered', 'Deselect all filtered students') : t('selectAllFiltered', 'Select all filtered students')}
-              >
-                {selectingAll ? (
-                  <DynamicLoader
-                    type="spinner"
-                    size="sm"
-                    variant={selectedStudents.length > 0 ? "white" : "primary"}
-                  />
-                ) : selectedStudents.length > 0 ? (
-                  <>
-                    <X className="h-4 w-4" />
-                    <span>{t('deselectAll', 'Deselect All')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Users className="h-4 w-4" />
-                    <span>{t('selectAll', 'Select All')}</span>
-                  </>
-                )}
-              </Button>
-            )}
 
             {/* Student Actions Floating Button - Show when students are selected */}
             {selectedStudents.length > 0 && (
@@ -1949,23 +1803,7 @@ export default function StudentsManagement() {
               </div>
             </>
           }
-          actionsContent={
-            <>
-              {/* Export Button */}
-              {students.length > 0 && (
-                <button
-                  onClick={() => {
-                    handleExportExcel();
-                    setShowMobileFilters(false);
-                  }}
-                  className="w-full bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-medium py-2.5 px-3 rounded-lg flex items-center gap-2.5 transition-colors text-sm"
-                >
-                  <Download className="h-4 w-4 text-purple-500" />
-                  <span className="flex-1 text-left">{t('exportToExcel', 'Export to Excel')}</span>
-                </button>
-              )}
-            </>
-          }
+          actionsContent={null}
         />
 
         {/* Students table - Show on all screen sizes */}

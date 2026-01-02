@@ -1,6 +1,6 @@
 // Grade level constants for consistent use across the application
 export const GRADE_LEVELS = [
-  { value: '0', label: 'Kindergarten', khmer: 'ថ្នាក់មត្តេយ្យ' },
+  { value: '0', label: 'Kindergarten', khmer: 'មត្តេយ្យ' },
   { value: '1', label: 'Grade 1', khmer: 'ថ្នាក់ទី1' },
   { value: '2', label: 'Grade 2', khmer: 'ថ្នាក់ទី2' },
   { value: '3', label: 'Grade 3', khmer: 'ថ្នាក់ទី3' },
@@ -19,7 +19,7 @@ export const GRADE_LEVELS = [
 export const getGradeLevels = (t) => {
   return GRADE_LEVELS.map(grade => ({
     ...grade,
-    translatedLabel: t(`grade${grade.value}`) || grade.label
+    translatedLabel: t(`grade${grade.value}`) || grade.khmer || grade.label
   }));
 };
 

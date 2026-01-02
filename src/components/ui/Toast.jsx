@@ -77,7 +77,7 @@ export default function ToastComponent({
           <IconComponent className={`h-4 w-4 sm:h-5 sm:w-5 ${config.iconColor}`} />
         </div>
         <div className="ml-2 sm:ml-3 w-0 flex-1 pr-1 sm:pr-2">
-          <Toast.Title className="text-xs sm:text-sm font-medium break-words leading-tight">
+          <Toast.Title className="text-xs sm:text-sm font-medium break-words leading-relaxed whitespace-pre-wrap">
             {message}
           </Toast.Title>
         </div>

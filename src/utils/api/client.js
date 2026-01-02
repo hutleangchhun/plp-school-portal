@@ -370,7 +370,8 @@ export const handleApiResponse = async (apiCall) => {
     return {
       success: false,
       error: error.message || 'An error occurred',
-      status: error.status
+      status: error.status,
+      errors: error.errors // Pass through detailed validation errors
     };
   }
 };
