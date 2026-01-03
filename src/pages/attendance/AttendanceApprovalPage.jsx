@@ -28,19 +28,20 @@ export default function AttendanceApprovalPage({ user }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [pageLimit, setPageLimit] = useState(10);
 
   // Get schoolId from user object
   const schoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId || null;
 
   // Fetch pending approvals
-  const fetchPendingApprovals = useCallback(async (page = 1) => {
+  const fetchPendingApprovals = useCallback(async (page = 1, limit = pageLimit) => {
     try {
       setLoading(true);
       clearError();
 
       const response = await attendanceService.getPendingApprovals({
         page,
-        limit: 10,
+        limit,
         schoolId
       });
 
@@ -56,7 +57,7 @@ export default function AttendanceApprovalPage({ user }) {
     } finally {
       setLoading(false);
     }
-  }, [schoolId, clearError, handleError]);
+  }, [schoolId, pageLimit, clearError, handleError]);
 
   // Initial fetch
   useEffect(() => {
@@ -225,9 +226,15 @@ export default function AttendanceApprovalPage({ user }) {
               page: currentPage,
               pages: totalPages,
               total: totalRecords,
-              limit: 10
+              limit: pageLimit
             }}
-            onPageChange={fetchPendingApprovals}
+            onPageChange={(page) => fetchPendingApprovals(page, pageLimit)}
+            onLimitChange={(limit) => {
+              setPageLimit(limit);
+              fetchPendingApprovals(1, limit);
+            }}
+            limitOptions={[10, 20, 50, 100]}
+            showLimitSelector={true}
             t={t}
           />
         </div>

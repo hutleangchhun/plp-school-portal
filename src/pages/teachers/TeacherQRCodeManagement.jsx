@@ -33,12 +33,13 @@ export default function TeacherQRCodeManagement({ user }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [viewMode, setViewMode] = useState('grid');
-  const itemsPerPage = 8;
 
   const cardRefsRef = useRef({});
   const [schoolName, setSchoolName] = useState(null);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [pageLimit, setPageLimit] = useState(8);
+  const [isLoadingAllStudents, setIsLoadingAllStudents] = useState(false);
 
   // Load teacher's classes on mount
   useEffect(() => {
@@ -121,7 +122,7 @@ export default function TeacherQRCodeManagement({ user }) {
 
         // Fetch students for selected class
         const response = await studentService.getStudentsBySchoolClasses(schoolId, {
-          limit: itemsPerPage,
+          limit: pageLimit,
           page: currentPage,
           classId: parseInt(selectedClassId)
         });
@@ -207,7 +208,7 @@ export default function TeacherQRCodeManagement({ user }) {
     return () => {
       mounted = false;
     };
-  }, [selectedClassId, currentPage, loading, showError, t]);
+  }, [selectedClassId, currentPage, loading, showError, t, pageLimit]);
 
   // Download entire card as image
   const downloadQRCode = async (qrCode, _cardRef, cardType = 'student') => {
@@ -278,6 +279,90 @@ export default function TeacherQRCodeManagement({ user }) {
     };
   });
 
+  // Fetch ALL students from the selected class (for export)
+  const fetchAllStudentsForExport = async () => {
+    try {
+      setIsLoadingAllStudents(true);
+      const accountData = await userService.getMyAccount();
+      const schoolId = accountData?.school_id;
+
+      if (!schoolId) {
+        showError(t('failedToFetchSchoolId', 'Failed to get school information'));
+        return [];
+      }
+
+      let allStudents = [];
+      let page = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await studentService.getStudentsBySchoolClasses(schoolId, {
+          limit: 100, // Fetch 100 at a time for efficiency
+          page: page,
+          classId: parseInt(selectedClassId)
+        });
+
+        if (!response.success || !response.data || response.data.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        // Enrich each student with QR code data
+        for (const student of response.data) {
+          try {
+            const userId = student.userId || student.user?.id || student.id;
+            if (!userId) continue;
+
+            const userResponse = await userService.getUserByID(userId);
+            const userData = userResponse?.data || userResponse;
+
+            if (userData) {
+              allStudents.push({
+                userId: userId,
+                name: userData.first_name && userData.last_name
+                  ? `${userData.first_name} ${userData.last_name}`
+                  : userData.username,
+                username: userData.username,
+                qrCode: userData.qr_code || null,
+                studentNumber: student.studentNumber,
+                email: userData.email,
+                hasQrCode: !!userData.qr_code,
+                schoolName: schoolName,
+                role: t('student', 'Student'),
+                class: {
+                  classId: student.class?.id || student.class?.classId,
+                  name: student.class?.name || null,
+                  gradeLevel: student.class?.gradeLevel,
+                  section: student.class?.section
+                },
+                className: student.class?.name || null
+              });
+            }
+          } catch (err) {
+            console.warn(`Failed to fetch user data for student:`, err);
+          }
+        }
+
+        // Check if there are more pages
+        if (response.pagination && response.pagination.pages) {
+          hasMore = page < response.pagination.pages;
+        } else {
+          hasMore = response.data.length === 100;
+        }
+
+        page++;
+      }
+
+      return allStudents;
+    } catch (error) {
+      console.error('Error fetching all students:', error);
+      showError(t('failedToLoadStudents', 'Failed to load students'));
+      return [];
+    } finally {
+      setIsLoadingAllStudents(false);
+    }
+  };
+
   // Download handlers for new modal
   const handleDownloadCurrentPage = async () => {
     for (const qrCode of studentQrCodes) {
@@ -288,8 +373,14 @@ export default function TeacherQRCodeManagement({ user }) {
   };
 
   const handleDownloadAllQueued = async () => {
+    const allStudents = await fetchAllStudentsForExport();
+    if (allStudents.length === 0) {
+      showError(t('noStudentsToExport', 'No students to export'));
+      return;
+    }
+
     await downloadQRCodesQueued(
-      studentQrCodes,
+      allStudents,
       'student',
       t,
       (current, total) => setDownloadProgress(Math.round((current / total) * 100)),
@@ -299,6 +390,12 @@ export default function TeacherQRCodeManagement({ user }) {
   };
 
   const handleDownloadAllPDF = async () => {
+    const allStudents = await fetchAllStudentsForExport();
+    if (allStudents.length === 0) {
+      showError(t('noStudentsToExport', 'No students to export'));
+      return;
+    }
+
     const selectedClass = classes.find(c => c.id === selectedClassId);
     if (selectedClass) {
       // Convert grade level 0 to Kindergarten display (same as class filter)
@@ -310,9 +407,9 @@ export default function TeacherQRCodeManagement({ user }) {
         : rawGradeLevel;
       const classIdentifier = formatClassIdentifier(displayGradeLevel, selectedClass.section);
       const className = `ថ្នាក់_${classIdentifier}`;
-      await downloadQRCodesAsPDF(studentQrCodes, 'student', t, showSuccess, showError, className);
+      await downloadQRCodesAsPDF(allStudents, 'student', t, showSuccess, showError, className);
     } else {
-      await downloadQRCodesAsPDF(studentQrCodes, 'student', t, showSuccess, showError, 'QR_Codes');
+      await downloadQRCodesAsPDF(allStudents, 'student', t, showSuccess, showError, 'QR_Codes');
     }
   };
 
@@ -348,7 +445,7 @@ export default function TeacherQRCodeManagement({ user }) {
             )}
           </div>
 
-          {/* Class Selector and View Toggle */}
+          {/* Class Selector, Limit Selector and View Toggle */}
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
             {/* Class Dropdown */}
             <div className="flex-1">
@@ -370,6 +467,27 @@ export default function TeacherQRCodeManagement({ user }) {
                   {t('noClassesAssigned', 'No classes assigned')}
                 </div>
               )}
+            </div>
+
+            {/* Limit Selector */}
+            <div className="flex-1 sm:flex-none">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('itemsPerPage', 'Items per page')}
+              </label>
+              <Dropdown
+                value={String(pageLimit)}
+                onValueChange={(value) => {
+                  setPageLimit(parseInt(value));
+                  setCurrentPage(1); // Reset to first page
+                }}
+                options={[
+                  { value: '8', label: '8' },
+                  { value: '12', label: '12' },
+                  { value: '16', label: '16' },
+                  { value: '20', label: '20' }
+                ]}
+                placeholder={t('selectLimit', 'Select limit...')}
+              />
             </div>
 
             {/* View Toggle */}
@@ -423,7 +541,7 @@ export default function TeacherQRCodeManagement({ user }) {
                   currentPage={currentPage}
                   totalPages={totalPages}
                   total={studentQrCodes.length}
-                  limit={itemsPerPage}
+                  limit={pageLimit}
                   onPageChange={setCurrentPage}
                   t={t}
                   className="border-t mt-6"

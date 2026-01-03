@@ -60,6 +60,7 @@ export default function TeacherAttendance() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10); // Default from API
   const [totalPages, setTotalPages] = useState(1); // Total pages from API
+  const [totalTeachers, setTotalTeachers] = useState(0); // Total teachers count from API
   const [exportModal, setExportModal] = useState({
     isOpen: false,
     status: 'processing', // 'processing', 'success', 'error'
@@ -170,7 +171,7 @@ export default function TeacherAttendance() {
   }, [t, _showSuccess, _showError]);
 
   // Fetch teachers and attendance data
-  const fetchTeachersAndAttendance = useCallback(async (_searchQuery = '', pageNum = 1) => {
+  const fetchTeachersAndAttendance = useCallback(async (_searchQuery = '', pageNum = 1, limit = itemsPerPage) => {
     if (fetchingRef.current || !schoolId || !isDirector) {
       console.log('Skipping fetch - already fetching or not director');
       return;
@@ -184,9 +185,9 @@ export default function TeacherAttendance() {
       const loadingKey = 'fetchTeachers';
       startLoading(loadingKey, t('loadingTeachers', 'Loading teachers...'));
 
-      // Fetch teachers with backend pagination (10 per page) and search query
+      // Fetch teachers with backend pagination and search query
       const response = await teacherService.getTeachersBySchool(schoolId, {
-        limit: 10,
+        limit: limit,
         page: pageNum,
         search: _searchQuery.trim() || undefined  // Pass search to API
       });
@@ -197,6 +198,9 @@ export default function TeacherAttendance() {
       }
       if (response.pagination?.pages) {
         setTotalPages(response.pagination.pages);
+      }
+      if (response.pagination?.total) {
+        setTotalTeachers(response.pagination.total);
       }
 
       if (response.data && Array.isArray(response.data)) {
@@ -368,7 +372,7 @@ export default function TeacherAttendance() {
       setInitialLoading(false);
       fetchingRef.current = false;
     }
-  }, [schoolId, isDirector, currentWeekStart, getWeekDates, t, handleError, clearError, startLoading, stopLoading]);
+  }, [schoolId, isDirector, currentWeekStart, getWeekDates, t, handleError, clearError, startLoading, stopLoading, itemsPerPage]);
 
   // With server-side search and pagination, teachers are already filtered by API
   // No need for client-side filtering
@@ -1281,12 +1285,19 @@ export default function TeacherAttendance() {
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
-              total={teachers.length}
+              total={totalTeachers}
               limit={itemsPerPage}
               onPageChange={(pageNum) => {
                 setCurrentPage(pageNum);
-                fetchTeachersAndAttendance(searchTerm, pageNum);
+                fetchTeachersAndAttendance(searchTerm, pageNum, itemsPerPage);
               }}
+              onLimitChange={(limit) => {
+                setItemsPerPage(limit);
+                setCurrentPage(1);
+                fetchTeachersAndAttendance(searchTerm, 1, limit);
+              }}
+              limitOptions={[10, 20, 50, 100]}
+              showLimitSelector={true}
               t={t}
               showFirstLast={true}
               showInfo={true}

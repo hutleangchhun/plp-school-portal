@@ -468,10 +468,10 @@ const TeacherEditModal = () => {
 
       const birth = fullData.placeOfBirth || {};
       setBirthInitialValues({
-        provinceId: birth.provinceId || res.provinceId || fullData.province_id || '',
-        districtId: birth.districtId || res.districtId || fullData.district_id || '',
-        communeId: birth.communeId || res.communeId || fullData.commune_id || '',
-        villageId: birth.villageId || res.villageId || fullData.village_id || ''
+        provinceId: birth.provinceId || '',
+        districtId: birth.districtId || '',
+        communeId: birth.communeId || '',
+        villageId: birth.villageId || ''
       });
     } catch (error) {
       console.error('Error initializing form data:', error);

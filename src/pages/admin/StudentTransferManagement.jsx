@@ -667,6 +667,20 @@ const StudentTransferManagement = () => {
     setSelectedStudentsMap(newSelectedMap);
   };
 
+  const handleSelectAllStudents = () => {
+    if (selectedStudentIds.size === students.length && students.length > 0) {
+      // Deselect all
+      setSelectedStudentIds(new Set());
+      setSelectedStudentsMap(new Map());
+    } else {
+      // Select all
+      const newSelectedIds = new Set(students.map(s => s.id));
+      const newSelectedMap = new Map(students.map(s => [s.id, s]));
+      setSelectedStudentIds(newSelectedIds);
+      setSelectedStudentsMap(newSelectedMap);
+    }
+  };
+
   const handleResetPassword = (student) => {
     setSelectedStudentForReset(student);
     setShowResetPasswordModal(true);
@@ -1005,11 +1019,14 @@ const StudentTransferManagement = () => {
 
       if (success > 0) {
         const message = failed === 0
-          ? t('studentsDeletedSuccess', `${success} student(s) deleted successfully`)
-          : t('partialDeleteSuccess', `${success} deleted, ${failed} failed`);
-        alert(message);
+          ? t('operationSuccessful', `${success} student(s) deleted successfully`)
+          : t('operationFailed', `${success} deleted, ${failed} failed`);
 
+        showSuccess(message);
         closeTransferModal();
+
+        // Refetch students with current filters to refresh data while preserving filters
+        fetchStudentsForSchool(selectedSourceSchool, studentPagination.page, searchQuery);
       }
 
       if (failed > 0) {
@@ -1126,6 +1143,20 @@ const StudentTransferManagement = () => {
                   </div>
                   {students.length > 0 && (
                     <div className="flex items-center space-x-2">
+                      {/* Select All Button */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSelectAllStudents}
+                        disabled={fetchingStudents}
+                        className="whitespace-nowrap"
+                      >
+                        {selectedStudentIds.size === students.length && students.length > 0
+                          ? t('deselectAll', 'Deselect All')
+                          : t('selectAll', 'Select All')}
+                      </Button>
+
                       {/* Export Button - Always show when students exist */}
                       <Button
                         type="button"
