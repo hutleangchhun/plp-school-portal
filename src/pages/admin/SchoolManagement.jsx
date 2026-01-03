@@ -317,8 +317,14 @@ const SchoolManagement = () => {
             schoolService.utils.formatSchoolData(school)
           );
           setSchools(formattedSchools);
-          setTotalSchools(formattedSchools.length);
-          setTotalPages(Math.ceil(formattedSchools.length / pageLimit));
+          // Use API's pagination metadata if available, otherwise calculate client-side
+          if (data.total !== undefined) {
+            setTotalSchools(data.total);
+            setTotalPages(data.totalPages || Math.ceil(data.total / pageLimit));
+          } else {
+            setTotalSchools(formattedSchools.length);
+            setTotalPages(Math.ceil(formattedSchools.length / pageLimit));
+          }
           setCurrentPage(1);
           setShowSchools(true);
         } else {
@@ -392,8 +398,14 @@ const SchoolManagement = () => {
             schoolService.utils.formatSchoolData(school)
           );
           setSchools(formattedSchools);
-          setTotalSchools(formattedSchools.length);
-          setTotalPages(Math.ceil(formattedSchools.length / pageLimit));
+          // Use API's pagination metadata if available, otherwise calculate client-side
+          if (data.total !== undefined) {
+            setTotalSchools(data.total);
+            setTotalPages(data.totalPages || Math.ceil(data.total / pageLimit));
+          } else {
+            setTotalSchools(formattedSchools.length);
+            setTotalPages(Math.ceil(formattedSchools.length / pageLimit));
+          }
           setShowSchools(true);
         } else {
           setSchools([]);
@@ -525,8 +537,14 @@ const SchoolManagement = () => {
               schoolService.utils.formatSchoolData(school)
             );
             setSchools(formattedSchools);
-            setTotalSchools(formattedSchools.length);
-            setTotalPages(Math.ceil(formattedSchools.length / pageLimit));
+            // Use API's pagination metadata if available, otherwise calculate client-side
+            if (data.total !== undefined) {
+              setTotalSchools(data.total);
+              setTotalPages(data.totalPages || Math.ceil(data.total / pageLimit));
+            } else {
+              setTotalSchools(formattedSchools.length);
+              setTotalPages(Math.ceil(formattedSchools.length / pageLimit));
+            }
             setShowSchools(true);
             return;
           }
@@ -570,48 +588,93 @@ const SchoolManagement = () => {
     }
   };
 
-  // Filter schools by search query only (API already handles location filtering)
-  const filteredSchools = useMemo(() => {
-    let result = schools;
-
-    // Filter by search query only
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      result = result.filter(school => {
-        const name = (school.name || '').toLowerCase();
-        const code = (school.code || '').toLowerCase();
-        return name.includes(query) || code.includes(query);
-      });
-    }
-
-    return result;
-  }, [schools, searchQuery]);
-
-  // Paginate filtered schools
+  // Schools are already paginated by the API, no need for client-side filtering/pagination
   const paginatedSchools = useMemo(() => {
-    const start = (currentPage - 1) * pageLimit;
-    const end = start + pageLimit;
-    return filteredSchools.slice(start, end);
-  }, [filteredSchools, currentPage, pageLimit]);
-
-  // Update total pages when filtered schools change
-  useEffect(() => {
-    const totalFilteredPages = Math.ceil(filteredSchools.length / pageLimit);
-    setTotalPages(totalFilteredPages);
-    // Reset to page 1 if current page exceeds new total pages
-    if (currentPage > totalFilteredPages && totalFilteredPages > 0) {
-      setCurrentPage(1);
-    }
-  }, [filteredSchools.length, pageLimit]);
+    // API handles pagination, so just return the schools as-is
+    return schools;
+  }, [schools]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
+    // Fetch data for the new page
+    const offset = (page - 1) * pageLimit;
+    reloadCurrentPageData(offset);
   };
 
   const handleLimitChange = (limit) => {
     setPageLimit(limit);
     setCurrentPage(1);
-    setTotalPages(Math.ceil(schools.length / limit));
+    // Reload data with new limit
+    reloadCurrentPageData(0, limit);
+  };
+
+  // Helper function to reload data for current filters with new pagination
+  const reloadCurrentPageData = async (offset, newLimit = pageLimit) => {
+    try {
+      setSchoolsLoading(true);
+      clearError();
+
+      const params = new URLSearchParams();
+
+      // Add current filters
+      if (selectedProvince && selectedDistrict) {
+        const districtObj = districts.find(d => d.district_code === selectedDistrict);
+        if (districtObj) {
+          const districtId = districtObj.district_id || districtObj.id || districtObj.districtId;
+          if (selectedProvince) params.append('provinceId', selectedProvince);
+          params.append('districtId', districtId);
+          if (selectedCommune) params.append('communeCode', selectedCommune);
+        }
+      } else if (selectedProvince) {
+        params.append('provinceId', selectedProvince);
+      }
+
+      // Add search filter if present
+      if (searchQuery.trim()) {
+        params.append('search', searchQuery.trim());
+      }
+
+      // Add pagination
+      params.append('limit', newLimit);
+      params.append('offset', offset);
+
+      const queryString = params.toString();
+      const endpoint = queryString
+        ? `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/schools?${queryString}`
+        : `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/schools?limit=${newLimit}&offset=${offset}`;
+
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data && data.data && Array.isArray(data.data)) {
+        const formattedSchools = data.data.map(school =>
+          schoolService.utils.formatSchoolData(school)
+        );
+        setSchools(formattedSchools);
+
+        // Update pagination from API response
+        if (data.total !== undefined) {
+          setTotalSchools(data.total);
+          setTotalPages(data.totalPages || Math.ceil(data.total / newLimit));
+        }
+      }
+    } catch (error) {
+      console.error('Error reloading page data:', error);
+      handleError(error, {
+        toastMessage: t('failedToLoadPage', 'Failed to load page data')
+      });
+    } finally {
+      setSchoolsLoading(false);
+    }
   };
 
   // CRUD Handlers
@@ -1182,7 +1245,7 @@ const SchoolManagement = () => {
                 page: currentPage,
                 pages: totalPages,
                 limit: pageLimit,
-                total: searchQuery ? filteredSchools.length : totalSchools
+                total: totalSchools
               }}
               onPageChange={handlePageChange}
               onLimitChange={handleLimitChange}
