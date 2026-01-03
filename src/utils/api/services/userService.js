@@ -642,6 +642,19 @@ const userService = {
    */
   deleteUser: async (userId) => {
     return del(ENDPOINTS.USERS.UPDATE_USER(userId));
+  },
+
+  /**
+   * Bulk delete users by their IDs
+   * @param {Array<number>} userIds - Array of user IDs to delete
+   * @returns {Promise<Object>} Response with success count, failed count, and detailed results
+   */
+  bulkDelete: async (userIds) => {
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      throw new Error('User IDs array is required and must not be empty');
+    }
+
+    return del(ENDPOINTS.USERS.BULK_DELETE, { user_ids: userIds });
   }
 };
 

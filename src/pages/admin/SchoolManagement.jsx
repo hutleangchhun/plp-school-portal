@@ -288,6 +288,8 @@ const SchoolManagement = () => {
       if (communeCode) {
         params.append('communeCode', communeCode);
       }
+      params.append('limit', pageLimit);
+      params.append('offset', 0);
 
       // Call API with combined parameters
       const queryString = params.toString();
@@ -361,6 +363,8 @@ const SchoolManagement = () => {
       // Build query parameters
       const params = new URLSearchParams();
       params.append('provinceId', provinceId);
+      params.append('limit', pageLimit);
+      params.append('offset', 0);
 
       // Call API with provinceId parameter
       const queryString = params.toString();
@@ -496,6 +500,8 @@ const SchoolManagement = () => {
       if (searchQuery.trim()) {
         params.append('search', searchQuery.trim());
       }
+      params.append('limit', pageLimit);
+      params.append('offset', 0);
 
       // Try API call with search parameter first
       const queryString = params.toString();

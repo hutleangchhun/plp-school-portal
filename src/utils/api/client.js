@@ -243,13 +243,21 @@ export const patch = async (url, data = {}, params = {}, headers = {}) => {
 /**
  * Make a DELETE request
  * @param {string} url - The URL to make the request to
- * @param {Object} params - Query parameters
+ * @param {Object} data - Request body data or query parameters
  * @param {Object} headers - Custom headers
  * @returns {Promise<Object>} The response data
  */
-export const del = async (url, params = {}, headers = {}) => {
+export const del = async (url, data = {}, headers = {}) => {
   try {
-    const response = await apiClient.delete(url, { params, headers });
+    const config = { headers };
+
+    // If data is provided, send it as request body
+    // Otherwise, treat it as query parameters for backwards compatibility
+    if (data && Object.keys(data).length > 0) {
+      config.data = data;
+    }
+
+    const response = await apiClient.delete(url, config);
     return response;
   } catch (error) {
     throw error;

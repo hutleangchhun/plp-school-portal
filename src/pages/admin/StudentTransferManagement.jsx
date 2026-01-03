@@ -19,7 +19,7 @@ import StudentContextMenu from '../../components/admin/StudentContextMenu';
 import ResetPasswordModal from '../../components/admin/ResetPasswordModal';
 import ExportProgressModal from '../../components/modals/ExportProgressModal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import { api } from '../../utils/api';
+import { userService } from '../../utils/api/services/userService';
 import { getFullName } from '../../utils/usernameUtils';
 import { formatClassIdentifier } from '../../utils/helpers';
 import locationService from '../../utils/api/services/locationService';
@@ -67,6 +67,7 @@ const StudentTransferManagement = () => {
   const [sourceLoading, setSourceLoading] = useState(false);
 
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferModalTab, setTransferModalTab] = useState('transfer'); // 'transfer' or 'bulkDelete'
   const [targetProvinces, setTargetProvinces] = useState([]);
   const [targetDistricts, setTargetDistricts] = useState([]);
   const [targetSchools, setTargetSchools] = useState([]);
@@ -77,6 +78,7 @@ const StudentTransferManagement = () => {
   const [selectedTargetMasterClassLabel, setSelectedTargetMasterClassLabel] = useState('');
   const [targetLoading, setTargetLoading] = useState(false);
   const [creatingMasterClass, setCreatingMasterClass] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // Export progress modal state
   const [showExportProgress, setShowExportProgress] = useState(false);
@@ -524,6 +526,7 @@ const StudentTransferManagement = () => {
 
   const closeTransferModal = () => {
     setShowTransferModal(false);
+    setTransferModalTab('transfer');
     setSelectedTargetProvince('');
     setSelectedTargetDistrict('');
     setSelectedTargetSchool('');
@@ -959,6 +962,69 @@ const StudentTransferManagement = () => {
     }
   };
 
+  const handleBulkDeleteStudents = async () => {
+    if (selectedStudentIds.size === 0) {
+      handleError(new Error('Please select at least one student to delete'));
+      return;
+    }
+
+    try {
+      setBulkDeleting(true);
+      clearError();
+      startLoading('bulkDelete', t('deletingStudents', 'Deleting students...'));
+
+      const userIds = Array.from(selectedStudentIds).map(id => {
+        const student = selectedStudentsMap.get(id) || students.find(s => s.id === id);
+        return student?.userId;
+      }).filter(Boolean);
+
+      const response = await userService.bulkDelete(userIds);
+
+      const { success = 0, failed = 0, results = [] } = response || {};
+
+      // Remove deleted students from the list
+      const deletedUserIds = new Set(results
+        .filter(r => r.status === 'deleted')
+        .map(r => r.userId));
+
+      setStudents(prev => prev.filter(s => !deletedUserIds.has(s.userId)));
+
+      // Remove from selection
+      const newSelectedIds = new Set(selectedStudentIds);
+      const newSelectedMap = new Map(selectedStudentsMap);
+      deletedUserIds.forEach(userId => {
+        const student = Array.from(selectedStudentsMap.values()).find(s => s.userId === userId);
+        if (student) {
+          newSelectedIds.delete(student.id);
+          newSelectedMap.delete(student.id);
+        }
+      });
+
+      setSelectedStudentIds(newSelectedIds);
+      setSelectedStudentsMap(newSelectedMap);
+
+      if (success > 0) {
+        const message = failed === 0
+          ? t('studentsDeletedSuccess', `${success} student(s) deleted successfully`)
+          : t('partialDeleteSuccess', `${success} deleted, ${failed} failed`);
+        alert(message);
+
+        closeTransferModal();
+      }
+
+      if (failed > 0) {
+        handleError(new Error(`${failed} deletion(s) failed`));
+      }
+    } catch (err) {
+      handleError(err, {
+        toastMessage: t('bulkDeleteFailed', 'Failed to delete students'),
+      });
+    } finally {
+      stopLoading('bulkDelete');
+      setBulkDeleting(false);
+    }
+  };
+
   const getProvinceOptions = (provinces) => {
     return provinces.map(province => ({
       value: province.id.toString(),
@@ -1322,60 +1388,224 @@ const StudentTransferManagement = () => {
           <Modal
             isOpen={showTransferModal}
             onClose={closeTransferModal}
-            title={t('selectTargetSchool', 'Select Target School')}
+            title={t('studentActions', 'Student Actions')}
             size="full"
             height="full"
-            closeOnOverlayClick={!transferring}
-            showCloseButton={!transferring}
+            closeOnOverlayClick={!transferring && !bulkDeleting}
+            showCloseButton={!transferring && !bulkDeleting}
             footer={
               <div className="flex items-center justify-end space-x-3 w-full">
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={transferring}
+                  disabled={transferring || bulkDeleting}
                   onClick={closeTransferModal}
                   size="sm"
                 >
                   {t('cancel', 'Cancel')}
                 </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  disabled={
-                    transferring ||
-                    !selectedTargetSchool ||
-                    !selectedTargetMasterClassId ||
-                    selectedSourceSchool === selectedTargetSchool
-                  }
-                  onClick={handleTransferStudent}
-                  size='sm'
-                >
-                  {transferring
-                    ? t('transferring', 'Transferring...')
-                    : t('transfer', 'Transfer')}
-                </Button>
+                {transferModalTab === 'transfer' && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    disabled={
+                      transferring ||
+                      !selectedTargetSchool ||
+                      !selectedTargetMasterClassId ||
+                      selectedSourceSchool === selectedTargetSchool
+                    }
+                    onClick={handleTransferStudent}
+                    size='sm'
+                  >
+                    {transferring
+                      ? t('transferring', 'Transferring...')
+                      : t('transfer', 'Transfer')}
+                  </Button>
+                )}
+                {transferModalTab === 'bulkDelete' && (
+                  <Button
+                    type="button"
+                    variant="danger"
+                    disabled={bulkDeleting || selectedStudentIds.size === 0}
+                    onClick={handleBulkDeleteStudents}
+                    size='sm'
+                  >
+                    {bulkDeleting
+                      ? t('deleting', 'Deleting...')
+                      : t('deleteSelected', 'Delete Selected')}
+                  </Button>
+                )}
               </div>
             }
             stickyFooter={true}
           >
-            <div className="space-y-6">
+            {/* Tab Navigation */}
+            <div className="flex gap-2 mb-6 border-b border-gray-200">
+              <button
+                onClick={() => setTransferModalTab('transfer')}
+                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                  transferModalTab === 'transfer'
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-600 border-transparent hover:text-gray-900'
+                }`}
+              >
+                {t('transfer', 'Transfer')}
+              </button>
+              <button
+                onClick={() => setTransferModalTab('bulkDelete')}
+                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                  transferModalTab === 'bulkDelete'
+                    ? 'text-red-600 border-red-600'
+                    : 'text-gray-600 border-transparent hover:text-gray-900'
+                }`}
+              >
+                {t('bulkDelete', 'Bulk Delete')}
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            {transferModalTab === 'transfer' && (
+              <div className="space-y-6">
+                <div className="space-y-6">
+                  {selectedStudentIds.size > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="inline-block w-1 h-5 bg-blue-600 rounded"></span>
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          {t('selectedStudents', 'Selected Students')} ({selectedStudentIds.size})
+                        </h3>
+                      </div>
+                      <div className="max-h-40 overflow-y-auto border border-dashed border-gray-300 rounded-md bg-white px-3 py-2 space-y-1">
+                        {Array.from(selectedStudentIds).map(id => {
+                          const student = selectedStudentsMap.get(id) || students.find(s => s.id === id);
+                          if (!student) return null;
+                          return (
+                            <div
+                              key={id}
+                              className="flex items-center justify-between text-xs text-gray-700 border-b border-gray-100 last:border-b-0 py-1"
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {getFullName(student)}
+                                </span>
+                                {student.username && (
+                                  <span className="text-gray-500">
+                                    {student.username}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="inline-block w-1 h-5 bg-purple-600 rounded"></span>
+                      <h3 className="text-base font-semibold text-gray-900">
+                        {t('selectSchool', 'Choose Target School')}
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t('province', 'Province')}
+                        </label>
+                        <Dropdown
+                          options={targetProvinceOptions}
+                          value={selectedTargetProvince}
+                          onValueChange={handleTargetProvinceChange}
+                          placeholder={t('selectProvince', 'Select Province')}
+                          className="w-full"
+                          disabled={targetLoading || transferring}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t('district', 'District')}
+                        </label>
+                        <Dropdown
+                          options={targetDistrictOptions}
+                          value={selectedTargetDistrict}
+                          onValueChange={handleTargetDistrictChange}
+                          placeholder={t('selectDistrict', 'Select District')}
+                          className="w-full"
+                          disabled={!selectedTargetProvince || targetLoading || transferring}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t('school', 'School')} <span className="text-red-500">*</span>
+                        </label>
+                        <SearchableDropdown
+                          options={targetSchoolOptions}
+                          value={selectedTargetSchool}
+                          onValueChange={handleTargetSchoolChange}
+                          placeholder={t('selectSchool', 'Select School')}
+                          searchPlaceholder={t('searchSchool', 'Search schools...')}
+                          className="w-full"
+                          disabled={!selectedTargetDistrict || targetLoading || transferring}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedTargetSchool && (
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="inline-block w-1 h-5 bg-green-600 rounded"></span>
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          {t('masterClassInfo', 'Master Class Information')}
+                        </h3>
+                      </div>
+                      <div className="text-sm text-gray-700 bg-gray-50 border border-dashed border-gray-300 rounded-md px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <span>
+                          {selectedTargetMasterClassLabel
+                            ? `${t('masterClassLabel', 'Master class')}: ${selectedTargetMasterClassLabel}`
+                            : t('noMasterClassFound', 'No master class found for this school')}
+                        </span>
+                        {!selectedTargetMasterClassLabel && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCreateMasterClass}
+                            disabled={creatingMasterClass || targetLoading || transferring}
+                          >
+                            {creatingMasterClass
+                              ? t('creatingMasterClass', 'Creating...')
+                              : t('createMasterClass', 'Create master class')}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {transferModalTab === 'bulkDelete' && (
               <div className="space-y-6">
                 {selectedStudentIds.size > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2 mb-1">
-                      <span className="inline-block w-1 h-5 bg-blue-600 rounded"></span>
+                      <span className="inline-block w-1 h-5 bg-red-600 rounded"></span>
                       <h3 className="text-sm font-semibold text-gray-900">
                         {t('selectedStudents', 'Selected Students')} ({selectedStudentIds.size})
                       </h3>
                     </div>
-                    <div className="max-h-40 overflow-y-auto border border-dashed border-gray-300 rounded-md bg-white px-3 py-2 space-y-1">
+                    <div className="max-h-96 overflow-y-auto border border-dashed border-red-300 rounded-md bg-red-50 px-3 py-2 space-y-1">
                       {Array.from(selectedStudentIds).map(id => {
                         const student = selectedStudentsMap.get(id) || students.find(s => s.id === id);
                         if (!student) return null;
                         return (
                           <div
                             key={id}
-                            className="flex items-center justify-between text-xs text-gray-700 border-b border-gray-100 last:border-b-0 py-1"
+                            className="flex items-center justify-between text-xs text-gray-700 border-b border-red-100 last:border-b-0 py-1"
                           >
                             <div className="flex flex-col">
                               <span className="font-medium">
@@ -1394,91 +1624,13 @@ const StudentTransferManagement = () => {
                   </div>
                 )}
 
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="inline-block w-1 h-5 bg-purple-600 rounded"></span>
-                    <h3 className="text-base font-semibold text-gray-900">
-                      {t('selectSchool', 'Choose Target School')}
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('province', 'Province')}
-                      </label>
-                      <Dropdown
-                        options={targetProvinceOptions}
-                        value={selectedTargetProvince}
-                        onValueChange={handleTargetProvinceChange}
-                        placeholder={t('selectProvince', 'Select Province')}
-                        className="w-full"
-                        disabled={targetLoading || transferring}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('district', 'District')}
-                      </label>
-                      <Dropdown
-                        options={targetDistrictOptions}
-                        value={selectedTargetDistrict}
-                        onValueChange={handleTargetDistrictChange}
-                        placeholder={t('selectDistrict', 'Select District')}
-                        className="w-full"
-                        disabled={!selectedTargetProvince || targetLoading || transferring}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('school', 'School')} <span className="text-red-500">*</span>
-                      </label>
-                      <SearchableDropdown
-                        options={targetSchoolOptions}
-                        value={selectedTargetSchool}
-                        onValueChange={handleTargetSchoolChange}
-                        placeholder={t('selectSchool', 'Select School')}
-                        searchPlaceholder={t('searchSchool', 'Search schools...')}
-                        className="w-full"
-                        disabled={!selectedTargetDistrict || targetLoading || transferring}
-                      />
-                    </div>
-                  </div>
+                <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                  <p className="text-sm text-red-800">
+                    <span className="font-semibold">{t('warning', 'Warning')}:</span> {t('bulkDeleteWarning', 'This action will permanently delete the selected students. This cannot be undone.')}
+                  </p>
                 </div>
-
-                {selectedTargetSchool && (
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className="inline-block w-1 h-5 bg-green-600 rounded"></span>
-                      <h3 className="text-sm font-semibold text-gray-900">
-                        {t('masterClassInfo', 'Master Class Information')}
-                      </h3>
-                    </div>
-                    <div className="text-sm text-gray-700 bg-gray-50 border border-dashed border-gray-300 rounded-md px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                      <span>
-                        {selectedTargetMasterClassLabel
-                          ? `${t('masterClassLabel', 'Master class')}: ${selectedTargetMasterClassLabel}`
-                          : t('noMasterClassFound', 'No master class found for this school')}
-                      </span>
-                      {!selectedTargetMasterClassLabel && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleCreateMasterClass}
-                          disabled={creatingMasterClass || targetLoading || transferring}
-                        >
-                          {creatingMasterClass
-                            ? t('creatingMasterClass', 'Creating...')
-                            : t('createMasterClass', 'Create master class')}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
-            </div>
+            )}
           </Modal>
 
       {/* Reset Password Modal */}

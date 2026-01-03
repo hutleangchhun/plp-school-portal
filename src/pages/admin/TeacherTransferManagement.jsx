@@ -72,6 +72,7 @@ const TeacherTransferManagement = () => {
 
   // Modal state for target school selection
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferModalTab, setTransferModalTab] = useState('transfer'); // 'transfer' or 'bulkDelete'
   const [targetProvinces, setTargetProvinces] = useState([]);
   const [targetDistricts, setTargetDistricts] = useState([]);
   const [targetSchools, setTargetSchools] = useState([]);
@@ -79,6 +80,7 @@ const TeacherTransferManagement = () => {
   const [selectedTargetDistrict, setSelectedTargetDistrict] = useState('');
   const [selectedTargetSchool, setSelectedTargetSchool] = useState('');
   const [targetLoading, setTargetLoading] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // Export progress modal state
   const [showExportProgress, setShowExportProgress] = useState(false);
@@ -476,6 +478,7 @@ const TeacherTransferManagement = () => {
 
   const closeTransferModal = () => {
     setShowTransferModal(false);
+    setTransferModalTab('transfer');
     setSelectedTargetProvince('');
     setSelectedTargetDistrict('');
     setSelectedTargetSchool('');
@@ -862,6 +865,69 @@ const TeacherTransferManagement = () => {
     }
   };
 
+  const handleBulkDeleteTeachers = async () => {
+    if (allSelectedTeacherIds.size === 0) {
+      handleError(new Error('Please select at least one teacher to delete'));
+      return;
+    }
+
+    try {
+      setBulkDeleting(true);
+      clearError();
+      startLoading('bulkDelete', t('deletingTeachers', 'Deleting teachers...'));
+
+      const userIds = Array.from(allSelectedTeacherIds).map(id => {
+        const teacher = selectedTeachersMap.get(id) || teachers.find(t => t.id === id);
+        return teacher?.userId;
+      }).filter(Boolean);
+
+      const response = await userService.bulkDelete(userIds);
+
+      const { success = 0, failed = 0, results = [] } = response || {};
+
+      // Remove deleted teachers from the list
+      const deletedUserIds = new Set(results
+        .filter(r => r.status === 'deleted')
+        .map(r => r.userId));
+
+      setTeachers(prev => prev.filter(t => !deletedUserIds.has(t.userId)));
+
+      // Remove from selection
+      const newSelectedIds = new Set(allSelectedTeacherIds);
+      const newSelectedMap = new Map(selectedTeachersMap);
+      deletedUserIds.forEach(userId => {
+        const teacher = Array.from(selectedTeachersMap.values()).find(t => t.userId === userId);
+        if (teacher) {
+          newSelectedIds.delete(teacher.id);
+          newSelectedMap.delete(teacher.id);
+        }
+      });
+
+      setAllSelectedTeacherIds(newSelectedIds);
+      setSelectedTeachersMap(newSelectedMap);
+
+      if (success > 0) {
+        const message = failed === 0
+          ? t('teachersDeletedSuccess', `${success} teacher(s) deleted successfully`)
+          : t('partialDeleteSuccess', `${success} deleted, ${failed} failed`);
+        alert(message);
+
+        closeTransferModal();
+      }
+
+      if (failed > 0) {
+        handleError(new Error(`${failed} deletion(s) failed`));
+      }
+    } catch (err) {
+      handleError(err, {
+        toastMessage: t('bulkDeleteFailed', 'Failed to delete teachers'),
+      });
+    } finally {
+      stopLoading('bulkDelete');
+      setBulkDeleting(false);
+    }
+  };
+
   const getProvinceOptions = (provinces) => {
     return provinces.map(province => ({
       value: province.id.toString(),
@@ -1147,51 +1213,92 @@ const TeacherTransferManagement = () => {
         <Modal
           isOpen={showTransferModal}
           onClose={closeTransferModal}
-          title={t('selectTargetSchool', 'Select Target School')}
+          title={t('teacherActions', 'Teacher Actions')}
           size="full"
           height="full"
-          closeOnOverlayClick={!transferring}
-          showCloseButton={!transferring}
+          closeOnOverlayClick={!transferring && !bulkDeleting}
+          showCloseButton={!transferring && !bulkDeleting}
           footer={
             <div className="flex items-center justify-end space-x-3 w-full">
               <Button
                 type="button"
                 variant="outline"
-                disabled={transferring}
+                disabled={transferring || bulkDeleting}
                 onClick={closeTransferModal}
                 size="sm"
               >
                 {t('cancel', 'Cancel')}
               </Button>
-              <Button
-                type="button"
-                variant="primary"
-                disabled={
-                  transferring ||
-                  !selectedTargetSchool ||
-                  selectedSourceSchool === selectedTargetSchool
-                }
-                onClick={handleTransferTeachers}
-                size='sm'
-              >
-                {transferring
-                  ? t('transferring', 'Transferring...')
-                  : t('transfer', 'Transfer')}
-              </Button>
+              {transferModalTab === 'transfer' && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  disabled={
+                    transferring ||
+                    !selectedTargetSchool ||
+                    selectedSourceSchool === selectedTargetSchool
+                  }
+                  onClick={handleTransferTeachers}
+                  size='sm'
+                >
+                  {transferring
+                    ? t('transferring', 'Transferring...')
+                    : t('transfer', 'Transfer')}
+                </Button>
+              )}
+              {transferModalTab === 'bulkDelete' && (
+                <Button
+                  type="button"
+                  variant="danger"
+                  disabled={bulkDeleting || allSelectedTeacherIds.size === 0}
+                  onClick={handleBulkDeleteTeachers}
+                  size='sm'
+                >
+                  {bulkDeleting
+                    ? t('deleting', 'Deleting...')
+                    : t('deleteSelected', 'Delete Selected')}
+                </Button>
+              )}
             </div>
           }
           stickyFooter={true}
         >
-          <div className="space-y-6">
+          {/* Tab Navigation */}
+          <div className="flex gap-2 mb-6 border-b border-gray-200">
+            <button
+              onClick={() => setTransferModalTab('transfer')}
+              className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                transferModalTab === 'transfer'
+                  ? 'text-blue-600 border-blue-600'
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+            >
+              {t('transfer', 'Transfer')}
+            </button>
+            <button
+              onClick={() => setTransferModalTab('bulkDelete')}
+              className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                transferModalTab === 'bulkDelete'
+                  ? 'text-red-600 border-red-600'
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+            >
+              {t('bulkDelete', 'Bulk Delete')}
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          {transferModalTab === 'transfer' && (
             <div className="space-y-6">
-              {/* Target School Selection */}
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="inline-block w-1 h-5 bg-purple-600 rounded"></span>
-                  <h3 className="text-base font-semibold text-gray-900">
-                    {t('selectSchool', 'Choose Target School')}
-                  </h3>
-                </div>
+              <div className="space-y-6">
+                {/* Target School Selection */}
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <span className="inline-block w-1 h-5 bg-purple-600 rounded"></span>
+                    <h3 className="text-base font-semibold text-gray-900">
+                      {t('selectSchool', 'Choose Target School')}
+                    </h3>
+                  </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Target Province */}
                   <div>
@@ -1256,6 +1363,7 @@ const TeacherTransferManagement = () => {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
 
               {/* Teacher List Preview - now below filters */}
@@ -1315,7 +1423,51 @@ const TeacherTransferManagement = () => {
                 </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {transferModalTab === 'bulkDelete' && (
+            <div className="space-y-6">
+              {allSelectedTeacherIds.size > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className="inline-block w-1 h-5 bg-red-600 rounded"></span>
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      {t('selectedTeachers', 'Selected Teachers')} ({allSelectedTeacherIds.size})
+                    </h3>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto border border-dashed border-red-300 rounded-md bg-red-50 px-3 py-2 space-y-1">
+                    {Array.from(allSelectedTeacherIds).map(id => {
+                      const teacher = selectedTeachersMap.get(id) || teachers.find(t => t.id === id);
+                      if (!teacher) return null;
+                      return (
+                        <div
+                          key={id}
+                          className="flex items-center justify-between text-xs text-gray-700 border-b border-red-100 last:border-b-0 py-1"
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {getFullName(teacher)}
+                            </span>
+                            {teacher.username && (
+                              <span className="text-gray-500">
+                                {teacher.username}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <p className="text-sm text-red-800">
+                  <span className="font-semibold">{t('warning', 'Warning')}:</span> {t('bulkDeleteWarning', 'This action will permanently delete the selected teachers. This cannot be undone.')}
+                </p>
+              </div>
+            </div>
+          )}
         </Modal>
       </div>
       </PageTransition>

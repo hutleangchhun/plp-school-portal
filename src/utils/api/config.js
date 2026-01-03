@@ -64,6 +64,7 @@ const ENDPOINTS = {
     PUBLIC_SCHOOL_USERS: (schoolId) => `/users/public/school/${schoolId}`,
     SIMPLE: '/users/simple',
     CREATE_USER: '/users',
+    BULK_DELETE: '/users/bulk/delete',
   },
   SCHOOLS: {
     BASE: '/schools',
