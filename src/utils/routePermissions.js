@@ -547,7 +547,7 @@ export const getNavigationItems = (user, t) => {
       href: '/admin/user-registration',
     },
     {
-      name: t('schoolManagement', 'School Management'),
+      name: t('schoolManagementPage', 'School Management'),
       href: '/admin/schools',
     },
   ];

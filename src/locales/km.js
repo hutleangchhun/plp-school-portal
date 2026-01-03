@@ -558,7 +558,7 @@ export const km = {
   // Teacher Information
   teacherInfo: 'ព័ត៌មានគ្រូបង្រៀន',
   attendanceRate: 'អត្រាវត្តមាន',
-  todayAttendanceOverview: 'ទិដ្ឋភាពទូទៅនៃវត្តមានថ្ងៃនេះ',
+  todayAttendanceOverview: 'ទិដ្ឋភាពទូទៅនៃវត្តមានថ្ងៃនេះ',r
   cannotMarkFutureAttendance: 'ការបញ្ជូនវត្តមានសិស្សបានសម្រាប់តែថ្ងៃនេះ',
   checkIn: 'ចុះវត្តមាន',
   studentAttendanceTracking: 'វត្តមានសិស្ស',
@@ -1768,6 +1768,7 @@ export const km = {
   teacherOverview: 'ព័ត៏មានបុគ្គលិកមន្ត្រីរាជការ',
   teacherOverviewDesc: 'មើលបំណែងចែកទិន្នន័យរបស់គ្រូបង្រៀន',
   studentDataOverview: 'ព័ត៏មានសិស្ស',
+  schoolManagementPage: 'គ្រប់គ្រងសាលារៀន',
   //schedule
   noSchedule: 'មិនមានការកំណត់',
   breaktime: 'ម៉ោងសម្រាក',
