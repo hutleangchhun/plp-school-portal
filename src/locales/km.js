@@ -562,6 +562,7 @@ export const km = {
   cannotMarkFutureAttendance: 'ការបញ្ជូនវត្តមានសិស្សបានសម្រាប់តែថ្ងៃនេះ',
   checkIn: 'ចុះវត្តមាន',
   studentAttendanceTracking: 'វត្តមានសិស្ស',
+  studentAttendanceView: 'វត្តមានសិស្ស',
 
   // Reports & Analytics
   academicPerformance: 'ការអនុវត្តន៍សិក្សា',
