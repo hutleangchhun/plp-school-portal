@@ -40,6 +40,7 @@ import ParentsManagement from './pages/parents/ParentsManagement';
 import Reports from './pages/reports/Reports';
 import Attendance from './pages/attendance/Attendance';
 import DirectorTeacherAttendance from './pages/attendance/DirectorTeacherAttendance';
+import DirectorStudentAttendance from './pages/attendance/DirectorStudentAttendance';
 import TeacherSelfAttendance from './pages/attendance/TeacherSelfAttendance';
 import AttendanceApprovalPage from './pages/attendance/AttendanceApprovalPage';
 import DirectorExamRecords from './pages/exam/DirectorExamRecords';
@@ -368,6 +369,14 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<DirectorTeacherAttendance />} />
+          </Route>
+
+          <Route path="student-attendance-view" element={
+            <ProtectedRoute path="/student-attendance-view" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<DirectorStudentAttendance />} />
           </Route>
 
           <Route path="teacher-dashboard" element={

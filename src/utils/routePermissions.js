@@ -61,6 +61,10 @@ export const routePermissions = {
     allowedRoles: [ROLES.DIRECTOR],
     component: 'DirectorTeacherAttendance'
   },
+  '/student-attendance-view': {
+    allowedRoles: [ROLES.DIRECTOR],
+    component: 'DirectorStudentAttendance'
+  },
   '/teacher-dashboard': {
     allowedRoles: [ROLES.TEACHER_ONLY],
     component: 'TeacherClasses'
@@ -410,6 +414,10 @@ export const getNavigationItems = (user, t) => {
           href: '/attendance',
         },
         {
+          name: t('studentAttendanceView', 'Student Attendance View'),
+          href: '/student-attendance-view',
+        },
+        {
           name: t('teacherAttendance') || 'វត្តមានគ្រូបង្រៀន',
           href: '/teacher-attendance',
         },
@@ -561,9 +569,22 @@ export const getNavigationItems = (user, t) => {
   if (user.roleId === 14) {
     // Check if director has teaching duties (assigned classes)
     if (isDirectorWithTeachingDuties(user)) {
+      // Modify director items to remove /attendance from main Attendance dropdown
+      // since it will be available under "My Class"
+      const directorItemsModified = directorItems.map(item => {
+        if (item.href === '#' && item.children && item.children.some(c => c.href === '/attendance')) {
+          // This is the Attendance dropdown - remove /attendance child
+          return {
+            ...item,
+            children: item.children.filter(child => child.href !== '/attendance')
+          };
+        }
+        return item;
+      });
+
       // Add teacher features to director navigation
       const directorWithTeacherItems = [
-        ...directorItems,
+        ...directorItemsModified,
         {
           name: t('myTeachingClass', 'My Class'),
           href: '#',

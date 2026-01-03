@@ -87,7 +87,7 @@ export default function TeacherAttendance() {
     const dates = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
+      date.setDate(date.getDate() + i); // Use date.getDate() instead of startDate.getDate()
       dates.push(date);
     }
     return dates;
@@ -317,7 +317,9 @@ export default function TeacherAttendance() {
             // Infer shift from submission time
             const recordTime = record.checkInTime ? new Date(record.checkInTime) : (record.createdAt ? new Date(record.createdAt) : null);
             const recordHour = recordTime ? recordTime.getHours() : 12;
-            const shift = recordHour < 12 ? 'MORNING' : 'AFTERNOON';
+            const shift = recordHour < 11 ? 'MORNING' :
+                          recordHour < 13 ? 'NOON' :
+                          'AFTERNOON';
 
             // Add the attendance record with all details
             weeklyAttendanceData[userId][recordDate].push({
@@ -1161,7 +1163,12 @@ export default function TeacherAttendance() {
                                 <div className="text-left text-xs space-y-2 max-w-xs">
                                   {attendanceRecords.map((record, recordIdx) => {
                                     const recordBadgeInfo = getBadgeInfo(record.status);
-                                    const shift = record.shift ? (record.shift === 'MORNING' ? t('morning', 'ព្រឹក') : t('afternoon', 'រសៀល')) : '';
+                                    const shift = record.shift ? (
+                                      record.shift === 'MORNING' ? t('morning', 'ព្រឹក') :
+                                      record.shift === 'NOON' ? t('noon', 'ថ្ងៃត្រង់') :
+                                      record.shift === 'AFTERNOON' ? t('afternoon', 'រសៀល') :
+                                      ''
+                                    ) : '';
                                     const className = record.className || (record.classId ? `${t('class', 'ថ្នាក់')} ${record.classId}` : '');
                                     const checkInTime = record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-US', {
                                       hour: '2-digit',

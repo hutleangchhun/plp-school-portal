@@ -225,8 +225,10 @@ export default function TeacherSelfAttendance() {
           const recordTime = record.createdAt ? new Date(record.createdAt) : null;
           const recordHour = recordTime ? recordTime.getHours() : 12;
 
-          // Infer shift: if submitted before noon, likely morning; otherwise afternoon
-          const shift = recordHour < 12 ? 'MORNING' : 'AFTERNOON';
+          // Infer shift: if submitted before 11am = morning, 11am-1pm = noon, after 1pm = afternoon
+          const shift = recordHour < 11 ? 'MORNING' :
+                        recordHour < 13 ? 'NOON' :
+                        'AFTERNOON';
 
           console.log('DEBUG: Processing record:', {
             rawDate: record.date,
@@ -380,6 +382,9 @@ export default function TeacherSelfAttendance() {
         if (shift === 'MORNING') {
           // Morning shift: Late if submitted at or after 7:00 AM
           finalStatus = currentHour >= 7 ? 'LATE' : 'PRESENT';
+        } else if (shift === 'NOON') {
+          // Noon shift: Late if submitted at or after 11:00 AM
+          finalStatus = currentHour >= 11 ? 'LATE' : 'PRESENT';
         } else if (shift === 'AFTERNOON') {
           // Afternoon shift: Late if submitted at or after 1:00 PM (13:00)
           finalStatus = currentHour >= 13 ? 'LATE' : 'PRESENT';
@@ -548,12 +553,15 @@ export default function TeacherSelfAttendance() {
 
     // Aggregate all attendance records for this date across all classes
     const morningRecords = [];
+    const noonRecords = [];
     const afternoonRecords = [];
 
     Object.entries(dayAttendance).forEach(([key, attendance]) => {
       const [classIdStr, shift] = key.split('_');
       if (shift === 'MORNING') {
         morningRecords.push(attendance);
+      } else if (shift === 'NOON') {
+        noonRecords.push(attendance);
       } else if (shift === 'AFTERNOON') {
         afternoonRecords.push(attendance);
       }
@@ -562,13 +570,15 @@ export default function TeacherSelfAttendance() {
     // Return aggregated attendance info
     return {
       morning: morningRecords.length > 0 ? morningRecords[morningRecords.length - 1] : null, // Use last for display
+      noon: noonRecords.length > 0 ? noonRecords[noonRecords.length - 1] : null,
       afternoon: afternoonRecords.length > 0 ? afternoonRecords[afternoonRecords.length - 1] : null,
       morningCount: morningRecords.length,
+      noonCount: noonRecords.length,
       afternoonCount: afternoonRecords.length,
       // For backward compatibility, return primary status
-      status: morningRecords[morningRecords.length - 1]?.status || afternoonRecords[afternoonRecords.length - 1]?.status,
+      status: morningRecords[morningRecords.length - 1]?.status || noonRecords[noonRecords.length - 1]?.status || afternoonRecords[afternoonRecords.length - 1]?.status,
       hasBothShifts: morningRecords.length > 0 && afternoonRecords.length > 0,
-      allRecords: { morning: morningRecords, afternoon: afternoonRecords }
+      allRecords: { morning: morningRecords, noon: noonRecords, afternoon: afternoonRecords }
     };
   };
 
@@ -670,6 +680,7 @@ export default function TeacherSelfAttendance() {
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
   const isBeforeMorningCutoff = currentHour < 7;
+  const isBeforeNoonCutoff = currentHour < 11;
   const isBeforeAfternoonCutoff = currentHour < 13;
 
   // Helper function to check if attendance is submitted for a specific class and shift
@@ -688,6 +699,8 @@ export default function TeacherSelfAttendance() {
   const isLateForShift = (shift) => {
     if (shift === 'MORNING') {
       return currentHour >= 7;
+    } else if (shift === 'NOON') {
+      return currentHour >= 11;
     } else if (shift === 'AFTERNOON') {
       return currentHour >= 13;
     }
@@ -707,7 +720,9 @@ export default function TeacherSelfAttendance() {
   // Open submit modal
   const openSubmitModal = () => {
     // Auto-detect current shift based on time
-    const autoShift = currentHour < 12 ? 'MORNING' : 'AFTERNOON';
+    const autoShift = currentHour < 11 ? 'MORNING' :
+                      currentHour < 13 ? 'NOON' :
+                      'AFTERNOON';
     setSelectedShiftForSubmit(autoShift);
 
     // Auto-select first class if not selected
@@ -785,7 +800,7 @@ export default function TeacherSelfAttendance() {
                   </div>
 
                   {/* Late Status Indicator */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="grid grid-cols-3 gap-3 mb-4">
                     <div className={`p-3 rounded-md ${isBeforeMorningCutoff ? 'bg-green-50 border border-green-300' : 'bg-orange-50 border border-orange-300'}`}>
                       <p className="text-xs font-medium text-gray-700">{t('morningShift', 'វេនព្រឹក')}</p>
                       <Badge color={isBeforeMorningCutoff ? 'green' : 'orange'} variant="outline" size="sm" className="mt-1">
@@ -793,6 +808,15 @@ export default function TeacherSelfAttendance() {
                       </Badge>
                       <p className="text-xs text-gray-600 mt-2">
                         {isBeforeMorningCutoff ? 'មុន' : 'ក្រោយ'} {'7:00 AM'}
+                      </p>
+                    </div>
+                    <div className={`p-3 rounded-md ${isBeforeNoonCutoff ? 'bg-green-50 border border-green-300' : 'bg-orange-50 border border-orange-300'}`}>
+                      <p className="text-xs font-medium text-gray-700">{t('noonShift', 'វេនថ្ងៃត្រង់')}</p>
+                      <Badge color={isBeforeNoonCutoff ? 'green' : 'orange'} variant="outline" size="sm" className="mt-1">
+                        {isBeforeNoonCutoff ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
+                      </Badge>
+                      <p className="text-xs text-gray-600 mt-2">
+                        {isBeforeNoonCutoff ? 'មុន' : 'ក្រោយ'} {'11:00 AM'}
                       </p>
                     </div>
                     <div className={`p-3 rounded-md ${isBeforeAfternoonCutoff ? 'bg-green-50 border border-green-300' : 'bg-orange-50 border border-orange-300'}`}>
@@ -985,13 +1009,27 @@ export default function TeacherSelfAttendance() {
 
                     // Determine colors based on attendance
                     const hasMorning = attendance?.morning;
+                    const hasNoon = attendance?.noon;
                     const hasAfternoon = attendance?.afternoon;
+                    const shiftsCount = (hasMorning ? 1 : 0) + (hasNoon ? 1 : 0) + (hasAfternoon ? 1 : 0);
 
-                    if (hasMorning || hasAfternoon) {
-                      if (hasMorning && hasAfternoon) {
-                        // Both shifts present - show mixed color
-                        bgColor = 'bg-gradient-to-br from-green-50 to-blue-50 hover:from-green-100 hover:to-blue-100';
+                    if (hasMorning || hasNoon || hasAfternoon) {
+                      // If all 3 shifts present - show full day color
+                      if (shiftsCount === 3) {
+                        bgColor = 'bg-gradient-to-br from-green-50 via-yellow-50 to-blue-50 hover:from-green-100 hover:via-yellow-100 hover:to-blue-100';
                         borderColor = 'border-green-500';
+                      } else if (shiftsCount === 2) {
+                        // Two shifts - determine which ones
+                        if (hasMorning && hasNoon) {
+                          bgColor = 'bg-gradient-to-br from-green-50 to-yellow-50 hover:from-green-100 hover:to-yellow-100';
+                          borderColor = 'border-green-500';
+                        } else if (hasMorning && hasAfternoon) {
+                          bgColor = 'bg-gradient-to-br from-green-50 to-blue-50 hover:from-green-100 hover:to-blue-100';
+                          borderColor = 'border-green-500';
+                        } else if (hasNoon && hasAfternoon) {
+                          bgColor = 'bg-gradient-to-br from-yellow-50 to-blue-50 hover:from-yellow-100 hover:to-blue-100';
+                          borderColor = 'border-yellow-500';
+                        }
                       } else if (hasMorning) {
                         // Only morning
                         const status = hasMorning.status;
@@ -1007,6 +1045,23 @@ export default function TeacherSelfAttendance() {
                           case 'LEAVE':
                             bgColor = 'bg-purple-50 hover:bg-purple-100';
                             borderColor = 'border-purple-500';
+                            break;
+                        }
+                      } else if (hasNoon) {
+                        // Only noon
+                        const status = hasNoon.status;
+                        switch (status) {
+                          case 'PRESENT':
+                            bgColor = 'bg-yellow-50 hover:bg-yellow-100';
+                            borderColor = 'border-yellow-500';
+                            break;
+                          case 'LATE':
+                            bgColor = 'bg-amber-50 hover:bg-amber-100';
+                            borderColor = 'border-amber-500';
+                            break;
+                          case 'LEAVE':
+                            bgColor = 'bg-yellow-100 hover:bg-yellow-200';
+                            borderColor = 'border-yellow-600';
                             break;
                         }
                       } else if (hasAfternoon) {
@@ -1034,12 +1089,18 @@ export default function TeacherSelfAttendance() {
                         <span className={`text-sm font-medium ${textColor}`}>
                           {date.getDate()}
                         </span>
-                        {(hasMorning || hasAfternoon) && (
+                        {(hasMorning || hasNoon || hasAfternoon) && (
                           <div className="flex gap-0.5 mt-0.5">
                             {hasMorning && (
                               <div className={`w-1 h-1 rounded-full ${hasMorning.status === 'PRESENT' ? 'bg-green-500' :
                                 hasMorning.status === 'LATE' ? 'bg-orange-500' :
                                   hasMorning.status === 'LEAVE' ? 'bg-purple-500' : 'bg-gray-400'
+                                }`} />
+                            )}
+                            {hasNoon && (
+                              <div className={`w-1 h-1 rounded-full ${hasNoon.status === 'PRESENT' ? 'bg-yellow-500' :
+                                hasNoon.status === 'LATE' ? 'bg-amber-500' :
+                                  hasNoon.status === 'LEAVE' ? 'bg-yellow-600' : 'bg-gray-400'
                                 }`} />
                             )}
                             {hasAfternoon && (
@@ -1055,13 +1116,34 @@ export default function TeacherSelfAttendance() {
 
                     return (
                       <div key={idx}>
-                        {(hasMorning || hasAfternoon) ? (
+                        {(hasMorning || hasNoon || hasAfternoon) ? (
                           <Tooltip
                             content={
                               <div className="text-xs space-y-1 max-w-xs">
                                 {attendance.allRecords.morning.length > 0 && (
                                   <div className="space-y-1">
                                     {attendance.allRecords.morning.map((record, idx) => {
+                                      const classId = record.classId;
+                                      const cls = classId ? classes.find(c => (c.classId || c.id) === classId) : null;
+                                      const className = cls?.name || (classId ? `Class ${classId}` : null);
+                                      return (
+                                        <div key={idx} className="py-0.5">
+                                          <div className="text-gray-900 font-medium">
+                                            {className ? `${className} - ${getStatusInKhmer(record.status)}` : getStatusInKhmer(record.status)}
+                                          </div>
+                                          <div className="text-gray-700 text-xs">
+                                            ចូល: {record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
+                                            {record.isCheckedOut ? ` | ចេញ: ${new Date(record.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}` : ' | ឥឡូវនៅ'}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {attendance.allRecords.noon.length > 0 && (
+                                  <div className="space-y-1">
+                                    {attendance.allRecords.noon.map((record, idx) => {
                                       const classId = record.classId;
                                       const cls = classId ? classes.find(c => (c.classId || c.id) === classId) : null;
                                       const className = cls?.name || (classId ? `Class ${classId}` : null);
@@ -1195,7 +1277,7 @@ export default function TeacherSelfAttendance() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('selectShift', 'ជ្រើសរើសវេន')} <span className='text-red-500'>*</span>
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => setSelectedShiftForSubmit('MORNING')}
                 className={`p-3 rounded-md border-2 transition-all ${selectedShiftForSubmit === 'MORNING'
@@ -1207,6 +1289,19 @@ export default function TeacherSelfAttendance() {
                 <p className="text-xs text-gray-600">{isBeforeMorningCutoff ? 'មុន' : 'ក្រោយ'} 7:00 AM</p>
                 <Badge color={isBeforeMorningCutoff ? 'green' : 'orange'} variant="filled" size="sm" className="mt-2">
                   {isBeforeMorningCutoff ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
+                </Badge>
+              </button>
+              <button
+                onClick={() => setSelectedShiftForSubmit('NOON')}
+                className={`p-3 rounded-md border-2 transition-all ${selectedShiftForSubmit === 'NOON'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+              >
+                <p className="font-medium text-gray-900">{t('noon', 'ថ្ងៃត្រង់')}</p>
+                <p className="text-xs text-gray-600">{isBeforeNoonCutoff ? 'មុន' : 'ក្រោយ'} 11:00 AM</p>
+                <Badge color={isBeforeNoonCutoff ? 'green' : 'orange'} variant="filled" size="sm" className="mt-2">
+                  {isBeforeNoonCutoff ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
                 </Badge>
               </button>
               <button

@@ -561,6 +561,7 @@ export const km = {
   todayAttendanceOverview: 'ទិដ្ឋភាពទូទៅនៃវត្តមានថ្ងៃនេះ',
   cannotMarkFutureAttendance: 'ការបញ្ជូនវត្តមានសិស្សបានសម្រាប់តែថ្ងៃនេះ',
   checkIn: 'ចុះវត្តមាន',
+  studentAttendanceTracking: 'វត្តមានសិស្ស',
 
   // Reports & Analytics
   academicPerformance: 'ការអនុវត្តន៍សិក្សា',
@@ -1773,8 +1774,12 @@ export const km = {
   chooseShift: 'ជ្រើសរើសវេន...',
   allShifts: 'វេនទាំងអស់',
   morningShift: 'ព្រឹកម៉ោង (7:00-12:00)',
+  noonShift: 'វេនថ្ងៃត្រង់',
   afternoonShift: 'ល្ងាច ម៉ោង (13:00-17:00)',
   noShift: 'គ្មានវេន',
+  morning: 'ព្រឹក',
+  noon: 'ថ្ងៃត្រង់',
+  afternoon: 'រសៀល',
   academicYear: 'ឆ្នាំសិក្សា',
   selectAcademicYear: 'ជ្រើសរើសឆ្នាំសិក្សា',
 
@@ -1814,7 +1819,7 @@ export const km = {
   dayRequired: 'ត្រូវការថ្ងៃក្នុងសប្តាហ៍',
   subjectRequired: 'ត្រូវការមុខវិជ្ជា',
   endTimeAfterStart: 'ម៉ោងបញ្ចប់ត្រូវតែក្រោយម៉ោងចាប់ផ្តើម',
-  morningHoursOnly: 'វេនព្រឹកអនុញ្ញាតតែពេលវេលារវាង 7:00-12:00',
+  morningHoursOnly: 'វេនព្រឹកអនុញ្ញាតតែពេលវេលារវាង 7:00-11:00',
   afternoonHoursOnly: 'វេនរសៀលអនុញ្ញាតតែពេលវេលារវាង 13:00-17:00',
   classRequired: 'ត្រូវការថ្នាក់',
   shift: 'វេន',
