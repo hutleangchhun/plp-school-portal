@@ -1730,14 +1730,23 @@ export default function BulkStudentImport() {
                   }]);
                 } else {
                   // Partial failures - remove only successful students from form
-                  // Keep only the failed students so user can retry them
+                  // Keep only the failed students so user can retry them with all original data intact
                   const failedStudents = finalResults.filter(result => !result.success);
 
                   if (failedStudents.length > 0) {
-                    // Create new student entries for the failed ones
-                    const failedStudentRecords = validStudents.filter((_, idx) => {
-                      const wasSuccessful = finalResults[idx]?.success;
-                      return !wasSuccessful;
+                    // Use the original students array (before transformation) filtered by failed indices
+                    // This preserves classId, schoolId, and all other original data
+                    const failedStudentRecords = students.filter((_, idx) => {
+                      // Find corresponding index in validStudents
+                      const validStudentIndex = validStudents.findIndex(vs =>
+                        vs.firstName === students[idx].firstName &&
+                        vs.lastName === students[idx].lastName &&
+                        vs.username === students[idx].username
+                      );
+
+                      if (validStudentIndex === -1) return false; // Not in validStudents (invalid row)
+
+                      return finalResults[validStudentIndex]?.success === false;
                     });
 
                     setStudents(failedStudentRecords);
