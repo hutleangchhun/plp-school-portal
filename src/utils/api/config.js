@@ -225,6 +225,7 @@ const ENDPOINTS = {
   RATE_LIMIT: {
     BASE: '/rate-limit',
     ALL_USERS: '/rate-limit/all-users',
+    CONCURRENT_STATS: '/rate-limit/concurrent/stats',
   },
 };
 

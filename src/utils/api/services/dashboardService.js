@@ -1005,5 +1005,39 @@ export const dashboardService = {
         data: {}
       };
     }
+  },
+
+  /**
+   * Get concurrent users statistics
+   * Fetches data from /api/v1/rate-limit/concurrent/stats endpoint
+   * @returns {Promise<Object>} Response with concurrent users statistics
+   */
+  async getConcurrentUsers() {
+    try {
+      console.log('👥 Fetching concurrent users statistics...');
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.RATE_LIMIT.CONCURRENT_STATS)
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch concurrent users statistics');
+      }
+
+      const apiData = response.data || {};
+
+      return {
+        success: true,
+        data: apiData
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getConcurrentUsers:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get concurrent users statistics',
+        data: {}
+      };
+    }
   }
 };

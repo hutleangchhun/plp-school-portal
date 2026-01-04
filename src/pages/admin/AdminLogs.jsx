@@ -8,7 +8,6 @@ import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Badge } from '../../components/ui/Badge';
 import StatsCard from '../../components/ui/StatsCard';
-import { Server, Users, Activity, Zap } from 'lucide-react';
 import { dashboardService } from '../../utils/api/services/dashboardService';
 
 const AdminLogs = () => {
@@ -19,6 +18,7 @@ const AdminLogs = () => {
   const [serverInfo, setServerInfo] = useState(null);
   const [users, setUsers] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [concurrentData, setConcurrentData] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -31,16 +31,23 @@ const AdminLogs = () => {
         startLoading('fetchRateLimitData', t('loadingRateLimitData', 'Loading rate limit data...'));
       }
 
-      const response = await dashboardService.getRateLimitAllUsers();
+      const [rateLimitResponse, concurrentResponse] = await Promise.all([
+        dashboardService.getRateLimitAllUsers(),
+        dashboardService.getConcurrentUsers()
+      ]);
 
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to load rate limit data');
+      if (!rateLimitResponse.success) {
+        throw new Error(rateLimitResponse.error || 'Failed to load rate limit data');
       }
 
-      const data = response.data;
+      const data = rateLimitResponse.data;
       setServerInfo(data.server);
       setUsers(data.users || []);
       setSummary(data.summary);
+
+      if (concurrentResponse.success) {
+        setConcurrentData(concurrentResponse.data);
+      }
     } catch (err) {
       handleError(err, {
         toastMessage: t('failedToLoadRateLimitData', 'Failed to load rate limit data'),
@@ -121,14 +128,13 @@ const AdminLogs = () => {
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-3 sm:p-6 space-y-4">
 
-        {/* Summary Stats */}
+        {/* Rate Limit Summary Stats */}
         {summary && (
           <FadeInSection delay={50}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
                 title={t('totalUsers', 'Total Users')}
                 value={summary.totalUsers || 0}
-                icon={Users}
                 enhanced={true}
                 gradientFrom="from-blue-500"
                 gradientTo="to-blue-600"
@@ -140,7 +146,6 @@ const AdminLogs = () => {
                 title={t('activeUsers', 'Active Users')}
                 value={users.filter(u => u.ttl > 0).length}
                 subtitle={`${users.length} total tracked`}
-                icon={Activity}
                 enhanced={true}
                 gradientFrom="from-green-500"
                 gradientTo="to-green-600"
@@ -152,7 +157,6 @@ const AdminLogs = () => {
                 title={t('totalRequests', 'Total Requests')}
                 value={summary.totalRequests || 0}
                 subtitle={`Avg: ${summary.averageRequestsPerUser || 0} per user`}
-                icon={Activity}
                 enhanced={true}
                 gradientFrom="from-cyan-500"
                 gradientTo="to-cyan-600"
@@ -165,11 +169,63 @@ const AdminLogs = () => {
                   title={t('topUser', 'Top User')}
                   value={summary.topUser.totalRequests || 0}
                   subtitle={`ID: ${summary.topUser.identifier}`}
-                  icon={Zap}
                   enhanced={true}
                   gradientFrom="from-purple-500"
                   gradientTo="to-purple-600"
                   hoverColor="hover:border-purple-200"
+                  responsive={true}
+                />
+              )}
+            </div>
+          </FadeInSection>
+        )}
+
+        {/* Concurrent Users Stats */}
+        {concurrentData && concurrentData.current && (
+          <FadeInSection delay={75}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatsCard
+                title={t('concurrentUsers', 'Concurrent Users')}
+                value={concurrentData.current.concurrentUsers || 0}
+                subtitle={t('currentlyActive', 'Currently Active')}
+                enhanced={true}
+                gradientFrom="from-indigo-500"
+                gradientTo="to-indigo-600"
+                hoverColor="hover:border-indigo-200"
+                responsive={true}
+              />
+
+              <StatsCard
+                title={t('authenticatedUsers', 'Authenticated Users')}
+                value={concurrentData.current.authenticatedUsers || 0}
+                subtitle={`${((concurrentData.current.authenticatedUsers / (concurrentData.current.concurrentUsers || 1)) * 100).toFixed(0)}% of total`}
+                enhanced={true}
+                gradientFrom="from-emerald-500"
+                gradientTo="to-emerald-600"
+                hoverColor="hover:border-emerald-200"
+                responsive={true}
+              />
+
+              <StatsCard
+                title={t('anonymousUsers', 'Anonymous Users')}
+                value={concurrentData.current.anonymousUsers || 0}
+                subtitle={`${((concurrentData.current.anonymousUsers / (concurrentData.current.concurrentUsers || 1)) * 100).toFixed(0)}% of total`}
+                enhanced={true}
+                gradientFrom="from-orange-500"
+                gradientTo="to-orange-600"
+                hoverColor="hover:border-orange-200"
+                responsive={true}
+              />
+
+              {concurrentData.breakdown && (
+                <StatsCard
+                  title={t('activeServers', 'Active Servers')}
+                  value={Object.keys(concurrentData.breakdown.byServer || {}).length}
+                  subtitle={t('loadBalanced', 'Load Balanced')}
+                  enhanced={true}
+                  gradientFrom="from-rose-500"
+                  gradientTo="to-rose-600"
+                  hoverColor="hover:border-rose-200"
                   responsive={true}
                 />
               )}
