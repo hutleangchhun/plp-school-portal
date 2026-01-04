@@ -222,6 +222,10 @@ const ENDPOINTS = {
     BASE: '/salary-types',
     BY_EMPLOYMENT_TYPE: (employmentType) => `/salary-types/employment-type/${encodeURIComponent(employmentType)}`,
   },
+  RATE_LIMIT: {
+    BASE: '/rate-limit',
+    ALL_USERS: '/rate-limit/all-users',
+  },
 };
 
 // HTTP Status codes for consistent error handling

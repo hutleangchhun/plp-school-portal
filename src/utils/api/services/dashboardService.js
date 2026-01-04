@@ -971,5 +971,39 @@ export const dashboardService = {
         data: {}
       };
     }
+  },
+
+  /**
+   * Get rate limit information for all users
+   * Fetches data from /api/v1/rate-limit/all-users endpoint
+   * @returns {Promise<Object>} Response with rate limit data for all users
+   */
+  async getRateLimitAllUsers() {
+    try {
+      console.log('📊 Fetching rate limit data for all users...');
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.RATE_LIMIT.ALL_USERS)
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch rate limit data');
+      }
+
+      const apiData = response.data || {};
+
+      return {
+        success: true,
+        data: apiData
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getRateLimitAllUsers:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get rate limit data',
+        data: {}
+      };
+    }
   }
 };

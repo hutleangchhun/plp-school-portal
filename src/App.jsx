@@ -7,7 +7,7 @@ import TeacherReports from './pages/teachers/TeacherReports';
 import TeacherScheduleCalendar from './components/schedule/TeacherScheduleCalendar';
 import DirectorScheduleCalendar from './components/director/DirectorScheduleCalendar';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import UserActivityLogs from './pages/admin/UserActivityLogs';
+import AdminLogs from './pages/admin/AdminLogs';
 import TeacherTransferManagement from './pages/admin/TeacherTransferManagement';
 import StudentTransferManagement from './pages/admin/StudentTransferManagement';
 import StudentDemographicsDashboard from './pages/admin/StudentDemographicsDashboard';
@@ -194,13 +194,13 @@ function AppContent() {
             <Route index element={<AdminDashboard user={user} setUser={setUser} />} />
           </Route>
 
-          {/* Admin user activity logs route - role ID 1 only (enforced by routePermissions) */}
+          {/* Admin logs route - role ID 1 only (enforced by routePermissions) */}
           <Route path="admin-logs" element={
             <ProtectedRoute path="/admin-logs" user={user}>
               <DashboardLayout user={user} onLogout={handleLogout} />
             </ProtectedRoute>
           }>
-            <Route index element={<UserActivityLogs />} />
+            <Route index element={<AdminLogs />} />
           </Route>
 
           {/* Admin teacher transfer route - role ID 1 only (enforced by routePermissions) */}
