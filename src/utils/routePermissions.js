@@ -133,6 +133,10 @@ export const routePermissions = {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'UserActivityLogs'
   },
+  '/admin/logs': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'UserActivityLogs'
+  },
   '/admin/teacher-transfer': {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'TeacherTransferManagement'
