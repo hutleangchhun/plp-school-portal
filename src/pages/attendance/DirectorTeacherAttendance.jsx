@@ -298,7 +298,6 @@ export default function TeacherAttendance() {
           allAttendanceRecords.forEach(record => {
             const userId = Number(record.userId || record.user_id);
             const recordDate = record.date ? record.date.split('T')[0] : null;
-            const recordClassId = record.classId || 'null';
 
             if (!userId || isNaN(userId) || !recordDate) {
               return;
@@ -1239,12 +1238,18 @@ export default function TeacherAttendance() {
                                 <div
                                   className="flex flex-col items-center gap-1"
                                   onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
+                                    // Allow clicks to propagate if it's today (for opening modal to update)
+                                    if (!isToday(date)) {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                    }
                                   }}
                                   onMouseDown={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
+                                    // Allow mouse events to propagate if it's today
+                                    if (!isToday(date)) {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                    }
                                   }}
                                 >
                                   <Tooltip content={tooltipContent}>
@@ -1265,16 +1270,17 @@ export default function TeacherAttendance() {
                             return (
                               <td
                                 key={idx}
-                                className={`px-3 py-3 text-center ${attendanceRecords.length > 0 ? '' : 'cursor-pointer hover:bg-blue-100'} transition-colors ${
+                                className={`px-3 py-3 text-center ${isToday(date) ? 'cursor-pointer hover:bg-blue-100' : ''} transition-colors ${
                                   isCurrentDay ? 'bg-blue-50' : isWeekendDay ? 'bg-gray-50' : ''
                                 }`}
-                                onClick={(e) => {
-                                  // Only open modal if there are no attendance records (empty cell)
-                                  if (attendanceRecords.length === 0) {
-                                    openAttendanceModal(teacher, date, null);
+                                onClick={() => {
+                                  // Allow updating attendance only for today
+                                  if (isToday(date)) {
+                                    const existingAttendance = attendanceRecords.length > 0 ? attendanceRecords[0] : null;
+                                    openAttendanceModal(teacher, date, existingAttendance);
                                   }
                                 }}
-                                title={isToday(date) && attendanceRecords.length === 0 ? t('clickToMarkAttendance', 'ចុចដើម្បីបញ្ជូនវត្តមាន') : ''}
+                                title={isToday(date) ? t('clickToMarkAttendance', 'ចុចដើម្បីបញ្ជូនវត្តមាន') : ''}
                               >
                                 {badge || <span className="text-gray-400">-</span>}
                               </td>
