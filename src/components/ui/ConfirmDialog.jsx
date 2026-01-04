@@ -12,7 +12,8 @@ export default function ConfirmDialog({
   type = 'warning',
   confirmText,
   cancelText,
-  loading = false
+  loading = false,
+  disabledReason = null
 }) {
   const { t } = useLanguage();
 
@@ -60,9 +61,9 @@ export default function ConfirmDialog({
   return (
     <AlertDialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <AlertDialog.Portal>
-        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm rounded-lg" />
+        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm rounded-sm" />
         <AlertDialog.Content 
-          className="fixed left-1/2 top-1/2 z-50 max-w-sm sm:max-w-md w-[90%] sm:w-full bg-white rounded-lg border border-gray-200 shadow-2xl"
+          className="fixed left-1/2 top-1/2 z-50 max-w-sm sm:max-w-md w-[90%] sm:w-full bg-white rounded-sm border border-gray-200 shadow-2xl"
           style={{ transform: 'translate(-50%, -50%)' }}
         >
           <div className="bg-white px-3 pt-4 pb-3 sm:px-4 sm:pt-5 sm:pb-4 lg:p-6 lg:pb-4 rounded-t-lg ">
@@ -83,33 +84,41 @@ export default function ConfirmDialog({
             </div>
           </div>
           
-          <div className="bg-gray-50 px-3 py-3 sm:px-4 sm:py-3 lg:px-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 rounded-b-lg">
-            <AlertDialog.Cancel asChild>
-              <Button
-                type="button"
-                disabled={loading}
-                variant="outline"
-                size="sm"
-                className="w-full sm:w-auto text-xs sm:text-sm"
-              >
-                {cancelText || t('បោះបង់', 'Cancel')}
-              </Button>
-            </AlertDialog.Cancel>
-            <AlertDialog.Action asChild>
-              <Button
-                type="button"
-                disabled={loading}
-                onClick={handleConfirm}
-                variant={config.variant}
-                size="sm"
-                className="w-full sm:w-auto text-xs sm:text-sm"
-              >
-                {loading && (
-                  <div className="animate-spin -ml-1 mr-2 h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                )}
-                {confirmText || t('បន្ត', 'Continue')}
-              </Button>
-            </AlertDialog.Action>
+          <div className="bg-gray-50 px-3 py-3 sm:px-4 sm:py-3 lg:px-6 rounded-b-sm">
+            {disabledReason && (
+              <p className="text-xs sm:text-sm text-gray-700 mb-3 p-2">
+                {disabledReason}
+              </p>
+            )}
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+              <AlertDialog.Cancel asChild>
+                <Button
+                  type="button"
+                  disabled={loading}
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto text-xs sm:text-sm"
+                >
+                  {cancelText || t('បោះបង់', 'Cancel')}
+                </Button>
+              </AlertDialog.Cancel>
+              <AlertDialog.Action asChild>
+                <Button
+                  type="button"
+                  disabled={loading || !!disabledReason}
+                  onClick={handleConfirm}
+                  variant={config.variant}
+                  size="sm"
+                  className="w-full sm:w-auto text-xs sm:text-sm"
+                  title={disabledReason || ''}
+                >
+                  {loading && (
+                    <div className="animate-spin -ml-1 mr-2 h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  )}
+                  {confirmText || t('បន្ត', 'Continue')}
+                </Button>
+              </AlertDialog.Action>
+            </div>
           </div>
         </AlertDialog.Content>
       </AlertDialog.Portal>

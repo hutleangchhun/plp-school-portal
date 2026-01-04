@@ -2,6 +2,7 @@ import React from 'react';
 import { Trash2, Edit2, Users } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /**
  * ClassCard - reusable, minimalist class card with dynamic colors and values
@@ -33,6 +34,7 @@ export default function ClassCard({
   onEdit,
   onDelete,
 }) {
+  const { t } = useLanguage();
   const percent = capacity > 0 ? Math.min(Math.round((enrolled / capacity) * 100), 100) : 0;
 
   // Calculate status based on percentage if not provided
@@ -105,7 +107,7 @@ export default function ClassCard({
           </div>
           <div className="flex items-center gap-2">
             {onManage && (
-              <Tooltip content="View and manage students in this class">
+              <Tooltip content={t('manageStudent', 'View and manage students in this class')} className="p-2 text-xs">
                 <button
                   onClick={onManage}
                   className="p-2 rounded-md text-green-500 hover:text-green-600 hover:bg-green-50 border-2 border-green-100 bg-green-100 duration-300"
@@ -116,7 +118,7 @@ export default function ClassCard({
               </Tooltip>
             )}
             {onEdit && (
-              <Tooltip content="Edit class details">
+              <Tooltip content={t('editClass', 'Edit class details')} className="p-2 text-xs">
                 <button
                   onClick={onEdit}
                   className="p-2 rounded-md text-blue-500 hover:text-blue-600 hover:bg-blue-50 border-2 border-blue-100 bg-blue-100 duration-300"
@@ -127,7 +129,7 @@ export default function ClassCard({
               </Tooltip>
             )}
             {onDelete && (
-              <Tooltip content="Delete class">
+              <Tooltip content={t('deleteClass', 'Delete class')} className="p-2 text-xs">
                 <button
                   onClick={onDelete}
                   className="p-2 rounded-md text-red-500 hover:text-red-600 hover:bg-red-50 border-2 border-red-100 bg-red-100 duration-300"

@@ -517,6 +517,18 @@ export const km = {
   noClassesMatchFilter: 'មិនមានថ្នាក់ដែលត្រូវការការស្វែងរករបស់អ្នក',
   noClassesDescription: 'បង្កើតថ្នាក់រៀនតាមប្រើប្រាស់របស់អ្នក',
   searchClasses: 'ស្វែងរកថ្នាក់តាមឈ្មោះ',
+  classCreatedSuccess: 'បានបង្កើតថ្នាក់ដោយជោគជ័យ',
+  manageStudent: 'គ្រប់គ្រងសិស្ស',
+  editClassDetails: 'កែប្រែព័ត៌មានលម្អិតថ្នាក់',
+  classUpdatedSuccess: 'បានកែប្រែថ្នាក់ដោយជោគជ័យ',
+  deletingClass: 'កំពុងលុបថ្នាក់...',
+  classDeletedSuccess: 'បានលុបថ្នាក់ដោយជោគជ័យ',
+  failedToCreateClass: 'បរាជ័យក្នុងការបង្កើតថ្នាក់',
+  failedToUpdateClass: 'បរាជ័យក្នុងការកែប្រែថ្នាក់',
+  failedToDeleteClass: 'បរាជ័យក្នុងការលុបថ្នាក់',
+  confirmDeleteClass: 'លុបថ្នាក់រៀន',
+  confirmDeleteClassMessage: 'តើអ្នកប្រាកដថាចង់លុបថ្នាក់នេះទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+  cannotDeleteClassWithStudents: 'មិនអាចលុបថ្នាក់ដែលមានសិស្សបានទេ។ សូមផ្ទេរសិស្សទាំងអស់ចេញពីថ្នាក់នេះមុន។',
 
   // Attendance
   attendanceFor: 'វត្តមានសម្រាប់',

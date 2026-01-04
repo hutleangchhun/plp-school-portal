@@ -1430,6 +1430,7 @@ export default function ClassesManagement() {
           confirmText={t('delete') || 'Delete'}
           cancelText={t('cancel') || 'Cancel'}
           loading={isLoading('fetchClasses')}
+          disabledReason={selectedClass?.enrolled > 0 ? t('cannotDeleteClassWithStudents') || `Cannot delete class with ${selectedClass?.enrolled} student(s). Please remove all students first.` : null}
         />
       </div>
     </PageTransition>
