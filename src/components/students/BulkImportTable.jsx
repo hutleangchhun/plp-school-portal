@@ -75,7 +75,7 @@ const BulkImportTable = ({
           </div>
           <div className='text-red-600 flex justify-between items-center'>
             <OctagonAlert className="h-5 w-5 mr-1" />
-            <div className='pt-1'><p>ចំណាំ៖ អ្នកអាចបន្ថែមបានច្រើនបំផុត 70 នាក់ក្នុងមួយពេល</p></div>
+            <div className='pt-1'><p>ចំណាំ៖ អ្នកអាចបន្ថែមបានច្រើនបំផុត 100 នាក់ក្នុងមួយពេល</p></div>
           </div>
         </div>
       </div>

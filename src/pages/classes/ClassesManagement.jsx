@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Users, BookOpen, Clock, Calendar, Building, User, ChevronLeft, ChevronRight, Search, Filter } from 'lucide-react';
 import ClassCard from '@/components/ui/ClassCard';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -26,8 +27,10 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import EmptyState from '../../components/ui/EmptyState';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { encryptParams } from '../../utils/encryption'; // Import encryption for URL parameters
 
 export default function ClassesManagement() {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const { error, handleError, clearError, retry } = useErrorHandler();
@@ -1079,6 +1082,10 @@ export default function ClassesManagement() {
                     enrolled={classItem.enrolled}
                     capacity={classItem.capacity}
                     badges={badges}
+                    onManage={() => {
+                      const encryptedParams = encryptParams({ classId: classItem.id, schoolId: schoolInfo.id });
+                      navigate(`/students?params=${encryptedParams}`);
+                    }}
                     onEdit={() => handleEditClass(classItem)}
                     onDelete={() => { setSelectedClass(classItem); setShowDeleteDialog(true); }}
                   />

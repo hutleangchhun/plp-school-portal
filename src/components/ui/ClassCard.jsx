@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trash2, Edit2, Users } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 /**
  * ClassCard - reusable, minimalist class card with dynamic colors and values
@@ -14,7 +15,7 @@ import Badge from '@/components/ui/Badge';
  * - badges: array of badge objects [{ label: string, color?: string, variant?: string }]
  * - status: 'available' | 'high' | 'full' (controls accent color)
  * - accentColor?: { bar: string, track: string, pillText?: string } tailwind classes
- * - onManage?: function
+ * - onManage?: function (callback to view/manage students in class)
  * - onEdit?: function
  * - onDelete?: function
  * - manageLabel?: string
@@ -28,6 +29,7 @@ export default function ClassCard({
   badges = [],
   status: propStatus, // Rename to avoid conflict
   accentColor,
+  onManage,
   onEdit,
   onDelete,
 }) {
@@ -102,23 +104,38 @@ export default function ClassCard({
             )}
           </div>
           <div className="flex items-center gap-2">
+            {onManage && (
+              <Tooltip content="View and manage students in this class">
+                <button
+                  onClick={onManage}
+                  className="p-2 rounded-md text-green-500 hover:text-green-600 hover:bg-green-50 border-2 border-green-100 bg-green-100 duration-300"
+                  title="Manage Students"
+                >
+                  <Users className="h-4 w-4" />
+                </button>
+              </Tooltip>
+            )}
             {onEdit && (
-              <button
-                onClick={onEdit}
-                className="p-2 rounded-md text-blue-500 hover:text-blue-600 hover:bg-blue-50 border-2 border-blue-100 bg-blue-100 duration-300"
-                title="Edit Class"
-              >
-                <Edit2 className="h-4 w-4" />
-              </button>
+              <Tooltip content="Edit class details">
+                <button
+                  onClick={onEdit}
+                  className="p-2 rounded-md text-blue-500 hover:text-blue-600 hover:bg-blue-50 border-2 border-blue-100 bg-blue-100 duration-300"
+                  title="Edit Class"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </button>
+              </Tooltip>
             )}
             {onDelete && (
-              <button
-                onClick={onDelete}
-                className="p-2 rounded-md text-red-500 hover:text-red-600 hover:bg-red-50 border-2 border-red-100 bg-red-100 duration-300"
-                title="Delete Class"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <Tooltip content="Delete class">
+                <button
+                  onClick={onDelete}
+                  className="p-2 rounded-md text-red-500 hover:text-red-600 hover:bg-red-50 border-2 border-red-100 bg-red-100 duration-300"
+                  title="Delete Class"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </Tooltip>
             )}
           </div>
         </div>

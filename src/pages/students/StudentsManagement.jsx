@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Plus, MinusCircle, Edit2, Users, X, ArrowRightLeft, Eye, Filter } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -15,7 +15,7 @@ import useSelectedStudents from '../../hooks/useSelectedStudents';
 import { Badge } from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
 import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
-import { encryptId } from '../../utils/encryption';
+import { encryptId, decryptParams } from '../../utils/encryption';
 import { getFullName } from '../../utils/usernameUtils';
 import StudentActionsModal from '../../components/students/StudentActionsModal';
 import StudentViewModal from '../../components/students/StudentViewModal';
@@ -37,6 +37,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
  */
 export default function StudentsManagement() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const { error, handleError, clearError, retry } = useErrorHandler();
@@ -121,6 +122,44 @@ export default function StudentsManagement() {
   const [availableClasses, setAvailableClasses] = useState([]);
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
   const [selectedClassId, setSelectedClassId] = useState('all');
+
+  // Read classId and schoolId from URL query parameters and pre-select the class
+  useEffect(() => {
+    // Try to get encrypted params first
+    const encryptedParams = searchParams.get('params');
+
+    if (encryptedParams) {
+      // Decrypt the parameters
+      const decrypted = decryptParams(encryptedParams);
+      if (decrypted) {
+        console.log('Decrypted params from URL:', decrypted);
+        // Set schoolId from decrypted params
+        if (decrypted.schoolId && !schoolId) {
+          console.log('Setting school ID from encrypted params:', decrypted.schoolId);
+          setSchoolId(decrypted.schoolId);
+        }
+        // Pre-select the class if classId is provided
+        if (decrypted.classId && decrypted.classId !== 'all') {
+          setSelectedClassId(decrypted.classId);
+        }
+      }
+    } else {
+      // Fallback to non-encrypted params (for backward compatibility)
+      const classIdParam = searchParams.get('classId');
+      const schoolIdParam = searchParams.get('schoolId');
+
+      // Set schoolId from URL if provided (to avoid waiting for my-account API call)
+      if (schoolIdParam && !schoolId) {
+        console.log('Setting school ID from URL param:', schoolIdParam);
+        setSchoolId(schoolIdParam);
+      }
+
+      // Pre-select the class if classId is provided
+      if (classIdParam && classIdParam !== 'all') {
+        setSelectedClassId(classIdParam);
+      }
+    }
+  }, [searchParams, schoolId]);
 
   // Debug: Log filter changes
   // useEffect(() => {
