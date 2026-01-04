@@ -1188,7 +1188,7 @@ export default function BulkStudentImport() {
   const addRow = () => {
     // Check if we've reached the maximum limit of 70 students
     if (students.length >= 70) {
-      showError('អ្នកអាចបន្ថែមសិស្សបានច្រើនបំផុត ៧០នាក់។ សូមលុបជួរដើម្បីបន្ថែមជួរថ្មី។', { duration: 5000 });
+      showError('អ្នកអាចបន្ថែមសិស្សបានច្រើនបំផុត ១០០នាក់។ សូមលុបជួរដើម្បីបន្ថែមជួរថ្មី។', { duration: 5000 });
       return;
     }
 
@@ -1334,7 +1334,7 @@ export default function BulkStudentImport() {
       }
 
       // Validate student count limit (maximum 70 students)
-      if (students.length > 70) {
+      if (students.length > 100) {
         showError('អ្នកអាចបញ្ជូនសិស្សបានច្រើនបំផុត ៧០នាក់ក្នុងមួយពេល។ សូមកាត់បន្ថយចំនួនសិស្សហើយព្យាយាមម្តងទៀត។', { duration: 5000 });
         stopLoading(loadingKey);
         setLoading(false);
