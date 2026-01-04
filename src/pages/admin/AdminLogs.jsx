@@ -137,9 +137,9 @@ const AdminLogs = () => {
               />
 
               <StatsCard
-                title={t('totalRequests', 'Total Requests')}
-                value={summary.totalRequests || 0}
-                subtitle={`Avg: ${summary.averageRequestsPerUser || 0} per user`}
+                title={t('activeUsers', 'Active Users')}
+                value={users.filter(u => u.ttl > 0).length}
+                subtitle={`${users.length} total tracked`}
                 icon={Activity}
                 enhanced={true}
                 gradientFrom="from-green-500"
@@ -148,32 +148,30 @@ const AdminLogs = () => {
                 responsive={true}
               />
 
-              {summary.topUser && (
-                <>
-                  <StatsCard
-                    title={t('topUser', 'Top User')}
-                    value={summary.topUser.totalRequests || 0}
-                    subtitle={`ID: ${summary.topUser.identifier}`}
-                    icon={Zap}
-                    enhanced={true}
-                    gradientFrom="from-purple-500"
-                    gradientTo="to-purple-600"
-                    hoverColor="hover:border-purple-200"
-                    responsive={true}
-                  />
+              <StatsCard
+                title={t('totalRequests', 'Total Requests')}
+                value={summary.totalRequests || 0}
+                subtitle={`Avg: ${summary.averageRequestsPerUser || 0} per user`}
+                icon={Activity}
+                enhanced={true}
+                gradientFrom="from-cyan-500"
+                gradientTo="to-cyan-600"
+                hoverColor="hover:border-cyan-200"
+                responsive={true}
+              />
 
-                  <StatsCard
-                    title={t('averageUsage', 'Avg Usage')}
-                    value={`${summary.averageRequestsPerUser || 0}`}
-                    subtitle={t('requestsPerUser', 'requests per user')}
-                    icon={Activity}
-                    enhanced={true}
-                    gradientFrom="from-orange-500"
-                    gradientTo="to-orange-600"
-                    hoverColor="hover:border-orange-200"
-                    responsive={true}
-                  />
-                </>
+              {summary.topUser && (
+                <StatsCard
+                  title={t('topUser', 'Top User')}
+                  value={summary.topUser.totalRequests || 0}
+                  subtitle={`ID: ${summary.topUser.identifier}`}
+                  icon={Zap}
+                  enhanced={true}
+                  gradientFrom="from-purple-500"
+                  gradientTo="to-purple-600"
+                  hoverColor="hover:border-purple-200"
+                  responsive={true}
+                />
               )}
             </div>
           </FadeInSection>
