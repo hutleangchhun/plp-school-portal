@@ -54,7 +54,7 @@ export const routePermissions = {
     component: 'ParentsManagement'
   },
   '/attendance': {
-    allowedRoles: [ROLES.DIRECTOR, ROLES.TEACHER],
+    allowedRoles: [ROLES.TEACHER],
     component: 'Attendance'
   },
   '/teacher-attendance': {
@@ -409,10 +409,6 @@ export const getNavigationItems = (user, t) => {
       name: t('attendance') || 'វត្តមាន',
       href: '#', // Parent item doesn't need a direct link
       children: [
-        {
-          name: t('studentAttendance') || 'វត្តមានសិស្ស',
-          href: '/attendance',
-        },
         {
           name: t('studentAttendanceView', 'Student Attendance View'),
           href: '/student-attendance-view',
