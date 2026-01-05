@@ -58,6 +58,7 @@ const ENDPOINTS = {
     VERIFY_EMAIL: '/users/verify-email',
     RESEND_VERIFICATION: '/users/resend-verification',
     UPDATE_USER: (userId) => `/users/${userId}`,
+    ACTIVE_STATUS: (userId) => `/users/${userId}/active-status`,
     GENERATE_QR_CODE: '/users/generate-qr-code',
     GENERATE_USERNAME: '/users/generate-username',
     VALIDATE_EMAIL: (email) => `/users/validate/email?email=${encodeURIComponent(email)}`,

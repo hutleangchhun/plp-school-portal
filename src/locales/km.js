@@ -396,6 +396,12 @@ export const km = {
   poorCardGradeStatistics: 'ស្ថិតិកម្រិតប័ណ្ណក្រីក្រ',
   failedToLoadStats: 'បរាជ័យក្នុងការផ្ទុកស្ថិតិ',
   myTeachingClass: 'ថ្នាក់ដែលបង្រៀន',
+  teacherCreatedSuccess: 'បានបង្កើតបុគ្គលិកដោយជោគជ័យ',
+  teacherUpdatedSuccess: 'បានកែប្រែទិន្នន័យបុគ្គលិកដោយជោគជ័យ',
+  teacherCreationFailed: 'បរាជ័យក្នុងការបង្កើតបុគ្គលិក',
+  failedCreateTeacher: 'បរាជ័យក្នុងការបង្កើតគ្រូ',
+  teacherUpdateFailed: 'បរាជ័យក្នុងការកែប្រែទិន្នន័យបុគ្គលិក',
+  failedUpdateTeacher: 'បរាជ័យក្នុងការកែប្រែព័ត៌មានគ្រូ',
 
   // Parent Management
   parents: 'អាណាព្យាបាល',
@@ -575,6 +581,7 @@ export const km = {
   checkIn: 'ចុះវត្តមាន',
   studentAttendanceTracking: 'វត្តមានសិស្ស',
   studentAttendanceView: 'វត្តមានសិស្ស',
+  
 
   // Reports & Analytics
   academicPerformance: 'ការអនុវត្តន៍សិក្សា',
@@ -1873,6 +1880,22 @@ export const km = {
   teacherDemographics: 'ស្ថិតិជនជាតិភាគតិច និង ប្រភេទពិការភាព',
   viewTeacherDemographics: 'មើលជនជាតិ និងតម្រូវការពិការភាពរបស់គ្រូបង្រៀននៅគ្រប់សាលារៀនទាំងអស់',
   activeFilters: 'តម្រងបានជ្រើសរើស',
-  autoSelected: 'បានជ្រើសរើសដោយស្វయ័ត',
+  autoSelected: 'បានជ្រើសរើសដោយស្វ័យប្រវត្តិ',
   perPage: 'មួយទំព័រ',
+  activateTeacher: 'បើកដំណើរបុគ្គលិក',
+  deactivateTeacher: 'បិទដំណើរបុគ្គលិក',
+  confirmActivateTeacher: 'តើអ្នកប្រាកដថាចង់បើកដំណើរការគណនីបុគ្គលិកនេះ? គណនីនេះនឹងអាចចូលប្រើប្រាស់ប្រព័ន្ធបាន។',
+  confirmDeactivateTeacher: 'តើអ្នកប្រាកដថាចង់បិទដំណើរការគណនីបុគ្គលិកនេះ? គណនីនឹងមិនអាចចូលប្រើប្រាស់ប្រព័ន្ធបានទៀតទេ។',
+  teacherActivatedSuccess: 'បាន​បើក​ដំណើរការ​គណនីបុគ្គលិក​ដោយ​ជោគជ័យ',
+  teacherDeactivatedSuccess: 'បាន​បិទ​ដំណើរការ​គណនីបុគ្គលិក​ដោយ​ជោគជ័យ',
+  failedToUpdateStatus: 'បរាជ័យក្នុងការកែប្រែស្ថានភាពបុគ្គលិក',
+  errorUpdatingTeacherStatus: 'បរាជ័យក្នុងការកែប្រែស្ថានភាពបុគ្គលិក',
+  activate: 'បើកដំណើរការគណនី',
+  deactivate: 'បិទដំណើរការគណនី',
+  allStatuses: 'ស្ថានភាពទាំងអស់',
+  selectStatus: 'ជ្រើសរើសស្ថានភាព',
 };
+
+// Inserted translations - Teacher Active/Inactive Status
+km.active = 'សកម្ម';
+km.inactive = 'អសកម្ម';

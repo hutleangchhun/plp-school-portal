@@ -16,7 +16,6 @@ export const nationalityOptions = [
 
 // Role options (primarily school roles + students)
 export const roleOptions = [
-  { value: '9', label: 'សិស្ស' }, // STUDENT
   { value: '8', label: 'គ្រូបង្រៀន' }, // TEACHER
   { value: '14', label: 'នាយកសាលារៀន' }, // PRINCIPAL
   { value: '15', label: 'នាយករងសាលារៀន' }, // DEPUTYPRINCIPAL

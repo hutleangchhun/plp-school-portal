@@ -655,6 +655,23 @@ const userService = {
     }
 
     return del(ENDPOINTS.USERS.BULK_DELETE, { user_ids: userIds });
+  },
+
+  /**
+   * Toggle user active/inactive status
+   * @param {string|number} userId - User ID
+   * @param {boolean} isActive - Active status to set
+   * @returns {Promise<Object>} Updated user data with new status
+   */
+  updateUserActiveStatus: async (userId, isActive) => {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    console.log(`Updating user ${userId} active status to: ${isActive}`);
+    return patch(ENDPOINTS.USERS.ACTIVE_STATUS(userId), {
+      is_active: isActive
+    });
   }
 };
 

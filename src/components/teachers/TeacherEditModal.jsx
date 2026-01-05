@@ -805,7 +805,7 @@ const TeacherEditModal = () => {
     if (!editForm.employment_type) {
       errorsList.push({
         field: t('employmentType', 'ប្រភេទការងារ'),
-        messages: [t('fieldRequired', 'ាលលេខនេះគឺចាំបាច់')]
+        messages: [t('fieldRequired', 'ត្រូវបំពេញជាចាំបាច់')]
       });
     }
 
@@ -855,8 +855,8 @@ const TeacherEditModal = () => {
     // Teacher number validation (if provided)
     if (editForm.teacher_number?.trim() && teacherNumberAvailable === false) {
       errorsList.push({
-        field: t('teacherNumber', 'លេខគ្រូ'),
-        messages: [t('teacherNumberNotAvailable', 'លេខគ្រូនេះត្រូវបានប្រើរួចហើយ')]
+        field: t('teacherNumber', 'អត្តលេខគ្រូ'),
+        messages: [t('teacherNumberNotAvailable', 'អត្តលេខគ្រូនេះត្រូវបានប្រើរួចហើយ')]
       });
     }
 
@@ -1124,7 +1124,7 @@ const TeacherEditModal = () => {
             navigate(redirectPath, { replace: true });
           }, 1500);
         } else {
-          throw new Error('Failed to create teacher');
+          throw new Error(t('teacherCreationFailed', 'Failed to create teacher'));
         }
       } else {
         // EDIT MODE: Update existing teacher
@@ -1244,7 +1244,7 @@ const TeacherEditModal = () => {
             navigate(redirectPath, { replace: true });
           }, 1500);
         } else {
-          throw new Error('Failed to update teacher');
+          throw new Error(t('teacherUpdateFailed', 'Failed to update teacher'))
         }
       }
     } catch (error) {

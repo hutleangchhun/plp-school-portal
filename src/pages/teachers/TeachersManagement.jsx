@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, MinusCircle, Edit2, Users, Download, X, Filter, User, Eye } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, Users, Download, X, Filter, User, Eye, Lock, Unlock } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -100,8 +100,11 @@ export default function TeachersManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState(''); // '' = all, 'true' = active, 'false' = inactive
+  const [selectedRoleId, setSelectedRoleId] = useState(''); // '' = all roles
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [viewingTeacher, setViewingTeacher] = useState(null);
   const [selectedTeachers, setSelectedTeachers] = useState([]);
@@ -208,6 +211,8 @@ export default function TeachersManagement() {
     const currentParams = JSON.stringify({
       search: searchTerm,
       gradeLevel: selectedGradeLevel,
+      statusFilter: selectedStatusFilter,
+      roleId: selectedRoleId,
       schoolId,
       page: pagination.page,
       limit: pagination.limit
@@ -232,9 +237,11 @@ export default function TeachersManagement() {
       console.log(`School ID: ${schoolId}`);
       console.log(`Search term: ${searchTerm}`);
       console.log(`Grade Level: ${selectedGradeLevel}`);
+      console.log(`Status Filter: ${selectedStatusFilter}`);
+      console.log(`Role ID Filter: ${selectedRoleId}`);
       console.log(`Page: ${pagination.page}, Limit: ${pagination.limit}`);
 
-      // Build request parameters with search, grade level, and pagination
+      // Build request parameters with search, grade level, status filter, role filter, and pagination
       const requestParams = {
         page: pagination.page,
         limit: pagination.limit
@@ -244,6 +251,12 @@ export default function TeachersManagement() {
       }
       if (selectedGradeLevel && selectedGradeLevel !== '') {
         requestParams.grade_level = selectedGradeLevel;
+      }
+      if (selectedStatusFilter !== '') {
+        requestParams.is_active = selectedStatusFilter === 'true';
+      }
+      if (selectedRoleId && selectedRoleId !== '') {
+        requestParams.roleId = selectedRoleId;
       }
 
       const response = await teacherService.getTeachersBySchool(schoolId, requestParams);
@@ -264,26 +277,35 @@ export default function TeachersManagement() {
       console.log('Raw teacher data:', data);
 
       // Map backend data structure to component format
-      data = data.map(teacher => ({
-        id: teacher.teacherId,
-        teacherId: teacher.teacherId,
-        userId: teacher.userId,
-        username: teacher.user?.username || '',
-        firstName: teacher.user?.first_name || '',
-        lastName: teacher.user?.last_name || '',
-        name: getFullName(teacher.user, ''),
-        email: teacher.user?.email || '',
-        phone: teacher.user?.phone || '',
-        schoolId: teacher.schoolId,
-        schoolName: teacher.school?.name || '',
-        hireDate: teacher.hire_date,
-        gradeLevel: teacher.gradeLevel || null,
-        employmentType: teacher.employment_type || '',
-        roleId: teacher.roleId,
-        status: teacher.status,
-        isActive: teacher.status === 'ACTIVE',
-        classes: teacher.classes || []
-      }));
+      data = data.map(teacher => {
+        // Determine active status from teacher.is_active field (primary source)
+        // Falls back to status field if is_active is not available
+        const isActive = teacher.is_active !== undefined
+          ? teacher.is_active
+          : teacher.status === 'ACTIVE';
+
+        return {
+          id: teacher.teacherId,
+          teacherId: teacher.teacherId,
+          userId: teacher.userId,
+          username: teacher.user?.username || '',
+          firstName: teacher.user?.first_name || '',
+          lastName: teacher.user?.last_name || '',
+          name: getFullName(teacher.user, ''),
+          email: teacher.user?.email || '',
+          phone: teacher.user?.phone || '',
+          gender: teacher.user?.gender || '',
+          schoolId: teacher.schoolId,
+          schoolName: teacher.school?.name || '',
+          hireDate: teacher.hire_date,
+          gradeLevel: teacher.gradeLevel || null,
+          employmentType: teacher.employment_type || '',
+          roleId: teacher.roleId,
+          status: teacher.status,
+          isActive: isActive,
+          classes: teacher.classes || []
+        };
+      });
 
       console.log('Mapped teacher data:', data);
 
@@ -332,7 +354,7 @@ export default function TeachersManagement() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [schoolId, searchTerm, selectedGradeLevel, pagination.page, pagination.limit, showError, t, handleError, stopLoading]);
+  }, [schoolId, searchTerm, selectedGradeLevel, selectedStatusFilter, selectedRoleId, pagination.page, pagination.limit, showError, t, handleError, stopLoading]);
 
   // Initialize school ID and fetch teachers
   useEffect(() => {
@@ -352,10 +374,12 @@ export default function TeachersManagement() {
   const fetchParams = useMemo(() => ({
     searchTerm,
     selectedGradeLevel,
+    selectedStatusFilter,
+    selectedRoleId,
     schoolId,
     page: pagination.page,
     limit: pagination.limit
-  }), [searchTerm, selectedGradeLevel, schoolId, pagination.page, pagination.limit]);
+  }), [searchTerm, selectedGradeLevel, selectedStatusFilter, selectedRoleId, schoolId, pagination.page, pagination.limit]);
 
   // Handle fetch on parameter changes
   useEffect(() => {
@@ -420,6 +444,69 @@ export default function TeachersManagement() {
     showSuccess(t('featureComingSoon', 'This feature is coming soon'));
     setShowDeleteDialog(false);
     setSelectedTeacher(null);
+  };
+
+  // Handle toggle user active/inactive status - show confirmation dialog
+  const handleToggleUserStatus = (teacher) => {
+    setSelectedTeacher(teacher);
+    setShowStatusDialog(true);
+  };
+
+  // Handle confirm status change
+  const handleConfirmStatusChange = async () => {
+    if (!selectedTeacher) return;
+
+    try {
+      const newStatus = !selectedTeacher.isActive;
+      setLoading(true);
+      console.log(`Toggling user ${selectedTeacher.userId} status from ${selectedTeacher.isActive} to ${newStatus}`);
+
+      // Call API to update status
+      const response = await userService.updateUserActiveStatus(selectedTeacher.userId, newStatus);
+
+      if (response && response.success !== false) {
+        // Update the teacher in the list
+        const updatedTeachers = teachers.map(t => {
+          if (t.userId === selectedTeacher.userId) {
+            return {
+              ...t,
+              isActive: newStatus,
+              status: newStatus ? 'ACTIVE' : 'INACTIVE'
+            };
+          }
+          return t;
+        });
+
+        setTeachers(updatedTeachers);
+        setAllTeachers(allTeachers.map(t => {
+          if (t.userId === selectedTeacher.userId) {
+            return {
+              ...t,
+              isActive: newStatus,
+              status: newStatus ? 'ACTIVE' : 'INACTIVE'
+            };
+          }
+          return t;
+        }));
+
+        showSuccess(
+          newStatus
+            ? t('teacherActivatedSuccess', 'Teacher activated successfully')
+            : t('teacherDeactivatedSuccess', 'Teacher deactivated successfully')
+        );
+      } else {
+        showError(response?.error || t('failedToUpdateStatus', 'Failed to update teacher status'));
+      }
+    } catch (err) {
+      console.error('Error toggling teacher status:', err);
+      handleError(err, {
+        toastMessage: t('errorUpdatingTeacherStatus', 'Failed to update teacher status')
+      });
+    } finally {
+      setLoading(false);
+      setShowStatusDialog(false);
+      setSelectedTeacher(null);
+    }
   };
 
   // Export handlers - Export in Cambodian school format
@@ -779,7 +866,7 @@ export default function TeachersManagement() {
       cellClassName: 'text-xs sm:text-sm text-gray-700',
       responsive: 'hidden lg:table-cell',
       render: (teacher) => (
-        <p>{teacher.username || '-'}</p>
+        <p>{teacher.username || ''}</p>
       )
     },
     {
@@ -792,12 +879,26 @@ export default function TeachersManagement() {
         const level = teacher.gradeLevel;
 
         if (!level) {
-          return <p>-</p>;
+          return <p></p>;
         }
 
         return (
           <p> {getGradeLabel(String(level), t)}</p>
         );
+      }
+    },
+    {
+      key: 'gender',
+      header: t('gender', 'Gender'),
+      cellClassName: 'text-xs sm:text-sm text-gray-700',
+      responsive: 'hidden lg:table-cell',
+      render: (teacher) => {
+        const genderDisplay = teacher.gender === 'MALE' || teacher.gender === 'male'
+          ? t('male', 'Male')
+          : teacher.gender === 'FEMALE' || teacher.gender === 'female'
+          ? t('female', 'Female')
+          : '-';
+        return <p>{genderDisplay}</p>;
       }
     },
     {
@@ -885,6 +986,26 @@ export default function TeachersManagement() {
             title={t('editTeacher', 'Edit teacher')}
           >
             <Edit2 className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleUserStatus(teacher);
+            }}
+            variant="ghost"
+            size="sm"
+            className={teacher.isActive
+              ? "text-orange-600 hover:text-orange-900 hover:bg-orange-50 hover:scale-110"
+              : "text-gray-400 hover:text-gray-600 hover:bg-gray-100 hover:scale-110"}
+            title={teacher.isActive
+              ? t('deactivateTeacher', 'Deactivate teacher')
+              : t('activateTeacher', 'Activate teacher')}
+          >
+            {teacher.isActive ? (
+              <Unlock className="h-4 w-4" />
+            ) : (
+              <Lock className="h-4 w-4" />
+            )}
           </Button>
           {/*
           <Button
@@ -1008,9 +1129,9 @@ export default function TeachersManagement() {
               <Filter className="h-4 w-4" />
               <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
               <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
-              {(localSearchTerm || selectedGradeLevel) && (
+              {(localSearchTerm || selectedGradeLevel || selectedStatusFilter || selectedRoleId) && (
                 <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
-                  {(localSearchTerm ? 1 : 0) + (selectedGradeLevel ? 1 : 0)}
+                  {(localSearchTerm ? 1 : 0) + (selectedGradeLevel ? 1 : 0) + (selectedStatusFilter ? 1 : 0) + (selectedRoleId ? 1 : 0)}
                 </span>
               )}
             </Button>
@@ -1019,12 +1140,24 @@ export default function TeachersManagement() {
         </div>
 
         {/* Active Filters Display */}
-        {selectedGradeLevel && (
+        {(selectedGradeLevel || selectedStatusFilter || selectedRoleId) && (
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-blue-900">{t('activeFilters', 'Active Filters')}:</span>
-            <Badge color="green" variant="outline" size="sm">
-              {t('gradeLevel', 'Grade Level')}: {getSharedGradeLevelOptions(t, false).find(g => g.value === selectedGradeLevel)?.label || selectedGradeLevel}
-            </Badge>
+            {selectedGradeLevel && (
+              <Badge color="green" variant="outline" size="sm">
+                {t('gradeLevel', 'Grade Level')}: {getSharedGradeLevelOptions(t, false).find(g => g.value === selectedGradeLevel)?.label || selectedGradeLevel}
+              </Badge>
+            )}
+            {selectedStatusFilter && (
+              <Badge color="blue" variant="outline" size="sm">
+                {t('status', 'Status')}: {selectedStatusFilter === 'true' ? t('active', 'Active') : t('inactive', 'Inactive')}
+              </Badge>
+            )}
+            {selectedRoleId && (
+              <Badge color="purple" variant="outline" size="sm">
+                {t('roles', 'Role')}: {roleOptions.find(r => r.value === selectedRoleId)?.label || selectedRoleId}
+              </Badge>
+            )}
           </div>
         )}
 
@@ -1034,10 +1167,12 @@ export default function TeachersManagement() {
           onClose={() => setShowMobileFilters(false)}
           title={t('filters', 'Filters & Actions')}
           subtitle={t('manageTeacherRecords', 'Manage your filters and actions')}
-          hasFilters={localSearchTerm || selectedGradeLevel}
+          hasFilters={localSearchTerm || selectedGradeLevel || selectedStatusFilter || selectedRoleId}
           onClearFilters={() => {
             handleSearchChange('');
             setSelectedGradeLevel('');
+            setSelectedStatusFilter('');
+            setSelectedRoleId('');
             setPagination(prev => ({ ...prev, page: 1 }));
           }}
           onApply={() => {
@@ -1056,6 +1191,44 @@ export default function TeachersManagement() {
                   }}
                   options={getGradeLevelOptions()}
                   placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                  minWidth="w-full"
+                  triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
+                />
+              </div>
+              {/* Role Filter */}
+              <div className="mt-4">
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('roles', 'Role')}</label>
+                <Dropdown
+                  value={selectedRoleId}
+                  onValueChange={(value) => {
+                    setSelectedRoleId(value);
+                    setPagination(prev => ({ ...prev, page: 1 }));
+                  }}
+                  options={[
+                    { value: '', label: t('allRoles', 'All Roles') },
+                    ...roleOptions
+                  ]}
+                  placeholder={t('selectRole', 'Select Role')}
+                  minWidth="w-full"
+                  triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
+                />
+              </div>
+
+              {/* Active Status Filter */}
+              <div className="mt-4">
+                <label className="block text-gray-700 text-xs font-semibold mb-2 uppercase">{t('status', 'Status')}</label>
+                <Dropdown
+                  value={selectedStatusFilter}
+                  onValueChange={(value) => {
+                    setSelectedStatusFilter(value);
+                    setPagination(prev => ({ ...prev, page: 1 }));
+                  }}
+                  options={[
+                    { value: '', label: t('allStatuses', 'All Statuses') },
+                    { value: 'true', label: t('active', 'Active') },
+                    { value: 'false', label: t('inactive', 'Inactive') }
+                  ]}
+                  placeholder={t('selectStatus', 'Select Status')}
                   minWidth="w-full"
                   triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
                 />
@@ -1182,9 +1355,28 @@ export default function TeachersManagement() {
         title={t('deleteTeacher', 'Delete Teacher')}
         message={`${t('confirmDeleteTeacher', 'Are you sure you want to delete')} ${getFullName(selectedTeacher, t('thisTeacher', 'this teacher'))}? ${t('thisActionCannotBeUndone', 'This action cannot be undone.')}`}
         confirmText={isLoading('deleteTeacher') ? t('deleting', 'Deleting...') : t('delete', 'Delete')}
-        confirmVariant="danger"
+        type="danger"
         cancelText={t('cancel', 'Cancel')}
-        isConfirming={isLoading('deleteTeacher')}
+        loading={isLoading('deleteTeacher')}
+      />
+
+      <ConfirmDialog
+        isOpen={showStatusDialog}
+        onClose={() => {
+          setShowStatusDialog(false);
+          setSelectedTeacher(null);
+        }}
+        onConfirm={handleConfirmStatusChange}
+        title={selectedTeacher?.isActive
+          ? t('deactivateTeacher', 'Deactivate Teacher')
+          : t('activateTeacher', 'Activate Teacher')}
+        message={selectedTeacher?.isActive
+          ? t('confirmDeactivateTeacher', 'Are you sure you want to deactivate this teacher? They will no longer be able to access the system.')
+          : t('confirmActivateTeacher', 'Are you sure you want to activate this teacher? They will be able to access the system.')}
+        type={selectedTeacher?.isActive ? 'warning' : 'info'}
+        confirmText={loading ? t('updating', 'Updating...') : (selectedTeacher?.isActive ? t('deactivate', 'Deactivate') : t('activate', 'Activate'))}
+        cancelText={t('cancel', 'Cancel')}
+        loading={loading}
       />
 
       {/* View Teacher Modal */}

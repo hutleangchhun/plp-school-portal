@@ -4,7 +4,7 @@ import { ENDPOINTS } from '../config.js';
 export const teacherService = {
     // Fetch all Teacher in one school
     getTeachersBySchool: async (schoolId, params = {}) => {
-        const { search, grade_level, page, limit } = params;
+        const { search, grade_level, page, limit, is_active, roleId } = params;
 
         // Build query parameters
         const queryParams = {};
@@ -19,6 +19,12 @@ export const teacherService = {
         }
         if (limit) {
             queryParams.limit = limit;
+        }
+        if (is_active !== undefined && is_active !== null) {
+            queryParams.is_active = is_active;
+        }
+        if (roleId && roleId !== '') {
+            queryParams.roleId = roleId;
         }
 
         const response = await handleApiResponse(() =>
