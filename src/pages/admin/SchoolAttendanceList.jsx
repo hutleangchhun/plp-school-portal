@@ -13,14 +13,17 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/ca
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import SchoolAttendanceDetailModal from '../../components/attendance/SchoolAttendanceDetailModal';
+import SchoolAttendanceCountModal from '../../components/attendance/SchoolAttendanceCountModal';
 import Badge from '@/components/ui/Badge';
+import { Eye } from 'lucide-react';
 
 const SchoolCoverageTable = ({
   data = [],
   loading,
   pagination = {},
   onPageChange = () => {},
-  onLimitChange = () => {}
+  onLimitChange = () => {},
+  onViewDetails = () => {}
 }) => {
   const { t } = useLanguage();
   const [sortConfig, setSortConfig] = useState({ key: 'schoolName', direction: 'asc' });
@@ -124,6 +127,9 @@ const SchoolCoverageTable = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t('dateRange', 'Date Range')}
               </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('actions', 'Actions')}
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -180,6 +186,17 @@ const SchoolCoverageTable = ({
                       <span className="text-gray-400">-</span>
                     )}
                   </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => onViewDetails(school)}
+                    className="p-2 h-auto"
+                    title={t('viewDetails', 'View Details')}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
                 </td>
               </tr>
             ))}
@@ -241,6 +258,9 @@ const SchoolAttendanceList = () => {
   // Selected school for detail modal
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  
+  // New modal for attendance counts
+  const [attendanceCountModalOpen, setAttendanceCountModalOpen] = useState(false);
 
   // Fetch provinces on mount
   useEffect(() => {
@@ -378,6 +398,11 @@ const SchoolAttendanceList = () => {
     setDetailModalOpen(true);
   };
 
+  const handleViewAttendanceCount = (school) => {
+    setSelectedSchool(school);
+    setAttendanceCountModalOpen(true);
+  };
+
   // Handle pagination
   const handlePageChange = (newPage) => {
     fetchSchools(newPage);
@@ -491,6 +516,7 @@ const SchoolAttendanceList = () => {
                 }));
                 fetchSchools(1, newLimit);
               }}
+              onViewDetails={handleViewAttendanceCount}
             />
           </CardContent>
         </Card>
@@ -545,7 +571,7 @@ const SchoolAttendanceList = () => {
       </SidebarFilter>
 
       {/* School Detail Modal */}
-      {selectedSchool && (
+      {selectedSchool && detailModalOpen && (
         <SchoolAttendanceDetailModal
           isOpen={detailModalOpen}
           onClose={() => {
@@ -553,6 +579,19 @@ const SchoolAttendanceList = () => {
             setSelectedSchool(null);
           }}
           school={selectedSchool}
+        />
+      )}
+
+      {/* New School Attendance Count Modal */}
+      {selectedSchool && attendanceCountModalOpen && (
+        <SchoolAttendanceCountModal
+          isOpen={attendanceCountModalOpen}
+          onClose={() => {
+            setAttendanceCountModalOpen(false);
+            setSelectedSchool(null);
+          }}
+          schoolId={selectedSchool.schoolId}
+          schoolName={selectedSchool.schoolName}
         />
       )}
     </div>

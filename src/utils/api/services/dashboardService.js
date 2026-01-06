@@ -294,21 +294,21 @@ export const dashboardService = {
 
       // The payload includes a data array and totals at the top level
       const data = Array.isArray(payload.data) ? payload.data : [];
-      const totalSchools = payload.totalSchools || payload.total_schools || 0;
-      const totalStudents = payload.totalStudents || payload.total_students || 0;
-      const totalStudentsWithClass = payload.totalStudentsWithClass || payload.total_students_with_class || 0;
-      const totalStudentsNoClass = payload.totalStudentsNoClass || payload.total_students_no_class || 0;
-      const totalTeachers = payload.totalTeachers || payload.total_teachers || 0;
-      const totalClasses = payload.totalClasses || payload.total_classes || 0;
+      const totalSchools = payload.totalSchools ?? payload.total_schools ?? 0;
+      const totalStudents = payload.totalStudents ?? payload.total_students ?? 0;
+      const totalStudentsWithClass = payload.totalStudentsWithClass ?? payload.total_students_with_class ?? 0;
+      const totalStudentsNoClass = payload.totalStudentsNoClass ?? payload.total_students_no_class ?? 0;
+      const totalTeachers = payload.totalTeachers ?? payload.total_teachers ?? 0;
+      const totalClasses = payload.totalClasses ?? payload.total_classes ?? 0;
 
       // Transform data for chart usage if needed
       // Make sure data is an array before calling .map()
       const chartData = Array.isArray(data) ?
         data.map(school => ({
           name: school.schoolName || school.school_name || school.name || 'Unknown School',
-          studentsWithClassCount: school.studentsWithClassCount || school.studentCount || 0,
-          totalStudentsCount: school.totalStudentsCount || 0,
-          studentsNoClassCount: school.studentsNoClassCount || 0,
+          studentsWithClassCount: school.studentsWithClassCount ?? 0,
+          totalStudentsCount: school.totalStudentsCount ?? 0,
+          studentsNoClassCount: school.studentsNoClassCount ?? 0,
           teacherCount: school.teacherCount || 0,
           classCount: school.classCount || 0,
           value: school.totalStudentsCount || 0, // Default value use total

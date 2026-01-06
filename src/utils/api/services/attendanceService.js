@@ -52,7 +52,7 @@ export const attendanceService = {
     const response = await handleApiResponse(() =>
       apiClient_.get(`${ENDPOINTS.ATTENDANCE.BASE}`, { params: queryParams })
     );
-    
+
     console.log('Raw API response:', response);
 
     // Robustly extract data and pagination from various response shapes
@@ -582,6 +582,23 @@ export const attendanceService = {
     async getSchoolAttendanceCount(schoolId) {
       return handleApiResponse(() =>
         apiClient_.get(`${ENDPOINTS.ATTENDANCE.DASHBOARD.BASE}/schools/${schoolId}/attendance-count`)
+      );
+    },
+
+    /**
+     * Get attendance count for a specific school with date range or specific date
+     * @param {number} schoolId - School ID
+     * @param {Object} params - Query parameters (startDate, endDate, date)
+     * @returns {Promise<Object>} Attendance counts with breakdown
+     */
+    async getSchoolAttendanceCountWithDates(schoolId, params = {}) {
+      const queryParams = {};
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
+      if (params.date) queryParams.date = params.date;
+
+      return handleApiResponse(() =>
+        apiClient_.get(`${ENDPOINTS.ATTENDANCE.DASHBOARD.BASE}/schools/${schoolId}/attendance-count`, { params: queryParams })
       );
     }
   },
