@@ -10,7 +10,7 @@ const getApiBaseUrl = () => {
     return 'http://localhost:8080/api/v1';
   }
 
-  return 'https://plp-api.moeys.gov.kh/api/v1';
+  return 'http://192.168.155.89/api/v1';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -19,13 +19,13 @@ const API_BASE_URL = getApiBaseUrl();
 export const HTTPS_CONFIG = {
   // API URLs
   apiUrls: {
-    production: 'https://plp-api.moeys.gov.kh/api/v1',
+    production: 'http://192.168.155.89/api/v1',
     development: 'http://localhost:8080/api/v1'
   },
 
   // Static asset URLs
   staticUrls: {
-    production: 'https://plp-api.moeys.gov.kh',
+    production: 'http://192.168.155.89',
     development: 'http://localhost:8080'
   },
 
@@ -112,7 +112,7 @@ const ENDPOINTS = {
     BY_SCHOOL: (schoolId) => `/parents/school/${schoolId}`,
     STUDENT_PARENT: '/parents/student-parent'
   },
-  TEACHERS:{
+  TEACHERS: {
     BASE: '/teachers',
     GET_BY_ID: (teacherId) => `/teachers/${teacherId}`,
     TEACHER_ID: (teacherId) => `/teachers/${teacherId}`,
@@ -163,7 +163,7 @@ const ENDPOINTS = {
     BATCH_UPDATE: '/grades/batch-update',
     REPORT: {
       STUDENT: (studentId, term) => `/grades/report/student/${studentId}?term=${term}`,
-      CLASS: (classId, subjectId, term) => 
+      CLASS: (classId, subjectId, term) =>
         `/grades/report/class/${classId}/${subjectId}?term=${term}`,
     },
   },
@@ -256,7 +256,7 @@ export const getStaticAssetBaseUrl = () => {
     return 'http://localhost:8080';
   }
 
-  return 'https://plp-api.moeys.gov.kh';
+  return 'http://192.168.155.89';
 };
 
 // Function to get book cover URL from filename
@@ -272,11 +272,11 @@ export const testApiConnection = async (baseUrl) => {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-    
+
     // Try to make a simple request to test connectivity
     // Try multiple endpoints to increase chance of success - use public endpoints that don't require auth
     const testEndpoints = ['', '/health', '/status', '/docs'];
-    
+
     for (const endpoint of testEndpoints) {
       try {
         const response = await fetch(`${baseUrl}${endpoint}`, {
@@ -286,7 +286,7 @@ export const testApiConnection = async (baseUrl) => {
             'Content-Type': 'application/json'
           }
         });
-        
+
         // If we get any response (even 404 or 401), the server is reachable
         // Only server errors (5xx) indicate server problems
         if (response.status < 500) {
@@ -298,7 +298,7 @@ export const testApiConnection = async (baseUrl) => {
         continue;
       }
     }
-    
+
     clearTimeout(timeoutId);
     return false;
   } catch {
