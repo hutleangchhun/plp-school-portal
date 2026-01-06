@@ -78,6 +78,10 @@ const SchoolDistributionChart = ({
     const fetchSchoolDistribution = async () => {
       try {
         setLoading(true);
+        // Reset sort order to DESC when location filters change
+        if (selectedProvince || selectedDistrict) {
+          setSortOrder('DESC');
+        }
         clearError();
 
         // Pass filter parameters to the service
@@ -149,6 +153,11 @@ const SchoolDistributionChart = ({
       const params = {};
       if (selectedProvince) params.provinceId = selectedProvince;
       if (selectedDistrict) params.districtId = selectedDistrict;
+
+      // Reset sort order to DESC when filtering as per user request
+      if (selectedProvince || selectedDistrict) {
+        setSortOrder('DESC');
+      }
 
       const response = await dashboardService.getSchoolDistribution(params);
 
@@ -342,13 +351,14 @@ const SchoolDistributionChart = ({
         </div>
       </div>
 
-      <div className="h-96 overflow-x-auto overflow-y-hidden custom-scrollbar">
+      <div className="h-96 overflow-x-auto overflow-y-hidden custom-scrollbar bg-white">
         <div style={{ 
           minWidth: '100%', 
-          width: chartData.length > 10 ? `${chartData.length * 60}px` : '100%',
-          height: '100%' 
+          width: chartData.length > 10 ? `${chartData.length * 70}px` : '100%',
+          height: '100%',
+          position: 'relative'
         }}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minHeight={300}>
           <BarChart
             data={chartData}
             margin={{
@@ -378,6 +388,7 @@ const SchoolDistributionChart = ({
             />
             <Tooltip
               content={<CustomTooltip />}
+              cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
             />
             <Legend verticalAlign="top" align="right" height={36}/>
             {activeMetric === 'studentCount' && (
@@ -387,7 +398,7 @@ const SchoolDistributionChart = ({
                 stackId="students" 
                 fill="#10b981" 
                 isAnimationActive={false}
-                barSize={30}
+                barSize={40}
               />
             )}
             {activeMetric === 'studentCount' && (
@@ -398,7 +409,15 @@ const SchoolDistributionChart = ({
                 fill="#f59e0b" 
                 radius={[4, 4, 0, 0]} 
                 isAnimationActive={false}
-                barSize={30}
+                barSize={40}
+              />
+            )}
+            {activeMetric === 'studentCount' && (
+              <Bar 
+                dataKey="totalStudentsCount" 
+                name={t('totalStudents', 'Total Students')} 
+                fill="transparent" 
+                legendType="none"
               />
             )}
             {activeMetric !== 'studentCount' && (
@@ -408,7 +427,7 @@ const SchoolDistributionChart = ({
                 fill="#3b82f6" 
                 radius={[4, 4, 0, 0]}
                 isAnimationActive={false}
-                barSize={30}
+                barSize={40}
               />
             )}
           </BarChart>
