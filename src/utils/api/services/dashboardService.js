@@ -296,6 +296,8 @@ export const dashboardService = {
       const data = Array.isArray(payload.data) ? payload.data : [];
       const totalSchools = payload.totalSchools || payload.total_schools || 0;
       const totalStudents = payload.totalStudents || payload.total_students || 0;
+      const totalStudentsWithClass = payload.totalStudentsWithClass || payload.total_students_with_class || 0;
+      const totalStudentsNoClass = payload.totalStudentsNoClass || payload.total_students_no_class || 0;
       const totalTeachers = payload.totalTeachers || payload.total_teachers || 0;
       const totalClasses = payload.totalClasses || payload.total_classes || 0;
 
@@ -304,12 +306,12 @@ export const dashboardService = {
       const chartData = Array.isArray(data) ?
         data.map(school => ({
           name: school.schoolName || school.school_name || school.name || 'Unknown School',
-          studentCount: school.studentCount || 0,
+          studentsWithClassCount: school.studentsWithClassCount || school.studentCount || 0,
           totalStudentsCount: school.totalStudentsCount || 0,
           studentsNoClassCount: school.studentsNoClassCount || 0,
           teacherCount: school.teacherCount || 0,
           classCount: school.classCount || 0,
-          value: school.studentCount || 0, // Default value when activeMetric is studentCount
+          value: school.totalStudentsCount || 0, // Default value use total
           provinceId: school.provinceId,
           districtId: school.districtId
         })) : [];
@@ -341,6 +343,8 @@ export const dashboardService = {
       const summary = {
         totalSchools: totalSchools,
         totalStudents: totalStudents,
+        totalStudentsWithClass: totalStudentsWithClass,
+        totalStudentsNoClass: totalStudentsNoClass,
         totalTeachers: totalTeachers,
         totalClasses: totalClasses,
         totalDirectors: totalDirectors,

@@ -22,7 +22,7 @@ const SchoolDistributionChart = ({
   const { error, handleError, clearError, retry } = useErrorHandler();
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeMetric, setActiveMetric] = useState('studentCount');
+  const [activeMetric, setActiveMetric] = useState('totalStudentsCount');
   const [sortOrder, setSortOrder] = useState('DESC'); // Default sorting order
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -93,7 +93,7 @@ const SchoolDistributionChart = ({
         // Map activeMetric to the corresponding field in API response
         let sortByField;
         switch(activeMetric) {
-          case 'studentCount':
+          case 'totalStudentsCount':
             sortByField = 'totalStudentsCount';
             break;
           case 'teacherCount':
@@ -103,7 +103,7 @@ const SchoolDistributionChart = ({
             sortByField = 'classCount';
             break;
           default:
-            sortByField = 'studentCount'; // default sorting field
+            sortByField = 'totalStudentsCount'; // default sorting field
         }
 
         params.sortBy = sortByField;
@@ -171,8 +171,8 @@ const SchoolDistributionChart = ({
         const hasRegionFilter = !!(selectedProvince || selectedDistrict);
         const sortedData = [...schoolData]
           .sort((a, b) => {
-            const valA = activeMetric === 'studentCount' ? (a.totalStudentsCount || 0) : (a[activeMetric] || 0);
-            const valB = activeMetric === 'studentCount' ? (b.totalStudentsCount || 0) : (b[activeMetric] || 0);
+            const valA = a[activeMetric] || 0;
+            const valB = b[activeMetric] || 0;
             return sortOrder === 'DESC' ? valB - valA : valA - valB;
           });
 
@@ -194,7 +194,7 @@ const SchoolDistributionChart = ({
 
   // Metric options for the chart
   const metricOptions = [
-    { value: 'studentCount', label: t('totalStudents', 'Students') },
+    { value: 'totalStudentsCount', label: t('totalStudents', 'Students') },
     { value: 'teacherCount', label: t('totalTeachers', 'Teachers') },
     { value: 'classCount', label: t('totalClasses', 'Classes') }
   ];
@@ -240,10 +240,10 @@ const SchoolDistributionChart = ({
           onClearFilters={() => {
             setSelectedProvince('');
             setSelectedDistrict('');
-            setActiveMetric('studentCount');
+            setActiveMetric('totalStudentsCount');
             setSortOrder('DESC');
           }}
-          hasFilters={!!(selectedProvince || selectedDistrict || activeMetric !== 'studentCount' || sortOrder !== 'DESC')}
+          hasFilters={!!(selectedProvince || selectedDistrict || activeMetric !== 'totalStudentsCount' || sortOrder !== 'DESC')}
         >
           {/* Province filter */}
           <div className="space-y-2">
@@ -252,7 +252,10 @@ const SchoolDistributionChart = ({
             </label>
             <Dropdown
               value={selectedProvince}
-              onValueChange={setSelectedProvince}
+              onValueChange={(val) => {
+                setSelectedProvince(val);
+                setSelectedDistrict('');
+              }}
               options={[
                 { value: '', label: t('allProvinces', 'All Provinces') },
                 ...provinces.map((province) => ({
@@ -391,9 +394,9 @@ const SchoolDistributionChart = ({
               cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
             />
             <Legend verticalAlign="top" align="right" height={36}/>
-            {activeMetric === 'studentCount' && (
+            {activeMetric === 'totalStudentsCount' && (
               <Bar 
-                dataKey="studentCount" 
+                dataKey="studentsWithClassCount" 
                 name={t('studentsWithClass', 'Students with class')} 
                 stackId="students" 
                 fill="#10b981" 
@@ -401,7 +404,7 @@ const SchoolDistributionChart = ({
                 barSize={40}
               />
             )}
-            {activeMetric === 'studentCount' && (
+            {activeMetric === 'totalStudentsCount' && (
               <Bar 
                 dataKey="studentsNoClassCount" 
                 name={t('studentsNoClass', 'Students without class')} 
@@ -412,7 +415,7 @@ const SchoolDistributionChart = ({
                 barSize={40}
               />
             )}
-            {activeMetric === 'studentCount' && (
+            {activeMetric === 'totalStudentsCount' && (
               <Bar 
                 dataKey="totalStudentsCount" 
                 name={t('totalStudents', 'Total Students')} 
@@ -420,7 +423,7 @@ const SchoolDistributionChart = ({
                 legendType="none"
               />
             )}
-            {activeMetric !== 'studentCount' && (
+            {activeMetric !== 'totalStudentsCount' && (
               <Bar
                 dataKey={activeMetric}
                 name={metricOptions.find(opt => opt.value === activeMetric)?.label || activeMetric}

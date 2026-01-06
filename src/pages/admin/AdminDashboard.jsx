@@ -20,10 +20,11 @@ const AdminDashboard = ({ user: initialUser }) => {
   const [user] = useState(initialUser);
   const [initialLoading, setInitialLoading] = useState(true);
   const [systemStats, setSystemStats] = useState({
-    totalSchools: 0,
-    totalStudents: 0,
-    totalTeachers: 0,
     totalClasses: 0,
+    totalStudents: 0,
+    totalStudentsWithClass: 0,
+    totalStudentsNoClass: 0,
+    totalTeachers: 0,
     totalDirectors: 0,
     totalDeputyPrincipals: 0,
     totalSecretaries: 0,
@@ -57,6 +58,8 @@ const AdminDashboard = ({ user: initialUser }) => {
         setSystemStats({
           totalSchools: response.summary.totalSchools,
           totalStudents: response.summary.totalStudents,
+          totalStudentsWithClass: response.summary.totalStudentsWithClass,
+          totalStudentsNoClass: response.summary.totalStudentsNoClass,
           totalTeachers: response.summary.totalTeachers,
           totalClasses: response.summary.totalClasses,
           totalDirectors: response.summary.totalDirectors,
@@ -169,11 +172,10 @@ const AdminDashboard = ({ user: initialUser }) => {
         </FadeInSection>
 
         {/* System Statistics */}
-        <FadeInSection delay={200} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <FadeInSection delay={200} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <StatsCard
             title={t('totalSchools', 'Total Schools')}
             value={systemStats.totalSchools}
-            icon={Building2}
             enhanced={true}
             gradientFrom="from-blue-500"
             gradientTo="to-blue-600"
@@ -184,7 +186,6 @@ const AdminDashboard = ({ user: initialUser }) => {
           <StatsCard
             title={t('totalStudents', 'Total Students')}
             value={systemStats.totalStudents}
-            icon={Users}
             enhanced={true}
             gradientFrom="from-green-500"
             gradientTo="to-green-600"
@@ -193,9 +194,28 @@ const AdminDashboard = ({ user: initialUser }) => {
           />
 
           <StatsCard
+            title={t('studentsWithClass', 'Students With Class')}
+            value={systemStats.totalStudentsWithClass}
+            enhanced={true}
+            gradientFrom="from-emerald-500"
+            gradientTo="to-emerald-600"
+            hoverColor="hover:border-emerald-200"
+            responsive={true}
+          />
+
+          <StatsCard
+            title={t('studentsNoClass', 'Students No Class')}
+            value={systemStats.totalStudentsNoClass}
+            enhanced={true}
+            gradientFrom="from-amber-500"
+            gradientTo="to-amber-600"
+            hoverColor="hover:border-amber-200"
+            responsive={true}
+          />
+
+          <StatsCard
             title={t('totalTeachers', 'Total Teachers')}
             value={systemStats.totalTeachers}
-            icon={User}
             enhanced={true}
             gradientFrom="from-purple-500"
             gradientTo="to-purple-600"
@@ -206,7 +226,6 @@ const AdminDashboard = ({ user: initialUser }) => {
           <StatsCard
             title={t('totalClasses', 'Total Classes')}
             value={systemStats.totalClasses}
-            icon={BookOpen}
             enhanced={true}
             gradientFrom="from-orange-500"
             gradientTo="to-orange-600"
@@ -216,11 +235,10 @@ const AdminDashboard = ({ user: initialUser }) => {
         </FadeInSection>
 
         {/* Additional Role Statistics */}
-        <FadeInSection delay={250} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+        <FadeInSection delay={250} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-6">
           <StatsCard
             title={t('totalDirectors', 'Total Directors')}
             value={systemStats.totalDirectors}
-            icon={User}
             enhanced={true}
             gradientFrom="from-rose-500"
             gradientTo="to-rose-600"
@@ -231,7 +249,6 @@ const AdminDashboard = ({ user: initialUser }) => {
           <StatsCard
             title={t('totalDeputyPrincipals', 'Deputy Principals')}
             value={systemStats.totalDeputyPrincipals}
-            icon={User}
             enhanced={true}
             gradientFrom="from-pink-500"
             gradientTo="to-pink-600"
@@ -242,7 +259,6 @@ const AdminDashboard = ({ user: initialUser }) => {
           <StatsCard
             title={t('totalSecretaries', 'Secretaries')}
             value={systemStats.totalSecretaries}
-            icon={Briefcase}
             enhanced={true}
             gradientFrom="from-cyan-500"
             gradientTo="to-cyan-600"
@@ -253,7 +269,6 @@ const AdminDashboard = ({ user: initialUser }) => {
           <StatsCard
             title={t('totalTreasurers', 'Treasurers')}
             value={systemStats.totalTreasurers}
-            icon={Briefcase}
             enhanced={true}
             gradientFrom="from-teal-500"
             gradientTo="to-teal-600"
@@ -264,7 +279,6 @@ const AdminDashboard = ({ user: initialUser }) => {
           <StatsCard
             title={t('totalLibrarians', 'Librarians')}
             value={systemStats.totalLibrarians}
-            icon={BookOpen}
             enhanced={true}
             gradientFrom="from-indigo-500"
             gradientTo="to-indigo-600"
@@ -275,7 +289,6 @@ const AdminDashboard = ({ user: initialUser }) => {
           <StatsCard
             title={t('totalWorkshop', 'Workshop Staff')}
             value={systemStats.totalWorkshop}
-            icon={Briefcase}
             enhanced={true}
             gradientFrom="from-amber-500"
             gradientTo="to-amber-600"
@@ -286,7 +299,6 @@ const AdminDashboard = ({ user: initialUser }) => {
           <StatsCard
             title={t('totalSecurity', 'Security Staff')}
             value={systemStats.totalSecurity}
-            icon={Shield}
             enhanced={true}
             gradientFrom="from-slate-500"
             gradientTo="to-slate-600"
@@ -297,7 +309,6 @@ const AdminDashboard = ({ user: initialUser }) => {
           <StatsCard
             title={t('totalTeacherIct', 'ICT Teachers')}
             value={systemStats.totalTeacherIct}
-            icon={User}
             enhanced={true}
             gradientFrom="from-lime-500"
             gradientTo="to-lime-600"
