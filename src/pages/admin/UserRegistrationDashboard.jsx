@@ -11,12 +11,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/ca
 import { Users, Filter, Calendar, BarChart3 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { roleOptions, gradeLevelOptions } from '../../utils/formOptions';
+import { roleOptions, gradeLevelOptions, getDynamicRoleOptions, ROLE_STUDENT_ID } from '../../utils/formOptions';
 import { DatePickerWithDropdowns } from '@/components/ui/date-picker-with-dropdowns';
 import Dropdown from '@/components/ui/Dropdown';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 
-const DEFAULT_ROLE_ID = roleOptions[0]?.value || '9';
+const dashboardRoleOptions = getDynamicRoleOptions({ includeStudent: true });
+
+const DEFAULT_ROLE_ID = ROLE_STUDENT_ID;
 
 const UserRegistrationDashboard = () => {
   const { t } = useLanguage();
@@ -60,7 +62,7 @@ const UserRegistrationDashboard = () => {
   const [districts, setDistricts] = useState([]);
   const [schools, setSchools] = useState([]);
   const [gradeLevel, setGradeLevel] = useState(gradeLevelOptions);
-  const [roleLevel, setRoleLevel] = useState(roleOptions);
+  const [roleLevel, setRoleLevel] = useState(dashboardRoleOptions);
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(today);
   const [excludeSchoolIdsText, setExcludeSchoolIdsText] = useState('');
@@ -285,9 +287,9 @@ const UserRegistrationDashboard = () => {
                 {t('gradeLevel', 'Grade Level')}: {gradeLevelOptions.find(gl => gl.value === effectiveFilters.gradeLevel)?.label}
               </Badge>
             )}
-            {roleOptions.find(ro => ro.value === effectiveFilters.roleId) && (
+            {dashboardRoleOptions.find(ro => ro.value === effectiveFilters.roleId) && (
               <Badge className="mr-2">
-                {t('role', 'Role')}: {roleOptions.find(ro => ro.value === effectiveFilters.roleId)?.label}
+                {t('role', 'Role')}: {dashboardRoleOptions.find(ro => ro.value === effectiveFilters.roleId)?.label}
               </Badge>
             )}
             {effectiveFilters.startDate && (
@@ -485,7 +487,7 @@ const UserRegistrationDashboard = () => {
               <Dropdown
                 value={tempFilters.roleId}
                 onValueChange={(val) => handleTempFilterChange('roleId', val)}
-                options={roleOptions.map((opt) => ({
+                options={dashboardRoleOptions.map((opt) => ({
                   value: opt.value,
                   label: opt.label,
                 }))}

@@ -27,6 +27,26 @@ export const roleOptions = [
   { value: '21', label: 'គ្រូICT' } // TEACHERICT
 ];
 
+// Student Role ID
+export const ROLE_STUDENT_ID = '9';
+
+/**
+ * Get dynamic role options based on configuration
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.includeStudent - Whether to include student role (ID 9)
+ * @returns {Array} Array of role options
+ */
+export const getDynamicRoleOptions = ({ includeStudent = false } = {}) => {
+  const options = [...roleOptions];
+  if (includeStudent) {
+    // Check if student role is already in options to avoid duplicates
+    if (!options.find((opt) => opt.value === ROLE_STUDENT_ID)) {
+      options.unshift({ value: ROLE_STUDENT_ID, label: 'សិស្ស' });
+    }
+  }
+  return options;
+};
+
 // Child status options
 export const childStatusOptions = [
   { value: '', label: 'ជ្រើសរើសស្ថានភាព' },
