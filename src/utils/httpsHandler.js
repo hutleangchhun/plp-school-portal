@@ -6,14 +6,41 @@
 /**
  * Configuration for HTTPS handling
  */
+const getDynamicConfig = () => {
+  // 1. Local Development
+  if (import.meta.env.MODE === 'development') {
+    return { api: 'http://localhost:8080/api/v1', static: 'http://localhost:8080' };
+  }
+
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+
+  // 2. Physical Server
+  if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.89') {
+    return { api: 'http://192.168.155.89/api/v1', static: 'http://192.168.155.89' };
+  }
+
+  // 3. Localhost in Production build
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return { api: 'http://localhost:8080/api/v1', static: 'http://localhost:8080' };
+  }
+
+  // 4. Public / Vercel
+  return {
+    api: import.meta.env.VITE_API_URL || 'https://plp-api.moeys.gov.kh/api/v1',
+    static: import.meta.env.VITE_STATIC_BASE_URL || 'https://plp-api.moeys.gov.kh'
+  };
+};
+
+const dynamicConfig = getDynamicConfig();
+
 export const HttpsConfig = {
   // Base URLs - Production API
   apiUrls: {
-    primary: 'http://192.168.155.89',
-    fallback: 'http://192.168.155.89',
+    primary: dynamicConfig.api,
+    fallback: dynamicConfig.api,
     static: {
-      primary: 'http://192.168.155.89',
-      fallback: 'http://192.168.155.89'
+      primary: dynamicConfig.static,
+      fallback: dynamicConfig.static
     }
   },
 

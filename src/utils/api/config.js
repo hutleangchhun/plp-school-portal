@@ -1,16 +1,27 @@
 // API Configuration - Environment-aware URL selection
 const getApiBaseUrl = () => {
-  // Use environment variable if set, otherwise default based on environment
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-
-  // Default based on environment
+  // 1. Development Mode (Vite)
   if (import.meta.env.MODE === 'development') {
     return 'http://localhost:8080/api/v1';
   }
 
-  return 'http://192.168.155.89/api/v1';
+  // Runtime detection for Physical Server vs Public/Vercel
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+
+    // 2. Physical server portal (via domain or IP) uses internal API IP
+    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.89') {
+      return 'http://192.168.155.89/api/v1';
+    }
+
+    // 3. Localhost in production build (rare but possible)
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:8080/api/v1';
+    }
+  }
+
+  // 4. Default to MOEYS API for all other environments (Vercel, etc.)
+  return 'https://plp-api.moeys.gov.kh/api/v1';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -19,13 +30,15 @@ const API_BASE_URL = getApiBaseUrl();
 export const HTTPS_CONFIG = {
   // API URLs
   apiUrls: {
-    production: 'http://192.168.155.89/api/v1',
+    production: 'https://plp-api.moeys.gov.kh/api/v1',
+    physical: 'http://192.168.155.89/api/v1',
     development: 'http://localhost:8080/api/v1'
   },
 
   // Static asset URLs
   staticUrls: {
-    production: 'http://192.168.155.89',
+    production: 'https://plp-api.moeys.gov.kh',
+    physical: 'http://192.168.155.89',
     development: 'http://localhost:8080'
   },
 
@@ -246,17 +259,21 @@ export const HTTP_STATUS = {
 
 // Function to get static asset base URL
 export const getStaticAssetBaseUrl = () => {
-  // Use environment variable if set
-  if (import.meta.env.VITE_STATIC_BASE_URL) {
-    return import.meta.env.VITE_STATIC_BASE_URL;
-  }
-
-  // Default based on environment
   if (import.meta.env.MODE === 'development') {
     return 'http://localhost:8080';
   }
 
-  return 'http://192.168.155.89';
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.89') {
+      return 'http://192.168.155.89';
+    }
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:8080';
+    }
+  }
+
+  return 'https://plp-api.moeys.gov.kh';
 };
 
 // Function to get book cover URL from filename
