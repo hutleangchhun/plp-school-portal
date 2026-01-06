@@ -1909,6 +1909,7 @@ export default function StudentsManagement() {
         onRemoveStudent={removeStudent}
         onClearAll={clearAll}
         schoolId={schoolId}
+        onRefresh={() => fetchStudents(undefined, true, true)}
       />
 
       {/* View Student Modal */}
