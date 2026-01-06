@@ -1,11 +1,10 @@
 import { useRef } from 'react';
-import { Plus, Upload, Download, Save, FileSpreadsheet } from 'lucide-react';
+import { Upload, Download, Save, FileSpreadsheet } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 const BulkImportHeader = ({ 
   onExcelImport, 
   onDownloadTemplate, 
-  onAddRow, 
   onSubmit, 
   loading, 
   schoolId,
@@ -14,10 +13,10 @@ const BulkImportHeader = ({
   const fileInputRef = useRef(null);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+    <div className="bg-white rounded-sm border border-gray-200 p-6 shadow-sm">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-sm flex items-center justify-center shadow-lg">
             <Upload className="h-6 w-6 text-white" />
           </div>
           <div>
@@ -56,14 +55,6 @@ const BulkImportHeader = ({
             ទាញយកគំរូ
           </Button>
 
-          <Button
-            onClick={onAddRow}
-            variant="outline"
-            size="sm"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            បន្ថែមជួរ
-          </Button>
           <Button
             onClick={onSubmit}
             variant="primary"

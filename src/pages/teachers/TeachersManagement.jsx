@@ -100,7 +100,7 @@ export default function TeachersManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState(''); // '' = all, 'true' = active, 'false' = inactive
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('true'); // '' = all, 'true' = active, 'false' = inactive
   const [selectedRoleId, setSelectedRoleId] = useState(''); // '' = all roles
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -494,6 +494,9 @@ export default function TeachersManagement() {
             ? t('teacherActivatedSuccess', 'Teacher activated successfully')
             : t('teacherDeactivatedSuccess', 'Teacher deactivated successfully')
         );
+
+        // Refresh data from API to ensure consistency
+        fetchTeachers(true);
       } else {
         showError(response?.error || t('failedToUpdateStatus', 'Failed to update teacher status'));
       }

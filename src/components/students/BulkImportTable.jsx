@@ -1,5 +1,7 @@
 import { OctagonAlert } from 'lucide-react';
 import StudentTableRow from './StudentTableRow';
+import { Plus } from 'lucide-react';
+import { Button } from '../ui/Button';
 
 const BulkImportTable = ({
   students,
@@ -14,7 +16,8 @@ const BulkImportTable = ({
   handleCellMouseEnter,
   handleCellMouseUp,
   selectedRange,
-  tableRef
+  tableRef,
+  onAddRow
 }) => {
   // Function to check if any student has father information
   const hasAnyFatherInfo = () => {
@@ -66,17 +69,23 @@ const BulkImportTable = ({
   const { studentInfoCount, fatherInfoCount, motherInfoCount, additionalInfoCount } = getColumnCounts();
 
   return (
-    <div className="shadow-lg rounded-lg overflow-hidden border border-gray-200 bg-transparent">
+    <div className="shadow-lg rounded-sm overflow-hidden border border-gray-200 bg-transparent">
       <div className="bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900">តារាងបញ្ចូលសិស្ស</h2>
-        <div className='text-sm flex justify-between items-center gap-4 flex-col sm:flex-row'>
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">តារាងបញ្ចូលសិស្ស</h2>
+        <div className='text-sm flex justify-between items-start gap-4 flex-col sm:flex-row'>
           <div>
-            <p>សូមបំពេញព័ត៌មានសិស្សនៅក្នុងតារាងខាងក្រោម ឬនាំចូលពីឯកសារ Excel។</p>
+            <p className='mb-1 text-gray-700'>សូមបំពេញព័ត៌មានសិស្សនៅក្នុងតារាងខាងក្រោម ឬនាំចូលពីឯកសារ Excel។</p>
+            <span className="text-red-600">ចំណាំ៖ អ្នកអាចបន្ថែមបានច្រើនបំផុត 100 នាក់ក្នុងមួយពេល</span>
           </div>
-          <div className='text-red-600 flex justify-between items-center'>
-            <OctagonAlert className="h-5 w-5 mr-1" />
-            <div className='pt-1'><p>ចំណាំ៖ អ្នកអាចបន្ថែមបានច្រើនបំផុត 100 នាក់ក្នុងមួយពេល</p></div>
-          </div>
+          <Button
+            onClick={onAddRow}
+            variant="outline"
+            size="sm"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            បន្ថែមជួរ
+          </Button>
+          
         </div>
       </div>
       <div className="relative overflow-auto" ref={tableRef} style={{ position: 'relative', zIndex: 10, height: '600px' }}>

@@ -1926,7 +1926,6 @@ export default function BulkStudentImport() {
           <BulkImportHeader
             onExcelImport={handleExcelImport}
             onDownloadTemplate={downloadTemplate}
-            onAddRow={addRow}
             onSubmit={handleSubmit}
             loading={loading}
             schoolId={schoolId}
@@ -2163,6 +2162,7 @@ export default function BulkStudentImport() {
             handleCellMouseUp={handleCellMouseUp}
             selectedRange={selectedRange}
             tableRef={tableRef}
+            onAddRow={addRow}
           />
         </FadeInSection>
       </div>
