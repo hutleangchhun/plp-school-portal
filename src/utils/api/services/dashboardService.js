@@ -305,6 +305,8 @@ export const dashboardService = {
         data.map(school => ({
           name: school.schoolName || school.school_name || school.name || 'Unknown School',
           studentCount: school.studentCount || 0,
+          totalStudentsCount: school.totalStudentsCount || 0,
+          studentsNoClassCount: school.studentsNoClassCount || 0,
           teacherCount: school.teacherCount || 0,
           classCount: school.classCount || 0,
           value: school.studentCount || 0, // Default value when activeMetric is studentCount

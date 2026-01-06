@@ -217,6 +217,8 @@ export const km = {
   years: 'ឆ្នាំ',
   location: 'ទីតាំង',
   totalTeachers: 'គ្រូបង្រៀនសរុប',
+  studentsWithClass: 'សិស្សមានថ្នាក់',
+  studentsNoClass: 'សិស្សមិនមានថ្នាក់',
 
   // Student Management
   addStudent: 'បន្ថែមសិស្ស',
@@ -582,7 +584,7 @@ export const km = {
   checkIn: 'ចុះវត្តមាន',
   studentAttendanceTracking: 'វត្តមានសិស្ស',
   studentAttendanceView: 'វត្តមានសិស្ស',
-  
+
 
   // Reports & Analytics
   academicPerformance: 'ការអនុវត្តន៍សិក្សា',
@@ -809,8 +811,8 @@ export const km = {
   enterPassword: 'បញ្ចូលពាក្យសម្ងាត់របស់អ្នក',
   signingIn: 'កំពុងចូល...',
   signIn: 'ចូលប្រព័ន្ធ',
-  invalidUsernameAndPassword : 'ឈ្មោះអ្នកប្រើ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ',
-  permissionDenied : 'អនុញ្ញាតឱ្យចូលប្រើ',
+  invalidUsernameAndPassword: 'ឈ្មោះអ្នកប្រើ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ',
+  permissionDenied: 'អនុញ្ញាតឱ្យចូលប្រើ',
   serverError: 'បញ្ហាម៉ាស៊ីនមេ',
   usernameAndPhonenumber: 'ឈ្មោះអ្នកប្រើប្រាស់​ ឬលេខទូរស័ព្ទ',
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { createPortal } from 'react-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { dashboardService } from '../../utils/api/services/dashboardService';
 import locationService from '../../utils/api/services/locationService';
@@ -81,15 +82,15 @@ const SchoolDistributionChart = ({
 
         // Pass filter parameters to the service
         const params = {};
-        if (selectedProvince) params.provinceId = parseInt(selectedProvince, 20);
-        if (selectedDistrict) params.districtId = parseInt(selectedDistrict, 20);
+        if (selectedProvince) params.provinceId = parseInt(selectedProvince, 10);
+        if (selectedDistrict) params.districtId = parseInt(selectedDistrict, 10);
 
         // Add sorting parameters based on active metric
         // Map activeMetric to the corresponding field in API response
         let sortByField;
         switch(activeMetric) {
           case 'studentCount':
-            sortByField = 'studentCount';
+            sortByField = 'totalStudentsCount';
             break;
           case 'teacherCount':
             sortByField = 'teacherCount';
@@ -113,12 +114,14 @@ const SchoolDistributionChart = ({
             ? response.data
             : (Array.isArray(response.raw) ? response.raw : []);
 
-          // Limit to top 10 schools for better visualization
-          const displayData = schoolData.slice(0, 15);
+          // Show top 20 schools by default, but show all when filtered by region
+          const hasRegionFilter = !!(selectedProvince || selectedDistrict);
+          const displayData = hasRegionFilter ? schoolData : schoolData.slice(0, 20);
 
           setChartData(displayData);
 
-          console.log('✅ School distribution data loaded:', displayData);
+          console.log('✅ School distribution chartData set:', displayData);
+          console.log('📊 Active metric:', activeMetric);
         } else {
           console.error('Failed to fetch school distribution:', response.error);
           // setError(new Error(response.error || 'Failed to fetch school distribution'));
@@ -156,11 +159,15 @@ const SchoolDistributionChart = ({
           : (Array.isArray(response.raw) ? response.raw : []);
 
         // Limit to top 10 schools for better visualization
+        const hasRegionFilter = !!(selectedProvince || selectedDistrict);
         const sortedData = [...schoolData]
-          .sort((a, b) => (b[activeMetric] || 0) - (a[activeMetric] || 0))
-          .slice(0, 15);
+          .sort((a, b) => {
+            const valA = activeMetric === 'studentCount' ? (a.totalStudentsCount || 0) : (a[activeMetric] || 0);
+            const valB = activeMetric === 'studentCount' ? (b.totalStudentsCount || 0) : (b[activeMetric] || 0);
+            return sortOrder === 'DESC' ? valB - valA : valA - valB;
+          });
 
-        setChartData(sortedData);
+        setChartData(hasRegionFilter ? sortedData : sortedData.slice(0, 20));
       } else {
         console.error('Failed to refresh school distribution:', response.error);
         // setError(new Error(response.error || 'Failed to refresh school distribution'));
@@ -210,98 +217,103 @@ const SchoolDistributionChart = ({
 
   return (
     <div className={`bg-white rounded-md border border-gray-200 p-6 ${className}`}>
-      {/* Filters Sidebar */}
-      <SidebarFilter
-        isOpen={isFilterOpen}
-        onClose={() => setIsFilterOpen(false)}
-        title={t('schoolFilters', 'School Filters')}
-        subtitle={t('schoolFiltersDesc', 'Filter and sort schools for the chart')}
-        onApply={handleRefresh}
-        onClearFilters={() => {
-          setSelectedProvince('');
-          setSelectedDistrict('');
-          setActiveMetric('studentCount');
-          setSortOrder('DESC');
-        }}
-        hasFilters={!!(selectedProvince || selectedDistrict || activeMetric !== 'studentCount' || sortOrder !== 'DESC')}
-      >
-        {/* Province filter */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            {t('province', 'Province')}
-          </label>
-          <Dropdown
-            value={selectedProvince}
-            onValueChange={setSelectedProvince}
-            options={[
-              { value: '', label: t('allProvinces', 'All Provinces') },
-              ...provinces.map((province) => ({
-                value: province.id.toString(),
-                label:
-                  province.province_name_kh ||
-                  province.province_name_en ||
-                  province.name ||
-                  'Unknown Province',
-              })),
-            ]}
-            placeholder={t('selectProvince', 'Select Province')}
-            className='w-full'
-          />
-        </div>
+      {/* Filters Sidebar - Rendered in Portal to avoid transform issues */}
+      {isFilterOpen && createPortal(
+        <SidebarFilter
+          isOpen={isFilterOpen}
+          onClose={() => setIsFilterOpen(false)}
+          title={t('schoolFilters', 'School Filters')}
+          subtitle={t('schoolFiltersDesc', 'Filter and sort schools for the chart')}
+          onApply={() => {
+            handleRefresh();
+            setIsFilterOpen(false);
+          }}
+          onClearFilters={() => {
+            setSelectedProvince('');
+            setSelectedDistrict('');
+            setActiveMetric('studentCount');
+            setSortOrder('DESC');
+          }}
+          hasFilters={!!(selectedProvince || selectedDistrict || activeMetric !== 'studentCount' || sortOrder !== 'DESC')}
+        >
+          {/* Province filter */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              {t('province', 'Province')}
+            </label>
+            <Dropdown
+              value={selectedProvince}
+              onValueChange={setSelectedProvince}
+              options={[
+                { value: '', label: t('allProvinces', 'All Provinces') },
+                ...provinces.map((province) => ({
+                  value: province.id.toString(),
+                  label:
+                    province.province_name_kh ||
+                    province.province_name_en ||
+                    province.name ||
+                    'Unknown Province',
+                })),
+              ]}
+              placeholder={t('selectProvince', 'Select Province')}
+              className='w-full'
+            />
+          </div>
 
-        {/* District filter */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            {t('district', 'District')}
-          </label>
-          <Dropdown
-            value={selectedDistrict}
-            onValueChange={setSelectedDistrict}
-            options={[
-              { value: '', label: t('allDistricts', 'All Districts') },
-              ...districts.map((district) => ({
-                value: district.id
-                  ? district.id.toString()
-                  : district.district_code || district.code || district.id,
-                label:
-                  district.district_name_kh ||
-                  district.district_name_en ||
-                  district.name ||
-                  'Unknown District',
-              })),
-            ]}
-            placeholder={t('selectDistrict', 'Select District')}
-            disabled={!selectedProvince}
-            className='w-full'
-          />
-        </div>
+          {/* District filter */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              {t('district', 'District')}
+            </label>
+            <Dropdown
+              value={selectedDistrict}
+              onValueChange={setSelectedDistrict}
+              options={[
+                { value: '', label: t('allDistricts', 'All Districts') },
+                ...districts.map((district) => ({
+                  value: district.id
+                    ? district.id.toString()
+                    : district.district_code || district.code || district.id,
+                  label:
+                    district.district_name_kh ||
+                    district.district_name_en ||
+                    district.name ||
+                    'Unknown District',
+                })),
+              ]}
+              placeholder={t('selectDistrict', 'Select District')}
+              disabled={!selectedProvince}
+              className='w-full'
+            />
+          </div>
 
-        {/* Metric sort field */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            {t('sortByMetric', 'Sort by metric')}
-          </label>
-          <Dropdown
-            value={activeMetric}
-            onValueChange={setActiveMetric}
-            options={metricOptions}
-            className='w-full'
-          />
-        </div>
+          {/* Metric sort field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              {t('sortByMetric', 'Sort by metric')}
+            </label>
+            <Dropdown
+              value={activeMetric}
+              onValueChange={setActiveMetric}
+              options={metricOptions}
+              className='w-full'
+            />
+          </div>
 
-        {/* Sort order */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            {t('sortOrder', 'Sort order')}
-          </label>
-          <SortOrderDropdown
-            value={sortOrder}
-            onChange={setSortOrder}
-            className="w-full"
-          />
-        </div>
-
-      </SidebarFilter>
+          {/* Sort order */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              {t('sortOrder', 'Sort order')}
+            </label>
+            <SortOrderDropdown
+              value={sortOrder}
+              onChange={setSortOrder}
+              className="w-full"
+            />
+          </div>
+        </SidebarFilter>,
+        document.body
+      )}
 
       <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-6">
         <div>
@@ -330,57 +342,85 @@ const SchoolDistributionChart = ({
         </div>
       </div>
 
-      <div className="h-96">
+      <div className="h-96 overflow-x-auto overflow-y-hidden custom-scrollbar">
+        <div style={{ 
+          minWidth: '100%', 
+          width: chartData.length > 10 ? `${chartData.length * 60}px` : '100%',
+          height: '100%' 
+        }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
-            layout="vertical"
             margin={{
               top: 20,
               right: 30,
-              // Extra left margin so school names sit clearly to the left of bars
-              left: 120,
-              bottom: 20,
+              left: 40, // Increased left margin
+              bottom: 100, // Increased bottom margin for rotated labels
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
-            {/* Numeric values along the bottom */}
-            <XAxis type="number" />
-            <YAxis
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis 
+              dataKey="name" 
               type="category"
-              // Use school name field from API (fallback to other possible keys)
-              dataKey="name"
+              interval={0}
               tick={{
-                fontSize: 11,
-                // Keep labels on the left of the bar, not under it
+                fontSize: 10,
+                angle: -45,
                 textAnchor: 'end'
               }}
-              // Show all category labels (no skipping)
-              interval={0}
-              // Wider axis area to fully show school names on the left
-              width={180}
+              height={100}
+            />
+            <YAxis 
+              type="number" 
+              allowDecimals={false} 
+              width={60} 
+              domain={[0, 'auto']}
             />
             <Tooltip
               content={<CustomTooltip />}
-              formatter={(value, name) => [value, t(name, name)]}
-              labelFormatter={(value) => value}
             />
-            <Legend />
-            <Bar
-              dataKey={activeMetric}
-              name={metricOptions.find(opt => opt.value === activeMetric)?.label || activeMetric}
-              fill="#3b82f6" // Tailwind blue-500
-              radius={[0, 4, 4, 0]}
-            />
+            <Legend verticalAlign="top" align="right" height={36}/>
+            {activeMetric === 'studentCount' && (
+              <Bar 
+                dataKey="studentCount" 
+                name={t('studentsWithClass', 'Students with class')} 
+                stackId="students" 
+                fill="#10b981" 
+                isAnimationActive={false}
+                barSize={30}
+              />
+            )}
+            {activeMetric === 'studentCount' && (
+              <Bar 
+                dataKey="studentsNoClassCount" 
+                name={t('studentsNoClass', 'Students without class')} 
+                stackId="students" 
+                fill="#f59e0b" 
+                radius={[4, 4, 0, 0]} 
+                isAnimationActive={false}
+                barSize={30}
+              />
+            )}
+            {activeMetric !== 'studentCount' && (
+              <Bar
+                dataKey={activeMetric}
+                name={metricOptions.find(opt => opt.value === activeMetric)?.label || activeMetric}
+                fill="#3b82f6" 
+                radius={[4, 4, 0, 0]}
+                isAnimationActive={false}
+                barSize={30}
+              />
+            )}
           </BarChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Summary Stats */}
       <div className="mt-6 pt-4 border-t border-gray-200">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="text-center">
-            <p className="text-2xl font-bold text-blue-600">{chartData.reduce((sum, item) => sum + (item.studentCount || 0), 0)}</p>
+            <p className="text-2xl font-bold text-blue-600">{chartData.reduce((sum, item) => sum + (item.totalStudentsCount || 0), 0)}</p>
             <p className="text-sm text-gray-500">{t('totalStudents', 'Total Students')}</p>
           </div>
           <div className="text-center">
