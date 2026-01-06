@@ -4,7 +4,6 @@ import { useLoading } from '../../contexts/LoadingContext';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import StatsCard from '../../components/ui/StatsCard';
 import SchoolDistributionChart from '../../components/ui/SchoolDistributionChart';
-import DataCompletenessChart from '../../components/ui/DataCompletenessChart';
 import FieldCompletenessChart from '../../components/ui/FieldCompletenessChart';
 import { dashboardService } from '../../utils/api/services/dashboardService';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
@@ -313,15 +312,6 @@ const AdminDashboard = ({ user: initialUser }) => {
           <div className="">
             <SchoolDistributionChart />
           </div>
-              
-          {/* Data Completeness Chart
-          <div className="">
-            <DataCompletenessChart
-              sharedFilters={sharedFilters}
-              onFiltersChange={setSharedFilters}
-            />
-          </div>
-             */}
           {/* Field Completeness Chart */}
           <div className="">
             <FieldCompletenessChart
