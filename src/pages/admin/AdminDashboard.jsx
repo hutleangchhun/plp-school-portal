@@ -313,15 +313,15 @@ const AdminDashboard = ({ user: initialUser }) => {
           <div className="">
             <SchoolDistributionChart />
           </div>
-
-          {/* Data Completeness Chart */}
+              
+          {/* Data Completeness Chart
           <div className="">
             <DataCompletenessChart
               sharedFilters={sharedFilters}
               onFiltersChange={setSharedFilters}
             />
           </div>
-
+             */}
           {/* Field Completeness Chart */}
           <div className="">
             <FieldCompletenessChart
