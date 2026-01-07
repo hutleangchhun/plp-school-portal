@@ -1,28 +1,31 @@
 // API Configuration - Environment-aware URL selection
 const getApiBaseUrl = () => {
-  // 1. Development (local Vite)
+  // 1. Development (Vite)
   if (import.meta.env.MODE === 'development') {
     return 'http://localhost:8080/api/v1';
   }
 
-  // 2. Browser runtime (production)
+  // 2. Production (browser)
   if (typeof window !== 'undefined') {
-    const { protocol, hostname } = window.location;
+    const { hostname } = window.location;
 
-    // HTTPS frontend → ALWAYS use same-origin API
-    if (protocol === 'https:') {
+    // Physical server or official domain - use proxy /api
+    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.89') {
       return '/api';
     }
 
-    // HTTP-only environments (rare)
+    // Localhost in production build (e.g., served by a local server)
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://localhost:8080/api/v1';
     }
   }
 
-  // 3. Fallback (external public API)
+  // 3. Fallback (external public API for Vercel or other domains)
   return 'https://plp-api.moeys.gov.kh/api/v1';
 };
+
+export default getApiBaseUrl;
+
 
 
 const API_BASE_URL = getApiBaseUrl();
@@ -83,7 +86,7 @@ const ENDPOINTS = {
   },
   SCHOOLS: {
     BASE: '/schools',
-    SCHOOL_BY_ID: (schoolId) => `/schools${schoolId}`,
+    SCHOOL_BY_ID: (schoolId) => `/schools/${schoolId}`,
     SCHOOL_BY_PROVINCE: (provinceId) => `/schools/province/${provinceId}`,
     SCHOOL_BY_DISTRICT: (districtId) => `/schools/district/${districtId}`,
     SCHOOL_BY_COMMUNE: (communeCode) => `/schools/commune/${communeCode}`,
@@ -266,14 +269,18 @@ export const getStaticAssetBaseUrl = () => {
 
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
+
+    // Physical server or official domain - they usually serve API from the same host or delegated IP
     if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.89') {
       return 'http://192.168.155.89';
     }
+
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://localhost:8080';
     }
   }
 
+  // Fallback to production API host for static assets
   return 'https://plp-api.moeys.gov.kh';
 };
 
