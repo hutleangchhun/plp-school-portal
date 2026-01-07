@@ -48,6 +48,7 @@ export default function Dashboard({ user: initialUser }) {
     totalTeacherIct: 0,
     totalStudentsCount: 0,
     studentsNoClassCount: 0,
+    studentsWithClassCount: 0,
   });
   const [schoolInfo, setSchoolInfo] = useState(null);
   const [schoolImageError, setSchoolImageError] = useState(false);
@@ -207,6 +208,7 @@ export default function Dashboard({ user: initialUser }) {
                 totalTeacherIct: schoolData.teacherIctCount || 0,
                 totalStudentsCount: schoolData.totalStudentsCount || 0,
                 studentsNoClassCount: schoolData.studentsNoClassCount || 0,
+                studentsWithClassCount: schoolData.studentsWithClassCount || 0,
               });
 
               console.log(
@@ -303,6 +305,7 @@ export default function Dashboard({ user: initialUser }) {
             totalTeacherIct: 0,
             totalStudentsCount: 0,
             studentsNoClassCount: 0,
+            studentsWithClassCount: 0,
           });
         }
       }
@@ -513,7 +516,7 @@ export default function Dashboard({ user: initialUser }) {
 
               <StatsCard
                 title={t("totalStudents") || "Total Students"}
-                value={`${schoolStats.totalStudents} / ${schoolStats.totalStudentsCount}`}
+                value={`${schoolStats.studentsWithClassCount} / ${schoolStats.totalStudentsCount}`}
                 enhanced={true}
                 gradientFrom="from-green-500"
                 gradientTo="to-green-600"
