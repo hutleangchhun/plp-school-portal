@@ -16,7 +16,7 @@ const getDynamicConfig = () => {
 
   // 2. Physical Server
   if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.89') {
-    return { api: '/api', static: 'http://192.168.155.89' };
+    return { api: '/api', static: '' };
   }
 
   // 3. Localhost in Production build

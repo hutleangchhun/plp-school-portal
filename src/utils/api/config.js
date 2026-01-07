@@ -270,9 +270,9 @@ export const getStaticAssetBaseUrl = () => {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
 
-    // Physical server or official domain - they usually serve API from the same host or delegated IP
+    // In production, we proxy /uploads/ through the same domain to avoid Mixed Content errors
     if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.89') {
-      return 'http://192.168.155.89';
+      return ''; // Empty string means use current origin (e.g., /uploads/...)
     }
 
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
