@@ -1,28 +1,29 @@
 // API Configuration - Environment-aware URL selection
 const getApiBaseUrl = () => {
-  // 1. Development Mode (Vite)
+  // 1. Development (local Vite)
   if (import.meta.env.MODE === 'development') {
     return 'http://localhost:8080/api/v1';
   }
 
-  // Runtime detection for Physical Server vs Public/Vercel
+  // 2. Browser runtime (production)
   if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
+    const { protocol, hostname } = window.location;
 
-    // 2. Physical server portal (via domain or IP) uses internal API IP
-    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.89') {
-      return 'http://192.168.155.89/api/v1';
+    // HTTPS frontend → ALWAYS use same-origin API
+    if (protocol === 'https:') {
+      return '/api';
     }
 
-    // 3. Localhost in production build (rare but possible)
+    // HTTP-only environments (rare)
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://localhost:8080/api/v1';
     }
   }
 
-  // 4. Default to MOEYS API for all other environments (Vercel, etc.)
+  // 3. Fallback (external public API)
   return 'https://plp-api.moeys.gov.kh/api/v1';
 };
+
 
 const API_BASE_URL = getApiBaseUrl();
 
