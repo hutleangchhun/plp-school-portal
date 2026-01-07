@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>សេវាកម្មមិនអាចប្រើបានបណ្ដោះអាសន្ន | ប្រព័ន្ធព័ត៌មានអ្នកប្រើប្រាស់</title>
+
+    <!-- Khmer Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --danger: #ef4444;
+            --bg: #020617;
+            --card: rgba(15, 23, 42, 0.85);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Noto Sans Khmer', 'Hanuman', 'Khmer OS System', system-ui, sans-serif;
+            background: radial-gradient(circle at top, #0f172a, #020617);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            max-width: 560px;
+            width: 100%;
+            padding: 3rem 2.5rem;
+            background: var(--card);
+            border-radius: 24px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
+            animation: slideUp 0.8s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            margin: 0 auto 1.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            font-size: 2.6rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        h1 {
+            font-size: 2.1rem;
+            margin: 0 0 1rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            font-size: 1.05rem;
+            color: var(--muted);
+            line-height: 1.8;
+            margin-bottom: 2.5rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.8rem 2rem;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(99, 102, 241, 0.35);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .footer {
+            margin-top: 2.5rem;
+            font-size: 0.85rem;
+            color: var(--muted);
+            opacity: 0.75;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="status">⚠️</div>
+
+        <h1>សេវាកម្មមិនអាចប្រើបានបណ្ដោះអាសន្ន</h1>
+
+        <p>
+            ប្រព័ន្ធព័ត៌មានអ្នកប្រើប្រាស់កំពុងជួបប្រទះបញ្ហាបច្ចេកទេស
+            ដែលបណ្ដាលឱ្យសេវាកម្មមិនអាចដំណើរការបានជាបណ្ដោះអាសន្ន។
+            ក្រុមការងារបច្ចេកទេសរបស់យើងកំពុងដំណើរការជួសជុល
+            ដើម្បីស្តារឡើងវិញនូវប្រព័ន្ធឱ្យបានឆាប់តាមដែលអាចធ្វើទៅបាន។
+            សូមអភ័យទោសចំពោះភាពមិនស្រួលដែលបានកើតមាន។
+        </p>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="location.reload()">
+                ព្យាយាមម្ដងទៀត
+            </button>
+            <button class="btn btn-outline" onclick="history.back()">
+                ត្រឡប់ក្រោយ
+            </button>
+        </div>
+
+        <div class="footer">
+            លេខកូដកំហុស៖ 50x • បញ្ហាការតភ្ជាប់ម៉ាស៊ីនមេ
+        </div>
+    </div>
+</body>
+
+</html>

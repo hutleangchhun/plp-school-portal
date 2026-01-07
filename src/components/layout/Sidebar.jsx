@@ -69,7 +69,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/teacher-transfer': UserStar,
     '/admin/student-transfer': Users,
     '/admin/bmi-report': Heart,
-    '/admin/attendance-overview': ClipboardList,
     '/admin/school-attendance': CalendarCheck,
     '/admin/student-demographics': Database,
     '/admin/teacher-overview': Database,
@@ -83,7 +82,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     'teacher-transfer': ArrowRightLeft,
     'student-transfer': ArrowRightLeft,
     'bmi-report': Heart,
-    'attendance-overview': ClipboardList,
     // Temporarily removed icon mappings (will be re-enabled later):
     // '/achievements': Trophy,
     // '/settings': SettingsIcon,
@@ -115,7 +113,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/teacher-transfer': 'blue',
     '/admin/student-transfer': 'blue',
     '/admin/bmi-report': 'blue',
-    '/admin/attendance-overview': 'blue',
     '/admin/school-attendance': 'blue',
     '/admin/teacher-overview': 'blue',
     'attendance': 'blue', // Parent item for attendance dropdown
@@ -128,7 +125,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     'teacher-transfer': 'blue',
     'student-transfer': 'blue',
     'bmi-report': 'blue',
-    'attendance-overview': 'blue',
     // Temporarily removed color mappings (will be re-enabled later):
     // '/achievements': 'blue',
     // '/settings': 'blue',

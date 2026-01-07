@@ -153,10 +153,6 @@ export const routePermissions = {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'BMIReport'
   },
-  '/admin/attendance-overview': {
-    allowedRoles: [ROLES.ROLE1_ONLY],
-    component: 'AttendanceOverview'
-  },
   '/admin/school-attendance': {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'SchoolAttendanceList'
@@ -318,9 +314,9 @@ export const hasRouteAccess = (path, user) => {
     // If route specifies allowed roles, check if role1 can access
     if (routeConfig.allowedRoles && routeConfig.allowedRoles.length > 0) {
       const canAccess = routeConfig.allowedRoles.includes(ROLES.ROLE1_ONLY) ||
-             routeConfig.allowedRoles.includes(ROLES.ROLE1) ||
-             routeConfig.allowedRoles.includes(ROLES.TEACHER) ||
-             routeConfig.allowedRoles.includes(ROLES.DIRECTOR);
+        routeConfig.allowedRoles.includes(ROLES.ROLE1) ||
+        routeConfig.allowedRoles.includes(ROLES.TEACHER) ||
+        routeConfig.allowedRoles.includes(ROLES.DIRECTOR);
       return canAccess;
     }
 
@@ -367,8 +363,8 @@ export const hasRouteAccess = (path, user) => {
  */
 export const getAccessibleRoutes = (user) => {
   if (!user) return [];
-  
-  return Object.keys(routePermissions).filter(path => 
+
+  return Object.keys(routePermissions).filter(path =>
     hasRouteAccess(path, user)
   );
 };
@@ -428,9 +424,9 @@ export const getNavigationItems = (user, t) => {
       ],
     },
     {
-       name: t('QRCodeManangement', 'QR Codes Management'),
+      name: t('QRCodeManangement', 'QR Codes Management'),
       href: '/qr-codes',
-     },
+    },
     // DISABLED: /exam-records removed from director navigation
     // {
     //   name: t('examRecords', 'Exam Records'),
@@ -450,7 +446,8 @@ export const getNavigationItems = (user, t) => {
       name: t('dashboard', 'Dashboard'),
       href: '/teacher-dashboard',
     },
-    {      name: t('student', 'Students'),
+    {
+      name: t('student', 'Students'),
       href: '/my-students',
     },
     {
@@ -532,10 +529,6 @@ export const getNavigationItems = (user, t) => {
       name: t('attendanceManagement', 'Attendance Management'),
       href: '#',
       children: [
-        {
-          name: t('attendanceOverview', 'Attendance Overview'),
-          href: '/admin/attendance-overview',
-        },
         {
           name: t('schoolAttendanceList', 'School Attendance'),
           href: '/admin/school-attendance',

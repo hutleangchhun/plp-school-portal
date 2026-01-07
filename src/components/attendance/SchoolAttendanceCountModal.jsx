@@ -5,34 +5,67 @@ import Modal from '../ui/Modal';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import StatsCard from '../ui/StatsCard';
 import { Users, User, TrendingUp, AlertCircle, Calendar } from 'lucide-react';
-import { DatePicker } from '../ui/date-picker';
+import { DatePickerWithDropdowns } from '../ui/date-picker-with-dropdowns';
 import { format } from 'date-fns';
 
 /**
  * School Attendance Count Modal
  * Shows detailed attendance statistics for a specific date with status breakdowns
  */
-const SchoolAttendanceCountModal = ({ isOpen, onClose, schoolId, schoolName }) => {
+const SchoolAttendanceCountModal = ({ 
+  isOpen, 
+  onClose, 
+  schoolId, 
+  schoolName,
+  initialFilterMode = 'single',
+  initialDate = '',
+  initialStartDate = '',
+  initialEndDate = ''
+}) => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  
+  const formatDateLocal = (date) => {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const today = formatDateLocal(new Date());
+  
+  const [filterMode, setFilterMode] = useState(initialFilterMode);
+  const [date, setDate] = useState(initialDate || today);
+  const [startDate, setStartDate] = useState(initialStartDate);
+  const [endDate, setEndDate] = useState(initialEndDate);
 
   useEffect(() => {
     if (isOpen && schoolId) {
       fetchAttendanceCount();
     }
-  }, [isOpen, schoolId, selectedDate]);
+  }, [isOpen, schoolId, filterMode, date, startDate, endDate]);
 
   const fetchAttendanceCount = async () => {
     setLoading(true);
     setError(null);
     try {
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const params = {};
+      
+      if (filterMode === 'single' && date) {
+        params.date = date;
+      } else if (filterMode === 'range') {
+        if (startDate) params.startDate = startDate;
+        if (endDate) params.endDate = endDate;
+      }
+      
+      console.log('Fetching attendance count with params:', params);
+      
       const response = await attendanceService.dashboard.getSchoolAttendanceCountWithDates(
         schoolId, 
-        { date: dateStr }
+        params
       );
       
       if (response && response.success) {
@@ -63,25 +96,85 @@ const SchoolAttendanceCountModal = ({ isOpen, onClose, schoolId, schoolName }) =
       size="xl"
     >
       <div className="space-y-6 py-2">
-        {/* Date Selector Header */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-2xl border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-center gap-3">
+        {/* Date Filter Header */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-2xl border border-blue-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
             <div className="p-2.5 bg-blue-600 rounded-xl shadow-lg shadow-blue-200">
               <Calendar className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-blue-800 uppercase tracking-widest">{t('viewingAttendanceFor', 'Viewing Attendance For')}</p>
-              <p className="text-sm font-bold text-blue-900">{format(selectedDate, 'PPPP')}</p>
+              <p className="text-[10px] font-bold text-blue-800 uppercase tracking-widest">{t('attendanceFilters', 'Attendance Filters')}</p>
+              <p className="text-sm font-bold text-blue-900">
+                {filterMode === 'single' && date ? format(new Date(date), 'PPPP') : 
+                 filterMode === 'range' ? `${startDate || '...'} ${t('to', 'to')} ${endDate || '...'}` : 
+                 t('selectDateRange', 'Select date or range')}
+              </p>
             </div>
           </div>
-          <div className="w-full sm:w-64">
-            <DatePicker 
-              value={selectedDate} 
-              onChange={setSelectedDate} 
-              className="bg-white border-blue-200 hover:border-blue-300 shadow-sm"
-              placeholder={t('selectDate', 'Select date')}
-            />
+          
+          {/* Filter Mode Toggle */}
+          <div className="flex bg-white p-1 rounded-lg mb-4 shadow-sm">
+            <button
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                filterMode === 'single' 
+                  ? 'bg-blue-600 text-white shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setFilterMode('single')}
+            >
+              {t('singleDate', 'Single Date')}
+            </button>
+            <button
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                filterMode === 'range' 
+                  ? 'bg-blue-600 text-white shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setFilterMode('range')}
+            >
+              {t('dateRange', 'Date Range')}
+            </button>
           </div>
+
+          {/* Date Pickers */}
+          {filterMode === 'single' ? (
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-gray-700">
+                {t('selectDate', 'Select Date')}
+              </label>
+              <DatePickerWithDropdowns
+                value={date ? new Date(date) : undefined}
+                onChange={(newDate) => setDate(newDate ? formatDateLocal(newDate) : '')}
+                placeholder={t('selectDate', 'Select date')}
+                className="w-full bg-white"
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-gray-700">
+                  {t('startDate', 'Start Date')}
+                </label>
+                <DatePickerWithDropdowns
+                  value={startDate ? new Date(startDate) : undefined}
+                  onChange={(newDate) => setStartDate(newDate ? formatDateLocal(newDate) : '')}
+                  placeholder={t('startDate', 'Start date')}
+                  className="w-full bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-gray-700">
+                  {t('endDate', 'End Date')}
+                </label>
+                <DatePickerWithDropdowns
+                  value={endDate ? new Date(endDate) : undefined}
+                  onChange={(newDate) => setEndDate(newDate ? formatDateLocal(newDate) : '')}
+                  placeholder={t('endDate', 'End date')}
+                  className="w-full bg-white"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {loading ? (

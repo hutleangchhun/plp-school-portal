@@ -15,7 +15,8 @@ import SidebarFilter from '../../components/ui/SidebarFilter';
 import SchoolAttendanceDetailModal from '../../components/attendance/SchoolAttendanceDetailModal';
 import SchoolAttendanceCountModal from '../../components/attendance/SchoolAttendanceCountModal';
 import Badge from '@/components/ui/Badge';
-import { Eye } from 'lucide-react';
+import { Eye, Calendar } from 'lucide-react';
+import { DatePickerWithDropdowns } from '@/components/ui/date-picker-with-dropdowns';
 
 const SchoolCoverageTable = ({
   data = [],
@@ -225,6 +226,16 @@ const SchoolAttendanceList = () => {
   const { t } = useLanguage();
   const { error, handleError, clearError } = useErrorHandler();
 
+  const formatDateLocal = (date) => {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const today = formatDateLocal(new Date());
+
   const [loading, setLoading] = useState(true);
   const [schoolsData, setSchoolsData] = useState([]);
   const [schoolSummary, setSchoolSummary] = useState({
@@ -241,12 +252,20 @@ const SchoolAttendanceList = () => {
   // Filters
   const [filters, setFilters] = useState({
     province: '',
-    district: ''
+    district: '',
+    date: today,
+    startDate: '',
+    endDate: '',
+    filterMode: 'single' // 'single' or 'range'
   });
 
   const [tempFilters, setTempFilters] = useState({
     province: '',
-    district: ''
+    district: '',
+    date: today,
+    startDate: '',
+    endDate: '',
+    filterMode: 'single'
   });
 
   const [filterSidebarOpen, setFilterSidebarOpen] = useState(false);
@@ -309,6 +328,14 @@ const SchoolAttendanceList = () => {
       if (filters.province) params.provinceId = parseInt(filters.province, 10);
       if (filters.district) params.districtId = parseInt(filters.district, 10);
 
+      // Add date filters based on mode
+      if (filters.filterMode === 'single' && filters.date) {
+        params.date = filters.date;
+      } else if (filters.filterMode === 'range') {
+        if (filters.startDate) params.startDate = filters.startDate;
+        if (filters.endDate) params.endDate = filters.endDate;
+      }
+
       console.log('Fetching school coverage with params:', params);
 
       const response = await attendanceService.dashboard.getSchoolsCoverage(params);
@@ -349,12 +376,12 @@ const SchoolAttendanceList = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters.province, filters.district, clearError, handleError, t, pagination.limit]);
+  }, [filters, clearError, handleError, t, pagination.limit]);
 
   // Initial fetch and refetch when filters change
   useEffect(() => {
     fetchSchools(1);
-  }, [fetchSchools]);
+  }, [fetchSchools, filters]);
 
   // Handle filter changes
   const handleOpenFilterSidebar = () => {
@@ -387,8 +414,16 @@ const SchoolAttendanceList = () => {
   };
 
   const handleResetFilters = () => {
-    setFilters({ province: '', district: '' });
-    setTempFilters({ province: '', district: '' });
+    const resetFilters = { 
+      province: '', 
+      district: '', 
+      date: '', 
+      startDate: '', 
+      endDate: '', 
+      filterMode: 'single' 
+    };
+    setFilters(resetFilters);
+    setTempFilters(resetFilters);
     setDistricts([]);
   };
 
@@ -452,14 +487,50 @@ const SchoolAttendanceList = () => {
             >
               <Filter className="h-4 w-4" />
               {t('filters', 'Filters')}
-              {(filters.province || filters.district) && (
-                <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-white text-blue-600 rounded-full">
-                  {[filters.province, filters.district].filter(Boolean).length}
-                </span>
-              )}
+              {(filters.province || filters.district || filters.date || filters.startDate || filters.endDate) && (
+              <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-white text-blue-600 rounded-full">
+                {[
+                  filters.province, 
+                  filters.district, 
+                  filters.filterMode === 'single' ? filters.date : (filters.startDate || filters.endDate)
+                ].filter(Boolean).length}
+              </span>
+            )}
             </Button>
           </div>
         </div>
+
+        {/* Active Filter Badges */}
+        {(filters.province || filters.district || filters.date || filters.startDate || filters.endDate) && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            {filters.province && (
+              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100">
+                {t('province', 'Province')}: {provinces.find(p => p.id === parseInt(filters.province))?.province_name_kh || filters.province}
+              </Badge>
+            )}
+            {filters.district && (
+              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100">
+                {t('district', 'District')}: {districts.find(d => d.id === parseInt(filters.district))?.district_name_kh || filters.district}
+              </Badge>
+            )}
+            {filters.filterMode === 'single' && filters.date && (
+              <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100">
+                {t('date', 'Date')}: {filters.date}
+              </Badge>
+            )}
+            {filters.filterMode === 'range' && (filters.startDate || filters.endDate) && (
+              <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100">
+                {t('period', 'Period')}: {filters.startDate || '...'} {t('to', 'to')} {filters.endDate || '...'}
+              </Badge>
+            )}
+            <button 
+              onClick={handleResetFilters}
+              className="text-xs text-red-600 hover:text-red-800 font-medium underline px-2"
+            >
+              {t('clearAll', 'Clear All')}
+            </button>
+          </div>
+        )}
 
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -528,7 +599,7 @@ const SchoolAttendanceList = () => {
         onClose={() => setFilterSidebarOpen(false)}
         title={t('filters', 'Filters')}
         subtitle={t('filterByLocation', 'Filter by location')}
-        hasFilters={!!(filters.province || filters.district)}
+        hasFilters={!!(filters.province || filters.district || filters.date || filters.startDate || filters.endDate)}
         onClearFilters={handleResetFilters}
         onApply={handleApplyFilters}
       >
@@ -567,6 +638,83 @@ const SchoolAttendanceList = () => {
               minWidth="w-full"
             />
           </div>
+
+          <div className="pt-4 border-t border-gray-100">
+            <label className="block text-sm font-medium text-gray-700 mb-4">
+              {t('filterByDate', 'Filter by Date')}
+            </label>
+            
+            <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
+              <button
+                className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  tempFilters.filterMode === 'single' 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setTempFilters(prev => ({ ...prev, filterMode: 'single' }))}
+              >
+                {t('singleDate', 'Single Date')}
+              </button>
+              <button
+                className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  tempFilters.filterMode === 'range' 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setTempFilters(prev => ({ ...prev, filterMode: 'range' }))}
+              >
+                {t('dateRange', 'Date Range')}
+              </button>
+            </div>
+
+            {tempFilters.filterMode === 'single' ? (
+              <div className="space-y-3">
+                <label className="block text-xs font-medium text-gray-500 flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {t('selectDate', 'Select Date')}
+                </label>
+                <DatePickerWithDropdowns
+                  value={tempFilters.date ? new Date(tempFilters.date) : undefined}
+                  onChange={(date) =>
+                    setTempFilters(prev => ({ ...prev, date: date ? formatDateLocal(date) : '' }))
+                  }
+                  placeholder={t('selectDate', 'Select date')}
+                  className="w-full"
+                />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-gray-500 flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {t('startDate', 'Start Date')}
+                  </label>
+                  <DatePickerWithDropdowns
+                    value={tempFilters.startDate ? new Date(tempFilters.startDate) : undefined}
+                    onChange={(date) =>
+                      setTempFilters(prev => ({ ...prev, startDate: date ? formatDateLocal(date) : '' }))
+                    }
+                    placeholder={t('startDate', 'Start date')}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-gray-500 flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {t('endDate', 'End Date')}
+                  </label>
+                  <DatePickerWithDropdowns
+                    value={tempFilters.endDate ? new Date(tempFilters.endDate) : undefined}
+                    onChange={(date) =>
+                      setTempFilters(prev => ({ ...prev, endDate: date ? formatDateLocal(date) : '' }))
+                    }
+                    placeholder={t('endDate', 'End date')}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </SidebarFilter>
 
@@ -592,6 +740,10 @@ const SchoolAttendanceList = () => {
           }}
           schoolId={selectedSchool.schoolId}
           schoolName={selectedSchool.schoolName}
+          initialFilterMode={filters.filterMode}
+          initialDate={filters.date}
+          initialStartDate={filters.startDate}
+          initialEndDate={filters.endDate}
         />
       )}
     </div>

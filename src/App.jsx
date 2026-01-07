@@ -247,14 +247,6 @@ function AppContent() {
             <Route index element={<BMIReport />} />
           </Route>
 
-          {/* Admin Attendance Overview route - role ID 1 only (enforced by routePermissions) */}
-          <Route path="admin/attendance-overview" element={
-            <ProtectedRoute path="/admin/attendance-overview" user={user}>
-              <DashboardLayout user={user} onLogout={handleLogout} />
-            </ProtectedRoute>
-          }>
-            <Route index element={<AttendanceOverview />} />
-          </Route>
 
           {/* Admin School Attendance List route - role ID 1 only (enforced by routePermissions) */}
           <Route path="admin/school-attendance" element={

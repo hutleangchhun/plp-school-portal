@@ -546,6 +546,9 @@ export const attendanceService = {
       };
       if (params.provinceId) queryParams.provinceId = params.provinceId;
       if (params.districtId) queryParams.districtId = params.districtId;
+      if (params.date) queryParams.date = params.date;
+      if (params.startDate) queryParams.startDate = params.startDate;
+      if (params.endDate) queryParams.endDate = params.endDate;
 
       return handleApiResponse(() =>
         apiClient_.get(`${ENDPOINTS.ATTENDANCE.DASHBOARD.BASE}/schools/coverage`, { params: queryParams })
