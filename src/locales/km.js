@@ -576,6 +576,11 @@ export const km = {
   attendanceApprovals: 'ការឯកភាពវត្តមាន',
   reviewPendingApprovals: 'ពិនិត្យការអនុម័តវត្តមានដែលកំពុងរង់ចាំ',
   attendanceStatus: 'ប្រភេទវត្តមាន',
+  singleDate: 'កាលបរិច្ឆេទជាក់លាក់',
+  dateRange: 'កាលបរិច្ឆេទចន្លោះ',
+  selectDateRange: 'ជ្រើសរើសជួរថ្ងៃទី',
+  selectSingleDate: 'ជ្រើសរើសថ្ងៃតែមួយ',
+  approveAttendance: 'អនុម័តវត្តមាន',
   // Teacher Information
   teacherInfo: 'ព័ត៌មានគ្រូបង្រៀន',
   attendanceRate: 'អត្រាវត្តមាន',
