@@ -621,9 +621,9 @@ export const excelImportHandler = async (file, ethnicGroupOptions, accessibility
       sampleStudents: mappedStudents.slice(0, 3).map(s => ({ name: s.firstName, lastName: s.lastName, username: s.username }))
     });
 
-    // Check if imported students exceed the limit of 70
-    if (mappedStudents.length > 70) {
-      showError(`ឯកសារ Excel មានសិស្ស ${mappedStudents.length} នាក់ ប៉ុន្តែអ្នកអាចនាំចូលបានច្រើនបំផុត ៧០នាក់ប៉ុណ្ណោះ។ សូមកាត់បន្ថយចំនួនសិស្សនៅក្នុងឯកសារ Excel ។`, { duration: 7000 });
+    // Check if imported students exceed the limit of 100
+    if (mappedStudents.length > 100) {
+      showError(`ឯកសារ Excel មានសិស្ស ${mappedStudents.length} នាក់ ប៉ុន្តែអ្នកអាចនាំចូលបានច្រើនបំផុត ១០០នាក់ប៉ុណ្ណោះ។ សូមកាត់បន្ថយចំនួនសិស្សនៅក្នុងឯកសារ Excel ។`, { duration: 7000 });
       return null;
     }
 
