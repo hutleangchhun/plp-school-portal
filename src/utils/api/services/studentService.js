@@ -12,13 +12,13 @@ export const studentService = {
    * @param {number} [params.page=1] - Page number
    * @param {number} [params.limit=10] - Number of items per page
    * @param {string} [params.search=''] - Search term for filtering students
-   * @param {boolean|string} [params.status=true] - Filter by active status (accepts 'active', 'inactive', or boolean)
+   * @param {boolean|string} [params.status] - Filter by active status (accepts 'active', 'inactive', or boolean, defaults to undefined for all)
    * @param {number} [params.roleId=9] - Role ID for students (default: 9)
    * @param {string|number|null} [params.classId] - Filter by class ID, use 'null' string to get students without a class
    * @returns {Promise<Object>} Response with student data and pagination info
    */
   async getStudents(params = {}) {
-    const { page = 1, limit = 10, search = '', status = true, roleId = 9, classId, gradeLevel } = params;
+    const { page = 1, limit = 10, search = '', status = undefined, roleId = 9, classId, gradeLevel } = params;
 
     // Normalize status: accept 'active' | 'inactive' | '' | boolean
     let normalizedStatus = status;
@@ -849,6 +849,7 @@ export const studentService = {
         dateOfBirth,
         gradeLevel,
         createdAt,
+        status,
         hasAccessibility,
         isEthnicMinority
       } = params;
@@ -876,6 +877,7 @@ export const studentService = {
       if (dateOfBirth) apiParams.dateOfBirth = dateOfBirth;
       if (gradeLevel) apiParams.gradeLevel = gradeLevel;
       if (createdAt) apiParams.createdAt = createdAt;
+      if (status !== undefined) apiParams.status = status;
 
       // Add report-specific filters for performance optimization
       if (hasAccessibility === true) apiParams.hasAccessibility = true;
@@ -1084,7 +1086,7 @@ export const studentService = {
         academicYear: student.academic_year || classInfo.academicYear,
         gradeLevel: student.grade_level || student.gradeLevel || classInfo.gradeLevel,
         profilePicture: student.profile_picture || student.profilePicture || user.profile_picture || user.profilePicture,
-        isActive: student.student_status === 'ACTIVE' || student.isActive !== undefined ? student.isActive : (user.is_active !== undefined ? user.is_active : true),
+        isActive: user.is_active !== false, // Map is_active from nested user object, defaulting to true if undefined
         username: student.username || user.username || '',
         // School info
         schoolId: schoolInfo.schoolId || schoolInfo.id || student.schoolId || student.school_id,

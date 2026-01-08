@@ -34,7 +34,7 @@ const StudentTransferManagement = () => {
   const { t } = useLanguage();
   const { startLoading, stopLoading } = useLoading();
   const { error, handleError, clearError } = useErrorHandler();
-  const { showSuccess } = useToast();
+  const { showSuccess, showError } = useToast();
 
   const [sourceProvinces, setSourceProvinces] = useState([]);
   const [sourceDistricts, setSourceDistricts] = useState([]);
@@ -43,6 +43,7 @@ const StudentTransferManagement = () => {
   const [selectedSourceDistrict, setSelectedSourceDistrict] = useState('');
   const [selectedSourceSchool, setSelectedSourceSchool] = useState('');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
 
   const [students, setStudents] = useState([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
@@ -60,6 +61,11 @@ const StudentTransferManagement = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedStudentForDelete, setSelectedStudentForDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Status toggle dialog state
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [selectedStudentForStatus, setSelectedStudentForStatus] = useState(null);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [fetchingStudents, setFetchingStudents] = useState(false);
@@ -119,17 +125,28 @@ const StudentTransferManagement = () => {
     init();
   }, [clearError, handleError, selectedGradeLevel, t]);
 
+
   const fetchStudentsGlobal = useCallback(async (page = 1, search = '', limit = studentPagination.limit) => {
     try {
       setFetchingStudents(true);
       clearError();
 
       const actualLimit = typeof limit === 'number' ? limit : parseInt(limit);
+
+      // Convert status filter to API parameter format
+      let statusParam = undefined;
+      if (selectedStatusFilter === 'active') {
+        statusParam = true;
+      } else if (selectedStatusFilter === 'inactive') {
+        statusParam = false;
+      }
+
       const response = await studentService.getStudents({
         page,
         limit: actualLimit,
         search: search.trim() || '',
         gradeLevel: selectedGradeLevel && selectedGradeLevel !== 'all' ? selectedGradeLevel : undefined,
+        status: statusParam,
       });
 
       const mappedStudents = (response.data || []).map(student => ({
@@ -143,10 +160,12 @@ const StudentTransferManagement = () => {
         phone: student.phone,
         gradeLevel: student.gradeLevel,
         class: student.class,
-        // Preserve source school from global /students endpoint or nested school object
-        schoolId: student.schoolId || student.school?.schoolId,
-        schoolName: student.schoolName || student.school?.name,
-        rawStudent: student // Keep raw for school fetch
+        // Use already-formatted data from formatStudentData
+        schoolId: student.schoolId,
+        schoolName: student.schoolName,
+        isActive: student.isActive, // Already mapped by formatStudentData
+        currentClass: student.class,
+        rawStudent: student
       }));
 
       // Fetch school details for students that don't have schoolName
@@ -176,12 +195,8 @@ const StudentTransferManagement = () => {
         })
       );
 
-      const finalStudents =
-        selectedGradeLevel && selectedGradeLevel !== 'all'
-          ? studentsWithSchoolInfo.filter(s => String(s.gradeLevel) === String(selectedGradeLevel))
-          : studentsWithSchoolInfo;
-
-      setStudents(finalStudents);
+      // Filtering is now done on the backend via API parameters
+      setStudents(studentsWithSchoolInfo);
 
       const pagination = response.pagination || {
         page,
@@ -204,7 +219,7 @@ const StudentTransferManagement = () => {
     } finally {
       setFetchingStudents(false);
     }
-  }, [clearError, handleError, selectedGradeLevel, t]);
+  }, [clearError, handleError, selectedGradeLevel, selectedStatusFilter, t]);
 
   const fetchStudentsForSchool = useCallback(async (schoolId, page = 1, search = '', limit = studentPagination.limit) => {
     if (!schoolId) {
@@ -219,11 +234,21 @@ const StudentTransferManagement = () => {
       clearError();
 
       const actualLimit = typeof limit === 'number' ? limit : parseInt(limit);
+
+      // Convert status filter to API parameter format
+      let statusParam = undefined;
+      if (selectedStatusFilter === 'active') {
+        statusParam = true;
+      } else if (selectedStatusFilter === 'inactive') {
+        statusParam = false;
+      }
+
       const response = await studentService.getStudentsBySchool(schoolId, {
         page,
         limit: actualLimit,
         search: search.trim() || undefined,
         gradeLevel: selectedGradeLevel && selectedGradeLevel !== 'all' ? selectedGradeLevel : undefined,
+        status: statusParam,
       });
 
       if (!response.success) {
@@ -243,9 +268,11 @@ const StudentTransferManagement = () => {
         class: student.class,
         classId: student.class?.classId || student.class?.id,
         schoolId: schoolId,
-        // Extract school name from nested school object or use default
-        schoolName: student.school?.name,
-        rawStudent: student // Keep raw for school fetch
+        // Use already-formatted data from formatStudentData
+        schoolName: student.schoolName,
+        isActive: student.isActive, // Already mapped by formatStudentData
+        currentClass: student.class,
+        rawStudent: student
       }));
 
       // Fetch school details and class info if needed
@@ -285,12 +312,8 @@ const StudentTransferManagement = () => {
         })
       );
 
-      const finalStudents =
-        selectedGradeLevel && selectedGradeLevel !== 'all'
-          ? studentsWithSchoolInfo.filter(s => String(s.gradeLevel) === String(selectedGradeLevel))
-          : studentsWithSchoolInfo;
-
-      setStudents(finalStudents);
+      // Filtering is now done on the backend via API parameters
+      setStudents(studentsWithSchoolInfo);
 
       if (response.pagination) {
         setStudentPagination(prev => ({
@@ -318,7 +341,7 @@ const StudentTransferManagement = () => {
     } finally {
       setFetchingStudents(false);
     }
-  }, [clearError, handleError, selectedGradeLevel, t]);
+  }, [clearError, handleError, selectedGradeLevel, selectedStatusFilter, t]);
 
   const handleSearchChange = (value) => {
     setSearchQuery(value);
@@ -424,6 +447,7 @@ const StudentTransferManagement = () => {
     setSelectedSourceDistrict('');
     setSelectedSourceSchool('');
     setSelectedGradeLevel('all');
+    setSelectedStatusFilter('all');
     setSourceDistricts([]);
     setSourceSchools([]);
     setStudents([]);
@@ -432,11 +456,18 @@ const StudentTransferManagement = () => {
     setSelectedStudentIds(new Set());
     setSelectedStudentsMap(new Map());
     setIsSourceFilterOpen(false);
+    // Fetch all students after reset
+    setTimeout(() => {
+      fetchStudentsGlobal(1, '', 9);
+    }, 0);
   };
 
   const handleApplySourceFilters = () => {
     if (selectedSourceSchool) {
       fetchStudentsForSchool(selectedSourceSchool, 1, searchQuery, studentPagination.limit);
+    } else {
+      // If no specific school selected, fetch all students
+      fetchStudentsGlobal(1, searchQuery, studentPagination.limit);
     }
     setIsSourceFilterOpen(false);
   };
@@ -742,6 +773,79 @@ const StudentTransferManagement = () => {
   const handleCancelDelete = () => {
     setShowDeleteConfirm(false);
     setSelectedStudentForDelete(null);
+  };
+
+  const handleToggleUserStatus = (student) => {
+    setSelectedStudentForStatus(student);
+    setShowStatusDialog(true);
+  };
+
+  const handleConfirmStatusChange = async () => {
+    if (!selectedStudentForStatus) return;
+
+    try {
+      const newStatus = !selectedStudentForStatus.isActive;
+      setIsTogglingStatus(true);
+      clearError();
+      console.log(`Toggling student ${selectedStudentForStatus.userId} status from ${selectedStudentForStatus.isActive} to ${newStatus}`);
+
+      // Call API to update status
+      const response = await userService.updateUserActiveStatus(selectedStudentForStatus.userId, newStatus);
+
+      if (response && response.success !== false) {
+        // Update the student in the list
+        const updatedStudents = students.map(s => {
+          if (s.userId === selectedStudentForStatus.userId) {
+            return {
+              ...s,
+              isActive: newStatus
+            };
+          }
+          return s;
+        });
+
+        setStudents(updatedStudents);
+
+        // Update selectedStudentsMap to remove disabled students
+        if (!newStatus) {
+          const newSelectedIds = new Set(selectedStudentIds);
+          const newSelectedMap = new Map(selectedStudentsMap);
+          newSelectedIds.delete(selectedStudentForStatus.id);
+          newSelectedMap.delete(selectedStudentForStatus.id);
+          setSelectedStudentIds(newSelectedIds);
+          setSelectedStudentsMap(newSelectedMap);
+        }
+
+        showSuccess(
+          newStatus
+            ? t('studentActivatedSuccess', 'Student activated successfully')
+            : t('studentDeactivatedSuccess', 'Student deactivated successfully')
+        );
+
+        // Optionally refetch to ensure consistency
+        if (selectedSourceSchool) {
+          fetchStudentsForSchool(selectedSourceSchool, studentPagination.page, searchQuery, studentPagination.limit);
+        } else {
+          fetchStudentsGlobal(studentPagination.page, searchQuery, studentPagination.limit);
+        }
+      } else {
+        showError(response?.error || t('failedToUpdateStatus', 'Failed to update student status'));
+      }
+    } catch (err) {
+      console.error('Error toggling student status:', err);
+      handleError(err, {
+        toastMessage: t('errorUpdatingStudentStatus', 'Failed to update student status')
+      });
+    } finally {
+      setIsTogglingStatus(false);
+      setShowStatusDialog(false);
+      setSelectedStudentForStatus(null);
+    }
+  };
+
+  const handleCancelStatusChange = () => {
+    setShowStatusDialog(false);
+    setSelectedStudentForStatus(null);
   };
 
   const handleExportStudents = async () => {
@@ -1080,6 +1184,17 @@ const StudentTransferManagement = () => {
   const targetDistrictOptions = getDistrictOptions(targetDistricts);
   const targetSchoolOptions = getSchoolOptions(targetSchools);
 
+  // Load students on initial page load if not already loaded
+  useEffect(() => {
+    if (!initialLoading && students.length === 0) {
+      if (selectedSourceSchool) {
+        fetchStudentsForSchool(selectedSourceSchool, 1, '', studentPagination.limit);
+      } else {
+        fetchStudentsGlobal(1, '', studentPagination.limit);
+      }
+    }
+  }, [initialLoading, selectedSourceSchool, students.length, fetchStudentsGlobal, fetchStudentsForSchool, studentPagination.limit]);
+
   if (initialLoading) {
     return <PageLoader message={t('loadingProvinces', 'Loading provinces...')} className="min-h-screen bg-gray-50" />;
   }
@@ -1188,7 +1303,7 @@ const StudentTransferManagement = () => {
                 </div>
 
                 {/* Active Filters Display */}
-                {(selectedSourceProvince || selectedSourceDistrict || selectedSourceSchool || (selectedGradeLevel && selectedGradeLevel !== 'all')) && (
+                {(selectedSourceProvince || selectedSourceDistrict || selectedSourceSchool || (selectedGradeLevel && selectedGradeLevel !== 'all') || (selectedStatusFilter && selectedStatusFilter !== 'all')) && (
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-semibold text-blue-900">{t('activeFilters', 'Active Filters')}:</span>
                       {selectedSourceProvince && (
@@ -1209,6 +1324,11 @@ const StudentTransferManagement = () => {
                       {selectedGradeLevel && selectedGradeLevel !== 'all' && (
                         <Badge color="purple" variant="filled" size="sm">
                           {t('gradeLevel', 'Grade Level')}: {gradeLevelOptions.find(g => g.value === selectedGradeLevel)?.label}
+                        </Badge>
+                      )}
+                      {selectedStatusFilter && selectedStatusFilter !== 'all' && (
+                        <Badge color="orange" variant="filled" size="sm">
+                          {t('status', 'Status')}: {selectedStatusFilter === 'active' ? t('active', 'Active') : t('inactive', 'Inactive')}
                         </Badge>
                       )}
                     </div>
@@ -1264,10 +1384,12 @@ const StudentTransferManagement = () => {
                           student={student}
                           onResetPassword={handleResetPassword}
                           onDelete={handleDeleteStudent}
+                          onToggleActiveStatus={handleToggleUserStatus}
                         >
                           <div
                             className={
                               `bg-white rounded-sm border hover:border-blue-400 hover:shadow-md transition-all duration-200 flex justify-between items-start p-4 ` +
+                              (student.isActive === false ? 'opacity-50 ' : '') +
                               (selectedStudentIds.has(student.id)
                                 ? 'border-blue-500 ring-2 ring-blue-200'
                                 : 'border-gray-200')
@@ -1275,14 +1397,12 @@ const StudentTransferManagement = () => {
                           >
                           <div className="space-3">
                             <div>
-                              <div>
-                                <span
-                                  className="font-semibold text-gray-900 text-sm line-clamp-2 hover:text-blue-600 cursor-pointer"
-                                  onClick={() => handleSelectStudent(student)}
-                                >
-                                  {getFullName(student)}
-                                </span>
-                              </div>
+                              <label
+                                htmlFor={`student-${student.id}`}
+                                className="font-semibold text-gray-900 text-sm cursor-pointer line-clamp-2 hover:text-blue-600"
+                              >
+                                {getFullName(student)}
+                              </label>
                               <div className="text-xs text-gray-500">
                                 {student.username}
                               </div>
@@ -1306,6 +1426,11 @@ const StudentTransferManagement = () => {
                                 </div>
                               )}
                               <div className="flex flex-wrap items-center gap-2 mt-1">
+                                {student.isActive === false && (
+                                  <Badge color="red" variant="filled" size="sm">
+                                    {t('inactive', 'Inactive')}
+                                  </Badge>
+                                )}
                                 {student.gradeLevel && (
                                   <Badge color="blue" variant="outlined" size="sm">
                                     {t('gradeLevelShort', 'Grade')} {student.gradeLevel}
@@ -1317,9 +1442,15 @@ const StudentTransferManagement = () => {
                           <div className="flex items-start">
                             <input
                               type="checkbox"
+                              id={`student-${student.id}`}
                               checked={selectedStudentIds.has(student.id)}
                               onChange={() => handleSelectStudent(student)}
-                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer mt-0.5"
+                              disabled={student.isActive === false}
+                              className={`w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 mt-0.5 ${
+                                student.isActive === false
+                                  ? 'cursor-not-allowed opacity-50 bg-gray-100'
+                                  : 'cursor-pointer'
+                              }`}
                             />
                           </div>
                           </div>
@@ -1409,6 +1540,24 @@ const StudentTransferManagement = () => {
                   value={selectedGradeLevel}
                   onValueChange={setSelectedGradeLevel}
                   placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                  className="w-full"
+                  disabled={sourceLoading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('status', 'Status')}
+                </label>
+                <Dropdown
+                  options={[
+                    { value: 'all', label: t('all', 'All') },
+                    { value: 'active', label: t('active', 'Active') },
+                    { value: 'inactive', label: t('inactive', 'Inactive') }
+                  ]}
+                  value={selectedStatusFilter}
+                  onValueChange={setSelectedStatusFilter}
+                  placeholder={t('selectStatus', 'Select Status')}
                   className="w-full"
                   disabled={sourceLoading}
                 />
@@ -1690,6 +1839,21 @@ const StudentTransferManagement = () => {
         confirmText={t('delete', 'Delete')}
         cancelText={t('cancel', 'Cancel')}
         loading={isDeleting}
+      />
+
+      {/* Status Change Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showStatusDialog}
+        onClose={handleCancelStatusChange}
+        onConfirm={handleConfirmStatusChange}
+        title={t('changeUserStatus', 'Change User Status')}
+        message={selectedStudentForStatus
+          ? t('confirmStatusChange', `Are you sure you want to ${selectedStudentForStatus.isActive ? 'disable' : 'enable'} ${getFullName(selectedStudentForStatus)}?`)
+          : ''}
+        type="warning"
+        confirmText={t('confirm', 'Confirm')}
+        cancelText={t('cancel', 'Cancel')}
+        loading={isTogglingStatus}
       />
     </>
   );

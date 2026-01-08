@@ -2,9 +2,9 @@ import React from 'react';
 import * as ContextMenu from '@radix-ui/react-context-menu';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
-import { Lock, Copy, Trash2 } from 'lucide-react';
+import { Lock, Copy, Trash2, Ban } from 'lucide-react';
 
-const TeacherContextMenu = ({ children, teacher, onResetPassword, onDelete }) => {
+const TeacherContextMenu = ({ children, teacher, onResetPassword, onDelete, onToggleActiveStatus }) => {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
 
@@ -38,6 +38,12 @@ const TeacherContextMenu = ({ children, teacher, onResetPassword, onDelete }) =>
   const handleDelete = () => {
     if (onDelete) {
       onDelete(teacher);
+    }
+  };
+
+  const handleToggleStatus = () => {
+    if (onToggleActiveStatus) {
+      onToggleActiveStatus(teacher);
     }
   };
 
@@ -95,6 +101,25 @@ const TeacherContextMenu = ({ children, teacher, onResetPassword, onDelete }) =>
             <Copy className="w-4 h-4" />
             <span>{t('copyUsername', 'Copy Username')}</span>
           </ContextMenu.Item>
+
+          {onToggleActiveStatus && (
+            <>
+              <ContextMenu.Separator className="bg-gray-200 h-px" />
+
+              {/* Toggle Active Status Option */}
+              <ContextMenu.Item
+                onSelect={handleToggleStatus}
+                className="px-3 py-2.5 text-sm text-yellow-600 cursor-pointer flex items-center space-x-2 hover:bg-yellow-50 hover:text-yellow-700 transition-colors focus:outline-none focus:bg-yellow-50"
+              >
+                <Ban className="w-4 h-4" />
+                <span>
+                  {teacher?.isActive !== false
+                    ? t('disableTeacher', 'Disable Teacher')
+                    : t('enableTeacher', 'Enable Teacher')}
+                </span>
+              </ContextMenu.Item>
+            </>
+          )}
 
           {onDelete && (
             <>

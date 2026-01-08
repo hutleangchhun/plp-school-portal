@@ -37,7 +37,7 @@ const TeacherTransferManagement = () => {
   const { t } = useLanguage();
   const { startLoading, stopLoading } = useLoading();
   const { error, handleError, clearError } = useErrorHandler();
-  const { showSuccess } = useToast();
+  const { showSuccess, showError } = useToast();
 
   // Location state for source school cascade filtering
   const [sourceProvinces, setSourceProvinces] = useState([]);
@@ -46,6 +46,8 @@ const TeacherTransferManagement = () => {
   const [selectedSourceProvince, setSelectedSourceProvince] = useState('');
   const [selectedSourceDistrict, setSelectedSourceDistrict] = useState('');
   const [selectedSourceSchool, setSelectedSourceSchool] = useState('');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState('8'); // Default to teacher role (8)
 
   // Other state
   const [teachers, setTeachers] = useState([]);
@@ -64,6 +66,11 @@ const TeacherTransferManagement = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedTeacherForDelete, setSelectedTeacherForDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Status toggle dialog state
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [selectedTeacherForStatus, setSelectedTeacherForStatus] = useState(null);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [fetchingTeachers, setFetchingTeachers] = useState(false);
@@ -128,10 +135,21 @@ const TeacherTransferManagement = () => {
       setFetchingTeachers(true);
       clearError();
       const actualLimit = typeof limit === 'number' ? limit : parseInt(limit);
+
+      // Convert status filter to API parameter
+      let statusParam = undefined;
+      if (selectedStatusFilter === 'active') {
+        statusParam = true;
+      } else if (selectedStatusFilter === 'inactive') {
+        statusParam = false;
+      }
+
       const response = await api.teacher.getAllTeachers({
         page: page,
         limit: actualLimit,
-        search: search.trim() || undefined
+        search: search.trim() || undefined,
+        is_active: statusParam,
+        roleId: selectedRoleFilter // Filter by selected role
       });
 
       if (!response.success) {
@@ -153,7 +171,8 @@ const TeacherTransferManagement = () => {
         schoolId: teacher.schoolId,
         schoolName: teacher.school?.name || '',
         status: teacher.status,
-        classes: teacher.classes || []
+        classes: teacher.classes || [],
+        isActive: teacher.is_active !== false // Map is_active from API to isActive
       }));
 
       // Fetch school details for teachers that don't have schoolName
@@ -227,10 +246,21 @@ const TeacherTransferManagement = () => {
       setFetchingTeachers(true);
       clearError();
       const actualLimit = typeof limit === 'number' ? limit : parseInt(limit);
+
+      // Convert status filter to API parameter
+      let statusParam = undefined;
+      if (selectedStatusFilter === 'active') {
+        statusParam = true;
+      } else if (selectedStatusFilter === 'inactive') {
+        statusParam = false;
+      }
+
       const response = await api.teacher.getTeachersBySchool(schoolId, {
         page: page,
         limit: actualLimit,
-        search: search.trim() || undefined
+        search: search.trim() || undefined,
+        is_active: statusParam,
+        roleId: selectedRoleFilter // Filter by selected role
       });
 
       if (!response.success) {
@@ -251,7 +281,8 @@ const TeacherTransferManagement = () => {
         roleId: teacher.roleId,
         schoolId: teacher.schoolId,
         status: teacher.status,
-        classes: teacher.classes || []
+        classes: teacher.classes || [],
+        isActive: teacher.is_active !== false // Map is_active from API to isActive
       }));
 
       // Fetch school details for teachers that don't have schoolName
@@ -306,7 +337,7 @@ const TeacherTransferManagement = () => {
     } finally {
       setFetchingTeachers(false);
     }
-  }, [clearError, handleError, t]);
+  }, [clearError, handleError, selectedStatusFilter, t]);
 
   // Search handlers: only hit API on explicit submit
   const handleSearchChange = (value) => {
@@ -416,6 +447,8 @@ const TeacherTransferManagement = () => {
     setSelectedSourceProvince('');
     setSelectedSourceDistrict('');
     setSelectedSourceSchool('');
+    setSelectedStatusFilter('all');
+    setSelectedRoleFilter('8');
     setSourceDistricts([]);
     setSourceSchools([]);
     setTeachers([]);
@@ -642,6 +675,79 @@ const TeacherTransferManagement = () => {
   const handleCancelDelete = () => {
     setShowDeleteConfirm(false);
     setSelectedTeacherForDelete(null);
+  };
+
+  const handleToggleUserStatus = (teacher) => {
+    setSelectedTeacherForStatus(teacher);
+    setShowStatusDialog(true);
+  };
+
+  const handleConfirmStatusChange = async () => {
+    if (!selectedTeacherForStatus) return;
+
+    try {
+      const newStatus = !selectedTeacherForStatus.isActive;
+      setIsTogglingStatus(true);
+      clearError();
+      console.log(`Toggling teacher ${selectedTeacherForStatus.userId} status from ${selectedTeacherForStatus.isActive} to ${newStatus}`);
+
+      // Call API to update status
+      const response = await userService.updateUserActiveStatus(selectedTeacherForStatus.userId, newStatus);
+
+      if (response && response.success !== false) {
+        // Update the teacher in the list
+        const updatedTeachers = teachers.map(t => {
+          if (t.userId === selectedTeacherForStatus.userId) {
+            return {
+              ...t,
+              isActive: newStatus
+            };
+          }
+          return t;
+        });
+
+        setTeachers(updatedTeachers);
+
+        // Update selectedTeachersMap to remove disabled teachers
+        if (!newStatus) {
+          const newSelectedIds = new Set(allSelectedTeacherIds);
+          const newSelectedMap = new Map(selectedTeachersMap);
+          newSelectedIds.delete(selectedTeacherForStatus.id);
+          newSelectedMap.delete(selectedTeacherForStatus.id);
+          setAllSelectedTeacherIds(newSelectedIds);
+          setSelectedTeachersMap(newSelectedMap);
+        }
+
+        showSuccess(
+          newStatus
+            ? t('teacherActivatedSuccess', 'Teacher activated successfully')
+            : t('teacherDeactivatedSuccess', 'Teacher deactivated successfully')
+        );
+
+        // Optionally refetch to ensure consistency
+        if (selectedSourceSchool) {
+          fetchTeachersForSchool(selectedSourceSchool, teacherPagination.page, searchQuery, teacherPagination.limit);
+        } else {
+          fetchAllTeachers(teacherPagination.page, searchQuery, teacherPagination.limit);
+        }
+      } else {
+        showError(response?.error || t('failedToUpdateStatus', 'Failed to update teacher status'));
+      }
+    } catch (err) {
+      console.error('Error toggling teacher status:', err);
+      handleError(err, {
+        toastMessage: t('errorUpdatingTeacherStatus', 'Failed to update teacher status')
+      });
+    } finally {
+      setIsTogglingStatus(false);
+      setShowStatusDialog(false);
+      setSelectedTeacherForStatus(null);
+    }
+  };
+
+  const handleCancelStatusChange = () => {
+    setShowStatusDialog(false);
+    setSelectedTeacherForStatus(null);
   };
 
   const handleExportTeachers = async () => {
@@ -1084,7 +1190,7 @@ const TeacherTransferManagement = () => {
               </div>
 
               {/* Active Filters Display */}
-              {(selectedSourceProvince || selectedSourceDistrict || selectedSourceSchool) && (
+              {(selectedSourceProvince || selectedSourceDistrict || selectedSourceSchool || (selectedStatusFilter && selectedStatusFilter !== 'all') || (selectedRoleFilter && selectedRoleFilter !== '8')) && (
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-semibold text-blue-900">{t('activeFilters', 'Active Filters')}:</span>
                     {selectedSourceProvince && (
@@ -1100,6 +1206,16 @@ const TeacherTransferManagement = () => {
                     {selectedSourceSchool && (
                       <Badge color="green" variant="filled" size="sm">
                         {t('school', 'School')}: {sourceSchools.find(s => s.id.toString() === selectedSourceSchool)?.name}
+                      </Badge>
+                    )}
+                    {selectedStatusFilter && selectedStatusFilter !== 'all' && (
+                      <Badge color="orange" variant="filled" size="sm">
+                        {t('status', 'Status')}: {selectedStatusFilter === 'active' ? t('active', 'Active') : t('inactive', 'Inactive')}
+                      </Badge>
+                    )}
+                    {selectedRoleFilter && selectedRoleFilter !== '8' && (
+                      <Badge color="purple" variant="filled" size="sm">
+                        {t('role', 'Role')}: {roleOptions.find(r => r.value === selectedRoleFilter)?.label || selectedRoleFilter}
                       </Badge>
                     )}
                   </div>
@@ -1156,10 +1272,12 @@ const TeacherTransferManagement = () => {
                         teacher={teacher}
                         onResetPassword={handleResetPassword}
                         onDelete={handleDeleteUser}
+                        onToggleActiveStatus={handleToggleUserStatus}
                       >
                         <div
                           className={
                             `bg-white rounded-sm border hover:border-blue-400 hover:shadow-md transition-all duration-200 flex justify-between items-start p-4 ` +
+                            (teacher.isActive === false ? 'opacity-50 ' : '') +
                             (allSelectedTeacherIds.has(teacher.id)
                               ? 'border-blue-500 ring-2 ring-blue-200'
                               : 'border-gray-200')
@@ -1191,6 +1309,11 @@ const TeacherTransferManagement = () => {
 
                             {/* Grade level and role */}
                             <div className="flex flex-wrap items-center gap-2 mt-1">
+                              {teacher.isActive === false && (
+                                <Badge color="red" variant="filled" size="sm">
+                                  {t('inactive', 'Inactive')}
+                                </Badge>
+                              )}
                               {teacher.gradeLevel && (
                                 <Badge color="blue" variant="outlined" size="sm">
                                   {t('gradeLevelShort', 'Grade')} {teacher.gradeLevel}
@@ -1211,7 +1334,12 @@ const TeacherTransferManagement = () => {
                             id={`teacher-${teacher.id}`}
                             checked={allSelectedTeacherIds.has(teacher.id)}
                             onChange={() => handleSelectTeacher(teacher)}
-                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer mt-0.5"
+                            disabled={teacher.isActive === false}
+                            className={`w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 mt-0.5 ${
+                              teacher.isActive === false
+                                ? 'cursor-not-allowed opacity-50 bg-gray-100'
+                                : 'cursor-pointer'
+                            }`}
                           />
                         </div>
 
@@ -1508,7 +1636,7 @@ const TeacherTransferManagement = () => {
         onClose={() => setIsSourceFilterOpen(false)}
         title={t('filters', 'Filters')}
         subtitle={t('selectSourceSchoolDesc', 'Choose the school where teachers are currently assigned')}
-        hasFilters={Boolean(selectedSourceProvince || selectedSourceDistrict || selectedSourceSchool)}
+        hasFilters={Boolean(selectedSourceProvince || selectedSourceDistrict || selectedSourceSchool || (selectedStatusFilter && selectedStatusFilter !== 'all') || (selectedRoleFilter && selectedRoleFilter !== '8'))}
         overlayClassName="bg-gray-500/75"
         onApply={handleApplySourceFilters}
       >
@@ -1557,6 +1685,38 @@ const TeacherTransferManagement = () => {
               emptyMessage={t('noSchoolsFound', 'No schools found')}
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('status', 'Status')}
+            </label>
+            <Dropdown
+              options={[
+                { value: 'all', label: t('all', 'All') },
+                { value: 'active', label: t('active', 'Active') },
+                { value: 'inactive', label: t('inactive', 'Inactive') }
+              ]}
+              value={selectedStatusFilter}
+              onValueChange={setSelectedStatusFilter}
+              placeholder={t('selectStatus', 'Select Status')}
+              className="w-full"
+              disabled={sourceLoading}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('role', 'Role')}
+            </label>
+            <Dropdown
+              options={roleOptions}
+              value={selectedRoleFilter}
+              onValueChange={setSelectedRoleFilter}
+              placeholder={t('selectRole', 'Select Role')}
+              className="w-full"
+              disabled={sourceLoading}
+            />
+          </div>
         </div>
       </SidebarFilter>
 
@@ -1586,6 +1746,21 @@ const TeacherTransferManagement = () => {
         confirmText={t('delete', 'Delete')}
         cancelText={t('cancel', 'Cancel')}
         loading={isDeleting}
+      />
+
+      {/* Status Change Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showStatusDialog}
+        onClose={handleCancelStatusChange}
+        onConfirm={handleConfirmStatusChange}
+        title={t('changeUserStatus', 'Change User Status')}
+        message={selectedTeacherForStatus
+          ? t('confirmStatusChange', `Are you sure you want to ${selectedTeacherForStatus.isActive ? 'disable' : 'enable'} ${getFullName(selectedTeacherForStatus)}?`)
+          : ''}
+        type="warning"
+        confirmText={t('confirm', 'Confirm')}
+        cancelText={t('cancel', 'Cancel')}
+        loading={isTogglingStatus}
       />
     </>
   );
