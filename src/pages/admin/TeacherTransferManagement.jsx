@@ -47,7 +47,7 @@ const TeacherTransferManagement = () => {
   const [selectedSourceDistrict, setSelectedSourceDistrict] = useState('');
   const [selectedSourceSchool, setSelectedSourceSchool] = useState('');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
-  const [selectedRoleFilter, setSelectedRoleFilter] = useState('8'); // Default to teacher role (8)
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState(''); // Empty = all roles, '8' = teacher only
 
   // Other state
   const [teachers, setTeachers] = useState([]);
@@ -149,7 +149,7 @@ const TeacherTransferManagement = () => {
         limit: actualLimit,
         search: search.trim() || undefined,
         is_active: statusParam,
-        roleId: selectedRoleFilter // Filter by selected role
+        roleId: selectedRoleFilter || undefined // Only filter by role if selected
       });
 
       if (!response.success) {
@@ -260,7 +260,7 @@ const TeacherTransferManagement = () => {
         limit: actualLimit,
         search: search.trim() || undefined,
         is_active: statusParam,
-        roleId: selectedRoleFilter // Filter by selected role
+        roleId: selectedRoleFilter || undefined // Only filter by role if selected
       });
 
       if (!response.success) {
@@ -337,7 +337,7 @@ const TeacherTransferManagement = () => {
     } finally {
       setFetchingTeachers(false);
     }
-  }, [clearError, handleError, selectedStatusFilter, t]);
+  }, [clearError, handleError, selectedStatusFilter, selectedRoleFilter, t]);
 
   // Search handlers: only hit API on explicit submit
   const handleSearchChange = (value) => {
@@ -448,7 +448,7 @@ const TeacherTransferManagement = () => {
     setSelectedSourceDistrict('');
     setSelectedSourceSchool('');
     setSelectedStatusFilter('all');
-    setSelectedRoleFilter('8');
+    setSelectedRoleFilter('');
     setSourceDistricts([]);
     setSourceSchools([]);
     setTeachers([]);
@@ -1190,7 +1190,7 @@ const TeacherTransferManagement = () => {
               </div>
 
               {/* Active Filters Display */}
-              {(selectedSourceProvince || selectedSourceDistrict || selectedSourceSchool || (selectedStatusFilter && selectedStatusFilter !== 'all') || (selectedRoleFilter && selectedRoleFilter !== '8')) && (
+              {(selectedSourceProvince || selectedSourceDistrict || selectedSourceSchool || (selectedStatusFilter && selectedStatusFilter !== 'all') || selectedRoleFilter) && (
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-semibold text-blue-900">{t('activeFilters', 'Active Filters')}:</span>
                     {selectedSourceProvince && (
@@ -1213,7 +1213,7 @@ const TeacherTransferManagement = () => {
                         {t('status', 'Status')}: {selectedStatusFilter === 'active' ? t('active', 'Active') : t('inactive', 'Inactive')}
                       </Badge>
                     )}
-                    {selectedRoleFilter && selectedRoleFilter !== '8' && (
+                    {selectedRoleFilter && (
                       <Badge color="purple" variant="filled" size="sm">
                         {t('role', 'Role')}: {roleOptions.find(r => r.value === selectedRoleFilter)?.label || selectedRoleFilter}
                       </Badge>
@@ -1636,7 +1636,7 @@ const TeacherTransferManagement = () => {
         onClose={() => setIsSourceFilterOpen(false)}
         title={t('filters', 'Filters')}
         subtitle={t('selectSourceSchoolDesc', 'Choose the school where teachers are currently assigned')}
-        hasFilters={Boolean(selectedSourceProvince || selectedSourceDistrict || selectedSourceSchool || (selectedStatusFilter && selectedStatusFilter !== 'all') || (selectedRoleFilter && selectedRoleFilter !== '8'))}
+        hasFilters={Boolean(selectedSourceProvince || selectedSourceDistrict || selectedSourceSchool || (selectedStatusFilter && selectedStatusFilter !== 'all') || selectedRoleFilter)}
         overlayClassName="bg-gray-500/75"
         onApply={handleApplySourceFilters}
       >
