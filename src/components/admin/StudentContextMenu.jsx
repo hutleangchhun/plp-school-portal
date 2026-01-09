@@ -2,9 +2,9 @@ import React from 'react';
 import * as ContextMenu from '@radix-ui/react-context-menu';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
-import { Lock, Copy, Trash2, Ban } from 'lucide-react';
+import { Lock, Copy, Trash2, Ban, QrCode } from 'lucide-react';
 
-const StudentContextMenu = ({ children, student, onResetPassword, onDelete, onToggleActiveStatus }) => {
+const StudentContextMenu = ({ children, student, onResetPassword, onDelete, onToggleActiveStatus, onDownloadQRCode }) => {
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
 
@@ -21,6 +21,12 @@ const StudentContextMenu = ({ children, student, onResetPassword, onDelete, onTo
   const handleToggleStatus = () => {
     if (onToggleActiveStatus) {
       onToggleActiveStatus(student);
+    }
+  };
+
+  const handleDownloadQRCode = () => {
+    if (onDownloadQRCode) {
+      onDownloadQRCode(student);
     }
   };
 
@@ -101,6 +107,21 @@ const StudentContextMenu = ({ children, student, onResetPassword, onDelete, onTo
             <Copy className="w-4 h-4" />
             <span>{t('copyUsername', 'Copy Username')}</span>
           </ContextMenu.Item>
+
+          {onDownloadQRCode && (
+            <>
+              <ContextMenu.Separator className="bg-gray-200 h-px" />
+
+              {/* Download QR Code Option */}
+              <ContextMenu.Item
+                onSelect={handleDownloadQRCode}
+                className="px-3 py-2.5 text-sm text-gray-700 cursor-pointer flex items-center space-x-2 hover:bg-blue-50 hover:text-blue-700 transition-colors focus:outline-none focus:bg-blue-50"
+              >
+                <QrCode className="w-4 h-4" />
+                <span>{t('downloadQRCode', 'Download QR Code')}</span>
+              </ContextMenu.Item>
+            </>
+          )}
 
           {onToggleActiveStatus && (
             <>

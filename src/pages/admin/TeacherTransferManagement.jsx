@@ -24,6 +24,7 @@ import { getFullName } from '../../utils/usernameUtils';
 import locationService from '../../utils/api/services/locationService';
 import schoolService from '../../utils/api/services/schoolService';
 import { userService } from '../../utils/api/services/userService';
+import { downloadSingleQRCode } from '../../utils/qrCodeDownloadUtils';
 import { roleOptions } from '../../utils/formOptions';
 import { Users, ListFilter, RotateCcw, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -88,6 +89,7 @@ const TeacherTransferManagement = () => {
   const [selectedTargetSchool, setSelectedTargetSchool] = useState('');
   const [targetLoading, setTargetLoading] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [downloadingQRCode, setDownloadingQRCode] = useState(false);
 
   // Export progress modal state
   const [showExportProgress, setShowExportProgress] = useState(false);
@@ -750,6 +752,50 @@ const TeacherTransferManagement = () => {
     setSelectedTeacherForStatus(null);
   };
 
+  const handleDownloadQRCode = async (teacher) => {
+    if (!teacher || !teacher.userId) {
+      showError(t('invalidTeacher', 'Invalid teacher data'));
+      return;
+    }
+
+    try {
+      setDownloadingQRCode(true);
+
+      // Fetch full user data including QR code
+      const userResponse = await userService.getUserByID(teacher.userId);
+      const userData = userResponse?.data || userResponse;
+
+      if (!userData || !userData.qr_code) {
+        showError(t('noQRCodeAvailable', 'No QR code available for this teacher'));
+        return;
+      }
+
+      // Prepare QR code data structure matching downloadSingleQRCode requirements
+      const qrCodeData = {
+        userId: teacher.userId,
+        name: getFullName(teacher),
+        username: teacher.username || userData.username,
+        qrCode: userData.qr_code,
+        schoolName: teacher.schoolName || '',
+        schoolId: teacher.schoolId,
+        email: teacher.email || userData.email,
+        hasQrCode: true,
+        role: getRoleName(teacher.roleId) || t('teacher', 'Teacher'),
+        gradeLevel: teacher.gradeLevel || null
+      };
+
+      // Download using utility function
+      await downloadSingleQRCode(qrCodeData, 'teacher', t, showError);
+
+      showSuccess(t('qrCodeDownloaded', 'QR code downloaded successfully'));
+    } catch (err) {
+      console.error('Error downloading QR code:', err);
+      showError(t('downloadQRCodeFailed', 'Failed to download QR code'));
+    } finally {
+      setDownloadingQRCode(false);
+    }
+  };
+
   const handleExportTeachers = async () => {
     if (teachers.length === 0) {
       handleError(new Error(t('noTeachersToExport', 'No teachers to export')));
@@ -1273,6 +1319,7 @@ const TeacherTransferManagement = () => {
                         onResetPassword={handleResetPassword}
                         onDelete={handleDeleteUser}
                         onToggleActiveStatus={handleToggleUserStatus}
+                        onDownloadQRCode={handleDownloadQRCode}
                       >
                         <div
                           className={
