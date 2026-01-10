@@ -3,6 +3,8 @@
  * Defines which routes are accessible to which roles
  */
 
+import { userUtils } from './api/services/userService';
+
 // Role constants
 export const ROLES = {
   TEACHER: 8,
@@ -168,6 +170,10 @@ export const routePermissions = {
   '/admin/schools': {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'SchoolManagement'
+  },
+  '/multi-role-dashboard': {
+    allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR, ROLES.RESTRICTED_ROLES_ONLY],
+    component: 'MultiRoleDashboardPage'
   }
 };
 
@@ -266,6 +272,11 @@ export const hasRouteAccess = (path, user) => {
     // If route doesn't exist, deny access
     if (!routeConfig) return false;
 
+    // Special case: /multi-role-dashboard requires officerRoles
+    if (path === '/multi-role-dashboard') {
+      return userUtils.hasMultipleRoles(user);
+    }
+
     // If route specifies allowed roles, check if director is allowed
     if (routeConfig.allowedRoles && routeConfig.allowedRoles.length > 0) {
       // Director can access routes that have ROLES.DIRECTOR in allowedRoles
@@ -292,6 +303,11 @@ export const hasRouteAccess = (path, user) => {
     // If route doesn't exist, deny access
     if (!routeConfig) return false;
 
+    // Special case: /multi-role-dashboard requires officerRoles
+    if (path === '/multi-role-dashboard') {
+      return userUtils.hasMultipleRoles(user);
+    }
+
     // If route specifies allowed roles, check if teacher can access
     if (routeConfig.allowedRoles && routeConfig.allowedRoles.length > 0) {
       // Teacher can access routes that have ROLES.TEACHER_ONLY or ROLES.TEACHER in allowedRoles
@@ -309,6 +325,11 @@ export const hasRouteAccess = (path, user) => {
     // If route doesn't exist, deny access
     if (!routeConfig) {
       return false;
+    }
+
+    // Special case: /multi-role-dashboard requires officerRoles
+    if (path === '/multi-role-dashboard') {
+      return userUtils.hasMultipleRoles(user);
     }
 
     // If route specifies allowed roles, check if role1 can access
@@ -332,6 +353,11 @@ export const hasRouteAccess = (path, user) => {
     // If route doesn't exist, deny access
     if (!routeConfig) {
       return false;
+    }
+
+    // Special case: /multi-role-dashboard requires officerRoles
+    if (path === '/multi-role-dashboard') {
+      return userUtils.hasMultipleRoles(user);
     }
 
     // If route specifies allowed roles, check if restricted role can access
@@ -440,6 +466,14 @@ export const getNavigationItems = (user, t) => {
     // achievements, settings
   ];
 
+  // Add multi-role dashboard if director has multiple roles
+  if (user && userUtils.hasMultipleRoles(user)) {
+    directorItems.push({
+      name: t('multiRoleDashboard', 'Multi-Role Dashboard'),
+      href: '/multi-role-dashboard',
+    });
+  }
+
   // Teacher gets my-classes, my-students, attendance, my-attendance, and qr-codes
   const teacherItems = [
     {
@@ -483,6 +517,14 @@ export const getNavigationItems = (user, t) => {
     //   href: '/my-students-exams',
     // },
   ];
+
+  // Add multi-role dashboard if teacher has secondary roles
+  if (user && userUtils.hasMultipleRoles(user)) {
+    teacherItems.push({
+      name: t('multiRoleDashboard', 'Multi-Role Dashboard'),
+      href: '/multi-role-dashboard',
+    });
+  }
 
   // Role 1 (Admin) navigation items
   const role1Items = [
@@ -545,6 +587,14 @@ export const getNavigationItems = (user, t) => {
     },
   ];
 
+  // Add multi-role dashboard if admin has secondary roles
+  if (user && userUtils.hasMultipleRoles(user)) {
+    role1Items.push({
+      name: t('multiRoleDashboard', 'Multi-Role Dashboard'),
+      href: '/multi-role-dashboard',
+    });
+  }
+
   // Restricted Roles (15-21) navigation items
   const restrictedRolesItems = [
     {
@@ -552,6 +602,14 @@ export const getNavigationItems = (user, t) => {
       href: '/my-attendance',
     },
   ];
+
+  // Add multi-role dashboard if restricted role has multiple roles
+  if (user && userUtils.hasMultipleRoles(user)) {
+    restrictedRolesItems.push({
+      name: t('multiRoleDashboard', 'Multi-Role Dashboard'),
+      href: '/multi-role-dashboard',
+    });
+  }
 
   // Return appropriate items based on user role
   if (user.roleId === 1) {

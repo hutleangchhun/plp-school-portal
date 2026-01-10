@@ -53,6 +53,94 @@ const fetchAndStoreTeacherClasses = async (user) => {
 };
 
 /**
+ * Helper function to fetch and integrate secondary/officer roles
+ * @param {Object} user - User object to enhance with secondary role data
+ * @returns {Promise<Object>} Enhanced user object with secondary role data
+ */
+const fetchAndIntegrateSecondaryRoles = async (user) => {
+  if (!user) {
+    return user;
+  }
+
+  try {
+    console.log('🔍 Fetching secondary roles from /auth/secondary-roles...');
+    const response = await handleApiResponse(() =>
+      apiClient_.get(ENDPOINTS.AUTH.SECONDARY_ROLES)
+    );
+
+    const responseData = response?.data || response;
+    console.log('📥 Secondary roles response:', responseData);
+
+    // If user has a secondary role
+    if (responseData?.role && responseData?.role !== null && responseData?.data && responseData?.data !== null) {
+      const { role, data } = responseData;
+      console.log('✅ User has secondary role:', role);
+      console.log('📊 Secondary role data:', data);
+
+      // Map API role to internal structure, preserving ALL array data from API
+      let officerRoles = [];
+      let officerData = null;
+
+      if (role === 'PROVINCIAL_OFFICER') {
+        officerRoles = ['PROVINCIAL_OFFICER'];
+        officerData = {
+          provincialOfficer: {
+            provincialOfficerId: data.provincialOfficerId,
+            provinceIds: data.provinceIds,  // Array of province IDs
+            status: data.status
+          }
+        };
+      } else if (role === 'DISTRICT_OFFICER') {
+        officerRoles = ['DISTRICT_OFFICER'];
+        officerData = {
+          districtOfficer: {
+            districtOfficerId: data.districtOfficerId,
+            provinceIds: data.provinceIds,  // Array of province IDs
+            districtIds: data.districtIds,  // Array of district IDs
+            schoolIds: data.schoolIds || [],
+            status: data.status
+          }
+        };
+      } else if (role === 'COMMUNE_OFFICER') {
+        officerRoles = ['COMMUNE_OFFICER'];
+        officerData = {
+          communeOfficer: {
+            communeOfficerId: data.communeOfficerId,
+            provinceIds: data.provinceIds,  // Array of province IDs
+            districtIds: data.districtIds,  // Array of district IDs
+            communeIds: data.communeIds,    // Array of commune IDs
+            status: data.status
+          }
+        };
+      }
+
+      // Enhance user object with secondary role data
+      const enhancedUser = {
+        ...user,
+        officerRoles: officerRoles,
+        secondaryRole: {  // Also save the API response structure
+          role: role,
+          data: data
+        },
+        ...officerData
+      };
+
+      console.log('✅ User enhanced with secondary role data:');
+      console.log('   - officerRoles:', enhancedUser.officerRoles);
+      console.log('   - Officer data:', officerData);
+      return enhancedUser;
+    } else {
+      console.log('ℹ️ User has no secondary role');
+      return user;
+    }
+  } catch (error) {
+    console.error('❌ Error fetching secondary roles:', error);
+    // Don't fail login if secondary roles fetch fails
+    return user;
+  }
+};
+
+/**
  * Authentication API Service
  * Handles all authentication-related API operations
  */
@@ -95,10 +183,17 @@ export const authService = {
       }
 
       // Normalize user data: roleId = 14 is the primary director role
+      // Also preserve multi-role data (officerRoles, provincialOfficer, etc.)
       const normalizedUser = {
         ...user,
         isDirector: user.roleId === 14,
-        is_director: user.roleId === 14
+        is_director: user.roleId === 14,
+        // Preserve multi-role data structure
+        roles: user.roles || [user.roleEn],
+        officerRoles: user.officerRoles || [],
+        provincialOfficer: user.provincialOfficer || null,
+        districtOfficer: user.districtOfficer || null,
+        communeOfficer: user.communeOfficer || null
       };
 
       // Allow users with roleId = 8 (teachers), roleId = 14 (directors), roleId = 1 (admin), and roleId 15-21 (restricted roles)
@@ -149,18 +244,23 @@ export const authService = {
           console.log('   - schoolId:', freshUserData.schoolId);
           console.log('   - isDirector:', freshUserData.isDirector, 'Type:', typeof freshUserData.isDirector);
           console.log('   - is_director:', freshUserData.is_director, 'Type:', typeof freshUserData.is_director);
-          userUtils.saveUserData(freshUserData);
+
+          // Fetch and integrate secondary/officer roles
+          const userWithSecondaryRoles = await fetchAndIntegrateSecondaryRoles(freshUserData);
+
+          userUtils.saveUserData(userWithSecondaryRoles);
 
           console.log('💾 Data saved. Verifying localStorage...');
           const verifyData = userUtils.getUserData();
           console.log('✓ Verified school_id in localStorage:', verifyData?.school_id);
+          console.log('✓ Verified officerRoles in localStorage:', verifyData?.officerRoles);
 
           // Fetch and store teacher's classes if user is a teacher (roleId = 8)
-          await fetchAndStoreTeacherClasses(freshUserData);
+          await fetchAndStoreTeacherClasses(userWithSecondaryRoles);
 
           return {
             success: true,
-            data: { accessToken, user: freshUserData }
+            data: { accessToken, user: userWithSecondaryRoles }
           };
         } else {
           console.warn('⚠️ my-account response not successful or missing data');
@@ -176,14 +276,20 @@ export const authService = {
       console.log('🔍 Login user data being saved:');
       console.log('   - isDirector:', normalizedUser.isDirector, 'Type:', typeof normalizedUser.isDirector);
       console.log('   - is_director:', normalizedUser.is_director, 'Type:', typeof normalizedUser.is_director);
-      userUtils.saveUserData(normalizedUser);
+
+      // Fetch and integrate secondary/officer roles
+      const userWithSecondaryRoles = await fetchAndIntegrateSecondaryRoles(normalizedUser);
+
+      userUtils.saveUserData(userWithSecondaryRoles);
+
+      console.log('✓ Verified officerRoles in localStorage:', userWithSecondaryRoles?.officerRoles);
 
       // Fetch and store teacher's classes if user is a teacher (roleId = 8)
-      await fetchAndStoreTeacherClasses(normalizedUser);
+      await fetchAndStoreTeacherClasses(userWithSecondaryRoles);
 
       return {
         success: true,
-        data: { accessToken, user: normalizedUser }
+        data: { accessToken, user: userWithSecondaryRoles }
       };
     }
 
@@ -305,7 +411,13 @@ export const authService = {
       const normalizedUser = {
         ...user,
         isDirector: user.roleId === 14,
-        is_director: user.roleId === 14
+        is_director: user.roleId === 14,
+        // Preserve multi-role data structure
+        roles: user.roles || [user.roleEn],
+        officerRoles: user.officerRoles || [],
+        provincialOfficer: user.provincialOfficer || null,
+        districtOfficer: user.districtOfficer || null,
+        communeOfficer: user.communeOfficer || null
       };
 
       // Check role authorization

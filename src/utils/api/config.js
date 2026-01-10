@@ -62,6 +62,7 @@ const ENDPOINTS = {
     REFRESH_TOKEN: '/auth/refresh-token',
     ME: '/auth/me',
     RESET_PASSWORD: '/auth/reset-password',
+    SECONDARY_ROLES: '/auth/secondary-roles',
   },
   USERS: {
     BASE: '/users',

@@ -25,6 +25,7 @@ import StudentRegistration from './pages/auth/StudentRegistration';
 import SchoolLookup from './pages/public/SchoolLookup';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/dashboard/Dashboard';
+import MultiRoleDashboardPage from './pages/dashboard/MultiRoleDashboardPage';
 import ProfileUpdate from './pages/profile/ProfileUpdate';
 import DashboardLayout from './components/layout/DashboardLayout';
 import NotFound from './pages/NotFound';
@@ -184,6 +185,15 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<Dashboard user={user} setUser={setUser} />} />
+          </Route>
+
+          {/* Multi-Role Dashboard route - accessible to users with multi-role data */}
+          <Route path="multi-role-dashboard" element={
+            <ProtectedRoute path="/multi-role-dashboard" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<MultiRoleDashboardPage user={user} />} />
           </Route>
 
           {/* Admin dashboard route - accessible to role ID 1 users */}

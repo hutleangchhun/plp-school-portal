@@ -672,6 +672,115 @@ const userService = {
     return patch(ENDPOINTS.USERS.ACTIVE_STATUS(userId), {
       is_active: isActive
     });
+  },
+
+  /**
+   * Get user's secondary/officer roles
+   * @returns {Promise<Object>} Secondary role data { role, data }
+   */
+  getSecondaryRoles: async () => {
+    console.log('📥 Fetching secondary roles from /auth/secondary-roles');
+    try {
+      const response = await get(ENDPOINTS.AUTH.SECONDARY_ROLES);
+      console.log('✅ Secondary roles response:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Error fetching secondary roles:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Create provincial officer role
+   * @param {Object} data - Officer data { userId, provinceId, position, department }
+   * @returns {Promise<Object>} Created provincial officer data
+   */
+  createProvincialOfficer: async (data) => {
+    console.log('📤 Creating provincial officer:', data);
+    return post('/provincial-officers', data);
+  },
+
+  /**
+   * Update provincial officer role by user ID
+   * @param {string|number} userId - User ID
+   * @param {Object} data - Officer data to update { provinceId?, position?, department?, is_active? }
+   * @returns {Promise<Object>} Updated provincial officer data
+   */
+  updateProvincialOfficer: async (userId, data) => {
+    console.log('📤 Updating provincial officer for user:', userId, data);
+    return put(`/provincial-officers/user/${userId}`, data);
+  },
+
+  /**
+   * Create district officer role
+   * @param {Object} data - Officer data { userId, provinceId, districtId, position, department }
+   * @returns {Promise<Object>} Created district officer data
+   */
+  createDistrictOfficer: async (data) => {
+    console.log('📤 Creating district officer:', data);
+    return post('/district-officers', data);
+  },
+
+  /**
+   * Update district officer role by user ID
+   * @param {string|number} userId - User ID
+   * @param {Object} data - Officer data to update { provinceId?, districtId?, position?, department? }
+   * @returns {Promise<Object>} Updated district officer data
+   */
+  updateDistrictOfficer: async (userId, data) => {
+    console.log('📤 Updating district officer for user:', userId, data);
+    return put(`/district-officers/user/${userId}`, data);
+  },
+
+  /**
+   * Create commune officer role
+   * @param {Object} data - Officer data { userId, provinceId, districtId, communeId, position, department }
+   * @returns {Promise<Object>} Created commune officer data
+   */
+  createCommuneOfficer: async (data) => {
+    console.log('📤 Creating commune officer:', data);
+    return post('/commune-officers', data);
+  },
+
+  /**
+   * Update commune officer role by user ID
+   * @param {string|number} userId - User ID
+   * @param {Object} data - Officer data to update { provinceId?, districtId?, communeId?, position?, department? }
+   * @returns {Promise<Object>} Updated commune officer data
+   */
+  updateCommuneOfficer: async (userId, data) => {
+    console.log('📤 Updating commune officer for user:', userId, data);
+    return put(`/commune-officers/user/${userId}`, data);
+  },
+
+  /**
+   * Delete provincial officer role by user ID
+   * @param {string|number} userId - User ID
+   * @returns {Promise<Object>} Delete response message
+   */
+  deleteProvincialOfficer: async (userId) => {
+    console.log('🗑️ Deleting provincial officer for user:', userId);
+    return del(`/provincial-officers/user/${userId}`);
+  },
+
+  /**
+   * Delete district officer role by user ID
+   * @param {string|number} userId - User ID
+   * @returns {Promise<Object>} Delete response message
+   */
+  deleteDistrictOfficer: async (userId) => {
+    console.log('🗑️ Deleting district officer for user:', userId);
+    return del(`/district-officers/user/${userId}`);
+  },
+
+  /**
+   * Delete commune officer role by user ID
+   * @param {string|number} userId - User ID
+   * @returns {Promise<Object>} Delete response message
+   */
+  deleteCommuneOfficer: async (userId) => {
+    console.log('🗑️ Deleting commune officer for user:', userId);
+    return del(`/commune-officers/user/${userId}`);
   }
 };
 
@@ -687,6 +796,10 @@ const userUtils = {
     try {
       localStorage.setItem('user', JSON.stringify(userData));
       // Dispatch custom event to notify components in the same tab
+      // Use CustomEvent for better compatibility
+      const event = new CustomEvent('userDataUpdated', { detail: userData });
+      window.dispatchEvent(event);
+      // Also dispatch as a regular event for fallback
       window.dispatchEvent(new Event('userDataUpdated'));
       console.log('💾 User data saved to localStorage and event dispatched');
     } catch (error) {
@@ -751,7 +864,7 @@ const userUtils = {
    */
   getRoleDisplay: (user, t) => {
     if (!user || !user.roleNameEn) return t('roles.unknown') || 'Unknown';
-    
+
     const roleMap = {
       admin: t('roles.admin') || 'Administrator',
       teacher: t('roles.teacher') || 'Teacher',
@@ -759,8 +872,92 @@ const userUtils = {
       parent: t('roles.parent') || 'Parent',
       staff: t('roles.staff') || 'Staff'
     };
-    
+
     return roleMap[user.roleNameEn.toLowerCase()] || user.roleNameEn;
+  },
+
+  /**
+   * Check if user has multiple roles
+   * @param {Object} user - User object
+   * @returns {boolean} Whether user has multiple roles
+   */
+  hasMultipleRoles: (user) => {
+    if (!user) return false;
+    const roles = user.roles || [];
+    const officerRoles = user.officerRoles || [];
+    return roles.length > 1 || officerRoles.length > 0;
+  },
+
+  /**
+   * Check if user is a provincial officer
+   * @param {Object} user - User object
+   * @returns {boolean} Whether user has PROVINCIAL_OFFICER role
+   */
+  isProvincialOfficer: (user) => {
+    if (!user) return false;
+    const officerRoles = user.officerRoles || [];
+    return officerRoles.includes('PROVINCIAL_OFFICER');
+  },
+
+  /**
+   * Check if user is a district officer
+   * @param {Object} user - User object
+   * @returns {boolean} Whether user has DISTRICT_OFFICER role
+   */
+  isDistrictOfficer: (user) => {
+    if (!user) return false;
+    const officerRoles = user.officerRoles || [];
+    return officerRoles.includes('DISTRICT_OFFICER');
+  },
+
+  /**
+   * Check if user is a commune officer
+   * @param {Object} user - User object
+   * @returns {boolean} Whether user has COMMUNE_OFFICER role
+   */
+  isCommuneOfficer: (user) => {
+    if (!user) return false;
+    const officerRoles = user.officerRoles || [];
+    return officerRoles.includes('COMMUNE_OFFICER');
+  },
+
+  /**
+   * Get all roles (primary + officer roles) as display text
+   * @param {Object} user - User object
+   * @param {Function} t - Translation function
+   * @returns {Array} Array of role display texts
+   */
+  getAllRolesDisplay: (user, t) => {
+    if (!user) return [];
+
+    const roles = [];
+    const roleMap = {
+      TEACHER: t('roles.teacher') || 'Teacher',
+      DIRECTOR: t('roles.director') || 'Director',
+      ADMIN: t('roles.admin') || 'Administrator',
+      STUDENT: t('roles.student') || 'Student',
+      PARENT: t('roles.parent') || 'Parent',
+      PROVINCIAL_OFFICER: t('roles.provincialOfficer') || 'Provincial Officer',
+      DISTRICT_OFFICER: t('roles.districtOfficer') || 'District Officer',
+      COMMUNE_OFFICER: t('roles.communeOfficer') || 'Commune Officer'
+    };
+
+    // Add primary role
+    if (user.roleEn) {
+      roles.push(roleMap[user.roleEn] || user.roleEn);
+    }
+
+    // Add officer roles
+    if (user.officerRoles && Array.isArray(user.officerRoles)) {
+      user.officerRoles.forEach(role => {
+        const displayRole = roleMap[role] || role;
+        if (!roles.includes(displayRole)) {
+          roles.push(displayRole);
+        }
+      });
+    }
+
+    return roles;
   },
 
   /**

@@ -7,9 +7,10 @@ import { Button } from '../../components/ui/Button';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import ProfileImage from '../../components/ui/ProfileImage';
 import ProfileInfoDisplay from '../../components/ui/ProfileInfoDisplay';
-import { api, utils } from '../../utils/api';
+import { api, utils, apiClient } from '../../utils/api';
 import { userService } from '../../utils/api/services/userService';
 import salaryTypeService from '../../utils/api/services/salaryTypeService';
+import locationService from '../../utils/api/services/locationService';
 import { sanitizeUsername, getFullName } from '../../utils/usernameUtils';
 import { convertHeightToCm, convertWeightToKg, calculateBMI } from '../../utils/physicalMeasurementUtils';
 import Dropdown from '../../components/ui/Dropdown';
@@ -19,6 +20,7 @@ import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import { ethnicGroupOptions as baseEthnicGroupOptions, employmentTypeOptions, accessibilityOptions, educationLevelOptions, trainingTypeOptions, teachingTypeOptions, teacherStatusOptions, subjectOptions, roleOptions, maritalStatusOptions, spouseJobOptions, gradeLevelOptions } from '../../utils/formOptions';
 import MultiSelectDropdown from '../../components/ui/MultiSelectDropdown';
 import SalaryTypeDropdown from '../../components/ui/SalaryTypeDropdown';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 
 export default function ProfileUpdate({ user, setUser }) {
   const { t } = useLanguage();
@@ -117,12 +119,32 @@ export default function ProfileUpdate({ user, setUser }) {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showDeleteSecondaryRoleDialog, setShowDeleteSecondaryRoleDialog] = useState(false);
+  const [showSwitchRoleDialog, setShowSwitchRoleDialog] = useState(false);
+  const [pendingRoleSwitch, setPendingRoleSwitch] = useState(null);
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [pictureUploading, setPictureUploading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmNewPasswordInput, setConfirmNewPasswordInput] = useState('');
+  const [changePasswordLoading, setChangePasswordLoading] = useState(false);
+  const [showCurrentPasswordTab, setShowCurrentPasswordTab] = useState(false);
+  const [showNewPasswordTab, setShowNewPasswordTab] = useState(false);
+  const [secondaryRoleType, setSecondaryRoleType] = useState(''); // 'PROVINCIAL' | 'DISTRICT' | 'COMMUNE'
+  const [secondaryProvinceIds, setSecondaryProvinceIds] = useState([]); // Array of province IDs
+  const [secondaryDistrictIds, setSecondaryDistrictIds] = useState([]); // Array of district IDs
+  const [secondaryCommuneIds, setSecondaryCommuneIds] = useState([]); // Array of commune IDs
+  const [secondaryRoleLoading, setSecondaryRoleLoading] = useState(false);
+  const [secondaryProvinces, setSecondaryProvinces] = useState([]);
+  const [secondaryDistricts, setSecondaryDistricts] = useState([]);
+  const [secondaryCommunes, setSecondaryCommunes] = useState([]);
+  const [secondaryLocationLoading, setSecondaryLocationLoading] = useState(false);
+  const [existingCommuneOfficer, setExistingCommuneOfficer] = useState(null);
+  const [isEditingCommuneOfficer, setIsEditingCommuneOfficer] = useState(false);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const [usernameSuggestions, setUsernameSuggestions] = useState([]);
@@ -202,6 +224,80 @@ export default function ProfileUpdate({ user, setUser }) {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Load provinces for secondary officer role dropdowns
+  useEffect(() => {
+    const loadProvinces = async () => {
+      try {
+        setSecondaryLocationLoading(true);
+        const response = await locationService.getProvinces();
+        const provinces = Array.isArray(response) ? response : (response?.data || []);
+        setSecondaryProvinces(provinces);
+      } catch (error) {
+        console.error('Error loading secondary provinces:', error);
+      } finally {
+        setSecondaryLocationLoading(false);
+      }
+    };
+
+    loadProvinces();
+  }, []);
+
+  const handleSecondaryProvinceChange = async (provinceIds) => {
+    setSecondaryProvinceIds(provinceIds);
+    setSecondaryDistrictIds([]);
+    setSecondaryCommuneIds([]);
+    setSecondaryDistricts([]);
+    setSecondaryCommunes([]);
+
+    if (!provinceIds || provinceIds.length === 0) {
+      return;
+    }
+
+    try {
+      setSecondaryLocationLoading(true);
+      const firstProvinceId = provinceIds[0];
+      const districtsResponse = await locationService.getDistrictsByProvince(Number(firstProvinceId));
+      const districts = Array.isArray(districtsResponse) ? districtsResponse : (districtsResponse?.data || []);
+      setSecondaryDistricts(districts);
+    } catch (error) {
+      console.error('Error loading secondary districts:', error);
+    } finally {
+      setSecondaryLocationLoading(false);
+    }
+  };
+
+  const handleSecondaryDistrictChange = async (districtIds) => {
+    setSecondaryDistrictIds(districtIds);
+    setSecondaryCommuneIds([]);
+    setSecondaryCommunes([]);
+
+    if (!districtIds || districtIds.length === 0 || !secondaryProvinceIds || secondaryProvinceIds.length === 0) {
+      return;
+    }
+
+    try {
+      setSecondaryLocationLoading(true);
+
+      const firstDistrictId = districtIds[0];
+      const firstProvinceId = secondaryProvinceIds[0];
+
+      // Find the district object to get its code
+      const selectedDistrict = secondaryDistricts.find(d => d.id === Number(firstDistrictId));
+      const districtCode = selectedDistrict?.district_code || selectedDistrict?.code || firstDistrictId;
+
+      console.log('📍 Loading communes for district:', firstDistrictId, 'with code:', districtCode);
+
+      const communesResponse = await locationService.getCommunesByDistrict(Number(firstProvinceId), Number(districtCode));
+      const communes = Array.isArray(communesResponse) ? communesResponse : (communesResponse?.data || []);
+      console.log('📍 Communes loaded:', communes.length);
+      setSecondaryCommunes(communes);
+    } catch (error) {
+      console.error('Error loading secondary communes:', error);
+    } finally {
+      setSecondaryLocationLoading(false);
+    }
+  };
 
 
   // Fetch user data from database
@@ -434,7 +530,11 @@ export default function ProfileUpdate({ user, setUser }) {
           provinceId: normalizedData.residence?.provinceId || normalizedData.province_id || '',
           districtId: normalizedData.residence?.districtId || normalizedData.district_id || '',
           communeId: normalizedData.residence?.communeId || normalizedData.commune_id || '',
-          villageId: normalizedData.residence?.villageId || normalizedData.village_id || ''
+          villageId: normalizedData.residence?.villageId || normalizedData.village_id || '',
+          // Secondary officer data
+          provincialOfficer: normalizedData.provincialOfficer || null,
+          districtOfficer: normalizedData.districtOfficer || null,
+          communeOfficer: normalizedData.communeOfficer || null
         };
 
         setFormData(newFormData);
@@ -443,6 +543,29 @@ export default function ProfileUpdate({ user, setUser }) {
         setOriginalTeacherNumber(newFormData.teacher_number || '');
         setTeacherNumberAvailable(null);
         console.log('User data loaded into form, keys present:', Object.keys(newFormData).filter(k => newFormData[k]));
+
+        // Fetch officer data separately if not included in user response
+        if (!newFormData.provincialOfficer && !newFormData.districtOfficer && !newFormData.communeOfficer) {
+          console.log('Officer data not in main response, fetching additional data...');
+          try {
+            const officerResponse = await api.user.getUserByID(extractedUserId);
+            if (officerResponse?.provincialOfficer || officerResponse?.districtOfficer || officerResponse?.communeOfficer) {
+              console.log('✓ Found officer data in additional fetch:', {
+                provincialOfficer: officerResponse.provincialOfficer,
+                districtOfficer: officerResponse.districtOfficer,
+                communeOfficer: officerResponse.communeOfficer
+              });
+              setFormData(prev => ({
+                ...prev,
+                provincialOfficer: officerResponse.provincialOfficer || null,
+                districtOfficer: officerResponse.districtOfficer || null,
+                communeOfficer: officerResponse.communeOfficer || null
+              }));
+            }
+          } catch (error) {
+            console.log('Could not fetch officer data:', error.message);
+          }
+        }
 
         // Fetch salary type name if salary type ID and employment type exist
         const currentEmploymentType = newFormData.employment_type;
@@ -513,6 +636,150 @@ export default function ProfileUpdate({ user, setUser }) {
 
     fetchUserData();
   }, []); // Remove setUser from dependencies as it can cause infinite loops
+
+  // Fetch existing secondary officer data from /auth/secondary-roles endpoint
+  useEffect(() => {
+    const loadSecondaryOfficerData = async () => {
+      if (!formData || !formData.id) {
+        console.log('FormData or formData.id not ready yet');
+        return;
+      }
+
+      console.log('Fetching secondary officer data from /auth/secondary-roles');
+
+      try {
+        const response = await apiClient.get('/auth/secondary-roles');
+        console.log('🔍 Secondary roles API response:', response);
+        console.log('🔍 Response.data:', response?.data);
+        console.log('🔍 Response.role:', response?.role);
+
+        // The API returns { role, data: {...} } at the top level
+        // But apiClient wraps it, so we need to check both response and response.data
+        let role = response?.role;
+        let data = response?.data;
+
+        // If no role at top level, check if it's nested in data
+        if (!role && response?.data?.role) {
+          role = response.data.role;
+          data = response.data.data;
+        }
+
+        console.log('🔍 Extracted role:', role, 'data:', data);
+
+        // If no role or data is null, user has no secondary role
+        if (!role || role === null || !data || data === null) {
+          console.log('✓ User has no secondary role assigned (role=null, data=null)');
+          setExistingCommuneOfficer(null);
+          setIsEditingCommuneOfficer(false);
+          return;
+        }
+
+        let roleType = null;
+        let officerData = null;
+
+        console.log('🔍 Mapping role:', role, 'to roleType');
+
+        // Map role name to role type and extract data
+        if (role === 'PROVINCIAL_OFFICER') {
+          roleType = 'PROVINCIAL';
+          officerData = {
+            provincialOfficerId: data.provincialOfficerId,
+            provinceId: data.provinceId
+          };
+          console.log('✓ Found Provincial Officer data:', officerData);
+        } else if (role === 'DISTRICT_OFFICER') {
+          roleType = 'DISTRICT';
+          officerData = {
+            districtOfficerId: data.districtOfficerId,
+            provinceId: data.provinceId,
+            districtId: data.districtId
+          };
+          console.log('✓ Found District Officer data:', officerData);
+        } else if (role === 'COMMUNE_OFFICER') {
+          roleType = 'COMMUNE';
+          officerData = {
+            communeOfficerId: data.communeOfficerId,
+            provinceId: data.provinceId,
+            districtId: data.districtId,
+            communeId: data.communeId
+          };
+          console.log('✓ Found Commune Officer data:', officerData);
+        } else {
+          console.log('🔍 Unknown role type:', role, 'Data received:', data);
+        }
+
+        if (!roleType || !officerData) {
+          console.log('❌ Unknown secondary role type:', role);
+          setExistingCommuneOfficer(null);
+          setIsEditingCommuneOfficer(false);
+          return;
+        }
+
+        // Pre-fill form with existing data
+        setExistingCommuneOfficer(officerData);
+        setSecondaryRoleType(roleType);
+
+        // Handle both array and single value formats from API
+        const provinceIdsArray = Array.isArray(data.provinceIds)
+          ? data.provinceIds.map(String)
+          : [String(data.provinceId)];
+        setSecondaryProvinceIds(provinceIdsArray);
+
+        if (roleType === 'DISTRICT' || roleType === 'COMMUNE') {
+          const districtIdsArray = Array.isArray(data.districtIds)
+            ? data.districtIds.map(String)
+            : [String(data.districtId)];
+          setSecondaryDistrictIds(districtIdsArray);
+        }
+
+        if (roleType === 'COMMUNE') {
+          const communeIdsArray = Array.isArray(data.communeIds)
+            ? data.communeIds.map(String)
+            : [String(data.communeId)];
+          setSecondaryCommuneIds(communeIdsArray);
+        }
+
+        setIsEditingCommuneOfficer(true);
+
+        console.log('✅ Secondary role form pre-filled with', roleType, 'officer data');
+
+        // Load districts for the first selected province
+        try {
+          const firstProvinceId = Array.isArray(data.provinceIds) ? data.provinceIds[0] : data.provinceId;
+          const firstDistrictId = Array.isArray(data.districtIds) ? data.districtIds[0] : data.districtId;
+
+          const districtsResponse = await locationService.getDistrictsByProvince(Number(firstProvinceId));
+          const districts = Array.isArray(districtsResponse) ? districtsResponse : (districtsResponse?.data || []);
+          setSecondaryDistricts(districts);
+          console.log('📍 Loaded districts for province', firstProvinceId, ':', districts.length, 'districts');
+
+          // Load communes for the district if district is selected
+          if (firstDistrictId) {
+            // Find the district to get its code
+            const selectedDistrict = districts.find(d => d.id === firstDistrictId);
+            const districtCode = selectedDistrict?.district_code || selectedDistrict?.code || firstDistrictId;
+
+            console.log('🔍 Loading communes for district ID:', firstDistrictId, 'with code:', districtCode);
+
+            const communesResponse = await locationService.getCommunesByDistrict(Number(firstProvinceId), Number(districtCode));
+            const communes = Array.isArray(communesResponse) ? communesResponse : (communesResponse?.data || []);
+            setSecondaryCommunes(communes);
+            console.log('📍 Loaded communes:', communes.length, 'communes');
+          }
+        } catch (error) {
+          console.error('Error loading location data:', error);
+        }
+      } catch (error) {
+        console.error('❌ Could not fetch secondary roles:', error);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error stack:', error.stack);
+        setExistingCommuneOfficer(null);
+        setIsEditingCommuneOfficer(false);
+      }
+    };
+
+    loadSecondaryOfficerData();
+  }, [formData?.id]);
 
   // Initialize location data when pending data is available and provinces are loaded
   useEffect(() => {
@@ -698,6 +965,484 @@ export default function ProfileUpdate({ user, setUser }) {
     } catch (error) {
       console.error('Download error:', error);
       showError(t('downloadFailed') || 'Failed to download profile data');
+    }
+  };
+
+  const handleSecondaryRoleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!secondaryRoleType) {
+      showError(t('secondaryRoleTypeRequired', 'សូមជ្រើសរើសតួនាទីបន្ថែមមួយ')); 
+      return;
+    }
+
+    if (secondaryProvinceIds.length === 0) {
+      showError(t('provinceIdRequired', 'សូមបំពេញលេខកូដខេត្ត'));
+      return;
+    }
+
+    if (secondaryRoleType === 'DISTRICT' && secondaryDistrictIds.length === 0) {
+      showError(t('districtIdRequired', 'សូមបំពេញលេខកូដស្រុក'));
+      return;
+    }
+
+    if (secondaryRoleType === 'COMMUNE' && (secondaryDistrictIds.length === 0 || secondaryCommuneIds.length === 0)) {
+      showError(t('communeIdRequired', 'សូមបំពេញលេខកូដស្រុក និងលេខកូដឃុំ'));
+      return;
+    }
+
+    const authUser = (() => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        return storedUser ? JSON.parse(storedUser) : null;
+      } catch (error) {
+        console.warn('Could not parse user from localStorage in secondary role:', error);
+        return null;
+      }
+    })();
+
+    const targetUserId = formData.id || formData.userId || user?.id || authUser?.id;
+
+    if (!targetUserId) {
+      showError(t('userIdNotFound', 'មិនអាចស្វែងរកលេខអ្នកប្រើសម្រាប់បន្ថែមតួនាទីបានទេ'));
+      return;
+    }
+
+    // Auto-generate position and department based on secondary role type
+    let position = '';
+    let department = 'Education Department';
+
+    if (secondaryRoleType === 'PROVINCIAL') {
+      position = t('provincialOfficer', 'មន្ត្រីខេត្ត');
+      department = t('department', 'នាយកដ្ឋានអប់រំ');
+    } else if (secondaryRoleType === 'DISTRICT') {
+      position = t('districtOfficer', 'មន្ត្រីស្រុក');
+      department = t('department', 'នាយកដ្ឋានអប់រំ');
+    } else if (secondaryRoleType === 'COMMUNE') {
+      position = t('communeOfficer', 'មន្ត្រីឃុំ');
+      department = t('department', 'នាយកដ្ឋានអប់រំ');
+    }
+
+    // Convert string IDs to numbers for API payload
+    const provinceIds = secondaryProvinceIds.map(id => Number(id));
+    const districtIds = secondaryDistrictIds.map(id => Number(id));
+    const communeIds = secondaryCommuneIds.map(id => Number(id));
+
+    // Payload for CREATE - includes userId since API needs to know which user
+    const createPayload = {
+      userId: targetUserId,
+      provinceIds: provinceIds,
+      position: position,
+      department: department,
+    };
+
+    // Payload for UPDATE - excludes userId since it's in the URL path
+    const updateBasePayload = {
+      provinceIds: provinceIds,
+      position: position,
+      department: department,
+    };
+
+    let createData = createPayload;
+    let updateData = updateBasePayload;
+
+    if (secondaryRoleType === 'DISTRICT') {
+      createData = {
+        ...createPayload,
+        districtIds: districtIds,
+      };
+      updateData = {
+        ...updateBasePayload,
+        districtIds: districtIds,
+      };
+    } else if (secondaryRoleType === 'COMMUNE') {
+      createData = {
+        ...createPayload,
+        districtIds: districtIds,
+        communeIds: communeIds,
+      };
+      updateData = {
+        ...updateBasePayload,
+        districtIds: districtIds,
+        communeIds: communeIds,
+      };
+    }
+
+    if (!secondaryRoleType) {
+      showError(t('secondaryRoleTypeRequired', 'សូមជ្រើសរើសតួនាទីបន្ថែមមួយ'));
+      return;
+    }
+
+    setSecondaryRoleLoading(true);
+    try {
+      if (isEditingCommuneOfficer && existingCommuneOfficer) {
+        // Update existing officer - determine which service method to use based on role type
+        if (secondaryRoleType === 'PROVINCIAL') {
+          await userService.updateProvincialOfficer(targetUserId, updateData);
+          showSuccess(t('secondaryRoleUpdated', 'បានរក្សាទុកតួនាទីបន្ថែមដោយជោគជ័យ'));
+        } else if (secondaryRoleType === 'DISTRICT') {
+          await userService.updateDistrictOfficer(targetUserId, updateData);
+          showSuccess(t('secondaryRoleUpdated', 'បានរក្សាទុកតួនាទីបន្ថែមដោយជោគជ័យ'));
+        } else if (secondaryRoleType === 'COMMUNE') {
+          await userService.updateCommuneOfficer(targetUserId, updateData);
+          showSuccess(t('secondaryRoleUpdated', 'បានរក្សាទុកតួនាទីបន្ថែមដោយជោគជ័យ'));
+        }
+      } else {
+        // Create new officer
+        if (secondaryRoleType === 'PROVINCIAL') {
+          await userService.createProvincialOfficer(createData);
+        } else if (secondaryRoleType === 'DISTRICT') {
+          await userService.createDistrictOfficer(createData);
+        } else if (secondaryRoleType === 'COMMUNE') {
+          await userService.createCommuneOfficer(createData);
+        }
+        showSuccess(t('secondaryRoleCreated', 'បានបន្ថែមតួនាទីបន្ថែមដោយជោគជ័យ'));
+      }
+
+      // Refresh secondary role data from API after successful operation
+      try {
+        console.log('🔄 Refreshing secondary role data after successful save...');
+        const response = await userService.getSecondaryRoles();
+        console.log('📥 Refresh response:', response);
+
+        // Parse response similar to initial load - handle both top-level and nested structures
+        let role = response?.role;
+        let data = response?.data;
+
+        // If no role at top level, check if it's nested in data
+        if (!role && response?.data?.role) {
+          role = response.data.role;
+          data = response.data.data;
+        }
+
+        console.log('🔍 Extracted role:', role, 'data:', data);
+
+        if (role && role !== null && data && data !== null) {
+          let roleType = null;
+
+          if (role === 'PROVINCIAL_OFFICER') {
+            roleType = 'PROVINCIAL';
+          } else if (role === 'DISTRICT_OFFICER') {
+            roleType = 'DISTRICT';
+          } else if (role === 'COMMUNE_OFFICER') {
+            roleType = 'COMMUNE';
+          }
+
+          if (roleType) {
+            // Pre-fill form with refreshed data
+            setSecondaryRoleType(roleType);
+
+            // Handle both array and single value formats from API
+            const provinceIdsArray = Array.isArray(data.provinceIds)
+              ? data.provinceIds.map(String)
+              : [String(data.provinceId)];
+            setSecondaryProvinceIds(provinceIdsArray);
+
+            if (roleType === 'DISTRICT' || roleType === 'COMMUNE') {
+              const districtIdsArray = Array.isArray(data.districtIds)
+                ? data.districtIds.map(String)
+                : [String(data.districtId)];
+              setSecondaryDistrictIds(districtIdsArray);
+            }
+
+            if (roleType === 'COMMUNE') {
+              const communeIdsArray = Array.isArray(data.communeIds)
+                ? data.communeIds.map(String)
+                : [String(data.communeId)];
+              setSecondaryCommuneIds(communeIdsArray);
+            }
+
+            // Set edit mode for refreshed data
+            let officerData = null;
+            const firstProvinceId = Array.isArray(data.provinceIds) ? data.provinceIds[0] : data.provinceId;
+            const firstDistrictId = Array.isArray(data.districtIds) ? data.districtIds[0] : data.districtId;
+            const firstCommuneId = Array.isArray(data.communeIds) ? data.communeIds[0] : data.communeId;
+
+            if (roleType === 'PROVINCIAL') {
+              officerData = {
+                provincialOfficerId: data.provincialOfficerId,
+                provinceId: firstProvinceId
+              };
+            } else if (roleType === 'DISTRICT') {
+              officerData = {
+                districtOfficerId: data.districtOfficerId,
+                provinceId: firstProvinceId,
+                districtId: firstDistrictId
+              };
+            } else if (roleType === 'COMMUNE') {
+              officerData = {
+                communeOfficerId: data.communeOfficerId,
+                provinceId: firstProvinceId,
+                districtId: firstDistrictId,
+                communeId: firstCommuneId
+              };
+            }
+
+            setExistingCommuneOfficer(officerData);
+            setIsEditingCommuneOfficer(true);
+
+            // Update localStorage with new secondary role data to notify sidebar
+            try {
+              const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+              const updatedUser = {
+                ...currentUser,
+                officerRoles: [role],
+                ...officerData
+              };
+              userService.saveUserData(updatedUser);
+              console.log('✅ Updated localStorage with secondary role data');
+            } catch (err) {
+              console.error('⚠️ Error updating localStorage:', err);
+            }
+
+            // Reload location dropdowns
+            try {
+              const districtsResponse = await locationService.getDistrictsByProvince(Number(firstProvinceId));
+              const districts = Array.isArray(districtsResponse) ? districtsResponse : (districtsResponse?.data || []);
+              setSecondaryDistricts(districts);
+
+              if (firstDistrictId) {
+                const selectedDistrict = districts.find(d => d.id === firstDistrictId);
+                const districtCode = selectedDistrict?.district_code || selectedDistrict?.code || firstDistrictId;
+
+                const communesResponse = await locationService.getCommunesByDistrict(Number(firstProvinceId), Number(districtCode));
+                const communes = Array.isArray(communesResponse) ? communesResponse : (communesResponse?.data || []);
+                setSecondaryCommunes(communes);
+              }
+            } catch (error) {
+              console.error('Error reloading location data:', error);
+            }
+
+            console.log('✅ Secondary role data refreshed successfully');
+          }
+        } else {
+          console.log('ℹ️ User has no secondary role after save');
+          setSecondaryRoleType('');
+          setSecondaryProvinceIds([]);
+          setSecondaryDistrictIds([]);
+          setSecondaryCommuneIds([]);
+          setExistingCommuneOfficer(null);
+          setIsEditingCommuneOfficer(false);
+        }
+      } catch (refreshError) {
+        console.error('❌ Error refreshing secondary role data:', refreshError);
+        // Keep current form data if refresh fails - don't reset
+        // The data was already saved successfully, just the refresh failed
+        console.log('⚠️ Keeping current form data despite refresh error');
+      }
+    } catch (error) {
+      console.error('Error saving secondary officer role:', error);
+      const apiMessage = error?.response?.data?.message || error?.message;
+      const errorMsg = isEditingCommuneOfficer
+        ? t('secondaryRoleUpdateFailed', 'រក្សាទុកតួនាទីបន្ថែមមិនបានជោគជ័យ')
+        : t('secondaryRoleCreateFailed', 'បន្ថែមតួនាទីបន្ថែមមិនបានជោគជ័យ');
+      showError(apiMessage || errorMsg);
+    } finally {
+      setSecondaryRoleLoading(false);
+    }
+  };
+
+  const handleDeleteSecondaryRole = () => {
+    if (!isEditingCommuneOfficer || !existingCommuneOfficer) {
+      showError(t('noSecondaryRoleToDelete', 'No secondary role to delete'));
+      return;
+    }
+
+    // Show confirmation dialog
+    setShowDeleteSecondaryRoleDialog(true);
+  };
+
+  const handleConfirmDeleteSecondaryRole = async () => {
+    try {
+      setSecondaryRoleLoading(true);
+      const targetUserId = formData.id;
+
+      console.log('🗑️ Deleting secondary role for user:', targetUserId, 'Type:', secondaryRoleType);
+
+      // Call appropriate delete method based on role type
+      if (secondaryRoleType === 'PROVINCIAL') {
+        await userService.deleteProvincialOfficer(targetUserId);
+        showSuccess(t('secondaryRoleDeleted', 'បានលុបតួនាទីបន្ថែមដោយជោគជ័យ'));
+      } else if (secondaryRoleType === 'DISTRICT') {
+        await userService.deleteDistrictOfficer(targetUserId);
+        showSuccess(t('secondaryRoleDeleted', 'បានលុបតួនាទីបន្ថែមដោយជោគជ័យ'));
+      } else if (secondaryRoleType === 'COMMUNE') {
+        await userService.deleteCommuneOfficer(targetUserId);
+        showSuccess(t('secondaryRoleDeleted', 'បានលុបតួនាទីបន្ថែមដោយជោគជ័យ'));
+      }
+
+      // Reset form after successful deletion
+      setSecondaryRoleType('');
+      setSecondaryProvinceIds([]);
+      setSecondaryDistrictIds([]);
+      setSecondaryCommuneIds([]);
+      setSecondaryDistricts([]);
+      setSecondaryCommunes([]);
+      setExistingCommuneOfficer(null);
+      setIsEditingCommuneOfficer(false);
+
+      // Update localStorage to remove secondary role data and notify sidebar
+      try {
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const updatedUser = {
+          ...currentUser,
+          officerRoles: [],
+          provincialOfficer: null,
+          districtOfficer: null,
+          communeOfficer: null
+        };
+        userService.saveUserData(updatedUser);
+        console.log('✅ Cleared secondary role from localStorage');
+      } catch (err) {
+        console.error('⚠️ Error updating localStorage:', err);
+      }
+
+      // Close dialog
+      setShowDeleteSecondaryRoleDialog(false);
+
+      console.log('✅ Secondary role deleted successfully');
+    } catch (error) {
+      console.error('Error deleting secondary officer role:', error);
+      const apiMessage = error?.response?.data?.message || error?.message;
+      const errorMsg = t('secondaryRoleDeleteFailed', 'Failed to delete secondary role');
+      showError(apiMessage || errorMsg);
+    } finally {
+      setSecondaryRoleLoading(false);
+    }
+  };
+
+  const handleRoleTypeChange = (newRoleType) => {
+    // Check if we're switching to a different role type while editing
+    if (isEditingCommuneOfficer && existingCommuneOfficer) {
+      // Determine current role type
+      let currentRoleType = '';
+      if (existingCommuneOfficer.provincialOfficerId) {
+        currentRoleType = 'PROVINCIAL';
+      } else if (existingCommuneOfficer.districtOfficerId) {
+        currentRoleType = 'DISTRICT';
+      } else if (existingCommuneOfficer.communeOfficerId) {
+        currentRoleType = 'COMMUNE';
+      }
+
+      // If switching to a different role type, show confirmation dialog
+      if (newRoleType && newRoleType !== currentRoleType && newRoleType !== '') {
+        console.log('🔄 User switching from', currentRoleType, 'to', newRoleType);
+        setPendingRoleSwitch(newRoleType);
+        setShowSwitchRoleDialog(true);
+        return; // Don't change role type yet
+      }
+    }
+
+    // Normal role type change (restore or reset)
+    let shouldRestoreData = false;
+    let dataToRestore = null;
+
+    if (isEditingCommuneOfficer && existingCommuneOfficer) {
+      // Determine what the original role type is based on existing officer data
+      let originalRoleType = '';
+      if (existingCommuneOfficer.provincialOfficerId) {
+        originalRoleType = 'PROVINCIAL';
+      } else if (existingCommuneOfficer.districtOfficerId) {
+        originalRoleType = 'DISTRICT';
+      } else if (existingCommuneOfficer.communeOfficerId) {
+        originalRoleType = 'COMMUNE';
+      }
+
+      // If selecting the same role type as the existing data, restore it
+      if (newRoleType === originalRoleType) {
+        shouldRestoreData = true;
+        dataToRestore = existingCommuneOfficer;
+      }
+    }
+
+    setSecondaryRoleType(newRoleType);
+
+    // Restore pre-filled data if switching back to original role type
+    if (shouldRestoreData && dataToRestore) {
+      console.log('🔄 Restoring pre-filled data for', newRoleType, ':', dataToRestore);
+      setSecondaryProvinceIds([String(dataToRestore.provinceId)]);
+
+      if (newRoleType === 'DISTRICT' || newRoleType === 'COMMUNE') {
+        setSecondaryDistrictIds([String(dataToRestore.districtId)]);
+      }
+
+      if (newRoleType === 'COMMUNE') {
+        setSecondaryCommuneIds([String(dataToRestore.communeId)]);
+      }
+
+      // Reload location dropdowns
+      (async () => {
+        try {
+          const districtsResponse = await locationService.getDistrictsByProvince(Number(dataToRestore.provinceId));
+          const districts = Array.isArray(districtsResponse) ? districtsResponse : (districtsResponse?.data || []);
+          setSecondaryDistricts(districts);
+
+          if (dataToRestore.districtId) {
+            const selectedDistrict = districts.find(d => d.id === dataToRestore.districtId);
+            const districtCode = selectedDistrict?.district_code || selectedDistrict?.code || dataToRestore.districtId;
+
+            const communesResponse = await locationService.getCommunesByDistrict(Number(dataToRestore.provinceId), Number(districtCode));
+            const communes = Array.isArray(communesResponse) ? communesResponse : (communesResponse?.data || []);
+            setSecondaryCommunes(communes);
+          }
+        } catch (error) {
+          console.error('Error reloading location data:', error);
+        }
+      })();
+    } else if (newRoleType !== secondaryRoleType) {
+      // Reset location fields when changing to a different role type
+      setSecondaryProvinceIds([]);
+      setSecondaryDistrictIds([]);
+      setSecondaryCommuneIds([]);
+      setSecondaryDistricts([]);
+      setSecondaryCommunes([]);
+    }
+  };
+
+  const handleConfirmSwitchRole = async () => {
+    if (!pendingRoleSwitch) {
+      return;
+    }
+
+    try {
+      setSecondaryRoleLoading(true);
+      const targetUserId = formData.id;
+      const currentRoleType = secondaryRoleType;
+
+      console.log('🔄 Switching from', currentRoleType, 'to', pendingRoleSwitch);
+
+      // Delete the current secondary role
+      if (currentRoleType === 'PROVINCIAL') {
+        await userService.deleteProvincialOfficer(targetUserId);
+      } else if (currentRoleType === 'DISTRICT') {
+        await userService.deleteDistrictOfficer(targetUserId);
+      } else if (currentRoleType === 'COMMUNE') {
+        await userService.deleteCommuneOfficer(targetUserId);
+      }
+
+      console.log('✅ Current role deleted, switching to', pendingRoleSwitch);
+
+      // Reset form for new role type
+      setSecondaryRoleType(pendingRoleSwitch);
+      setSecondaryProvinceIds([]);
+      setSecondaryDistrictIds([]);
+      setSecondaryCommuneIds([]);
+      setSecondaryDistricts([]);
+      setSecondaryCommunes([]);
+      setExistingCommuneOfficer(null);
+      setIsEditingCommuneOfficer(false);
+      setPendingRoleSwitch(null);
+      setShowSwitchRoleDialog(false);
+
+      showSuccess(t('secondaryRoleSwitched', 'បាន切换តួនាទីបន្ថែមដោយជោគជ័យ'));
+      console.log('✅ Secondary role switched successfully');
+    } catch (error) {
+      console.error('Error switching secondary role:', error);
+      const apiMessage = error?.response?.data?.message || error?.message;
+      const errorMsg = t('secondaryRoleSwitchFailed', 'Failed to switch secondary role');
+      showError(apiMessage || errorMsg);
+    } finally {
+      setSecondaryRoleLoading(false);
     }
   };
 
@@ -1394,6 +2139,68 @@ export default function ProfileUpdate({ user, setUser }) {
     return true;
   };
 
+  const handleChangePasswordSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!newPasswordInput || !confirmNewPasswordInput) {
+      showError(t('passwordFieldsRequired', 'សូមបំពេញពាក្យសម្ងាត់ទាំងអស់'));
+      return;
+    }
+
+    if (newPasswordInput !== confirmNewPasswordInput) {
+      showError(t('passwordsDoNotMatch', 'ពាក្យសម្ងាត់ថ្មី និងការបញ្ជាក់ម្តងទៀត មិនត្រូវគ្នា'));
+      return;
+    }
+
+    if (newPasswordInput.length < 8) {
+      showError(t('passwordMinLength', 'ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 តួអក្សរ'));
+      return;
+    }
+
+    const hasNonEnglish = /[^\x00-\x7F]/.test(newPasswordInput);
+    if (hasNonEnglish) {
+      showError(t('passwordEnglishOnly', 'ពាក្យសម្ងាត់ត្រូវប្រើតែអក្សរអង់គ្លេសប៉ុណ្ណោះ'));
+      return;
+    }
+
+    // Use same admin reset endpoint logic as ResetPasswordModal
+    const authUser = (() => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        return storedUser ? JSON.parse(storedUser) : null;
+      } catch (error) {
+        console.warn('Could not parse user from localStorage in password reset:', error);
+        return null;
+      }
+    })();
+
+    const targetUserId = formData.id || formData.userId || user?.id || authUser?.id;
+
+    if (!targetUserId) {
+      showError(t('userIdNotFound', 'មិនអាចស្វែងរកលេខអ្នកប្រើសម្រាប់កំណត់ពាក្យសម្ងាត់ឡើងវិញបានទេ'));
+      return;
+    }
+
+    setChangePasswordLoading(true);
+    try {
+      const response = await api.admin.resetTeacherPassword(targetUserId, newPasswordInput);
+
+      if (response?.success) {
+        showSuccess(t('passwordChangedSuccess', 'បានប្តូរពាក្យសម្ងាត់ដោយជោគជ័យ'));
+        setNewPasswordInput('');
+        setConfirmNewPasswordInput('');
+      } else {
+        const apiMessage = response?.error || t('passwordChangeFailed', 'ប្តូរពាក្យសម្ងាត់មិនបានជោគជ័យ');
+        showError(apiMessage);
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      const apiMessage = error?.response?.data?.message || error?.message;
+      showError(apiMessage || t('passwordChangeFailed', 'ប្តូរពាក្យសម្ងាត់មិនបានជោគជ័យ'));
+    } finally {
+      setChangePasswordLoading(false);
+    }
+  };
 
   // Show initial loading state
   if (initialLoading) {
@@ -1407,42 +2214,56 @@ export default function ProfileUpdate({ user, setUser }) {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 w-full">
-      {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
-            <div>
-              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
-                {t('profile', 'My Profile')}
-              </h1>
-              <p className="text-sm text-gray-600 mt-2">
-                {t('updateYourPersionalDetails','Update your personal details and preferences')}
-              </p>
-            </div>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Button
-                type="button"
-                onClick={handleEditToggle}
-                variant="primary"
-                size="sm"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                <span>{isEditMode ? t('cancel') || 'Cancel' : t('edit') || 'Edit'}</span>
-              </Button>
-              {isEditMode && (
+      <Tabs defaultValue="overview" className="w-full">
+        {/* Sticky Header + Tabs Container */}
+        <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-2 pb-3 bg-gray-50/95 backdrop-blur">
+          {/* Header Section */}
+          <div className="mb-3 sm:mb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
+              <div>
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
+                  {t('profile', 'My Profile')}
+                </h1>
+                <p className="text-sm text-gray-600 mt-2">
+                  {t('updateYourPersionalDetails','Update your personal details and preferences')}
+                </p>
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto">
                 <Button
-                  type="submit"
-                  form="profile-form"
-                  disabled={isProfileSubmitDisabled}
-                  variant="success"
+                  type="button"
+                  onClick={handleEditToggle}
+                  variant="primary"
                   size="sm"
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  <span>{loading ? t('updating') : t('save', 'Save Changes')}</span>
+                  <Edit className="h-4 w-4 mr-2" />
+                  <span>{isEditMode ? t('cancel') || 'Cancel' : t('edit') || 'Edit'}</span>
                 </Button>
-              )}
+                {isEditMode && (
+                  <Button
+                    type="submit"
+                    form="profile-form"
+                    disabled={isProfileSubmitDisabled}
+                    variant="success"
+                    size="sm"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    <span>{loading ? t('updating') : t('save', 'Save Changes')}</span>
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
+
+          <TabsList className="w-full justify-start overflow-x-auto border border-gray-200 rounded-sm bg-white shadow-sm">
+            <TabsTrigger value="overview">{t('profileOverview', 'Profile overview')}</TabsTrigger>
+            <TabsTrigger value="sample1">{t('resetPassword', 'Reset password')}</TabsTrigger>
+            <TabsTrigger value="sample2">{t('addRole', 'Add role')}</TabsTrigger>
+          </TabsList>
         </div>
+
+        <div className="mt-4">
+
+        <TabsContent value="overview">
 
         {/* Profile Picture Card - Full Width */}
         {isEditMode && (
@@ -1726,6 +2547,33 @@ export default function ProfileUpdate({ user, setUser }) {
                         placeholder={t('selectNationality')}
                         className="w-full"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('role', 'Role')}
+                      </label>
+                      <Dropdown
+                        value={formData.roleId}
+                        onValueChange={(value) => {
+                          const selectedRole = roleOptions.find(r => r.value === value);
+                          setFormData(prev => ({
+                            ...prev,
+                            roleId: value,
+                            role: value,
+                            roleNameKh: selectedRole?.label || ''
+                          }));
+                        }}
+                        options={roleOptions}
+                        placeholder={t('selectRole', 'Select Role')}
+                        className="w-full"
+                        maxHeight="max-h-40"
+                      />
+                      {formData.roleId && (
+                        <p className="mt-1 text-xs text-green-600">
+                          ✓ {roleOptions.find(r => r.value === formData.roleId)?.label}
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -2890,9 +3738,246 @@ export default function ProfileUpdate({ user, setUser }) {
           </form>
         )}
 
+        </TabsContent>
+
+        <TabsContent value="sample1">
+          <div className="mt-6 bg-white rounded-md border border-gray-200 p-6 sm:p-8 w-full shadow-sm">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">
+              {t('resetPassword', 'Change password')}
+            </h2>
+            <p className="text-sm text-gray-600 mb-6 max-w-3xl">
+              {t('changePasswordDescription', 'Update your account password. Make sure to use a strong password that you can remember.')}
+            </p>
+
+            <form onSubmit={handleChangePasswordSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('newPassword', 'New password')}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                    <Lock className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type={showNewPasswordTab ? 'text' : 'password'}
+                    className="mt-1 block w-full pl-10 pr-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    value={newPasswordInput}
+                    onChange={(e) => setNewPasswordInput(e.target.value)}
+                    placeholder={t('enterNewPassword', 'Enter new password')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPasswordTab(!showNewPasswordTab)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors z-10"
+                    tabIndex="-1"
+                  >
+                    {showNewPasswordTab ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+
+                {newPasswordInput && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-600">{t('passwordStrength', 'Password Strength')}</span>
+                      <span className={`text-xs font-medium ${getPasswordStrength(newPasswordInput).color.replace('bg-', 'text-')}`}>
+                        {getPasswordStrength(newPasswordInput).label}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 rounded-full ${getPasswordStrength(newPasswordInput).color}`}
+                        style={{ width: `${Math.min((newPasswordInput.length / 8) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('confirmNewPassword', 'Confirm new password')}
+                </label>
+                <input
+                  type="password"
+                  className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                  value={confirmNewPasswordInput}
+                  onChange={(e) => setConfirmNewPasswordInput(e.target.value)}
+                  placeholder={t('confirmNewPasswordPlaceholder', 'Re-enter new password')}
+                />
+              </div>
+
+              <div className="col-span-1 md:col-span-2 pt-2 flex justify-start">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={changePasswordLoading}
+                >
+                  {changePasswordLoading ? t('updating', 'Updating...') : t('resetPassword', 'Change password')}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="sample2">
+          <div className="mt-6 bg-white rounded-md border border-gray-200 p-6 sm:p-8 w-full shadow-sm">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">
+              {t('secondaryRoleTitle', 'បន្ថែមតួនាទីបន្ថែមជាមន្ត្រី')}
+            </h2>
+            <p className="text-sm text-gray-600 mb-6 max-w-3xl">
+              {t(
+                'secondaryRoleDescription',
+                'អ្នកអាចបន្ថែមតួនាទីបន្ថែមមួយក្នុងនាមជាមន្ត្រីខេត្ត ស្រុក ឬឃុំ តាមខ្លួនឯង។ សូមជ្រើសរើសតែតួនាទីមួយប៉ុណ្ណោះ។'
+              )}
+            </p>
+
+            <form onSubmit={handleSecondaryRoleSubmit} className="space-y-6">
+              {/* Step 1: Select Secondary Role Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('secondaryRoleType', 'ប្រភេទតួនាទីបន្ថែម')} *
+                </label>
+                <Dropdown
+                  value={secondaryRoleType}
+                  onValueChange={handleRoleTypeChange}
+                  options={[
+                    { value: '', label: t('selectSecondaryRoleType', 'ជ្រើសរើសប្រភេទតួនាទីបន្ថែម') },
+                    { value: 'PROVINCIAL', label: t('provincialOfficer', 'មន្ត្រីខេត្ត') },
+                    { value: 'DISTRICT', label: t('districtOfficer', 'មន្ត្រីស្រុក') },
+                    { value: 'COMMUNE', label: t('communeOfficer', 'មន្ត្រីឃុំ') }
+                  ]}
+                  placeholder={t('selectSecondaryRoleType', 'ជ្រើសរើសប្រភេទតួនាទីបន្ថែម')}
+                  className="w-full md:w-1/2"
+                />
+                {secondaryRoleType && (
+                  <p className="mt-2 text-sm text-green-600">
+                    ✓ {secondaryRoleType === 'PROVINCIAL' ? t('provincialOfficer', 'មន្ត្រីខេត្ត') : secondaryRoleType === 'DISTRICT' ? t('districtOfficer', 'មន្ត្រីស្រុក') : t('communeOfficer', 'មន្ត្រីឃុំ')}
+                  </p>
+                )}
+              </div>
+
+              {/* Step 2 & 3: Location and Additional Information in Same Row */}
+              {secondaryRoleType && (
+                <div className="border-t pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {/* Province - MultiSelectDropdown */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('selectProvince', 'ខេត្ត')} *
+                      </label>
+                      <MultiSelectDropdown
+                        values={secondaryProvinceIds}
+                        onValuesChange={handleSecondaryProvinceChange}
+                        options={secondaryProvinces.map((p) => ({
+                          value: String(p.id),
+                          label:
+                            p.name ||
+                            p.province_name_kh ||
+                            p.province_name_en ||
+                            `Province ${p.id}`,
+                        }))}
+                        placeholder={t('enterProvinceId', 'ជ្រើសរើសខេត្ត')}
+                        className="w-full"
+                        disabled={secondaryLocationLoading}
+                      />
+                    </div>
+
+                    {/* District - only for district/commune */}
+                    {(secondaryRoleType === 'DISTRICT' || secondaryRoleType === 'COMMUNE') && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t('selectDistrict', 'ស្រុក')} *
+                        </label>
+                        <MultiSelectDropdown
+                          values={secondaryDistrictIds}
+                          onValuesChange={handleSecondaryDistrictChange}
+                          options={secondaryDistricts.map((d) => ({
+                            value: String(d.id),
+                            label:
+                              d.name ||
+                              d.district_name_kh ||
+                              d.district_name_en ||
+                              `District ${d.id}`,
+                          }))}
+                          placeholder={t('enterDistrictId', 'ជ្រើសរើសស្រុក')}
+                          className="w-full"
+                          disabled={secondaryProvinceIds.length === 0 || secondaryLocationLoading}
+                        />
+                      </div>
+                    )}
+
+                    {/* Commune - only for commune */}
+                    {secondaryRoleType === 'COMMUNE' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t('selectCommune', 'ឃុំ')} *
+                        </label>
+                        <MultiSelectDropdown
+                          values={secondaryCommuneIds}
+                          onValuesChange={setSecondaryCommuneIds}
+                          options={secondaryCommunes.map((c) => ({
+                            value: String(c.id),
+                            label:
+                              c.name ||
+                              c.commune_name_kh ||
+                              c.commune_name_en ||
+                              `Commune ${c.id}`,
+                          }))}
+                          placeholder={t('enterCommuneId', 'ជ្រើសរើសឃុំ')}
+                          className="w-full"
+                          disabled={secondaryDistrictIds.length === 0 || secondaryLocationLoading}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              {secondaryRoleType && (
+                <div className="flex justify-start gap-3 pt-4">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    disabled={secondaryRoleLoading}
+                  >
+                    {secondaryRoleLoading
+                      ? t('saving', 'កំពុងរក្សាទុក...')
+                      : isEditingCommuneOfficer
+                      ? t('updateSecondaryRole', 'ធ្វើបច្ចុប្បន្នភាពតួនាទីបន្ថែម')
+                      : t('saveSecondaryRole', 'រក្សាទុកតួនាទីបន្ថែម')}
+                  </Button>
+                  {isEditingCommuneOfficer && (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      disabled={secondaryRoleLoading}
+                      onClick={handleDeleteSecondaryRole}
+                    >
+                      {secondaryRoleLoading
+                        ? t('deleting', 'កំពុងលុប...')
+                        : t('deleteSecondaryRole', 'លុបតួនាទីបន្ថែម')}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </form>
+          </div>
+        </TabsContent>
+
+      </div>
+
+      </Tabs>
+
       {/* Image Modal */}
       {showImageModal && formData.profile_picture && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowImageModal(false)}>
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+          onClick={() => setShowImageModal(false)}
+        >
           <div className="relative max-w-4xl max-h-full p-4">
             <Button
               onClick={() => setShowImageModal(false)}
@@ -2923,6 +4008,35 @@ export default function ProfileUpdate({ user, setUser }) {
         confirmText={t('update')}
         cancelText={t('cancel')}
         loading={loading}
+      />
+
+      {/* Delete Secondary Role Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteSecondaryRoleDialog}
+        onClose={() => setShowDeleteSecondaryRoleDialog(false)}
+        onConfirm={handleConfirmDeleteSecondaryRole}
+        title={t('deleteSecondaryRoleTitle', 'Delete Secondary Officer Role')}
+        message={t('deleteSecondaryRoleMessage', 'Are you sure you want to delete this secondary officer role? This action cannot be undone.')}
+        type="danger"
+        confirmText={t('delete', 'Delete')}
+        cancelText={t('cancel', 'Cancel')}
+        loading={secondaryRoleLoading}
+      />
+
+      {/* Switch Secondary Role Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showSwitchRoleDialog}
+        onClose={() => {
+          setShowSwitchRoleDialog(false);
+          setPendingRoleSwitch(null);
+        }}
+        onConfirm={handleConfirmSwitchRole}
+        title={t('switchSecondaryRoleTitle', 'Switch Secondary Officer Role')}
+        message={t('switchSecondaryRoleMessage', 'You already have a secondary officer role. Your current role will be deleted and replaced with the new one. Continue?')}
+        type="warning"
+        confirmText={t('switchRole', 'Switch Role')}
+        cancelText={t('cancel', 'Cancel')}
+        loading={secondaryRoleLoading}
       />
     </div>
   );

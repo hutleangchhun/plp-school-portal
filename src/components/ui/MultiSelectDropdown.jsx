@@ -3,8 +3,8 @@ import { ChevronDown, Check, X } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
 export default function MultiSelectDropdown({
-  value = [],
-  onValueChange,
+  values = [],
+  onValuesChange,
   options = [],
   placeholder = 'Select options...',
   className = '',
@@ -13,21 +13,21 @@ export default function MultiSelectDropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const selectedOptions = options.filter(option => value.includes(option.value));
-  const displayValue = selectedOptions.length > 0 
+  const selectedOptions = options.filter(option => values.includes(option.value));
+  const displayValue = selectedOptions.length > 0
     ? selectedOptions.map(opt => opt.label).join(', ')
     : placeholder;
 
   const handleToggle = (optionValue) => {
-    const newValue = value.includes(optionValue)
-      ? value.filter(v => v !== optionValue)
-      : [...value, optionValue];
-    onValueChange(newValue);
+    const newValue = values.includes(optionValue)
+      ? values.filter(v => v !== optionValue)
+      : [...values, optionValue];
+    onValuesChange(newValue);
   };
 
   const handleClear = (e) => {
     e.stopPropagation();
-    onValueChange([]);
+    onValuesChange([]);
   };
 
   return (
@@ -41,7 +41,7 @@ export default function MultiSelectDropdown({
             {displayValue}
           </span>
           <div className="flex items-center ml-2 flex-shrink-0">
-            {value.length > 0 && (
+            {values.length > 0 && (
               <X
                 className="h-4 w-4 text-gray-400 hover:text-gray-600 mr-1"
                 onClick={handleClear}
@@ -57,27 +57,25 @@ export default function MultiSelectDropdown({
           className={`min-w-[200px] bg-white rounded-md shadow-lg border border-gray-200 p-1 z-[9999] ${maxHeight} overflow-y-auto`}
           align="start"
           sideOffset={4}
+          onCloseAutoFocus={(e) => e.preventDefault()}
         >
           {options.map((option) => (
-            <DropdownMenu.Item
+            <div
               key={option.value}
-              className={`flex items-center px-3 py-2 text-sm rounded-sm transition-colors focus:outline-none ${
-                value.includes(option.value)
-                  ? 'bg-blue-100 text-blue-900 cursor-pointer hover:bg-blue-100'
-                  : 'text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-gray-900'
-              } data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900 data-[highlighted]:outline-none`}
-              onSelect={(e) => {
-                e.preventDefault();
-                handleToggle(option.value);
-              }}
+              className={`flex items-center px-3 py-2 text-sm rounded-sm transition-colors cursor-pointer ${
+                values.includes(option.value)
+                  ? 'bg-blue-100 text-blue-900'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+              onClick={() => handleToggle(option.value)}
             >
               <div className="w-4 h-4 mr-2 flex items-center justify-center flex-shrink-0">
-                {value.includes(option.value) && (
+                {values.includes(option.value) && (
                   <Check className="h-4 w-4 text-blue-600" />
                 )}
               </div>
               <span className="flex-1">{option.label}</span>
-            </DropdownMenu.Item>
+            </div>
           ))}
           {options.length === 0 && (
             <div className="px-3 py-2 text-sm text-gray-500 text-center">

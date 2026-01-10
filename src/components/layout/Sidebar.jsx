@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Users,
   ChevronDown,
@@ -23,7 +23,8 @@ import {
   Heart,
   ClipboardList,
   Database,
-  CalendarDays
+  CalendarDays,
+  Briefcase
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -33,6 +34,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
   const { t } = useLanguage();
   const location = useLocation();
   const [openDropdowns, setOpenDropdowns] = useState({});
+  const [currentUser, setCurrentUser] = useState(user);
 
   const toggleDropdown = (key) => {
     setOpenDropdowns(prev => ({
@@ -41,9 +43,42 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     }));
   };
 
+  // Listen for user data changes in localStorage (e.g., when secondary roles are loaded)
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          console.log('🔄 Sidebar - User data updated from localStorage:', parsedUser);
+          console.log('🔄 Sidebar - officerRoles:', parsedUser?.officerRoles);
+          setCurrentUser(parsedUser);
+        }
+      } catch (err) {
+        console.error('Error updating user from localStorage:', err);
+      }
+    };
+
+    // Listen for custom event dispatched by userService.saveUserData
+    // This fires when secondary roles are added/updated/deleted
+    window.addEventListener('userDataUpdated', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('userDataUpdated', handleStorageChange);
+    };
+  }, []);
+
+  // Update currentUser when prop user changes
+  useEffect(() => {
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, [user]);
+
   // Debug: Log user object to check roleId
-  console.log('Sidebar - User object:', user);
-  console.log('Sidebar - roleId:', user?.roleId);
+  console.log('Sidebar - User object:', currentUser);
+  console.log('Sidebar - roleId:', currentUser?.roleId);
+  console.log('Sidebar - officerRoles:', currentUser?.officerRoles);
 
   // Icon mapping for routes
   const iconMap = {
@@ -72,6 +107,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/school-attendance': CalendarCheck,
     '/admin/student-demographics': Database,
     '/admin/teacher-overview': Database,
+    '/multi-role-dashboard': Briefcase,
     'attendance': Calendar, // Parent item for attendance dropdown
     'attendanceManagement': ClipboardList, // Parent item for attendance management dropdown
     'attendance-management': ClipboardList,
@@ -115,6 +151,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/bmi-report': 'blue',
     '/admin/school-attendance': 'blue',
     '/admin/teacher-overview': 'blue',
+    '/multi-role-dashboard': 'blue',
     'attendance': 'blue', // Parent item for attendance dropdown
     'attendanceManagement': 'blue', // Parent item for attendance management dropdown
     'attendance-management': 'blue',
@@ -133,7 +170,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
   };
 
   // Get navigation items based on user role
-  const navigationItems = getNavigationItems(user, t).map(item => {
+  const navigationItems = getNavigationItems(currentUser, t).map(item => {
     // For parent items (those with children and href='#'), use the item name as key for icon/color lookup
     const iconKey = item.children ? item.name?.toLowerCase() || item.href : item.href;
     return {

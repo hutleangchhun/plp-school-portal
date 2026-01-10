@@ -91,7 +91,7 @@ export const km = {
   district: 'ស្រុក/ខណ្ឌ/ក្រុង',
   province: 'ខេត្ត',
   gpsCoordinates: 'កូអរដោនេ GPS',
-  selectProvince: 'ជ្រើសរើសខេត្ត',
+  selectProvince: 'ជ្រើសរើសរាជធានី/ខេត្ត',
   selectDistrict: 'ជ្រើសរើសស្រុក/ខណ្ឌ/ក្រុង',
   selectCommune: 'ជ្រើសរើសឃុំ/សង្កាត់',
   selectVillage: 'ជ្រើសរើសភូមិ',
@@ -166,6 +166,12 @@ export const km = {
   teacher: 'គ្រូបង្រៀន',
   noTeacher: 'គ្មានគ្រូបង្រៀន',
   director: 'នាយក',
+  multiRoleDashboard: 'ផ្ទាំងគ្រប់គ្រងចម្រុះតួនាទី',
+  multiRoleDescription: 'បង្ហាញទិន្នន័យរួមអំពីភារកិច្ចជាគ្រូ និងមន្ត្រីរដ្ឋបាល',
+  officialResponsibilities: 'ភារកិច្ចផ្លូវការ',
+  provincialOfficer: 'មន្រ្តីទទួលបន្ទុកតាមរាជធានីខេត្ត',
+  districtOfficer: 'មន្រ្តីទទួលបន្ទុកតាមក្រុង​ ស្រុក ខណ្ឌ',
+  communeOfficer: 'មន្រ្តីទទួលបន្ទុកតាមឃុំ/សង្កាត់',
 
   // Validation messages
   usernameRequiredMsg: 'ឈ្មោះអ្នកប្រើត្រូវបានទាមទារ',
@@ -185,6 +191,13 @@ export const km = {
   checkConnection: 'សូមពិនិត្យការតភ្ជាប់របស់អ្នក ហើយព្យាយាមម្តងទៀត។',
   loadingUserData: 'កំពុងទាញយកព័ត៌មាន...',
   updating: 'កំពុងកែប្រែ...',
+
+  //profile update
+  profileOverview: 'ផ្លាស់ប្ដូរព័ត៌មានផ្ទាល់ខ្លួន',
+  resetPassword: 'ផ្លាស់ប្ដូរពាក្យសម្ងាត់',
+  addRole: 'បន្ថែមតួនាទី',
+  changePasswordDescription: 'ផ្លាស់ប្ដូរពាក្យសម្ងាត់សម្រាប់គណនីរបស់អ្នក។ ត្រូវប្រាកដថាលេខសម្ងាត់ថ្មីរបស់អ្នកមានសុវត្ថិភាព និងងាយស្រួលចងចាំ។',
+  secondaryRoleTitle: 'តួនាទីបន្ថែម',
 
   // Dialogs
   confirmUpdate: 'បញ្ជាក់ការកែប្រែ',
@@ -220,7 +233,7 @@ export const km = {
   studentsWithClass: 'សិស្សមានថ្នាក់',
   studentsNoClass: 'សិស្សមិនមានថ្នាក់',
 
-  // Student Management
+  // Student Managementធ
   addStudent: 'បន្ថែមសិស្ស',
   editStudent: 'កែប្រែសិស្ស',
   errorFetchingStudents: 'កំហុសក្នុងការទាញយកព័ត៌មានសិស្ស',

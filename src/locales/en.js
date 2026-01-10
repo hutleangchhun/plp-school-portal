@@ -115,6 +115,12 @@ export const en = {
   teacher: 'Teacher',
   noTeacher: 'No Teacher',
   director: 'Director',
+  multiRoleDashboard: 'Multi-Role Dashboard',
+  multiRoleDescription: 'Combined view of your teacher and officer responsibilities',
+  officialResponsibilities: 'Official Responsibilities',
+  provincialOfficer: 'Provincial Officer',
+  districtOfficer: 'District Officer',
+  communeOfficer: 'Commune Officer',
   
   // Validation messages
   usernameRequiredMsg: 'Username is required',

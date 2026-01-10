@@ -2,6 +2,7 @@ import { Shield, Briefcase, MapPinned, Hash, Building } from "lucide-react";
 import SchoolOverviewChart from "../../components/ui/SchoolOverviewChart";
 import StudentDemographicsChart from "../../components/ui/StudentDemographicsChart";
 import BMIPieChart from "../../components/ui/BMIPieChart";
+import MultiRoleDashboard from "../../components/ui/MultiRoleDashboard";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useLoading } from "../../contexts/LoadingContext";
@@ -493,6 +494,24 @@ export default function Dashboard({ user: initialUser }) {
               </div>
             </div>
           </FadeInSection>
+        )}
+
+        {/* Multi-Role Dashboard - Show if user has multiple roles */}
+        {user && (
+          (() => {
+            console.log('🔍 Dashboard - User multi-role check:');
+            console.log('  - roles:', user.roles);
+            console.log('  - officerRoles:', user.officerRoles);
+            console.log('  - roleId:', user.roleId);
+            console.log('  - provincialOfficer:', user.provincialOfficer);
+            console.log('  - districtOfficer:', user.districtOfficer);
+            console.log('  - communeOfficer:', user.communeOfficer);
+            return user?.officerRoles && user.officerRoles.length > 0 ? (
+              <FadeInSection delay={150} className="mb-6">
+                <MultiRoleDashboard user={user} />
+              </FadeInSection>
+            ) : null;
+          })()
         )}
 
         {/* School Statistics - Combined */}
