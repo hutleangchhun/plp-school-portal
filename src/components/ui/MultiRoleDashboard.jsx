@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import StatsCard from "./StatsCard";
 import Badge from "./Badge";
+import SchoolDistributionChart from "./SchoolDistributionChart";
 import { userUtils } from "../../utils/api/services/userService";
 import locationService from "../../utils/api/services/locationService";
 
@@ -160,6 +161,28 @@ const MultiRoleDashboard = ({ user, className = "" }) => {
     return null;
   }
 
+  // Extract filter IDs from officer data (use first ID for filtering)
+  // API supports filtering by single province/district/commune ID
+  const filterProvinceId = officerData?.provinceIds?.[0] || null;
+  const filterDistrictId = officerData?.districtIds?.[0] || null;
+  const filterCommuneId = officerData?.communeIds?.[0] || null;
+
+  // Restricted location IDs for sidebar filters - only show user's assigned locations
+  const restrictedProvinceIds = officerData?.provinceIds || [];
+  const restrictedDistrictIds = officerData?.districtIds || [];
+  const restrictedCommuneIds = officerData?.communeIds || [];
+
+  console.log('🎯 Multi-Role Dashboard filters:');
+  console.log('   - Province IDs:', officerData?.provinceIds);
+  console.log('   - District IDs:', officerData?.districtIds);
+  console.log('   - Commune IDs:', officerData?.communeIds);
+  console.log('   - Filter Province ID:', filterProvinceId);
+  console.log('   - Filter District ID:', filterDistrictId);
+  console.log('   - Filter Commune ID:', filterCommuneId);
+  console.log('   - Restricted Province IDs:', restrictedProvinceIds);
+  console.log('   - Restricted District IDs:', restrictedDistrictIds);
+  console.log('   - Restricted Commune IDs:', restrictedCommuneIds);
+
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Header */}
@@ -208,40 +231,55 @@ const MultiRoleDashboard = ({ user, className = "" }) => {
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {officerData.provinceId && (
+                  {officerData.provinceIds && officerData.provinceIds.length > 0 && (
                     <StatsCard
                       title={t("province", "Province")}
                       value={
                         loadingLocations
                           ? "..."
                           : locationNames.provinceName ||
-                            `Province ${officerData.provinceId}`
+                            `Province ${officerData.provinceIds[0]}`
+                      }
+                      subtitle={
+                        officerData.provinceIds.length > 1
+                          ? `+${officerData.provinceIds.length - 1} more`
+                          : undefined
                       }
                       valueColor="text-gray-900"
                       titleColor="text-gray-700"
                     />
                   )}
-                  {officerData.districtId && (
+                  {officerData.districtIds && officerData.districtIds.length > 0 && (
                     <StatsCard
                       title={t("district", "District")}
                       value={
                         loadingLocations
                           ? "..."
                           : locationNames.districtName ||
-                            `District ${officerData.districtId}`
+                            `District ${officerData.districtIds[0]}`
+                      }
+                      subtitle={
+                        officerData.districtIds.length > 1
+                          ? `+${officerData.districtIds.length - 1} more`
+                          : undefined
                       }
                       valueColor="text-gray-900"
                       titleColor="text-gray-700"
                     />
                   )}
-                  {officerData.communeId && (
+                  {officerData.communeIds && officerData.communeIds.length > 0 && (
                     <StatsCard
                       title={t("commune", "Commune")}
                       value={
                         loadingLocations
                           ? "..."
                           : locationNames.communeName ||
-                            `Commune ${officerData.communeId}`
+                            `Commune ${officerData.communeIds[0]}`
+                      }
+                      subtitle={
+                        officerData.communeIds.length > 1
+                          ? `+${officerData.communeIds.length - 1} more`
+                          : undefined
                       }
                       valueColor="text-gray-900"
                       titleColor="text-gray-700"
@@ -267,6 +305,17 @@ const MultiRoleDashboard = ({ user, className = "" }) => {
           </div>
         </div>
       </div>
+
+      {/* School Distribution Chart with location filters */}
+      <SchoolDistributionChart
+        className="w-full"
+        user={user}
+        filterProvinceId={filterProvinceId}
+        filterDistrictId={filterDistrictId}
+        restrictedProvinceIds={restrictedProvinceIds}
+        restrictedDistrictIds={restrictedDistrictIds}
+        restrictedCommuneIds={restrictedCommuneIds}
+      />
     </div>
   );
 };

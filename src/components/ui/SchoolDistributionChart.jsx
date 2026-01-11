@@ -16,7 +16,11 @@ import CustomTooltip from '../ui/TooltipChart';
 const SchoolDistributionChart = ({
   className = "",
   filterProvinceId = null,
-  filterDistrictId = null
+  filterDistrictId = null,
+  restrictedProvinceIds = [],
+  restrictedDistrictIds = [],
+  restrictedCommuneIds = [],
+  user = null
 }) => {
   const { t } = useLanguage();
   const { error, handleError, clearError, retry } = useErrorHandler();
@@ -26,9 +30,14 @@ const SchoolDistributionChart = ({
   const [sortOrder, setSortOrder] = useState('DESC'); // Default sorting order
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
-  const [selectedProvince, setSelectedProvince] = useState(filterProvinceId || '');
-  const [selectedDistrict, setSelectedDistrict] = useState(filterDistrictId || '');
+  const [selectedProvince, setSelectedProvince] = useState(filterProvinceId ? filterProvinceId.toString() : '');
+  const [selectedDistrict, setSelectedDistrict] = useState(filterDistrictId ? filterDistrictId.toString() : '');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Check if filters are restricted (for multi-role dashboard)
+  // Admin (roleId = 1) should NOT have restrictions and see all locations
+  const isAdmin = user?.roleId === 1;
+  const hasRestrictedFilters = restrictedProvinceIds.length > 0 && !isAdmin;
 
   // Fetch provinces when component mounts
   useEffect(() => {
@@ -37,7 +46,17 @@ const SchoolDistributionChart = ({
         const response = await locationService.getProvinces();
         if (response && response.success !== false) {
           // Format response to match expected structure, assuming it returns data in a list format
-          setProvinces(Array.isArray(response) ? response : response.data || []);
+          let allProvinces = Array.isArray(response) ? response : response.data || [];
+
+          // If restricted provinces provided, filter to only those
+          if (hasRestrictedFilters && restrictedProvinceIds.length > 0) {
+            allProvinces = allProvinces.filter(province =>
+              restrictedProvinceIds.includes(province.id)
+            );
+            console.log('🔒 Filtered provinces to restricted list:', restrictedProvinceIds, 'Result:', allProvinces.length);
+          }
+
+          setProvinces(allProvinces);
         } else {
           setProvinces([]);
         }
@@ -47,7 +66,7 @@ const SchoolDistributionChart = ({
     };
 
     fetchProvinces();
-  }, []);
+  }, [hasRestrictedFilters, restrictedProvinceIds.join(',')])
 
   // Fetch districts when province is selected
   useEffect(() => {
@@ -58,7 +77,17 @@ const SchoolDistributionChart = ({
           const provinceId = parseInt(selectedProvince, 10);  // Convert string back to integer
           const response = await locationService.getDistrictsByProvince(provinceId);
           if (response && response.success !== false) {
-            setDistricts(Array.isArray(response) ? response : response.data || []);
+            let allDistricts = Array.isArray(response) ? response : response.data || [];
+
+            // If restricted districts provided, filter to only those
+            if (hasRestrictedFilters && restrictedDistrictIds.length > 0) {
+              allDistricts = allDistricts.filter(district =>
+                restrictedDistrictIds.includes(district.id)
+              );
+              console.log('🔒 Filtered districts to restricted list:', restrictedDistrictIds, 'Result:', allDistricts.length);
+            }
+
+            setDistricts(allDistricts);
           } else {
             setDistricts([]);
           }
@@ -71,7 +100,18 @@ const SchoolDistributionChart = ({
       }
     };
     fetchDistricts();
-  }, [selectedProvince]);
+  }, [selectedProvince, hasRestrictedFilters, restrictedDistrictIds.join(',')]);
+
+  // Auto-select district when filterDistrictId is provided and districts are loaded
+  useEffect(() => {
+    if (filterDistrictId && districts.length > 0 && !selectedDistrict) {
+      const districtExists = districts.some(d => d.id === parseInt(filterDistrictId, 10));
+      if (districtExists) {
+        setSelectedDistrict(filterDistrictId.toString());
+        console.log('✅ Auto-selected district:', filterDistrictId);
+      }
+    }
+  }, [districts, filterDistrictId, selectedDistrict]);
 
   // Fetch school distribution data
   useEffect(() => {
