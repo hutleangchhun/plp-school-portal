@@ -1184,13 +1184,39 @@ export default function ProfileUpdate({ user, setUser }) {
             // Update localStorage with new secondary role data to notify sidebar
             try {
               const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+              // Build complete officer data with arrays
+              let completeOfficerData = {};
+              if (roleType === 'PROVINCIAL') {
+                completeOfficerData.provincialOfficer = {
+                  provincialOfficerId: data.provincialOfficerId,
+                  provinceIds: Array.isArray(data.provinceIds) ? data.provinceIds : [data.provinceId],
+                  status: data.status
+                };
+              } else if (roleType === 'DISTRICT') {
+                completeOfficerData.districtOfficer = {
+                  districtOfficerId: data.districtOfficerId,
+                  provinceIds: Array.isArray(data.provinceIds) ? data.provinceIds : [data.provinceId],
+                  districtIds: Array.isArray(data.districtIds) ? data.districtIds : [data.districtId],
+                  status: data.status
+                };
+              } else if (roleType === 'COMMUNE') {
+                completeOfficerData.communeOfficer = {
+                  communeOfficerId: data.communeOfficerId,
+                  provinceIds: Array.isArray(data.provinceIds) ? data.provinceIds : [data.provinceId],
+                  districtIds: Array.isArray(data.districtIds) ? data.districtIds : [data.districtId],
+                  communeIds: Array.isArray(data.communeIds) ? data.communeIds : [data.communeId],
+                  status: data.status
+                };
+              }
+
               const updatedUser = {
                 ...currentUser,
                 officerRoles: [role],
-                ...officerData
+                ...completeOfficerData
               };
               userService.saveUserData(updatedUser);
-              console.log('✅ Updated localStorage with secondary role data');
+              console.log('✅ Updated localStorage with secondary role data:', completeOfficerData);
             } catch (err) {
               console.error('⚠️ Error updating localStorage:', err);
             }
