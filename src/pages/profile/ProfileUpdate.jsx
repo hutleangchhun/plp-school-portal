@@ -8,7 +8,7 @@ import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dr
 import ProfileImage from '../../components/ui/ProfileImage';
 import ProfileInfoDisplay from '../../components/ui/ProfileInfoDisplay';
 import { api, utils, apiClient } from '../../utils/api';
-import { userService } from '../../utils/api/services/userService';
+import { userService, userUtils } from '../../utils/api/services/userService';
 import salaryTypeService from '../../utils/api/services/salaryTypeService';
 import locationService from '../../utils/api/services/locationService';
 import { sanitizeUsername, getFullName } from '../../utils/usernameUtils';
@@ -1215,7 +1215,7 @@ export default function ProfileUpdate({ user, setUser }) {
                 officerRoles: [role],
                 ...completeOfficerData
               };
-              userService.saveUserData(updatedUser);
+              userUtils.saveUserData(updatedUser);
               console.log('✅ Updated localStorage with secondary role data:', completeOfficerData);
             } catch (err) {
               console.error('⚠️ Error updating localStorage:', err);
@@ -1317,7 +1317,7 @@ export default function ProfileUpdate({ user, setUser }) {
           districtOfficer: null,
           communeOfficer: null
         };
-        userService.saveUserData(updatedUser);
+        userUtils.saveUserData(updatedUser);
         console.log('✅ Cleared secondary role from localStorage');
       } catch (err) {
         console.error('⚠️ Error updating localStorage:', err);
