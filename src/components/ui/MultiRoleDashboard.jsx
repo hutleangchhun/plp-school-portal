@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
-import StatsCard from "./StatsCard";
 import Badge from "./Badge";
 import SchoolDistributionChart from "./SchoolDistributionChart";
 import { userUtils } from "../../utils/api/services/userService";
@@ -13,137 +12,50 @@ import locationService from "../../utils/api/services/locationService";
  */
 const MultiRoleDashboard = ({ user, className = "" }) => {
   const { t } = useLanguage();
-  const [locationNames, setLocationNames] = useState({
-    provinceName: null,
-    districtName: null,
-    communeName: null,
-  });
-  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [locationNames, setLocationNames] = useState({});
+  const [loadingNames, setLoadingNames] = useState(false);
+  const [currentUser, setCurrentUser] = useState(user);
 
-  if (!user) {
-    return null;
-  }
-
-  // Extract location names from officer data or use fallback names
+  // Listen for localStorage updates when secondary role changes
   useEffect(() => {
-    console.log("🔍 [useEffect] Extracting location names from officer data");
-
-    if (!user?.officerRoles || user.officerRoles.length === 0) {
-      console.log("🔍 [useEffect] No officer roles, skipping");
-      return;
-    }
-
-    const officerData =
-      user.provincialOfficer || user.districtOfficer || user.communeOfficer;
-    console.log("🔍 [useEffect] Officer data:", officerData);
-
-    if (!officerData) {
-      console.log("🔍 [useEffect] No officer data found");
-      return;
-    }
-
-    // Extract location names directly from officer data
-    // API might return: province_name, district_name, commune_name OR just IDs
-    const names = {
-      provinceName:
-        officerData.province_name || officerData.provinceName || null,
-      districtName:
-        officerData.district_name || officerData.districtName || null,
-      communeName: officerData.commune_name || officerData.communeName || null,
+    const handleUserDataUpdated = () => {
+      console.log('🔄 [MultiRoleDashboard] User data updated event received');
+      try {
+        const updatedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        setCurrentUser(updatedUser);
+        console.log('✅ [MultiRoleDashboard] Updated user from localStorage:', updatedUser);
+      } catch (error) {
+        console.error('❌ [MultiRoleDashboard] Error reading updated user from localStorage:', error);
+      }
     };
 
-    console.log("🔍 [useEffect] Extracted names from officer data:", names);
+    window.addEventListener('userDataUpdated', handleUserDataUpdated);
+    return () => window.removeEventListener('userDataUpdated', handleUserDataUpdated);
+  }, []);
 
-    // If any names are missing, fetch them
-    const needsFetch =
-      !names.provinceName || !names.districtName || !names.communeName;
-
-    if (needsFetch) {
-      console.log("⚠️ [useEffect] Some names missing, fetching from API...");
-      setLoadingLocations(true);
-
-      const fetchMissingNames = async () => {
-        try {
-          let finalNames = { ...names };
-
-          // Fetch province name
-          if (!finalNames.provinceName && officerData.provinceId) {
-            console.log(
-              "🔍 Fetching province name for ID:",
-              officerData.provinceId
-            );
-            finalNames.provinceName = await locationService.getProvinceName(
-              officerData.provinceId
-            );
-            console.log("✅ Province name:", finalNames.provinceName);
-          }
-
-          // Fetch district name
-          if (
-            !finalNames.districtName &&
-            officerData.districtId &&
-            officerData.provinceId
-          ) {
-            console.log(
-              "🔍 Fetching district name for ID:",
-              officerData.districtId
-            );
-            finalNames.districtName = await locationService.getDistrictName(
-              officerData.provinceId,
-              officerData.districtId
-            );
-            console.log("✅ District name:", finalNames.districtName);
-          }
-
-          // Fetch commune name
-          if (
-            !finalNames.communeName &&
-            officerData.communeId &&
-            officerData.provinceId &&
-            officerData.districtId
-          ) {
-            console.log(
-              "🔍 Fetching commune name for ID:",
-              officerData.communeId
-            );
-            finalNames.communeName = await locationService.getCommuneName(
-              officerData.provinceId,
-              officerData.districtId,
-              officerData.communeId
-            );
-            console.log("✅ Commune name:", finalNames.communeName);
-          }
-
-          console.log("✅ All names ready:", finalNames);
-          setLocationNames(finalNames);
-        } catch (error) {
-          console.error("❌ Error fetching location names:", error);
-          setLocationNames(names);
-        } finally {
-          setLoadingLocations(false);
-        }
-      };
-
-      fetchMissingNames();
-    } else {
-      console.log("✅ All location names available from officer data");
-      setLocationNames(names);
-      setLoadingLocations(false);
+  // Update currentUser when prop changes
+  useEffect(() => {
+    if (user) {
+      setCurrentUser(user);
     }
   }, [user]);
 
+  if (!currentUser) {
+    return null;
+  }
+
   // Extract multi-role data
   // Users can have ONE of: PROVINCIAL_OFFICER, DISTRICT_OFFICER, or COMMUNE_OFFICER (defined in officerRoles array)
-  const isTeacher = user.roleId === 8;
-  const isProvincialOfficer = userUtils.isProvincialOfficer(user);
-  const isDistrictOfficer = userUtils.isDistrictOfficer(user);
-  const isCommuneOfficer = userUtils.isCommuneOfficer(user);
+  const isTeacher = currentUser.roleId === 8;
+  const isProvincialOfficer = userUtils.isProvincialOfficer(currentUser);
+  const isDistrictOfficer = userUtils.isDistrictOfficer(currentUser);
+  const isCommuneOfficer = userUtils.isCommuneOfficer(currentUser);
 
   // Get the appropriate officer data based on which officerRole they have
   // Priority: provincialOfficer > districtOfficer > communeOfficer
   // (Only one will be populated based on officerRoles array)
   const officerData =
-    user.provincialOfficer || user.districtOfficer || user.communeOfficer;
+    currentUser.provincialOfficer || currentUser.districtOfficer || currentUser.communeOfficer;
 
   // Determine officer type from the first true condition
   const officerType = isProvincialOfficer
@@ -171,6 +83,65 @@ const MultiRoleDashboard = ({ user, className = "" }) => {
   const restrictedProvinceIds = officerData?.provinceIds || [];
   const restrictedDistrictIds = officerData?.districtIds || [];
   const restrictedCommuneIds = officerData?.communeIds || [];
+
+  // Fetch location names for all assigned IDs
+  useEffect(() => {
+    const fetchLocationNames = async () => {
+      try {
+        setLoadingNames(true);
+        const names = {};
+
+        // Fetch province names
+        if (restrictedProvinceIds.length > 0) {
+          for (const provinceId of restrictedProvinceIds) {
+            try {
+              const name = await locationService.getProvinceName(provinceId);
+              names[`province_${provinceId}`] = name;
+            } catch (error) {
+              console.error(`Error fetching province name for ID ${provinceId}:`, error);
+              names[`province_${provinceId}`] = `Province ${provinceId}`;
+            }
+          }
+        }
+
+        // Fetch district names
+        if (restrictedDistrictIds.length > 0 && filterProvinceId) {
+          for (const districtId of restrictedDistrictIds) {
+            try {
+              const name = await locationService.getDistrictName(filterProvinceId, districtId);
+              names[`district_${districtId}`] = name;
+            } catch (error) {
+              console.error(`Error fetching district name for ID ${districtId}:`, error);
+              names[`district_${districtId}`] = `District ${districtId}`;
+            }
+          }
+        }
+
+        // Fetch commune names
+        if (restrictedCommuneIds.length > 0 && filterProvinceId && filterDistrictId) {
+          for (const communeId of restrictedCommuneIds) {
+            try {
+              const name = await locationService.getCommuneName(filterProvinceId, filterDistrictId, communeId);
+              names[`commune_${communeId}`] = name;
+            } catch (error) {
+              console.error(`Error fetching commune name for ID ${communeId}:`, error);
+              names[`commune_${communeId}`] = `Commune ${communeId}`;
+            }
+          }
+        }
+
+        setLocationNames(names);
+      } catch (error) {
+        console.error('Error fetching location names:', error);
+      } finally {
+        setLoadingNames(false);
+      }
+    };
+
+    if (officerData) {
+      fetchLocationNames();
+    }
+  }, [restrictedProvinceIds.join(','), restrictedDistrictIds.join(','), restrictedCommuneIds.join(','), filterProvinceId, filterDistrictId]);
 
   console.log('🎯 Multi-Role Dashboard filters:');
   console.log('   - Province IDs:', officerData?.provinceIds);
@@ -223,82 +194,43 @@ const MultiRoleDashboard = ({ user, className = "" }) => {
         {/* Overview Section */}
         <div className="bg-white rounded-lg mt-4">
           <div className="space-y-6">
-            {/* Officer Section */}
+            {/* All Assigned Locations Section */}
             {officerData && (
-              <div className="">
+              <div className="mt-6 pt-4 border-t border-gray-200">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">
-                  {t("officialResponsibilities", "Official Responsibilities")}
+                  {t("assignedLocations", "Assigned Locations")}
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* All Provinces Card */}
                   {officerData.provinceIds && officerData.provinceIds.length > 0 && (
-                    <StatsCard
-                      title={t("province", "Province")}
-                      value={
-                        loadingLocations
-                          ? "..."
-                          : locationNames.provinceName ||
-                            `Province ${officerData.provinceIds[0]}`
-                      }
-                      subtitle={
-                        officerData.provinceIds.length > 1
-                          ? `+${officerData.provinceIds.length - 1} more`
-                          : undefined
-                      }
-                      valueColor="text-gray-900"
-                      titleColor="text-gray-700"
-                    />
+                    <div className="flex-1 min-w-0 bg-gray-50 border-gray-100 border-2 p-4 rounded-md">
+                      <p className="text-sm font-medium text-gray-500">{t("allAssignedProvinces", "ខេត្ត/ស្រុក")}</p>
+                      <p className="text-sm text-gray-900 break-words mt-1">
+                        {loadingNames ? t("loading", "កំពុងផ្ទុក...") : officerData.provinceIds.map(provinceId => locationNames[`province_${provinceId}`] || `Province ${provinceId}`).join(', ') || '-'}
+                      </p>
+                    </div>
                   )}
+
+                  {/* All Districts Card */}
                   {officerData.districtIds && officerData.districtIds.length > 0 && (
-                    <StatsCard
-                      title={t("district", "District")}
-                      value={
-                        loadingLocations
-                          ? "..."
-                          : locationNames.districtName ||
-                            `District ${officerData.districtIds[0]}`
-                      }
-                      subtitle={
-                        officerData.districtIds.length > 1
-                          ? `+${officerData.districtIds.length - 1} more`
-                          : undefined
-                      }
-                      valueColor="text-gray-900"
-                      titleColor="text-gray-700"
-                    />
+                    <div className="flex-1 min-w-0 bg-gray-50 border-gray-100 border-2 p-4 rounded-md">
+                      <p className="text-sm font-medium text-gray-500">{t("allAssignedDistricts", "ស្រុក")}</p>
+                      <p className="text-sm text-gray-900 break-words mt-1">
+                        {loadingNames ? t("loading", "កំពុងផ្ទុក...") : officerData.districtIds.map(districtId => locationNames[`district_${districtId}`] || `District ${districtId}`).join(', ') || '-'}
+                      </p>
+                    </div>
                   )}
+
+                  {/* All Communes Card */}
                   {officerData.communeIds && officerData.communeIds.length > 0 && (
-                    <StatsCard
-                      title={t("commune", "Commune")}
-                      value={
-                        loadingLocations
-                          ? "..."
-                          : locationNames.communeName ||
-                            `Commune ${officerData.communeIds[0]}`
-                      }
-                      subtitle={
-                        officerData.communeIds.length > 1
-                          ? `+${officerData.communeIds.length - 1} more`
-                          : undefined
-                      }
-                      valueColor="text-gray-900"
-                      titleColor="text-gray-700"
-                    />
+                    <div className="flex-1 min-w-0 bg-gray-50 border-gray-100 border-2 p-4 rounded-md">
+                      <p className="text-sm font-medium text-gray-500">{t("allAssignedCommunes", "ឃុំ")}</p>
+                      <p className="text-sm text-gray-900 break-words mt-1">
+                        {loadingNames ? t("loading", "កំពុងផ្ទុក...") : officerData.communeIds.map(communeId => locationNames[`commune_${communeId}`] || `Commune ${communeId}`).join(', ') || '-'}
+                      </p>
+                    </div>
                   )}
-                  <StatsCard
-                    title={t("role", "Role")}
-                    value={
-                      officerType === "PROVINCIAL_OFFICER"
-                        ? t("provincialOfficer", "Provincial Officer")
-                        : officerType === "DISTRICT_OFFICER"
-                        ? t("districtOfficer", "District Officer")
-                        : officerType === "COMMUNE_OFFICER"
-                        ? t("communeOfficer", "Commune Officer")
-                        : "-"
-                    }
-                    valueColor="text-gray-900"
-                    titleColor="text-gray-700"
-                  />
                 </div>
               </div>
             )}
@@ -309,7 +241,7 @@ const MultiRoleDashboard = ({ user, className = "" }) => {
       {/* School Distribution Chart with location filters */}
       <SchoolDistributionChart
         className="w-full"
-        user={user}
+        user={currentUser}
         filterProvinceId={filterProvinceId}
         filterDistrictId={filterDistrictId}
         restrictedProvinceIds={restrictedProvinceIds}

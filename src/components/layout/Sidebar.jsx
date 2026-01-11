@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Users,
   ChevronDown,
@@ -169,19 +169,23 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     // '/my-assignments': 'blue'
   };
 
-  // Get navigation items based on user role
-  const navigationItems = getNavigationItems(currentUser, t).map(item => {
-    // For parent items (those with children and href='#'), use the item name as key for icon/color lookup
-    const iconKey = item.children ? item.name?.toLowerCase() || item.href : item.href;
-    return {
-      ...item,
-      icon: iconMap[iconKey] || iconMap[item.href] || CalendarCheck,
-      current: location.pathname === item.href,
-      color: colorMap[iconKey] || colorMap[item.href] || 'blue',
-      // Check if any child is active
-      hasActiveChild: item.children?.some(child => location.pathname === child.href)
-    };
-  });
+  // Get navigation items based on user role - memoized to update when currentUser changes
+  const navigationItems = useMemo(() => {
+    console.log('📋 [Sidebar] Regenerating navigation items for user:', currentUser?.email);
+    console.log('📋 [Sidebar] hasMultipleRoles:', currentUser?.officerRoles?.length > 0);
+    return getNavigationItems(currentUser, t).map(item => {
+      // For parent items (those with children and href='#'), use the item name as key for icon/color lookup
+      const iconKey = item.children ? item.name?.toLowerCase() || item.href : item.href;
+      return {
+        ...item,
+        icon: iconMap[iconKey] || iconMap[item.href] || CalendarCheck,
+        current: location.pathname === item.href,
+        color: colorMap[iconKey] || colorMap[item.href] || 'blue',
+        // Check if any child is active
+        hasActiveChild: item.children?.some(child => location.pathname === child.href)
+      };
+    });
+  }, [currentUser, t, location.pathname]);
 
   const getColorClasses = (color, isActive) => {
     const colorMap = {

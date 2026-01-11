@@ -617,9 +617,18 @@ export default function ProfileUpdate({ user, setUser }) {
         setBirthInitialized(false);
 
         // Also update the user context if needed
+        // Preserve secondary role data from localStorage to avoid losing it
         if (setUser) {
+          const storedUser = localStorage.getItem('user');
+          const storedUserData = storedUser ? JSON.parse(storedUser) : {};
+
           const updatedUser = {
-            ...userData
+            ...userData,
+            // Preserve secondary role fields from localStorage
+            officerRoles: storedUserData.officerRoles || userData.officerRoles,
+            provincialOfficer: storedUserData.provincialOfficer || userData.provincialOfficer,
+            districtOfficer: storedUserData.districtOfficer || userData.districtOfficer,
+            communeOfficer: storedUserData.communeOfficer || userData.communeOfficer
           };
           setUser(updatedUser);
         }
@@ -1734,9 +1743,18 @@ export default function ProfileUpdate({ user, setUser }) {
       const response = await api.user.updateUser(userId, updateData);
       clearTimeout(timeoutId);
 
+      // Preserve secondary role data from localStorage when updating user
+      const storedUser = localStorage.getItem('user');
+      const storedUserData = storedUser ? JSON.parse(storedUser) : {};
+
       const updatedUser = {
         ...user,
-        ...response
+        ...response,
+        // Preserve secondary role fields from localStorage
+        officerRoles: storedUserData.officerRoles || user.officerRoles,
+        provincialOfficer: storedUserData.provincialOfficer || user.provincialOfficer,
+        districtOfficer: storedUserData.districtOfficer || user.districtOfficer,
+        communeOfficer: storedUserData.communeOfficer || user.communeOfficer
       };
       utils.user.saveUserData(updatedUser);
       setUser(updatedUser);

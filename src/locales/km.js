@@ -89,7 +89,7 @@ export const km = {
   village: 'ភូមិ',
   commune: 'ឃុំ/សង្កាត់',
   district: 'ស្រុក/ខណ្ឌ/ក្រុង',
-  province: 'ខេត្ត',
+  province: 'រាជធានី/ខេត្ត',
   gpsCoordinates: 'កូអរដោនេ GPS',
   selectProvince: 'ជ្រើសរើសរាជធានី/ខេត្ត',
   selectDistrict: 'ជ្រើសរើសស្រុក/ខណ្ឌ/ក្រុង',
@@ -198,6 +198,7 @@ export const km = {
   addRole: 'បន្ថែមតួនាទី',
   changePasswordDescription: 'ផ្លាស់ប្ដូរពាក្យសម្ងាត់សម្រាប់គណនីរបស់អ្នក។ ត្រូវប្រាកដថាលេខសម្ងាត់ថ្មីរបស់អ្នកមានសុវត្ថិភាព និងងាយស្រួលចងចាំ។',
   secondaryRoleTitle: 'តួនាទីបន្ថែម',
+  assignedLocations: 'តំបន់ដែលបានកំណត់',
 
   // Dialogs
   confirmUpdate: 'បញ្ជាក់ការកែប្រែ',
