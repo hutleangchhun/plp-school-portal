@@ -309,7 +309,7 @@ export default function ProfileUpdate({ user, setUser }) {
 
   // Wrapper for setting initial residence values - use the hook's built-in initialization
   // which handles loading districts, communes, and villages automatically
-  const setResidenceInitialValues = useCallback((values) => {
+  const setResidenceInitialValues = useCallback(async (values) => {
     if (values?.provinceId) {
       // Set our local state first
       const provinceId = values.provinceId.toString();
@@ -322,16 +322,15 @@ export default function ProfileUpdate({ user, setUser }) {
       setSelectedResidenceCommune(communeId);
       setSelectedResidenceVillage(villageId);
 
-      // Then use residenceLocation's setInitialValues which handles all the cascading loads
-      residenceLocation.setInitialValues(values);
+      // Use residenceLocation's setInitialValues which handles all the cascading loads
+      // This is async and will load districts, communes, and villages
+      await residenceLocation.setInitialValues(values);
     }
   }, [residenceLocation.setInitialValues]);
 
   // Wrapper for setting initial birth values
-  const setBirthInitialValues = useCallback((values) => {
+  const setBirthInitialValues = useCallback(async (values) => {
     if (values?.provinceId) {
-      console.log('🏥 Setting birth initial values:', values);
-
       // Set our local state first
       const provinceId = values.provinceId.toString();
       const districtId = values.districtId?.toString() || '';
@@ -343,8 +342,9 @@ export default function ProfileUpdate({ user, setUser }) {
       setSelectedBirthCommune(communeId);
       setSelectedBirthVillage(villageId);
 
-      // Then use birthLocation's setInitialValues which handles all the cascading loads
-      birthLocation.setInitialValues(values);
+      // Use birthLocation's setInitialValues which handles all the cascading loads
+      // This is async and will load districts, communes, and villages
+      await birthLocation.setInitialValues(values);
     }
   }, [birthLocation.setInitialValues]);
 
@@ -963,29 +963,32 @@ export default function ProfileUpdate({ user, setUser }) {
 
   // Initialize location data when pending data is available and provinces are loaded
   useEffect(() => {
-    const hasProvinces = residenceLocation.provinces && residenceLocation.provinces.length > 0;
-    if (!residenceInitialized && pendingResidenceData && !residenceLoadingProvinces && hasProvinces) {
-      setLocationDataLoading(true);
-      setResidenceInitialValues(pendingResidenceData);
-      setLocationDataLoading(false);
-      setResidenceInitialized(true);
-      setPendingResidenceData(null);
-    }
+    const initializeResidence = async () => {
+      const hasProvinces = residenceLocation.provinces && residenceLocation.provinces.length > 0;
+      if (!residenceInitialized && pendingResidenceData && !residenceLoadingProvinces && hasProvinces) {
+        setLocationDataLoading(true);
+        await setResidenceInitialValues(pendingResidenceData);
+        setLocationDataLoading(false);
+        setResidenceInitialized(true);
+        setPendingResidenceData(null);
+      }
+    };
+    initializeResidence();
   }, [pendingResidenceData, residenceInitialized, residenceLoadingProvinces, setResidenceInitialValues, residenceLocation.provinces]);
 
 
   useEffect(() => {
-    const hasProvinces = birthLocation.provinces && birthLocation.provinces.length > 0;
-    if (!birthInitialized && pendingBirthData && !birthLoadingProvinces && hasProvinces) {
-      console.log('🏥 Setting birth data:', pendingBirthData);
-      setLocationDataLoading(true);
-
-      setBirthInitialValues(pendingBirthData);
-      console.log('✅ Birth data set successfully');
-      setLocationDataLoading(false);
-      setBirthInitialized(true);
-      setPendingBirthData(null);
-    }
+    const initializeBirth = async () => {
+      const hasProvinces = birthLocation.provinces && birthLocation.provinces.length > 0;
+      if (!birthInitialized && pendingBirthData && !birthLoadingProvinces && hasProvinces) {
+        setLocationDataLoading(true);
+        await setBirthInitialValues(pendingBirthData);
+        setLocationDataLoading(false);
+        setBirthInitialized(true);
+        setPendingBirthData(null);
+      }
+    };
+    initializeBirth();
   }, [pendingBirthData, birthInitialized, birthLoadingProvinces, setBirthInitialValues, birthLocation.provinces]);
 
   // Fallback timeout to ensure initialization happens even if there are issues
@@ -1070,11 +1073,11 @@ export default function ProfileUpdate({ user, setUser }) {
     setShowDropdown(false);
   };
 
-  const handleEditToggle = () => {
+  const handleEditToggle = async () => {
     if (!isEditMode) {
       // When entering edit mode, initialize location selectors from formData if not already set
       if (formData.residence?.provinceId && !selectedResidenceProvince) {
-        setResidenceInitialValues({
+        await setResidenceInitialValues({
           provinceId: formData.residence.provinceId,
           districtId: formData.residence.districtId,
           communeId: formData.residence.communeId,
@@ -1083,7 +1086,7 @@ export default function ProfileUpdate({ user, setUser }) {
       }
 
       if (formData.placeOfBirth?.provinceId && !selectedBirthProvince) {
-        setBirthInitialValues({
+        await setBirthInitialValues({
           provinceId: formData.placeOfBirth.provinceId,
           districtId: formData.placeOfBirth.districtId,
           communeId: formData.placeOfBirth.communeId,
