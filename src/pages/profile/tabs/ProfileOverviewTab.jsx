@@ -379,39 +379,7 @@ export default function ProfileOverviewTab({
                 />
               </div>
 
-              {/* Role */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('role', 'Role')}
-                </label>
-                <Dropdown
-                  value={formData.roleId}
-                  onValueChange={(value) => {
-                    const selectedRole = roleOptions.find((r) => r.value === value);
-                    setFormData((prev) => ({
-                      ...prev,
-                      roleId: value,
-                      role: value,
-                      roleNameKh: selectedRole?.label || '',
-                    }));
-                  }}
-                  options={roleOptions}
-                  placeholder={t('selectRole', 'Select Role')}
-                  className="w-full"
-                  maxHeight="max-h-40"
-                  disabled={formData.roleId === '14'}
-                />
-                {formData.roleId && (
-                  <p className="mt-1 text-xs text-green-600">
-                    ✓ {roleOptions.find((r) => r.value === formData.roleId)?.label}
-                  </p>
-                )}
-                {formData.roleId === '14' && (
-                  <p className="mt-2 text-xs text-gray-500 italic">
-                    {t('principalRoleCannotChange', 'Principal role cannot be changed')}
-                  </p>
-                )}
-              </div>
+
 
               {/* Ethnic Group */}
               <div>

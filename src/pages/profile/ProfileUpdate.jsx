@@ -15,7 +15,7 @@ import Dropdown from '../../components/ui/Dropdown';
 import { useLocationData } from '../../hooks/useLocationData';
 import { useStableCallback } from '../../utils/reactOptimization';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
-import { roleOptions } from '../../utils/formOptions';
+import { roleOptions, nationalityOptionsProfile } from '../../utils/formOptions';
 import MultiSelectDropdown from '../../components/ui/MultiSelectDropdown';
 import SalaryTypeDropdown from '../../components/ui/SalaryTypeDropdown';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
@@ -42,7 +42,7 @@ export default function ProfileUpdate({ user, setUser }) {
     profile_picture: '',
     phone: '',
     teacher_number: '',
-    nationality: 'ខ្មែរ',
+    nationality: nationalityOptionsProfile[0]?.value || 'ខ្មែរ',
     roleNameEn: '',
     roleNameKh: '',
     school_name: '',
@@ -170,11 +170,12 @@ export default function ProfileUpdate({ user, setUser }) {
 
   // Guard to prevent duplicate API calls due to React.StrictMode in development
   const userDataFetchedRef = useRef(false);
-  const secondaryOfficerDataFetchedRef = useRef(false);
+  const lastFetchedSecondaryRoleUserId = useRef(null);
 
-  // Use single shared location data instance for both residence and birth
-  // to avoid duplicate API calls from multiple useLocationData hooks
-  const locationData = useLocationData();
+  // Use separate location data instances for residence and birth to allow independent state
+  // This ensures that selecting a province in residence doesn't affect the districts list in place of birth
+  const residenceLocation = useLocationData();
+  const birthLocation = useLocationData();
 
   // Separate state for residence location selections
   const [selectedResidenceProvince, setSelectedResidenceProvince] = useState('');
@@ -191,118 +192,128 @@ export default function ProfileUpdate({ user, setUser }) {
   // Residence location handlers
   const handleResidenceProvinceChange = useCallback((value) => {
     setSelectedResidenceProvince(value);
+    residenceLocation.handleProvinceChange(value);
+    
     setSelectedResidenceDistrict('');
     setSelectedResidenceCommune('');
     setSelectedResidenceVillage('');
-  }, []);
+  }, [residenceLocation]);
 
   const handleResidenceDistrictChange = useCallback((value) => {
     setSelectedResidenceDistrict(value);
+    residenceLocation.handleDistrictChange(value);
+
     setSelectedResidenceCommune('');
     setSelectedResidenceVillage('');
-  }, []);
+  }, [residenceLocation]);
 
   const handleResidenceCommuneChange = useCallback((value) => {
     setSelectedResidenceCommune(value);
+    residenceLocation.handleCommuneChange(value);
+
     setSelectedResidenceVillage('');
-  }, []);
+  }, [residenceLocation]);
 
   const handleResidenceVillageChange = useCallback((value) => {
     setSelectedResidenceVillage(value);
-  }, []);
+    residenceLocation.handleVillageChange(value);
+  }, [residenceLocation]);
 
   // Birth location handlers
   const handleBirthProvinceChange = useCallback((value) => {
     setSelectedBirthProvince(value);
+    birthLocation.handleProvinceChange(value);
+
     setSelectedBirthDistrict('');
     setSelectedBirthCommune('');
     setSelectedBirthVillage('');
-  }, []);
+  }, [birthLocation]);
 
   const handleBirthDistrictChange = useCallback((value) => {
     setSelectedBirthDistrict(value);
+    birthLocation.handleDistrictChange(value);
+
     setSelectedBirthCommune('');
     setSelectedBirthVillage('');
-  }, []);
+  }, [birthLocation]);
 
   const handleBirthCommuneChange = useCallback((value) => {
     setSelectedBirthCommune(value);
+    birthLocation.handleCommuneChange(value);
+
     setSelectedBirthVillage('');
-  }, []);
+  }, [birthLocation]);
 
   const handleBirthVillageChange = useCallback((value) => {
     setSelectedBirthVillage(value);
-  }, []);
+    birthLocation.handleVillageChange(value);
+  }, [birthLocation]);
 
   // Wrapper functions for residence location getters
   const getResidenceProvinceOptions = useCallback(() => {
-    return locationData.provinces;
-  }, [locationData.provinces]);
+    return residenceLocation.provinces;
+  }, [residenceLocation.provinces]);
 
   const getResidenceDistrictOptions = useCallback(() => {
     if (!selectedResidenceProvince) return [];
-    if (locationData.loadingDistricts) {
+    if (residenceLocation.loadingDistricts) {
       return [{ value: '', label: t('loadingDistricts'), disabled: true }];
     }
-    return locationData.districts;
-  }, [selectedResidenceProvince, locationData.districts, locationData.loadingDistricts, t]);
+    return residenceLocation.districts;
+  }, [selectedResidenceProvince, residenceLocation.districts, residenceLocation.loadingDistricts, t]);
 
   const getResidenceCommuneOptions = useCallback(() => {
     if (!selectedResidenceDistrict) return [];
-    if (locationData.loadingCommunes) {
+    if (residenceLocation.loadingCommunes) {
       return [{ value: '', label: t('loadingCommunes'), disabled: true }];
     }
-    return locationData.communes;
-  }, [selectedResidenceDistrict, locationData.communes, locationData.loadingCommunes, t]);
+    return residenceLocation.communes;
+  }, [selectedResidenceDistrict, residenceLocation.communes, residenceLocation.loadingCommunes, t]);
 
   const getResidenceVillageOptions = useCallback(() => {
     if (!selectedResidenceCommune) return [];
-    if (locationData.loadingVillages) {
+    if (residenceLocation.loadingVillages) {
       return [{ value: '', label: t('loadingVillages'), disabled: true }];
     }
-    return locationData.villages;
-  }, [selectedResidenceCommune, locationData.villages, locationData.loadingVillages, t]);
+    return residenceLocation.villages;
+  }, [selectedResidenceCommune, residenceLocation.villages, residenceLocation.loadingVillages, t]);
 
   // Wrapper functions for birth location getters
   const getBirthProvinceOptions = useCallback(() => {
-    return locationData.provinces;
-  }, [locationData.provinces]);
+    return birthLocation.provinces;
+  }, [birthLocation.provinces]);
 
   const getBirthDistrictOptions = useCallback(() => {
     if (!selectedBirthProvince) return [];
-    if (locationData.loadingDistricts) {
+    if (birthLocation.loadingDistricts) {
       return [{ value: '', label: t('loadingDistricts'), disabled: true }];
     }
-    return locationData.districts;
-  }, [selectedBirthProvince, locationData.districts, locationData.loadingDistricts, t]);
+    return birthLocation.districts;
+  }, [selectedBirthProvince, birthLocation.districts, birthLocation.loadingDistricts, t]);
 
   const getBirthCommuneOptions = useCallback(() => {
     if (!selectedBirthDistrict) return [];
-    if (locationData.loadingCommunes) {
+    if (birthLocation.loadingCommunes) {
       return [{ value: '', label: t('loadingCommunes'), disabled: true }];
     }
-    return locationData.communes;
-  }, [selectedBirthDistrict, locationData.communes, locationData.loadingCommunes, t]);
+    return birthLocation.communes;
+  }, [selectedBirthDistrict, birthLocation.communes, birthLocation.loadingCommunes, t]);
 
   const getBirthVillageOptions = useCallback(() => {
     if (!selectedBirthCommune) return [];
-    if (locationData.loadingVillages) {
+    if (birthLocation.loadingVillages) {
       return [{ value: '', label: t('loadingVillages'), disabled: true }];
     }
-    return locationData.villages;
-  }, [selectedBirthCommune, locationData.villages, locationData.loadingVillages, t]);
+    return birthLocation.villages;
+  }, [selectedBirthCommune, birthLocation.villages, birthLocation.loadingVillages, t]);
 
   // Wrapper for setting initial residence values - use the hook's built-in initialization
   // which handles loading districts, communes, and villages automatically
-  // Note: locationData is NOT in dependency array because we want this function to remain stable
-  // The closure captures locationData correctly, and we don't need to recreate the function
-  // when locationData object reference changes
   const setResidenceInitialValues = useCallback((values) => {
     if (values.provinceId) {
       console.log('🏠 Setting residence initial values:', values);
-      // Use locationData's setInitialValues which handles all the cascading loads
-      // This is async but we don't need to await it since it updates locationData state
-      locationData.setInitialValues(values);
+      // Use residenceLocation's setInitialValues which handles all the cascading loads
+      residenceLocation.setInitialValues(values);
 
       // Also set our local state for reference
       setSelectedResidenceProvince(values.provinceId.toString());
@@ -310,24 +321,26 @@ export default function ProfileUpdate({ user, setUser }) {
       setSelectedResidenceCommune(values.communeId?.toString() || '');
       setSelectedResidenceVillage(values.villageId?.toString() || '');
     }
-  }, []);
+  }, [residenceLocation.setInitialValues]);
 
-  // Wrapper for setting initial birth values - just set our local state
-  // Birth location uses the same locationData instance, so we don't load cascading data
-  // Users can select birth location normally via dropdowns if needed
+  // Wrapper for setting initial birth values
   const setBirthInitialValues = useCallback((values) => {
     if (values.provinceId) {
       console.log('🏥 Setting birth initial values:', values);
+      
+      // Use birthLocation's setInitialValues which handles all the cascading loads
+      birthLocation.setInitialValues(values);
+
       setSelectedBirthProvince(values.provinceId.toString());
       setSelectedBirthDistrict(values.districtId?.toString() || '');
       setSelectedBirthCommune(values.communeId?.toString() || '');
       setSelectedBirthVillage(values.villageId?.toString() || '');
     }
-  }, []);
+  }, [birthLocation.setInitialValues]);
 
   // Expose loading states
-  const residenceLoadingProvinces = locationData.loadingProvinces;
-  const birthLoadingProvinces = locationData.loadingProvinces;
+  const residenceLoadingProvinces = residenceLocation.loadingProvinces;
+  const birthLoadingProvinces = birthLocation.loadingProvinces;
 
 
   useEffect(() => {
@@ -351,12 +364,12 @@ export default function ProfileUpdate({ user, setUser }) {
     };
   }, []);
 
-  // Use shared provinces from locationData for secondary officer role dropdowns
+  // Use shared provinces from residenceLocation for secondary officer role dropdowns
   // Instead of making a separate API call, reuse the provinces already loaded
   useEffect(() => {
-    if (locationData.provinces && locationData.provinces.length > 0) {
+    if (residenceLocation.provinces && residenceLocation.provinces.length > 0) {
       // Convert from location data format to the format expected by secondary provinces
-      const secondaryProvinces = locationData.provinces.map(p => ({
+      const secondaryProvinces = residenceLocation.provinces.map(p => ({
         id: p.originalData?.id || p.value,
         province_name_kh: p.originalData?.province_name_kh || p.labelKh,
         province_name_en: p.originalData?.province_name_en || p.labelEn,
@@ -365,7 +378,7 @@ export default function ProfileUpdate({ user, setUser }) {
       setSecondaryProvinces(secondaryProvinces);
       setSecondaryLocationLoading(false);
     }
-  }, [locationData.provinces]);
+  }, [residenceLocation.provinces]);
 
   const handleSecondaryProvinceChange = async (provinceIds) => {
     setSecondaryProvinceIds(provinceIds);
@@ -628,26 +641,34 @@ export default function ProfileUpdate({ user, setUser }) {
             }
           })(),
           // Handle nested residence object with full location data (Khmer names prioritized)
+          // Handle nested residence object with full location data (Khmer names prioritized)
+          // Ensure IDs are strings to match dropdown values
           residence: {
-            provinceId: normalizedData.residence?.provinceId || normalizedData.province_id || '',
-            province_name: normalizedData.residence?.province?.province_name_kh || normalizedData.residence?.province?.province_name_en || '',
-            districtId: normalizedData.residence?.districtId || normalizedData.district_id || '',
-            district_name: normalizedData.residence?.district?.district_name_kh || normalizedData.residence?.district?.district_name_en || '',
-            communeId: normalizedData.residence?.communeId || normalizedData.commune_id || '',
-            commune_name: normalizedData.residence?.commune?.commune_name_kh || normalizedData.residence?.commune?.commune_name_en || '',
-            villageId: normalizedData.residence?.villageId || normalizedData.village_id || '',
-            village_name: normalizedData.residence?.village?.village_name_kh || normalizedData.residence?.village?.village_name_en || ''
+            provinceId: String(normalizedData.residence?.provinceId || normalizedData.province_id || ''),
+            province_name: normalizedData.residence?.province?.province_name_kh || normalizedData.residence?.province?.province_name_en || normalizedData.residence?.province?.['_name_kh'] || normalizedData.residence?.province?.['_name_en'] || '',
+            districtId: String(normalizedData.residence?.districtId || normalizedData.district_id || ''),
+            district_code: normalizedData.residence?.district?.district_code || normalizedData.residence?.district?.code || normalizedData.residence?.district?.['_code'] || normalizedData.district_code || String(normalizedData.residence?.districtId || normalizedData.district_id || ''),
+            district_name: normalizedData.residence?.district?.district_name_kh || normalizedData.residence?.district?.district_name_en || normalizedData.residence?.district?.['_name_kh'] || normalizedData.residence?.district?.['_name_en'] || '',
+            communeId: String(normalizedData.residence?.communeId || normalizedData.commune_id || ''),
+            commune_code: normalizedData.residence?.commune?.commune_code || normalizedData.residence?.commune?.code || normalizedData.residence?.commune?.['_code'] || normalizedData.commune_code || String(normalizedData.residence?.communeId || normalizedData.commune_id || ''),
+            commune_name: normalizedData.residence?.commune?.commune_name_kh || normalizedData.residence?.commune?.commune_name_en || normalizedData.residence?.commune?.['_name_kh'] || normalizedData.residence?.commune?.['_name_en'] || '',
+            villageId: String(normalizedData.residence?.villageId || normalizedData.village_id || ''),
+            village_name: normalizedData.residence?.village?.village_name_kh || normalizedData.residence?.village?.village_name_en || normalizedData.residence?.village?.['_name_kh'] || normalizedData.residence?.village?.['_name_en'] || ''
           },
           // Handle nested placeOfBirth object with full location data (Khmer names prioritized)
+          // Handle nested placeOfBirth object with full location data (Khmer names prioritized)
+          // Ensure IDs are strings to match dropdown values
           placeOfBirth: {
-            provinceId: normalizedData.placeOfBirth?.provinceId || normalizedData.residence?.provinceId || normalizedData.province_id || '',
+            provinceId: String(normalizedData.placeOfBirth?.provinceId || normalizedData.residence?.provinceId || normalizedData.province_id || ''),
             province_name: normalizedData.placeOfBirth?.province?.province_name_kh || normalizedData.placeOfBirth?.province?.province_name_en || normalizedData.residence?.province?.province_name_kh || '',
-            districtId: normalizedData.placeOfBirth?.districtId || normalizedData.residence?.districtId || normalizedData.district_id || '',
-            district_name: normalizedData.placeOfBirth?.district?.district_name_kh || normalizedData.placeOfBirth?.district?.district_name_en || normalizedData.residence?.district?.district_name_kh || '',
-            communeId: normalizedData.placeOfBirth?.communeId || normalizedData.residence?.communeId || normalizedData.commune_id || '',
-            commune_name: normalizedData.placeOfBirth?.commune?.commune_name_kh || normalizedData.placeOfBirth?.commune?.commune_name_en || normalizedData.residence?.commune?.commune_name_kh || '',
-            villageId: normalizedData.placeOfBirth?.villageId || normalizedData.residence?.villageId || normalizedData.village_id || '',
-            village_name: normalizedData.placeOfBirth?.village?.village_name_kh || normalizedData.placeOfBirth?.village?.village_name_en || normalizedData.residence?.village?.village_name_kh || ''
+            districtId: String(normalizedData.placeOfBirth?.districtId || normalizedData.residence?.districtId || normalizedData.district_id || ''),
+            district_code: normalizedData.placeOfBirth?.district?.district_code || normalizedData.placeOfBirth?.district?.code || normalizedData.placeOfBirth?.district?.['_code'] || normalizedData.residence?.district?.district_code || String(normalizedData.placeOfBirth?.districtId || normalizedData.residence?.districtId || normalizedData.district_id || ''),
+            district_name: normalizedData.placeOfBirth?.district?.district_name_kh || normalizedData.placeOfBirth?.district?.district_name_en || normalizedData.placeOfBirth?.district?.['_name_kh'] || normalizedData.placeOfBirth?.district?.['_name_en'] || normalizedData.residence?.district?.district_name_kh || '',
+            communeId: String(normalizedData.placeOfBirth?.communeId || normalizedData.residence?.communeId || normalizedData.commune_id || ''),
+            commune_code: normalizedData.placeOfBirth?.commune?.commune_code || normalizedData.placeOfBirth?.commune?.code || normalizedData.placeOfBirth?.commune?.['_code'] || normalizedData.residence?.commune?.commune_code || String(normalizedData.placeOfBirth?.communeId || normalizedData.residence?.communeId || normalizedData.commune_id || ''),
+            commune_name: normalizedData.placeOfBirth?.commune?.commune_name_kh || normalizedData.placeOfBirth?.commune?.commune_name_en || normalizedData.placeOfBirth?.commune?.['_name_kh'] || normalizedData.placeOfBirth?.commune?.['_name_en'] || normalizedData.residence?.commune?.commune_name_kh || '',
+            villageId: String(normalizedData.placeOfBirth?.villageId || normalizedData.residence?.villageId || normalizedData.village_id || ''),
+            village_name: normalizedData.placeOfBirth?.village?.village_name_kh || normalizedData.placeOfBirth?.village?.village_name_en || normalizedData.placeOfBirth?.village?.['_name_kh'] || normalizedData.placeOfBirth?.village?.['_name_en'] || normalizedData.residence?.village?.village_name_kh || ''
           },
           // Handle teacher family information
           teacher_family: {
@@ -784,22 +805,21 @@ export default function ProfileUpdate({ user, setUser }) {
   // Fetch existing secondary officer data from /auth/secondary-roles endpoint
   useEffect(() => {
     const loadSecondaryOfficerData = async () => {
-      // Guard against duplicate fetches due to React.StrictMode
-      if (secondaryOfficerDataFetchedRef.current) {
-        console.log('Secondary officer data already fetched, skipping duplicate call');
-        return;
-      }
-
+      // Only fetch if we have a valid user ID
       if (!formData || !formData.id) {
-        console.log('FormData or formData.id not ready yet');
         return;
       }
 
-      secondaryOfficerDataFetchedRef.current = true;
-      console.log('Fetching secondary officer data from /auth/secondary-roles');
+      // Prevent duplicate fetches for the same user
+      if (lastFetchedSecondaryRoleUserId.current === formData.id) {
+        return;
+      }
+
+      lastFetchedSecondaryRoleUserId.current = formData.id;
+      console.log('Fetching secondary officer data from /auth/secondary-roles for user:', formData.id);
 
       try {
-        const response = await apiClient.get('/auth/secondary-roles');
+        const response = await userService.getSecondaryRoles();
         console.log('🔍 Secondary roles API response:', response);
         console.log('🔍 Response.data:', response?.data);
         console.log('🔍 Response.role:', response?.role);
@@ -922,21 +942,22 @@ export default function ProfileUpdate({ user, setUser }) {
         }
       } catch (error) {
         console.error('❌ Could not fetch secondary roles:', error);
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Error stack:', error.stack);
         setExistingCommuneOfficer(null);
         setIsEditingCommuneOfficer(false);
       }
     };
 
     loadSecondaryOfficerData();
-  }, []); // Guard ref prevents duplicate calls from StrictMode
+  }, [formData?.id]); // Depend on formData.id to trigger prompt fetching
 
 
   // Initialize location data when pending data is available and provinces are loaded
   useEffect(() => {
-    if (!residenceInitialized && pendingResidenceData && !residenceLoadingProvinces) {
-      console.log('🏠 Setting residence data:', pendingResidenceData);
+    const hasProvinces = residenceLocation.provinces && residenceLocation.provinces.length > 0;
+    if (!residenceInitialized && pendingResidenceData && !residenceLoadingProvinces && hasProvinces) {
+      console.log('🏠 Setting residence data - PENDING DATA:', pendingResidenceData);
+      console.log('🏠 Setting residence data - PROVINCES COUNT:', residenceLocation.provinces.length);
+      console.log('🏠 Setting residence data - FIRST PROVINCE:', residenceLocation.provinces[0]);
       setLocationDataLoading(true);
 
       setResidenceInitialValues(pendingResidenceData);
@@ -945,11 +966,12 @@ export default function ProfileUpdate({ user, setUser }) {
       setResidenceInitialized(true);
       setPendingResidenceData(null);
     }
-  }, [pendingResidenceData, residenceInitialized, residenceLoadingProvinces, setResidenceInitialValues]);
+  }, [pendingResidenceData, residenceInitialized, residenceLoadingProvinces, setResidenceInitialValues, residenceLocation.provinces]);
 
 
   useEffect(() => {
-    if (!birthInitialized && pendingBirthData && !birthLoadingProvinces) {
+    const hasProvinces = birthLocation.provinces && birthLocation.provinces.length > 0;
+    if (!birthInitialized && pendingBirthData && !birthLoadingProvinces && hasProvinces) {
       console.log('🏥 Setting birth data:', pendingBirthData);
       setLocationDataLoading(true);
 
@@ -959,7 +981,7 @@ export default function ProfileUpdate({ user, setUser }) {
       setBirthInitialized(true);
       setPendingBirthData(null);
     }
-  }, [pendingBirthData, birthInitialized, birthLoadingProvinces, setBirthInitialValues]);
+  }, [pendingBirthData, birthInitialized, birthLoadingProvinces, setBirthInitialValues, birthLocation.provinces]);
 
   // Fallback timeout to ensure initialization happens even if there are issues
   useEffect(() => {

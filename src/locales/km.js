@@ -199,6 +199,7 @@ export const km = {
   changePasswordDescription: 'ផ្លាស់ប្ដូរពាក្យសម្ងាត់សម្រាប់គណនីរបស់អ្នក។ ត្រូវប្រាកដថាលេខសម្ងាត់ថ្មីរបស់អ្នកមានសុវត្ថិភាព និងងាយស្រួលចងចាំ។',
   secondaryRoleTitle: 'តួនាទីបន្ថែម',
   assignedLocations: 'តំបន់ដែលបានកំណត់',
+  selectEthnicGroup: 'ជ្រើសរើសក្រុមជនជាតិភាគតិច',
 
   // Dialogs
   confirmUpdate: 'បញ្ជាក់ការកែប្រែ',
