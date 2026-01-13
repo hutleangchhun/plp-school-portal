@@ -311,8 +311,6 @@ export default function ProfileUpdate({ user, setUser }) {
   // which handles loading districts, communes, and villages automatically
   const setResidenceInitialValues = useCallback((values) => {
     if (values?.provinceId) {
-      console.log('🏠 Setting residence initial values:', values);
-
       // Set our local state first
       const provinceId = values.provinceId.toString();
       const districtId = values.districtId?.toString() || '';
@@ -967,13 +965,8 @@ export default function ProfileUpdate({ user, setUser }) {
   useEffect(() => {
     const hasProvinces = residenceLocation.provinces && residenceLocation.provinces.length > 0;
     if (!residenceInitialized && pendingResidenceData && !residenceLoadingProvinces && hasProvinces) {
-      console.log('🏠 Setting residence data - PENDING DATA:', pendingResidenceData);
-      console.log('🏠 Setting residence data - PROVINCES COUNT:', residenceLocation.provinces.length);
-      console.log('🏠 Setting residence data - FIRST PROVINCE:', residenceLocation.provinces[0]);
       setLocationDataLoading(true);
-
       setResidenceInitialValues(pendingResidenceData);
-      console.log('✅ Residence data set successfully');
       setLocationDataLoading(false);
       setResidenceInitialized(true);
       setPendingResidenceData(null);
@@ -1078,6 +1071,26 @@ export default function ProfileUpdate({ user, setUser }) {
   };
 
   const handleEditToggle = () => {
+    if (!isEditMode) {
+      // When entering edit mode, initialize location selectors from formData if not already set
+      if (formData.residence?.provinceId && !selectedResidenceProvince) {
+        setResidenceInitialValues({
+          provinceId: formData.residence.provinceId,
+          districtId: formData.residence.districtId,
+          communeId: formData.residence.communeId,
+          villageId: formData.residence.villageId
+        });
+      }
+
+      if (formData.placeOfBirth?.provinceId && !selectedBirthProvince) {
+        setBirthInitialValues({
+          provinceId: formData.placeOfBirth.provinceId,
+          districtId: formData.placeOfBirth.districtId,
+          communeId: formData.placeOfBirth.communeId,
+          villageId: formData.placeOfBirth.villageId
+        });
+      }
+    }
     setIsEditMode(!isEditMode);
   };
 
