@@ -310,31 +310,43 @@ export default function ProfileUpdate({ user, setUser }) {
   // Wrapper for setting initial residence values - use the hook's built-in initialization
   // which handles loading districts, communes, and villages automatically
   const setResidenceInitialValues = useCallback((values) => {
-    if (values.provinceId) {
+    if (values?.provinceId) {
       console.log('🏠 Setting residence initial values:', values);
-      // Use residenceLocation's setInitialValues which handles all the cascading loads
-      residenceLocation.setInitialValues(values);
 
-      // Also set our local state for reference
-      setSelectedResidenceProvince(values.provinceId.toString());
-      setSelectedResidenceDistrict(values.districtId?.toString() || '');
-      setSelectedResidenceCommune(values.communeId?.toString() || '');
-      setSelectedResidenceVillage(values.villageId?.toString() || '');
+      // Set our local state first
+      const provinceId = values.provinceId.toString();
+      const districtId = values.districtId?.toString() || '';
+      const communeId = values.communeId?.toString() || '';
+      const villageId = values.villageId?.toString() || '';
+
+      setSelectedResidenceProvince(provinceId);
+      setSelectedResidenceDistrict(districtId);
+      setSelectedResidenceCommune(communeId);
+      setSelectedResidenceVillage(villageId);
+
+      // Then use residenceLocation's setInitialValues which handles all the cascading loads
+      residenceLocation.setInitialValues(values);
     }
   }, [residenceLocation.setInitialValues]);
 
   // Wrapper for setting initial birth values
   const setBirthInitialValues = useCallback((values) => {
-    if (values.provinceId) {
+    if (values?.provinceId) {
       console.log('🏥 Setting birth initial values:', values);
-      
-      // Use birthLocation's setInitialValues which handles all the cascading loads
-      birthLocation.setInitialValues(values);
 
-      setSelectedBirthProvince(values.provinceId.toString());
-      setSelectedBirthDistrict(values.districtId?.toString() || '');
-      setSelectedBirthCommune(values.communeId?.toString() || '');
-      setSelectedBirthVillage(values.villageId?.toString() || '');
+      // Set our local state first
+      const provinceId = values.provinceId.toString();
+      const districtId = values.districtId?.toString() || '';
+      const communeId = values.communeId?.toString() || '';
+      const villageId = values.villageId?.toString() || '';
+
+      setSelectedBirthProvince(provinceId);
+      setSelectedBirthDistrict(districtId);
+      setSelectedBirthCommune(communeId);
+      setSelectedBirthVillage(villageId);
+
+      // Then use birthLocation's setInitialValues which handles all the cascading loads
+      birthLocation.setInitialValues(values);
     }
   }, [birthLocation.setInitialValues]);
 

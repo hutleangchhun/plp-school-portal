@@ -378,7 +378,12 @@ export const getGenderOptions = (t) => [
 
 // Nationality options - for profile nationality selection
 export const nationalityOptionsProfile = [
-  { value: 'ខ្មែរ', label: 'ខ្មែរ (Cambodian)' }
+  { value: 'ខ្មែរ', label: 'ខ្មែរ' },
+  { value: 'ចិន', label: 'ចិន' },
+  { value: 'វៀតណាម', label: 'វៀតណាម' },
+  { value: 'ឡាវ', label: 'ឡាវ' },
+  { value: 'ថៃ', label: 'ថៃ' },
+  { value: 'ផ្សេងៗ', label: 'ផ្សេងៗ' }
 ];
 
 // Secondary role type options - for Add role tab
