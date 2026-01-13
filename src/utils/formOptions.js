@@ -369,3 +369,21 @@ export const getAcademicYearOptions = () => {
     { value: `${currentYear + 1}-${currentYear + 2}`, label: `${currentYear + 1}-${currentYear + 2}` }
   ];
 };
+
+// Gender options - for profile gender selection
+export const getGenderOptions = (t) => [
+  { value: 'MALE', label: t ? t('male') : 'ប្រុស' },
+  { value: 'FEMALE', label: t ? t('female') : 'ស្រី' }
+];
+
+// Nationality options - for profile nationality selection
+export const nationalityOptionsProfile = [
+  { value: 'ខ្មែរ', label: 'ខ្មែរ (Cambodian)' }
+];
+
+// Secondary role type options - for Add role tab
+export const secondaryRoleTypeOptions = [
+  { value: 'PROVINCIAL', label: 'មន្ត្រីខេត្ត' },
+  { value: 'DISTRICT', label: 'មន្ត្រីស្រុក' },
+  { value: 'COMMUNE', label: 'មន្ត្រីឃុំ' }
+];
