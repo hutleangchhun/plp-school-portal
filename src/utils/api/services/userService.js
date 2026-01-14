@@ -1022,6 +1022,32 @@ const userUtils = {
       return profilePicture;
     }
     
+    // If backend returns only a filename (common for stored profile pictures), serve it through
+    // the files endpoint (proxied via /api -> /api/v1).
+    const trimmedProfile = String(profilePicture).trim();
+    const isJustFilename =
+      !trimmedProfile.includes('/') &&
+      !trimmedProfile.includes('\\') &&
+      /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(trimmedProfile);
+
+    if (isJustFilename) {
+      return `/api/files/profile_pictures/${encodeURIComponent(trimmedProfile)}`;
+    }
+
+    // If backend returns a relative files path, normalize it to /api/files/...
+    if (trimmedProfile.startsWith('files/')) {
+      return `/api/${trimmedProfile}`;
+    }
+    if (trimmedProfile.startsWith('/files/')) {
+      return `/api${trimmedProfile}`;
+    }
+    if (trimmedProfile.startsWith('profile_pictures/')) {
+      return `/api/files/${trimmedProfile}`;
+    }
+    if (trimmedProfile.startsWith('/profile_pictures/')) {
+      return `/api/files${trimmedProfile}`;
+    }
+
     // Use environment-aware static base URL from config
     const staticBaseUrl = getStaticAssetBaseUrl();
     
