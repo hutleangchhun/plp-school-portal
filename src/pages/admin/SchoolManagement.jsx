@@ -6,6 +6,7 @@ import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import schoolService from '../../utils/api/services/schoolService';
 import locationService from '../../utils/api/services/locationService';
+import apiClient from '../../utils/api/client';
 import Table from '../../components/ui/Table';
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
 import { Search, X, Edit2, Trash2, RefreshCw, Plus } from 'lucide-react';
@@ -291,22 +292,9 @@ const SchoolManagement = () => {
       params.append('limit', pageLimit);
       params.append('offset', 0);
 
-      // Call API with combined parameters
-      const queryString = params.toString();
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/schools?${queryString}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await apiClient.get('/schools', {
+        params: Object.fromEntries(params.entries())
+      });
 
       if (data && (data.data || Array.isArray(data))) {
         const schoolsData = data.data || data;
@@ -372,22 +360,9 @@ const SchoolManagement = () => {
       params.append('limit', pageLimit);
       params.append('offset', 0);
 
-      // Call API with provinceId parameter
-      const queryString = params.toString();
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/schools?${queryString}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await apiClient.get('/schools', {
+        params: Object.fromEntries(params.entries())
+      });
 
       if (data && (data.data || Array.isArray(data))) {
         const schoolsData = data.data || data;
@@ -515,39 +490,26 @@ const SchoolManagement = () => {
       params.append('limit', pageLimit);
       params.append('offset', 0);
 
-      // Try API call with search parameter first
-      const queryString = params.toString();
-      const endpoint = queryString
-        ? `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/schools?${queryString}`
-        : `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/schools`;
-
-      const response = await fetch(endpoint, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-        }
+      const data = await apiClient.get('/schools', {
+        params: Object.fromEntries(params.entries())
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data && (data.data || Array.isArray(data))) {
-          const schoolsData = data.data || data;
-          if (Array.isArray(schoolsData)) {
-            // Format the schools data using the service formatter
-            const formattedSchools = schoolsData.map(school =>
-              schoolService.utils.formatSchoolData(school)
-            );
-            setSchools(formattedSchools);
-            // Use API's pagination metadata if available, otherwise calculate client-side
-            if (data.total !== undefined) {
-              setTotalSchools(data.total);
-              setTotalPages(data.totalPages || Math.ceil(data.total / pageLimit));
-            } else {
-              setTotalSchools(formattedSchools.length);
-              setTotalPages(Math.ceil(formattedSchools.length / pageLimit));
-            }
-            setShowSchools(true);
-            return;
+      if (data && (data.data || Array.isArray(data))) {
+        const schoolsData = data.data || data;
+        if (Array.isArray(schoolsData)) {
+          const formattedSchools = schoolsData.map(school =>
+            schoolService.utils.formatSchoolData(school)
+          );
+          setSchools(formattedSchools);
+          if (data.total !== undefined) {
+            setTotalSchools(data.total);
+            setTotalPages(data.totalPages || Math.ceil(data.total / pageLimit));
+          } else {
+            setTotalSchools(formattedSchools.length);
+            setTotalPages(Math.ceil(formattedSchools.length / pageLimit));
           }
+          setShowSchools(true);
+          return;
         }
       }
 
@@ -638,22 +600,9 @@ const SchoolManagement = () => {
       params.append('limit', newLimit);
       params.append('offset', offset);
 
-      const queryString = params.toString();
-      const endpoint = queryString
-        ? `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/schools?${queryString}`
-        : `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/schools?limit=${newLimit}&offset=${offset}`;
-
-      const response = await fetch(endpoint, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
-        }
+      const data = await apiClient.get('/schools', {
+        params: Object.fromEntries(params.entries())
       });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
 
       if (data && data.data && Array.isArray(data.data)) {
         const formattedSchools = data.data.map(school =>
