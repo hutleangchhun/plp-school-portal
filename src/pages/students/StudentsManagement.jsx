@@ -308,7 +308,7 @@ export default function StudentsManagement() {
     return () => clearTimeout(id);
   }, [academicYearFilter]);
 
-  // Fetch current user's school ID from my-account endpoint
+  // Fetch current user's school ID from localStorage
   const fetchSchoolId = useStableCallback(async () => {
     try {
       if (schoolId) {
@@ -316,21 +316,26 @@ export default function StudentsManagement() {
         return schoolId;
       }
 
-      console.log('Fetching school ID from my-account endpoint...');
-      const accountData = await userService.getMyAccount();
-      console.log('📥 Full my-account response in StudentsManagement:', accountData);
-
-      if (accountData && accountData.school_id) {
-        console.log('✅ School ID fetched from account:', accountData.school_id);
-        setSchoolId(accountData.school_id);
-        return accountData.school_id;
-      } else {
-        console.error('No school_id found in account data:', accountData);
-        showError(t('noSchoolIdFound', 'No school ID found for your account'));
-        return null;
+      console.log('Fetching school ID from localStorage...');
+      
+      // Get school ID from user data in localStorage
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        const userSchoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId;
+        
+        if (userSchoolId) {
+          console.log('✅ School ID fetched from localStorage:', userSchoolId);
+          setSchoolId(userSchoolId);
+          return userSchoolId;
+        }
       }
+      
+      console.error('No school_id found in localStorage user data');
+      showError(t('noSchoolIdFound', 'No school ID found for your account'));
+      return null;
     } catch (err) {
-      console.error('Error fetching school ID:', err);
+      console.error('Error fetching school ID from localStorage:', err);
       handleError(err, {
         toastMessage: t('failedToFetchSchoolId', 'Failed to fetch school information')
       });
