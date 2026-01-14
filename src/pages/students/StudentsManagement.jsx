@@ -104,8 +104,23 @@ export default function StudentsManagement() {
     }
   }, [user, handleError, t]);
 
-  // State for current user's school ID (fetched from my-account endpoint)
-  const [schoolId, setSchoolId] = useState(null);
+  // State for current user's school ID (get from localStorage on mount)
+  const [schoolId, setSchoolId] = useState(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        const userSchoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId;
+        if (userSchoolId) {
+          console.log('✅ School ID from localStorage:', userSchoolId);
+          return userSchoolId;
+        }
+      }
+    } catch (err) {
+      console.error('Error getting school ID from localStorage:', err);
+    }
+    return null;
+  });
 
   // State for students list and pagination
   const [students, setStudents] = useState([]);
@@ -123,7 +138,7 @@ export default function StudentsManagement() {
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
   const [selectedClassId, setSelectedClassId] = useState('all');
 
-  // Read classId and schoolId from URL query parameters and pre-select the class
+  // Read classId from URL query parameters and pre-select the class
   useEffect(() => {
     // Try to get encrypted params first
     const encryptedParams = searchParams.get('params');
@@ -133,11 +148,6 @@ export default function StudentsManagement() {
       const decrypted = decryptParams(encryptedParams);
       if (decrypted) {
         console.log('Decrypted params from URL:', decrypted);
-        // Set schoolId from decrypted params
-        if (decrypted.schoolId && !schoolId) {
-          console.log('Setting school ID from encrypted params:', decrypted.schoolId);
-          setSchoolId(decrypted.schoolId);
-        }
         // Pre-select the class if classId is provided
         if (decrypted.classId && decrypted.classId !== 'all') {
           setSelectedClassId(decrypted.classId);
@@ -146,20 +156,13 @@ export default function StudentsManagement() {
     } else {
       // Fallback to non-encrypted params (for backward compatibility)
       const classIdParam = searchParams.get('classId');
-      const schoolIdParam = searchParams.get('schoolId');
-
-      // Set schoolId from URL if provided (to avoid waiting for my-account API call)
-      if (schoolIdParam && !schoolId) {
-        console.log('Setting school ID from URL param:', schoolIdParam);
-        setSchoolId(schoolIdParam);
-      }
 
       // Pre-select the class if classId is provided
       if (classIdParam && classIdParam !== 'all') {
         setSelectedClassId(classIdParam);
       }
     }
-  }, [searchParams, schoolId]);
+  }, [searchParams]);
 
   // Debug: Log filter changes
   // useEffect(() => {
@@ -308,41 +311,6 @@ export default function StudentsManagement() {
     return () => clearTimeout(id);
   }, [academicYearFilter]);
 
-  // Fetch current user's school ID from localStorage
-  const fetchSchoolId = useStableCallback(async () => {
-    try {
-      if (schoolId) {
-        console.log('School ID already available:', schoolId);
-        return schoolId;
-      }
-
-      console.log('Fetching school ID from localStorage...');
-      
-      // Get school ID from user data in localStorage
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const user = JSON.parse(userData);
-        const userSchoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId;
-        
-        if (userSchoolId) {
-          console.log('✅ School ID fetched from localStorage:', userSchoolId);
-          setSchoolId(userSchoolId);
-          return userSchoolId;
-        }
-      }
-      
-      console.error('No school_id found in localStorage user data');
-      showError(t('noSchoolIdFound', 'No school ID found for your account'));
-      return null;
-    } catch (err) {
-      console.error('Error fetching school ID from localStorage:', err);
-      handleError(err, {
-        toastMessage: t('failedToFetchSchoolId', 'Failed to fetch school information')
-      });
-      return null;
-    }
-  }, [schoolId, showError, t, handleError]);
-
   // Initialize classes using new classes/user API
   const initializeClasses = useStableCallback(async () => {
     console.log('🚀 initializeClasses called with selectedGradeLevel:', selectedGradeLevel);
@@ -375,14 +343,12 @@ export default function StudentsManagement() {
       // Need to get school ID first
       let currentSchoolId = schoolId;
       if (!currentSchoolId) {
-        console.log('🚨 No school ID available, fetching from my-account...');
-        currentSchoolId = await fetchSchoolId();
-        if (!currentSchoolId) {
-          setClasses([]);
-          setAllClasses([]);
-          setSelectedClassId('all');
-          return;
-        }
+        console.log('🚨 No school ID available');
+        showError(t('noSchoolIdFound', 'No school ID found for your account'));
+        setClasses([]);
+        setAllClasses([]);
+        setSelectedClassId('all');
+        return;
       }
 
       // Build query parameters - pass gradeLevel to API for server-side filtering
@@ -435,12 +401,6 @@ export default function StudentsManagement() {
       console.log('📚 Class data with gradeLevel:', teacherClasses.slice(0, 3).map(c => ({ name: c.name, gradeLevel: c.gradeLevel })));
       classesInitialized.current = true;
 
-      // Extract and set school ID from the first class if not already set
-      if (!schoolId && teacherClasses.length > 0 && teacherClasses[0].schoolId) {
-        console.log('Setting school ID from classes data:', teacherClasses[0].schoolId);
-        setSchoolId(teacherClasses[0].schoolId);
-      }
-
       // Set first class as default if none selected and teacher has only one class
       if (selectedClassId === 'all' && teacherClasses.length === 1) {
         setSelectedClassId(teacherClasses[0].classId.toString());
@@ -466,7 +426,7 @@ export default function StudentsManagement() {
       setAllClasses([]);
       setSelectedClassId('all');
     }
-  }, [user?.id, user?.username, handleError, t, schoolId, fetchSchoolId, selectedGradeLevel]);
+  }, [user?.id, user?.username, handleError, t, schoolId, selectedGradeLevel, showError]);
 
   // Fetch students with pagination and filters using school classes endpoint
   const fetchStudents = useStableCallback(async (search = searchTerm, force = false, skipLoading = false, academicYear = academicYearFilter, isPagination = false) => {
@@ -590,6 +550,7 @@ export default function StudentsManagement() {
   }, [schoolId, showError, t, handleError, selectedClassId]);
 
   // Re-fetch school ID when user school_id changes (e.g., after login or transfer)
+  // Re-fetch school ID when user school_id changes (e.g., after login or transfer)
   useEffect(() => {
     if (user?.teacher?.schoolId || user?.school_id || user?.schoolId) {
       const newSchoolId = user?.teacher?.schoolId || user.school_id || user.schoolId;
@@ -599,14 +560,14 @@ export default function StudentsManagement() {
         setSchoolId(newSchoolId);
         // Reset classes to force re-initialization with new school
         classesInitialized.current = false;
-        initializeClasses();
       }
     }
-  }, [user?.teacher?.schoolId, user?.school_id, user?.schoolId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.teacher?.schoolId, user?.school_id, user?.schoolId, schoolId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize classes when component mounts or when grade level changes
+  // Only call this once per grade level change
   useEffect(() => {
-    console.log('🔄 Component mounted or grade level changed, initializing classes...');
+    console.log('🔄 Initializing classes for grade level:', selectedGradeLevel);
     // Reset the flag to force re-fetch when grade level changes
     if (selectedGradeLevel !== 'all') {
       classesInitialized.current = false;
@@ -614,7 +575,7 @@ export default function StudentsManagement() {
     initializeClasses().catch((err) => {
       console.error('🚨 Unhandled error in initializeClasses:', err);
     });
-  }, [initializeClasses, selectedGradeLevel]);
+  }, [selectedGradeLevel]);
 
   // Initial fetch when school ID becomes available
   useEffect(() => {
@@ -622,7 +583,7 @@ export default function StudentsManagement() {
       console.log('School ID available, initial fetch...');
       fetchStudents('', true); // Force initial fetch - let fetchStudents handle loading states
     }
-  }, [schoolId, fetchStudents]);
+  }, [schoolId]);
 
   // Memoized fetch parameters to avoid unnecessary re-renders
   const fetchParams = useMemo(() => ({
@@ -686,7 +647,7 @@ export default function StudentsManagement() {
       console.log(`Cleaning up timer`);
       clearTimeout(timer);
     };
-  }, [fetchParams, fetchStudents, schoolId]);
+  }, [fetchParams, schoolId]);
 
   // Close export dropdown when clicking outside
   useEffect(() => {
@@ -757,7 +718,7 @@ export default function StudentsManagement() {
       // If already on page 1, the main useEffect will handle the fetch automatically
       prevFiltersRef.current = { selectedClassId, academicYearFilter: debouncedAcademicYear, poorCardId: poorCardIdFilter };
     }
-  }, [selectedClassId, debouncedAcademicYear, poorCardIdFilter, pagination.page, schoolId, searchTerm, fetchStudents]); // Reset page when filters change
+  }, [selectedClassId, debouncedAcademicYear, poorCardIdFilter, pagination.page, schoolId, searchTerm]); // Reset page when filters change
 
   // Get class information for the selected class
   const classInfo = selectedClassId !== 'all'

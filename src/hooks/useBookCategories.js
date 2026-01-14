@@ -22,12 +22,18 @@ const notifySubjects = (data) => {
   subjectsSubscribers.forEach(callback => callback(data));
 };
 
-export const useBookCategories = () => {
+export const useBookCategories = (isEnabled = false) => {
   const [bookCategories, setBookCategories] = useState(() => sharedBookCategoriesCache || []);
   const [subjects, setSubjects] = useState(() => sharedSubjectsCache || []);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Only fetch if enabled
+    if (!isEnabled) {
+      console.log('[useBookCategories] Fetch disabled (isEnabled=false)');
+      return;
+    }
+
     // Subscribe to category updates
     const categoriesCallback = (data) => {
       setBookCategories(data);
@@ -126,7 +132,7 @@ export const useBookCategories = () => {
       categoriesSubscribers = categoriesSubscribers.filter(cb => cb !== categoriesCallback);
       subjectsSubscribers = subjectsSubscribers.filter(cb => cb !== subjectsCallback);
     };
-  }, []);
+  }, [isEnabled]);
 
   return {
     bookCategories,

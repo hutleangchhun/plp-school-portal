@@ -16,8 +16,9 @@ import { useAllBooks } from '../../hooks/useAllBooks';
 export default function StudentViewModal({ isOpen, onClose, student }) {
   const { t } = useLanguage();
   // Use shared hooks to fetch book categories and subjects, and all books (prevents duplicates)
-  const { bookCategories, subjects } = useBookCategories();
-  const { allBooks, loading: loadingAllBooks } = useAllBooks();
+  // Only fetch when modal is open
+  const { bookCategories, subjects } = useBookCategories(isOpen);
+  const { allBooks, loading: loadingAllBooks } = useAllBooks(isOpen);
 
   const [books, setBooks] = useState([]);
 
