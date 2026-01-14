@@ -200,7 +200,6 @@ export const km = {
   secondaryRoleTitle: 'តួនាទីបន្ថែម',
   assignedLocations: 'តំបន់ដែលបានកំណត់',
   selectEthnicGroup: 'ជ្រើសរើសក្រុមជនជាតិភាគតិច',
-  confirmNewPasswordPlaceholder: 'បញ្ចូលពាក្យសម្ងាត់ថ្មីម្តងទៀត',
 
   // Dialogs
   confirmUpdate: 'បញ្ជាក់ការកែប្រែ',
