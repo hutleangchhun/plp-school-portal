@@ -260,7 +260,7 @@ export default function Login({ setUser }) {
       
       {/* Main content area */}
       <div className="flex-1 flex items-center justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md sm:max-w-lg w-full bg-white rounded-xl shadow-lg border border-gray-200 p-6 sm:p-8 space-y-6 sm:space-y-8">
+        <div className="max-w-md sm:max-w-lg w-full bg-white rounded-sm shadow-lg border border-gray-200 p-6 sm:p-8 space-y-6 sm:space-y-8">
           {/* Logos Section */}
           <div className="flex justify-center items-center space-x-4 sm:space-x-8 mb-6 sm:mb-8">
             <img 
@@ -300,7 +300,7 @@ export default function Login({ setUser }) {
                     name="username"
                     type="text"
                     required
-                    className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-300 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-300 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
                     placeholder={t('enterUsername', 'Enter your username')}
                     value={formData.username}
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
@@ -321,7 +321,7 @@ export default function Login({ setUser }) {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className="appearance-none relative block w-full pl-10 pr-12 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-300 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                    className="appearance-none relative block w-full pl-10 pr-12 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all duration-300 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
                     placeholder={t('enterPassword', 'Enter your password')}
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
