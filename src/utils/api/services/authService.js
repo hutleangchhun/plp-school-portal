@@ -245,8 +245,12 @@ export const authService = {
           console.log('   - isDirector:', freshUserData.isDirector, 'Type:', typeof freshUserData.isDirector);
           console.log('   - is_director:', freshUserData.is_director, 'Type:', typeof freshUserData.is_director);
 
-          // Fetch and integrate secondary/officer roles
-          const userWithSecondaryRoles = await fetchAndIntegrateSecondaryRoles(freshUserData);
+          // Parallelize secondary roles and teacher classes fetch for faster login
+          // These two operations are independent and can run concurrently
+          const [userWithSecondaryRoles] = await Promise.all([
+            fetchAndIntegrateSecondaryRoles(freshUserData),
+            fetchAndStoreTeacherClasses(freshUserData)
+          ]);
 
           userUtils.saveUserData(userWithSecondaryRoles);
 
@@ -254,9 +258,6 @@ export const authService = {
           const verifyData = userUtils.getUserData();
           console.log('✓ Verified school_id in localStorage:', verifyData?.school_id);
           console.log('✓ Verified officerRoles in localStorage:', verifyData?.officerRoles);
-
-          // Fetch and store teacher's classes if user is a teacher (roleId = 8)
-          await fetchAndStoreTeacherClasses(userWithSecondaryRoles);
 
           return {
             success: true,

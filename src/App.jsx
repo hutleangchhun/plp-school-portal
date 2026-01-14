@@ -67,6 +67,8 @@ function AppContent() {
   const toastContext = useToast();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Track if session was just validated to avoid redundant checks
+  const [sessionValidated, setSessionValidated] = useState(false);
 
   // Initialize notification helper with toast context
   useEffect(() => {
@@ -95,6 +97,7 @@ function AppContent() {
 
   useEffect(() => {
     checkAuth();
+    setSessionValidated(true);
     setLoading(false);
   }, []);
 

@@ -5,6 +5,13 @@ import { API_BASE_URL } from './config';
 // Flag to prevent multiple simultaneous redirects
 let isRedirecting = false;
 
+// Token expiry cache to avoid parsing JWT on every request
+let tokenExpiryCache = {
+  token: null,
+  expiryTime: null,
+  isExpiring: false
+};
+
 // Debug mode for testing error scenarios
 let debugMode = {
   enabled: false,
@@ -67,27 +74,40 @@ apiClient.interceptors.request.use(
 
     const token = localStorage.getItem('authToken');
     if (token) {
-      // Check if token is expired before making request
-      try {
-        const tokenParts = token.split('.');
-        if (tokenParts.length === 3) {
-          const payload = JSON.parse(atob(tokenParts[1]));
-          const now = Math.floor(Date.now() / 1000);
+      // Use cached token expiry to avoid JWT parsing overhead
+      let isExpiring = false;
 
-          // Check if token expires within the next 5 minutes (300 seconds)
-          if (payload.exp && payload.exp < (now + 300)) {
-            console.warn('Auth token is expired or expiring soon');
-            // Don't set the Authorization header for expired tokens
-            // This will trigger a 401 response which will be handled by the response interceptor
-          } else {
-            config.headers.Authorization = `Bearer ${token}`;
+      // Only parse JWT if token has changed
+      if (tokenExpiryCache.token !== token) {
+        try {
+          const tokenParts = token.split('.');
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]));
+            const now = Math.floor(Date.now() / 1000);
+
+            // Cache the token and its expiry status
+            tokenExpiryCache.token = token;
+            tokenExpiryCache.expiryTime = payload.exp;
+            tokenExpiryCache.isExpiring = payload.exp && payload.exp < (now + 300);
           }
+        } catch (error) {
+          console.warn('Error parsing JWT token:', error);
+          // Allow request even if parsing fails
+        }
+      }
+
+      // Use cached expiry status
+      if (!tokenExpiryCache.isExpiring && token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      } else if (tokenExpiryCache.isExpiring) {
+        // Recalculate if cached expiry time is in the past
+        const now = Math.floor(Date.now() / 1000);
+        if (tokenExpiryCache.expiryTime && tokenExpiryCache.expiryTime < (now + 300)) {
+          console.warn('Auth token is expired or expiring soon');
+          // Don't set the Authorization header for expired tokens
         } else {
           config.headers.Authorization = `Bearer ${token}`;
         }
-      } catch (error) {
-        console.warn('Error parsing JWT token:', error);
-        config.headers.Authorization = `Bearer ${token}`;
       }
     }
     return config;
@@ -394,6 +414,12 @@ export const tokenManager = {
    */
   setToken: (token) => {
     localStorage.setItem('authToken', token);
+    // Clear token expiry cache when token is updated
+    tokenExpiryCache = {
+      token: null,
+      expiryTime: null,
+      isExpiring: false
+    };
   },
 
   /**
@@ -409,6 +435,12 @@ export const tokenManager = {
    */
   removeToken: () => {
     localStorage.removeItem('authToken');
+    // Clear token expiry cache
+    tokenExpiryCache = {
+      token: null,
+      expiryTime: null,
+      isExpiring: false
+    };
   },
 
   /**
