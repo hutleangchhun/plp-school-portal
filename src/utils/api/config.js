@@ -10,7 +10,7 @@ const getApiBaseUrl = () => {
     const { hostname } = window.location;
 
     // Physical server or official domain - use proxy /api
-    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.105') {
+    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.89') {
       return '/api';
     }
 
@@ -35,14 +35,14 @@ export const HTTPS_CONFIG = {
   // API URLs
   apiUrls: {
     production: 'https://plp-api.moeys.gov.kh/api/v1',
-    physical: 'http://192.168.155.105/api/v1',
+    physical: 'http://192.168.155.89/api/v1',
     development: 'http://localhost:8080/api/v1'
   },
 
   // Static asset URLs
   staticUrls: {
     production: 'https://plp-api.moeys.gov.kh',
-    physical: 'http://192.168.155.105',
+    physical: 'http://192.168.155.89',
     development: 'http://localhost:8080'
   },
 
@@ -272,7 +272,7 @@ export const getStaticAssetBaseUrl = () => {
     const hostname = window.location.hostname;
 
     // In production, we proxy /uploads/ through the same domain to avoid Mixed Content errors
-    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.105') {
+    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.89') {
       return ''; // Empty string means use current origin (e.g., /uploads/...)
     }
 

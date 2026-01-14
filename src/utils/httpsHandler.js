@@ -15,7 +15,7 @@ const getDynamicConfig = () => {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
 
   // 2. Physical Server
-  if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.105') {
+  if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.89') {
     return { api: '/api', static: '' };
   }
 
