@@ -10,7 +10,6 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Pagination from '../../components/ui/Pagination';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import classService from '../../utils/api/services/classService'; // Import the classService
-import schoolService from '../../utils/api/services/schoolService'; // Import schoolService for school info
 import { teacherService } from '../../utils/api/services/teacherService'; // Import teacherService for teacher selection
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
@@ -214,37 +213,19 @@ export default function ClassesManagement() {
     }
   };
 
-  // Fetch school information from localStorage
-  const fetchSchoolInfo = async () => {
+  // Get school information from localStorage (no API call needed)
+  const fetchSchoolInfo = () => {
     try {
-      // Get school ID from user data in localStorage
       const userData = localStorage.getItem('user');
       if (userData) {
         const user = JSON.parse(userData);
         const schoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId;
 
         if (schoolId) {
-          try {
-            const schoolResponse = await schoolService.getSchoolInfo(schoolId);
-
-            if (schoolResponse && schoolResponse.data) {
-              setSchoolInfo({
-                id: schoolResponse.data.id,
-                name: schoolResponse.data.name || `School ${schoolResponse.data.id}`
-              });
-            } else {
-              setSchoolInfo({
-                id: schoolId,
-                name: `School ${schoolId}`
-              });
-            }
-          } catch (schoolError) {
-            console.error('Error fetching school details:', schoolError);
-            setSchoolInfo({
-              id: schoolId,
-              name: `School ${schoolId}`
-            });
-          }
+          setSchoolInfo({
+            id: schoolId,
+            name: `School ${schoolId}`
+          });
         } else {
           setSchoolInfo({ id: null, name: 'No School Found' });
         }
@@ -257,7 +238,6 @@ export default function ClassesManagement() {
         toastMessage: t('failedToFetchSchoolId', 'Failed to fetch school information')
       });
       setSchoolInfo({ id: null, name: 'Error Loading School' });
-      setInitialLoading(false); // Stop loading on error
     }
   };
 
