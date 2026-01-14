@@ -638,15 +638,14 @@ const TeacherTransferManagement = () => {
       setIsDeleting(true);
       clearError();
 
-      const response = await userService.deleteUser(selectedTeacherForDelete.userId);
+      const response = await userService.bulkDelete([selectedTeacherForDelete.userId]);
 
       console.log('Delete response:', response, 'Status:', response?.status);
 
       // Check if deletion was successful
-      // API may return { success: true }, { success: false }, or no success field
-      const isSuccess = response?.success !== false && response?.error === undefined;
+      const { success = 0, failed = 0 } = response || {};
 
-      if (isSuccess) {
+      if (success > 0) {
         // Remove teacher from the list
         setTeachers(prev => prev.filter(t => t.userId !== selectedTeacherForDelete.userId));
         // Remove from selection if selected
@@ -662,7 +661,7 @@ const TeacherTransferManagement = () => {
         setShowDeleteConfirm(false);
         setSelectedTeacherForDelete(null);
       } else {
-        throw new Error(response?.error || 'Failed to delete user');
+        throw new Error(failed > 0 ? 'Failed to delete user' : 'No users deleted');
       }
     } catch (err) {
       console.error('Delete user error:', err);
