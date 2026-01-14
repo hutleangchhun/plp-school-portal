@@ -13,8 +13,8 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - VITE_API_URL=http://192.168.155.89/api/v1
-      - VITE_STATIC_BASE_URL=http://192.168.155.89
+      - VITE_API_URL=http://192.168.155.105/api/v1
+      - VITE_STATIC_BASE_URL=http://192.168.155.105
     volumes: []
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
