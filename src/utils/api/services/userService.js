@@ -996,9 +996,29 @@ const userUtils = {
     
     // If it's already a full URL, handle protocol conversion if needed
     if (profilePicture.startsWith('http')) {
+      try {
+        const parsedUrl = new URL(profilePicture);
+
+        // If backend returns absolute URLs like http://<ip>/api/v1/files/..., rewrite to use
+        // the app's /api proxy which maps to backend /api/v1/.
+        if (parsedUrl.pathname.startsWith('/api/v1/')) {
+          const rewrittenPath = `/api${parsedUrl.pathname.slice('/api/v1'.length)}`;
+          return `${rewrittenPath}${parsedUrl.search}`;
+        }
+
+        // If backend returns absolute URLs for uploads, prefer serving via current origin/proxy.
+        if (parsedUrl.pathname.startsWith('/uploads/')) {
+          const staticBaseUrl = getStaticAssetBaseUrl();
+          return `${staticBaseUrl}${parsedUrl.pathname}${parsedUrl.search}`;
+        }
+      } catch {
+        // If parsing fails, fall back to original behavior below.
+      }
+
       if (forceHttps && profilePicture.startsWith('http://')) {
         return profilePicture.replace('http://', 'https://');
       }
+
       return profilePicture;
     }
     
