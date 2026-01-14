@@ -140,7 +140,7 @@ export const routePermissions = {
     component: 'UserActivityLogs'
   },
   '/admin/teacher-transfer': {
-    allowedRoles: [ROLES.ROLE1_ONLY, ROLES.TEACHER, ROLES.DIRECTOR, ROLES.RESTRICTED_ROLES_ONLY],
+    allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'TeacherTransferManagement'
   },
   '/admin/student-transfer': {
