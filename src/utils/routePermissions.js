@@ -276,12 +276,6 @@ export const hasRouteAccess = (path, user) => {
     if (path === '/multi-role-dashboard') {
       return userUtils.hasMultipleRoles(user);
     }
-
-    // Special case: /admin/teacher-transfer requires multiple roles (officerRoles)
-    if (path === '/admin/teacher-transfer') {
-      return userUtils.hasMultipleRoles(user);
-    }
-
     // If route specifies allowed roles, check if director is allowed
     if (routeConfig.allowedRoles && routeConfig.allowedRoles.length > 0) {
       // Director can access routes that have ROLES.DIRECTOR in allowedRoles
@@ -310,11 +304,6 @@ export const hasRouteAccess = (path, user) => {
 
     // Special case: /multi-role-dashboard requires officerRoles
     if (path === '/multi-role-dashboard') {
-      return userUtils.hasMultipleRoles(user);
-    }
-
-    // Special case: /admin/teacher-transfer requires multiple roles (officerRoles)
-    if (path === '/admin/teacher-transfer') {
       return userUtils.hasMultipleRoles(user);
     }
 
@@ -367,11 +356,6 @@ export const hasRouteAccess = (path, user) => {
 
     // Special case: /multi-role-dashboard requires officerRoles
     if (path === '/multi-role-dashboard') {
-      return userUtils.hasMultipleRoles(user);
-    }
-
-    // Special case: /admin/teacher-transfer requires multiple roles (officerRoles)
-    if (path === '/admin/teacher-transfer') {
       return userUtils.hasMultipleRoles(user);
     }
 
@@ -491,10 +475,6 @@ export const getNavigationItems = (user, t) => {
           name: t('multiRoleDashboard', 'Multi-Role Dashboard'),
           href: '/multi-role-dashboard',
         },
-        {
-          name: t('teacherTransfer', 'Teacher Transfer'),
-          href: '/admin/teacher-transfer',
-        },
       ],
     });
   }
@@ -552,10 +532,6 @@ export const getNavigationItems = (user, t) => {
         {
           name: t('multiRoleDashboard', 'Multi-Role Dashboard'),
           href: '/multi-role-dashboard',
-        },
-        {
-          name: t('teacherTransfer', 'Teacher Transfer'),
-          href: '/admin/teacher-transfer',
         },
       ],
     });
@@ -632,10 +608,6 @@ export const getNavigationItems = (user, t) => {
           name: t('multiRoleDashboard', 'Multi-Role Dashboard'),
           href: '/multi-role-dashboard',
         },
-        {
-          name: t('teacherTransfer', 'Teacher Transfer'),
-          href: '/admin/teacher-transfer',
-        },
       ],
     });
   }
@@ -657,10 +629,6 @@ export const getNavigationItems = (user, t) => {
         {
           name: t('multiRoleDashboard', 'Multi-Role Dashboard'),
           href: '/multi-role-dashboard',
-        },
-        {
-          name: t('teacherTransfer', 'Teacher Transfer'),
-          href: '/admin/teacher-transfer',
         },
       ],
     });

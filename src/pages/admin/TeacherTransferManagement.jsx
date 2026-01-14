@@ -40,14 +40,6 @@ const TeacherTransferManagement = () => {
   const { error, handleError, clearError } = useErrorHandler();
   const { showSuccess, showError } = useToast();
 
-  // Get current user from localStorage
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userLocationRestrictions, setUserLocationRestrictions] = useState({
-    provinceIds: [],
-    districtIds: [],
-    communeIds: []
-  });
-
   // Location state for source school cascade filtering
   const [sourceProvinces, setSourceProvinces] = useState([]);
   const [sourceDistricts, setSourceDistricts] = useState([]);
@@ -120,145 +112,9 @@ const TeacherTransferManagement = () => {
     { value: 100, label: '100' }
   ];
 
-  // Load user and location restrictions on component mount
+  // Fetch provinces and all teachers on component mount
   useEffect(() => {
-    try {
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const user = JSON.parse(userData);
-        setCurrentUser(user);
-
-        // Extract location restrictions from secondary roles
-        // Support: provincialOfficer, districtOfficer, communeOfficer
-        const restrictions = {
-          provinceIds: [],
-          districtIds: [],
-          communeIds: []
-        };
-
-        if (user.provincialOfficer) {
-          restrictions.provinceIds = user.provincialOfficer.provinceIds || [];
-        }
-        if (user.districtOfficer) {
-          restrictions.districtIds = user.districtOfficer.districtIds || [];
-          restrictions.provinceIds = user.districtOfficer.provinceIds || [];
-        }
-        if (user.communeOfficer) {
-          restrictions.communeIds = user.communeOfficer.communeIds || [];
-          restrictions.districtIds = user.communeOfficer.districtIds || [];
-          restrictions.provinceIds = user.communeOfficer.provinceIds || [];
-        }
-
-        setUserLocationRestrictions(restrictions);
-      }
-    } catch (err) {
-      console.error('Error loading user from localStorage:', err);
-    }
-  }, []);
-
-  // Fetch and display location names for sidebar
-  useEffect(() => {
-    const fetchDisplayNames = async () => {
-      const names = { province: '', district: '' };
-
-      if (selectedSourceProvince) {
-        try {
-          // Convert to number for proper comparison
-          const provinceId = parseInt(selectedSourceProvince);
-          const provinceName = await locationService.getProvinceName(provinceId);
-          names.province = provinceName;
-          console.log('✅ Fetched province name:', provinceName);
-        } catch (error) {
-          console.error('Error fetching province name:', error);
-          names.province = `Province ${selectedSourceProvince}`;
-        }
-      }
-
-      if (selectedSourceDistrict && selectedSourceProvince) {
-        try {
-          // For district, we need to find the district ID from sourceDistricts
-          const district = sourceDistricts.find(d => d.district_code === selectedSourceDistrict);
-          if (district) {
-            const districtId = district.id || district.district_id || district.districtId;
-            const districtName = district.district_name_kh || district.district_name_en || district.name;
-            names.district = districtName;
-            console.log('✅ Fetched district name:', districtName);
-          } else {
-            names.district = `District ${selectedSourceDistrict}`;
-          }
-        } catch (error) {
-          console.error('Error fetching district name:', error);
-          names.district = `District ${selectedSourceDistrict}`;
-        }
-      }
-
-      setDisplayedLocationNames(names);
-    };
-
-    if (selectedSourceProvince || selectedSourceDistrict) {
-      fetchDisplayNames();
-    }
-  }, [selectedSourceProvince, selectedSourceDistrict, sourceDistricts]);
-
-  // Fetch provinces and auto-select user's assigned location
-  useEffect(() => {
-    const initializeLocationFilters = async () => {
-      if (userLocationRestrictions.provinceIds && userLocationRestrictions.provinceIds.length > 0) {
-        await fetchProvinces();
-
-        // Auto-select the first assigned province
-        const firstProvinceId = userLocationRestrictions.provinceIds[0];
-        setSelectedSourceProvince(firstProvinceId);
-
-        // Auto-fetch districts for this province
-        try {
-          setSourceLoading(true);
-          const response = await locationService.getDistrictsByProvince(String(firstProvinceId));
-          let districtsData = response.data || response;
-
-          // Filter districts based on user's assigned districts
-          if (userLocationRestrictions.districtIds && userLocationRestrictions.districtIds.length > 0) {
-            districtsData = districtsData.filter(district =>
-              userLocationRestrictions.districtIds.includes(district.id)
-            );
-          }
-
-          setSourceDistricts(Array.isArray(districtsData) ? districtsData : []);
-
-          // Auto-select the first assigned district if available
-          if (districtsData.length > 0) {
-            const firstDistrictCode = districtsData[0].district_code || districtsData[0].code;
-            setSelectedSourceDistrict(firstDistrictCode);
-
-            // Auto-fetch schools for this district
-            const districtId = districtsData[0].district_id || districtsData[0].id || districtsData[0].districtId;
-            if (districtId) {
-              try {
-                const schoolResponse = await schoolService.getSchoolsByDistrict(districtId);
-                const schoolsData = schoolResponse.data || [];
-                setSourceSchools(Array.isArray(schoolsData) ? schoolsData : []);
-              } catch (err) {
-                console.error('Failed to fetch schools:', err);
-                setSourceSchools([]);
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Failed to fetch districts:', err);
-          setSourceDistricts([]);
-        } finally {
-          setSourceLoading(false);
-        }
-      }
-    };
-
-    if (userLocationRestrictions.provinceIds && userLocationRestrictions.provinceIds.length > 0) {
-      initializeLocationFilters();
-    }
-  }, [userLocationRestrictions]);
-
-  // Fetch all teachers on component mount
-  useEffect(() => {
+    fetchProvinces();
     fetchAllTeachers();
   }, []);
 
@@ -266,15 +122,7 @@ const TeacherTransferManagement = () => {
     try {
       clearError();
       const response = await locationService.getProvinces();
-      let provincesData = response.data || response;
-
-      // Filter provinces based on user's secondary role location restrictions
-      if (userLocationRestrictions.provinceIds && userLocationRestrictions.provinceIds.length > 0) {
-        provincesData = provincesData.filter(province =>
-          userLocationRestrictions.provinceIds.includes(province.provinceIds)
-        );
-      }
-
+      const provincesData = response.data || response;
       setSourceProvinces(provincesData);
       setTargetProvinces(provincesData);
     } catch (err) {
@@ -537,15 +385,7 @@ const TeacherTransferManagement = () => {
     try {
       setSourceLoading(true);
       const response = await locationService.getDistrictsByProvince(String(provinceId));
-      let districtsData = response.data || response;
-
-      // Filter districts based on user's secondary role location restrictions
-      if (userLocationRestrictions.districtIds && userLocationRestrictions.districtIds.length > 0) {
-        districtsData = districtsData.filter(district =>
-          userLocationRestrictions.districtIds.includes(district.id)
-        );
-      }
-
+      const districtsData = response.data || response;
       setSourceDistricts(Array.isArray(districtsData) ? districtsData : []);
       setSourceSchools([]);
     } catch (err) {
@@ -605,11 +445,13 @@ const TeacherTransferManagement = () => {
     setSelectedTeachersMap(new Map());
   };
 
-  const handleResetSourceFilters = async () => {
-    // Reset filters but keep the auto-selected province and district based on user's assigned locations
+  const handleResetSourceFilters = () => {
+    setSelectedSourceProvince('');
+    setSelectedSourceDistrict('');
     setSelectedSourceSchool('');
     setSelectedStatusFilter('all');
     setSelectedRoleFilter('');
+    setSourceDistricts([]);
     setSourceSchools([]);
     setTeachers([]);
     setSearchQuery('');
@@ -617,37 +459,6 @@ const TeacherTransferManagement = () => {
     setAllSelectedTeacherIds(new Set());
     setSelectedTeachersMap(new Map());
     setIsSourceFilterOpen(false);
-
-    // Re-apply auto-selection to assigned province and district
-    if (userLocationRestrictions.provinceIds && userLocationRestrictions.provinceIds.length > 0) {
-      const firstProvinceId = userLocationRestrictions.provinceIds[0];
-      setSelectedSourceProvince(firstProvinceId);
-
-      try {
-        setSourceLoading(true);
-        const response = await locationService.getDistrictsByProvince(String(firstProvinceId));
-        let districtsData = response.data || response;
-
-        if (userLocationRestrictions.districtIds && userLocationRestrictions.districtIds.length > 0) {
-          districtsData = districtsData.filter(district =>
-            userLocationRestrictions.districtIds.includes(district.id)
-          );
-        }
-
-        setSourceDistricts(Array.isArray(districtsData) ? districtsData : []);
-
-        // Re-select first assigned district
-        if (districtsData.length > 0) {
-          const firstDistrictCode = districtsData[0].district_code || districtsData[0].code;
-          setSelectedSourceDistrict(firstDistrictCode);
-        }
-      } catch (err) {
-        console.error('Failed to reset district selection:', err);
-        setSourceDistricts([]);
-      } finally {
-        setSourceLoading(false);
-      }
-    }
   };
 
   const handleApplySourceFilters = () => {
@@ -689,59 +500,8 @@ const TeacherTransferManagement = () => {
       setTargetLoading(true);
       // Load target provinces when modal opens
       const response = await locationService.getProvinces();
-      let provincesData = response.data || response;
-
-      // Filter target provinces based on user's secondary role location restrictions
-      if (userLocationRestrictions.provinceIds && userLocationRestrictions.provinceIds.length > 0) {
-        provincesData = provincesData.filter(province =>
-          userLocationRestrictions.provinceIds.includes(province.id)
-        );
-      }
-
+      const provincesData = response.data || response;
       setTargetProvinces(provincesData);
-
-      // Auto-select the first assigned province as target
-      if (provincesData.length > 0) {
-        const firstProvinceId = provincesData[0].id;
-        setSelectedTargetProvince(firstProvinceId);
-
-        // Auto-fetch districts for this target province
-        try {
-          const districtResponse = await locationService.getDistrictsByProvince(String(firstProvinceId));
-          let districtsData = districtResponse.data || districtResponse;
-
-          // Filter target districts based on user's assigned districts
-          if (userLocationRestrictions.districtIds && userLocationRestrictions.districtIds.length > 0) {
-            districtsData = districtsData.filter(district =>
-              userLocationRestrictions.districtIds.includes(district.id)
-            );
-          }
-
-          setTargetDistricts(Array.isArray(districtsData) ? districtsData : []);
-
-          // Auto-select the first assigned district as target
-          if (districtsData.length > 0) {
-            const firstDistrictCode = districtsData[0].district_code || districtsData[0].code;
-            setSelectedTargetDistrict(firstDistrictCode);
-
-            // Auto-fetch schools for this target district
-            const districtId = districtsData[0].district_id || districtsData[0].id || districtsData[0].districtId;
-            if (districtId) {
-              try {
-                const schoolResponse = await schoolService.getSchoolsByDistrict(districtId);
-                const schoolsData = schoolResponse.data || [];
-                setTargetSchools(Array.isArray(schoolsData) ? schoolsData : []);
-              } catch (err) {
-                console.error('Failed to fetch target schools:', err);
-                setTargetSchools([]);
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Failed to fetch target districts:', err);
-          setTargetDistricts([]);
-        }
-      }
     } catch (err) {
       handleError(err, {
         toastMessage: t('failedToLoadProvinces', 'Failed to load provinces'),
@@ -776,15 +536,7 @@ const TeacherTransferManagement = () => {
     try {
       setTargetLoading(true);
       const response = await locationService.getDistrictsByProvince(String(provinceId));
-      let districtsData = response.data || response;
-
-      // Filter target districts based on user's secondary role location restrictions
-      if (userLocationRestrictions.districtIds && userLocationRestrictions.districtIds.length > 0) {
-        districtsData = districtsData.filter(district =>
-          userLocationRestrictions.districtIds.includes(district.id)
-        );
-      }
-
+      const districtsData = response.data || response;
       setTargetDistricts(Array.isArray(districtsData) ? districtsData : []);
       setTargetSchools([]);
     } catch (err) {
