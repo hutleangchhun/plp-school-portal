@@ -10,7 +10,6 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Pagination from '../../components/ui/Pagination';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import classService from '../../utils/api/services/classService'; // Import the classService
-import { userService } from '../../utils/api/services/userService'; // Import userService for my-account
 import schoolService from '../../utils/api/services/schoolService'; // Import schoolService for school info
 import { teacherService } from '../../utils/api/services/teacherService'; // Import teacherService for teacher selection
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
@@ -215,34 +214,39 @@ export default function ClassesManagement() {
     }
   };
 
-  // Fetch school information - first try from classes, then from my-account
+  // Fetch school information from localStorage
   const fetchSchoolInfo = async () => {
     try {
-      // Get school ID from my-account endpoint
-      const accountData = await userService.getMyAccount();
+      // Get school ID from user data in localStorage
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        const schoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId;
 
-      if (accountData && accountData.school_id) {
+        if (schoolId) {
+          try {
+            const schoolResponse = await schoolService.getSchoolInfo(schoolId);
 
-        try {
-          const schoolResponse = await schoolService.getSchoolInfo(accountData.school_id);
-
-          if (schoolResponse && schoolResponse.data) {
+            if (schoolResponse && schoolResponse.data) {
+              setSchoolInfo({
+                id: schoolResponse.data.id,
+                name: schoolResponse.data.name || `School ${schoolResponse.data.id}`
+              });
+            } else {
+              setSchoolInfo({
+                id: schoolId,
+                name: `School ${schoolId}`
+              });
+            }
+          } catch (schoolError) {
+            console.error('Error fetching school details:', schoolError);
             setSchoolInfo({
-              id: schoolResponse.data.id,
-              name: schoolResponse.data.name || `School ${schoolResponse.data.id}`
-            });
-          } else {
-            setSchoolInfo({
-              id: accountData.school_id,
-              name: `School ${accountData.school_id}`
+              id: schoolId,
+              name: `School ${schoolId}`
             });
           }
-        } catch (schoolError) {
-          console.error('Error fetching school details:', schoolError);
-          setSchoolInfo({
-            id: accountData.school_id,
-            name: `School ${accountData.school_id}`
-          });
+        } else {
+          setSchoolInfo({ id: null, name: 'No School Found' });
         }
       } else {
         setSchoolInfo({ id: null, name: 'No School Found' });
@@ -257,21 +261,22 @@ export default function ClassesManagement() {
     }
   };
 
-  // Function to refresh user authentication data from server
+  // Function to refresh user authentication data from localStorage
   const refreshUserData = async () => {
     try {
-      const accountData = await userService.getMyAccount();
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
 
-      if (accountData) {
         // Extract class information from the new API response structure
         let classIds = [];
         let classNames = [];
         let gradeLevels = [];
 
-        if (accountData.classes && Array.isArray(accountData.classes)) {
-          classIds = accountData.classes.map(cls => parseInt(cls.class_id));
-          classNames = accountData.classes.map(cls => cls.name);
-          gradeLevels = accountData.classes.map(cls => cls.grade_level);
+        if (user.classes && Array.isArray(user.classes)) {
+          classIds = user.classes.map(cls => parseInt(cls.class_id));
+          classNames = user.classes.map(cls => cls.name);
+          gradeLevels = user.classes.map(cls => cls.grade_level);
         } else {
           classIds = user?.classIds || [];
           classNames = user?.classNames || [];
@@ -310,29 +315,26 @@ export default function ClassesManagement() {
 
   useEffect(() => {
     const initializePage = async () => {
-      await Promise.all([
-        fetchSchoolInfo(),
-        fetchClasses()
-      ]);
-      // Don't set initialLoading to false here - let fetchClasses handle it when real data is fetched
+      // Fetch school info first, then fetch classes
+      await fetchSchoolInfo();
     };
 
     initializePage();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-fetch school info when user school_id changes (e.g., after login or transfer)
-  useEffect(() => {
-    if (user?.teacher?.schoolId || user?.school_id || user?.schoolId) {
-      fetchSchoolInfo();
-    }
-  }, [user?.teacher?.schoolId, user?.school_id, user?.schoolId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Fetch teachers when school info is loaded
+  // Fetch classes when school info is loaded
   useEffect(() => {
     if (schoolInfo?.id) {
-      fetchTeachers(schoolInfo.id);
+      fetchClasses();
     }
   }, [schoolInfo?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch teachers on demand (when school info is needed for add/edit)
+  // useEffect(() => {
+  //   if (schoolInfo?.id) {
+  //     fetchTeachers(schoolInfo.id);
+  //   }
+  // }, [schoolInfo?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-fetch classes when user ID changes (after authentication)
   // Note: fetchClasses now uses my-account API directly, so we don't need to depend on user.classIds
