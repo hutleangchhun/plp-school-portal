@@ -9,7 +9,6 @@ import { getFullName } from '../../utils/usernameUtils';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
 import { teacherService } from '../../utils/api/services/teacherService';
-import { userService } from '../../utils/api/services/userService';
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
 import { Badge } from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
@@ -173,7 +172,7 @@ export default function TeachersManagement() {
     }, 500);
   }, []);
 
-  // Fetch current user's school ID
+  // Fetch current user's school ID from localStorage
   const fetchSchoolId = useStableCallback(async () => {
     try {
       if (schoolId) {
@@ -181,20 +180,26 @@ export default function TeachersManagement() {
         return;
       }
 
-      console.log('Fetching school ID from my-account endpoint...');
-      const accountData = await userService.getMyAccount();
-      console.log('📥 Full my-account response in TeachersManagement:', accountData);
-
-      if (accountData && accountData.school_id) {
-        console.log('✅ School ID fetched from account:', accountData.school_id);
-        setSchoolId(accountData.school_id);
-        setSchoolName(accountData.school?.name || '');
+      console.log('Fetching school ID from localStorage...');
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        const userSchoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId;
+        
+        if (userSchoolId) {
+          console.log('✅ School ID fetched from localStorage:', userSchoolId);
+          setSchoolId(userSchoolId);
+          setSchoolName(user?.teacher?.schoolName || user?.school?.name || '');
+        } else {
+          console.error('No school_id found in localStorage user data');
+          showError(t('noSchoolIdFound', 'No school ID found for your account'));
+        }
       } else {
-        console.error('No school_id found in account data:', accountData);
+        console.error('No user data in localStorage');
         showError(t('noSchoolIdFound', 'No school ID found for your account'));
       }
     } catch (err) {
-      console.error('Error fetching school ID:', err);
+      console.error('Error fetching school ID from localStorage:', err);
       handleError(err, {
         toastMessage: t('failedToFetchSchoolId', 'Failed to fetch school information')
       });
