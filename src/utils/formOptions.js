@@ -388,7 +388,7 @@ export const nationalityOptionsProfile = [
 
 // Secondary role type options - for Add role tab
 export const secondaryRoleTypeOptions = [
-  { value: 'PROVINCIAL', label: 'មន្ត្រីខេត្ត' },
-  { value: 'DISTRICT', label: 'មន្ត្រីស្រុក' },
-  { value: 'COMMUNE', label: 'មន្ត្រីឃុំ' }
+  { value: 'PROVINCIAL', label: 'មន្រ្តីទទួលបន្ទុកតាមរាជធានីខេត្ត' },
+  { value: 'DISTRICT', label: 'មន្រ្តីទទួលបន្ទុកតាមក្រុង​ ស្រុក ខណ្ឌ' },
+  { value: 'COMMUNE', label: 'មន្រ្តីទទួលបន្ទុកតាមឃុំ សង្កាត់' }
 ];
