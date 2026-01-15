@@ -211,82 +211,25 @@ export const authService = {
       // Save token first so subsequent API calls work
       tokenManager.setToken(accessToken);
 
-      // Fetch fresh user data from my-account endpoint to get latest school_id
-      try {
-        console.log('🔍 Fetching fresh user data from /users/my-account...');
-        const accountResponse = await handleApiResponse(() =>
-          apiClient_.get(ENDPOINTS.USERS.MY_ACCOUNT)
-        );
-
-        console.log('📥 Raw my-account API response:', JSON.stringify(accountResponse, null, 2));
-
-        if (accountResponse.success && accountResponse.data) {
-          // Use fresh data from my-account which has latest school_id
-          console.log('✅ Fresh account data from my-account:');
-          console.log('   - school_id:', accountResponse.data.school_id);
-          console.log('   - id:', accountResponse.data.id);
-
-          const freshUserData = {
-            ...normalizedUser,
-            ...accountResponse.data,
-            // Ensure we keep the original user properties that might not be in account response
-            id: accountResponse.data.id || normalizedUser.id,
-            schoolId: accountResponse.data.school_id || normalizedUser.schoolId,
-            school_id: accountResponse.data.school_id || normalizedUser.school_id,
-            // roleId = 14 is the primary director role
-            isDirector: accountResponse.data.roleId === 14 || accountResponse.data.role_id === 14,
-            // Also keep snake_case for backwards compatibility
-            is_director: accountResponse.data.roleId === 14 || accountResponse.data.role_id === 14
-          };
-
-          console.log('✅ Merged user data being saved to localStorage:');
-          console.log('   - school_id:', freshUserData.school_id);
-          console.log('   - schoolId:', freshUserData.schoolId);
-          console.log('   - isDirector:', freshUserData.isDirector, 'Type:', typeof freshUserData.isDirector);
-          console.log('   - is_director:', freshUserData.is_director, 'Type:', typeof freshUserData.is_director);
-
-          // Parallelize secondary roles and teacher classes fetch for faster login
-          // These two operations are independent and can run concurrently
-          const [userWithSecondaryRoles] = await Promise.all([
-            fetchAndIntegrateSecondaryRoles(freshUserData),
-            fetchAndStoreTeacherClasses(freshUserData)
-          ]);
-
-          userUtils.saveUserData(userWithSecondaryRoles);
-
-          console.log('💾 Data saved. Verifying localStorage...');
-          const verifyData = userUtils.getUserData();
-          console.log('✓ Verified school_id in localStorage:', verifyData?.school_id);
-          console.log('✓ Verified officerRoles in localStorage:', verifyData?.officerRoles);
-
-          return {
-            success: true,
-            data: { accessToken, user: userWithSecondaryRoles }
-          };
-        } else {
-          console.warn('⚠️ my-account response not successful or missing data');
-        }
-      } catch (accountError) {
-        console.error('❌ Failed to fetch fresh account data:', accountError);
-        // Fallback to login data if my-account fails
-        userUtils.saveUserData(normalizedUser);
-      }
-
-      // Fallback: save login user data
-      console.log('⚠️ Using fallback login data');
-      console.log('🔍 Login user data being saved:');
+      // Directly use login response data as the source of truth,
+      // then enrich and store it in localStorage without calling /users/my-account
+      console.log('⚙️ Using login response data as primary user source');
+      console.log('🔍 Login user data being saved (before enrichment):');
       console.log('   - isDirector:', normalizedUser.isDirector, 'Type:', typeof normalizedUser.isDirector);
       console.log('   - is_director:', normalizedUser.is_director, 'Type:', typeof normalizedUser.is_director);
 
-      // Fetch and integrate secondary/officer roles
-      const userWithSecondaryRoles = await fetchAndIntegrateSecondaryRoles(normalizedUser);
+      // Parallelize secondary roles and teacher classes fetch for faster login
+      // These operations are independent and can run concurrently
+      const [userWithSecondaryRoles] = await Promise.all([
+        fetchAndIntegrateSecondaryRoles(normalizedUser),
+        fetchAndStoreTeacherClasses(normalizedUser)
+      ]);
 
       userUtils.saveUserData(userWithSecondaryRoles);
 
-      console.log('✓ Verified officerRoles in localStorage:', userWithSecondaryRoles?.officerRoles);
-
-      // Fetch and store teacher's classes if user is a teacher (roleId = 8)
-      await fetchAndStoreTeacherClasses(userWithSecondaryRoles);
+      console.log('💾 Data saved to localStorage using login response only. Verifying...');
+      const verifyData = userUtils.getUserData();
+      console.log('✓ Verified officerRoles in localStorage:', verifyData?.officerRoles);
 
       return {
         success: true,
