@@ -714,6 +714,7 @@ export const km = {
   totalScore: 'ពិន្ទុសរុប',
   average: 'មធ្យមភាគ',
   grading: 'ចំណាត់ថ្នាក់',
+  examGrade: 'និទ្ទេស',
 
 
 

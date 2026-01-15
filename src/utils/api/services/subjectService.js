@@ -42,6 +42,26 @@ export const subjectService = {
       throw error;
     }
   },
+  async getAllActive() {
+    try {
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.SUBJECTS.BASE + '/active')
+      );
+
+      const responseData = response.data || response;
+      const subjectsArray = Array.isArray(responseData)
+        ? responseData
+        : responseData.subjects || responseData.data || [];
+
+      return {
+        success: true,
+        data: subjectsArray,
+      };
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      throw error;
+    }
+  },
 
   /**
    * Get subject by ID

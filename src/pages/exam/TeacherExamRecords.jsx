@@ -214,9 +214,7 @@ export default function TeacherExamRecords({ user }) {
 
           console.log(`Fetching exam history for student userId: ${userId}, studentId: ${student.studentId}`);
 
-          const response = await examHistoryService.getUserExamHistoryFiltered(userId, {
-            examType: 'exam'
-          });
+          const response = await examHistoryService.getUserExamHistoryFiltered(userId);
 
           // API returns array of exam records for the user
           const exams = Array.isArray(response.data) ? response.data : (response.data ? [response.data] : []);

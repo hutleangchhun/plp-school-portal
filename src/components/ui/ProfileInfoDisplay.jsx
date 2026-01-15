@@ -20,8 +20,8 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
           </h3>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:gap-6 lg:grid-cols-4">
-          <InfoField label={t('firstName')} value={formData.first_name} />
           <InfoField label={t('lastName')} value={formData.last_name} />
+          <InfoField label={t('firstName')} value={formData.first_name} />
           <InfoField label={t('gender')} value={formData.gender === 'MALE' ? t('male') : t('female')} />
           <InfoField label={t('dateOfBirth')} value={formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : '-'} />
           <InfoField label={t('nationality')} value={formData.nationality} />

@@ -65,7 +65,7 @@ export default function BMIPieChart({ schoolId, className = "" }) {
 
       // Get current academic year (e.g., "2024-2025")
       const currentYear = new Date().getFullYear();
-      const academicYear = `${currentYear}-${currentYear + 1}`;
+      const academicYear = `${currentYear - 1}-${currentYear}`;
 
       // Fetch BMI distribution from dashboard API endpoint
       const response = await dashboardService.getBMIDistribution(schoolId, {

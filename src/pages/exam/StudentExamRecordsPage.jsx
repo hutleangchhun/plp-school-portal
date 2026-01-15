@@ -48,8 +48,17 @@ export default function StudentExamRecordsPage({ user }) {
   const [subjects, setSubjects] = useState([]);
   const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  // Initialize with current month as default
+  const getCurrentMonthDates = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { firstDay, lastDay };
+  };
+
+  const { firstDay, lastDay } = getCurrentMonthDates();
+  const [startDate, setStartDate] = useState(firstDay);
+  const [endDate, setEndDate] = useState(lastDay);
   const [selectedExam, setSelectedExam] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -58,7 +67,7 @@ export default function StudentExamRecordsPage({ user }) {
     const fetchSubjects = async () => {
       try {
         setSubjectsLoading(true);
-        const response = await subjectService.getAll({ limit: 1000 });
+        const response = await subjectService.getAllActive();
 
         if (response.success && response.data) {
           setSubjects(Array.isArray(response.data) ? response.data : []);
@@ -98,6 +107,11 @@ export default function StudentExamRecordsPage({ user }) {
             setIsFilterLoading(true);
           }
 
+          // Preserve student information from location.state if available
+          if (location.state?.student && !student) {
+            setStudent(location.state.student);
+          }
+
           // Always make API call with filters
           if (userId) {
             // Decrypt the encrypted user ID from the URL
@@ -113,10 +127,8 @@ export default function StudentExamRecordsPage({ user }) {
               return;
             }
 
-            // Build backend filter parameters
-            const filterParams = {
-              examType: 'exam'
-            };
+            // Initialize filter parameters object
+            const filterParams = {};
 
             // Add status filter if not ALL
             if (statusFilter !== 'ALL') {
@@ -445,8 +457,40 @@ export default function StudentExamRecordsPage({ user }) {
           )}
         </Button>
       </div>
+
+      {/* Active Filters Display */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap gap-2 items-center mt-4">
+          <span className="text-sm font-medium text-gray-600">{t('activeFilters', 'Active Filters')}:</span>
+          {searchTerm && (
+            <Badge color="blue" variant="outline" className="flex items-center gap-1">
+              {t('search', 'Search')}: {searchTerm}
+            </Badge>
+          )}
+          {statusFilter !== 'ALL' && (
+            <Badge color="green" variant="outline" className="flex items-center gap-1">
+              {t('status', 'Status')}: {statusFilter === 'COMPLETED' ? t('completed', 'Completed') : t('inProgress', 'In Progress')}
+            </Badge>
+          )}
+          {subjectFilter && (
+            <Badge color="purple" variant="outline" className="flex items-center gap-1">
+              {t('subject', 'Subject')}: {subjectFilterOptions.find(opt => opt.value === subjectFilter)?.label || subjectFilter}
+            </Badge>
+          )}
+          {startDate && (
+            <Badge color="orange" variant="outline" className="flex items-center gap-1">
+              {t('startDate', 'Start Date')}: {startDate.toLocaleDateString()}
+            </Badge>
+          )}
+          {endDate && (
+            <Badge color="orange" variant="outline" className="flex items-center gap-1">
+              {t('endDate', 'End Date')}: {endDate.toLocaleDateString()}
+            </Badge>
+          )}
+        </div>
+      )}
     </div>
-  ), [searchTerm, hasActiveFilters, t]);
+  ), [searchTerm, hasActiveFilters, t, startDate, endDate, firstDay, lastDay, statusFilter, subjectFilter, subjectFilterOptions]);
 
   // Memoize table section - only re-render when data or config changes
   const tableSection = useMemo(() => (
@@ -508,7 +552,7 @@ export default function StudentExamRecordsPage({ user }) {
             )
           },
           {
-            header: t('gradeLevel', 'Grade Level'),
+            header: t('examGrade', 'ExamGrade'),
             accessor: 'letterGrade',
             render: (exam) => (
               <div>
@@ -528,37 +572,25 @@ export default function StudentExamRecordsPage({ user }) {
             )
           },
           {
-            header: t('status', 'Status'),
-            accessor: 'status',
-            disableSort: true,
-            render: (exam) => (
-              <div className="space-y-2">
-                {getStatusBadge(exam.status, exam.passed)}
-              </div>
-            )
-          },
-          {
             header: t('details', 'Details'),
             accessor: 'id',
             disableSort: true,
             render: (exam) => (
               <div className="flex gap-2">
                 <Button
-                  variant="outline"
+                  variant="link"
                   size="sm"
                   onClick={() => handleViewDetails(exam)}
-                  title={t('viewDetails', 'View Details')}
                 >
-                  <Eye className="w-3 h-3" />
+                  <Eye className="w-4 h-4" />
                 </Button>
                 {exam.certificateFile && (
                   <Button
-                    variant="outline"
+                    variant="link"
                     size="sm"
                     onClick={() => handleDownloadCertificate(exam)}
-                    title={t('downloadCertificate', 'Download Certificate')}
                   >
-                    <Download className="w-3 h-3" />
+                    <Download className="w-4 h-4" />
                   </Button>
                 )}
               </div>
@@ -659,7 +691,7 @@ export default function StudentExamRecordsPage({ user }) {
   }
 
   return (
-    <PageTransition variant="fade" className="flex-1">
+    <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-3 sm:p-6">
         <Button
             variant="link"
@@ -670,7 +702,7 @@ export default function StudentExamRecordsPage({ user }) {
             {t('goBack', 'Back')}
           </Button>
         <FadeInSection>
-          <div className="w-full border p-6 rounded-lg mb-4">
+          <div className="w-full border bg-white p-6 rounded-sm mb-4">
             {/* Header */}
             {headerSection}
             {/* Search Bar and Filter Button */}
@@ -738,10 +770,7 @@ export default function StudentExamRecordsPage({ user }) {
                   <p className="text-sm font-medium text-gray-500">{t('examType', 'Exam Type')}</p>
                   <p className="text-lg font-semibold text-gray-900">{getExamTypeLabel(selectedExam.examType)}</p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">{t('status', 'Status')}</p>
-                  <div className="mt-1">{getStatusBadge(selectedExam.status, selectedExam.passed)}</div>
-                </div>
+                
               </div>
 
               {/* Score & Grade */}
@@ -785,30 +814,6 @@ export default function StudentExamRecordsPage({ user }) {
                   <p className="text-2xl font-bold text-blue-600">{selectedExam.totalQuestions || 0}</p>
                 </div>
               </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="border-t p-6 flex gap-2 justify-end bg-gray-50">
-              {selectedExam.certificateFile && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
-                    handleDownloadCertificate(selectedExam);
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  {t('downloadCertificate', 'Download Certificate')}
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCloseModal}
-              >
-                {t('close', 'Close')}
-              </Button>
             </div>
           </div>
         </div>

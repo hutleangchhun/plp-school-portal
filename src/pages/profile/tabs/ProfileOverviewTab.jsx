@@ -6,6 +6,7 @@ import ProfileInfoDisplay from '../../../components/ui/ProfileInfoDisplay';
 import Dropdown from '../../../components/ui/Dropdown';
 import MultiSelectDropdown from '../../../components/ui/MultiSelectDropdown';
 import SalaryTypeDropdown from '../../../components/ui/SalaryTypeDropdown';
+import { getFullName } from '@/utils/usernameUtils';
 import {
   genderOptions,
   roleOptions,
@@ -263,9 +264,7 @@ export default function ProfileOverviewTab({
               {/* User Info Summary */}
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  {formData.first_name && formData.last_name
-                    ? `${formData.first_name} ${formData.last_name}`
-                    : formData.username || '-'}
+                  {getFullName(formData, formData.username)}
                 </h2>
                 {formData.roleNameKh && (
                   <p className="text-sm text-gray-600 mb-1">
@@ -294,28 +293,6 @@ export default function ProfileOverviewTab({
               <h3 className="text-lg font-semibold text-gray-900">{t('personalInformation')}</h3>
             </div>
             <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
-              {/* First Name */}
-              <div>
-                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
-                  {t('firstName')} *
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                    <User className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="first_name"
-                    id="first_name"
-                    required
-                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                    value={formData.first_name}
-                    onChange={handleInputChange}
-                    placeholder={t('enterFirstName')}
-                  />
-                </div>
-              </div>
-
               {/* Last Name */}
               <div>
                 <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
@@ -334,6 +311,27 @@ export default function ProfileOverviewTab({
                     value={formData.last_name}
                     onChange={handleInputChange}
                     placeholder={t('enterLastName')}
+                  />
+                </div>
+              </div>
+              {/* First Name */}
+              <div>
+                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
+                  {t('firstName')} *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                    <User className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    name="first_name"
+                    id="first_name"
+                    required
+                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    value={formData.first_name}
+                    onChange={handleInputChange}
+                    placeholder={t('enterFirstName')}
                   />
                 </div>
               </div>
@@ -409,11 +407,10 @@ export default function ProfileOverviewTab({
                     type="text"
                     name="weight_kg"
                     id="weight_kg"
-                    className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] ${
-                      isWeightInvalid()
+                    className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] ${isWeightInvalid()
                         ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                         : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
-                    }`}
+                      }`}
                     value={formData.weight_kg}
                     onChange={handleInputChange}
                     onBlur={(e) => {
@@ -444,11 +441,10 @@ export default function ProfileOverviewTab({
                     type="text"
                     name="height_cm"
                     id="height_cm"
-                    className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] ${
-                      isHeightInvalid()
+                    className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] ${isHeightInvalid()
                         ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                         : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
-                    }`}
+                      }`}
                     value={formData.height_cm}
                     onChange={handleInputChange}
                     onBlur={(e) => {
@@ -645,13 +641,12 @@ export default function ProfileOverviewTab({
                     type="email"
                     name="email"
                     id="email"
-                    className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm ${
-                      emailAvailable === false
+                    className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm ${emailAvailable === false
                         ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                         : emailAvailable === true
-                        ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } focus:scale-[1.01]`}
+                          ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
+                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                      } focus:scale-[1.01]`}
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder={t('enterEmail')}
