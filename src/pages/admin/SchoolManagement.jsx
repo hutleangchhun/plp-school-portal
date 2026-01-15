@@ -470,10 +470,67 @@ const SchoolManagement = () => {
     }
   };
 
-  // Handle search button click - only search when button is clicked
-  const handleSearchButtonClick = () => {
+  // Handle search button click - combine search with current location filters
+  const handleSearchButtonClick = async () => {
     if (searchQuery.trim()) {
-      loadAllSchools(searchQuery);
+      try {
+        setSchoolsLoading(true);
+        clearError();
+
+        const params = new URLSearchParams();
+
+        // Add current location filters
+        if (selectedProvince && selectedDistrict) {
+          const districtObj = districts.find(d => d.district_code === selectedDistrict);
+          if (districtObj) {
+            const districtId = districtObj.district_id || districtObj.id || districtObj.districtId;
+            if (selectedProvince) params.append('provinceId', selectedProvince);
+            params.append('districtId', districtId);
+            if (selectedCommune) params.append('communeCode', selectedCommune);
+          }
+        } else if (selectedProvince) {
+          params.append('provinceId', selectedProvince);
+        }
+
+        // Add search filter
+        params.append('search', searchQuery.trim());
+        params.append('limit', pageLimit);
+        params.append('offset', 0);
+
+        const data = await apiClient.get('/schools', {
+          params: Object.fromEntries(params.entries())
+        });
+
+        if (data && data.data && Array.isArray(data.data)) {
+          const formattedSchools = data.data.map(school =>
+            schoolService.utils.formatSchoolData(school)
+          );
+          setSchools(formattedSchools);
+          setShowSchools(true);
+
+          // Update pagination from API response
+          if (data.total !== undefined) {
+            setTotalSchools(data.total);
+            setTotalPages(data.totalPages || Math.ceil(data.total / pageLimit));
+          } else {
+            setTotalSchools(formattedSchools.length);
+            setTotalPages(Math.ceil(formattedSchools.length / pageLimit));
+          }
+          setCurrentPage(1);
+        } else {
+          setSchools([]);
+          setShowSchools(false);
+        }
+      } catch (error) {
+        console.error('Error searching schools:', error);
+        handleError(error, {
+          toastMessage: t('failedToLoadSchools', 'Error loading schools')
+        });
+        setSchools([]);
+        setShowSchools(false);
+      } finally {
+        setSchoolsLoading(false);
+      }
     }
   };
 
@@ -1100,6 +1157,14 @@ const SchoolManagement = () => {
                     onClick={() => {
                       setSearchQuery('');
                       setCurrentPage(1);
+                      // Reload data with current location filters only
+                      if (selectedProvince && selectedDistrict) {
+                        loadSchools(selectedDistrict, selectedCommune);
+                      } else if (selectedProvince) {
+                        loadSchoolsByProvince(selectedProvince);
+                      } else {
+                        loadAllSchools();
+                      }
                     }}
                     className="absolute right-12 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
                     title={t('search', 'Clear')}
