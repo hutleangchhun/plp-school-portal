@@ -26,7 +26,7 @@ const getApiBaseUrl = () => {
   }
 
   // 4. Fallback (external public API for Vercel or other domains)
-  return 'https://plp-sms.moeys.gov.kh/api/v1';
+  return 'https://plp-sms.moeys.gov.kh/api';
 };
 
 export default getApiBaseUrl;
