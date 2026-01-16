@@ -8,7 +8,7 @@ import locationService from '../../utils/api/services/locationService';
 import schoolService from '../../utils/api/services/schoolService';
 import StatsCard from '../../components/ui/StatsCard';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
-import { Users, Filter, Calendar, BarChart3 } from 'lucide-react';
+import { Users, Filter, Calendar, ListFilter } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { roleOptions, gradeLevelOptions, getDynamicRoleOptions, ROLE_STUDENT_ID } from '../../utils/formOptions';
@@ -262,7 +262,7 @@ const UserRegistrationDashboard = () => {
             }}
             className="flex items-center gap-2"
           >
-            <Filter className="h-4 w-4" />
+            <ListFilter className="h-4 w-4" />
             {t('filters', 'Filters')}
             {hasActiveFilters && (
               <span className="ml-1 px-2 py-0.5 text-xs font-semibold bg-white text-blue-600 rounded-full">
@@ -332,31 +332,25 @@ const UserRegistrationDashboard = () => {
           <StatsCard
             title={t('totalRegistrations', 'Total Registrations')}
             value={stats.total}
-            icon={Users}
             enhanced
             responsive
-            gradientFrom="from-blue-500"
-            gradientTo="to-blue-600"
+            hoverColor='hover:border-cyan-200'
           />
 
           <StatsCard
             title={t('uniqueGenders', 'Unique Genders')}
             value={stats.genderDistribution.length}
-            icon={BarChart3}
             enhanced
             responsive
-            gradientFrom="from-purple-500"
-            gradientTo="to-purple-600"
+            hoverColor='hover:border-green-200'
           />
 
           <StatsCard
             title={t('uniqueAges', 'Unique Ages')}
             value={stats.ageDistribution.length}
-            icon={BarChart3}
             enhanced
             responsive
-            gradientFrom="from-green-500"
-            gradientTo="to-green-600"
+            hoverColor='hover:border-red-200'
           />
         </div>
 
@@ -446,7 +440,7 @@ const UserRegistrationDashboard = () => {
         isOpen={filterSidebarOpen}
         onClose={() => setFilterSidebarOpen(false)}
         title={t('filters', 'Filters')}
-        subtitle={t('filterByDemographics', 'Filter by role, grade, date and location')}
+        subtitle={t('filterDesc', 'Filter by role, grade, date and location')}
         hasFilters={hasActiveFilters}
         onClearFilters={() => {
           setFilters({

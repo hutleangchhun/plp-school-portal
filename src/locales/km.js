@@ -1918,6 +1918,19 @@ export const km = {
   deactivate: 'បិទដំណើរការគណនី',
   allStatuses: 'ស្ថានភាពទាំងអស់',
   selectStatus: 'ជ្រើសរើសស្ថានភាព',
+
+  // user register log
+  ageDistribution: 'ការបែងចែកតាមអាយុ',
+  userRegistrationLog: 'កំណត់ហេតុការចុះឈ្មោះអ្នកប្រើប្រាស់',
+  userRegistrationDashboard: 'ផ្ទាំងគ្រប់គ្រងទិន្នន័យនៃការចុះឈ្មោះអ្នកប្រើប្រាស់',
+  userRegistrationDashboardDesc: 'មើល និងវិភាគទិន្នន័យការចុះឈ្មោះអ្នកប្រើប្រាស់ថ្មីៗបែងចែកតាម តួនាទី អាយុ និងភេទ',
+  totalRegistrations: 'ចំនួនការចុះឈ្មោះសរុប',
+  uniqueGenders: 'ក្រុមភេទ',
+  uniqueAges: 'ក្រុមអាយុ',
+  excludeSchoolIds: 'ដកទិន្នន័យសាលារៀនដែលមិនចង់បាន',
+  filterDesc: 'ជ្រើសរើសទិន្នន័យដែលអ្នកចង់បង្ហាញតាមការចង់បាន',
+  noGenderData: 'មិនមានទិន្នន័យការបែងចែកតាមភេទ',
+  noAgeData: 'មិនមានទិន្នន័យការបែងចែកតាមអាយុ',
 };
 
 // Inserted translations - Teacher Active/Inactive Status
