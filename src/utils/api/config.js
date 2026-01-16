@@ -5,31 +5,23 @@ const getApiBaseUrl = () => {
     return 'http://localhost:8080/api/v1';
   }
 
-  // 2. Check for explicit environment variable (Vercel or Docker)
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
-  }
-
-  // 3. Production (browser) - environment-specific routing
+  // 2. Production (browser)
   if (typeof window !== 'undefined') {
     const { hostname } = window.location;
 
-    // Official domain when accessed directly - use /api/v1
-    if (hostname === 'plp-sms.moeys.gov.kh') {
-      return '/api/v1';
+    // Physical server or official domain - use proxy /api
+    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.105') {
+      return '/api';
     }
 
     // Localhost in production build (e.g., served by a local server)
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://localhost:8080/api/v1';
     }
-
-    // Vercel or other external domains - use full HTTPS URL to official API
-    return 'https://plp-sms.moeys.gov.kh/api';
   }
 
-  // Fallback for non-browser environments (SSR, build time)
-  return 'https://plp-sms.moeys.gov.kh/api';
+  // 3. Fallback (external public API for Vercel or other domains)
+  return 'https://plp-api.moeys.gov.kh/api/v1';
 };
 
 export default getApiBaseUrl;
@@ -253,7 +245,6 @@ const ENDPOINTS = {
     BASE: '/rate-limit',
     ALL_USERS: '/rate-limit/all-users',
     CONCURRENT_STATS: '/rate-limit/concurrent/stats',
-    HOURLY_USAGE: '/api/usage/hourly',
   },
 };
 
