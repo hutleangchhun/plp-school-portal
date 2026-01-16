@@ -1045,5 +1045,52 @@ export const dashboardService = {
         data: {}
       };
     }
+  },
+
+  /**
+   * Get hourly user usage statistics
+   * Fetches data from /api/v1/api/usage/hourly endpoint
+   * @param {string} date - Date in YYYY-MM-DD format
+   * @returns {Promise<Object>} Response with hourly usage data
+   */
+  async getHourlyUsage(date) {
+    try {
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.RATE_LIMIT.HOURLY_USAGE, {
+          params: { date }
+        })
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch hourly usage data');
+      }
+
+      // API returns: {success: true, data: {success: true, data: [...]}}
+      // We need to extract the nested data array
+      let apiData = response.data;
+
+      // If apiData is an object with a 'data' property, extract it
+      if (apiData && typeof apiData === 'object' && !Array.isArray(apiData) && apiData.data) {
+        apiData = apiData.data;
+      }
+
+      // Ensure apiData is an array
+      if (!Array.isArray(apiData)) {
+        apiData = [];
+      }
+
+      return {
+        success: true,
+        data: apiData
+      };
+
+    } catch (error) {
+      console.error('Error in getHourlyUsage:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get hourly usage data',
+        data: []
+      };
+    }
   }
 };

@@ -10,6 +10,8 @@ import { Badge } from '../../components/ui/Badge';
 import StatsCard from '../../components/ui/StatsCard';
 import { dashboardService } from '../../utils/api/services/dashboardService';
 import { api } from '../../utils/api';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 
 const AdminLogs = () => {
   const { t } = useLanguage();
@@ -24,7 +26,18 @@ const AdminLogs = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loginUsers, setLoginUsers] = useState(null);
+  const [hourlyUsageData, setHourlyUsageData] = useState([]);
+  const [selectedUsageDate, setSelectedUsageDate] = useState(new Date());
+  const [hourlyUsageLoading, setHourlyUsageLoading] = useState(true);
   const autoRefreshRef = React.useRef(null);
+
+  const formatDateToString = (date) => {
+    if (!date) return new Date().toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const fetchLoginUsers = async () => {
     try {
@@ -41,6 +54,56 @@ const AdminLogs = () => {
       console.error('Error fetching login users:', err);
       // Set default data structure instead of null so card still renders
       setLoginUsers({ date: new Date().toISOString().split('T')[0], count: 0, userIds: [] });
+    }
+  };
+
+  const fetchHourlyUsage = async (dateObj) => {
+    try {
+      setHourlyUsageLoading(true);
+      const dateString = formatDateToString(dateObj);
+      const response = await dashboardService.getHourlyUsage(dateString);
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to load hourly usage data');
+      }
+
+      // Ensure data is an array - handle both array and object responses
+      let hourlyData = response.data;
+      if (!Array.isArray(hourlyData)) {
+        // If data is an object, try to extract array from it
+        hourlyData = [];
+      }
+
+      console.log('Raw hourly data from API:', hourlyData);
+
+      // Transform data for chart - format hour labels and ensure all 24 hours are present
+      const hourlyMap = new Map();
+      hourlyData.forEach(item => {
+        console.log('Processing item:', item, 'hour:', item?.hour, 'activeUsers:', item?.activeUsers);
+        if (item && (typeof item.hour === 'number' || item.hour !== undefined)) {
+          hourlyMap.set(item.hour, Number(item.activeUsers) || 0);
+        }
+      });
+
+      // Create array with all 24 hours
+      const chartData = Array.from({ length: 24 }, (_, hour) => ({
+        hour: hour,
+        hourLabel: `${String(hour).padStart(2, '0')}:00`,
+        activeUsers: hourlyMap.get(hour) || 0
+      }));
+
+      console.log('Final chart data:', chartData);
+      console.log('Max value for Y-axis:', Math.max(...chartData.map(d => d.activeUsers || 0), 3));
+
+      setHourlyUsageData(chartData);
+    } catch (err) {
+      console.error('Error fetching hourly usage:', err);
+      handleError(err, {
+        toastMessage: t('failedToLoadHourlyUsage', 'Failed to load hourly usage data')
+      });
+      setHourlyUsageData([]);
+    } finally {
+      setHourlyUsageLoading(false);
     }
   };
 
@@ -83,6 +146,7 @@ const AdminLogs = () => {
   useEffect(() => {
     fetchRateLimitData();
     fetchLoginUsers();
+    fetchHourlyUsage(new Date());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -253,6 +317,99 @@ const AdminLogs = () => {
             </div>
           </FadeInSection>
         )}
+
+        {/* Hourly User Usage Graph */}
+        <FadeInSection delay={100}>
+          <Card className="border border-gray-200 shadow-sm">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+              <div>
+                <CardTitle className="text-xl font-bold text-gray-900">
+                  {t('hourlyUserUsage', 'Hourly User Usage')}
+                </CardTitle>
+                <p className="text-sm text-gray-500 mt-1">
+                  {t('hourlyUserUsageDescription', 'Active users throughout the day')}
+                </p>
+              </div>
+              <div className="w-full sm:w-64">
+                <DatePickerWithDropdowns
+                  value={selectedUsageDate}
+                  onChange={(date) => {
+                    setSelectedUsageDate(date);
+                    fetchHourlyUsage(date);
+                  }}
+                  placeholder={t('selectDate', 'Select Date')}
+                  toDate={new Date()}
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {hourlyUsageLoading ? (
+                <div className="flex items-center justify-center h-80">
+                  <div className="text-gray-500">{t('loading', 'Loading...')}</div>
+                </div>
+              ) : hourlyUsageData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={350}>
+                  <LineChart
+                    data={hourlyUsageData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="hourLabel"
+                      tick={{ fill: '#6b7280', fontSize: 12 }}
+                      label={{
+                        value: t('hour', 'Hour'),
+                        position: 'insideBottom',
+                        offset: -5,
+                        style: { fill: '#6b7280', fontSize: 12 }
+                      }}
+                    />
+                    <YAxis
+                      tick={{ fill: '#6b7280', fontSize: 12 }}
+                      label={{
+                        value: t('activeUsers', 'Active Users'),
+                        angle: -90,
+                        position: 'insideLeft',
+                        style: { fill: '#6b7280', fontSize: 12 }
+                      }}
+                      domain={[0, Math.max(...hourlyUsageData.map(d => d.activeUsers || 0), 3)]}
+                      type="number"
+                      allowDecimals={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '8px'
+                      }}
+                      formatter={(value) => [value, t('activeUsers', 'Active Users')]}
+                      labelFormatter={(label) => `${t('hour', 'Hour')}: ${label}`}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '14px', paddingTop: '20px' }} />
+                    <Line
+                      type="monotone"
+                      dataKey="activeUsers"
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      name={t('activeUsers', 'Active Users')}
+                      dot={{ r: 4, fill: '#3b82f6' }}
+                      activeDot={{ r: 6 }}
+                      connectNulls={true}
+                      isAnimationActive={true}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-80">
+                  <div className="text-gray-500">
+                    {t('noHourlyUsageData', 'No hourly usage data available for this date')}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </FadeInSection>
 
         {/* Controls */}
         <FadeInSection delay={125}>

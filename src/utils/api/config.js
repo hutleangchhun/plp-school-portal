@@ -258,6 +258,7 @@ const ENDPOINTS = {
     BASE: '/rate-limit',
     ALL_USERS: '/rate-limit/all-users',
     CONCURRENT_STATS: '/rate-limit/concurrent/stats',
+    HOURLY_USAGE: '/api/usage/hourly',
   },
 };
 
