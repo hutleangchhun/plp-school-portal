@@ -268,11 +268,7 @@ export default function ClassesManagement() {
           ...user,
           classIds: classIds,
           classNames: classNames,
-          gradeLevels: gradeLevels,
-          // Also update other fields that might have changed
-          teacherId: accountData.teacherId || user.teacherId,
-          school_id: accountData.school_id || user.school_id,
-          schoolId: accountData.school_id || user.schoolId, // For backward compatibility
+          gradeLevels: gradeLevels
         };
 
         // Update localStorage and state with fresh data

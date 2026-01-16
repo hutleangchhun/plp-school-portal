@@ -8,7 +8,9 @@ import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Badge } from '../../components/ui/Badge';
 import StatsCard from '../../components/ui/StatsCard';
+import { LogIn } from 'lucide-react';
 import { dashboardService } from '../../utils/api/services/dashboardService';
+import { api } from '../../utils/api';
 
 const AdminLogs = () => {
   const { t } = useLanguage();
@@ -22,7 +24,27 @@ const AdminLogs = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [loginUsers, setLoginUsers] = useState(null);
   const autoRefreshRef = React.useRef(null);
+
+  const fetchLoginUsers = async () => {
+    try {
+      const today = new Date();
+      const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const response = await api.userActivityLog.getUsersLoginByDate(dateString);
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to load login users');
+      }
+
+      setLoginUsers(response.data);
+    } catch (err) {
+      handleError(err, {
+        toastMessage: t('failedToLoadLoginUsers', 'Failed to load login users'),
+      });
+      setLoginUsers(null);
+    }
+  };
 
   const fetchRateLimitData = async (silent = false) => {
     try {
@@ -62,6 +84,7 @@ const AdminLogs = () => {
 
   useEffect(() => {
     fetchRateLimitData();
+    fetchLoginUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -233,8 +256,27 @@ const AdminLogs = () => {
           </FadeInSection>
         )}
 
+        {/* Users Logged In Today Stats */}
+        {loginUsers && loginUsers.count !== undefined && (
+          <FadeInSection delay={100}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatsCard
+                title={t('usersLoggedInToday', 'Users Logged In Today')}
+                value={loginUsers.count}
+                subtitle={t('totalUniqueUsers', 'Total unique users')}
+                icon={LogIn}
+                enhanced={true}
+                gradientFrom="from-indigo-500"
+                gradientTo="to-indigo-600"
+                hoverColor="hover:border-indigo-200"
+                responsive={true}
+              />
+            </div>
+          </FadeInSection>
+        )}
+
         {/* Controls */}
-        <FadeInSection delay={100}>
+        <FadeInSection delay={125}>
           <div className="flex items-center justify-between">
             <button
               onClick={() => fetchRateLimitData()}

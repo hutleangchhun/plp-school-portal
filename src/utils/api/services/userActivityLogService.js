@@ -92,4 +92,27 @@ export const userActivityLogService = {
       data: response.data || {},
     };
   },
+
+  /**
+   * Get users who logged in on a specific date
+   * @param {string} date - Date in YYYY-MM-DD format
+   */
+  async getUsersLoginByDate(date) {
+    const url = `/api/usage/users?date=${date}`;
+
+    const response = await handleApiResponse(() => apiClient_.get(url));
+
+    if (!response || !response.success) {
+      return {
+        success: false,
+        error: response?.error || 'Failed to fetch users login data',
+        data: { date, count: 0, userIds: [] },
+      };
+    }
+
+    return {
+      success: true,
+      data: response.data || { date, count: 0, userIds: [] },
+    };
+  },
 };

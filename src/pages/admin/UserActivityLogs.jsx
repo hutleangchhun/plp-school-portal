@@ -33,6 +33,7 @@ const UserActivityLogs = () => {
     USER_DELETE: { success: 0, failed: 0 },
   });
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [loginUsers, setLoginUsers] = useState(null);
   const tableEndRef = React.useRef(null);
   const autoRefreshRef = React.useRef(null);
   const pageRef = React.useRef(1);
@@ -68,6 +69,24 @@ const UserActivityLogs = () => {
       handleError(err, {
         toastMessage: t('failedToLoadActivityCounts', 'Failed to load activity counts'),
       });
+    }
+  };
+
+  const fetchLoginUsers = async (dateObj) => {
+    try {
+      const dateString = formatDateToString(dateObj);
+      const response = await api.userActivityLog.getUsersLoginByDate(dateString);
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to load login users');
+      }
+
+      setLoginUsers(response.data);
+    } catch (err) {
+      handleError(err, {
+        toastMessage: t('failedToLoadLoginUsers', 'Failed to load login users'),
+      });
+      setLoginUsers(null);
     }
   };
 
@@ -152,9 +171,10 @@ const UserActivityLogs = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
-  // Fetch activity counts when date changes
+  // Fetch activity counts and login users when date changes
   useEffect(() => {
     fetchActivityCounts(selectedDate);
+    fetchLoginUsers(selectedDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
@@ -310,6 +330,20 @@ const UserActivityLogs = () => {
               hoverColor="hover:border-red-200"
               responsive={true}
             />
+
+            {loginUsers && loginUsers.count !== undefined && (
+              <StatsCard
+                title={t('usersLoggedInToday', 'Users Logged In Today')}
+                value={loginUsers.count}
+                subtitle={t('totalUniqueUsers', 'Total unique users')}
+                icon={LogIn}
+                enhanced={true}
+                gradientFrom="from-indigo-500"
+                gradientTo="to-indigo-600"
+                hoverColor="hover:border-indigo-200"
+                responsive={true}
+              />
+            )}
           </div>
         </FadeInSection>
 
