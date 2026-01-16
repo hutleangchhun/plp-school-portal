@@ -74,26 +74,25 @@ const AdminLogs = () => {
         hourlyData = [];
       }
 
-      console.log('Raw hourly data from API:', hourlyData);
-
       // Transform data for chart - format hour labels and ensure all 24 hours are present
       const hourlyMap = new Map();
       hourlyData.forEach(item => {
-        console.log('Processing item:', item, 'hour:', item?.hour, 'activeUsers:', item?.activeUsers);
         if (item && (typeof item.hour === 'number' || item.hour !== undefined)) {
           hourlyMap.set(item.hour, Number(item.activeUsers) || 0);
         }
       });
 
       // Create array with all 24 hours
-      const chartData = Array.from({ length: 24 }, (_, hour) => ({
-        hour: hour,
-        hourLabel: `${String(hour).padStart(2, '0')}:00`,
-        activeUsers: hourlyMap.get(hour) || 0
-      }));
-
-      console.log('Final chart data:', chartData);
-      console.log('Max value for Y-axis:', Math.max(...chartData.map(d => d.activeUsers || 0), 3));
+      // Cambodia timezone is UTC+7, so add 7 hours to the display time
+      const CAMBODIA_TIMEZONE_OFFSET = 7;
+      const chartData = Array.from({ length: 24 }, (_, hour) => {
+        const cambodiaHour = (hour + CAMBODIA_TIMEZONE_OFFSET) % 24;
+        return {
+          hour: hour,
+          hourLabel: `${String(cambodiaHour).padStart(2, '0')}:00`,
+          activeUsers: hourlyMap.get(hour) || 0
+        };
+      });
 
       setHourlyUsageData(chartData);
     } catch (err) {
