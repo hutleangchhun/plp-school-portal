@@ -14,11 +14,6 @@ const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
     const { hostname } = window.location;
 
-    // Physical server - use relative path with /api (nginx handles /v1 rewrite)
-    if (hostname === '192.168.155.105') {
-      return '/api';
-    }
-
     // Official domain when accessed directly - use /api/v1
     if (hostname === 'plp-sms.moeys.gov.kh') {
       return '/api/v1';
