@@ -1118,6 +1118,7 @@ export default function ClassesManagement() {
                 }}
                 variant="outline"
                 size="sm"
+                disabled={loading}
               >
                 {t('cancel') || 'Cancel'}
               </Button>
@@ -1133,7 +1134,18 @@ export default function ClassesManagement() {
             </div>
           }
         >
-          <form id="class-form" onSubmit={handleSubmit} className="space-y-4">
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center space-y-3">
+                <LoadingSpinner size="lg" variant="primary" />
+                <p className="text-sm text-gray-600">
+                  {showEditModal ? (t('loading') || 'Loading...') : (t('saving') || 'Saving...')}
+                </p>
+              </div>
+            </div>
+          )}
+          {!loading && (
+            <form id="class-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1390,7 +1402,8 @@ export default function ClassesManagement() {
                 </div>
               </div>
             </div>
-          </form>
+            </form>
+          )}
         </Modal>
 
         {/* Delete Confirmation */}

@@ -110,9 +110,12 @@ export const userActivityLogService = {
       };
     }
 
+    // Extract the actual API response data from the wrapped response
+    const apiData = response.data?.data || response.data || { date, count: 0, userIds: [] };
+
     return {
       success: true,
-      data: response.data || { date, count: 0, userIds: [] },
+      data: apiData,
     };
   },
 };

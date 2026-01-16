@@ -8,7 +8,6 @@ import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Badge } from '../../components/ui/Badge';
 import StatsCard from '../../components/ui/StatsCard';
-import { LogIn } from 'lucide-react';
 import { dashboardService } from '../../utils/api/services/dashboardService';
 import { api } from '../../utils/api';
 
@@ -39,10 +38,9 @@ const AdminLogs = () => {
 
       setLoginUsers(response.data);
     } catch (err) {
-      handleError(err, {
-        toastMessage: t('failedToLoadLoginUsers', 'Failed to load login users'),
-      });
-      setLoginUsers(null);
+      console.error('Error fetching login users:', err);
+      // Set default data structure instead of null so card still renders
+      setLoginUsers({ date: new Date().toISOString().split('T')[0], count: 0, userIds: [] });
     }
   };
 
@@ -157,7 +155,7 @@ const AdminLogs = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
                 title={t('totalUsers', 'Total Users')}
-                value={summary.totalUsers || 0}
+                value={loginUsers?.count || summary.totalUsers || 0}
                 enhanced={true}
                 gradientFrom="from-blue-500"
                 gradientTo="to-blue-600"
@@ -252,25 +250,6 @@ const AdminLogs = () => {
                   responsive={true}
                 />
               )}
-            </div>
-          </FadeInSection>
-        )}
-
-        {/* Users Logged In Today Stats */}
-        {loginUsers && loginUsers.count !== undefined && (
-          <FadeInSection delay={100}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatsCard
-                title={t('usersLoggedInToday', 'Users Logged In Today')}
-                value={loginUsers.count}
-                subtitle={t('totalUniqueUsers', 'Total unique users')}
-                icon={LogIn}
-                enhanced={true}
-                gradientFrom="from-indigo-500"
-                gradientTo="to-indigo-600"
-                hoverColor="hover:border-indigo-200"
-                responsive={true}
-              />
             </div>
           </FadeInSection>
         )}
