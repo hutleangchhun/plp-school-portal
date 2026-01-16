@@ -9,8 +9,9 @@ import studentService from '../../utils/api/services/studentService';
 import classService from '../../utils/api/services/classService';
 import DynamicLoader from '../ui/DynamicLoader';
 import SelectedCard from '../ui/SelectedCard';
-import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
+import { formatClassIdentifier } from '../../utils/helpers';
 import { getFullName } from '../../utils/usernameUtils';
+import { gradeLevelOptions } from '../../utils/formOptions';
 
 const SelectedStudentsManager = ({
   selectedStudents = [],
@@ -125,9 +126,15 @@ const SelectedStudentsManager = ({
   // Use external classes if provided, otherwise use internal classes
   const classes = externalClasses || internalClasses;
 
-  // Grade level options using shared helper (includes Kindergarten/grade 0)
-  const gradeLevelOptions = useMemo(() => {
-    return getSharedGradeLevelOptions(t, true);
+  // Grade level options from formOptions (includes Kindergarten/grade 0)
+  const gradeOptions = useMemo(() => {
+    return [
+      { value: 'all', label: t('allGrades', 'All Grades') },
+      ...gradeLevelOptions.map(option => ({
+        value: option.value,
+        label: t(option.translationKey, option.label)
+      }))
+    ];
   }, [t]);
 
   // Filter classes by selected grade level (client-side filtering when using external classes)
@@ -301,7 +308,7 @@ const SelectedStudentsManager = ({
                         setSelectedGradeLevel(value);
                         setSelectedClass(''); // Reset class selection when grade changes
                       }}
-                      options={gradeLevelOptions}
+                      options={gradeOptions}
                       placeholder={t('selectGradeLevel') || 'Select Grade Level'}
                       className="w-full"
                       minWidth="w-full"
