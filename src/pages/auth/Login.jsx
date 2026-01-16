@@ -266,9 +266,9 @@ export default function Login({ setUser }) {
             <img 
               src={moeysLogo} 
               alt={t('MoEYS Logo') || 'រូបសញ្ញាក្រសួងអប់រំ'} 
-              className="h-12 sm:h-16 w-auto object-contain"
+              className="h-16 sm:h-20 w-auto object-contain"
             />
-            <div className="h-8 sm:h-12 w-px bg-gray-300"></div>
+            <div className="h-8 sm:h-12  w-px border border-gray-700"></div>
             <img 
               src={plpLogo} 
               alt={t('PLP Logo') || 'រូបសញ្ញា PLP'} 
