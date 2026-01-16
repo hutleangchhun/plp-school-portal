@@ -16,7 +16,7 @@ const getApiBaseUrl = () => {
 
     // Physical server - use relative path with /api/v1
     if (hostname === '192.168.155.105') {
-      return '/api/v1';
+      return '';
     }
 
     // Official domain when accessed directly - use /api/v1
@@ -30,11 +30,11 @@ const getApiBaseUrl = () => {
     }
 
     // Vercel or other external domains - use full HTTPS URL to official API
-    return 'https://plp-sms.moeys.gov.kh/api';
+    return 'https://plp-sms.moeys.gov.kh/api/v1';
   }
 
   // Fallback for non-browser environments (SSR, build time)
-  return 'https://plp-sms.moeys.gov.kh/api';
+  return 'https://plp-sms.moeys.gov.kh/api/v1';
 };
 
 export default getApiBaseUrl;
