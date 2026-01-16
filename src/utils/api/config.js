@@ -5,7 +5,12 @@ const getApiBaseUrl = () => {
     return 'http://localhost:8080/api/v1';
   }
 
-  // 2. Production (browser)
+  // 2. Check for explicit environment variable (Vercel or Docker)
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+
+  // 3. Production (browser)
   if (typeof window !== 'undefined') {
     const { hostname } = window.location;
 
@@ -20,8 +25,8 @@ const getApiBaseUrl = () => {
     }
   }
 
-  // 3. Fallback (external public API for Vercel or other domains)
-  return 'https://plp-api.moeys.gov.kh/api/v1';
+  // 4. Fallback (external public API for Vercel or other domains)
+  return 'https://plp-sms.moeys.gov.kh/api/v1';
 };
 
 export default getApiBaseUrl;
