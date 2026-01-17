@@ -9,6 +9,7 @@ import { getFullName } from '../../utils/usernameUtils';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
 import { teacherService } from '../../utils/api/services/teacherService';
+import { userService } from '../../utils/api/services/userService';
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
 import { Badge } from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
@@ -112,11 +113,13 @@ export default function TeachersManagement() {
   const [dataFetched, setDataFetched] = useState(false);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const [selectingAll, setSelectingAll] = useState(false);
+  const [tableLoading, setTableLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
   const searchTimeoutRef = useRef(null);
+  const lastPaginationRef = useRef({ page: 1, limit: 10 });
 
   // State for all teachers (unfiltered) and filtered teachers
   const [allTeachers, setAllTeachers] = useState([]);
@@ -391,16 +394,28 @@ export default function TeachersManagement() {
     if (!schoolId || !dataFetched) return;
 
     const isSearchChange = fetchParams.searchTerm.trim() !== '';
+    const isPaginationChange = lastPaginationRef.current.page !== pagination.page || lastPaginationRef.current.limit !== pagination.limit;
     const delay = isSearchChange ? 500 : 100;
+
+    // Update the last pagination ref before scheduling the fetch so we know what was changed
+    lastPaginationRef.current = { page: pagination.page, limit: pagination.limit };
 
     const timer = setTimeout(() => {
       if (!fetchingRef.current) {
-        fetchTeachers(false);
+        console.log('🔄 Fetching with isPagination:', isPaginationChange);
+        fetchTeachers(false, isPaginationChange);
       }
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [fetchParams, fetchTeachers, schoolId, dataFetched]);
+  }, [fetchParams, fetchTeachers, schoolId, dataFetched, pagination.page, pagination.limit]);
+
+  // Clear table loading when data finishes loading
+  useEffect(() => {
+    if (!isLoading('fetchTeachers')) {
+      setTableLoading(false);
+    }
+  }, [isLoading('fetchTeachers')]);
 
   // Close export dropdown when clicking outside
   useEffect(() => {
@@ -435,6 +450,7 @@ export default function TeachersManagement() {
 
   // Handle limit change
   const handleLimitChange = (newLimit) => {
+    setPaginationLoading(true);
     setPagination(prev => ({
       ...prev,
       limit: newLimit,
@@ -442,6 +458,7 @@ export default function TeachersManagement() {
     }));
     // Scroll to top when changing limit
     window.scrollTo(0, 0);
+    // fetchTeachers will be triggered by useEffect watching pagination.limit
   };
 
   // Handle delete teacher
@@ -736,23 +753,25 @@ export default function TeachersManagement() {
   };
 
   // Handle select teacher
-  const handleSelectTeacher = (teacher) => {
+  const handleSelectTeacher = useCallback((teacher) => {
     setSelectedTeachers(prev => {
-      const isSelected = prev.some(t => t.id === teacher.id);
+      const isSelected = prev.some(t => t.id === teacher.id || t.userId === teacher.userId);
       if (isSelected) {
-        return prev.filter(t => t.id !== teacher.id);
+        return prev.filter(t => t.id !== teacher.id && t.userId !== teacher.userId);
       } else {
         return [...prev, teacher];
       }
     });
-  };
+  }, []);
 
   // Handle select all teachers on current page
   const handleSelectAll = async () => {
     if (selectingAll) return;
 
     // If all teachers are already selected, deselect all
-    if (selectedTeachers.length === teachers.length && teachers.length > 0) {
+    const allSelected = teachers.length > 0 && selectedTeachers.length === teachers.length;
+
+    if (allSelected) {
       clearAllTeachers();
       showSuccess(t('deselectedAllTeachers', 'All teachers deselected'));
       return;
@@ -766,28 +785,24 @@ export default function TeachersManagement() {
       const batchSize = 50;
       let selectedCount = 0;
 
-      for (let i = 0; i < teachers.length; i += batchSize) {
-        const batch = teachers.slice(i, i + batchSize);
-
-        // Use setTimeout to yield control to the UI between batches
-        await new Promise(resolve => {
-          setTimeout(() => {
-            batch.forEach(teacher => {
-              if (!selectedTeachers.some(t => t.id === teacher.id)) {
-                handleSelectTeacher(teacher);
-                selectedCount++;
-              }
-            });
-            resolve();
-          }, 0);
-        });
-      }
+      setSelectedTeachers(prev => {
+        const newSelected = [...prev];
+        for (const teacher of teachers) {
+          if (!newSelected.some(t => t.id === teacher.id || t.userId === teacher.userId)) {
+            newSelected.push(teacher);
+            selectedCount++;
+          }
+        }
+        return newSelected;
+      });
 
       if (selectedCount > 0) {
         showSuccess(
           t('selectedAllTeachers') ||
           `Selected ${selectedCount} teacher${selectedCount !== 1 ? 's' : ''}`
         );
+      } else if (selectedCount === 0 && teachers.length > 0) {
+        showSuccess(t('allTeachersAlreadySelected', 'All teachers already selected'));
       }
     } catch (error) {
       console.error('Error selecting all teachers:', error);
@@ -1000,12 +1015,17 @@ export default function TeachersManagement() {
               e.stopPropagation();
               handleToggleUserStatus(teacher);
             }}
+            disabled={teacher.roleId === 14}
             variant="ghost"
             size="sm"
-            className={teacher.isActive
+            className={teacher.roleId === 14
+              ? "text-gray-300 cursor-not-allowed opacity-50"
+              : teacher.isActive
               ? "text-orange-600 hover:text-orange-900 hover:bg-orange-50 hover:scale-110"
               : "text-gray-400 hover:text-gray-600 hover:bg-gray-100 hover:scale-110"}
-            title={teacher.isActive
+            title={teacher.roleId === 14
+              ? t('cannotChangeDirectorStatus', 'Cannot change director status')
+              : teacher.isActive
               ? t('deactivateTeacher', 'Deactivate teacher')
               : t('activateTeacher', 'Activate teacher')}
           >
@@ -1051,10 +1071,9 @@ export default function TeachersManagement() {
   // Show initial loading state
   if (initialLoading) {
     return (
-      <PageLoader
-        message={t('loadingTeachers', 'Loading teachers...')}
-        className="min-h-screen bg-gray-50"
-      />
+      <div className="min-h-screen bg-gray-50">
+        <PageLoader message={t('loadingTeachers', 'Loading teachers...')} />
+      </div>
     );
   }
 
@@ -1336,7 +1355,7 @@ export default function TeachersManagement() {
           <Table
             columns={tableColumns}
             data={teachers}
-            loading={isLoading('fetchTeachers')}
+            loading={tableLoading || isLoading('fetchTeachers')}
             emptyMessage={t('noTeachersFound', 'No teachers found')}
             emptyIcon={Users}
             emptyVariant='info'
@@ -1351,7 +1370,7 @@ export default function TeachersManagement() {
             showLimitSelector={true}
             rowClassName="hover:bg-blue-50"
             t={t}
-            disabled={paginationLoading}
+            disabled={tableLoading}
           />
         )}
       </div>

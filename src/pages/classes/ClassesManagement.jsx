@@ -117,7 +117,7 @@ export default function ClassesManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalClasses, setTotalClasses] = useState(0);
-  const classesPerPage = 6;
+  const [classesPerPage, setClassesPerPage] = useState(6);
 
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -475,6 +475,13 @@ export default function ClassesManagement() {
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm, selectedGradeLevel]); // Removed user and schoolInfo dependencies
+
+  // Auto-fetch classes when limit per page changes
+  useEffect(() => {
+    if (!user?.id || !schoolInfo?.id || !dataFetched) return;
+    console.log('🔄 classesPerPage changed, fetching classes with new limit');
+    fetchClasses(1, selectedGradeLevel, searchTerm, true);
+  }, [classesPerPage]); // Trigger fetch when limit changes
 
   const handleAddClass = () => {
     setFormData({
@@ -875,6 +882,16 @@ export default function ClassesManagement() {
     }
   }, [currentPage, totalPages, paginationLoading, fetchClasses, selectedGradeLevel, searchTerm]);
 
+  // Handle limit (items per page) change
+  const handleLimitChange = React.useCallback((newLimit) => {
+    console.log('🔄 Limit change:', { newLimit, classesPerPage });
+    setPaginationLoading(true);
+    setClassesPerPage(newLimit);
+    setCurrentPage(1); // Reset to first page when changing limit
+    // fetchClasses will be triggered by useEffect watching classesPerPage
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [classesPerPage]);
+
 
   // Use the shared enrollment status utility from exportUtils
 
@@ -902,10 +919,9 @@ export default function ClassesManagement() {
   // Show initial loading state (only if no error)
   if (initialLoading) {
     return (
-      <PageLoader
-        message={t('loadingClasses')}
-        className="min-h-screen bg-gray-50"
-      />
+      <div className="min-h-screen bg-gray-50">
+        <PageLoader message={t('loadingClasses')} />
+      </div>
     );
   }
 
@@ -1081,6 +1097,9 @@ export default function ClassesManagement() {
                 total={totalClasses}
                 limit={classesPerPage}
                 onPageChange={handlePageChange}
+                onLimitChange={handleLimitChange}
+                limitOptions={[6, 12, 24]}
+                showLimitSelector={true}
                 t={t}
                 showFirstLast={true}
                 showInfo={true}

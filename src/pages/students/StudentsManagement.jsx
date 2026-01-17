@@ -670,6 +670,13 @@ export default function StudentsManagement() {
     };
   }, []);
 
+  // Clear pagination loading when data finishes loading
+  useEffect(() => {
+    if (!isLoading('fetchStudents')) {
+      setPaginationLoading(false);
+    }
+  }, [isLoading('fetchStudents')]);
+
   // Handle page change
   const handlePageChange = (newPage) => {
     console.log(`=== PAGINATION CHANGE DEBUG ===`);
@@ -679,6 +686,7 @@ export default function StudentsManagement() {
 
     if (newPage >= 1 && newPage <= pagination.pages && !paginationLoading) {
       console.log(`Valid page change - updating pagination state`);
+      setPaginationLoading(true);
       setPagination(prev => {
         const newPagination = { ...prev, page: newPage };
         console.log(`New pagination state:`, newPagination);
@@ -693,6 +701,7 @@ export default function StudentsManagement() {
 
   // Handle limit change
   const handleLimitChange = (newLimit) => {
+    setPaginationLoading(true);
     setPagination(prev => ({
       ...prev,
       limit: newLimit,
@@ -1612,10 +1621,9 @@ export default function StudentsManagement() {
   // Show initial loading state (only if no error)
   if (initialLoading) {
     return (
-      <PageLoader
-        message={t('loadingStudents')}
-        className="min-h-screen bg-gray-50"
-      />
+      <div className="min-h-screen bg-gray-50">
+        <PageLoader message={t('loadingStudents')} />
+      </div>
     );
   }
 
@@ -1814,35 +1822,34 @@ export default function StudentsManagement() {
         {/* Students table - Show on all screen sizes */}
         {/* Only show student data if grade level is 'all' OR if there are classes for the selected grade level */}
         {selectedGradeLevel === 'all' || allClasses.length > 0 ? (
-          <>
-            {paginationLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <LoadingSpinner size="lg" variant="primary">
-                  {t('loadingPage', 'Loading page...')}
-                </LoadingSpinner>
-              </div>
-            ) : (
-              <Table
-                columns={tableColumns}
-                data={students}
-                emptyMessage={t('noStudentsFound', 'No students found')}
-                emptyIcon={Users}
-                emptyVariant='info'
-                emptyDescription={t('noStudentsFoundMatchingCriteria', 'No students found matching your criteria.')}
-                emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
-                onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
-                rowClassName="hover:bg-blue-50"
-                showPagination={students.length > 0}
-                pagination={pagination}
-                onPageChange={handlePageChange}
-                onLimitChange={handleLimitChange}
-                limitOptions={[10, 25, 50]}
-                showLimitSelector={true}
-                t={t}
-                disabled={paginationLoading}
-              />
-            )}
-          </>
+          paginationLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <LoadingSpinner size="lg" variant="primary">
+                {t('loadingPage', 'Loading page...')}
+              </LoadingSpinner>
+            </div>
+          ) : (
+            <Table
+              columns={tableColumns}
+              data={students}
+              loading={paginationLoading}
+              emptyMessage={t('noStudentsFound', 'No students found')}
+              emptyIcon={Users}
+              emptyVariant='info'
+              emptyDescription={t('noStudentsFoundMatchingCriteria', 'No students found matching your criteria.')}
+              emptyActionLabel={localSearchTerm ? t('clearSearch', 'Clear search') : undefined}
+              onEmptyAction={localSearchTerm ? () => handleSearchChange('') : undefined}
+              rowClassName="hover:bg-blue-50"
+              showPagination={students.length > 0}
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              onLimitChange={handleLimitChange}
+              limitOptions={[10, 25, 50]}
+              showLimitSelector={true}
+              t={t}
+              disabled={paginationLoading}
+            />
+          )
         ) : (
           <EmptyState
             icon={Users}

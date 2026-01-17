@@ -3,6 +3,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { useToast } from '../../contexts/ToastContext';
 import { PageLoader } from '../../components/ui/DynamicLoader';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import schoolService from '../../utils/api/services/schoolService';
 import locationService from '../../utils/api/services/locationService';
@@ -35,6 +36,7 @@ const SchoolManagement = () => {
   const [loading, setLoading] = useState(false);
   const [schoolsLoading, setSchoolsLoading] = useState(false);
   const [projectTypesLoading, setProjectTypesLoading] = useState(false);
+  const [paginationLoading, setPaginationLoading] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -614,17 +616,19 @@ const SchoolManagement = () => {
   }, [schools]);
 
   const handlePageChange = (page) => {
+    setPaginationLoading(true);
     setCurrentPage(page);
     // Fetch data for the new page
     const offset = (page - 1) * pageLimit;
-    reloadCurrentPageData(offset);
+    reloadCurrentPageData(offset).finally(() => setPaginationLoading(false));
   };
 
   const handleLimitChange = (limit) => {
+    setPaginationLoading(true);
     setPageLimit(limit);
     setCurrentPage(1);
     // Reload data with new limit
-    reloadCurrentPageData(0, limit);
+    reloadCurrentPageData(0, limit).finally(() => setPaginationLoading(false));
   };
 
   // Helper function to reload data for current filters with new pagination
@@ -994,10 +998,9 @@ const SchoolManagement = () => {
   // Show loading on initial page load (loading provinces and schools)
   if ((loading || schoolsLoading) && !showSchools && !provinces.length) {
     return (
-      <PageLoader
-        message={t('loadingData', 'Loading data...')}
-        className="min-h-screen bg-gray-50"
-      />
+      <div className="min-h-screen bg-gray-50">
+        <PageLoader message={t('loadingData', 'Loading data...')} />
+      </div>
     );
   }
 
@@ -1189,6 +1192,13 @@ const SchoolManagement = () => {
         {(showSchools || schoolsLoading) && (
           <div className="space-y-4">
             {/* Table with total schools count */}
+            {paginationLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <LoadingSpinner size="lg" variant="primary">
+                  {t('loadingPage', 'Loading page...')}
+                </LoadingSpinner>
+              </div>
+            ) : (
             <Table
               columns={[
                 {
@@ -1252,7 +1262,7 @@ const SchoolManagement = () => {
                 }
               ]}
               data={paginatedSchools}
-              loading={schoolsLoading}
+              loading={schoolsLoading || paginationLoading}
               emptyMessage={t('noSchoolsFound', 'No schools found')}
               showPagination={true}
               pagination={{
@@ -1268,7 +1278,9 @@ const SchoolManagement = () => {
               t={t}
               enableSort={true}
               defaultSortKey="name"
+              disabled={paginationLoading}
             />
+            )}
           </div>
         )}
         </div>

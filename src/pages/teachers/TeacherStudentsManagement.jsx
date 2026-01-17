@@ -14,6 +14,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import EmptyState from '@/components/ui/EmptyState';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import Modal from '../../components/ui/Modal';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import StudentViewModal from '../../components/students/StudentViewModal';
@@ -45,6 +46,8 @@ export default function TeacherStudentsManagement({ user }) {
     total: 0,
     pages: 1
   });
+  const [paginationLoading, setPaginationLoading] = useState(false);
+  const [dataFetched, setDataFetched] = useState(false);
 
   // Fetch school ID from my-account endpoint
   useEffect(() => {
@@ -124,6 +127,7 @@ export default function TeacherStudentsManagement({ user }) {
     };
   }, [user, showError, t]);
 
+
   // Load students when filters or page change
   useEffect(() => {
     // Only load if schoolId is available
@@ -149,7 +153,7 @@ export default function TeacherStudentsManagement({ user }) {
           // Load students for a specific class
           const params = {
             page: pagination.page,
-            limit: 10,
+            limit: pagination.limit,
             classId: parseInt(selectedClassId)
           };
 
@@ -186,8 +190,8 @@ export default function TeacherStudentsManagement({ user }) {
           });
 
           // Apply pagination on combined results
-          const startIndex = (pagination.page - 1) * 10;
-          const paginatedStudents = allStudents.slice(startIndex, startIndex + 10);
+          const startIndex = (pagination.page - 1) * pagination.limit;
+          const paginatedStudents = allStudents.slice(startIndex, startIndex + pagination.limit);
           allStudents = paginatedStudents;
 
           console.log(`Loaded ${allStudents.length} students from ${classes.length} teacher classes`);
@@ -198,8 +202,9 @@ export default function TeacherStudentsManagement({ user }) {
           setPagination(prev => ({
             ...prev,
             total: totalCount,
-            pages: Math.ceil(totalCount / 10)
+            pages: Math.ceil(totalCount / pagination.limit)
           }));
+          setDataFetched(true);
         }
       } catch (error) {
         console.error('Error loading students:', error);
@@ -207,6 +212,7 @@ export default function TeacherStudentsManagement({ user }) {
       } finally {
         if (mounted) {
           setStudentsLoading(false);
+          setPaginationLoading(false);
         }
       }
     }
@@ -216,7 +222,7 @@ export default function TeacherStudentsManagement({ user }) {
     return () => {
       mounted = false;
     };
-  }, [schoolId, selectedClassId, searchInput, pagination.page, classes, showError, t]);
+  }, [schoolId, selectedClassId, searchInput, pagination.page, pagination.limit, classes, showError, t]);
 
   // Handlers
   const handleSearchChange = (value) => {
@@ -230,11 +236,15 @@ export default function TeacherStudentsManagement({ user }) {
   };
 
   const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    if (newPage >= 1 && newPage <= pagination.pages && !paginationLoading) {
+      setPaginationLoading(true);
+      setPagination(prev => ({ ...prev, page: newPage }));
+    }
   };
 
   // Handle limit change
   const handleLimitChange = (newLimit) => {
+    setPaginationLoading(true);
     setPagination(prev => ({
       ...prev,
       limit: newLimit,
@@ -427,7 +437,11 @@ export default function TeacherStudentsManagement({ user }) {
   ];
 
   if (initialLoading) {
-    return <PageLoader message={t('loadingStudents', 'Loading students...')} />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <PageLoader message={t('loadingStudents', 'Loading students...')} />
+      </div>
+    );
   }
 
   return (
@@ -574,8 +588,14 @@ export default function TeacherStudentsManagement({ user }) {
           />
 
           {/* Table/Cards */}
-          {studentsLoading ? (
+          {studentsLoading && !paginationLoading ? (
             <DynamicLoader message={t('loadingStudents', 'Loading students...')} />
+          ) : paginationLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <LoadingSpinner size="lg" variant="primary">
+                {t('loadingPage', 'Loading page...')}
+              </LoadingSpinner>
+            </div>
           ) : students.length === 0 ? (
             <EmptyState
               icon={Users}
@@ -589,6 +609,7 @@ export default function TeacherStudentsManagement({ user }) {
             <Table
               data={students}
               columns={columns}
+              loading={paginationLoading}
               showPagination={true}
               pagination={pagination}
               onPageChange={handlePageChange}
@@ -596,6 +617,7 @@ export default function TeacherStudentsManagement({ user }) {
               limitOptions={[10, 25, 50]}
               showLimitSelector={true}
               t={t}
+              disabled={paginationLoading}
             />
           )}
 
