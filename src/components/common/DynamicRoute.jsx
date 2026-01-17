@@ -66,6 +66,19 @@ export function ProtectedRoute({ children, path, user, fallbackPath }) {
     return <Navigate to="/login" replace />;
   }
 
+  // Skip route permission checks for API/static file paths
+  // These are served by Nginx and should not trigger route permission checks
+  const isApiOrStaticPath = path && (
+    path.startsWith('/api/') ||
+    path.startsWith('/uploads/') ||
+    path.startsWith('/health')
+  );
+
+  if (isApiOrStaticPath) {
+    // Allow API/static requests to pass through - they'll be handled by the server
+    return children;
+  }
+
   // Check if user has access to this specific route
   const hasAccess = hasRouteAccess(path, user);
 
