@@ -12,6 +12,7 @@ import { dashboardService } from '../../utils/api/services/dashboardService';
 import { api } from '../../utils/api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
+import { Button } from '@/components/ui/Button';
 
 const AdminLogs = () => {
   const { t } = useLanguage();
@@ -39,10 +40,9 @@ const AdminLogs = () => {
     return `${year}-${month}-${day}`;
   };
 
-  const fetchLoginUsers = async () => {
+  const fetchLoginUsers = async (dateObj = new Date()) => {
     try {
-      const today = new Date();
-      const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const dateString = formatDateToString(dateObj);
       const response = await api.userActivityLog.getUsersLoginByDate(dateString);
 
       if (!response.success) {
@@ -53,7 +53,7 @@ const AdminLogs = () => {
     } catch (err) {
       console.error('Error fetching login users:', err);
       // Set default data structure instead of null so card still renders
-      setLoginUsers({ date: new Date().toISOString().split('T')[0], count: 0, userIds: [] });
+      setLoginUsers({ date: formatDateToString(dateObj), count: 0, userIds: [] });
     }
   };
 
@@ -83,13 +83,10 @@ const AdminLogs = () => {
       });
 
       // Create array with all 24 hours
-      // Cambodia timezone is UTC+7, so add 7 hours to the display time
-      const CAMBODIA_TIMEZONE_OFFSET = 7;
       const chartData = Array.from({ length: 24 }, (_, hour) => {
-        const cambodiaHour = (hour + CAMBODIA_TIMEZONE_OFFSET) % 24;
         return {
           hour: hour,
-          hourLabel: `${String(cambodiaHour).padStart(2, '0')}:00`,
+          hourLabel: `${String(hour).padStart(2, '0')}:00`,
           activeUsers: hourlyMap.get(hour) || 0
         };
       });
@@ -329,16 +326,51 @@ const AdminLogs = () => {
                   {t('hourlyUserUsageDescription', 'Active users throughout the day')}
                 </p>
               </div>
-              <div className="w-full sm:w-64">
-                <DatePickerWithDropdowns
-                  value={selectedUsageDate}
-                  onChange={(date) => {
-                    setSelectedUsageDate(date);
-                    fetchHourlyUsage(date);
+              <div className="w-full sm:w-auto flex items-center gap-2">
+                <Button
+                  onClick={() => {
+                    const previousDay = new Date(selectedUsageDate);
+                    previousDay.setDate(previousDay.getDate() - 1);
+                    setSelectedUsageDate(previousDay);
+                    fetchHourlyUsage(previousDay);
+                    fetchLoginUsers(previousDay);
                   }}
-                  placeholder={t('selectDate', 'Select Date')}
-                  toDate={new Date()}
-                />
+                  size="sm"
+                  variant="link"
+                  title={t('previousDay', 'Previous Day')}
+                >
+                  ←
+                </Button>
+                <div className="flex-1 sm:flex-none sm:w-64">
+                  <DatePickerWithDropdowns
+                    value={selectedUsageDate}
+                    onChange={(date) => {
+                      setSelectedUsageDate(date);
+                      fetchHourlyUsage(date);
+                      fetchLoginUsers(date);
+                    }}
+                    placeholder={t('selectDate', 'Select Date')}
+                    toDate={new Date()}
+                  />
+                </div>
+                <Button
+                  onClick={() => {
+                    const nextDay = new Date(selectedUsageDate);
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    // Don't allow selecting future dates beyond today
+                    if (nextDay <= new Date()) {
+                      setSelectedUsageDate(nextDay);
+                      fetchHourlyUsage(nextDay);
+                      fetchLoginUsers(nextDay);
+                    }
+                  }}
+                  size="sm"
+                  variant="link"
+                  disabled={new Date(selectedUsageDate).toDateString() === new Date().toDateString()}
+                  title={t('nextDay', 'Next Day')}
+                >
+                  →
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
