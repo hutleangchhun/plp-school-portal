@@ -10,7 +10,7 @@ const getApiBaseUrl = () => {
     const { hostname } = window.location;
 
     // Physical server or official domain - use proxy /api
-    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.105') {
+    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.105' || hostname === '192.168.155.115') {
       return '/api';
     }
 
@@ -20,8 +20,8 @@ const getApiBaseUrl = () => {
     }
   }
 
-  // 3. Fallback (external public API for Vercel or other domains)
-  return 'https://plp-api.moeys.gov.kh/api/v1';
+  // 3. Fallback - use /api (relative URL for proxy)
+  return '/api';
 };
 
 export default getApiBaseUrl;
@@ -273,7 +273,7 @@ export const getStaticAssetBaseUrl = () => {
     const hostname = window.location.hostname;
 
     // In production, we proxy /uploads/ through the same domain to avoid Mixed Content errors
-    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.105') {
+    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.105' || hostname === '192.168.155.115') {
       return ''; // Empty string means use current origin (e.g., /uploads/...)
     }
 
