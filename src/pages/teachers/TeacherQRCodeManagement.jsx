@@ -252,7 +252,9 @@ export default function TeacherQRCodeManagement({ user }) {
       // Fallback: download just the QR code image
       if (qrCode.qrCode) {
         const link = document.createElement('a');
-        link.href = qrCode.qrCode;
+        link.href = qrCode.qrCode.startsWith('/') || qrCode.qrCode.startsWith('http')
+          ? qrCode.qrCode
+          : `/api/files/${qrCode.qrCode}`;
         link.download = `${qrCode.name}_QR.png`;
         link.click();
       } else {

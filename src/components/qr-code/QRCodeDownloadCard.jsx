@@ -196,7 +196,10 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
 
   if (qrCode.qrCode) {
     const img = document.createElement('img');
-    img.src = qrCode.qrCode;
+    // Construct the full URL for the QR code image
+    img.src = qrCode.qrCode.startsWith('/') || qrCode.qrCode.startsWith('http')
+      ? qrCode.qrCode
+      : `/api/files/${qrCode.qrCode}`;
     img.style.width = '290px'; // Increased to 290px for maximum clarity
     img.style.height = '290px';
     img.style.border = `3px solid ${accentColor}`; // Thicker border for better definition

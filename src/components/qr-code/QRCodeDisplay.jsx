@@ -97,13 +97,22 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                 <div className="flex justify-center mb-3 relative">
                   {qrCode.qrCode ? (
                     <img
-                      src={qrCode.qrCode}
+                      src={`/api/files/${qrCode.qrCode}`}
                       alt={`QR Code for ${qrCode.name}`}
                       className="w-40 h-40 border border-gray-300 rounded"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextElementSibling.style.display = 'flex';
+                      }}
                     />
                   ) : (
                     <div className="w-40 h-40 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50">
                       <p className="text-xs text-gray-400 text-center px-2">{t('noQRCode', 'No QR Code')}</p>
+                    </div>
+                  )}
+                  {qrCode.qrCode && (
+                    <div className="w-40 h-40 border-2 border-dashed border-gray-300 rounded items-center justify-center bg-gray-50 hidden" style={{ display: 'none' }}>
+                      <p className="text-xs text-gray-400 text-center px-2">{t('failedToLoadQR', 'Failed to load QR Code')}</p>
                     </div>
                   )}
                 </div>
