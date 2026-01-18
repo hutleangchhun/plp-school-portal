@@ -3,8 +3,8 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api/v1/(.*)",
-      "destination": "https://plp-sms.moeys.gov.kh/api/v1/$1"
+      "source": "/api/(.*)",
+      "destination": "https://plp-sms.moeys.gov.kh/api/$1"
     },
     {
       "source": "/uploads/(.*)",
