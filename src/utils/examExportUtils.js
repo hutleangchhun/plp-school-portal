@@ -112,6 +112,11 @@ const applyExamExportStyling = (ws, XLSXStyle, totalRows) => {
     for (let C = range.s.c; C <= range.e.c; C++) {
       const cellAddress = XLSXStyle.utils.encode_cell({ r: R, c: C });
 
+      // Ensure cell exists
+      if (!ws[cellAddress]) {
+        ws[cellAddress] = { v: '' };
+      }
+
       // Title styling (row 0)
       if (R === 0) {
         ws[cellAddress].s = {

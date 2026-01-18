@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Plus, MinusCircle, Edit2, Users, X, ArrowRightLeft, Eye, Filter } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, Users, X, ArrowRightLeft, Eye, Filter, Download } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -25,6 +25,7 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { exportStudentToExcel } from '../../utils/studentDownloadUtils';
 
 /**
  * StudentsManagement Component
@@ -184,6 +185,7 @@ export default function StudentsManagement() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [viewingStudent, setViewingStudent] = useState(null);
   const [loadingStudentDetails, setLoadingStudentDetails] = useState(false);
+  const [downloadingStudentId, setDownloadingStudentId] = useState(null);
   const [transferTargetClassId, setTransferTargetClassId] = useState('');
   const [bulkTransferTargetClassId, setBulkTransferTargetClassId] = useState('');
   // Use the custom hook for managing selected students
@@ -1387,6 +1389,21 @@ export default function StudentsManagement() {
     navigate(`/students/edit?id=${encryptedId}`);
   };
 
+  /**
+   * Download student data as Excel file
+   */
+  const handleDownloadStudent = async (student) => {
+    try {
+      setDownloadingStudentId(student.id);
+      await exportStudentToExcel(student, t);
+      showSuccess(t('studentDownloadSuccess', 'Student data downloaded successfully'));
+    } catch (err) {
+      console.error('Error downloading student:', err);
+      showError(t('studentDownloadError', 'Failed to download student data'));
+    } finally {
+      setDownloadingStudentId(null);
+    }
+  };
 
   // Handle select all students on current page only
   const handleSelectAllCurrentPage = async () => {
@@ -1590,6 +1607,22 @@ export default function StudentsManagement() {
             aria-label={t('moveStudentToMaster', 'Move student to master class')}
           >
             <MinusCircle className="h-4 w-4 stroke-[1.5]" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownloadStudent(student);
+            }}
+            disabled={downloadingStudentId === student.id}
+            className="p-1.5 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={t('downloadStudentData', 'Download student data as Excel')}
+            aria-label={t('downloadStudentData', 'Download student data as Excel')}
+          >
+            {downloadingStudentId === student.id ? (
+              <DynamicLoader type="spinner" size="sm" variant="primary" />
+            ) : (
+              <Download className="h-4 w-4 stroke-[1.5]" />
+            )}
           </button>
         </div>
       )
