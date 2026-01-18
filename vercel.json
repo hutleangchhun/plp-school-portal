@@ -4,11 +4,11 @@
   "rewrites": [
     {
       "source": "/api/v1/(.*)",
-      "destination": "http://157.10.73.52:8085/api/v1/$1"
+      "destination": "https://plp-sms.moeys.gov.kh/api/v1/$1"
     },
     {
       "source": "/uploads/(.*)",
-      "destination": "http://157.10.73.52:8085/uploads/$1"
+      "destination": "https://plp-sms.moeys.gov.kh/uploads/$1"
     },
     {
       "source": "/(.*)",

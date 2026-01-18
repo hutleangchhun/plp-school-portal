@@ -24,6 +24,7 @@ import { examHistoryService } from '../../utils/api/services/examHistoryService'
 import { subjectService } from '../../utils/api/services/subjectService';
 import { decryptId } from '../../utils/encryption';
 import { getFullName } from '../../utils/usernameUtils';
+import { exportExamResultsToExcel } from '../../utils/examExportUtils';
 
 /**
  * StudentExamRecordsPage Component
@@ -48,6 +49,7 @@ export default function StudentExamRecordsPage({ user }) {
   const [subjects, setSubjects] = useState([]);
   const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   // Initialize with current month as default
   const getCurrentMonthDates = () => {
     const now = new Date();
@@ -364,6 +366,21 @@ export default function StudentExamRecordsPage({ user }) {
   };
 
   /**
+   * Export exam results to Excel
+   */
+  const handleExportToExcel = async () => {
+    try {
+      setIsExporting(true);
+      await exportExamResultsToExcel(processedExams, student, t);
+    } catch (err) {
+      console.error('Error exporting to Excel:', err);
+      alert(t('exportError', 'Failed to export exam results'));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  /**
    * Process and filter exams (frontend filtering as fallback)
    * Note: Subject filtering is already done by backend, so we only do status and search
    */
@@ -439,6 +456,20 @@ export default function StudentExamRecordsPage({ user }) {
           />
         </div>
 
+        {/* Download Excel Button */}
+        <Button
+          onClick={handleExportToExcel}
+          variant="primary"
+          size="sm"
+          className="flex items-center justify-center gap-2 shadow-lg bg-green-600 hover:bg-green-700"
+          title={t('downloadExcel', 'Download Results as Excel')}
+          disabled={isExporting || processedExams.length === 0}
+        >
+          <Download className="h-4 w-4" />
+          <span className="sm:hidden">{t('downloadResults', 'Download')}</span>
+          <span className="hidden sm:inline">{isExporting ? t('exporting', 'Exporting...') : t('downloadExcel', 'Download Excel')}</span>
+        </Button>
+
         {/* Filter Button - Responsive (works on all screen sizes) */}
         <Button
           onClick={() => setSidebarOpen(true)}
@@ -490,7 +521,7 @@ export default function StudentExamRecordsPage({ user }) {
         </div>
       )}
     </div>
-  ), [searchTerm, hasActiveFilters, t, startDate, endDate, firstDay, lastDay, statusFilter, subjectFilter, subjectFilterOptions]);
+  ), [searchTerm, hasActiveFilters, t, startDate, endDate, firstDay, lastDay, statusFilter, subjectFilter, subjectFilterOptions, handleExportToExcel, isExporting, processedExams.length]);
 
   // Memoize table section - only re-render when data or config changes
   const tableSection = useMemo(() => (

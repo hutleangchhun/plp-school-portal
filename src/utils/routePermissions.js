@@ -516,11 +516,10 @@ export const getNavigationItems = (user, t) => {
       name: t('reports', 'Reports'),
       href: '/teacher-reports',
     },
-    // DISABLED: /my-students-exams removed from teacher navigation
-    // {
-    //   name: t('myStudentsExams', 'My Students Exams'),
-    //   href: '/my-students-exams',
-    // },
+    {
+      name: t('myStudentsExams', 'My Students Exams'),
+      href: '/my-students-exams',
+    },
   ];
 
   // Add multi-role dashboard if teacher has secondary roles
