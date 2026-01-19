@@ -66,6 +66,35 @@ const SUBJECT_SKILLS = {
 };
 
 /**
+ * Get exam type label in Khmer
+ */
+const getExamTypeLabel = (examType, t) => {
+  const examTypeMap = {
+    'exam': t('examTypeExam', 'ការប្រលង'),
+    'test': t('examTypeTest', 'ការធ្វើតេស្ត'),
+    'quiz': t('examTypeQuiz', 'សាកល្បង')
+  };
+  return examTypeMap[examType?.toLowerCase()] || examType || '-';
+};
+
+/**
+ * Format time taken in hh:mm:ss format
+ */
+const formatTimeTaken = (seconds) => {
+  if (!seconds || seconds <= 0) return '-';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  const pad = (num) => String(num).padStart(2, '0');
+
+  if (hours > 0) {
+    return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+  }
+  return `${pad(minutes)}:${pad(secs)}`;
+};
+
+/**
  * TeacherExamRecords Component
  * Teachers can view exam records for students in their assigned classes
  * and input student scores by subject and skill
