@@ -2,8 +2,8 @@ import { getTimestampedFilename } from './exportUtils';
 import { attendanceService } from './api/services/attendanceService';
 
 /**
- * Export all schools with attendance data to Excel
- * Fetches all schools without pagination limit
+ * Export all schools with detailed attendance data to Excel
+ * Fetches all schools without pagination limit and detailed attendance info for each
  * @param {Object} filters - Filter options (province, district, date range)
  * @param {Function} onSuccess - Success callback
  * @param {Function} onError - Error callback
@@ -47,26 +47,47 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
       throw new Error('No schools found to export');
     }
 
-    // Prepare export data
-    const exportData = schools.map((school, index) => ({
-      'ល.រ': index + 1,
-      'ឈ្មោះសាលា': school.schoolName || 'Unknown',
-      'ទិន្នន័យសិស្ស': school.hasStudentAttendance ? 'មាន' : 'គ្មាន',
-      'ទិន្នន័យគ្រូបង្រៀន': school.hasTeacherAttendance ? 'មាន' : 'គ្មាន',
-      'ចំនួនកំណត់ត្រាសិស្ស': school.studentAttendanceCount || 0,
-      'ចំនួនកំណត់ត្រាគ្រូ': school.teacherAttendanceCount || 0,
-      'ថ្ងៃដំបូង': school.firstAttendanceDate ? school.firstAttendanceDate.split('T')[0] : '-',
-      'ថ្ងៃចុងក្រោយ': school.lastAttendanceDate ? school.lastAttendanceDate.split('T')[0] : '-'
-    }));
+    // Fetch detailed attendance count data for each school
+    console.log(`Fetching detailed data for ${schools.length} schools...`);
+    const detailedDataPromises = schools.map(async (school) => {
+      try {
+        const countParams = {};
+        if (filters.filterMode === 'single' && filters.date) {
+          countParams.startDate = filters.date;
+          countParams.endDate = filters.date;
+        } else if (filters.filterMode === 'range') {
+          if (filters.startDate) countParams.startDate = filters.startDate;
+          if (filters.endDate) countParams.endDate = filters.endDate;
+        }
+
+        const detailResponse = await attendanceService.dashboard.getSchoolAttendanceCountWithDates(
+          school.schoolId,
+          countParams
+        );
+
+        if (detailResponse.success && detailResponse.data) {
+          return {
+            ...school,
+            details: detailResponse.data
+          };
+        }
+        return school;
+      } catch (err) {
+        console.warn(`Failed to fetch details for school ${school.schoolId}:`, err);
+        return school;
+      }
+    });
+
+    const schoolsWithDetails = await Promise.all(detailedDataPromises);
 
     // Build template data
     const templateData = [];
 
     // Row 0: Title
-    templateData.push(['របាយការណ៍វត្តមាននៃសាលា', '', '', '', '', '', '', '']);
+    templateData.push(['របាយការណ៍វត្តមាននៃសាលា', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
 
     // Row 1: Empty
-    templateData.push(['', '', '', '', '', '', '', '']);
+    templateData.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
 
     // Row 2: Filters info
     const filterInfo = [];
@@ -79,34 +100,51 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
         filterInfo.push(`ពេលវេលា: ${filters.startDate || '...'} ដល់ ${filters.endDate || '...'}`);
       }
     }
-    templateData.push([filterInfo.join(' | '), '', '', '', '', '', '', '']);
+    templateData.push([filterInfo.join(' | '), '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
 
     // Row 3: Empty
-    templateData.push(['', '', '', '', '', '', '', '']);
+    templateData.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
 
     // Row 4: Headers
     templateData.push([
       'ល.រ',
       'ឈ្មោះសាលា',
-      'ទិន្នន័យសិស្ស',
-      'ទិន្នន័យគ្រូបង្រៀន',
-      'ចំនួនកំណត់ត្រាសិស្ស',
-      'ចំនួនកំណត់ត្រាគ្រូ',
-      'ថ្ងៃដំបូង',
-      'ថ្ងៃចុងក្រោយ'
+      'ខេត្ត',
+      'ស្រុក',
+      'សរុបសិស្ស',
+      'សរុបគ្រូ',
+      'សិស្ស-វត្តមាន',
+      'សិស្ស-អវត្តមាន',
+      'សិស្ស-យឺត',
+      'សិស្ស-ច្បាប់',
+      'គ្រូ-វត្តមាន',
+      'គ្រូ-អវត្តមាន',
+      'គ្រូ-យឺត',
+      'គ្រូ-ច្បាប់',
+      'ថ្ងៃដំបូង'
     ]);
 
     // Data rows
-    const dataRows = exportData.map(row => [
-      row['ល.រ'],
-      row['ឈ្មោះសាលា'],
-      row['ទិន្នន័យសិស្ស'],
-      row['ទិន្នន័យគ្រូបង្រៀន'],
-      row['ចំនួនកំណត់ត្រាសិស្ស'],
-      row['ចំនួនកំណត់ត្រាគ្រូ'],
-      row['ថ្ងៃដំបូង'],
-      row['ថ្ងៃចុងក្រោយ']
-    ]);
+    const dataRows = schoolsWithDetails.map((school, index) => {
+      const details = school.details || {};
+      return [
+        index + 1,
+        school.schoolName || 'Unknown',
+        details.provinceName || '',
+        details.districtName || '',
+        details.totalStudents || 0,
+        details.totalTeachers || 0,
+        details.studentPresentCount || 0,
+        details.studentAbsentCount || 0,
+        details.studentLateCount || 0,
+        details.studentLeaveCount || 0,
+        details.teacherPresentCount || 0,
+        details.teacherAbsentCount || 0,
+        details.teacherLateCount || 0,
+        details.teacherLeaveCount || 0,
+        school.firstAttendanceDate ? school.firstAttendanceDate.split('T')[0] : '-'
+      ];
+    });
 
     templateData.push(...dataRows);
 
@@ -115,21 +153,28 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
 
     // Set column widths
     ws['!cols'] = [
-      { wch: 6 },   // ល.រ
-      { wch: 30 },  // ឈ្មោះសាលា
-      { wch: 12 },  // ទិន្នន័យសិស្ស
-      { wch: 15 },  // ទិន្នន័យគ្រូបង្រៀន
-      { wch: 18 },  // ចំនួនកំណត់ត្រាសិស្ស
-      { wch: 16 },  // ចំនួនកំណត់ត្រាគ្រូ
-      { wch: 12 },  // ថ្ងៃដំបូង
-      { wch: 14 }   // ថ្ងៃចុងក្រោយ
+      { wch: 6 },    // ល.រ
+      { wch: 28 },   // ឈ្មោះសាលា
+      { wch: 15 },   // ខេត្ត
+      { wch: 15 },   // ស្រុក
+      { wch: 10 },   // សរុបសិស្ស
+      { wch: 10 },   // សរុបគ្រូ
+      { wch: 12 },   // សិស្ស-វត្តមាន
+      { wch: 13 },   // សិស្ស-អវត្តមាន
+      { wch: 11 },   // សិស្ស-យឺត
+      { wch: 12 },   // សិស្ស-ច្បាប់
+      { wch: 12 },   // គ្រូ-វត្តមាន
+      { wch: 13 },   // គ្រូ-អវត្តមាន
+      { wch: 11 },   // គ្រូ-យឺត
+      { wch: 12 },   // គ្រូ-ច្បាប់
+      { wch: 14 }    // ថ្ងៃដំបូង
     ];
 
     // Apply styling
     const totalRows = templateData.length;
 
     for (let R = 0; R < totalRows; R++) {
-      for (let C = 0; C < 8; C++) {
+      for (let C = 0; C < 15; C++) {
         const cellAddress = XLSXStyle.utils.encode_cell({ r: R, c: C });
 
         if (!ws[cellAddress]) {
@@ -163,7 +208,7 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
             alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
             font: {
               name: 'Khmer OS Battambang',
-              sz: 10,
+              sz: 9,
               bold: true,
               color: { rgb: '000000' }
             }
@@ -193,8 +238,8 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
 
     // Merge cells for title and filter info
     ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } }
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 14 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 14 } }
     ];
 
     // Create workbook
