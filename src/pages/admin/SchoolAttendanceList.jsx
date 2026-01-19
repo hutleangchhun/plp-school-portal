@@ -5,7 +5,8 @@ import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import locationService from '../../utils/api/services/locationService';
-import { School, Users, ChevronRight, Filter, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { exportSchoolsAttendanceToExcel } from '../../utils/schoolAttendanceExportUtils';
+import { School, Users, ChevronRight, Filter, CheckCircle, XCircle, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import Pagination from '../../components/ui/Pagination';
 import StatsCard from '../../components/ui/StatsCard';
@@ -281,6 +282,9 @@ const SchoolAttendanceList = () => {
   // New modal for attendance counts
   const [attendanceCountModalOpen, setAttendanceCountModalOpen] = useState(false);
 
+  // Export loading state
+  const [isExporting, setIsExporting] = useState(false);
+
   // Fetch provinces on mount
   useEffect(() => {
     fetchProvinces();
@@ -438,6 +442,28 @@ const SchoolAttendanceList = () => {
     setAttendanceCountModalOpen(true);
   };
 
+  const handleExportToExcel = async () => {
+    setIsExporting(true);
+    try {
+      await exportSchoolsAttendanceToExcel(
+        filters,
+        () => {
+          handleError(null, {
+            toastMessage: t('exportSuccess', 'Schools data exported successfully'),
+            severity: 'success'
+          });
+        },
+        (error) => {
+          handleError(error, {
+            toastMessage: t('exportFailed', 'Failed to export schools data')
+          });
+        }
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Handle pagination
   const handlePageChange = (newPage) => {
     fetchSchools(newPage);
@@ -479,24 +505,37 @@ const SchoolAttendanceList = () => {
                 {t('schoolAttendanceListDesc', 'View attendance records for each school')}
               </p>
             </div>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleOpenFilterSidebar}
-              className="flex items-center gap-2"
-            >
-              <Filter className="h-4 w-4" />
-              {t('filters', 'Filters')}
-              {(filters.province || filters.district || filters.date || filters.startDate || filters.endDate) && (
-              <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-white text-blue-600 rounded-full">
-                {[
-                  filters.province, 
-                  filters.district, 
-                  filters.filterMode === 'single' ? filters.date : (filters.startDate || filters.endDate)
-                ].filter(Boolean).length}
-              </span>
-            )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleExportToExcel}
+                disabled={isExporting || schoolsData.length === 0}
+                className="flex items-center gap-2"
+                title={t('exportToExcel', 'Export all schools to Excel')}
+              >
+                <Download className="h-4 w-4" />
+                {isExporting ? t('exporting', 'Exporting...') : t('export', 'Export')}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleOpenFilterSidebar}
+                className="flex items-center gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                {t('filters', 'Filters')}
+                {(filters.province || filters.district || filters.date || filters.startDate || filters.endDate) && (
+                <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-white text-blue-600 rounded-full">
+                  {[
+                    filters.province,
+                    filters.district,
+                    filters.filterMode === 'single' ? filters.date : (filters.startDate || filters.endDate)
+                  ].filter(Boolean).length}
+                </span>
+              )}
+              </Button>
+            </div>
           </div>
         </div>
 
