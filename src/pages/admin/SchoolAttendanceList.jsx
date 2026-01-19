@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
+import { useToast } from '../../contexts/ToastContext';
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { attendanceService } from '../../utils/api/services/attendanceService';
@@ -226,6 +227,7 @@ const SchoolCoverageTable = ({
 const SchoolAttendanceList = () => {
   const { t } = useLanguage();
   const { error, handleError, clearError } = useErrorHandler();
+  const { showSuccess } = useToast();
 
   const formatDateLocal = (date) => {
     if (!date) return '';
@@ -448,10 +450,8 @@ const SchoolAttendanceList = () => {
       await exportSchoolsAttendanceToExcel(
         filters,
         () => {
-          handleError(null, {
-            toastMessage: t('exportSuccess', 'Schools data exported successfully'),
-            severity: 'success'
-          });
+          showSuccess(t('exportSuccess', 'Schools data exported successfully'));
+          clearError();
         },
         (error) => {
           handleError(error, {
