@@ -17,13 +17,14 @@ import Table from '../../components/ui/Table';
 import { Button } from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Dropdown from '../../components/ui/Dropdown';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
+import Modal from '../../components/ui/Modal';
 import {
   BookOpen,
   Eye,
   Save,
-  AlertCircle,
   Download,
-  X
+  ClipboardList
 } from 'lucide-react';
 
 /**
@@ -987,30 +988,18 @@ export default function TeacherExamRecords({ user }) {
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex gap-2 border-b border-gray-200 mb-6">
-              <button
-                onClick={() => setActiveTab('records')}
-                className={`px-4 py-2 font-medium transition-colors ${activeTab === 'records'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-800'
-                  }`}
-              >
-                {t('examRecords', 'Exam Records')}
-              </button>
-              <button
-                onClick={() => setActiveTab('scores')}
-                className={`px-4 py-2 font-medium transition-colors ${activeTab === 'scores'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-800'
-                  }`}
-              >
-                {t('scoreInput', 'Score Input')}
-              </button>
-            </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+              <TabsList>
+                <TabsTrigger value="records">
+                  {t('examRecords', 'Exam Records')}
+                </TabsTrigger>
+                <TabsTrigger value="scores">
+                  {t('scoreInput', 'Score Input')}
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Exam Records Tab */}
-            {activeTab === 'records' && (
-              <>
+              {/* Exam Records Tab */}
+              <TabsContent value="records">
                 <div className="mt-6">
                   {/* Primary Filters: Class, Search */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -1093,12 +1082,11 @@ export default function TeacherExamRecords({ user }) {
                     </>
                   )}
                 </div>
-              </>
-            )}
+              </TabsContent>
 
-            {/* Score Input Tab */}
-            {activeTab === 'scores' && (
-              <div className="mt-6">
+              {/* Score Input Tab */}
+              <TabsContent value="scores">
+                <div className="mt-6">
                 {/* Class, Academic Year, and Month Selection */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                   {/* Class Selection */}
@@ -1187,17 +1175,17 @@ export default function TeacherExamRecords({ user }) {
                 ) : (
                   <div className="space-y-6">
                     {/* Score Table */}
-                    <div className="shadow-lg rounded-lg overflow-hidden border border-gray-200 bg-transparent">
+                    <div className="shadow-lg rounded-sm overflow-hidden border border-gray-200 bg-transparent">
                       <div className="bg-white p-6 border-b border-gray-200">
                         <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('scoreInput', 'Score Input')}</h2>
                         <p className="text-sm text-gray-600">{t('enterStudentScores', 'Enter student scores for each skill category')}</p>
                       </div>
-                      <div className="relative overflow-auto" style={{ position: 'relative', zIndex: 10, height: '600px' }}>
+                      <div className="overflow-auto" style={{ height: '700px' }}>
                         <table className="min-w-full border-collapse bg-white">
-                          <thead className="sticky top-0 z-10 border-b border-gray-200">
+                          <thead className="sticky top-0 z-20 border-b border-gray-200">
                             {/* Main Header Row */}
                             <tr className="border-b border-gray-300 bg-gradient-to-r from-blue-600 to-blue-700">
-                              <th rowSpan="2" className="px-6 py-3 text-left text-sm font-bold text-white border-r border-blue-500 min-w-80 bg-gradient-to-r from-blue-600 to-blue-700 sticky left-0 z-20">
+                              <th rowSpan={2} className="px-6 py-3 text-left text-sm font-bold text-white border-r border-blue-500 min-w-80 bg-gradient-to-r from-blue-600 to-blue-700 sticky left-0 z-30">
                                 {t('studentName', 'Student Name')}
                               </th>
                               {Object.entries(SUBJECT_SKILLS).map(([subjectKey, subject]) => {
@@ -1213,13 +1201,13 @@ export default function TeacherExamRecords({ user }) {
                                   </th>
                                 );
                               })}
-                              <th rowSpan="2" className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-green-600 to-green-700">
+                              <th rowSpan={2} className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-green-600 to-green-700">
                                 {t('totalScore', 'Total Score')}
                               </th>
-                              <th rowSpan="2" className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-purple-600 to-purple-700">
+                              <th rowSpan={2} className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-purple-600 to-purple-700">
                                 {t('average', 'Average')}
                               </th>
-                              <th rowSpan="2" className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-orange-600 to-orange-700">
+                              <th rowSpan={2} className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-orange-600 to-orange-700">
                                 {t('grading', 'Grade')}
                               </th>
                             </tr>
@@ -1246,21 +1234,22 @@ export default function TeacherExamRecords({ user }) {
 
                               return (
                                 <tr key={`${rowIndex}-${studentId}`} className="hover:bg-gray-50 border-b border-gray-100">
-                                  <td className="text-left sticky left-0 z-10 min-w-80 bg-gray-50 border-r border-gray-200">
+                                  <td className="text-left sticky left-0 z-10 min-w-80 bg-gray-50 border-r border-gray-200" style={{ position: 'sticky', left: 0 }}>
                                     <div className="flex flex-col gap-2 p-3">
                                       <div className="flex items-start justify-between gap-2">
                                         <div>
                                           <p className="text-sm font-semibold text-gray-900">{studentName}</p>
                                           <p className="text-xs text-gray-500">ID: {studentId}</p>
                                         </div>
-                                        <button
+                                        <Button
+                                          variant="link"
+                                          size="sm"
                                           onClick={() => handleOpenExamHistoryModal(student)}
                                           disabled={examHistoryLoading}
-                                          className="text-xs px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
                                           title={t('viewExamHistory', 'View Exam History')}
                                         >
-                                          📋
-                                        </button>
+                                          <ClipboardList className="w-4 h-4 inline-block mr-1" />
+                                        </Button>
                                       </div>
                                     </div>
                                   </td>
@@ -1293,7 +1282,7 @@ export default function TeacherExamRecords({ user }) {
                                             }}
                                             onClick={(e) => e.stopPropagation()}
                                             onKeyDown={(e) => handleScoreCellKeyDown(e, rowIndex, subjectKey, skill, studentId)}
-                                            className="w-full h-full p-4 text-sm border-0 focus:border focus:ring-1 bg-white focus:border-blue-500 focus:ring-blue-500 text-center p-0"
+                                            className="w-full h-full p-4 text-sm border-0 focus:border focus:ring-1 bg-white focus:border-blue-500 focus:ring-blue-500 text-center"
                                           />
                                         </td>
                                       ));
@@ -1462,36 +1451,50 @@ export default function TeacherExamRecords({ user }) {
                   </div>
                 )}
               </div>
-            )}
+              </TabsContent>
+            </Tabs>
           </div>
         </FadeInSection>
 
         {/* Download Modal */}
-        {showDownloadModal && selectedStudentForDownload && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              {/* Modal Header */}
-              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">
-                    {t('selectExamsToDownload', 'Select Exams to Download')}
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {selectedStudentForDownload.student.user?.full_name ||
-                      selectedStudentForDownload.student.full_name ||
-                      `${selectedStudentForDownload.student.user?.first_name || ''} ${selectedStudentForDownload.student.user?.last_name || ''}`.trim()}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowDownloadModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Modal Body */}
-              <div className="p-6">
+        <Modal
+          isOpen={showDownloadModal}
+          onClose={() => setShowDownloadModal(false)}
+          title={t('selectExamsToDownload', 'Select Exams to Download')}
+          size="2xl"
+          height="full"
+          stickyFooter={true}
+          footer={
+            <div className="flex items-center justify-end gap-3 w-full">
+              <Button
+                variant="outline"
+                onClick={() => setShowDownloadModal(false)}
+                disabled={isExporting}
+              >
+                {t('cancel', 'Cancel')}
+              </Button>
+              <Button
+                onClick={handleExportSelectedExams}
+                disabled={isExporting || selectedExamsForDownload.size === 0}
+                className="flex items-center gap-2"
+              >
+                {isExporting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    {t('exporting', 'Exporting...')}
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    {t('downloadSelected', 'Download Selected')}
+                  </>
+                )}
+              </Button>
+            </div>
+          }
+        >
+          {selectedStudentForDownload && (
+            <div>
                 {selectedStudentForDownload.exams.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500">{t('noExams', 'No exam records found')}</p>
@@ -1559,61 +1562,45 @@ export default function TeacherExamRecords({ user }) {
                     ))}
                   </div>
                 )}
-              </div>
-
-              {/* Modal Footer */}
-              <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex items-center justify-end gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDownloadModal(false)}
-                  disabled={isExporting}
-                >
-                  {t('cancel', 'Cancel')}
-                </Button>
-                <Button
-                  onClick={handleExportSelectedExams}
-                  disabled={isExporting || selectedExamsForDownload.size === 0}
-                  className="flex items-center gap-2"
-                >
-                  {isExporting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      {t('exporting', 'Exporting...')}
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4" />
-                      {t('downloadSelected', 'Download Selected')}
-                    </>
-                  )}
-                </Button>
-              </div>
             </div>
-          </div>
-        )}
+          )}
+        </Modal>
 
       {/* Exam History Modal */}
-      {showExamHistoryModal && selectedStudentForHistory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex justify-between items-center border-b-4 border-blue-800">
-              <div>
-                <h2 className="text-xl font-bold">{t('examHistory', 'Exam History')}</h2>
-                <p className="text-sm text-blue-100">
-                  {selectedStudentForHistory?.user?.full_name || selectedStudentForHistory?.full_name || 'Student'}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowExamHistoryModal(false)}
-                className="text-white hover:bg-blue-800 p-2 rounded-full transition-colors"
-              >
-                ✕
-              </button>
+      <Modal
+        isOpen={showExamHistoryModal}
+        onClose={() => setShowExamHistoryModal(false)}
+        title={t('examHistory', 'Exam History')}
+        size="2xl"
+        height="full"
+        stickyFooter={true}
+        footer={
+          <div className="flex justify-between items-center gap-2 w-full">
+            <div className="text-sm text-gray-600">
+              {selectedExamsInHistory.size > 0 && (
+                <span>{selectedExamsInHistory.size} exam(s) selected</span>
+              )}
             </div>
-
-            {/* Modal Body */}
-            <div className="p-6">
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowExamHistoryModal(false)}
+                variant="outline"
+              >
+                {t('close', 'Close')}
+              </Button>
+              <Button
+                onClick={handleApplyExamsFromHistory}
+                disabled={selectedExamsInHistory.size === 0}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+              >
+                {t('applyScores', 'Apply Scores')}
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        {selectedStudentForHistory && (
+          <div>
               {examHistoryLoading ? (
                 <div className="flex justify-center items-center py-12">
                   <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
@@ -1717,34 +1704,9 @@ export default function TeacherExamRecords({ user }) {
                   <p className="text-gray-500 text-lg">{t('noExamsFound', 'No exam records found')}</p>
                 </div>
               )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-between items-center gap-2">
-              <div className="text-sm text-gray-600">
-                {selectedExamsInHistory.size > 0 && (
-                  <span>{selectedExamsInHistory.size} exam(s) selected</span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setShowExamHistoryModal(false)}
-                  variant="outline"
-                >
-                  {t('close', 'Close')}
-                </Button>
-                <Button
-                  onClick={handleApplyExamsFromHistory}
-                  disabled={selectedExamsInHistory.size === 0}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
-                >
-                  {t('applyScores', 'Apply Scores')}
-                </Button>
-              </div>
-            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
       </div>
     </PageTransition>
   );

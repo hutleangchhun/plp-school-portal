@@ -715,6 +715,7 @@ export const km = {
   average: 'មធ្យមភាគ',
   grading: 'ចំណាត់ថ្នាក់',
   examGrade: 'និទ្ទេស',
+  scoreInput: 'ការបញ្ចូលពិន្ទុ',
 
 
 
@@ -1931,6 +1932,9 @@ export const km = {
   filterDesc: 'ជ្រើសរើសទិន្នន័យដែលអ្នកចង់បង្ហាញតាមការចង់បាន',
   noGenderData: 'មិនមានទិន្នន័យការបែងចែកតាមភេទ',
   noAgeData: 'មិនមានទិន្នន័យការបែងចែកតាមអាយុ',
+
+
+  
 };
 
 // Inserted translations - Teacher Active/Inactive Status
