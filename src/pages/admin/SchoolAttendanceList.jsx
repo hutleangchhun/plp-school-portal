@@ -5,7 +5,7 @@ import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import locationService from '../../utils/api/services/locationService';
-import { School, Users, ChevronRight, Filter, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { School, Users, ChevronRight, Filter, CheckCircle, XCircle, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import Pagination from '../../components/ui/Pagination';
 import StatsCard from '../../components/ui/StatsCard';
@@ -17,6 +17,7 @@ import SchoolAttendanceCountModal from '../../components/attendance/SchoolAttend
 import Badge from '@/components/ui/Badge';
 import { Eye, Calendar } from 'lucide-react';
 import { DatePickerWithDropdowns } from '@/components/ui/date-picker-with-dropdowns';
+import { exportSchoolsAttendanceToExcel } from '../../utils/schoolAttendanceExportUtils';
 
 const SchoolCoverageTable = ({
   data = [],
@@ -237,6 +238,7 @@ const SchoolAttendanceList = () => {
   const today = formatDateLocal(new Date());
 
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [schoolsData, setSchoolsData] = useState([]);
   const [schoolSummary, setSchoolSummary] = useState({
     schoolsWithStudentAttendance: 0,
@@ -438,6 +440,43 @@ const SchoolAttendanceList = () => {
     setAttendanceCountModalOpen(true);
   };
 
+  // Handle export to Excel
+  const handleExportExcel = async () => {
+    try {
+      setExporting(true);
+      clearError();
+
+      const result = await exportSchoolsAttendanceToExcel(
+        filters,
+        () => {
+          // Success callback
+          console.log('Export completed successfully');
+          // You can show a success toast here if needed
+        },
+        (error) => {
+          // Error callback
+          console.error('Export failed:', error);
+          handleError(error, {
+            toastMessage: t('failedToExportData', 'Failed to export schools data')
+          });
+        }
+      );
+
+      if (!result.success) {
+        handleError(new Error(result.error?.message || 'Export failed'), {
+          toastMessage: t('failedToExportData', 'Failed to export schools data')
+        });
+      }
+    } catch (err) {
+      console.error('Export error:', err);
+      handleError(err, {
+        toastMessage: t('failedToExportData', 'Failed to export schools data')
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Handle pagination
   const handlePageChange = (newPage) => {
     fetchSchools(newPage);
@@ -479,24 +518,37 @@ const SchoolAttendanceList = () => {
                 {t('schoolAttendanceListDesc', 'View attendance records for each school')}
               </p>
             </div>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleOpenFilterSidebar}
-              className="flex items-center gap-2"
-            >
-              <Filter className="h-4 w-4" />
-              {t('filters', 'Filters')}
-              {(filters.province || filters.district || filters.date || filters.startDate || filters.endDate) && (
-              <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-white text-blue-600 rounded-full">
-                {[
-                  filters.province, 
-                  filters.district, 
-                  filters.filterMode === 'single' ? filters.date : (filters.startDate || filters.endDate)
-                ].filter(Boolean).length}
-              </span>
-            )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleExportExcel}
+                disabled={exporting || schoolsData.length === 0}
+                className="flex items-center gap-2"
+                title={t('exportSchools', 'Export all schools to Excel')}
+              >
+                <Download className="h-4 w-4" />
+                {exporting ? t('exporting', 'Exporting...') : t('export', 'Export')}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleOpenFilterSidebar}
+                className="flex items-center gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                {t('filters', 'Filters')}
+                {(filters.province || filters.district || filters.date || filters.startDate || filters.endDate) && (
+                <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-white text-blue-600 rounded-full">
+                  {[
+                    filters.province,
+                    filters.district,
+                    filters.filterMode === 'single' ? filters.date : (filters.startDate || filters.endDate)
+                  ].filter(Boolean).length}
+                </span>
+              )}
+              </Button>
+            </div>
           </div>
         </div>
 
