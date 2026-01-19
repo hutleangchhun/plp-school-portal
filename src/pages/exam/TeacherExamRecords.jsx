@@ -138,6 +138,7 @@ export default function TeacherExamRecords({ user }) {
   const [showExamHistoryModal, setShowExamHistoryModal] = useState(false);
   const [selectedStudentForHistory, setSelectedStudentForHistory] = useState(null);
   const [examHistoryLoading, setExamHistoryLoading] = useState(false);
+  const [selectedExamsInHistory, setSelectedExamsInHistory] = useState(new Set()); // Track selected exams in modal
 
   /**
    * Fetch teacher's assigned classes
@@ -667,6 +668,103 @@ export default function TeacherExamRecords({ user }) {
       showError(t('errorFetchingExamHistory', 'Failed to fetch exam history'));
     } finally {
       setExamHistoryLoading(false);
+    }
+  };
+
+  /**
+   * Toggle exam selection in history modal
+   */
+  const toggleExamInHistory = (examIndex) => {
+    const newSelection = new Set(selectedExamsInHistory);
+    if (newSelection.has(examIndex)) {
+      newSelection.delete(examIndex);
+    } else {
+      newSelection.add(examIndex);
+    }
+    setSelectedExamsInHistory(newSelection);
+  };
+
+  /**
+   * Apply selected exams from history modal to score fields
+   */
+  const handleApplyExamsFromHistory = () => {
+    if (!selectedStudentForHistory || selectedExamsInHistory.size === 0) {
+      showError(t('selectExamsToApply', 'Please select at least one exam to apply'));
+      return;
+    }
+
+    const studentId = selectedStudentForHistory.student.studentId || selectedStudentForHistory.student.id;
+    const selectedExams = Array.from(selectedExamsInHistory)
+      .map(idx => selectedStudentForHistory.exams[idx])
+      .filter(Boolean);
+
+    if (selectedExams.length === 0) return;
+
+    // Collect scores from all selected exams by subject
+    const scoresBySubject = {};
+    let appliedCount = 0;
+
+    selectedExams.forEach(exam => {
+      const score = exam.percentage !== undefined && exam.percentage !== null
+        ? exam.percentage
+        : exam.score !== undefined && exam.score !== null
+        ? exam.score
+        : 0;
+
+      // Try to match exam subject to SUBJECT_SKILLS
+      const examSubject = exam.subjectName?.toLowerCase() || '';
+      let matchedSubjectKey = null;
+
+      // Map exam subject to our subject keys
+      if (examSubject.includes('khmer')) matchedSubjectKey = 'khmer';
+      else if (examSubject.includes('math') || examSubject.includes('mathematics')) matchedSubjectKey = 'math';
+      else if (examSubject.includes('science')) matchedSubjectKey = 'science';
+      else if (examSubject.includes('ethics') || examSubject.includes('civic')) matchedSubjectKey = 'ethics';
+      else if (examSubject.includes('sport') || examSubject.includes('physical')) matchedSubjectKey = 'sport';
+      else if (examSubject.includes('health')) matchedSubjectKey = 'health';
+      else if (examSubject.includes('life skills')) matchedSubjectKey = 'life_skills';
+      else if (examSubject.includes('language') || examSubject.includes('foreign')) matchedSubjectKey = 'foreign_lang';
+
+      if (matchedSubjectKey) {
+        if (!scoresBySubject[matchedSubjectKey]) {
+          scoresBySubject[matchedSubjectKey] = [];
+        }
+        scoresBySubject[matchedSubjectKey].push(Math.min(score, 10));
+        appliedCount++;
+      }
+    });
+
+    // Apply averaged scores to all skills for matched subjects
+    if (appliedCount > 0) {
+      setScoreData(prev => {
+        const updated = { ...prev };
+        if (!updated[studentId]) updated[studentId] = {};
+
+        Object.entries(scoresBySubject).forEach(([subjectKey, scores]) => {
+          if (!updated[studentId][subjectKey]) updated[studentId][subjectKey] = {};
+
+          // Calculate average score from all selected exams for this subject
+          const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+
+          // Fill all skills with the averaged score
+          SUBJECT_SKILLS[subjectKey].skills.forEach(skill => {
+            updated[studentId][subjectKey][skill] = Math.round(averageScore * 100) / 100; // Round to 2 decimals
+          });
+        });
+
+        return updated;
+      });
+
+      const subjectNames = Object.keys(scoresBySubject)
+        .map(key => SUBJECT_SKILLS[key].name)
+        .join(', ');
+      showSuccess(t('examDataApplied', `Exam data applied to: ${subjectNames}`));
+
+      // Clear selections and close modal
+      setSelectedExamsInHistory(new Set());
+      setShowExamHistoryModal(false);
+    } else {
+      showError(t('cannotMatchSubject', 'Could not match selected exams to any subject category'));
     }
   };
 
@@ -1522,75 +1620,97 @@ export default function TeacherExamRecords({ user }) {
                 </div>
               ) : selectedStudentForHistory?.exams && selectedStudentForHistory.exams.length > 0 ? (
                 <div className="space-y-4">
-                  {selectedStudentForHistory.exams.map((exam, index) => (
-                    <div
-                      key={index}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Left Column */}
-                        <div>
-                          <h3 className="font-bold text-lg text-gray-900 mb-2">
-                            {exam.examTitle || '-'}
-                          </h3>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">{t('subject', 'Subject')}:</span>
-                              <span className="font-semibold">{exam.subjectKhmerName || exam.subjectName || '-'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">{t('examType', 'Exam Type')}:</span>
-                              <span className="font-semibold">{getExamTypeLabel(exam.examType, t)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">{t('examDate', 'Exam Date')}:</span>
-                              <span className="font-semibold">
-                                {exam.createdAt ? new Date(exam.createdAt).toLocaleDateString() : '-'}
-                              </span>
-                            </div>
+                  {selectedStudentForHistory.exams.map((exam, index) => {
+                    const isSelected = selectedExamsInHistory.has(index);
+                    return (
+                      <div
+                        key={index}
+                        onClick={() => toggleExamInHistory(index)}
+                        className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-blue-500 bg-blue-50 shadow-md'
+                            : 'border-gray-200 hover:shadow-md'
+                        }`}
+                      >
+                        <div className="flex gap-4">
+                          {/* Checkbox */}
+                          <div className="flex items-start pt-1">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleExamInHistory(index)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-5 h-5 rounded border-gray-300 text-blue-600 cursor-pointer"
+                            />
                           </div>
-                        </div>
 
-                        {/* Right Column */}
-                        <div>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-600">{t('score', 'Score')}:</span>
-                              <span className="text-lg font-bold text-blue-600">
-                                {exam.percentage !== undefined && exam.percentage !== null
-                                  ? `${exam.percentage}%`
-                                  : exam.score !== undefined && exam.score !== null
-                                  ? `${exam.score}/${exam.totalScore || 100}`
-                                  : '-'}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">{t('grade', 'Grade')}:</span>
-                              <span className="font-semibold text-lg">{exam.letterGrade || '-'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">{t('status', 'Status')}:</span>
-                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                exam.status === 'completed'
-                                  ? 'bg-green-100 text-green-800'
-                                  : exam.status === 'pending'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {exam.status || '-'}
-                              </span>
-                            </div>
-                            {exam.timeTaken && (
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">{t('duration', 'Duration')}:</span>
-                                <span className="font-semibold">{formatTimeTaken(exam.timeTaken)}</span>
+                          {/* Content */}
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Left Column */}
+                            <div>
+                              <h3 className="font-bold text-lg text-gray-900 mb-2">
+                                {exam.examTitle || '-'}
+                              </h3>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">{t('subject', 'Subject')}:</span>
+                                  <span className="font-semibold">{exam.subjectKhmerName || exam.subjectName || '-'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">{t('examType', 'Exam Type')}:</span>
+                                  <span className="font-semibold">{getExamTypeLabel(exam.examType, t)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">{t('examDate', 'Exam Date')}:</span>
+                                  <span className="font-semibold">
+                                    {exam.createdAt ? new Date(exam.createdAt).toLocaleDateString() : '-'}
+                                  </span>
+                                </div>
                               </div>
-                            )}
+                            </div>
+
+                            {/* Right Column */}
+                            <div>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-600">{t('score', 'Score')}:</span>
+                                  <span className="text-lg font-bold text-blue-600">
+                                    {exam.percentage !== undefined && exam.percentage !== null
+                                      ? `${exam.percentage}%`
+                                      : exam.score !== undefined && exam.score !== null
+                                      ? `${exam.score}/${exam.totalScore || 100}`
+                                      : '-'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">{t('grade', 'Grade')}:</span>
+                                  <span className="font-semibold text-lg">{exam.letterGrade || '-'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">{t('status', 'Status')}:</span>
+                                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                    exam.status === 'completed'
+                                      ? 'bg-green-100 text-green-800'
+                                      : exam.status === 'pending'
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {exam.status || '-'}
+                                  </span>
+                                </div>
+                                {exam.timeTaken && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">{t('duration', 'Duration')}:</span>
+                                    <span className="font-semibold">{formatTimeTaken(exam.timeTaken)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-12">
@@ -1600,13 +1720,27 @@ export default function TeacherExamRecords({ user }) {
             </div>
 
             {/* Modal Footer */}
-            <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-end gap-2">
-              <Button
-                onClick={() => setShowExamHistoryModal(false)}
-                variant="outline"
-              >
-                {t('close', 'Close')}
-              </Button>
+            <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-between items-center gap-2">
+              <div className="text-sm text-gray-600">
+                {selectedExamsInHistory.size > 0 && (
+                  <span>{selectedExamsInHistory.size} exam(s) selected</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setShowExamHistoryModal(false)}
+                  variant="outline"
+                >
+                  {t('close', 'Close')}
+                </Button>
+                <Button
+                  onClick={handleApplyExamsFromHistory}
+                  disabled={selectedExamsInHistory.size === 0}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+                >
+                  {t('applyScores', 'Apply Scores')}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
