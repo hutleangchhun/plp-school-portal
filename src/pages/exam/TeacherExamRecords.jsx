@@ -127,8 +127,6 @@ export default function TeacherExamRecords({ user }) {
   const [selectedAcademicYear, setSelectedAcademicYear] = useState(new Date().getFullYear().toString());
   const [scoreData, setScoreData] = useState({}); // { studentId: { subjectKey: { skillName: score } } }
   const [savingScores, setSavingScores] = useState(false);
-  const [studentExamSources, setStudentExamSources] = useState({}); // { studentId: Set(examIndices) } - track which exams are selected as score sources
-  const [studentExams, setStudentExams] = useState({}); // { studentId: exams[] } - store exam records for each student
 
   // State for Download Modal
   const [showDownloadModal, setShowDownloadModal] = useState(false);
@@ -305,13 +303,11 @@ export default function TeacherExamRecords({ user }) {
 
   /**
    * Fetch all students from selected class for score input
-   * Also fetches exam records for each student
    */
   const fetchClassStudentsForScores = useCallback(async () => {
     try {
       if (!selectedClass) {
         setClassStudents([]);
-        setStudentExams({});
         return;
       }
 
@@ -330,12 +326,9 @@ export default function TeacherExamRecords({ user }) {
 
         // Initialize score data structure for all students
         const initialScores = {};
-        const examsMap = {};
 
-        // Fetch exam records for each student
-        for (const student of students) {
+        students.forEach(student => {
           const studentId = student.studentId || student.id;
-          const userId = student.user?.id || student.userId || student.id;
 
           initialScores[studentId] = {};
           Object.keys(SUBJECT_SKILLS).forEach(subjectKey => {
@@ -344,20 +337,9 @@ export default function TeacherExamRecords({ user }) {
               initialScores[studentId][subjectKey][skill] = '';
             });
           });
-
-          // Fetch exam history for this student
-          try {
-            const examResponse = await examHistoryService.getUserExamHistoryFiltered(userId);
-            const exams = Array.isArray(examResponse.data) ? examResponse.data : (examResponse.data ? [examResponse.data] : []);
-            examsMap[studentId] = exams;
-          } catch (error) {
-            console.warn(`Failed to fetch exam history for student ${userId}:`, error);
-            examsMap[studentId] = [];
-          }
-        }
+        });
 
         setScoreData(initialScores);
-        setStudentExams(examsMap);
       }
     } catch (error) {
       console.error('Error fetching class students:', error);
@@ -430,104 +412,6 @@ export default function TeacherExamRecords({ user }) {
       }));
     }
   }, []);
-
-  /**
-   * Toggle exam selection for a student (multi-select)
-   */
-  const toggleStudentExamSelection = useCallback((studentId, examIndex) => {
-    setStudentExamSources(prev => {
-      const selectedSet = new Set(prev[studentId] || []);
-      if (selectedSet.has(examIndex)) {
-        selectedSet.delete(examIndex);
-      } else {
-        selectedSet.add(examIndex);
-      }
-      return {
-        ...prev,
-        [studentId]: selectedSet
-      };
-    });
-  }, []);
-
-  /**
-   * Apply selected exam data to score fields for a student
-   * Merges data from multiple selected exams by subject
-   */
-  const handleApplySelectedExamsToScores = useCallback((studentId) => {
-    const studentExamList = studentExams[studentId];
-    const selectedIndices = studentExamSources[studentId];
-
-    if (!selectedIndices || selectedIndices.size === 0) {
-      showError(t('noExamSelected', 'Please select at least one exam'));
-      return;
-    }
-
-    // Collect scores from all selected exams by subject
-    const scoresBySubject = {};
-    let appliedCount = 0;
-
-    selectedIndices.forEach(examIndex => {
-      if (studentExamList && studentExamList[examIndex]) {
-        const exam = studentExamList[examIndex];
-        const score = exam.percentage !== undefined && exam.percentage !== null
-          ? exam.percentage
-          : exam.score !== undefined && exam.score !== null
-          ? exam.score
-          : 0;
-
-        // Try to match exam subject to SUBJECT_SKILLS
-        const examSubject = exam.subjectName?.toLowerCase() || '';
-        let matchedSubjectKey = null;
-
-        // Map exam subject to our subject keys
-        if (examSubject.includes('khmer')) matchedSubjectKey = 'khmer';
-        else if (examSubject.includes('math') || examSubject.includes('mathematics')) matchedSubjectKey = 'math';
-        else if (examSubject.includes('science')) matchedSubjectKey = 'science';
-        else if (examSubject.includes('ethics') || examSubject.includes('civic')) matchedSubjectKey = 'ethics';
-        else if (examSubject.includes('sport') || examSubject.includes('physical')) matchedSubjectKey = 'sport';
-        else if (examSubject.includes('health')) matchedSubjectKey = 'health';
-        else if (examSubject.includes('life skills')) matchedSubjectKey = 'life_skills';
-        else if (examSubject.includes('language') || examSubject.includes('foreign')) matchedSubjectKey = 'foreign_lang';
-
-        if (matchedSubjectKey) {
-          if (!scoresBySubject[matchedSubjectKey]) {
-            scoresBySubject[matchedSubjectKey] = [];
-          }
-          scoresBySubject[matchedSubjectKey].push(Math.min(score, 10));
-          appliedCount++;
-        }
-      }
-    });
-
-    // Apply averaged scores to all skills for matched subjects
-    if (appliedCount > 0) {
-      setScoreData(prev => {
-        const updated = { ...prev };
-        if (!updated[studentId]) updated[studentId] = {};
-
-        Object.entries(scoresBySubject).forEach(([subjectKey, scores]) => {
-          if (!updated[studentId][subjectKey]) updated[studentId][subjectKey] = {};
-
-          // Calculate average score from all selected exams for this subject
-          const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
-
-          // Fill all skills with the averaged score
-          SUBJECT_SKILLS[subjectKey].skills.forEach(skill => {
-            updated[studentId][subjectKey][skill] = Math.round(averageScore * 100) / 100; // Round to 2 decimals
-          });
-        });
-
-        return updated;
-      });
-
-      const subjectNames = Object.keys(scoresBySubject)
-        .map(key => SUBJECT_SKILLS[key].name)
-        .join(', ');
-      showSuccess(t('examDataApplied', `Exam data applied to: ${subjectNames}`));
-    } else {
-      showError(t('cannotMatchSubject', 'Could not match selected exams to any subject category'));
-    }
-  }, [studentExams, studentExamSources, showError, showSuccess, t]);
 
   /**
    * Get all skill cells in order for keyboard navigation
@@ -1280,42 +1164,6 @@ export default function TeacherExamRecords({ user }) {
                                           📋
                                         </button>
                                       </div>
-                                      {studentExams && studentExams[studentId] && studentExams[studentId].length > 0 ? (
-                                        <div className="flex flex-col gap-2">
-                                          <label className="text-xs font-medium text-gray-700">
-                                            {t('selectExams', 'Select Exams')}:
-                                          </label>
-                                          <div className="flex flex-col gap-1 max-h-40 overflow-y-auto border border-gray-200 rounded p-2 bg-gray-50">
-                                            {studentExams[studentId].map((exam, idx) => {
-                                              const isSelected = (studentExamSources[studentId] || new Set()).has(idx);
-                                              return (
-                                                <label key={idx} className="flex items-center gap-2 cursor-pointer hover:bg-white p-1 rounded">
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={isSelected}
-                                                    onChange={() => toggleStudentExamSelection(studentId, idx)}
-                                                    className="w-3 h-3 rounded border-gray-300 text-blue-600"
-                                                  />
-                                                  <span className="text-xs text-gray-700">
-                                                    {exam.examTitle || `${t('exam', 'Exam')} ${idx + 1}`} - {exam.subjectKhmerName || exam.subjectName || 'N/A'}
-                                                  </span>
-                                                </label>
-                                              );
-                                            })}
-                                          </div>
-                                          <button
-                                            onClick={() => handleApplySelectedExamsToScores(studentId)}
-                                            disabled={(studentExamSources[studentId] || new Set()).size === 0}
-                                            className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                                          >
-                                            {t('applyScores', 'Apply Scores')}
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <p className="text-xs text-gray-400 mt-1">
-                                          {t('noExamRecords', 'No exam records')}
-                                        </p>
-                                      )}
                                     </div>
                                   </td>
                                   {Object.entries(SUBJECT_SKILLS).map(([subjectKey, subject]) => {
