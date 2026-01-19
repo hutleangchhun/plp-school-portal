@@ -19,6 +19,7 @@ import Badge from '../../components/ui/Badge';
 import Dropdown from '../../components/ui/Dropdown';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import Modal from '../../components/ui/Modal';
+import { YearPicker } from '../../components/ui/year-picker';
 import {
   BookOpen,
   Eye,
@@ -64,6 +65,35 @@ const SUBJECT_SKILLS = {
     name: 'Foreign Languages',
     skills: ['Listening', 'Speaking', 'Reading', 'Writing']
   }
+};
+
+/**
+ * Mapping of subject + skill combinations to API field names
+ * Maps the internal structure (subjectKey + skill) to the flat API field names
+ */
+const SUBJECT_SKILL_TO_API_FIELD = {
+  'khmer_Listening': 'khmerListening',
+  'khmer_Writing': 'khmerWriting',
+  'khmer_Reading': 'khmerReading',
+  'khmer_Speaking': 'khmerSpeaking',
+  'math_Number': 'mathNumber',
+  'math_Geometry': 'mathGeometry',
+  'math_Statistics': 'mathStatistic',
+  'science_Basic Concepts': 'science',
+  'ethics_Ethics': 'socialStudies',
+  'ethics_Civic Studies': 'socialStudies',
+  'sport_Physical Fitness': 'sport',
+  'sport_Skills': 'sport',
+  'sport_Participation': 'sport',
+  'health_Health': 'healthHygiene',
+  'health_Hygiene': 'healthHygiene',
+  'life_skills_Problem Solving': 'lifeSkills',
+  'life_skills_Communication': 'lifeSkills',
+  'life_skills_Creativity': 'lifeSkills',
+  'foreign_lang_Listening': 'foreignLanguage',
+  'foreign_lang_Speaking': 'foreignLanguage',
+  'foreign_lang_Reading': 'foreignLanguage',
+  'foreign_lang_Writing': 'foreignLanguage'
 };
 
 /**
@@ -540,36 +570,101 @@ export default function TeacherExamRecords({ user }) {
       setSavingScores(true);
       startLoading('saveScores', t('savingScores', 'Saving scores...'));
 
-      // Format month as YYYY-MM for API
-      const monthFormatted = `${selectedAcademicYear}-${String(selectedMonth).padStart(2, '0')}`;
+      const year = parseInt(selectedAcademicYear);
+      const month = selectedMonth; // Use month as number (1-12)
 
-      // Prepare data for API
-      const scoresToSave = [];
+      // Validate that all required cells have values (at least 0)
+      const missingCells = [];
+      let studentRowCount = 0;
+
       Object.entries(scoreData).forEach(([studentId, subjects]) => {
+        studentRowCount++;
+        Object.entries(subjects).forEach(([subjectKey, skills]) => {
+          const hasSubheader = ['khmer', 'math'].includes(subjectKey);
+
+          if (hasSubheader) {
+            // For subjects with subheaders, check each skill
+            Object.entries(skills).forEach(([skill, score]) => {
+              if (score === '') {
+                missingCells.push({
+                  studentId,
+                  subject: SUBJECT_SKILLS[subjectKey].name,
+                  skill
+                });
+              }
+            });
+          } else {
+            // For subjects without subheaders, check first skill only
+            const firstSkill = SUBJECT_SKILLS[subjectKey].skills[0];
+            const score = skills[firstSkill];
+            if (score === '') {
+              missingCells.push({
+                studentId,
+                subject: SUBJECT_SKILLS[subjectKey].name,
+                skill: 'All'
+              });
+            }
+          }
+        });
+      });
+
+      // If there are missing cells, show error
+      if (missingCells.length > 0) {
+        const errorMessage = t('incompletScores', 'Please fill in all score cells. Missing scores for:') + '\n' +
+          missingCells.slice(0, 5).map(cell => `Student ID: ${cell.studentId} - ${cell.subject}`).join('\n') +
+          (missingCells.length > 5 ? `\n... ${t('andMore', 'and')} ${missingCells.length - 5} ${t('more', 'more')}` : '');
+        showError(errorMessage);
+        setSavingScores(false);
+        stopLoading('saveScores');
+        return;
+      }
+
+      // Transform scoreData from nested structure to flat API format
+      // One record per student per month with all subject scores as flat fields
+      const recordsByStudent = {};
+
+      Object.entries(scoreData).forEach(([studentId, subjects]) => {
+        const studentIdNum = parseInt(studentId);
+
+        // Initialize record for this student if not exists
+        if (!recordsByStudent[studentIdNum]) {
+          recordsByStudent[studentIdNum] = {
+            studentId: studentIdNum,
+            month,
+            year,
+            classId: selectedClass?.id || null
+          };
+        }
+
+        // Process all subject scores and map to API field names
         Object.entries(subjects).forEach(([subjectKey, skills]) => {
           Object.entries(skills).forEach(([skill, score]) => {
             if (score !== '') {
-              scoresToSave.push({
-                studentId: parseInt(studentId),
-                subject: subjectKey,
-                skill,
-                score: parseFloat(score), // Keep as float for API
-                month: monthFormatted
-              });
+              // Get the API field name from the mapping
+              const fieldKey = `${subjectKey}_${skill}`;
+              const apiFieldName = SUBJECT_SKILL_TO_API_FIELD[fieldKey];
+
+              if (apiFieldName) {
+                // Store the score value in the appropriate API field
+                recordsByStudent[studentIdNum][apiFieldName] = parseFloat(score);
+              }
             }
           });
         });
       });
 
-      if (scoresToSave.length === 0) {
+      // Convert to array and validate that we have records
+      const recordsToSave = Object.values(recordsByStudent);
+
+      if (recordsToSave.length === 0) {
         showError(t('noScoresToSave', 'Please enter at least one score'));
         setSavingScores(false);
         stopLoading('saveScores');
         return;
       }
 
-      // Call API to save scores using batch update
-      const response = await scoreService.submitBatchScores(scoresToSave);
+      // Call API to save records using the new monthly exam bulk endpoint
+      const response = await scoreService.submitMonthlyExamBulk(recordsToSave);
 
       if (response.success) {
         showSuccess(t('scoresSaved', 'Scores saved successfully'));
@@ -585,7 +680,7 @@ export default function TeacherExamRecords({ user }) {
       setSavingScores(false);
       stopLoading('saveScores');
     }
-  }, [scoreData, selectedMonth, startLoading, stopLoading, showError, showSuccess, t]);
+  }, [scoreData, selectedMonth, selectedAcademicYear, selectedClass, startLoading, stopLoading, showError, showSuccess, t]);
 
   /**
    * Initial load - fetch classes
@@ -1109,24 +1204,18 @@ export default function TeacherExamRecords({ user }) {
                     </div>
                   )}
 
-                  {/* Academic Year Selection */}
+                  {/* Year Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('academicYear', 'Academic Year')}
+                      {t('year', 'Year')}
                       <span className="text-red-500 ml-1">*</span>
                     </label>
-                    <Dropdown
+                    <YearPicker
                       value={selectedAcademicYear}
-                      onValueChange={(value) => setSelectedAcademicYear(value)}
-                      options={Array.from({ length: 10 }, (_, i) => {
-                        const year = new Date().getFullYear() - i;
-                        return {
-                          value: year.toString(),
-                          label: `${year} - ${year + 1}`
-                        };
-                      })}
-                      placeholder={t('chooseOption', 'ជ្រើសរើសជម្រើស')}
-                      className='w-full'
+                      onChange={(value) => setSelectedAcademicYear(value)}
+                      placeholder={t('selectYear', 'Select Year')}
+                      fromYear={2000}
+                      toYear={new Date().getFullYear() + 1}
                     />
                   </div>
 
@@ -1493,16 +1582,17 @@ export default function TeacherExamRecords({ user }) {
             </div>
           }
         >
-          {selectedStudentForDownload && (
+          {selectedStudentForDownload ? (
             <div>
-                {selectedStudentForDownload.exams.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">{t('noExams', 'No exam records found')}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Select All / Deselect All */}
-                    <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+                {selectedStudentForDownload.exams ? (
+                  selectedStudentForDownload.exams.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">{t('noExams', 'No exam records found')}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* Select All / Deselect All */}
+                      <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
                       <input
                         type="checkbox"
                         checked={selectedExamsForDownload.size === selectedStudentForDownload.exams.length}
@@ -1560,10 +1650,15 @@ export default function TeacherExamRecords({ user }) {
                         </div>
                       </div>
                     ))}
+                    </div>
+                  )
+                ) : (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
                   </div>
                 )}
             </div>
-          )}
+          ) : null}
         </Modal>
 
       {/* Exam History Modal */}
@@ -1643,6 +1738,12 @@ export default function TeacherExamRecords({ user }) {
                                   <span className="text-gray-600">{t('subject', 'Subject')}:</span>
                                   <span className="font-semibold">{exam.subjectKhmerName || exam.subjectName || '-'}</span>
                                 </div>
+                                {exam.skillName && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">{t('skill', 'Skill')}:</span>
+                                    <span className="font-semibold text-blue-600">{exam.skillName}</span>
+                                  </div>
+                                )}
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">{t('examType', 'Exam Type')}:</span>
                                   <span className="font-semibold">{getExamTypeLabel(exam.examType, t)}</span>

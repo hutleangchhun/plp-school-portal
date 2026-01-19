@@ -57,6 +57,31 @@ export const scoreService = {
   },
 
   /**
+   * Submit student monthly exam records in bulk
+   * @param {Array} records - Array of monthly exam record objects with flattened subject scores
+   * @returns {Promise<Object>} Response from API
+   */
+  async submitMonthlyExamBulk(records) {
+    try {
+      if (!Array.isArray(records) || records.length === 0) {
+        throw new Error('Records array is required and must not be empty');
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.post(ENDPOINTS.STUDENT_MONTHLY_EXAM.BULK, records)
+      );
+
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error('Error submitting monthly exam records:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get grades for a specific student
    * @param {string|number} studentId - The student ID
    * @param {Object} options - Query options (subjectId, etc.)

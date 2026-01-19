@@ -185,6 +185,10 @@ const ENDPOINTS = {
         `/grades/report/class/${classId}/${subjectId}?term=${term}`,
     },
   },
+  STUDENT_MONTHLY_EXAM: {
+    BASE: '/student-monthly-exam',
+    BULK: '/student-monthly-exam/bulk',
+  },
   UPLOAD: {
     SINGLE: '/upload/single',
     MULTIPLE: '/upload/multiple',

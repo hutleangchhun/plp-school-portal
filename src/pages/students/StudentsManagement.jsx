@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Plus, MinusCircle, Edit2, Users, X, ArrowRightLeft, Eye, Filter, Download } from 'lucide-react';
+import { Search, Plus, MinusCircle, Edit2, Users, X, ArrowRightLeft, Eye, Filter } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -25,7 +25,6 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { exportStudentToExcel } from '../../utils/studentDownloadUtils';
 
 /**
  * StudentsManagement Component
@@ -138,29 +137,44 @@ export default function StudentsManagement() {
   const [availableClasses, setAvailableClasses] = useState([]);
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
   const [selectedClassId, setSelectedClassId] = useState('all');
+  const urlClassIdRef = useRef(null); // Store classId from URL params to prevent reset
+  const isFirstRenderRef = useRef(true); // Track if this is the first render to skip initial grade level reset
 
   // Read classId from URL query parameters and pre-select the class
   useEffect(() => {
     // Try to get encrypted params first
     const encryptedParams = searchParams.get('params');
+    console.log('🔍 URL params effect - encryptedParams:', encryptedParams);
 
     if (encryptedParams) {
       // Decrypt the parameters
       const decrypted = decryptParams(encryptedParams);
+      console.log('🔍 Decrypted params from URL:', decrypted);
+
       if (decrypted) {
-        console.log('Decrypted params from URL:', decrypted);
+        console.log('✅ Successfully decrypted params:', decrypted);
         // Pre-select the class if classId is provided
+        // IMPORTANT: Convert classId to string for consistent comparison with classDropdownOptions
         if (decrypted.classId && decrypted.classId !== 'all') {
-          setSelectedClassId(decrypted.classId);
+          const classId = String(decrypted.classId);
+          console.log('📌 Setting selectedClassId to:', classId, 'from decrypted:', decrypted.classId);
+          urlClassIdRef.current = classId; // Store in ref to prevent grade level reset
+          setSelectedClassId(classId);
         }
+      } else {
+        console.warn('❌ Failed to decrypt params from URL');
       }
     } else {
       // Fallback to non-encrypted params (for backward compatibility)
       const classIdParam = searchParams.get('classId');
+      console.log('🔍 No encrypted params, fallback classIdParam:', classIdParam);
 
       // Pre-select the class if classId is provided
       if (classIdParam && classIdParam !== 'all') {
-        setSelectedClassId(classIdParam);
+        const classId = String(classIdParam);
+        console.log('📌 Setting selectedClassId to:', classId);
+        urlClassIdRef.current = classId; // Store in ref to prevent grade level reset
+        setSelectedClassId(classId);
       }
     }
   }, [searchParams]);
@@ -185,7 +199,6 @@ export default function StudentsManagement() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [viewingStudent, setViewingStudent] = useState(null);
   const [loadingStudentDetails, setLoadingStudentDetails] = useState(false);
-  const [downloadingStudentId, setDownloadingStudentId] = useState(null);
   const [transferTargetClassId, setTransferTargetClassId] = useState('');
   const [bulkTransferTargetClassId, setBulkTransferTargetClassId] = useState('');
   // Use the custom hook for managing selected students
@@ -243,10 +256,41 @@ export default function StudentsManagement() {
     return options;
   }, [allClasses, t]);
 
-  // Reset selectedClassId when grade level changes
+  // Debug: Log dropdown options and selected value
   useEffect(() => {
+    console.log('🎯 Dropdown options and selection debug:');
+    console.log('   - selectedClassId:', selectedClassId, 'type:', typeof selectedClassId);
+    console.log('   - classDropdownOptions count:', classDropdownOptions.length);
+    if (classDropdownOptions.length > 0) {
+      console.log('   - First 3 options:', classDropdownOptions.slice(0, 3).map(opt => ({ value: opt.value, valueType: typeof opt.value, label: opt.label })));
+    }
+    const matching = classDropdownOptions.find(opt => {
+      const isMatch = opt.value === selectedClassId;
+      console.log(`     Checking: "${opt.value}" (type: ${typeof opt.value}) === "${selectedClassId}" (type: ${typeof selectedClassId}) => ${isMatch}`);
+      return isMatch;
+    });
+    console.log('   - Matching option found:', !!matching, matching?.label);
+  }, [selectedClassId, classDropdownOptions]);
+
+  // Reset selectedClassId when grade level changes (but only if not set from URL)
+  useEffect(() => {
+    // Skip on first render to allow URL params to be processed
+    if (isFirstRenderRef.current) {
+      console.log('🔄 Grade level effect skipped on first render');
+      isFirstRenderRef.current = false;
+      return;
+    }
+
+    // Don't reset if this classId came from URL params
+    if (urlClassIdRef.current === selectedClassId) {
+      console.log('🔄 Grade level changed but selectedClassId from URL is preserved:', selectedClassId);
+      return;
+    }
+
+    // Otherwise, reset to all when grade level changes
+    console.log('🔄 Grade level changed, resetting selectedClassId to all');
     setSelectedClassId('all');
-  }, [selectedGradeLevel]);
+  }, [selectedGradeLevel, selectedClassId]);
 
   // Enhanced client-side search function for class-filtered results
   const performClientSideSearch = useCallback((studentsData, searchQuery, poorCardId) => {
@@ -577,7 +621,20 @@ export default function StudentsManagement() {
     initializeClasses().catch((err) => {
       console.error('🚨 Unhandled error in initializeClasses:', err);
     });
-  }, [selectedGradeLevel]);
+  }, [selectedGradeLevel, initializeClasses]);
+
+  // Re-initialize classes when selectedClassId changes from URL (for initial pre-selection)
+  // This ensures classes are loaded before the filter is validated
+  useEffect(() => {
+    console.log('🔍 Check selectedClassId effect - selectedClassId:', selectedClassId, 'classes.length:', classes.length);
+    if (selectedClassId !== 'all' && classes.length === 0) {
+      console.log('🔄 selectedClassId from URL set to:', selectedClassId, '- re-initializing classes');
+      classesInitialized.current = false; // Force re-fetch
+      initializeClasses().catch((err) => {
+        console.error('🚨 Unhandled error in initializeClasses:', err);
+      });
+    }
+  }, [selectedClassId, classes.length, initializeClasses]);
 
   // Initial fetch when school ID becomes available
   useEffect(() => {
@@ -630,6 +687,12 @@ export default function StudentsManagement() {
       return; // Wait for school ID
     }
 
+    // IMPORTANT: If a specific class is selected from URL, wait for classes to load first
+    if (fetchParams.classId !== 'all' && classes.length === 0) {
+      console.log(`Waiting for classes to load before fetching students for class ${fetchParams.classId}...`);
+      return; // Wait for classes to load so validation can happen
+    }
+
     // Debounce only for search changes, immediate for filter changes
     const isSearchChange = fetchParams.searchTerm.trim() !== '';
     const delay = isSearchChange ? 500 : 100; // Small delay to batch state changes
@@ -649,7 +712,7 @@ export default function StudentsManagement() {
       console.log(`Cleaning up timer`);
       clearTimeout(timer);
     };
-  }, [fetchParams, schoolId]);
+  }, [fetchParams, schoolId, classes.length]);
 
   // Close export dropdown when clicking outside
   useEffect(() => {
@@ -1392,19 +1455,6 @@ export default function StudentsManagement() {
   /**
    * Download student data as Excel file
    */
-  const handleDownloadStudent = async (student) => {
-    try {
-      setDownloadingStudentId(student.id);
-      await exportStudentToExcel(student, t);
-      showSuccess(t('studentDownloadSuccess', 'Student data downloaded successfully'));
-    } catch (err) {
-      console.error('Error downloading student:', err);
-      showError(t('studentDownloadError', 'Failed to download student data'));
-    } finally {
-      setDownloadingStudentId(null);
-    }
-  };
-
   // Handle select all students on current page only
   const handleSelectAllCurrentPage = async () => {
     // If all current page students are already selected, deselect all current page
@@ -1607,22 +1657,6 @@ export default function StudentsManagement() {
             aria-label={t('moveStudentToMaster', 'Move student to master class')}
           >
             <MinusCircle className="h-4 w-4 stroke-[1.5]" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDownloadStudent(student);
-            }}
-            disabled={downloadingStudentId === student.id}
-            className="p-1.5 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            title={t('downloadStudentData', 'Download student data as Excel')}
-            aria-label={t('downloadStudentData', 'Download student data as Excel')}
-          >
-            {downloadingStudentId === student.id ? (
-              <DynamicLoader type="spinner" size="sm" variant="primary" />
-            ) : (
-              <Download className="h-4 w-4 stroke-[1.5]" />
-            )}
           </button>
         </div>
       )

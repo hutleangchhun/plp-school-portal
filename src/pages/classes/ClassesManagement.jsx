@@ -1077,7 +1077,11 @@ export default function ClassesManagement() {
                     capacity={classItem.capacity}
                     badges={badges}
                     onManage={() => {
-                      const encryptedParams = encryptParams({ classId: classItem.id, schoolId: schoolInfo.id });
+                      const paramsToEncrypt = { classId: classItem.id, schoolId: schoolInfo.id };
+                      console.log('📤 Encrypting params:', paramsToEncrypt);
+                      const encryptedParams = encryptParams(paramsToEncrypt);
+                      console.log('📤 Encrypted params:', encryptedParams);
+                      console.log('📤 Full URL:', `/students?params=${encryptedParams}`);
                       navigate(`/students?params=${encryptedParams}`);
                     }}
                     onEdit={() => handleEditClass(classItem)}

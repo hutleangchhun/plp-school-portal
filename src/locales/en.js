@@ -1033,6 +1033,14 @@ export const en = {
   totalScore: 'Total Score',
   average: 'Average',
   grading: 'Grade',
+  scoreInput: 'Score Input',
+  incompletScores: 'Please fill in all score cells. Missing scores for:',
+  andMore: 'and',
+  more: 'more',
+  noScoresToSave: 'Please enter at least one score',
+  scoresSaved: 'Scores saved successfully',
+  errorSavingScores: 'Failed to save scores',
+  enterStudentScores: 'Enter student scores for each skill category',
 
   // QR Code Card - Translations
   studentIdentification: 'Student Identification',

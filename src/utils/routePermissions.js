@@ -516,10 +516,6 @@ export const getNavigationItems = (user, t) => {
       name: t('reports', 'Reports'),
       href: '/teacher-reports',
     },
-    {
-      name: t('myStudentsExams', 'My Students Exams'),
-      href: '/my-students-exams',
-    },
   ];
 
   // Add multi-role dashboard if teacher has secondary roles
