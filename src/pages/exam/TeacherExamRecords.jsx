@@ -287,7 +287,7 @@ export default function TeacherExamRecords({ user }) {
       // Fetch all students in the class (no pagination for score input)
       const response = await studentService.getStudentsBySchoolClasses(schoolId, {
         classId: selectedClass,
-        limit: 10
+        limit: 100
       });
 
       if (response.success) {
@@ -313,14 +313,18 @@ export default function TeacherExamRecords({ user }) {
 
           // Fetch exam history for this student
           try {
+            console.log(`Fetching exams for student ${studentId} (userId: ${userId})`);
             const examResponse = await examHistoryService.getUserExamHistoryFiltered(userId);
             const exams = Array.isArray(examResponse.data) ? examResponse.data : (examResponse.data ? [examResponse.data] : []);
+            console.log(`Found ${exams.length} exams for student ${studentId}:`, exams);
             examsMap[studentId] = exams;
           } catch (error) {
             console.warn(`Failed to fetch exam history for student ${userId}:`, error);
             examsMap[studentId] = [];
           }
         }
+
+        console.log('Final examsMap:', examsMap);
 
         setScoreData(initialScores);
         setStudentExams(examsMap);
@@ -1170,7 +1174,7 @@ export default function TeacherExamRecords({ user }) {
                                         <p className="text-sm font-semibold text-gray-900">{studentName}</p>
                                         <p className="text-xs text-gray-500">ID: {studentId}</p>
                                       </div>
-                                      {studentExams[studentId] && studentExams[studentId].length > 0 && (
+                                      {studentExams && studentExams[studentId] && studentExams[studentId].length > 0 ? (
                                         <div className="flex flex-col gap-1">
                                           <label className="text-xs font-medium text-gray-700">
                                             {t('selectExam', 'Select Exam Source')}:
@@ -1194,6 +1198,10 @@ export default function TeacherExamRecords({ user }) {
                                             ))}
                                           </select>
                                         </div>
+                                      ) : (
+                                        <p className="text-xs text-gray-400 mt-1">
+                                          {t('noExamRecords', 'No exam records')}
+                                        </p>
                                       )}
                                     </div>
                                   </td>
