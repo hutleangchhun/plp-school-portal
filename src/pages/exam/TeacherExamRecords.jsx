@@ -107,6 +107,11 @@ export default function TeacherExamRecords({ user }) {
   const [selectedExamsForDownload, setSelectedExamsForDownload] = useState(new Set());
   const [isExporting, setIsExporting] = useState(false);
 
+  // State for Exam History Modal
+  const [showExamHistoryModal, setShowExamHistoryModal] = useState(false);
+  const [selectedStudentForHistory, setSelectedStudentForHistory] = useState(null);
+  const [examHistoryLoading, setExamHistoryLoading] = useState(false);
+
   /**
    * Fetch teacher's assigned classes
    */
@@ -728,6 +733,31 @@ export default function TeacherExamRecords({ user }) {
   };
 
   /**
+   * Open exam history modal for a student
+   */
+  const handleOpenExamHistoryModal = async (student) => {
+    try {
+      setExamHistoryLoading(true);
+      const userId = student.user?.id || student.userId || student.id;
+
+      // Fetch exam history from API
+      const response = await examHistoryService.getUserExamHistoryFiltered(userId);
+      const exams = Array.isArray(response.data) ? response.data : (response.data ? [response.data] : []);
+
+      setSelectedStudentForHistory({
+        student,
+        exams
+      });
+      setShowExamHistoryModal(true);
+    } catch (error) {
+      console.error('Error fetching exam history:', error);
+      showError(t('errorFetchingExamHistory', 'Failed to fetch exam history'));
+    } finally {
+      setExamHistoryLoading(false);
+    }
+  };
+
+  /**
    * Open download modal for a student
    */
   const handleOpenDownloadModal = (studentRecord) => {
@@ -1207,9 +1237,19 @@ export default function TeacherExamRecords({ user }) {
                                 <tr key={`${rowIndex}-${studentId}`} className="hover:bg-gray-50 border-b border-gray-100">
                                   <td className="text-left sticky left-0 z-10 min-w-80 bg-gray-50 border-r border-gray-200">
                                     <div className="flex flex-col gap-2 p-3">
-                                      <div>
-                                        <p className="text-sm font-semibold text-gray-900">{studentName}</p>
-                                        <p className="text-xs text-gray-500">ID: {studentId}</p>
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                          <p className="text-sm font-semibold text-gray-900">{studentName}</p>
+                                          <p className="text-xs text-gray-500">ID: {studentId}</p>
+                                        </div>
+                                        <button
+                                          onClick={() => handleOpenExamHistoryModal(student)}
+                                          disabled={examHistoryLoading}
+                                          className="text-xs px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                                          title={t('viewExamHistory', 'View Exam History')}
+                                        >
+                                          📋
+                                        </button>
                                       </div>
                                       {studentExams && studentExams[studentId] && studentExams[studentId].length > 0 ? (
                                         <div className="flex flex-col gap-2">
@@ -1576,6 +1616,124 @@ export default function TeacherExamRecords({ user }) {
             </div>
           </div>
         )}
+
+      {/* Exam History Modal */}
+      {showExamHistoryModal && selectedStudentForHistory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex justify-between items-center border-b-4 border-blue-800">
+              <div>
+                <h2 className="text-xl font-bold">{t('examHistory', 'Exam History')}</h2>
+                <p className="text-sm text-blue-100">
+                  {selectedStudentForHistory?.user?.full_name || selectedStudentForHistory?.full_name || 'Student'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowExamHistoryModal(false)}
+                className="text-white hover:bg-blue-800 p-2 rounded-full transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              {examHistoryLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+                </div>
+              ) : selectedStudentForHistory?.exams && selectedStudentForHistory.exams.length > 0 ? (
+                <div className="space-y-4">
+                  {selectedStudentForHistory.exams.map((exam, index) => (
+                    <div
+                      key={index}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Left Column */}
+                        <div>
+                          <h3 className="font-bold text-lg text-gray-900 mb-2">
+                            {exam.examTitle || '-'}
+                          </h3>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">{t('subject', 'Subject')}:</span>
+                              <span className="font-semibold">{exam.subjectKhmerName || exam.subjectName || '-'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">{t('examType', 'Exam Type')}:</span>
+                              <span className="font-semibold">{getExamTypeLabel(exam.examType, t)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">{t('examDate', 'Exam Date')}:</span>
+                              <span className="font-semibold">
+                                {exam.createdAt ? new Date(exam.createdAt).toLocaleDateString() : '-'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Column */}
+                        <div>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">{t('score', 'Score')}:</span>
+                              <span className="text-lg font-bold text-blue-600">
+                                {exam.percentage !== undefined && exam.percentage !== null
+                                  ? `${exam.percentage}%`
+                                  : exam.score !== undefined && exam.score !== null
+                                  ? `${exam.score}/${exam.totalScore || 100}`
+                                  : '-'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">{t('grade', 'Grade')}:</span>
+                              <span className="font-semibold text-lg">{exam.letterGrade || '-'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">{t('status', 'Status')}:</span>
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                exam.status === 'completed'
+                                  ? 'bg-green-100 text-green-800'
+                                  : exam.status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {exam.status || '-'}
+                              </span>
+                            </div>
+                            {exam.timeTaken && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">{t('duration', 'Duration')}:</span>
+                                <span className="font-semibold">{formatTimeTaken(exam.timeTaken)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 text-lg">{t('noExamsFound', 'No exam records found')}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-end gap-2">
+              <Button
+                onClick={() => setShowExamHistoryModal(false)}
+                variant="outline"
+              >
+                {t('close', 'Close')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </PageTransition>
   );
