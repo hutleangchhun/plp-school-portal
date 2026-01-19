@@ -6,6 +6,7 @@ import { useLoading } from '../../contexts/LoadingContext';
 import { examHistoryService } from '../../utils/api/services/examHistoryService';
 import { classService, studentService, scoreService } from '@/utils/api';
 import { encryptId } from '../../utils/encryption';
+import { exportExamResultsToExcel } from '../../utils/examExportUtils';
 import { formatClassIdentifier } from '../../utils/helpers';
 import { getFullName } from '../../utils/usernameUtils';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
@@ -20,7 +21,9 @@ import {
   BookOpen,
   Eye,
   Save,
-  AlertCircle
+  AlertCircle,
+  Download,
+  X
 } from 'lucide-react';
 
 /**
@@ -95,6 +98,14 @@ export default function TeacherExamRecords({ user }) {
   const [selectedAcademicYear, setSelectedAcademicYear] = useState(new Date().getFullYear().toString());
   const [scoreData, setScoreData] = useState({}); // { studentId: { subjectKey: { skillName: score } } }
   const [savingScores, setSavingScores] = useState(false);
+  const [studentExamSources, setStudentExamSources] = useState({}); // { studentId: examIndex } - track which exam is selected as score source
+  const [studentExams, setStudentExams] = useState({}); // { studentId: exams[] } - store exam records for each student
+
+  // State for Download Modal
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [selectedStudentForDownload, setSelectedStudentForDownload] = useState(null);
+  const [selectedExamsForDownload, setSelectedExamsForDownload] = useState(new Set());
+  const [isExporting, setIsExporting] = useState(false);
 
   /**
    * Fetch teacher's assigned classes
@@ -260,11 +271,13 @@ export default function TeacherExamRecords({ user }) {
 
   /**
    * Fetch all students from selected class for score input
+   * Also fetches exam records for each student
    */
   const fetchClassStudentsForScores = useCallback(async () => {
     try {
       if (!selectedClass) {
         setClassStudents([]);
+        setStudentExams({});
         return;
       }
 
@@ -283,8 +296,13 @@ export default function TeacherExamRecords({ user }) {
 
         // Initialize score data structure for all students
         const initialScores = {};
-        students.forEach(student => {
+        const examsMap = {};
+
+        // Fetch exam records for each student
+        for (const student of students) {
           const studentId = student.studentId || student.id;
+          const userId = student.user?.id || student.userId || student.id;
+
           initialScores[studentId] = {};
           Object.keys(SUBJECT_SKILLS).forEach(subjectKey => {
             initialScores[studentId][subjectKey] = {};
@@ -292,8 +310,20 @@ export default function TeacherExamRecords({ user }) {
               initialScores[studentId][subjectKey][skill] = '';
             });
           });
-        });
+
+          // Fetch exam history for this student
+          try {
+            const examResponse = await examHistoryService.getUserExamHistoryFiltered(userId);
+            const exams = Array.isArray(examResponse.data) ? examResponse.data : (examResponse.data ? [examResponse.data] : []);
+            examsMap[studentId] = exams;
+          } catch (error) {
+            console.warn(`Failed to fetch exam history for student ${userId}:`, error);
+            examsMap[studentId] = [];
+          }
+        }
+
         setScoreData(initialScores);
+        setStudentExams(examsMap);
       }
     } catch (error) {
       console.error('Error fetching class students:', error);
@@ -366,6 +396,63 @@ export default function TeacherExamRecords({ user }) {
       }));
     }
   }, []);
+
+  /**
+   * Apply exam data to score fields for a student
+   * Maps exam score to the selected subject skill
+   */
+  const handleApplyExamToScores = useCallback((studentId, examIndex) => {
+    const studentExamList = studentExams[studentId];
+    if (!studentExamList || !studentExamList[examIndex]) {
+      showError(t('noExamSelected', 'Please select a valid exam'));
+      return;
+    }
+
+    const exam = studentExamList[examIndex];
+    const score = exam.percentage !== undefined && exam.percentage !== null
+      ? exam.percentage
+      : exam.score !== undefined && exam.score !== null
+      ? exam.score
+      : 0;
+
+    // Try to match exam subject to SUBJECT_SKILLS
+    const examSubject = exam.subjectName?.toLowerCase() || '';
+    let matchedSubjectKey = null;
+
+    // Map exam subject to our subject keys
+    if (examSubject.includes('khmer')) matchedSubjectKey = 'khmer';
+    else if (examSubject.includes('math') || examSubject.includes('mathematics')) matchedSubjectKey = 'math';
+    else if (examSubject.includes('science')) matchedSubjectKey = 'science';
+    else if (examSubject.includes('ethics') || examSubject.includes('civic')) matchedSubjectKey = 'ethics';
+    else if (examSubject.includes('sport') || examSubject.includes('physical')) matchedSubjectKey = 'sport';
+    else if (examSubject.includes('health')) matchedSubjectKey = 'health';
+    else if (examSubject.includes('life skills')) matchedSubjectKey = 'life_skills';
+    else if (examSubject.includes('language') || examSubject.includes('foreign')) matchedSubjectKey = 'foreign_lang';
+
+    // If subject matched, populate scores
+    if (matchedSubjectKey && SUBJECT_SKILLS[matchedSubjectKey]) {
+      setScoreData(prev => {
+        const updated = { ...prev };
+        if (!updated[studentId]) updated[studentId] = {};
+        if (!updated[studentId][matchedSubjectKey]) updated[studentId][matchedSubjectKey] = {};
+
+        // Fill all skills with the exam score
+        SUBJECT_SKILLS[matchedSubjectKey].skills.forEach(skill => {
+          updated[studentId][matchedSubjectKey][skill] = Math.min(score, 10);
+        });
+
+        return updated;
+      });
+
+      showSuccess(t('examDataApplied', `Exam data applied to ${SUBJECT_SKILLS[matchedSubjectKey].name}`));
+      setStudentExamSources(prev => ({
+        ...prev,
+        [studentId]: examIndex
+      }));
+    } else {
+      showError(t('cannotMatchSubject', 'Could not match exam subject to any subject category'));
+    }
+  }, [studentExams, showError, showSuccess, t]);
 
   /**
    * Get all skill cells in order for keyboard navigation
@@ -600,6 +687,60 @@ export default function TeacherExamRecords({ user }) {
   };
 
   /**
+   * Open download modal for a student
+   */
+  const handleOpenDownloadModal = (studentRecord) => {
+    setSelectedStudentForDownload(studentRecord);
+    setSelectedExamsForDownload(new Set(studentRecord.exams.map((_, idx) => idx)));
+    setShowDownloadModal(true);
+  };
+
+  /**
+   * Toggle exam selection in the modal
+   */
+  const toggleExamSelection = (examIndex) => {
+    const newSelection = new Set(selectedExamsForDownload);
+    if (newSelection.has(examIndex)) {
+      newSelection.delete(examIndex);
+    } else {
+      newSelection.add(examIndex);
+    }
+    setSelectedExamsForDownload(newSelection);
+  };
+
+  /**
+   * Export selected exams to Excel
+   */
+  const handleExportSelectedExams = async () => {
+    try {
+      if (!selectedStudentForDownload || selectedExamsForDownload.size === 0) {
+        showError(t('selectExamsToDownload', 'Please select at least one exam to download'));
+        return;
+      }
+
+      setIsExporting(true);
+      startLoading('exportExams', t('exportingExams', 'Exporting exams...'));
+
+      // Filter selected exams
+      const selectedExams = selectedStudentForDownload.exams.filter((_, idx) =>
+        selectedExamsForDownload.has(idx)
+      );
+
+      // Export to Excel
+      await exportExamResultsToExcel(selectedExams, selectedStudentForDownload.student, t);
+
+      showSuccess(t('studentDownloadSuccess', 'Student exam records downloaded successfully'));
+      setShowDownloadModal(false);
+    } catch (error) {
+      console.error('Error exporting exams:', error);
+      showError(t('studentDownloadError', 'Failed to download exam records'));
+    } finally {
+      setIsExporting(false);
+      stopLoading('exportExams');
+    }
+  };
+
+  /**
    * Get table columns configuration - shows only students with records
    */
   const getTableColumns = () => [
@@ -658,15 +799,28 @@ export default function TeacherExamRecords({ user }) {
       header: t('actions', 'Actions'),
       disableSort: true,
       render: (item) => (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleViewStudentRecords(item.studentRecord)}
-          className="flex items-center gap-1"
-        >
-          <Eye className="w-4 h-4" />
-          {t('viewRecords', 'View Records')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleViewStudentRecords(item.studentRecord)}
+            className="flex items-center gap-1"
+          >
+            <Eye className="w-4 h-4" />
+            {t('viewRecords', 'View Records')}
+          </Button>
+          {item.totalExams > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleOpenDownloadModal(item.studentRecord)}
+              className="flex items-center gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+            >
+              <Download className="w-4 h-4" />
+              {t('download', 'Download')}
+            </Button>
+          )}
+        </div>
       )
     }
   ];
@@ -1011,11 +1165,36 @@ export default function TeacherExamRecords({ user }) {
                               return (
                                 <tr key={`${rowIndex}-${studentId}`} className="hover:bg-gray-50 border-b border-gray-100">
                                   <td className="text-left sticky left-0 z-10 min-w-80 bg-gray-50 border-r border-gray-200">
-                                    <div className="flex items-center gap-3">
-                                      <div className='p-3'>
+                                    <div className="flex flex-col gap-2 p-3">
+                                      <div>
                                         <p className="text-sm font-semibold text-gray-900">{studentName}</p>
                                         <p className="text-xs text-gray-500">ID: {studentId}</p>
                                       </div>
+                                      {studentExams[studentId] && studentExams[studentId].length > 0 && (
+                                        <div className="flex flex-col gap-1">
+                                          <label className="text-xs font-medium text-gray-700">
+                                            {t('selectExam', 'Select Exam Source')}:
+                                          </label>
+                                          <select
+                                            value={studentExamSources[studentId] ?? ''}
+                                            onChange={(e) => {
+                                              if (e.target.value !== '') {
+                                                handleApplyExamToScores(studentId, parseInt(e.target.value));
+                                              }
+                                            }}
+                                            className="text-xs px-2 py-1 border border-gray-300 rounded bg-white hover:bg-blue-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                          >
+                                            <option value="">
+                                              {t('chooseExam', 'Choose exam...')}
+                                            </option>
+                                            {studentExams[studentId].map((exam, idx) => (
+                                              <option key={idx} value={idx}>
+                                                {exam.examTitle || `${t('exam', 'Exam')} ${idx + 1}`} - {exam.subjectKhmerName || exam.subjectName || 'N/A'}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                      )}
                                     </div>
                                   </td>
                                   {Object.entries(SUBJECT_SKILLS).map(([subjectKey, subject]) => {
@@ -1219,6 +1398,132 @@ export default function TeacherExamRecords({ user }) {
             )}
           </div>
         </FadeInSection>
+
+        {/* Download Modal */}
+        {showDownloadModal && selectedStudentForDownload && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    {t('selectExamsToDownload', 'Select Exams to Download')}
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {selectedStudentForDownload.student.user?.full_name ||
+                      selectedStudentForDownload.student.full_name ||
+                      `${selectedStudentForDownload.student.user?.first_name || ''} ${selectedStudentForDownload.student.user?.last_name || ''}`.trim()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowDownloadModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6">
+                {selectedStudentForDownload.exams.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">{t('noExams', 'No exam records found')}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Select All / Deselect All */}
+                    <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+                      <input
+                        type="checkbox"
+                        checked={selectedExamsForDownload.size === selectedStudentForDownload.exams.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedExamsForDownload(
+                              new Set(selectedStudentForDownload.exams.map((_, idx) => idx))
+                            );
+                          } else {
+                            setSelectedExamsForDownload(new Set());
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                      />
+                      <label className="text-sm font-medium text-gray-700">
+                        {t('selectAll', 'Select All')}
+                      </label>
+                    </div>
+
+                    {/* Exam List */}
+                    {selectedStudentForDownload.exams.map((exam, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedExamsForDownload.has(idx)}
+                          onChange={() => toggleExamSelection(idx)}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 mt-1"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {exam.examTitle || t('exam', 'Exam')}
+                          </p>
+                          <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-600">
+                            <div>
+                              <span className="font-medium">{t('subject', 'Subject')}:</span> {exam.subjectKhmerName || exam.subjectName || '-'}
+                            </div>
+                            <div>
+                              <span className="font-medium">{t('score', 'Score')}:</span>{' '}
+                              {exam.percentage !== undefined && exam.percentage !== null
+                                ? `${exam.percentage}%`
+                                : exam.score !== undefined && exam.score !== null
+                                ? `${exam.score}/${exam.totalScore || 100}`
+                                : '-'}
+                            </div>
+                            <div>
+                              <span className="font-medium">{t('grade', 'Grade')}:</span> {exam.letterGrade || '-'}
+                            </div>
+                            <div>
+                              <span className="font-medium">{t('status', 'Status')}:</span> {exam.status || '-'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex items-center justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDownloadModal(false)}
+                  disabled={isExporting}
+                >
+                  {t('cancel', 'Cancel')}
+                </Button>
+                <Button
+                  onClick={handleExportSelectedExams}
+                  disabled={isExporting || selectedExamsForDownload.size === 0}
+                  className="flex items-center gap-2"
+                >
+                  {isExporting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      {t('exporting', 'Exporting...')}
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      {t('downloadSelected', 'Download Selected')}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </PageTransition>
   );
