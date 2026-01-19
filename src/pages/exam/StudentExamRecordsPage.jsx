@@ -41,6 +41,7 @@ export default function StudentExamRecordsPage({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isFilterLoading, setIsFilterLoading] = useState(false);
+  const [contextData, setContextData] = useState(null); // Context data from TeacherExamRecords
 
   // Page state
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -86,6 +87,13 @@ export default function StudentExamRecordsPage({ user }) {
     fetchSubjects();
   }, []);
 
+  // Extract and store context data from TeacherExamRecords when component mounts
+  useEffect(() => {
+    if (location.state?.context) {
+      setContextData(location.state.context);
+    }
+  }, [location.state?.context]);
+
   // Fetch student exam data
   useEffect(() => {
     const fetchStudentExams = async () => {
@@ -98,6 +106,10 @@ export default function StudentExamRecordsPage({ user }) {
           setLoading(true);
           setStudent(location.state.student);
           setExams(location.state.exams || []);
+          // Also extract context data if available
+          if (location.state?.context) {
+            setContextData(location.state.context);
+          }
           setLoading(false);
         } else {
           // Either filtering is active OR accessing via direct URL
@@ -435,8 +447,38 @@ export default function StudentExamRecordsPage({ user }) {
           <p className="text-base font-medium text-gray-600 mt-2">{t('studentName', 'Student Name')}: {studentName}</p>
         </div>
       </div>
+
+      {/* Display context data from TeacherExamRecords if available */}
+      {contextData && (
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {contextData.sourceClass && (
+              <div>
+                <p className="text-xs font-medium text-gray-600">{t('class', 'Class')}</p>
+                <p className="text-sm font-semibold text-gray-900">{contextData.sourceClass.name || 'N/A'}</p>
+              </div>
+            )}
+            {contextData.totalStats && (
+              <>
+                <div>
+                  <p className="text-xs font-medium text-gray-600">{t('totalExams', 'Total Exams')}</p>
+                  <p className="text-sm font-semibold text-gray-900">{contextData.totalStats.totalExams}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-green-600">{t('passed', 'Passed')}</p>
+                  <p className="text-sm font-semibold text-green-700">{contextData.totalStats.passedCount}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-red-600">{t('failed', 'Failed')}</p>
+                  <p className="text-sm font-semibold text-red-700">{contextData.totalStats.failedCount}</p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
-  ), [studentName, t, handleClose]);
+  ), [studentName, t, handleClose, contextData]);
 
   // Memoize search and filter button section
   const searchFilterSection = useMemo(() => (

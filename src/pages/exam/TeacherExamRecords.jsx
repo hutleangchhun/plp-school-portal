@@ -571,15 +571,30 @@ export default function TeacherExamRecords({ user }) {
   /**
    * Handle viewing student exam records
    * Navigate to the student exam records page with encrypted user ID
+   * Passes additional context including class info, academic year, and exam stats
    */
   const handleViewStudentRecords = (studentRecord) => {
     const userId = studentRecord.student.user?.id || studentRecord.student.userId || studentRecord.student.id;
     const encryptedUserId = encryptId(userId);
 
+    // Get selected class info for context
+    const selectedClassInfo = classes.find(c => c.classId === selectedClass || c.id === selectedClass);
+
     navigate(`/exam-records/${encryptedUserId}`, {
       state: {
         student: studentRecord.student,
-        exams: studentRecord.exams || []
+        exams: studentRecord.exams || [],
+        // Pass additional context from TeacherExamRecords
+        context: {
+          sourceClass: selectedClassInfo,
+          sourceRoute: '/my-students-exams',
+          totalStats: {
+            totalExams: studentRecord.exams?.length || 0,
+            passedCount: studentRecord.exams?.filter(e => e.status === 'COMPLETED' && e.passed).length || 0,
+            failedCount: studentRecord.exams?.filter(e => e.status === 'COMPLETED' && !e.passed).length || 0,
+            completedCount: studentRecord.exams?.filter(e => e.status === 'COMPLETED').length || 0
+          }
+        }
       }
     });
   };
