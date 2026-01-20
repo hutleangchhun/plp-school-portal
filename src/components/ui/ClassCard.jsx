@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Edit2, Users } from 'lucide-react';
+import { Trash2, Edit2, Users, Loader } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -20,6 +20,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
  * - onEdit?: function
  * - onDelete?: function
  * - manageLabel?: string
+ * - isEditLoading?: boolean (shows loading state on edit button)
  */
 export default function ClassCard({
   title,
@@ -33,6 +34,7 @@ export default function ClassCard({
   onManage,
   onEdit,
   onDelete,
+  isEditLoading = false,
 }) {
   const { t } = useLanguage();
   const percent = capacity > 0 ? Math.min(Math.round((enrolled / capacity) * 100), 100) : 0;
@@ -118,13 +120,22 @@ export default function ClassCard({
               </Tooltip>
             )}
             {onEdit && (
-              <Tooltip content={t('editClass', 'Edit class details')} className="p-2 text-xs">
+              <Tooltip content={isEditLoading ? t('loadingClassDetails', 'Loading class details...') : t('editClass', 'Edit class details')} className="p-2 text-xs">
                 <button
                   onClick={onEdit}
-                  className="p-2 rounded-md text-blue-500 hover:text-blue-600 hover:bg-blue-50 border-2 border-blue-100 bg-blue-100 duration-300"
-                  title="Edit Class"
+                  disabled={isEditLoading}
+                  className={`p-2 rounded-md border-2 duration-300 ${
+                    isEditLoading
+                      ? 'text-gray-400 hover:text-gray-400 hover:bg-gray-50 border-gray-200 bg-gray-100 cursor-not-allowed'
+                      : 'text-blue-500 hover:text-blue-600 hover:bg-blue-50 border-blue-100 bg-blue-100'
+                  }`}
+                  title={isEditLoading ? 'Loading...' : 'Edit Class'}
                 >
-                  <Edit2 className="h-4 w-4" />
+                  {isEditLoading ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Edit2 className="h-4 w-4" />
+                  )}
                 </button>
               </Tooltip>
             )}

@@ -11,6 +11,7 @@ import Pagination from '../../components/ui/Pagination';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import classService from '../../utils/api/services/classService'; // Import the classService
 import { teacherService } from '../../utils/api/services/teacherService'; // Import teacherService for teacher selection
+import { schoolService } from '../../utils/api/services/schoolService'; // Import schoolService for school details
 import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
 import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
 import { GRADE_LEVELS, getGradeLabel } from '../../constants/grades';
@@ -104,6 +105,7 @@ export default function ClassesManagement() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [dataFetched, setDataFetched] = useState(false);
   const [paginationLoading, setPaginationLoading] = useState(false);
+  const [editingClassId, setEditingClassId] = useState(null);
   
   // Debug pagination loading state changes
   useEffect(() => {
@@ -213,8 +215,8 @@ export default function ClassesManagement() {
     }
   };
 
-  // Get school information from localStorage (no API call needed)
-  const fetchSchoolInfo = () => {
+  // Get school information from localStorage and API
+  const fetchSchoolInfo = async () => {
     try {
       const userData = localStorage.getItem('user');
       if (userData) {
@@ -222,10 +224,38 @@ export default function ClassesManagement() {
         const schoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId;
 
         if (schoolId) {
-          setSchoolInfo({
-            id: schoolId,
-            name: `School ${schoolId}`
-          });
+          // First, try to get school name from user object
+          const schoolNameFromUser =
+            user?.school?.name ||
+            user?.schoolName ||
+            user?.school_name ||
+            user?.teacher?.school?.name ||
+            user?.teacher?.schoolName ||
+            user?.account?.school?.name ||
+            user?.account?.schoolName;
+
+          if (schoolNameFromUser) {
+            setSchoolInfo({
+              id: schoolId,
+              name: schoolNameFromUser
+            });
+          } else {
+            // If not in user data, fetch from API
+            try {
+              const response = await schoolService.getSchoolById(schoolId);
+              const schoolName = response?.data?.name || response?.name || `School ${schoolId}`;
+              setSchoolInfo({
+                id: schoolId,
+                name: schoolName
+              });
+            } catch (apiErr) {
+              console.warn('Failed to fetch school from API:', apiErr);
+              setSchoolInfo({
+                id: schoolId,
+                name: `School ${schoolId}`
+              });
+            }
+          }
         } else {
           setSchoolInfo({ id: null, name: 'No School Found' });
         }
@@ -509,6 +539,7 @@ export default function ClassesManagement() {
 
   const handleEditClass = async (classItem) => {
     try {
+      setEditingClassId(classItem.classId || classItem.id);
       setLoading(true);
 
       // Fetch the latest class data from the API
@@ -670,6 +701,7 @@ export default function ClassesManagement() {
       showError(t('errorFetchingClassDetails') || 'Error fetching class details');
     } finally {
       setLoading(false);
+      setEditingClassId(null);
     }
   };
 
@@ -1076,6 +1108,7 @@ export default function ClassesManagement() {
                     enrolled={classItem.enrolled}
                     capacity={classItem.capacity}
                     badges={badges}
+                    isEditLoading={editingClassId === classItem.id}
                     onManage={() => {
                       const paramsToEncrypt = { classId: classItem.id, schoolId: schoolInfo.id };
                       console.log('📤 Encrypting params:', paramsToEncrypt);
