@@ -632,7 +632,7 @@ export default function TeacherExamRecords({ user }) {
             studentId: studentIdNum,
             month,
             year,
-            classId: selectedClass?.id || null
+            classId: selectedClass || null
           };
         }
 
