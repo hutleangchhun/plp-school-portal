@@ -348,8 +348,8 @@ const StudentSelection = () => {
         const day = String(filters.dateOfBirth.getDate()).padStart(2, "0");
         filterParams.dateOfBirth = `${year}-${month}-${day}`;
       }
-      // gradeLevel is sent to API as gradeLevel parameter
-      if (filters.gradeLevel) filterParams.gradeLevel = filters.gradeLevel;
+      // gradeLevel is sent to API as gradeLevel parameter (only if not 'all')
+      if (filters.gradeLevel && filters.gradeLevel !== 'all') filterParams.gradeLevel = filters.gradeLevel;
 
       // Add class filter
       if (filters.classId && filters.classId !== "any") {
@@ -503,6 +503,11 @@ const StudentSelection = () => {
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
     // Page reset is handled by useEffect for filter changes
+  };
+
+  // Handle grade level change - when user selects "All Grade Levels", reset to show all classes
+  const handleGradeLevelChange = (value) => {
+    handleFilterChange({ ...filters, gradeLevel: value });
   };
 
   // Check if all current page students (without class) are selected
@@ -896,10 +901,8 @@ const StudentSelection = () => {
                 </label>
                 <Dropdown
                   value={filters.gradeLevel}
-                  onValueChange={(value) =>
-                    handleFilterChange({ ...filters, gradeLevel: value })
-                  }
-                  options={getSharedGradeLevelOptions(t, false)}
+                  onValueChange={handleGradeLevelChange}
+                  options={getSharedGradeLevelOptions(t, true)}
                   placeholder={t("selectGradeLevel", "Select Grade Level")}
                   minWidth="w-full"
                   triggerClassName="text-sm w-full bg-gray-50 border-gray-200"
