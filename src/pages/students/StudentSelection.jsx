@@ -899,7 +899,7 @@ const StudentSelection = () => {
                   onValueChange={(value) =>
                     handleFilterChange({ ...filters, gradeLevel: value })
                   }
-                  options={getSharedGradeLevelOptions(t, true)}
+                  options={getSharedGradeLevelOptions(t, false)}
                   placeholder={t("selectGradeLevel", "Select Grade Level")}
                   minWidth="w-full"
                   triggerClassName="text-sm w-full bg-gray-50 border-gray-200"

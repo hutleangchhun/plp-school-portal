@@ -9,6 +9,7 @@ import { encryptId } from '../../utils/encryption';
 import { exportExamResultsToExcel } from '../../utils/examExportUtils';
 import { formatClassIdentifier } from '../../utils/helpers';
 import { getFullName } from '../../utils/usernameUtils';
+import { genderToKhmer } from '../../utils/formatters';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -25,7 +26,8 @@ import {
   Eye,
   Save,
   Download,
-  ClipboardList
+  ClipboardList,
+  Loader
 } from 'lucide-react';
 
 /**
@@ -154,6 +156,7 @@ export default function TeacherExamRecords({ user }) {
   // State for Score Input Tab
   const [activeTab, setActiveTab] = useState('records'); // 'records' or 'scores'
   const [classStudents, setClassStudents] = useState([]);
+  const [classStudentsLoading, setClassStudentsLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-12
   const [selectedAcademicYear, setSelectedAcademicYear] = useState(new Date().getFullYear().toString());
   const [scoreData, setScoreData] = useState({}); // { studentId: { subjectKey: { skillName: score } } }
@@ -331,7 +334,7 @@ export default function TeacherExamRecords({ user }) {
       setLoading(false);
       stopLoading('fetchExamRecords');
     }
-  }, [selectedClass, startLoading, stopLoading, t, fetchAllStudents, pagination.pageSize]);
+  }, [selectedClass, startLoading, stopLoading, t, pagination.pageSize, user]);
 
   /**
    * Fetch all students from selected class for score input
@@ -340,11 +343,16 @@ export default function TeacherExamRecords({ user }) {
     try {
       if (!selectedClass) {
         setClassStudents([]);
+        setClassStudentsLoading(false);
         return;
       }
 
+      setClassStudentsLoading(true);
       const schoolId = user?.teacher?.schoolId || user?.schoolId;
-      if (!schoolId) return;
+      if (!schoolId) {
+        setClassStudentsLoading(false);
+        return;
+      }
 
       // Fetch all students in the class (no pagination for score input)
       const response = await studentService.getStudentsBySchoolClasses(schoolId, {
@@ -376,6 +384,8 @@ export default function TeacherExamRecords({ user }) {
     } catch (error) {
       console.error('Error fetching class students:', error);
       showError(t('errorFetchingStudents', 'Failed to fetch students'));
+    } finally {
+      setClassStudentsLoading(false);
     }
   }, [selectedClass, user, showError, t]);
 
@@ -690,26 +700,23 @@ export default function TeacherExamRecords({ user }) {
   }, [fetchClasses]);
 
   /**
-   * Fetch class students when switching to score input tab
+   * Handle tab switching - fetch appropriate data for each tab
    */
   useEffect(() => {
-    if (activeTab === 'scores') {
-      fetchClassStudentsForScores();
-    }
-  }, [activeTab, fetchClassStudentsForScores]);
+    if (!selectedClass) return;
 
-  /**
-   * Reset pagination and load exam records when class is selected
-   */
-  useEffect(() => {
-    if (selectedClass) {
+    if (activeTab === 'scores') {
+      // Fetch all students for score input when switching to scores tab
+      fetchClassStudentsForScores();
+    } else if (activeTab === 'records') {
+      // Reset pagination and fetch paginated exam records when switching to records tab
       setPagination(prev => ({
         ...prev,
         currentPage: 1
       }));
       fetchExamRecords(1);
     }
-  }, [selectedClass, fetchExamRecords]);
+  }, [activeTab, selectedClass]); // Trigger on both tab change and class selection
 
   /**
    * Handle viewing student exam records
@@ -1114,6 +1121,7 @@ export default function TeacherExamRecords({ user }) {
                           }))}
                           placeholder={t('chooseOption', 'ជ្រើសរើសជម្រើស')}
                           className='w-full'
+                          disabled={loading}
                         />
                       </div>
                     )}
@@ -1128,7 +1136,8 @@ export default function TeacherExamRecords({ user }) {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder={t('searchStudents', 'Search by student name...')}
-                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={loading || !selectedClass}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500"
                       />
                     </div>
                   </div>
@@ -1192,6 +1201,7 @@ export default function TeacherExamRecords({ user }) {
                         <span className="text-red-500 ml-1">*</span>
                       </label>
                       <Dropdown
+                        disabled={classStudentsLoading}
                         value={selectedClass ? selectedClass.toString() : ''}
                         onValueChange={(value) => setSelectedClass(value ? parseInt(value) : null)}
                         options={classes.map(cls => ({
@@ -1249,7 +1259,9 @@ export default function TeacherExamRecords({ user }) {
                 </div>
 
                 {/* Score Input Section */}
-                {!selectedClass ? (
+                {classStudentsLoading ? (
+                  <PageLoader message={t('loadingStudents', 'Loading students...')} />
+                ) : !selectedClass ? (
                   <EmptyState
                     icon={BookOpen}
                     title={t('selectClassFirst', 'Select a Class')}
@@ -1319,6 +1331,8 @@ export default function TeacherExamRecords({ user }) {
                           <tbody className="bg-white">
                             {classStudents.map((student, rowIndex) => {
                               const studentId = student.studentId || student.id;
+                              const rawGender = student?.gender;
+                              const studentGender = genderToKhmer(rawGender);
                               const studentName = getFullName(student.user || student, '');
 
                               return (
@@ -1328,7 +1342,7 @@ export default function TeacherExamRecords({ user }) {
                                       <div className="flex items-start justify-between gap-2">
                                         <div>
                                           <p className="text-sm font-semibold text-gray-900">{studentName}</p>
-                                          <p className="text-xs text-gray-500">ID: {studentId}</p>
+                                          <p className="text-xs text-gray-500">ភេទ: {studentGender}</p>
                                         </div>
                                         <Button
                                           variant="link"
@@ -1337,7 +1351,11 @@ export default function TeacherExamRecords({ user }) {
                                           disabled={examHistoryLoading}
                                           title={t('viewExamHistory', 'View Exam History')}
                                         >
-                                          <ClipboardList className="w-4 h-4 inline-block mr-1" />
+                                          {examHistoryLoading ? (
+                                            <Loader className="w-4 h-4 inline-block mr-1 animate-spin" />
+                                          ) : (
+                                            <ClipboardList className="w-4 h-4 inline-block mr-1" />
+                                          )}
                                         </Button>
                                       </div>
                                     </div>

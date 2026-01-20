@@ -616,10 +616,10 @@ export const km = {
   viewAnalytics: 'មើលរបាយការណ៍និងការវិភាគទូលំទូលាយ',
 
   //examination
-  noExamRecordsForStudent: 'មិនមានទិន្នន័យការប្រលងរបស់សិស្ស',
-  studentExamRecords: 'ទិន្នន័យការប្រលងរបស់សិស្ស',
-  viewAllStudentExams: 'ពិនិត្រមើលទិន្នន័យនៃការប្រលងរបស់សិស្ស',
-  selectClassFirstDesc: 'សូមជ្រើសរើសថ្នាក់ពីកម្រងខាងលើដើម្បីបង្ហាញទិន្នន័យការប្រលងរបស់សិស្ស',
+  noExamRecordsForStudent: 'មិនមានទិន្នន័យការប្រឡងរបស់សិស្ស',
+  studentExamRecords: 'ទិន្នន័យការប្រឡងរបស់សិស្ស',
+  viewAllStudentExams: 'ពិនិត្រមើលទិន្នន័យនៃការប្រឡងរបស់សិស្ស',
+  selectClassFirstDesc: 'សូមជ្រើសរើសថ្នាក់ពីកម្រងខាងលើដើម្បីបង្ហាញទិន្នន័យការប្រឡងរបស់សិស្ស',
   noStudentsDesc: 'មិនមានសិស្សនៅក្នុងថ្នាក់ដែលអ្នកបានជ្រើសរើស',
   searchExams: 'ស្វែងរកសិស្ស',
   examRecord: 'កំណត់ត្រាការប្រលង',
@@ -722,7 +722,8 @@ export const km = {
   noScoresToSave: 'សូមបញ្ចូលពិន្ទុយ៉ាងហោចណាស់មួយលេខ',
   scoresSaved: 'បានរក្សាទុកពិន្ទុដោយជោគជ័យ',
   errorSavingScores: 'បរាជ័យក្នុងការរក្សាទុកពិន្ទុ',
-  enterStudentScores: 'បញ្ចូលពិន្ទុសិស្សសម្រាប់ក្រុមជំនាញនីមួយៗ',
+  enterStudentScores: 'បញ្ចូលពិន្ទុសិស្សសម្រាប់មុខវិជ្ជានីមួយៗ',
+  viewClassStudentExams: 'មើលទិន្នន័យនៃការប្រលង និងបញ្ចូលទិន្នន័យពិន្ទុប្រចាំខែរបស់សិស្សថ្នាក់',
 
 
 
