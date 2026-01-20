@@ -12,7 +12,6 @@ import { exportReport4SemesterToExcel } from '../../utils/report4SemesterExportU
 import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
-import { parentService } from '../../utils/api/services/parentService';
 import { bmiService } from '../../utils/api/services/bmiService';
 import { Button } from '@/components/ui/Button';
 import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
@@ -639,17 +638,18 @@ export default function Reports() {
           };
 
           // Add class filter for report1 (required) and report3/report4/report8 (optional)
+          // Skip class filtering for report6 - it fetches all students with disabilities
           if (selectedReport === 'report1') {
             // Report 1 requires a specific class
             fetchParams.classId = selectedClass;
-          } else if (selectedReport !== 'report1' && selectedClass && selectedClass !== 'all') {
-            // Other reports only filter by class if selected
+          } else if (selectedReport !== 'report1' && selectedReport !== 'report6' && selectedClass && selectedClass !== 'all') {
+            // Other reports only filter by class if selected (except report6)
             fetchParams.classId = selectedClass;
           }
-          
+
           // Add backend filters for report6 for performance optimization
           if (selectedReport === 'report6') {
-            fetchParams.hasAccessibility = true; // Only fetch students with disabilities
+            fetchParams.hasAccessibility = true; // Only fetch students with disabilities (no class filter)
           }
           
           console.log(`📄 Fetching page ${currentPage} with limit 100...`, fetchParams);
@@ -681,135 +681,25 @@ export default function Reports() {
         console.log(`✅ Fetched total of ${allBasicStudents.length} students from school`);
 
         if (allBasicStudents.length > 0) {
-          const basicStudents = allBasicStudents;
-          
-          // Step 2: For each student, fetch full details using user.id and then fetch parents using studentId
-          const studentsWithFullData = await Promise.all(
-            basicStudents.map(async (basicStudent) => {
-              try {
-                const userId = basicStudent.user?.id || basicStudent.userId;
-                const studentId = basicStudent.studentId || basicStudent.id;
-                
-                console.log(`🔍 Fetching full details for user ID: ${userId}, student ID: ${studentId}`);
-                
-                // Fetch full student details by user ID
-                const fullStudentResponse = await studentService.getStudentById(userId);
-                
-                if (!fullStudentResponse.success || !fullStudentResponse.data) {
-                  console.warn(`⚠️ Could not fetch full details for user ${userId}`);
-                  return { ...basicStudent, parents: [] };
-                }
-                
-                const fullStudent = fullStudentResponse.data;
-                console.log(`✅ Got full student data for ${fullStudent.first_name} ${fullStudent.last_name}`);
-                console.log(`📋 Student fields:`, {
-                  id: fullStudent.id,
-                  date_of_birth: fullStudent.date_of_birth,
-                  gender: fullStudent.gender,
-                  phone: fullStudent.phone,
-                  ethnic_group: fullStudent.ethnic_group,
-                  accessibility: fullStudent.accessibility,
-                  hasResidence: !!fullStudent.residence
-                });
-                
-                // Fetch parent information using studentId
-                const parentsResponse = await parentService.getParentsByStudentId(studentId);
-                
-                console.log(`👨‍👩‍👧 Parent response for student ${studentId}:`, {
-                  success: parentsResponse.success,
-                  hasData: !!parentsResponse.data,
-                  isArray: Array.isArray(parentsResponse.data),
-                  hasDataProperty: parentsResponse.data?.data !== undefined,
-                  dataType: typeof parentsResponse.data,
-                  fullData: parentsResponse.data
-                });
-                
-                // Handle parent data and fetch full parent details
-                let parentsArray = [];
-                if (parentsResponse.success && parentsResponse.data) {
-                  let rawParents = [];
-                  
-                  // Check if data is directly an array
-                  if (Array.isArray(parentsResponse.data)) {
-                    rawParents = parentsResponse.data;
-                    console.log(`📌 Parents data is array, length: ${rawParents.length}`);
-                  } 
-                  // Check if data has a 'data' property that is an array
-                  else if (parentsResponse.data.data && Array.isArray(parentsResponse.data.data)) {
-                    rawParents = parentsResponse.data.data;
-                    console.log(`📌 Parents in data.data array, length: ${rawParents.length}`);
-                  } 
-                  // Check if data has a 'parents' property that is an array
-                  else if (parentsResponse.data.parents && Array.isArray(parentsResponse.data.parents)) {
-                    rawParents = parentsResponse.data.parents;
-                    console.log(`📌 Parents in data.parents array, length: ${rawParents.length}`);
-                  } 
-                  // Otherwise treat as single parent object
-                  else if (typeof parentsResponse.data === 'object') {
-                    rawParents = [parentsResponse.data];
-                    console.log(`📌 Single parent object`);
-                  }
-                  
-                  console.log(`📋 Raw parents to process:`, rawParents);
-                  
-                  // Fetch full details for each parent using their user ID
-                  parentsArray = await Promise.all(
-                    rawParents.map(async (parent) => {
-                      try {
-                        const parentUserId = parent.user?.id || parent.userId;
-                        if (!parentUserId) {
-                          console.warn(`⚠️ No user ID found for parent:`, parent);
-                          return {
-                            ...parent,
-                            user: parent.user || {}
-                          };
-                        }
-                        
-                        console.log(`🔍 Fetching full parent details for user ID: ${parentUserId}`);
-                        const parentUserResponse = await studentService.getStudentById(parentUserId);
-                        
-                        if (parentUserResponse.success && parentUserResponse.data) {
-                          console.log(`✅ Got full parent data for ${parentUserResponse.data.first_name} ${parentUserResponse.data.last_name}`);
-                          return {
-                            ...parent,
-                            user: parentUserResponse.data
-                          };
-                        }
-                        
-                        return {
-                          ...parent,
-                          user: parent.user || {}
-                        };
-                      } catch (error) {
-                        console.warn(`❌ Failed to fetch parent user details:`, error);
-                        return {
-                          ...parent,
-                          user: parent.user || {}
-                        };
-                      }
-                    })
-                  );
-                }
-                
-                console.log(`📋 Processed ${parentsArray.length} parents with full details for student ${studentId}`);
-                
-                // Combine full student data with parents and preserve class info
-                return {
-                  ...fullStudent,
-                  studentId: studentId,
-                  class: basicStudent.class || fullStudent.class, // Preserve class from basicStudent
-                  className: basicStudent.class?.name || fullStudent.class?.name, // Add className for easy access
-                  parents: parentsArray
-                };
-              } catch (error) {
-                console.warn(`❌ Failed to fetch data for student:`, error);
-                return { ...basicStudent, parents: [] };
-              }
-            })
-          );
-          
-          console.log(`✅ Processed ${studentsWithFullData.length} students with full data and parents`);
-          console.log('📊 Sample student with full data:', studentsWithFullData[0]);
+          // Step 2: Data from getStudentsBySchoolClasses is already formatted
+          // The API response is already flattened, so we just need to normalize field names for compatibility
+          const studentsWithFullData = allBasicStudents.map((basicStudent) => ({
+            ...basicStudent,
+            // Ensure we have the right field names for Report6Preview
+            id: basicStudent.id || basicStudent.userId,
+            first_name: basicStudent.firstName || basicStudent.first_name,
+            last_name: basicStudent.lastName || basicStudent.last_name,
+            gender: basicStudent.gender,
+            date_of_birth: basicStudent.date_of_birth || basicStudent.dateOfBirth,
+            ethnic_group: basicStudent.ethnic_group || basicStudent.ethnicGroup,
+            accessibility: basicStudent.accessibility,
+            class: basicStudent.class,
+            className: basicStudent.class?.name,
+            parents: [] // Report 6 doesn't need parent data
+          }));
+
+          console.log(`✅ Processed ${studentsWithFullData.length} students with accessibility data`);
+          console.log('📊 Sample student data:', studentsWithFullData[0]);
           console.log('📊 Sample student class:', studentsWithFullData[0]?.class);
           
           // Apply client-side filtering as backup (in case API filter doesn't work properly)

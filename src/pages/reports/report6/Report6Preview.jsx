@@ -48,18 +48,25 @@ export const Report6Preview = ({ data }) => {
     {
       key: 'studentId',
       header: t('studentId', 'Student ID'),
-      render: (student) => student.student?.studentNumber || student.studentNumber || ''
+      render: (student) => student.studentId || student.id || ''
     },
     {
       key: 'name',
       header: t('name', 'Name'),
-      render: (student) => getFullName(student, ''),
+      render: (student) => {
+        const firstName = student.first_name || student.user?.first_name || '';
+        const lastName = student.last_name || student.user?.last_name || '';
+        return `${firstName} ${lastName}`.trim();
+      },
       cellClassName: 'font-medium text-gray-900'
     },
     {
       key: 'gender',
       header: t('gender', 'Gender'),
-      render: (student) => student.gender === 'MALE' ? t('male', 'ប្រុស') : student.gender === 'FEMALE' ? t('female', 'ស្រី') : ''
+      render: (student) => {
+        const gender = student.gender || student.user?.gender || '';
+        return gender === 'MALE' ? t('male', 'ប្រុស') : gender === 'FEMALE' ? t('female', 'ស្រី') : '';
+      }
     },
     {
       key: 'class',
@@ -82,8 +89,11 @@ export const Report6Preview = ({ data }) => {
       key: 'disabilityType',
       header: t('disabilityTypes', 'Disability Type'),
       render: (student) => {
-        const accessibility = student.accessibility || student.specialNeeds || student.special_needs || '';
-        return Array.isArray(accessibility) ? accessibility.join(', ') : accessibility;
+        const accessibility = student.accessibility || student.user?.accessibility || student.specialNeeds || student.special_needs || '';
+        if (Array.isArray(accessibility)) {
+          return accessibility.join(', ');
+        }
+        return accessibility || '';
       }
     }
   ];
