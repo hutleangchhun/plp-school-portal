@@ -74,26 +74,30 @@ export default function StudentQRCodeGenerator() {
     if (sname) setSchoolName(sname);
   }, []);
 
-  // 🔹 Fetch Classes filtered by grade level
+  // 🔹 Fetch Classes filtered by grade level (only if grade level is selected)
   useEffect(() => {
-    if (!schoolId) return;
+    if (!schoolId || selectedGradeLevel === 'all') {
+      setClasses([]);
+      setSelectedClass('all');
+      return;
+    }
+
     (async () => {
       try {
         setStudentLoading(true);
         clearError();
-        
-        // Build params for getBySchool
-        const params = { limit: 100 };
-        
-        // Add gradeLevel filter if selected
-        if (selectedGradeLevel && selectedGradeLevel !== 'all') {
-          params.gradeLevel = selectedGradeLevel;
-        }
-        
+
+        // Build params for getBySchool with required gradeLevel
+        const params = {
+          limit: 100,
+          gradeLevel: selectedGradeLevel // Required parameter
+        };
+
         const response = await classService.getBySchool(schoolId, params);
-        
+
         if (response.success && response.classes) {
-          setClasses([{ id: 'all', name: t('allClasses', 'ថ្នាក់រៀនទាំងអស់') }, ...response.classes]);
+          // Only show specific classes, no "All Classes" option
+          setClasses(response.classes);
           setSelectedClass('all'); // Reset class selection when grade level changes
         }
       } catch (err) {

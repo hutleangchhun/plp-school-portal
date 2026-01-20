@@ -22,7 +22,6 @@ import { useReport1Data, Report1Preview } from './report1/indexReport1';
 import { useReport4Data, Report4Preview, exportReport4ToExcel } from './report4/indexReport4';
 import { useReport6Data, Report6Preview, exportReport6ToExcel } from './report6/indexReport6';
 import { useReport8Data, Report8Preview } from './report8/indexReport8';
-import { useReport9Data, Report9Preview, exportReport9ToExcel } from './report9/indexReport9';
 import { 
   BarChart, 
   Bar, 
@@ -63,12 +62,12 @@ export default function Reports() {
     { value: 'report4', label: t('report4', 'បញ្ជីអវត្តមានសិស្ស') },
     { value: 'report6', label: t('report6', 'បញ្ជីឈ្មោះសិស្សមានពិការភាព') },
     { value: 'report8', label: t('report8', 'បញ្ជីឈ្មោះសិស្សមានទិន្នន័យ BMI') },
-    { value: 'report9', label: t('report9', 'បញ្ជីឈ្មោះសិស្សជាជនជាតិដើមភាគតិច') },
-    
+
     // 🚧 Not Yet Implemented - Uncomment when ready
     // { value: 'report3', label: t('report3', 'បញ្ជីមធ្យមភាគសិស្ស') },
     // { value: 'report5', label: t('report5', 'បញ្ជីឈ្មោះសិស្សអាហារូបករណ៍') },
     // { value: 'report7', label: t('report7', 'បញ្ជីឈ្មោះសិស្សមានបញ្ហាសុខភាព') },
+    // { value: 'report9', label: t('report9', 'បញ្ជីឈ្មោះសិស្សជាជនជាតិដើមភាគតិច') },
     // { value: 'report10', label: t('report10', 'បញ្ជីឈ្មោះសិស្សផ្លាស់ប្ដូរថ្នាក់') },
     // { value: 'report11', label: t('report11', 'បញ្ជីឈ្មោះសិស្សបោះបង់ការសិក្សារ') },
     // { value: 'report12', label: t('report12', 'សៀវភៅតាមដាន') },
@@ -105,8 +104,16 @@ export default function Reports() {
   }, [selectedReport, selectedPeriod, selectedMonth, selectedYear, selectedClass, selectedSemesterStartDate, selectedSemesterEndDate]);
 
   // Fetch classes when report1, report3, report4, or report8 is selected, or when grade level changes
+  // For report1 and report4: Only fetch if a specific grade level is selected
   useEffect(() => {
     if (['report1', 'report3', 'report4', 'report8'].includes(selectedReport)) {
+      // For report1 and report4: require grade level selection before fetching
+      if (['report1', 'report4'].includes(selectedReport) && (!selectedGradeLevel || selectedGradeLevel === 'all')) {
+        setAllClasses([]);
+        setSelectedClass('all');
+        return;
+      }
+
       fetchSchoolClasses();
       // Reset class selection when grade level changes
       setSelectedClass('all');
@@ -159,8 +166,8 @@ export default function Reports() {
     const classOptions = [];
 
     // Only add "All Classes" option for reports that allow it
-    // Report 1 requires specific class selection
-    if (selectedReport !== 'report1') {
+    // Report 1 and Report 4 require specific class selection
+    if (!['report1', 'report4'].includes(selectedReport)) {
       classOptions.push({ value: 'all', label: t('allClasses', 'All Classes') });
     }
 
@@ -615,8 +622,8 @@ export default function Reports() {
           console.warn('⚠️ No students found');
           setReportData([]);
         }
-      } else if (['report1', 'report6', 'report9'].includes(selectedReport)) {
-        // For report1, report6, report9 - fetch students with full details and parent information
+      } else if (['report1', 'report6'].includes(selectedReport)) {
+        // For report1, report6 - fetch students with full details and parent information
         console.log(`📋 Fetching students with parent information for ${selectedReport}`);
         
         // Step 1: Fetch all students from school in batches (API limit is 100 per page)
@@ -640,13 +647,9 @@ export default function Reports() {
             fetchParams.classId = selectedClass;
           }
           
-          // Add backend filters for report6 and report9 for performance optimization
+          // Add backend filters for report6 for performance optimization
           if (selectedReport === 'report6') {
             fetchParams.hasAccessibility = true; // Only fetch students with disabilities
-          }
-          
-          if (selectedReport === 'report9') {
-            fetchParams.isEtnicgroup = true; // Only fetch ethnic minority students
           }
           
           console.log(`📄 Fetching page ${currentPage} with limit 100...`, fetchParams);
@@ -824,20 +827,6 @@ export default function Reports() {
               return hasDisability;
             });
             console.log(`🦽 Filtered ${filteredData.length} students with disabilities (from ${studentsWithFullData.length} total)`);
-          } else if (selectedReport === 'report9') {
-            // Filter students with actual ethnic minority groups (exclude Khmer majority)
-            filteredData = studentsWithFullData.filter(student => {
-              const ethnicGroup = student.ethnicGroup || student.ethnic_group || '';
-              const isValidEthnicGroup = ethnicGroup && 
-                                        ethnicGroup !== '' && 
-                                        ethnicGroup !== 'ខ្មែរ' && 
-                                        ethnicGroup !== 'Unknown' && 
-                                        ethnicGroup !== 'unknown' && 
-                                        ethnicGroup !== 'null' &&
-                                        ethnicGroup.toLowerCase() !== 'khmer';
-              return isValidEthnicGroup;
-            });
-            console.log(`🌍 Filtered ${filteredData.length} ethnic minority students (from ${studentsWithFullData.length} total)`);
           }
           
           setReportData(filteredData);
@@ -979,11 +968,6 @@ export default function Reports() {
         result = await exportReport6ToExcel(reportData, {
           schoolName
         });
-      } else if (selectedReport === 'report9') {
-        // Special handling for Report 9 (Ethnic Minority Students) - use traditional Excel format
-        result = await exportReport9ToExcel(reportData, {
-          schoolName
-        });
       } else {
         // Process and export other reports with standard format
         result = await processAndExportReport(
@@ -1060,7 +1044,7 @@ export default function Reports() {
 
     // Calculate statistics for charts
     const calculateStats = () => {
-      if (['report1', 'report6', 'report9'].includes(selectedReport)) {
+      if (['report1', 'report6'].includes(selectedReport)) {
         // Gender distribution
         const genderCount = reportData.reduce((acc, student) => {
           // For report6, only count students with accessibility issues
@@ -1081,20 +1065,12 @@ export default function Reports() {
         // Ethnic group distribution
         const ethnicCount = reportData.reduce((acc, student) => {
           let ethnic = student.ethnicGroup || student.ethnic_group || '';
-          
-          // For report9, skip students without ethnic group (they shouldn't be in the data anyway)
-          if (selectedReport === 'report9') {
-            // Only count students with actual ethnic group values
-            if (ethnic && ethnic !== 'Unknown' && ethnic !== 'unknown' && ethnic !== 'null' && ethnic !== 'ខ្មែរ') {
-              acc[ethnic] = (acc[ethnic] || 0) + 1;
-            }
-          } else {
-            // For other reports, treat empty, null, or 'Unknown' as Khmer
-            if (!ethnic || ethnic === 'Unknown' || ethnic === 'unknown' || ethnic === 'null') {
-              ethnic = 'ខ្មែរ';
-            }
-            acc[ethnic] = (acc[ethnic] || 0) + 1;
+
+          // For other reports, treat empty, null, or 'Unknown' as Khmer
+          if (!ethnic || ethnic === 'Unknown' || ethnic === 'unknown' || ethnic === 'null') {
+            ethnic = 'ខ្មែរ';
           }
+          acc[ethnic] = (acc[ethnic] || 0) + 1;
           return acc;
         }, {});
 
@@ -1148,13 +1124,9 @@ export default function Reports() {
       if (selectedReport === 'report8') {
         return <Report8Preview data={reportData} />;
       }
-      
-      if (selectedReport === 'report9') {
-        return <Report9Preview data={reportData} />;
-      }
 
-      // For report1, report6, report9 - Show statistics (OLD - keeping for charts)
-      if (['report1', 'report6', 'report9'].includes(selectedReport)) {
+      // For report1, report6 - Show statistics (OLD - keeping for charts)
+      if (['report1', 'report6'].includes(selectedReport)) {
         const maxValue = Math.max(...Object.values(stats?.genderCount || {}), 1);
         const maxParentValue = Math.max(
           stats?.parentStatus.bothParents || 0,
@@ -1276,32 +1248,6 @@ export default function Reports() {
                 </div>
               )}
 
-              {/* Report 9: Ethnic Groups Distribution Bar Chart */}
-              {selectedReport === 'report9' && ethnicGroupData.length > 0 && (
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h4 className="text-base font-semibold text-gray-900 mb-4">{t('ethnicGroupsDistribution', 'ការចែកចាយក្រុមជនជាតិ')}</h4>
-                  <ChartContainer
-                    config={{
-                      value: {
-                        label: t('students', 'សិស្ស'),
-                      },
-                    }}
-                    className="h-[300px] w-full"
-                  >
-                    <BarChart data={ethnicGroupData} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-                      <XAxis type="number" tickLine={false} axisLine={false} allowDecimals={false} />
-                      <YAxis dataKey="name" type="category" width={70} tickLine={false} axisLine={false} className="text-xs" />
-                      <ChartTooltip content={<ChartTooltipContent formatter={(value) => Math.round(value)} />} />
-                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                        {ethnicGroupData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ChartContainer>
-                </div>
-              )}
-
               {/* Report 1: Ethnic Groups Pie Chart */}
               {selectedReport === 'report1' && ethnicGroupData.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -1405,7 +1351,7 @@ export default function Reports() {
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              {!['report1', 'report6', 'report9'].includes(selectedReport) && (
+              {!['report1', 'report6'].includes(selectedReport) && (
                 <div className="text-xs text-gray-500">
                   <span>{timePeriods.find(p => p.value === selectedPeriod)?.label}</span>
                   {selectedPeriod === 'month' && selectedMonth && (
@@ -1487,7 +1433,7 @@ export default function Reports() {
             </div>
 
             {/* Step 2a: Grade Level Filter - Shown for report1, report3, report4, and report8 (cascade filter) */}
-            {['report1', 'report3', 'report4', 'report8'].includes(selectedReport) && allClasses.length > 0 && (
+            {['report1', 'report3', 'report4', 'report8'].includes(selectedReport) && (
               <div className="flex-shrink-0 min-w-[200px]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Filter className="h-4 w-4 inline mr-1" />
@@ -1510,12 +1456,32 @@ export default function Reports() {
             )}
 
             {/* Step 2b: Class Filter - Shown for report1, report3, report4, and report8 (filtered by grade level) */}
-            {['report1', 'report3', 'report4', 'report8'].includes(selectedReport) && (
+            {/* For report1 and report4: Only show class filter if grade level is selected */}
+            {['report1', 'report4'].includes(selectedReport) && selectedGradeLevel && selectedGradeLevel !== 'all' && (
               <div className="flex-shrink-0 min-w-[200px]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Filter className="h-4 w-4 inline mr-1" />
                   {t('selectClass') || 'Select Class'}
                   {['report1', 'report4'].includes(selectedReport) && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                <Dropdown
+                  value={selectedClass}
+                  onValueChange={setSelectedClass}
+                  options={getClassOptions()}
+                  placeholder={t('chooseClass', 'Choose class...')}
+                  minWidth="w-full"
+                  maxHeight="max-h-56"
+                  itemsToShow={10}
+                />
+              </div>
+            )}
+
+            {/* For report3 and report8: Show class filter normally after grade level loads */}
+            {['report3', 'report8'].includes(selectedReport) && allClasses.length > 0 && (
+              <div className="flex-shrink-0 min-w-[200px]">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Filter className="h-4 w-4 inline mr-1" />
+                  {t('selectClass') || 'Select Class'}
                 </label>
                 <Dropdown
                   value={selectedClass}
@@ -1632,7 +1598,7 @@ export default function Reports() {
             )}
 
             {/* For other reports (not report1, report4, report6, report8, report9): Show date filters normally */}
-            {!['report1', 'report4', 'report6', 'report8', 'report9'].includes(selectedReport) && (
+            {!['report1', 'report4', 'report6', 'report8'].includes(selectedReport) && (
               <>
                 {/* Time Period Dropdown */}
                 <div className="flex-shrink-0 min-w-[200px]">
