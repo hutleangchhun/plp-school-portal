@@ -156,9 +156,13 @@ export default function Reports() {
 
   // Build class dropdown options from filtered classes returned by API
   const getClassOptions = () => {
-    const classOptions = [
-      { value: 'all', label: t('allClasses', 'All Classes') }
-    ];
+    const classOptions = [];
+
+    // Only add "All Classes" option for reports that allow it
+    // Report 1 requires specific class selection
+    if (selectedReport !== 'report1') {
+      classOptions.push({ value: 'all', label: t('allClasses', 'All Classes') });
+    }
 
     classOptions.push(...allClasses.map(cls => {
       const rawGradeLevel =
@@ -199,8 +203,8 @@ export default function Reports() {
         return;
       }
 
-      // For report4 (absence report), validate class selection first
-      if (selectedReport === 'report4') {
+      // For report1 and report4, validate class selection first
+      if (['report1', 'report4'].includes(selectedReport)) {
         if (!selectedClass || selectedClass === 'all') {
           // Don't show error, just set empty data and stop loading
           setReportData([]);
@@ -626,9 +630,13 @@ export default function Reports() {
             page: currentPage,
             limit: 100 // API maximum
           };
-          
-          // Add class filter for report1 if a specific class is selected
-          if (selectedReport === 'report1' && selectedClass && selectedClass !== 'all') {
+
+          // Add class filter for report1 (required) and report3/report4/report8 (optional)
+          if (selectedReport === 'report1') {
+            // Report 1 requires a specific class
+            fetchParams.classId = selectedClass;
+          } else if (selectedReport !== 'report1' && selectedClass && selectedClass !== 'all') {
+            // Other reports only filter by class if selected
             fetchParams.classId = selectedClass;
           }
           
@@ -1016,6 +1024,18 @@ export default function Reports() {
     }
 
     if (!reportData || reportData.length === 0) {
+      // Special message for Report 1 when no class is selected
+      if (selectedReport === 'report1' && (!selectedClass || selectedClass === 'all')) {
+        return (
+          <EmptyState
+            icon={Filter}
+            title={t('selectClassRequired', 'Class Selection Required')}
+            description={t('selectClassForReport1', 'Please select a specific class to generate the report')}
+            variant="warning"
+          />
+        );
+      }
+
       // Special message for Report 4 when no class is selected
       if (selectedReport === 'report4' && (!selectedClass || selectedClass === 'all')) {
         return (
@@ -1424,7 +1444,7 @@ export default function Reports() {
           </div>
           <Button
             onClick={handleExportReport}
-            disabled={loading || (['report1', 'report4'].includes(selectedReport) && (!selectedClass || selectedClass === 'all'))}
+            disabled={loading || (['report1', 'report4'].includes(selectedReport) && (!selectedClass || selectedClass === 'all')) || (selectedReport === 'report1' && reportData.length === 0)}
             size="sm"
             variant="default"
           >

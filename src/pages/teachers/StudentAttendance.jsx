@@ -448,7 +448,7 @@ export default function TeacherAttendance({ user }) {
                 {t('markStudentAttendance', 'Mark student attendance for your classes')}
               </p>
             </div>
-            <div className="flex gap-4 items-start items-center">
+            <div className="flex gap-4 items-start">
               {/* Class Selector */}
               <div className="w-full sm:w-auto">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
