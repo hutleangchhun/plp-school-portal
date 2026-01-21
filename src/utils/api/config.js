@@ -220,8 +220,8 @@ const ENDPOINTS = {
   DASHBOARD: {
     BASE: '/dashboard',
     SCHOOL_BMI: (schoolId) => `/dashboard/school/${schoolId}/bmi`,
-    USER_REGISTRATION_STATS: '/dashboard/users/registration-stats',
-    STUDENT_EXTRA_LEARNING_TOOLS: '/dashboard/students/extra-learning-tools/stats',
+    USER_REGISTRATION_STATS: '/dashboard/user-registrations',
+    STUDENT_EXTRA_LEARNING_TOOLS: '/dashboard/admin/extra-learning',
     STUDENT_POOR_CARD_GRADE: '/dashboard/students/poor-card-grade',
     STUDENT_KINDERGARTEN: '/dashboard/students/kindergarten',
   },

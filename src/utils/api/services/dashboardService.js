@@ -600,7 +600,7 @@ export const dashboardService = {
     try {
       console.log('📊 Fetching teacher extra learning tool statistics...', params);
 
-      let url = `${ENDPOINTS.DASHBOARD.BASE}/teachers/extra-learning-tool/stats`;
+      let url = `${ENDPOINTS.DASHBOARD.BASE}/admin/extra-learning`;
 
       // Add query parameters for filtering
       const queryParams = [];
@@ -676,7 +676,7 @@ export const dashboardService = {
       }
 
       const response = await handleApiResponse(() =>
-        apiClient_.get(`${ENDPOINTS.DASHBOARD.BASE}/students/ethnic-group`, {
+        apiClient_.get(`${ENDPOINTS.DASHBOARD.BASE}/student-ethnic-group`, {
           params: queryParams
         })
       );
@@ -732,7 +732,7 @@ export const dashboardService = {
       }
 
       const response = await handleApiResponse(() =>
-        apiClient_.get(`${ENDPOINTS.DASHBOARD.BASE}/students/accessibility`, {
+        apiClient_.get(`${ENDPOINTS.DASHBOARD.BASE}/student-accessibility`, {
           params: queryParams
         })
       );
@@ -815,7 +815,7 @@ export const dashboardService = {
     try {
       console.log('📊 Fetching student extra learning tool statistics...', params);
 
-      let url = `${ENDPOINTS.DASHBOARD.BASE}/students/extra-learning-tools/stats`;
+      let url = `${ENDPOINTS.DASHBOARD.BASE}/admin/extra-learning`;
 
       // Add query parameters for filtering
       const queryParams = [];
@@ -874,7 +874,7 @@ export const dashboardService = {
     try {
       console.log('📊 Fetching student poor card grade statistics...', params);
 
-      let url = `${ENDPOINTS.DASHBOARD.BASE}/students/poor-card-grade`;
+      let url = `${ENDPOINTS.DASHBOARD.BASE}/student-poor-card-grade`;
 
       // Add query parameters for filtering
       const queryParams = [];
@@ -933,7 +933,7 @@ export const dashboardService = {
     try {
       console.log('📊 Fetching student kindergarten statistics...', params);
 
-      let url = `${ENDPOINTS.DASHBOARD.BASE}/students/kindergarten`;
+      let url = `${ENDPOINTS.DASHBOARD.BASE}/student-kindergarten`;
 
       // Add query parameters for filtering
       const queryParams = [];
