@@ -1089,7 +1089,7 @@ export default function ClassesManagement() {
                     badges={badges}
                     isEditLoading={editingClassId === classItem.id}
                     onManage={() => {
-                      const paramsToEncrypt = { classId: classItem.id, schoolId: schoolInfo.id };
+                      const paramsToEncrypt = { classId: classItem.id, schoolId: schoolInfo.id, gradeLevel: classItem.gradeLevel };
                       console.log('📤 Encrypting params:', paramsToEncrypt);
                       const encryptedParams = encryptParams(paramsToEncrypt);
                       console.log('📤 Encrypted params:', encryptedParams);

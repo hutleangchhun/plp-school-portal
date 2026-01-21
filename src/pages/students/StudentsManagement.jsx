@@ -153,6 +153,11 @@ export default function StudentsManagement() {
 
       if (decrypted) {
         console.log('✅ Successfully decrypted params:', decrypted);
+        // Pre-select the grade level if gradeLevel is provided
+        if (decrypted.gradeLevel && decrypted.gradeLevel !== 'all') {
+          console.log('📌 Setting selectedGradeLevel to:', decrypted.gradeLevel);
+          setSelectedGradeLevel(String(decrypted.gradeLevel));
+        }
         // Pre-select the class if classId is provided
         // IMPORTANT: Convert classId to string for consistent comparison with classDropdownOptions
         if (decrypted.classId && decrypted.classId !== 'all') {
@@ -1889,10 +1894,10 @@ export default function StudentsManagement() {
         {/* Students table - Show on all screen sizes */}
         {/* Only show student data if grade level is 'all' OR if there are classes for the selected grade level */}
         {selectedGradeLevel === 'all' || allClasses.length > 0 ? (
-          paginationLoading ? (
+          paginationLoading || isLoading('fetchStudents') ? (
             <div className="flex items-center justify-center py-12">
               <LoadingSpinner size="lg" variant="primary">
-                {t('loadingPage', 'Loading page...')}
+                {paginationLoading ? t('loadingPage', 'Loading page...') : t('loadingStudents', 'Loading students...')}
               </LoadingSpinner>
             </div>
           ) : (
