@@ -43,7 +43,9 @@ export const classService = {
       }
 
       // Build query parameters for pagination and filtering
-      const params = {};
+      const params = {
+        schoolId: schoolId
+      };
       if (options.page) params.page = options.page;
       if (options.limit) params.limit = options.limit;
       if (options.gradeLevel) params.gradeLevel = options.gradeLevel;
@@ -52,7 +54,7 @@ export const classService = {
       console.log('Fetching classes by school with params:', params);
 
       const response = await handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.CLASSES.CLASS_BY_SCHOOL(schoolId), { params })
+        apiClient_.get(ENDPOINTS.CLASSES.BASE, { params })
       );
 
       console.log('Raw classes by school API response:', response);

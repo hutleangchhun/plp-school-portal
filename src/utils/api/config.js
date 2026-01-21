@@ -148,7 +148,7 @@ const ENDPOINTS = {
     MASTER: (schoolId) => `/master-class/${schoolId}/students`,
     MASTER_CLASSES: (schoolId) => `/master-class/${schoolId}/masterclasses`,
     BY_USER: (userId) => `/classes/user/${userId}`,
-    CLASS_BY_SCHOOL: (schoolId) => `/classes/school/${schoolId}`,
+    CLASS_BY_SCHOOL: (schoolId) => `/classes/${schoolId}`,
     TRANSFER_STUDENT_MASTERCLASS: '/master-class/transfer-student-masterclass',
   },
   SUBJECTS: {
