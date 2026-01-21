@@ -282,7 +282,7 @@ export default function StudentsManagement() {
     }
 
     // Don't reset if this classId came from URL params
-    if (urlClassIdRef.current === selectedClassId) {
+    if (urlClassIdRef.current && urlClassIdRef.current === selectedClassId) {
       console.log('🔄 Grade level changed but selectedClassId from URL is preserved:', selectedClassId);
       return;
     }
@@ -290,7 +290,7 @@ export default function StudentsManagement() {
     // Otherwise, reset to all when grade level changes
     console.log('🔄 Grade level changed, resetting selectedClassId to all');
     setSelectedClassId('all');
-  }, [selectedGradeLevel, selectedClassId]);
+  }, [selectedGradeLevel]);
 
   // Enhanced client-side search function for class-filtered results
   const performClientSideSearch = useCallback((studentsData, searchQuery, poorCardId) => {
