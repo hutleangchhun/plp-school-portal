@@ -550,6 +550,7 @@ export const classService = {
 
       // Build query parameters with all filters
       const queryParams = {
+        schoolId: schoolId,
         page: params.page || 1,
         limit: params.limit || 10
       };
@@ -564,7 +565,7 @@ export const classService = {
       console.log('Fetching classes with cascade filters for school', schoolId, ':', queryParams);
 
       const response = await handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.CLASSES.CLASS_BY_SCHOOL(schoolId), { params: queryParams })
+        apiClient_.get(ENDPOINTS.CLASSES.BASE, { params: queryParams })
       );
 
       console.log('Classes with filters response:', response);

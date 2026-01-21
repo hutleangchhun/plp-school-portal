@@ -1017,11 +1017,11 @@ export default function ClassesManagement() {
             </div>
             {/* Classes Grid */}
         <FadeInSection delay={0.2} className='mt-3 sm:mt-6'>
-          {paginationLoading ? (
+          {paginationLoading || isLoading('fetchClasses') ? (
             <div className="flex items-center justify-center py-12">
               {console.log('🎯 Rendering LoadingSpinner for pagination')}
               <LoadingSpinner size="lg" variant="primary">
-                {t('loadingPage', 'Loading page...')}
+                {paginationLoading ? t('loadingPage', 'Loading page...') : t('loadingClasses', 'Loading classes...')}
               </LoadingSpinner>
             </div>
           ) : classes.length === 0 && dataFetched ? (
