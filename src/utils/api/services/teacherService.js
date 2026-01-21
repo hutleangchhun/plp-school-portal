@@ -190,8 +190,13 @@ export const teacherService = {
         };
     },
 
-    // Fetch classes for a specific teacher using GET /classes/teacher/:teacherId route
-    // API response format: { message, classes: [...], total, teacherInfo }
+    // Fetch classes for a specific teacher using GET /teachers/:teacherId/classes route
+    // API response format: Direct array of class objects
+    // Response structure from backend:
+    // [
+    //   { classId, name, gradeLevel, section, schoolId, teacherId, academicYear, maxStudents, status, school: { name } },
+    //   ...
+    // ]
     getTeacherClasses: async (teacherId) => {
         const response = await handleApiResponse(() =>
             apiClient_.get(ENDPOINTS.TEACHERS.CLASSES(teacherId))
@@ -204,15 +209,33 @@ export const teacherService = {
         const apiResponse = response?.data;
         console.log('getTeacherClasses - API response data:', apiResponse);
 
-        // Classes are in apiResponse.classes property
-        const classes = apiResponse?.classes && Array.isArray(apiResponse.classes) ? apiResponse.classes : [];
+        // Classes are returned as a direct array from the new endpoint
+        const classes = Array.isArray(apiResponse) ? apiResponse :
+                        (apiResponse?.classes && Array.isArray(apiResponse.classes) ? apiResponse.classes : []);
         console.log('getTeacherClasses - Extracted classes:', classes);
+
+        // Format classes with normalized field names
+        const formattedClasses = classes.map(cls => ({
+            classId: cls.classId || cls.id,
+            id: cls.classId || cls.id,
+            name: cls.name,
+            gradeLevel: cls.gradeLevel || cls.grade_level,
+            section: cls.section || '',
+            schoolId: cls.schoolId || cls.school_id,
+            schoolName: cls.school?.name || cls.schoolName || cls.school_name,
+            teacherId: cls.teacherId || cls.teacher_id,
+            academicYear: cls.academicYear || cls.academic_year,
+            maxStudents: cls.maxStudents || cls.max_students,
+            status: cls.status || 'ACTIVE',
+            createdAt: cls.createdAt || cls.created_at,
+            updatedAt: cls.updatedAt || cls.updated_at
+        }));
 
         return {
             success: response.success,
-            data: classes,
-            total: apiResponse?.total || classes.length,
-            teacherInfo: apiResponse?.teacherInfo,
+            data: formattedClasses,
+            classes: formattedClasses, // Keep both for backward compatibility
+            total: formattedClasses.length,
             error: response.error
         };
     },

@@ -6,8 +6,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../../components/ui/Button';
 import Dropdown from '../../components/ui/Dropdown';
 import { studentService } from '../../utils/api/services/studentService';
-import { classService } from '../../utils/api/services/classService';
-import { userService } from '../../utils/api/services/userService';
+import { teacherService } from '../../utils/api/services/teacherService';
 import { exportStudentsToExcel } from '../../utils/studentExportUtils';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Badge } from '../../components/ui/Badge';
@@ -49,55 +48,40 @@ export default function TeacherStudentsManagement({ user }) {
   const [paginationLoading, setPaginationLoading] = useState(false);
   const [dataFetched, setDataFetched] = useState(false);
 
-  // Fetch school ID from my-account endpoint
+  // Set school ID from user object (already available from props - no extra API call needed)
   useEffect(() => {
-    let mounted = true;
-
-    async function fetchSchoolId() {
-      try {
-        console.log('Fetching school ID from my-account endpoint...');
-        const accountData = await userService.getMyAccount();
-        console.log('📥 Account data:', accountData);
-
-        if (mounted && accountData && accountData.school_id) {
-          console.log('✅ School ID fetched:', accountData.school_id);
-          setSchoolId(accountData.school_id);
-          setSchoolName(accountData.school?.name || '');
-        }
-      } catch (error) {
-        console.error('Error fetching school ID:', error);
-        showError(t('failedToFetchSchoolId', 'Failed to fetch school information'));
-      }
+    const teacherSchoolId = user?.schoolId || user?.school_id;
+    if (teacherSchoolId) {
+      console.log('✅ School ID from user object:', teacherSchoolId);
+      setSchoolId(teacherSchoolId);
+      setSchoolName(user?.school?.name || user?.schoolName || '');
     }
+  }, [user]);
 
-    fetchSchoolId();
-
-    return () => {
-      mounted = false;
-    };
-  }, [showError, t]);
-
-  // Load classes assigned to this teacher
-  // Uses user.classIds array to fetch teacher's assigned classes
+  // Load classes assigned to this teacher using the new teacher classes endpoint
   useEffect(() => {
     let mounted = true;
 
     async function loadClasses() {
       try {
-        // Check if teacher has assigned classes
-        if (user?.classIds?.length > 0) {
-          console.log('🎓 Teacher has classIds:', user.classIds);
+        const teacherId = user?.teacherId || user?.id || user?.userId;
 
-          // Fetch each assigned class using classIds
-          const classPromises = user.classIds.map(classId =>
-            classService.getClassById(classId)
-          );
+        if (!teacherId) {
+          console.warn('⚠️ No teacher ID available');
+          if (mounted) {
+            setClasses([]);
+            setInitialLoading(false);
+          }
+          return;
+        }
 
-          const responses = await Promise.allSettled(classPromises);
-          const teacherClasses = responses
-            .filter(res => res.status === 'fulfilled' && res.value)
-            .map(res => res.value);
+        console.log('🎓 Fetching classes for teacher:', teacherId);
 
+        // Use the new /teachers/{teacherId}/classes endpoint
+        const classesResponse = await teacherService.getTeacherClasses(teacherId);
+
+        if (classesResponse.success && classesResponse.data) {
+          const teacherClasses = classesResponse.data;
           console.log(`✅ Loaded ${teacherClasses.length} classes for teacher:`, teacherClasses);
 
           if (mounted) {
@@ -105,7 +89,7 @@ export default function TeacherStudentsManagement({ user }) {
             // Keep selectedClassId as 'all' - user must manually select a class
           }
         } else {
-          console.warn('⚠️ Teacher has no classIds assigned');
+          console.warn('⚠️ Failed to fetch teacher classes');
           if (mounted) {
             setClasses([]);
           }
@@ -128,13 +112,10 @@ export default function TeacherStudentsManagement({ user }) {
   }, [user, showError, t]);
 
 
-  // Load students when filters or page change
+  // Load students when filters or page change using the new /students/my-students endpoint
   useEffect(() => {
     // Only load if schoolId is available
-    // If selectedClassId is 'all', only load if we have classes loaded
-    // If selectedClassId is specific, we can load immediately
     if (!schoolId) return;
-    if (selectedClassId === 'all' && classes.length === 0) return;
 
     let mounted = true;
 
@@ -142,69 +123,44 @@ export default function TeacherStudentsManagement({ user }) {
       try {
         setStudentsLoading(true);
 
-        let allStudents = [];
-        let totalCount = 0;
+        // Build parameters for the new /students/my-students endpoint
+        const params = {
+          page: pagination.page,
+          limit: pagination.limit,
+          schoolId: schoolId
+        };
 
-        // Determine if we're loading a specific class or all classes
-        const isSpecificClass = selectedClassId && selectedClassId !== 'all';
-        const isAllClasses = !selectedClassId || selectedClassId === 'all';
-
-        if (isSpecificClass) {
-          // Load students for a specific class
-          const params = {
-            page: pagination.page,
-            limit: pagination.limit,
-            classId: parseInt(selectedClassId)
-          };
-
-          // Add search parameter if provided
-          if (searchInput.trim()) {
-            params.search = searchInput.trim();
-          }
-
-          console.log('Loading students for specific class with params:', params);
-          const response = await studentService.getStudentsBySchoolClasses(schoolId, params);
-          console.log('Students response:', response);
-
-          if (mounted && response.success) {
-            allStudents = response.data || [];
-            totalCount = response.pagination?.total || 0;
-          }
-        } else if (isAllClasses && classes.length > 0) {
-          // Load students from all teacher's assigned classes
-          // Fetch all students from each teacher's class and combine them
-          const classPromises = classes.map(cls =>
-            studentService.getStudentsBySchoolClasses(schoolId, {
-              classId: cls.classId || cls.id,
-              search: searchInput.trim() || undefined,
-              limit: 100 // Get all students from this class
-            })
-          );
-
-          const responses = await Promise.all(classPromises);
-          responses.forEach(response => {
-            if (response.success && response.data) {
-              allStudents.push(...response.data);
-              totalCount += response.pagination?.total || response.data.length;
-            }
-          });
-
-          // Apply pagination on combined results
-          const startIndex = (pagination.page - 1) * pagination.limit;
-          const paginatedStudents = allStudents.slice(startIndex, startIndex + pagination.limit);
-          allStudents = paginatedStudents;
-
-          console.log(`Loaded ${allStudents.length} students from ${classes.length} teacher classes`);
+        // Add classId if filtering by specific class
+        if (selectedClassId && selectedClassId !== 'all') {
+          params.classId = parseInt(selectedClassId);
         }
 
-        if (mounted) {
-          setStudents(allStudents);
+        // Add search parameter if provided
+        if (searchInput.trim()) {
+          params.search = searchInput.trim();
+        }
+
+        console.log('📚 Loading students with params:', params);
+        const response = await studentService.getMyStudents(params);
+        console.log('📚 Students response:', response);
+
+        if (mounted && response.success) {
+          const students = response.data || [];
+          const paginationData = response.pagination || {};
+
+          console.log(`✅ Loaded ${students.length} students from /students/my-students endpoint`);
+
+          setStudents(students);
           setPagination(prev => ({
             ...prev,
-            total: totalCount,
-            pages: Math.ceil(totalCount / pagination.limit)
+            page: paginationData.page || prev.page,
+            limit: paginationData.limit || prev.limit,
+            total: paginationData.total || 0,
+            pages: paginationData.pages || Math.ceil((paginationData.total || 0) / (paginationData.limit || prev.limit))
           }));
           setDataFetched(true);
+        } else {
+          showError(t('failedToLoadStudents', 'Failed to load students'));
         }
       } catch (error) {
         console.error('Error loading students:', error);
@@ -222,7 +178,7 @@ export default function TeacherStudentsManagement({ user }) {
     return () => {
       mounted = false;
     };
-  }, [schoolId, selectedClassId, searchInput, pagination.page, pagination.limit, classes, showError, t]);
+  }, [schoolId, selectedClassId, searchInput, pagination.page, pagination.limit, showError, t]);
 
   // Handlers
   const handleSearchChange = (value) => {

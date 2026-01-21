@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button';
 import Dropdown from '../../components/ui/Dropdown';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import { studentService } from '../../utils/api/services/studentService';
-import { classService } from '../../utils/api/services/classService';
+import { teacherService } from '../../utils/api/services/teacherService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { getFullName } from '../../utils/usernameUtils';
@@ -90,7 +90,7 @@ export default function TeacherAttendance({ user }) {
 
   const isReadOnly = isPastDate();
 
-  // Load classes on mount
+  // Load classes on mount using new teacher classes endpoint
   useEffect(() => {
     let mounted = true;
 
@@ -101,12 +101,21 @@ export default function TeacherAttendance({ user }) {
       }
 
       try {
-        const userId = user.id || user.userId || user.school_id || user.schoolId;
-        const response = await classService.getClassByUser(userId);
+        const teacherId = user.teacherId || user.id || user.userId;
 
-        if (mounted && response.success && response.classes?.length > 0) {
-          setClasses(response.classes || []);
-          setSelectedClassId(String(response.classes[0].classId || response.classes[0].id));
+        if (!teacherId) {
+          console.warn('⚠️ No teacher ID available');
+          setInitialLoading(false);
+          return;
+        }
+
+        console.log('🎓 Fetching classes for teacher:', teacherId);
+        const response = await teacherService.getTeacherClasses(teacherId);
+
+        if (mounted && response.success && response.data?.length > 0) {
+          setClasses(response.data || []);
+          setSelectedClassId(String(response.data[0].classId || response.data[0].id));
+          console.log(`✅ Loaded ${response.data.length} classes for attendance`);
         }
       } catch (error) {
         console.error('Error loading classes:', error);

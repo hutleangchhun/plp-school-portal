@@ -11,8 +11,7 @@ import {
   Briefcase
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { classService } from '../../utils/api/services/classService';
-import { studentService } from '../../utils/api/services/studentService';
+import { teacherService } from '../../utils/api/services/teacherService';
 import { schoolService } from '../../utils/api/services/schoolService';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import DynamicLoader from '../../components/ui/DynamicLoader';
@@ -43,7 +42,7 @@ export default function TeacherDashboard({ user }) {
       }
 
       try {
-        const userId = user.id || user.userId || user.school_id || user.schoolId;
+        const teacherId = user.teacherId || user.id || user.userId;
         const userSchoolId = user.schoolId || user.school_id;
 
         // Fetch school information
@@ -60,30 +59,28 @@ export default function TeacherDashboard({ user }) {
           }
         }
 
-        // Fetch classes - use localStorage cache for teachers and directors with teaching duties
+        // Fetch classes for the teacher using new endpoint: /api/v1/teachers/:teacherId/classes
         let teacherClasses = [];
+        let totalStudents = 0;
 
-        if (canAccessTeacherFeatures(user)) {
-          // Try to load from localStorage first (cached during login)
+        if (canAccessTeacherFeatures(user) && teacherId) {
           try {
-            const storedClasses = localStorage.getItem('teacherClasses');
-            if (storedClasses) {
-              teacherClasses = JSON.parse(storedClasses);
-              console.log('📚 Loaded', teacherClasses.length, 'classes from localStorage for dashboard');
+            const classesResponse = await teacherService.getTeacherClasses(teacherId);
+
+            if (classesResponse.success) {
+              teacherClasses = classesResponse.data || [];
+              console.log('📚 Fetched', teacherClasses.length, 'classes from /teachers/{teacherId}/classes endpoint');
+
+              // Calculate total students from maxStudents in each class (or actual student count if available)
+              totalStudents = teacherClasses.reduce((sum, cls) => {
+                // If studentCount is available, use it; otherwise use maxStudents as capacity
+                return sum + (cls.studentCount || 0);
+              }, 0);
+
+              console.log(`Total students in all classes: ${totalStudents}`);
             }
-          } catch (err) {
-            console.error('Error loading classes from localStorage:', err);
-          }
-        }
-
-        // Fallback: fetch from API if not in localStorage
-        if (teacherClasses.length === 0) {
-          const classesResponse = await classService.getClassByUser(userId);
-          teacherClasses = classesResponse.success ? classesResponse.classes || [] : [];
-
-          // Cache for teachers and directors with teaching duties
-          if (canAccessTeacherFeatures(user) && teacherClasses.length > 0) {
-            localStorage.setItem('teacherClasses', JSON.stringify(teacherClasses));
+          } catch (error) {
+            console.error('Error fetching teacher classes:', error);
           }
         }
 
@@ -98,41 +95,6 @@ export default function TeacherDashboard({ user }) {
           } else {
             setSelectedClassId(String(teacherClasses[0].id || teacherClasses[0].classId));
           }
-        }
-
-        let totalStudents = 0;
-
-        // Only fetch attendance and students if teacher has classes
-        if (teacherClasses.length > 0) {
-          // Get class IDs
-          const classIds = teacherClasses.map(cls => cls.id || cls.classId);
-          console.log('Teacher class IDs:', classIds);
-
-          // Fetch students from each class and aggregate
-          const allStudents = [];
-          for (const classId of classIds) {
-            try {
-              const studentsResponse = await studentService.getMyStudents({
-                classId: classId,
-                page: 1,
-                limit: 100
-              });
-
-              if (studentsResponse.success && studentsResponse.data) {
-                allStudents.push(...studentsResponse.data);
-              }
-            } catch (error) {
-              console.error(`Error fetching students for class ${classId}:`, error);
-            }
-          }
-
-          // Remove duplicates based on student ID
-          const uniqueStudents = allStudents.filter((student, index, self) =>
-            index === self.findIndex(s => (s.id || s.userId) === (student.id || student.userId))
-          );
-
-          totalStudents = uniqueStudents.length;
-          console.log(`Total unique students across all classes: ${totalStudents}`);
         }
 
         if (mounted) {
