@@ -840,8 +840,9 @@ export default function ClassesManagement() {
         // Refresh user data from server to get updated class information
         await refreshUserData();
 
-        // Then fetch classes with updated user data
-        await fetchClasses();
+        // Reset to first page and fetch classes with updated user data
+        setCurrentPage(1);
+        await fetchClasses(1, selectedGradeLevel, searchTerm, false);
       } else {
         throw new Error(response.message || response.error || 'Failed to delete class');
       }
