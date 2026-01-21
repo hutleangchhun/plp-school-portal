@@ -13,7 +13,6 @@ import {
 import { useLanguage } from '../../contexts/LanguageContext';
 import { classService } from '../../utils/api/services/classService';
 import { studentService } from '../../utils/api/services/studentService';
-import { attendanceService } from '../../utils/api/services/attendanceService';
 import { schoolService } from '../../utils/api/services/schoolService';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import DynamicLoader from '../../components/ui/DynamicLoader';
@@ -28,17 +27,10 @@ export default function TeacherDashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalClasses: 0,
-    totalStudents: 0,
-    todayPresent: 0,
-    todayAbsent: 0,
-    todayLate: 0,
-    todayLeave: 0,
-    attendanceRate: 0
+    totalStudents: 0
   });
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState(null); // Will be set to first class after loading
-  const [classStats, setClassStats] = useState({}); // Store stats for each class
-  const [recentActivity, setRecentActivity] = useState([]);
   const [schoolName, setSchoolName] = useState('');
 
   useEffect(() => {
@@ -109,10 +101,6 @@ export default function TeacherDashboard({ user }) {
         }
 
         let totalStudents = 0;
-        let todayPresent = 0;
-        let todayAbsent = 0;
-        let todayLate = 0;
-        let todayLeave = 0;
 
         // Only fetch attendance and students if teacher has classes
         if (teacherClasses.length > 0) {
@@ -145,85 +133,12 @@ export default function TeacherDashboard({ user }) {
 
           totalStudents = uniqueStudents.length;
           console.log(`Total unique students across all classes: ${totalStudents}`);
-
-          // Fetch today's attendance only for teacher's classes
-          const today = new Date().toISOString().split('T')[0];
-          console.log('Fetching attendance for today:', today);
-
-          const attendanceResponse = await attendanceService.getAttendance({
-            date: today,
-            page: 1,
-            limit: 100
-          });
-
-          console.log('Today attendance response:', attendanceResponse);
-
-          if (attendanceResponse.success && attendanceResponse.data) {
-            // Filter to only include records from teacher's classes
-            // IMPORTANT: Only count STUDENT attendance records (exclude teacher attendance)
-            const todayRecords = attendanceResponse.data.filter(record => {
-              const recordDate = new Date(record.date).toISOString().split('T')[0];
-              const isToday = recordDate === today;
-              const isTeacherClass = classIds.includes(record.classId);
-              // Ensure the record has a classId (student attendance records have classId)
-              // Teacher attendance records may have classId=null or be from different context
-              const isStudentRecord = record.classId && record.classId !== null;
-              return isToday && isTeacherClass && isStudentRecord;
-            });
-
-            console.log(`Found ${todayRecords.length} student attendance records for teacher's classes today`);
-
-            // Calculate stats per class
-            const statsPerClass = {};
-            classIds.forEach(classId => {
-              statsPerClass[classId] = {
-                present: 0,
-                absent: 0,
-                late: 0,
-                leave: 0
-              };
-            });
-
-            todayRecords.forEach(record => {
-              const classId = record.classId;
-              if (statsPerClass[classId]) {
-                if (record.status === 'PRESENT') {
-                  todayPresent++;
-                  statsPerClass[classId].present++;
-                }
-                else if (record.status === 'ABSENT') {
-                  todayAbsent++;
-                  statsPerClass[classId].absent++;
-                }
-                else if (record.status === 'LATE') {
-                  todayLate++;
-                  statsPerClass[classId].late++;
-                }
-                else if (record.status === 'LEAVE') {
-                  todayLeave++;
-                  statsPerClass[classId].leave++;
-                }
-              }
-            });
-
-            if (mounted) {
-              setClassStats(statsPerClass);
-            }
-          }
         }
-
-        const totalMarked = todayPresent + todayAbsent + todayLate;
-        const attendanceRate = totalMarked > 0 ? Math.round((todayPresent / totalMarked) * 100) : 0;
 
         if (mounted) {
           setStats({
             totalClasses: teacherClasses.length,
-            totalStudents,
-            todayPresent,
-            todayAbsent,
-            todayLate,
-            todayLeave,
-            attendanceRate
+            totalStudents
           });
         }
       } catch (error) {
@@ -273,25 +188,6 @@ export default function TeacherDashboard({ user }) {
     return null;
   };
 
-  // Chart data for attendance - only showing student attendance statuses (Present, Absent, Late)
-  // Leave status is excluded as it's a special case and not counted in standard attendance metrics
-  const attendanceChartData = [
-    {
-      status: t('present', 'Present'),
-      students: stats.todayPresent,
-      fill: '#10b981'
-    },
-    {
-      status: t('absent', 'Absent'),
-      students: stats.todayAbsent,
-      fill: '#ef4444'
-    },
-    {
-      status: t('late', 'Late'),
-      students: stats.todayLate,
-      fill: '#f59e0b'
-    }
-  ];
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
