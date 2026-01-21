@@ -15,6 +15,7 @@ import { downloadQRCodesQueued, downloadQRCodesAsPDF } from '../../utils/qrCodeD
 import { classService } from '../../utils/api/services/classService';
 import { studentService } from '../../utils/api/services/studentService';
 import { userService } from '../../utils/api/services/userService';
+import { teacherService } from '../../utils/api/services/teacherService';
 import { getFullName } from '../../utils/usernameUtils';
 import { formatClassIdentifier } from '../../utils/helpers';
 import { createQRCodeDownloadCard } from '../../components/qr-code/QRCodeDownloadCard';
@@ -22,6 +23,13 @@ import { createQRCodeDownloadCard } from '../../components/qr-code/QRCodeDownloa
 export default function TeacherQRCodeManagement({ user }) {
   const { t } = useLanguage();
   const { showError, showSuccess } = useToast();
+
+  // Get teacher ID for API calls
+  const teacherId = user?.teacherId || user?.id;
+  
+  // Get school ID from user data instead of API call
+  const schoolId = user?.school_id || user?.schoolId;
+  const schoolNameValue = user?.school?.name || user?.schoolName;
 
   // State management
   const [loading, setLoading] = useState(true);
@@ -35,7 +43,7 @@ export default function TeacherQRCodeManagement({ user }) {
   const [viewMode, setViewMode] = useState('grid');
 
   const cardRefsRef = useRef({});
-  const [schoolName, setSchoolName] = useState(null);
+  const [schoolName, setSchoolName] = useState(schoolNameValue);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [pageLimit, setPageLimit] = useState(8);
@@ -49,19 +57,15 @@ export default function TeacherQRCodeManagement({ user }) {
       try {
         setLoading(true);
 
-        // Check if teacher has assigned classes
-        if (user?.classIds?.length > 0) {
-          console.log('🎓 Teacher has classIds:', user.classIds);
+        console.log('🔍 Fetching teacher classes for teacherId:', teacherId);
 
-          // Fetch each assigned class using classIds
-          const classPromises = user.classIds.map(classId =>
-            classService.getClassById(classId)
-          );
+        // Fetch teacher classes using teacherService
+        const response = await teacherService.getTeacherClasses(teacherId);
 
-          const responses = await Promise.allSettled(classPromises);
-          const teacherClasses = responses
-            .filter(res => res.status === 'fulfilled' && res.value)
-            .map(res => res.value);
+        console.log('📋 Teacher classes response:', response);
+
+        if (response.success && response.data) {
+          const teacherClasses = response.data || [];
 
           console.log(`✅ Loaded ${teacherClasses.length} classes for teacher:`, teacherClasses);
 
@@ -70,11 +74,12 @@ export default function TeacherQRCodeManagement({ user }) {
 
             // Auto-select first class if available
             if (teacherClasses.length > 0) {
-              setSelectedClassId(String(teacherClasses[0].id || teacherClasses[0].classId));
+              const firstClassId = teacherClasses[0].classId || teacherClasses[0].id;
+              setSelectedClassId(String(firstClassId));
             }
           }
         } else {
-          console.warn('⚠️ Teacher has no classIds assigned');
+          console.warn('⚠️ Failed to fetch teacher classes');
           if (mounted) {
             setClasses([]);
           }
@@ -94,7 +99,7 @@ export default function TeacherQRCodeManagement({ user }) {
     return () => {
       mounted = false;
     };
-  }, [user, showError, t]);
+  }, [teacherId, showError, t]);
 
   // Fetch students for selected class
   useEffect(() => {
@@ -106,11 +111,7 @@ export default function TeacherQRCodeManagement({ user }) {
       try {
         setStudentsLoading(true);
 
-        // Get school ID and name first
-        const accountData = await userService.getMyAccount();
-        const schoolId = accountData?.school_id;
-        const schoolNameValue = accountData?.school?.name || accountData?.schoolName;
-
+        // Use school ID from user data instead of API call
         if (!schoolId) {
           showError(t('failedToFetchSchoolId', 'Failed to get school information'));
           return;
@@ -208,7 +209,7 @@ export default function TeacherQRCodeManagement({ user }) {
     return () => {
       mounted = false;
     };
-  }, [selectedClassId, currentPage, loading, showError, t, pageLimit]);
+  }, [selectedClassId, currentPage, loading, showError, t, pageLimit, schoolId, schoolNameValue]);
 
   // Download entire card as image
   const downloadQRCode = async (qrCode, _cardRef, cardType = 'student') => {
@@ -285,9 +286,8 @@ export default function TeacherQRCodeManagement({ user }) {
   const fetchAllStudentsForExport = async () => {
     try {
       setIsLoadingAllStudents(true);
-      const accountData = await userService.getMyAccount();
-      const schoolId = accountData?.school_id;
-
+      
+      // Use school ID from user data instead of API call
       if (!schoolId) {
         showError(t('failedToFetchSchoolId', 'Failed to get school information'));
         return [];
