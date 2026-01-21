@@ -198,6 +198,9 @@ export const teacherService = {
     //   ...
     // ]
     getTeacherClasses: async (teacherId) => {
+        console.log('🎯 Making API call to get teacher classes for teacherId:', teacherId);
+        console.log('🎯 Endpoint URL:', ENDPOINTS.TEACHERS.CLASSES(teacherId));
+        
         const response = await handleApiResponse(() =>
             apiClient_.get(ENDPOINTS.TEACHERS.CLASSES(teacherId))
         );

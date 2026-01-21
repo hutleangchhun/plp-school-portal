@@ -85,7 +85,7 @@ apiClient.interceptors.request.use(
             const payload = JSON.parse(atob(tokenParts[1]));
             const now = Math.floor(Date.now() / 1000);
 
-            // Cache the token and its expiry status
+            // Cache token and its expiry status
             tokenExpiryCache.token = token;
             tokenExpiryCache.expiryTime = payload.exp;
             tokenExpiryCache.isExpiring = payload.exp && payload.exp < (now + 300);
@@ -104,12 +104,22 @@ apiClient.interceptors.request.use(
         const now = Math.floor(Date.now() / 1000);
         if (tokenExpiryCache.expiryTime && tokenExpiryCache.expiryTime < (now + 300)) {
           console.warn('Auth token is expired or expiring soon');
-          // Don't set the Authorization header for expired tokens
+          // Don't set Authorization header for expired tokens
         } else {
           config.headers.Authorization = `Bearer ${token}`;
         }
       }
     }
+
+    // Log the outgoing request for debugging
+    console.log('🌐 Outgoing API request:', {
+      method: config.method?.toUpperCase() || 'GET',
+      url: config.url,
+      headers: config.headers,
+      hasAuth: !!config.headers.Authorization,
+      params: config.params
+    });
+
     return config;
   },
   (error) => {
@@ -389,12 +399,15 @@ export const uploadFilePatch = async (url, file, fieldName = 'file', data = {}, 
  */
 export const handleApiResponse = async (apiCall) => {
   try {
+    console.log('🚀 Making API call:', apiCall.toString());
     const response = await apiCall();
+    console.log('📥 API response received:', response);
     return {
       success: true,
       data: response
     };
   } catch (error) {
+    console.error('❌ API call failed:', error);
     return {
       success: false,
       error: error.message || 'An error occurred',

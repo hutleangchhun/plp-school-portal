@@ -15,6 +15,7 @@ import Dropdown from '../../components/ui/Dropdown';
 import { formatDateKhmer } from '../../utils/formatters';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { classService } from '../../utils/api/services/classService';
+import { teacherService } from '../../utils/api/services/teacherService';
 import { isToday } from '../attendance/utils';
 import { canAccessTeacherFeatures } from '../../utils/routePermissions';
 
@@ -72,8 +73,63 @@ export default function TeacherSelfAttendance() {
     }
   });
 
-  const userId = user?.id;
+  const userId = user?.teacherId || user?.id;
+  const userLoginId = user?.id; // Use actual user ID for attendance marking
   const isTeacher = canAccessTeacherFeatures(user);
+
+  // Fetch teacher's classes from teacherService
+  const fetchTeacherClassesFromAPI = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      setLoadingClasses(true);
+      console.log('🔍 Fetching teacher classes for userId:', userId);
+      const response = await teacherService.getTeacherClasses(userId);
+
+      console.log('📋 Teacher classes response from teacherService:', {
+        success: response.success,
+        dataLength: response.data?.length,
+        classesLength: response.classes?.length,
+        fullResponse: response
+      });
+
+      // Use the already formatted classes from teacherService
+      // teacherService.getTeacherClasses returns { success, data: [], classes: [] }
+      let teacherClasses = [];
+      
+      if (response.success) {
+        // Prefer the 'data' property (formatted classes), fallback to 'classes'
+        teacherClasses = response.data || response.classes || [];
+      }
+
+      console.log('📚 Processed teacher classes:', teacherClasses);
+
+      if (teacherClasses.length > 0) {
+        console.log('✅ Fetched teacher classes from API:', teacherClasses);
+        setClasses(teacherClasses);
+        // Store in localStorage for next time
+        localStorage.setItem('teacherClasses', JSON.stringify(teacherClasses));
+
+        // Auto-select first class if available
+        const firstClass = teacherClasses[0];
+        const firstClassId = firstClass.classId || firstClass.id;
+        setSelectedClassId(firstClassId);
+        localStorage.setItem('currentClassId', String(firstClassId));
+        console.log('✅ Auto-selected first class:', firstClassId);
+      } else {
+        console.warn('⚠️ No classes found for teacher:', userId);
+        setClasses([]);
+        // Clear localStorage if no classes
+        localStorage.removeItem('teacherClasses');
+        localStorage.removeItem('currentClassId');
+      }
+    } catch (err) {
+      console.error('❌ Error fetching teacher classes from teacherService:', err);
+      setClasses([]);
+    } finally {
+      setLoadingClasses(false);
+    }
+  }, [userId, t]);
 
   // Load teacher's classes from localStorage (already fetched during login)
   useEffect(() => {
@@ -108,36 +164,7 @@ export default function TeacherSelfAttendance() {
       console.error('Error loading classes from localStorage:', err);
       fetchTeacherClassesFromAPI();
     }
-  }, [userId, isTeacher]);
-
-  // Fallback function to fetch classes from API
-  const fetchTeacherClassesFromAPI = useCallback(async () => {
-    if (!userId) return;
-
-    try {
-      setLoadingClasses(true);
-      const response = await classService.getClassByUser(userId);
-
-      console.log('Teacher classes response:', response);
-
-      if (response.success && response.classes) {
-        setClasses(response.classes);
-        // Store in localStorage for next time
-        localStorage.setItem('teacherClasses', JSON.stringify(response.classes));
-
-        // Auto-select first class if available
-        if (response.classes.length > 0) {
-          const firstClassId = response.classes[0].classId || response.classes[0].id;
-          setSelectedClassId(firstClassId);
-          localStorage.setItem('currentClassId', String(firstClassId));
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching teacher classes:', err);
-    } finally {
-      setLoadingClasses(false);
-    }
-  }, [userId]);
+  }, [userId, isTeacher, fetchTeacherClassesFromAPI]);
 
   // Helper function to get date string in YYYY-MM-DD format without timezone conversion
   const getLocalDateString = (date = new Date()) => {
@@ -173,7 +200,7 @@ export default function TeacherSelfAttendance() {
 
   // Fetch attendance for current month
   const fetchMonthlyAttendance = useCallback(async () => {
-    if (!userId) return;
+    if (!userLoginId) return; // Use userLoginId for attendance operations
 
     setLoading(true);
     clearError();
@@ -201,7 +228,7 @@ export default function TeacherSelfAttendance() {
       // Fetch attendance for all classes (don't filter by classId)
       // This allows us to show attendance for all teacher's classes
       const response = await attendanceService.getAttendance({
-        userId,
+        userId: userLoginId, // Use userLoginId for attendance operations
         startDate,
         endDate,
         limit: 400 // Increase limit to accommodate multiple classes
@@ -297,15 +324,15 @@ export default function TeacherSelfAttendance() {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [userId, currentMonth, t, handleError, clearError, startLoading, stopLoading]);
+  }, [userLoginId, currentMonth, t, handleError, clearError, startLoading, stopLoading]);
 
   // Fetch attendance on mount and when month/userId changes
   useEffect(() => {
-    if (userId) {
+    if (userLoginId) {
       fetchMonthlyAttendance();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, currentMonth]); // Re-fetch when userId or currentMonth changes
+  }, [userLoginId, currentMonth]); // Re-fetch when userLoginId or currentMonth changes
 
   // Update current time every second
   useEffect(() => {
@@ -327,7 +354,7 @@ export default function TeacherSelfAttendance() {
 
   // Mark attendance for today with specific class
   const markAttendance = async (status, shift = 'MORNING', classId = null, userReason = '') => {
-    if (!userId) return;
+    if (!userLoginId) return; // Use userLoginId for attendance marking
 
     // Use provided classId or fall back to selectedClassId
     const targetClassId = classId || selectedClassId;
@@ -394,7 +421,7 @@ export default function TeacherSelfAttendance() {
 
       // Build attendance payload with check-in timestamp (except for LEAVE status)
       const attendancePayload = {
-        userId: userId,
+        userId: userLoginId, // Use userLoginId for attendance marking
         date: requestDate,
         status: finalStatus,
         reason: userReason.trim(), // User's own reason
@@ -437,7 +464,7 @@ export default function TeacherSelfAttendance() {
 
   // Check-out function for existing attendance
   const checkOutAttendance = async (attendanceId, classId = null, shift = 'MORNING') => {
-    if (!userId || !attendanceId) return;
+    if (!userLoginId || !attendanceId) return; // Use userLoginId for attendance operations
 
     try {
       setSubmitting(true);
@@ -719,18 +746,38 @@ export default function TeacherSelfAttendance() {
 
   // Open submit modal
   const openSubmitModal = () => {
-    // Auto-detect current shift based on time
-    const autoShift = currentHour < 11 ? 'MORNING' :
-                      currentHour < 13 ? 'NOON' :
-                      'AFTERNOON';
-    setSelectedShiftForSubmit(autoShift);
+    console.log('🔓 Opening submit modal with current state:', {
+      classes: classes,
+      classesLength: classes.length,
+      selectedClassId,
+      currentHour
+    });
 
-    // Auto-select first class if not selected
-    if (!selectedClassForSubmit && classes.length > 0) {
-      setSelectedClassForSubmit(classes[0].classId || classes[0].id);
-    }
+    // Always fetch fresh classes when opening modal to ensure we have current data
+    fetchTeacherClassesFromAPI().then(() => {
+      // Auto-detect current shift based on time
+      const autoShift = currentHour < 11 ? 'MORNING' :
+                        currentHour < 13 ? 'NOON' :
+                        'AFTERNOON';
+      setSelectedShiftForSubmit(autoShift);
 
-    setShowSubmitModal(true);
+      // Auto-select first class from teacher's classes
+      if (classes.length > 0) {
+        const firstClass = classes[0];
+        const firstClassId = firstClass.classId || firstClass.id;
+        setSelectedClassForSubmit(firstClassId);
+        console.log('✅ Auto-selected class for modal:', {
+          firstClass,
+          firstClassId,
+          className: firstClass.name
+        });
+      } else {
+        console.warn('⚠️ No classes available for teacher to select');
+        setSelectedClassForSubmit(null);
+      }
+
+      setShowSubmitModal(true);
+    });
   };
 
   // Handle submit from modal
@@ -1250,25 +1297,35 @@ export default function TeacherSelfAttendance() {
           </div>
 
           {/* Class Selection - Only for Teachers (roleId = 8) */}
-          {isTeacher && classes.length > 0 && (
+          {isTeacher && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('selectClass', 'ជ្រើសរើសថ្នាក់')} <span className='text-red-500'>*</span>
               </label>
               <Dropdown
                 value={selectedClassForSubmit?.toString() || ''}
-                onValueChange={(value) => setSelectedClassForSubmit(Number(value))}
+                onValueChange={(value) => {
+                  console.log('🎯 Class selected in modal:', value);
+                  setSelectedClassForSubmit(Number(value));
+                }}
                 options={classes.map((cls) => {
                   const classId = cls.classId || cls.id;
                   const className = cls.name || `${t('grade', 'ថ្នាក់ទី')} ${cls.gradeLevel} ${cls.section || ''}`;
+                  console.log('🏫 Mapping class option:', { classId, className, cls });
                   return {
                     value: classId.toString(),
                     label: className
                   };
                 })}
-                placeholder={t('selectClass', 'ជ្រើសរើសថ្នាក់')}
+                placeholder={classes.length === 0 ? t('noClassesAvailable', 'No classes available') : t('selectClass', 'ជ្រើសរើសថ្នាក់')}
                 width="w-full"
+                disabled={classes.length === 0}
               />
+              {classes.length === 0 && (
+                <p className="text-sm text-red-600 mt-2">
+                  {t('noClassesAssigned', 'No classes assigned to you. Please contact administrator.')}
+                </p>
+              )}
             </div>
           )}
 
