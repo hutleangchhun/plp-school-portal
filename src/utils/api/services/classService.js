@@ -50,6 +50,7 @@ export const classService = {
       if (options.limit) params.limit = options.limit;
       if (options.gradeLevel) params.gradeLevel = options.gradeLevel;
       if (options.search && options.search.trim()) params.search = options.search.trim();
+      if (options.classId) params.classId = options.classId;
 
       console.log('Fetching classes by school with params:', params);
 
@@ -102,12 +103,53 @@ export const classService = {
   /**
    * Get class by ID
    * @param {string|number} classId - The ID of the class to retrieve
+   * @param {string|number} [schoolId] - The school ID (required for query parameter approach)
    * @returns {Promise<Object>} Class data
    */
-  async getClassById(classId) {
-    return handleApiResponse(() =>
-      apiClient_.get(`${ENDPOINTS.CLASSES.BASE}/${classId}`)
-    ).then(response => classService.utils.formatClassData(response.data));
+  async getClassById(classId, schoolId) {
+    console.log('getClassById called with:', { classId, schoolId });
+
+    if (schoolId) {
+      console.log('Using query parameter approach for classId:', classId);
+      // Use query parameter approach: /api/v1/classes?classId=X&schoolId=Y&page=1&limit=10
+      const response = await this.getBySchool(schoolId, {
+        classId: classId,
+        page: 1,
+        limit: 10
+      });
+
+      console.log('getClassById response:', response);
+      console.log('Response structure - classes:', response?.classes);
+      console.log('Response structure - data:', response?.data);
+      console.log('Full response object:', JSON.stringify(response, null, 2));
+
+      // Try multiple response structure patterns
+      const classesArray = response?.classes || response?.data || [];
+      console.log('Classes array:', classesArray);
+
+      if (Array.isArray(classesArray) && classesArray.length > 0) {
+        console.log('Found class:', classesArray[0]);
+        return {
+          data: classesArray[0]
+        };
+      }
+
+      // Check if response itself is the class data
+      if (response && response.classId === classId) {
+        console.log('Response is direct class data');
+        return {
+          data: response
+        };
+      }
+
+      console.warn('Class not found in response:', { classId, schoolId, response });
+      throw new Error(`Class ${classId} not found`);
+    } else {
+      // Fallback to path parameter if schoolId not provided
+      return handleApiResponse(() =>
+        apiClient_.get(`${ENDPOINTS.CLASSES.BASE}/${classId}`)
+      ).then(response => classService.utils.formatClassData(response.data));
+    }
   },
 
   /**
@@ -404,7 +446,11 @@ export const classService = {
         gradeLevel: cls.gradeLevel,
         section: cls.section,
         schoolId: cls.schoolId,
+        schoolName: cls.schoolName,
         teacherId: cls.teacherId,
+        userId: cls.userId,
+        username: cls.username,
+        fullName: cls.fullName,
         academicYear: cls.academicYear,
         maxStudents: cls.maxStudents,
         status: cls.status,

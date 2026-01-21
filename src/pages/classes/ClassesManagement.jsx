@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Users, BookOpen, Clock, Calendar, Building, User, ChevronLeft, ChevronRight, Search, Filter } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, BookOpen, Clock, Calendar, Building, User, ChevronLeft, ChevronRight, Search, Filter, Loader } from 'lucide-react';
 import ClassCard from '@/components/ui/ClassCard';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -393,44 +393,10 @@ export default function ClassesManagement() {
       }
 
 
-      // Process classes from the new API response - use studentCount directly from API
-      // First, collect all unique teacher IDs to fetch full teacher data
-      const teacherIds = [...new Set(classResponse.classes
-        .filter(classData => classData.teacher?.teacherId)
-        .map(classData => classData.teacher.teacherId)
-      )];
-
-      // Fetch full teacher details for all teachers in these classes
-      const teacherDetailsMap = new Map();
-      if (teacherIds.length > 0) {
-        try {
-          const teachersResponse = await teacherService.getTeachersBySchool(schoolInfo.id);
-          if (teachersResponse && teachersResponse.success && teachersResponse.data) {
-            teachersResponse.data.forEach(teacher => {
-              if (teacher.teacherId) {
-                teacherDetailsMap.set(teacher.teacherId, teacher);
-              }
-            });
-          }
-        } catch (teacherError) {
-          console.warn('Failed to fetch teacher details:', teacherError);
-        }
-      }
-
+      // Process classes from the new API response - teacher data is now flattened at top level
       const formattedClasses = classResponse.classes.map((classData) => {
-        // Get full teacher details if available
-        const teacherDetails = classData.teacher?.teacherId ? teacherDetailsMap.get(classData.teacher.teacherId) : null;
-
-        // Construct teacher name with full details
-        let teacherName = '';
-        if (teacherDetails) {
-          // Use full teacher details from teacherService
-          teacherName = getFullName(teacherDetails.user, teacherDetails.user?.username || `Teacher ${teacherDetails.teacherId}`);
-        } else if (classData.teacher && classData.teacher.teacherId) {
-          // Fallback to class teacher data only if teacherId exists
-          teacherName = getFullName(classData.teacher.user || classData.teacher, classData.teacher.user?.username || classData.teacher.username || `Teacher ${classData.teacher.teacherId}`);
-        }
-        // If no teacher data, leave teacherName as empty string
+        // Construct teacher name from flat response structure
+        const teacherName = classData.fullName || classData.username || '';
 
         return {
           id: classData.classId,
@@ -440,19 +406,20 @@ export default function ClassesManagement() {
           section: classData.section || '',
           subject: `Subject ${classData.gradeLevel}`,
           teacher: teacherName,
-          teacherId: classData.teacher?.teacherId || null,
-          userId: classData.teacher?.userId,
-          teacherUser: classData.teacher?.user,
+          teacherId: classData.teacherId || null,
+          userId: classData.userId,
+          username: classData.username,
           schedule: 'Mon, Wed, Fri',
           room: `Room ${classData.classId}`,
           capacity: classData.maxStudents || 50,
-          enrolled: classData.studentCount || 0, // Use studentCount directly from API
+          enrolled: classData.studentCount || 0,
           description: `Class ${classData.name} - Grade ${classData.gradeLevel} (${classData.section})`,
           classId: classData.classId,
           maxStudents: classData.maxStudents || 50,
           academicYear: classData.academicYear,
           status: classData.status,
-          school: classData.school
+          schoolId: classData.schoolId,
+          schoolName: classData.schoolName
         };
       });
       setClasses(formattedClasses);
@@ -542,14 +509,9 @@ export default function ClassesManagement() {
       setEditingClassId(classItem.classId || classItem.id);
       setLoading(true);
 
-      // Fetch the latest class data from the API
-      const response = await classService.getClassById(classItem.classId || classItem.id);
-
-      if (!response) {
-        throw new Error('Failed to fetch class details');
-      }
-
-      const classData = response.data || response;
+      // Use the class data we already have from the list
+      // The classItem contains all the necessary fields (fullName, username, etc.)
+      const classData = classItem;
 
 
       // Extract grade level from class name if not available in gradeLevel
@@ -576,10 +538,18 @@ export default function ClassesManagement() {
       // For teacher name, try multiple fallback sources
       let teacherName = 'Teacher'; // default fallback
 
-      // Try to get teacher name from API response
-      if (classData.teacher?.user?.first_name || classData.teacher?.user?.last_name || classData.teacher?.first_name || classData.teacher?.last_name) {
+      // Try to get teacher name from API response - handle both old nested and new flat structure
+      if (classData.fullName) {
+        // New flat response format
+        teacherName = classData.fullName;
+      } else if (classData.username) {
+        // New flat response format fallback
+        teacherName = classData.username;
+      } else if (classData.teacher?.user?.first_name || classData.teacher?.user?.last_name || classData.teacher?.first_name || classData.teacher?.last_name) {
+        // Old nested structure (backward compatibility)
         teacherName = getFullName(classData.teacher.user || classData.teacher, classData.teacher.username || 'Teacher');
       } else if (classData.teacher?.username) {
+        // Old nested structure fallback
         teacherName = classData.teacher.username;
       } else {
         // Fallback to current user's name if this is their class
@@ -631,12 +601,20 @@ export default function ClassesManagement() {
 
         // Only add if not already present
         if (!inAllTeachers) {
-          // Format teacher name the same way as in fetchTeachers for consistency
+          // Format teacher name - handle both new flat and old nested structure
           let formattedTeacherName = teacherName; // default fallback
 
-          if (classData.teacher?.user) {
+          if (classData.fullName) {
+            // New flat response format
+            formattedTeacherName = classData.fullName;
+          } else if (classData.username) {
+            // New flat response format fallback
+            formattedTeacherName = classData.username;
+          } else if (classData.teacher?.user) {
+            // Old nested structure
             formattedTeacherName = getFullName(classData.teacher.user, classData.teacher.user.username || teacherName);
           } else if (classData.teacher?.username) {
+            // Old nested structure fallback
             formattedTeacherName = classData.teacher.username;
           }
 
@@ -644,7 +622,7 @@ export default function ClassesManagement() {
             value: currentTeacherId,
             label: formattedTeacherName || teacherName,
             gradeLevel: classData.gradeLevel,
-            teacherData: classData.teacher
+            teacherData: classData.teacher || { fullName: classData.fullName, username: classData.username }
           };
 
           // Add to allTeachers
@@ -1185,22 +1163,23 @@ export default function ClassesManagement() {
                 variant="primary"
                 size="sm"
               >
+                {loading && <Loader className="inline h-4 w-4 mr-2 animate-spin" />}
                 {loading ? (t('saving') || 'Saving...') : (showAddModal ? (t('addClass') || 'Add Class') : (t('updateClass') || 'Update Class'))}
               </Button>
             </div>
           }
         >
-          {loading && (
+          {loading && showEditModal && !formData.name && (
             <div className="flex items-center justify-center py-12">
               <div className="flex flex-col items-center space-y-3">
                 <LoadingSpinner size="lg" variant="primary" />
                 <p className="text-sm text-gray-600">
-                  {showEditModal ? (t('loading') || 'Loading...') : (t('saving') || 'Saving...')}
+                  {t('loading') || 'Loading...'}
                 </p>
               </div>
             </div>
           )}
-          {!loading && (
+          {(!loading || !showEditModal || formData.name) && (
             <form id="class-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
