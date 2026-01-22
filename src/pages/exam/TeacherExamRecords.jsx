@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { examHistoryService } from '../../utils/api/services/examHistoryService';
-import { classService, studentService, scoreService } from '@/utils/api';
+import { teacherService } from '../../utils/api/services/teacherService';
+import { studentService, scoreService } from '@/utils/api';
+import { API_BASE_URL } from '../../utils/api/config';
 import { encryptId } from '../../utils/encryption';
 import { exportExamResultsToExcel } from '../../utils/examExportUtils';
 import { formatClassIdentifier } from '../../utils/helpers';
@@ -20,6 +23,7 @@ import Badge from '../../components/ui/Badge';
 import Dropdown from '../../components/ui/Dropdown';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import Modal from '../../components/ui/Modal';
+import ExportProgressModal from '../../components/modals/ExportProgressModal';
 import { YearPicker } from '../../components/ui/year-picker';
 import {
   BookOpen,
@@ -168,6 +172,14 @@ export default function TeacherExamRecords({ user }) {
   const [selectedExamsForDownload, setSelectedExamsForDownload] = useState(new Set());
   const [isExporting, setIsExporting] = useState(false);
 
+  // State for Class Score Export
+  const [isExportingClassScores, setIsExportingClassScores] = useState(false);
+  const [exportProgressModal, setExportProgressModal] = useState({
+    isOpen: false,
+    progress: 0,
+    status: 'processing' // 'processing', 'success', 'error'
+  });
+
   // State for Exam History Modal
   const [showExamHistoryModal, setShowExamHistoryModal] = useState(false);
   const [selectedStudentForHistory, setSelectedStudentForHistory] = useState(null);
@@ -179,19 +191,21 @@ export default function TeacherExamRecords({ user }) {
    */
   const fetchClasses = useCallback(async () => {
     try {
-      if (user?.classIds?.length > 0) {
-        const classPromises = user.classIds.map(classId =>
-          classService.getClassById(classId)
-        );
-        const responses = await Promise.allSettled(classPromises);
-        const teacherClasses = responses
-          .filter(res => res.status === 'fulfilled' && res.value)
-          .map(res => res.value);
-        setClasses(teacherClasses);
+      const teacherId = user?.teacher?.id || user?.teacherId;
+      
+      if (teacherId) {
+        const response = await teacherService.getTeacherClasses(teacherId);
+        
+        if (response.success) {
+          const teacherClasses = response.data || [];
+          setClasses(teacherClasses);
 
-        // If teacher has only one class, auto-select it
-        if (teacherClasses.length === 1) {
-          setSelectedClass(teacherClasses[0].classId || teacherClasses[0].id);
+          // If teacher has only one class, auto-select it
+          if (teacherClasses.length === 1) {
+            setSelectedClass(teacherClasses[0].classId || teacherClasses[0].id);
+          }
+        } else {
+          showError(t('errorFetchingClasses', 'Failed to fetch classes'));
         }
       }
     } catch (error) {
@@ -571,6 +585,155 @@ export default function TeacherExamRecords({ user }) {
       }
     }
   }, [getAllSkillCells]);
+
+  /**
+   * Export class scores to Excel
+   */
+  const handleExportClassScores = useCallback(async () => {
+    try {
+      if (!selectedClass) {
+        showError(t('selectClassFirst', 'Please select a class first'));
+        return;
+      }
+
+      setIsExportingClassScores(true);
+      setExportProgressModal({
+        isOpen: true,
+        progress: 10,
+        status: 'processing'
+      });
+
+      const year = parseInt(selectedAcademicYear);
+      const month = selectedMonth;
+      const token = localStorage.getItem('authToken');
+
+      setExportProgressModal(prev => ({
+        ...prev,
+        progress: 30
+      }));
+
+      // Make request to export endpoint with blob response type
+      // Using axios directly instead of apiClient to preserve status code and full response structure
+      const response = await axios({
+        method: 'GET',
+        baseURL: API_BASE_URL,
+        url: `/student-monthly-exam/export/class/${selectedClass}?year=${year}&month=${month}`,
+        responseType: 'blob',
+        validateStatus: () => true, // Accept all status codes to inspect them
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : undefined
+        }
+      });
+
+      setExportProgressModal(prev => ({
+        ...prev,
+        progress: 70
+      }));
+
+      // response.data should already be a Blob when responseType is 'blob'
+      let blob = response.data;
+
+      console.log('Response object:', response);
+      console.log('Response status:', response.status);
+      console.log('Blob object:', blob);
+      console.log('Blob size:', blob?.size, 'bytes');
+
+      // Validate response - check status code if available
+      if (response.status && response.status >= 400) {
+        // For error responses with blob
+        if (blob && blob.type && blob.type.includes('text')) {
+          const text = await blob.text();
+          console.error('Error response text:', text);
+          throw new Error(`Server error (${response.status}): ${text}`);
+        }
+        throw new Error(`Server error: HTTP ${response.status}`);
+      }
+
+      // Validate blob size - if it's too small, it might be an error response
+      if (blob && blob.size < 1000) {
+        // Try to read as text to see if it's an error message
+        if (blob.type && blob.type.includes('text')) {
+          try {
+            const text = await blob.text();
+            console.error('Response text:', text);
+            throw new Error('Invalid response from server: ' + text);
+          } catch (err) {
+            console.error('Error reading blob:', err);
+            throw new Error('Server returned empty or invalid response');
+          }
+        } else {
+          throw new Error(`Server returned file that is too small (${blob.size} bytes) - may be corrupted`);
+        }
+      }
+
+      // Ensure blob has correct MIME type
+      if (blob.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+        blob = new Blob([blob], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+      }
+
+      setExportProgressModal(prev => ({
+        ...prev,
+        progress: 85
+      }));
+
+      // Create download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `student-exams-attendance-${year}-${month}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      setExportProgressModal(prev => ({
+        ...prev,
+        progress: 100,
+        status: 'success'
+      }));
+
+      showSuccess(t('classScoresExported', 'Class scores exported successfully'));
+
+      // Auto-close modal after 1 second
+      setTimeout(() => {
+        setExportProgressModal({
+          isOpen: false,
+          progress: 0,
+          status: 'processing'
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Error exporting class scores:', error);
+      setExportProgressModal(prev => ({
+        ...prev,
+        status: 'error'
+      }));
+
+      let errorMessage = t('errorExportingClassScores', 'Failed to export class scores');
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      showError(errorMessage);
+
+      // Auto-close modal after 2 seconds on error
+      setTimeout(() => {
+        setExportProgressModal({
+          isOpen: false,
+          progress: 0,
+          status: 'processing'
+        });
+      }, 2000);
+    } finally {
+      setIsExportingClassScores(false);
+      stopLoading('exportClassScores');
+    }
+  }, [selectedClass, selectedAcademicYear, selectedMonth, showError, showSuccess, startLoading, stopLoading, t]);
 
   /**
    * Save all student scores
@@ -1191,8 +1354,8 @@ export default function TeacherExamRecords({ user }) {
               {/* Score Input Tab */}
               <TabsContent value="scores">
                 <div className="mt-6">
-                {/* Class, Academic Year, and Month Selection */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                {/* Class, Academic Year, Month Selection, and Export Button */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 items-end">
                   {/* Class Selection */}
                   {classes.length > 0 && (
                     <div>
@@ -1256,6 +1419,20 @@ export default function TeacherExamRecords({ user }) {
                       className='w-full'
                     />
                   </div>
+
+                  {/* Export Button - Shows on same row after month is selected */}
+                  {selectedMonth && selectedClass && (
+                    <Button
+                      onClick={handleExportClassScores}
+                      disabled={isExportingClassScores}
+                      className="flex items-center gap-2"
+                      variant="primary"
+                      size="sm"
+                    >
+                      <Download className="w-4 h-4" />
+                      {isExportingClassScores ? t('loadingData', 'Exporting...') : t('exportReport', 'Export Class Scores')}
+                    </Button>
+                  )}
                 </div>
 
                 {/* Score Input Section */}
@@ -1537,18 +1714,18 @@ export default function TeacherExamRecords({ user }) {
                       </div>
                     </div>
 
-                    {/* Save Button */}
+                    {/* Save and Export Buttons */}
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="outline"
                         onClick={() => setScoreData({})}
-                        disabled={savingScores}
+                        disabled={savingScores || isExportingClassScores}
                       >
                         {t('clear', 'Clear')}
                       </Button>
                       <Button
                         onClick={handleSaveScores}
-                        disabled={savingScores || !selectedMonth}
+                        disabled={savingScores || !selectedMonth || isExportingClassScores}
                         className="flex items-center gap-2"
                       >
                         <Save className="w-4 h-4" />
@@ -1826,6 +2003,20 @@ export default function TeacherExamRecords({ user }) {
           </div>
         )}
       </Modal>
+
+      {/* Export Progress Modal */}
+      <ExportProgressModal
+        isOpen={exportProgressModal.isOpen}
+        progress={exportProgressModal.progress}
+        status={exportProgressModal.status}
+        onComplete={() => {
+          setExportProgressModal({
+            isOpen: false,
+            progress: 0,
+            status: 'processing'
+          });
+        }}
+      />
       </div>
     </PageTransition>
   );

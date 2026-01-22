@@ -9,8 +9,9 @@ import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import { api, utils } from '../../utils/api';
 import Footer from '../../components/layout/Footer';
-import plpLogo from '../../assets/plppp.png';
+import plpLogo from '../../assets/logo-plp-sms-bg.png';
 import moeysLogo from '../../assets/moeys-logo.png';
+import minimalBg from '../../assets/minimal-bg.svg';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { getFullName } from '../../utils/usernameUtils';
@@ -251,7 +252,13 @@ export default function Login({ setUser }) {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50 flex flex-col bg-gray-50"
+      className="min-h-screen flex flex-col relative"
+      style={{
+        backgroundImage: `url(${minimalBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
     >
       {/* Language Switcher at the top */}
       <div className="flex justify-end p-4">
@@ -272,7 +279,7 @@ export default function Login({ setUser }) {
             <img 
               src={plpLogo} 
               alt={t('PLP Logo') || 'រូបសញ្ញា PLP'} 
-              className="h-12 sm:h-16 w-auto object-contain"
+              className="h-20 sm:h-24 w-auto object-contain"
             />
           </div>
           
