@@ -724,6 +724,8 @@ export const km = {
   errorSavingScores: 'បរាជ័យក្នុងការរក្សាទុកពិន្ទុ',
   enterStudentScores: 'បញ្ចូលពិន្ទុសិស្សសម្រាប់មុខវិជ្ជានីមួយៗ',
   viewClassStudentExams: 'មើលទិន្នន័យនៃការប្រលង និងបញ្ចូលទិន្នន័យពិន្ទុប្រចាំខែរបស់សិស្សថ្នាក់',
+  examDate: 'កាលបរិច្ឆេទការប្រលង',
+  examHistoryFromPLP: 'ទិន្នន័យការប្រលងតាម PLP',
 
 
 

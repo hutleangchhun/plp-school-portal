@@ -32,11 +32,19 @@ export function DatePickerWithDropdowns({
   toYear = new Date().getFullYear(),
   fromDate,
   toDate,
+  closeOnOutsideClick = true,
   ...props
 }) {
   // Accept both 'value' and 'date' props for flexibility
   const dateValue = value || date
   const [open, setOpen] = React.useState(false)
+
+  const handleOpenChange = (isOpen) => {
+    if (!isOpen && !closeOnOutsideClick) {
+      return;
+    }
+    setOpen(isOpen);
+  }
   const [currentMonth, setCurrentMonth] = React.useState(
     dateValue ? new Date(dateValue.getFullYear(), dateValue.getMonth()) : new Date()
   )
@@ -68,7 +76,7 @@ export function DatePickerWithDropdowns({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
