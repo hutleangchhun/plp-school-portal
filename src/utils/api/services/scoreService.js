@@ -192,6 +192,104 @@ export const scoreService = {
       console.error('Error fetching student grades report:', error);
       throw error;
     }
+  },
+
+  /**
+   * Get monthly exam scores for a class
+   * @param {Object} params - Query parameters
+   * @param {number} params.classId - The class ID
+   * @param {number} params.month - The month (1-12)
+   * @param {number} params.year - The year
+   * @returns {Promise<Object>} Monthly exam scores
+   */
+  async getMonthlyExamScores(params) {
+    try {
+      if (!params.classId || !params.month || !params.year) {
+        throw new Error('Class ID, month, and year are required');
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.STUDENT_MONTHLY_EXAM.BASE, { params })
+      );
+
+      // Handle different response formats
+      const data = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data && Array.isArray(response.data.data)
+          ? response.data.data
+          : [];
+
+      return {
+        success: true,
+        data
+      };
+    } catch (error) {
+      console.error('Error fetching monthly exam scores:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Export class scores to Excel
+   * @param {number} classId - The class ID
+   * @param {number} year - The year
+   * @param {number} month - The month (1-12)
+   * @returns {Promise<Blob>} Excel file as blob
+   */
+  async exportClassScores(classId, year, month) {
+    try {
+      if (!classId || !year || !month) {
+        throw new Error('Class ID, year, and month are required');
+      }
+
+      const response = await apiClient_.get(
+        ENDPOINTS.STUDENT_MONTHLY_EXAM.EXPORT.CLASS(classId, year, month),
+        {
+          responseType: 'blob',
+          validateStatus: () => true, // Accept all status codes
+        }
+      );
+
+      // Check for error responses
+      if (response.status && response.status >= 400) {
+        let errorMessage = `Server error: HTTP ${response.status}`;
+
+        // Try to read error message from blob if it's text
+        if (response.data && response.data.type && response.data.type.includes('text')) {
+          try {
+            const text = await response.data.text();
+            errorMessage = `Server error (${response.status}): ${text}`;
+          } catch (e) {
+            // Ignore text parsing errors
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      // Validate blob size
+      const blob = response.data;
+      if (blob && blob.size < 1000) {
+        if (blob.type && blob.type.includes('text')) {
+          try {
+            const text = await blob.text();
+            throw new Error('Invalid response from server: ' + text);
+          } catch (err) {
+            if (err.message.includes('Invalid response')) throw err;
+            throw new Error('Server returned empty or invalid response');
+          }
+        } else {
+          throw new Error(
+            `Server returned file that is too small (${blob.size} bytes) - may be corrupted`
+          );
+        }
+      }
+
+      return blob;
+    } catch (error) {
+      console.error('Error exporting class scores:', error);
+      throw error;
+    }
   }
 };
 

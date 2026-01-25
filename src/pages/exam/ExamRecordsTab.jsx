@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import axios from "axios";
 import { useLoading } from "../../contexts/LoadingContext";
 import { useToast } from "../../contexts/ToastContext";
-import { API_BASE_URL } from "../../utils/api/config";
+import { scoreService } from "../../utils/api/services/scoreService";
 import { getFullName } from "../../utils/usernameUtils";
 import { genderToKhmer } from "../../utils/formatters";
 import { PageLoader } from "../../components/ui/DynamicLoader";
@@ -77,72 +76,35 @@ export default function ExamRecordsTab({
 
       const year = parseInt(globalFilterYear);
       const month = globalFilterMonth;
-      const token = localStorage.getItem("authToken");
 
       setExportProgressModal((prev) => ({
         ...prev,
         progress: 30,
       }));
 
-      const response = await axios({
-        method: "GET",
-        baseURL: API_BASE_URL,
-        url: `/student-monthly-exam/export/class/${selectedClass}?year=${year}&month=${month}`,
-        responseType: "blob",
-        validateStatus: () => true,
-        headers: {
-          Authorization: token ? `Bearer ${token}` : undefined,
-        },
-      });
+      // Use service function to export class scores
+      const blob = await scoreService.exportClassScores(selectedClass, year, month);
 
       setExportProgressModal((prev) => ({
         ...prev,
         progress: 70,
       }));
 
-      let blob = response.data;
-
-      if (response.status && response.status >= 400) {
-        if (blob && blob.type && blob.type.includes("text")) {
-          const text = await blob.text();
-          console.error("Error response text:", text);
-          throw new Error(`Server error (${response.status}): ${text}`);
-        }
-        throw new Error(`Server error: HTTP ${response.status}`);
-      }
-
-      if (blob && blob.size < 1000) {
-        if (blob.type && blob.type.includes("text")) {
-          try {
-            const text = await blob.text();
-            console.error("Response text:", text);
-            throw new Error("Invalid response from server: " + text);
-          } catch (err) {
-            console.error("Error reading blob:", err);
-            throw new Error("Server returned empty or invalid response");
-          }
-        } else {
-          throw new Error(
-            `Server returned file that is too small (${blob.size} bytes) - may be corrupted`,
-          );
-        }
-      }
-
-      if (
-        blob.type !==
+      // Ensure correct MIME type for Excel files
+      const excelBlob = blob.type !==
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      ) {
-        blob = new Blob([blob], {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
-      }
+        ? new Blob([blob], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          })
+        : blob;
 
       setExportProgressModal((prev) => ({
         ...prev,
         progress: 85,
       }));
 
-      const url = window.URL.createObjectURL(blob);
+      // Download the file
+      const url = window.URL.createObjectURL(excelBlob);
       const link = document.createElement("a");
       link.href = url;
       link.download = `student-exams-records-${year}-${month}.xlsx`;
@@ -230,37 +192,24 @@ export default function ExamRecordsTab({
       const year = parseInt(globalFilterYear);
       const month = globalFilterMonth;
 
-      // Fetch monthly scores from API
-      const response = await axios.get(
-        `${API_BASE_URL}/student-monthly-exam`,
-        {
-          params: {
-            month,
-            year,
-            classId: selectedClass,
-          },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-          },
-        },
-      );
+      // Use service function to fetch monthly scores
+      const response = await scoreService.getMonthlyExamScores({
+        classId: selectedClass,
+        month,
+        year,
+      });
 
-
-      if (Array.isArray(response.data)) {
+      if (response.success) {
         setMonthlyRecords(response.data);
         setError(null);
-      } else if (response.data?.data && Array.isArray(response.data.data)) {
-        setMonthlyRecords(response.data.data);
-        setError(null);
       } else {
-        console.error("Unexpected response format:", response.data);
         setMonthlyRecords([]);
-        setError(t("invalidDataFormat", "Invalid data format received"));
+        setError(t("errorFetchingExamRecords", "Failed to fetch exam records"));
       }
     } catch (error) {
       console.error("Error fetching monthly scores:", error);
       setError(
-        error?.response?.data?.message ||
+        error?.message ||
           t("errorFetchingExamRecords", "Failed to fetch exam records"),
       );
       setMonthlyRecords([]);

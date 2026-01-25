@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import axios from "axios";
 import { useLoading } from "../../contexts/LoadingContext";
-import { API_BASE_URL } from "../../utils/api/config";
+import { scoreService } from "../../utils/api/services/scoreService";
 import { getFullName } from "../../utils/usernameUtils";
 import { PageLoader } from "../../components/ui/DynamicLoader";
 import EmptyState from "../../components/ui/EmptyState";
@@ -108,37 +107,24 @@ export default function HonorRollTab({
       const year = parseInt(filterAcademicYear);
       const month = filterMonth;
 
-      // Fetch monthly scores from API
-      const response = await axios.get(
-        `${API_BASE_URL}/student-monthly-exam`,
-        {
-          params: {
-            month,
-            year,
-            classId: selectedClass,
-          },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-          },
-        },
-      );
+      // Use service function to fetch monthly scores
+      const response = await scoreService.getMonthlyExamScores({
+        classId: selectedClass,
+        month,
+        year,
+      });
 
-
-      if (Array.isArray(response.data)) {
+      if (response.success) {
         setMonthlyRecords(response.data);
         setError(null);
-      } else if (response.data?.data && Array.isArray(response.data.data)) {
-        setMonthlyRecords(response.data.data);
-        setError(null);
       } else {
-        console.error("Unexpected response format:", response.data);
         setMonthlyRecords([]);
-        setError(t("invalidDataFormat", "Invalid data format received"));
+        setError(t("errorFetchingExamRecords", "Failed to fetch exam records"));
       }
     } catch (error) {
       console.error("Error fetching monthly scores:", error);
       setError(
-        error?.response?.data?.message ||
+        error?.message ||
           t("errorFetchingExamRecords", "Failed to fetch exam records"),
       );
       setMonthlyRecords([]);
