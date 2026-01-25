@@ -245,10 +245,15 @@ export default function ExamRecordsTab({
         },
       );
 
+
       if (Array.isArray(response.data)) {
         setMonthlyRecords(response.data);
         setError(null);
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        setMonthlyRecords(response.data.data);
+        setError(null);
       } else {
+        console.error("Unexpected response format:", response.data);
         setMonthlyRecords([]);
         setError(t("invalidDataFormat", "Invalid data format received"));
       }
