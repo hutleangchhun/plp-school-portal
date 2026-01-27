@@ -30,7 +30,8 @@ export default function ProfileImage({
   fallbackType = 'icon',
   onClick,
   clickable = false,
-  customSize = ''
+  customSize = '',
+  rounded = 'full'
 }) {
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
@@ -58,6 +59,21 @@ export default function ProfileImage({
 
   const sizeClasses = sizeMap[size] || sizeMap.md;
   const iconSizeClasses = iconSizeMap[size] || iconSizeMap.md;
+  
+  // Rounding mappings
+  const roundedMap = {
+    'none': 'rounded-none',
+    'sm': 'rounded-sm',
+    'md': 'rounded-md',
+    'lg': 'rounded-lg',
+    'xl': 'rounded-xl',
+    '2xl': 'rounded-2xl',
+    '3xl': 'rounded-3xl',
+    'full': 'rounded-full'
+  };
+  
+  const roundedClass = roundedMap[rounded] || 'rounded-full';
+  
   const borderClasses = showBorder ? `border-2 ${borderColor}` : '';
   const cursorClasses = clickable || onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : '';
 
@@ -134,7 +150,7 @@ export default function ProfileImage({
   if (imageLoading && hasProfilePicture) {
     return (
       <div 
-        className={`${sizeClasses} rounded-full bg-gray-200 ${borderClasses} ${cursorClasses} flex items-center justify-center ${className}`}
+        className={`${sizeClasses} ${roundedClass} bg-gray-200 ${borderClasses} ${cursorClasses} flex items-center justify-center ${className}`}
         onClick={handleClick}
       >
         <div className="animate-pulse">
@@ -148,7 +164,7 @@ export default function ProfileImage({
   if (hasProfilePicture) {
     return (
       <div 
-        className={`${sizeClasses} rounded-full ${borderClasses} ${cursorClasses} overflow-hidden relative ${className}`}
+        className={`${sizeClasses} ${roundedClass} ${borderClasses} ${cursorClasses} overflow-hidden relative ${className}`}
         onClick={handleClick}
       >
         <img
@@ -197,7 +213,7 @@ export default function ProfileImage({
   if (imageError && fallbackType === 'image') {
     return (
       <div 
-        className={`${sizeClasses} rounded-full bg-gray-100 ${borderClasses} ${cursorClasses} flex items-center justify-center ${className}`}
+        className={`${sizeClasses} ${roundedClass} bg-gray-100 ${borderClasses} ${cursorClasses} flex items-center justify-center ${className}`}
         onClick={handleClick}
       >
         <User className={`${iconSizeClasses} text-gray-500`} />
@@ -208,7 +224,7 @@ export default function ProfileImage({
   // Default fallback container
   return (
     <div 
-      className={`${sizeClasses} rounded-full bg-gradient-to-br from-gray-100 to-gray-200 ${borderClasses} ${cursorClasses} flex items-center justify-center relative overflow-hidden ${className}`}
+      className={`${sizeClasses} ${roundedClass} bg-gradient-to-br from-gray-100 to-gray-200 ${borderClasses} ${cursorClasses} flex items-center justify-center relative overflow-hidden ${className}`}
       onClick={handleClick}
     >
       {renderFallback()}

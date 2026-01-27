@@ -7,6 +7,7 @@ import EmptyState from "../../components/ui/EmptyState";
 import { Trophy, Download, Printer } from "lucide-react";
 import honorTabBorder from "../../assets/honorTabBorder.png";
 import pkachanEmblem from "../../assets/pkachan.png";
+import ProfileImage from "../../components/ui/ProfileImage";
 
 /**
  * Score calculation utilities
@@ -399,14 +400,15 @@ export default function HonorRollTab({
                         <div className="flex justify-center">
                           <div className="text-center">
                             <p className="text-base font-bold text-red-600 mb-3">លេខ១</p>
-                            <div className="w-32 h-32 mx-auto mb-3 rounded overflow-hidden border-3 border-gray-400 shadow-md">
-                              <img
-                                src={topStudents[0].record?.student?.photoUrl || '/default-avatar.png'}
+                            <div className="mx-auto mb-3 shadow-md">
+                              <ProfileImage
+                                user={topStudents[0].record?.student}
+                                size="custom"
+                                customSize="w-32 h-32"
+                                rounded="md"
+                                borderColor="border-gray-400"
                                 alt={topStudents[0].studentName}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.src = '/default-avatar.png';
-                                }}
+                                fallbackType="image"
                               />
                             </div>
                             <p className="font-bold text-gray-900 text-base">
@@ -421,14 +423,15 @@ export default function HonorRollTab({
                         {topStudents[1] && (
                           <div className="text-center">
                             <p className="text-sm font-bold text-red-600 mb-2">លេខ២</p>
-                            <div className="w-28 h-28 mx-auto mb-2 rounded overflow-hidden border-2 border-gray-400 shadow-sm">
-                              <img
-                                src={topStudents[1].record?.student?.photoUrl || '/default-avatar.png'}
+                            <div className="mx-auto mb-2 shadow-sm">
+                              <ProfileImage
+                                user={topStudents[1].record?.student}
+                                size="custom"
+                                customSize="w-28 h-28"
+                                rounded="md"
+                                borderColor="border-gray-400"
                                 alt={topStudents[1].studentName}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.src = '/default-avatar.png';
-                                }}
+                                fallbackType="image"
                               />
                             </div>
                             <p className="font-semibold text-gray-900 text-sm">
@@ -439,14 +442,15 @@ export default function HonorRollTab({
                         {topStudents[2] && (
                           <div className="text-center">
                             <p className="text-sm font-bold text-red-600 mb-2">លេខ៣</p>
-                            <div className="w-28 h-28 mx-auto mb-2 rounded overflow-hidden border-2 border-gray-400 shadow-sm">
-                              <img
-                                src={topStudents[2].record?.student?.photoUrl || '/default-avatar.png'}
+                            <div className="mx-auto mb-2 shadow-sm">
+                              <ProfileImage
+                                user={topStudents[2].record?.student}
+                                size="custom"
+                                customSize="w-28 h-28"
+                                rounded="md"
+                                borderColor="border-gray-400"
                                 alt={topStudents[2].studentName}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.src = '/default-avatar.png';
-                                }}
+                                fallbackType="image"
                               />
                             </div>
                             <p className="font-semibold text-gray-900 text-sm">
@@ -461,14 +465,15 @@ export default function HonorRollTab({
                         {topStudents[3] && (
                           <div className="text-center">
                             <p className="text-sm font-bold text-red-600 mb-2">លេខ៤</p>
-                            <div className="w-28 h-28 mx-auto mb-2 rounded overflow-hidden border-2 border-gray-400 shadow-sm">
-                              <img
-                                src={topStudents[3].record?.student?.photoUrl || '/default-avatar.png'}
+                            <div className="mx-auto mb-2 shadow-sm">
+                              <ProfileImage
+                                user={topStudents[3].record?.student}
+                                size="custom"
+                                customSize="w-28 h-28"
+                                rounded="md"
+                                borderColor="border-gray-400"
                                 alt={topStudents[3].studentName}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.src = '/default-avatar.png';
-                                }}
+                                fallbackType="image"
                               />
                             </div>
                             <p className="font-semibold text-gray-900 text-sm">
@@ -479,14 +484,15 @@ export default function HonorRollTab({
                         {topStudents[4] && (
                           <div className="text-center">
                             <p className="text-sm font-bold text-red-600 mb-2">លេខ៥</p>
-                            <div className="w-28 h-28 mx-auto mb-2 rounded overflow-hidden border-2 border-gray-400 shadow-sm">
-                              <img
-                                src={topStudents[4].record?.student?.photoUrl || '/default-avatar.png'}
+                            <div className="mx-auto mb-2 shadow-sm">
+                              <ProfileImage
+                                user={topStudents[4].record?.student}
+                                size="custom"
+                                customSize="w-28 h-28"
+                                rounded="md"
+                                borderColor="border-gray-400"
                                 alt={topStudents[4].studentName}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.src = '/default-avatar.png';
-                                }}
+                                fallbackType="image"
                               />
                             </div>
                             <p className="font-semibold text-gray-900 text-sm">

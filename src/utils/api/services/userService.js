@@ -155,7 +155,7 @@ const userService = {
 
     console.log('Updating user profile for ID:', currentUser.id);
     console.log('Formatted data:', formattedData);
-    
+
     return put(ENDPOINTS.USERS.UPDATE_USER(currentUser.id), formattedData);
   },
   /**
@@ -261,15 +261,15 @@ const userService = {
     if (!file) {
       throw new Error('No file provided for upload');
     }
-    
+
     if (!file.type.startsWith('image/')) {
       throw new Error('Invalid file type. Please select an image file.');
     }
-    
+
     if (file.size > 10 * 1024 * 1024) { // 10MB limit
       throw new Error('File too large. Please select an image smaller than 10MB.');
     }
-    
+
     console.log('=== UPLOAD SERVICE DEBUG ===');
     console.log('File details:', {
       name: file.name,
@@ -282,7 +282,7 @@ const userService = {
     console.log('2. POST /users/{userId}/upload-profile (if userId provided)');
     console.log('3. POST /upload/single (generic fallback)');
     console.log('=== END UPLOAD SERVICE DEBUG ===');
-    
+
     const endpoints = [];
 
     // Build list of endpoints to try in order of preference
@@ -311,22 +311,22 @@ const userService = {
       url: ENDPOINTS.UPLOAD.SINGLE,
       uploadFn: () => uploadFile(ENDPOINTS.UPLOAD.SINGLE, file, 'file')
     });
-    
+
     let lastError = null;
     const errors = [];
-    
+
     // Try each endpoint in sequence
     for (let i = 0; i < endpoints.length; i++) {
       const endpoint = endpoints[i];
-      
+
       try {
         console.log(`Attempting upload ${i + 1}/${endpoints.length}: ${endpoint.name}`);
         console.log(`${endpoint.method} ${endpoint.url}`);
-        
+
         const response = await endpoint.uploadFn();
-        
+
         console.log(`✅ Upload successful using ${endpoint.name}:`, response);
-        
+
         // Normalize response format
         if (response && (response.profile_picture || response.url || response.path || response.filename)) {
           return {
@@ -334,9 +334,9 @@ const userService = {
             originalResponse: response
           };
         }
-        
+
         return response;
-        
+
       } catch (error) {
         lastError = error;
         const errorInfo = {
@@ -346,32 +346,32 @@ const userService = {
           status: error.status,
           message: error.message
         };
-        
+
         errors.push(errorInfo);
         console.warn(`❌ ${endpoint.name} failed:`, errorInfo);
-        
+
         // For 403/401 errors, don't try other endpoints as it's likely an auth issue
         if (error.status === 403 || error.status === 401) {
           console.log('Authentication/authorization error detected, stopping further attempts');
           break;
         }
-        
+
         // For 413 (payload too large), don't try other endpoints
         if (error.status === 413) {
           console.log('File too large error detected, stopping further attempts');
           break;
         }
-        
+
         // Continue to next endpoint for other errors
         if (i < endpoints.length - 1) {
           console.log(`Trying next endpoint...`);
         }
       }
     }
-    
+
     // All endpoints failed
     console.error('🚫 All upload endpoints failed:', errors);
-    
+
     // Return a meaningful error based on the most relevant failure
     if (lastError?.status === 403) {
       throw new Error('Access denied: You do not have permission to upload profile pictures. Please contact your administrator or try logging out and logging in again.');
@@ -399,7 +399,7 @@ const userService = {
     if (!userId) {
       throw new Error('User ID is required for this method');
     }
-    
+
     console.log(`Uploading profile picture for user ${userId} using new POST endpoint: /users/${userId}/upload-profile`);
     return uploadFile(
       ENDPOINTS.USERS.UPLOAD_PROFILE(userId),
@@ -970,14 +970,14 @@ const userUtils = {
     if (!user || user.gender === undefined || user.gender === null) {
       return t('profile.unspecified') || 'Unspecified';
     }
-    
+
     const genderMap = {
       male: t('profile.male') || 'Male',
       female: t('profile.female') || 'Female',
       other: t('profile.other') || 'Other',
       prefer_not_to_say: t('profile.preferNotToSay') || 'Prefer not to say'
     };
-    
+
     return genderMap[user.gender] || user.gender;
   },
 
@@ -989,11 +989,11 @@ const userUtils = {
    */
   getProfilePictureUrl: (user, forceHttps = false) => {
     if (!user) return '';
-    
-    // Handle both camelCase and snake_case property names
-    const profilePicture = user.profilePicture || user.profile_picture;
+
+    // Handle camelCase, snake_case, and generic photoUrl property names
+    const profilePicture = user.profilePicture || user.profile_picture || user.photoUrl;
     if (!profilePicture) return '';
-    
+
     // If it's already a full URL, handle protocol conversion if needed
     if (profilePicture.startsWith('http')) {
       try {
@@ -1021,7 +1021,7 @@ const userUtils = {
 
       return profilePicture;
     }
-    
+
     // If backend returns only a filename (common for stored profile pictures), serve it through
     // the files endpoint (proxied via /api -> /api/v1).
     const trimmedProfile = String(profilePicture).trim();
@@ -1050,7 +1050,7 @@ const userUtils = {
 
     // Use environment-aware static base URL from config
     const staticBaseUrl = getStaticAssetBaseUrl();
-    
+
     // Handle different path formats
     let profilePath = profilePicture;
 
@@ -1065,7 +1065,7 @@ const userUtils = {
         profilePath = '/uploads/' + profilePath;
       }
     }
-    
+
     // Handle special characters in filename by encoding only the filename part
     const pathParts = profilePath.split('/');
     if (pathParts.length > 1) {
@@ -1076,7 +1076,7 @@ const userUtils = {
       }
       profilePath = pathParts.join('/');
     }
-    
+
     // Always use full API URL for profile pictures
     return `${staticBaseUrl}${profilePath}`;
   },
@@ -1088,9 +1088,9 @@ const userUtils = {
    */
   checkProfilePictureUrl: async (url) => {
     if (!url) return false;
-    
+
     try {
-      const response = await fetch(url, { 
+      const response = await fetch(url, {
         method: 'HEAD',
         mode: 'cors',
         cache: 'no-cache'
@@ -1101,7 +1101,7 @@ const userUtils = {
       if (url.startsWith('https://')) {
         try {
           const httpUrl = url.replace('https://', 'http://');
-          const fallbackResponse = await fetch(httpUrl, { 
+          const fallbackResponse = await fetch(httpUrl, {
             method: 'HEAD',
             mode: 'cors',
             cache: 'no-cache'
