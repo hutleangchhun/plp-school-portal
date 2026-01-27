@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Calendar, Users, Check, X, Clock, AlertCircle, Save, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -14,6 +14,7 @@ import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import EmptyState from '@/components/ui/EmptyState';
 import AttendanceExport from '../../components/attendance/AttendanceExport';
 import { formatClassIdentifier } from '../../utils/helpers';
+import Pagination from '../../components/ui/Pagination';
 
 export default function TeacherAttendance({ user }) {
   const { t } = useLanguage();
@@ -29,6 +30,16 @@ export default function TeacherAttendance({ user }) {
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showWarning, setShowWarning] = useState(true);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [studentsPerPage, setStudentsPerPage] = useState(10);
+  
+  // Refs to track previous class and date for detecting changes
+  const prevClassIdRef = useRef(selectedClassId);
+  const prevDateRef = useRef(selectedDate);
 
   // Update selected date to current date when component mounts or becomes visible
   useEffect(() => {
@@ -77,6 +88,12 @@ export default function TeacherAttendance({ user }) {
     const selected = new Date(selectedDate);
     selected.setHours(0, 0, 0, 0); // Reset time to start of day
     return selected < today;
+  };
+
+  // Handle limit change
+  const handleLimitChange = (newLimit) => {
+    setStudentsPerPage(newLimit);
+    setCurrentPage(1); // Reset to first page when changing limit
   };
 
   // Check if the selected date is in the future (after today)
@@ -135,7 +152,7 @@ export default function TeacherAttendance({ user }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load students and attendance when class or date changes
+  // Load students and attendance when class, date, or page changes
   useEffect(() => {
     if (!selectedClassId || initialLoading) return;
 
@@ -143,14 +160,27 @@ export default function TeacherAttendance({ user }) {
 
     async function loadStudentsAndAttendance() {
       try {
+        // Check if class or date changed (not just page change)
+        const classChanged = prevClassIdRef.current !== selectedClassId;
+        const dateChanged = prevDateRef.current?.getTime() !== selectedDate?.getTime();
+        
+        if (classChanged || dateChanged) {
+          console.log('Class or date changed, clearing attendance state');
+          setAttendance({});
+          setExistingAttendance({});
+          setCurrentPage(1);
+          prevClassIdRef.current = selectedClassId;
+          prevDateRef.current = selectedDate;
+        }
+        
         setStudentsLoading(true);
 
-        // Fetch students in the class (no limit to get all students)
-        console.log('Fetching students for classId:', selectedClassId);
+        // Fetch students in the class with pagination
+        console.log('Fetching students for classId:', selectedClassId, 'page:', currentPage);
         const studentsResponse = await studentService.getMyStudents({
           classId: selectedClassId,
-          page: 1,
-          limit: 100 // Set very high limit to get all students
+          page: currentPage,
+          limit: studentsPerPage
         });
 
         console.log('Students API response:', studentsResponse);
@@ -159,8 +189,22 @@ export default function TeacherAttendance({ user }) {
 
         if (studentsResponse.success) {
           const studentsList = studentsResponse.data || [];
-          console.log(`Loaded ${studentsList.length} students for attendance`);
+          // Extract pagination info from the response
+          const paginationInfo = studentsResponse.pagination || {};
+          const total = paginationInfo.total || studentsList.length;
+          const pages = paginationInfo.pages || Math.ceil(total / studentsPerPage);
+          
+          console.log('=== PAGINATION DEBUG ===');
+          console.log('Full API Response:', studentsResponse);
+          console.log('Pagination Info:', paginationInfo);
+          console.log('Students List Length:', studentsList.length);
+          console.log('Total from API:', total);
+          console.log('Pages from API:', pages);
+          console.log('Current Page:', currentPage);
+          console.log(`Loaded ${studentsList.length} students for attendance (page ${currentPage} of ${pages}, total: ${total})`);
           setStudents(studentsList);
+          setTotalStudents(total);
+          setTotalPages(pages);
 
           // Fetch existing attendance for this date and class
           const selectedDateStr = formatDateToString(selectedDate);
@@ -221,29 +265,39 @@ export default function TeacherAttendance({ user }) {
 
           console.log('Attendance map after loading from API:', attendanceMap);
 
-          // Initialize attendance for all students (no default status if not marked)
-          console.log('=== INITIALIZING STUDENTS ===');
-          studentsList.forEach((student, index) => {
-            const studentUserId = Number(student.userId || student.id);
-            if (index === 0) {
-              console.log('First student:', {
-                rawUserId: student.userId || student.id,
-                normalizedUserId: studentUserId,
-                hasAttendance: !!attendanceMap[studentUserId],
-                attendanceData: attendanceMap[studentUserId]
-              });
-            }
-            if (!attendanceMap[studentUserId]) {
-              attendanceMap[studentUserId] = {
-                status: null, // No default status
-                reason: ''
-              };
-            }
+          console.log('=== ATTENDANCE MERGE DEBUG ===');
+          console.log('Attendance from API (attendanceMap):', attendanceMap);
+          // Merge with existing attendance state to preserve selections from other pages
+          // Only add students that either have API data OR don't exist in previous state
+          setAttendance(prev => {
+            console.log('Previous attendance state:', prev);
+            const merged = { ...prev };
+            
+            // Add students from current page
+            studentsList.forEach(student => {
+              const studentUserId = Number(student.userId || student.id);
+              
+              // If student has attendance from API, use it
+              if (attendanceMap[studentUserId]) {
+                merged[studentUserId] = attendanceMap[studentUserId];
+              }
+              // If student doesn't exist in previous state, initialize with null
+              else if (!prev[studentUserId]) {
+                merged[studentUserId] = {
+                  status: null,
+                  reason: ''
+                };
+              }
+              // Otherwise, keep the previous value (user's selection)
+            });
+            
+            console.log('Final merged attendance state:', merged);
+            return merged;
           });
-
-          console.log('=== FINAL ATTENDANCE MAP ===', attendanceMap);
-          setAttendance(attendanceMap);
-          setExistingAttendance(existingMap);
+          setExistingAttendance(prev => ({
+            ...prev,
+            ...existingMap
+          }));
         }
       } catch (error) {
         console.error('Error loading students and attendance:', error);
@@ -260,7 +314,7 @@ export default function TeacherAttendance({ user }) {
     return () => {
       mounted = false;
     };
-  }, [selectedClassId, selectedDate, initialLoading, showError]);
+  }, [selectedClassId, selectedDate, currentPage, initialLoading, showError, studentsPerPage]);
 
   // Handle status change for a student
   const handleStatusChange = (studentUserId, status) => {
@@ -301,7 +355,7 @@ export default function TeacherAttendance({ user }) {
     }));
   };
 
-  // Mark all as present
+  // Mark all as present (only for current page)
   const handleMarkAllPresent = () => {
     // Prevent editing if the date is in the past
     if (isReadOnly) {
@@ -309,7 +363,7 @@ export default function TeacherAttendance({ user }) {
       return;
     }
 
-    const newAttendance = {};
+    const newAttendance = { ...attendance };
     students.forEach(student => {
       const studentUserId = student.userId || student.id;
       newAttendance[studentUserId] = {
@@ -318,7 +372,7 @@ export default function TeacherAttendance({ user }) {
       };
     });
     setAttendance(newAttendance);
-    showSuccess(t('markedAllPresent', 'Marked all students as present'));
+    showSuccess(t('markedAllPresent', 'Marked all students on this page as present'));
   };
 
   // Save attendance
@@ -426,7 +480,11 @@ export default function TeacherAttendance({ user }) {
 
 
   if (initialLoading) {
-    return <PageLoader message={t('loadingAttendance', 'Loading attendance...')} />;
+    return (
+      <div className='h-96 flex justify-center items-center'>
+        <PageLoader message={t('loadingAttendance', 'Loading attendance...')} />
+      </div>
+    );
   }
 
   if (classes.length === 0) {
@@ -572,7 +630,9 @@ export default function TeacherAttendance({ user }) {
 
           {/* Students List */}
           {studentsLoading ? (
-            <DynamicLoader message={t('loadingStudents', 'Loading students...')} />
+            <div className='h-96 flex justify-center items-center'>
+              <DynamicLoader message={t('loadingStudents', 'Loading students...')} />
+            </div>
           ) : students.length === 0 ? (
             <EmptyState
               icon={Users}
@@ -582,7 +642,7 @@ export default function TeacherAttendance({ user }) {
             />
           ) : (
             <div className="p-4 sm:p-6 overflow-hidden">
-              <div className="overflow-x-auto rounded-lg shadow">
+              <div className="overflow-x-auto rounded-sm shadow">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead>
                     <tr className='bg-blue-500'>
@@ -634,7 +694,7 @@ export default function TeacherAttendance({ user }) {
                                     key={status.value}
                                     onClick={() => handleStatusChange(studentUserId, status.value)}
                                     disabled={isReadOnly}
-                                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all border-0 ${isSelected
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-sm transition-all border-0 ${isSelected
                                         ? `${status.bgColor} ${status.textColor} border-${status.borderColor}-200`
                                         : `bg-transparent border-2 border-gray-100 text-gray-600 ${isReadOnly ? '' : 'hover:bg-gray-100'}`
                                       } ${isReadOnly && !isSelected ? 'opacity-50' : ''} ${isReadOnly ? 'cursor-not-allowed' : 'cursor-pointer'}`}
@@ -673,6 +733,21 @@ export default function TeacherAttendance({ user }) {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Pagination Controls */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                total={totalStudents}
+                limit={studentsPerPage}
+                onPageChange={setCurrentPage}
+                onLimitChange={handleLimitChange}
+                t={t}
+                showFirstLast={true}
+                showInfo={true}
+                showLimitSelector={true}
+                limitOptions={[10, 25, 50, 100]}
+              />
             </div>
           )}
         </FadeInSection>
