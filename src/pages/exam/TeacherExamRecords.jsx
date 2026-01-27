@@ -193,6 +193,15 @@ export default function TeacherExamRecords({ user }) {
               <TabsContent value="honor">
                 <HonorRollTab
                   selectedClass={selectedClass}
+                  selectedClassName={
+                    selectedClass
+                      ? formatClassIdentifier(
+                          classes.find((c) => (c.classId || c.id) === selectedClass)?.gradeLevel,
+                          classes.find((c) => (c.classId || c.id) === selectedClass)?.section,
+                          t
+                        ) || classes.find((c) => (c.classId || c.id) === selectedClass)?.name
+                      : null
+                  }
                   globalFilterMonth={filterMonth}
                   globalFilterYear={filterAcademicYear}
                   t={t}

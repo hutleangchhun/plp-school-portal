@@ -114,7 +114,7 @@ const DynamicLoader = ({
 
 // Convenience components for common use cases
 export const PageLoader = ({ message, className, ...props }) => (
-  <div className={cn('flex items-center justify-center min-h-[400px]', className)}>
+  <div className={cn('flex items-center justify-center min-h-screen', className)}>
     <DynamicLoader
       type="spinner"
       size="lg"
