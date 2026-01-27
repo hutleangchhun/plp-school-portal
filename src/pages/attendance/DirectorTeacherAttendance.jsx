@@ -185,155 +185,153 @@ export default function TeacherAttendance() {
       const loadingKey = 'fetchTeachers';
       startLoading(loadingKey, t('loadingTeachers', 'Loading teachers...'));
 
-      // Fetch teachers with backend pagination and search query
-      const response = await teacherService.getTeachersBySchool(schoolId, {
-        limit: limit,
+      // ✅ Single optimized call to fetch teachers + settings combined
+      console.log(`🚀 Fetching teachers with attendance settings from: /teachers/attendance-settings/${schoolId}`);
+      const response = await attendanceService.getTeacherAttendanceSettings(schoolId, {
+        search: _searchQuery.trim() || '',
         page: pageNum,
-        search: _searchQuery.trim() || undefined  // Pass search to API
+        limit
       });
 
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch teacher attendance settings');
+      }
+
       // Update pagination info from API response
-      if (response.pagination?.limit) {
-        setItemsPerPage(response.pagination.limit);
+      const pagination = response.pagination || {};
+      if (pagination?.limit) {
+        setItemsPerPage(pagination.limit);
       }
-      if (response.pagination?.pages) {
-        setTotalPages(response.pagination.pages);
+      if (pagination?.totalPages) {
+        setTotalPages(pagination.totalPages);
       }
-      if (response.pagination?.total) {
-        setTotalTeachers(response.pagination.total);
+      if (pagination?.total) {
+        setTotalTeachers(pagination.total);
       }
 
-      if (response.data && Array.isArray(response.data)) {
-        const formattedTeachers = response.data
-          .filter(teacher => teacher && (teacher.id || teacher.userId || teacher.user_id))
-          .map(teacher => {
-            // Teacher data might be in nested user object
-            const user = teacher.user || teacher;
-            const userId = user.id || teacher.id || teacher.userId || teacher.user_id;
-            const username = user.username || teacher.username || '';
+      console.log('✅ Received data from single endpoint:', {
+        teachersCount: response.data?.length,
+        pagination,
+        networkRequests: '1 (optimized single call)'
+      });
 
-            console.log('Teacher data:', { teacher, user, userId, username });
+      // Process teachers data from the new endpoint
+      const teachersData = response.data || [];
+      if (Array.isArray(teachersData) && teachersData.length > 0) {
+        const formattedTeachers = teachersData
+          .filter(item => item && (item.userId || item.teacherId))
+          .map(item => {
+            const user = item.user || {};
+            const firstName = user.firstName || '';
+            const lastName = user.lastName || '';
+            const fullName = `${firstName} ${lastName}`.trim() || 'Unknown';
 
             return {
-              id: Number(userId), // User ID (for attendance queries)
-              teacherId: Number(teacher.teacherId || teacher.teacher_id || teacher.id), // Teacher ID (for teacher-settings API)
-              name: getFullName(user, username || 'Unknown'),
-              username,
-              teacherNumber: teacher.teacherNumber || teacher.teacher_number || '',
-              profilePicture: user.profile_picture || user.profilePicture || teacher.profile_picture || teacher.profilePicture || ''
+              id: Number(item.userId), // User ID
+              teacherId: Number(item.teacherId), // Teacher ID
+              name: fullName,
+              username: user.username || '',
+              teacherNumber: item.teacherNumber || '',
+              profilePicture: user.profilePicture || '',
+              gender: user.gender || '',
+              isActive: user.isActive !== false
             };
           });
 
         setTeachers(formattedTeachers);
 
-        // Fetch teacher settings for each teacher
-        const settingsPromises = formattedTeachers.map(async (teacher) => {
-          try {
-            // Use teacherId (teacher_id from teachers table) for the API call
-            const settingsResponse = await teacherSettingsService.getTeacherSettings(teacher.teacherId);
-            console.log(`Settings for teacher_id ${teacher.teacherId} (user_id: ${teacher.id}):`, settingsResponse);
-
-            // Handle API response structure: response.data contains the actual settings object
-            const requiresApproval = settingsResponse.success && settingsResponse.data
-              ? settingsResponse.data.requiresApproval === true
-              : false;
-
-            return {
-              userId: teacher.id, // Store by user ID for easy lookup
-              teacherId: teacher.teacherId,
-              requiresApproval
-            };
-          } catch (err) {
-            console.warn(`Failed to fetch settings for teacher_id ${teacher.teacherId} (user_id: ${teacher.id}):`, err);
-            return {
-              userId: teacher.id,
-              teacherId: teacher.teacherId,
-              requiresApproval: false
-            };
-          }
-        });
-
-        const settingsResults = await Promise.all(settingsPromises);
+        // Extract teacher settings from the same response (no separate API call needed)
         const settingsMap = {};
-        settingsResults.forEach(result => {
-          // Store by userId for easy lookup in the UI (teacher rows are keyed by teacher.id which is userId)
-          settingsMap[result.userId] = {
-            requiresApproval: result.requiresApproval,
-            teacherId: result.teacherId // Keep teacherId for updates
+        teachersData.forEach(item => {
+          const userId = Number(item.userId);
+          const settings = item.attendanceSettings || {};
+
+          settingsMap[userId] = {
+            requiresApproval: settings.requiresApproval === true,
+            teacherId: Number(item.teacherId),
+            settingsId: settings.id,
+            updatedAt: settings.updatedAt,
+            updatedBy: settings.updatedBy
           };
         });
         setTeacherSettings(settingsMap);
 
-        // Fetch attendance for the entire week in one go
-        const weeklyAttendanceData = {};
+        // ✅ Fetch attendance data separately (not included in the settings endpoint)
+        console.log('📅 Fetching attendance data for teachers...');
         const dates = getWeekDates(currentWeekStart);
         const startDate = dates[0].toISOString().split('T')[0];
         const endDate = dates[6].toISOString().split('T')[0];
 
-        try {
-          const allAttendanceRecords = [];
+        const weeklyAttendanceData = {};
 
-          // Fetch attendance for each teacher
-          for (const teacher of formattedTeachers) {
-            try {
-              const attendanceResponse = await attendanceService.getAttendance({
+        // Fetch attendance for each teacher
+        const attendancePromises = formattedTeachers.map(async (teacher) => {
+          try {
+            const attendanceResponse = await attendanceService.getAttendance({
+              userId: teacher.id,
+              startDate,
+              endDate,
+              limit: 400
+            });
+
+            if (attendanceResponse.success && attendanceResponse.data) {
+              const records = Array.isArray(attendanceResponse.data)
+                ? attendanceResponse.data
+                : attendanceResponse.data.records || [];
+
+              return {
                 userId: teacher.id,
-                startDate,
-                endDate,
-                limit: 400
-              });
-
-              if (attendanceResponse.success && attendanceResponse.data) {
-                const records = Array.isArray(attendanceResponse.data)
-                  ? attendanceResponse.data
-                  : attendanceResponse.data.records || [];
-                allAttendanceRecords.push(...records);
-              }
-            } catch (err) {
-              console.warn(`Failed to fetch attendance for teacher ${teacher.id}:`, err);
+                records
+              };
             }
+            return { userId: teacher.id, records: [] };
+          } catch (err) {
+            console.warn(`Failed to fetch attendance for teacher ${teacher.id}:`, err);
+            return { userId: teacher.id, records: [] };
           }
+        });
 
-          // Group attendance records by userId -> date -> array of records
-          allAttendanceRecords.forEach(record => {
-            const userId = Number(record.userId || record.user_id);
+        const attendanceResults = await Promise.all(attendancePromises);
+
+        // Process attendance records and group by date
+        attendanceResults.forEach(({ userId, records }) => {
+          weeklyAttendanceData[userId] = {};
+
+          records.forEach(record => {
             const recordDate = record.date ? record.date.split('T')[0] : null;
 
-            if (!userId || isNaN(userId) || !recordDate) {
-              return;
-            }
+            if (!recordDate) return;
 
-            // Initialize user's attendance data if not exists
-            if (!weeklyAttendanceData[userId]) {
-              weeklyAttendanceData[userId] = {};
-            }
-
-            // Initialize date's attendance data if not exists
             if (!weeklyAttendanceData[userId][recordDate]) {
               weeklyAttendanceData[userId][recordDate] = [];
             }
 
-            // Infer shift from submission time
-            const recordTime = record.checkInTime ? new Date(record.checkInTime) : (record.createdAt ? new Date(record.createdAt) : null);
-            const recordHour = recordTime ? recordTime.getHours() : 12;
-            const shift = recordHour < 11 ? 'MORNING' :
-                          recordHour < 13 ? 'NOON' :
-                          'AFTERNOON';
+            // Format attendance record
+            const recordTime = record.checkInTime
+              ? new Date(record.checkInTime)
+              : record.createdAt
+              ? new Date(record.createdAt)
+              : null;
 
-            // Add the attendance record with all details
+            const recordHour = recordTime ? recordTime.getHours() : 12;
+            const shift =
+              recordHour < 11 ? 'MORNING' : recordHour < 13 ? 'NOON' : 'AFTERNOON';
+
             weeklyAttendanceData[userId][recordDate].push({
               status: record.status?.toUpperCase() || 'PRESENT',
-              time: record.createdAt ? new Date(record.createdAt).toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-              }) : null,
+              time: recordTime
+                ? recordTime.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                  })
+                : null,
               id: record.id,
               createdAt: record.createdAt,
               reason: record.reason || '',
               classId: record.classId,
               className: record.class?.name || null,
-              shift: shift,
+              shift,
               checkInTime: record.checkInTime || null,
               checkOutTime: record.checkOutTime || null,
               hoursWorked: record.hoursWorked !== undefined ? record.hoursWorked : null,
@@ -342,24 +340,26 @@ export default function TeacherAttendance() {
             });
           });
 
-          // Sort each date's records by checkInTime or createdAt
-          Object.keys(weeklyAttendanceData).forEach(userId => {
-            Object.keys(weeklyAttendanceData[userId]).forEach(date => {
-              weeklyAttendanceData[userId][date].sort((a, b) => {
-                const timeA = new Date(a.checkInTime || a.createdAt || 0);
-                const timeB = new Date(b.checkInTime || b.createdAt || 0);
-                return timeA - timeB;
-              });
+          // Sort records by time
+          Object.keys(weeklyAttendanceData[userId]).forEach(date => {
+            weeklyAttendanceData[userId][date].sort((a, b) => {
+              const timeA = a.checkInTime ? new Date(a.checkInTime).getTime() : 0;
+              const timeB = b.checkInTime ? new Date(b.checkInTime).getTime() : 0;
+              return timeA - timeB;
             });
           });
-        } catch (err) {
-          console.error(`Error fetching weekly attendance:`, err);
-        }
+        });
+
+        console.log('✅ Attendance data processed:', {
+          teachersWithAttendance: Object.keys(weeklyAttendanceData).length,
+          totalRecords: attendanceResults.reduce((sum, a) => sum + a.records.length, 0)
+        });
 
         setWeeklyAttendance(weeklyAttendanceData);
       } else {
         setTeachers([]);
         setWeeklyAttendance({});
+        setTeacherSettings({});
       }
 
       stopLoading(loadingKey);

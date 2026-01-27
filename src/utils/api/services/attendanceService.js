@@ -276,6 +276,104 @@ export const attendanceService = {
   },
 
   /**
+   * Get teacher attendance with consolidated data
+   * GET /teachers/teacher-attendance/:schoolId
+   * Combines teachers, settings, and attendance in a single optimized call
+   * @param {number} schoolId - School ID
+   * @param {Object} params - Query parameters for filtering and pagination
+   * @param {string} [params.startDate] - Start date (YYYY-MM-DD)
+   * @param {string} [params.endDate] - End date (YYYY-MM-DD)
+   * @param {number} [params.page=1] - Page number
+   * @param {number} [params.limit=10] - Items per page
+   * @param {string} [params.search] - Search query for teacher name
+   * @returns {Promise<Object>} Response with teachers, settings, attendance and pagination
+   */
+  async getTeacherAttendance(schoolId, params = {}) {
+    const {
+      startDate,
+      endDate,
+      page = 1,
+      limit = 10,
+      search = ''
+    } = params;
+
+    const queryParams = {
+      page,
+      limit
+    };
+
+    if (startDate) queryParams.startDate = startDate;
+    if (endDate) queryParams.endDate = endDate;
+    if (search) queryParams.search = search;
+
+    const wrappedResponse = await handleApiResponse(() =>
+      apiClient_.get(ENDPOINTS.TEACHERS.TEACHER_ATTENDANCE(schoolId), {
+        params: queryParams
+      })
+    );
+
+    // handleApiResponse wraps the response, so unwrap it
+    const apiResponse = wrappedResponse?.data || {};
+
+    return {
+      success: apiResponse.success !== false,
+      data: apiResponse.data || {},
+      pagination: apiResponse.pagination || {
+        page,
+        limit,
+        total: 0,
+        pages: 0
+      }
+    };
+  },
+
+  /**
+   * Get teacher attendance settings (combined teacher + settings data)
+   * GET /teachers/attendance-settings/:schoolId
+   * Returns teachers with their attendance settings (requiresApproval, etc.)
+   * @param {number} schoolId - School ID
+   * @param {Object} params - Query parameters for filtering and pagination
+   * @param {string} [params.search] - Search query for teacher name/email
+   * @param {number} [params.page=1] - Page number
+   * @param {number} [params.limit=20] - Items per page
+   * @returns {Promise<Object>} Response with teachers, settings and pagination
+   */
+  async getTeacherAttendanceSettings(schoolId, params = {}) {
+    const {
+      search = '',
+      page = 1,
+      limit = 20
+    } = params;
+
+    const queryParams = {
+      page,
+      limit
+    };
+
+    if (search) queryParams.search = search;
+
+    const wrappedResponse = await handleApiResponse(() =>
+      apiClient_.get(ENDPOINTS.TEACHERS.ATTENDANCE_SETTINGS(schoolId), {
+        params: queryParams
+      })
+    );
+
+    // handleApiResponse wraps the response, so unwrap it
+    const apiResponse = wrappedResponse?.data || {};
+
+    return {
+      success: apiResponse.success !== false,
+      data: apiResponse.data || [],
+      pagination: apiResponse.pagination || {
+        page,
+        limit,
+        total: 0,
+        totalPages: 0
+      }
+    };
+  },
+
+  /**
    * Attendance Dashboard API Methods
    */
   dashboard: {

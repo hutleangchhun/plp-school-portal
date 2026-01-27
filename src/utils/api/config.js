@@ -139,6 +139,8 @@ const ENDPOINTS = {
     TRANSFER_SCHOOL: (teacherId) => `/teachers/${teacherId}/school`,
     CHECK_NUMBER: (teacherNumber) => `/teachers/check-number/${teacherNumber}`,
     CLASSES: (teacherId) => `/teachers/${teacherId}/classes`,
+    TEACHER_ATTENDANCE: (schoolId) => `/teachers/teacher-attendance/${schoolId}`,
+    ATTENDANCE_SETTINGS: (schoolId) => `/teachers/attendance-settings/${schoolId}`,
   },
   CLASSES: {
     BASE: '/classes',
