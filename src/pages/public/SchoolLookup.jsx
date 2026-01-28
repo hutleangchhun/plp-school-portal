@@ -442,7 +442,7 @@ const SchoolLookup = () => {
                 value={selectedDistrict}
                 onValueChange={handleDistrictChange}
                 options={districts.map((district) => ({
-                  value: district.districtCode,
+                  value: district.id.toString(),
                   label: district.district_name_kh
                 }))}
                 placeholder={t('selectDistrict', 'Select District')}
