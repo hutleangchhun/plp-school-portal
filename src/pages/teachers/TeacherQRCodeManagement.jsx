@@ -157,7 +157,7 @@ export default function TeacherQRCodeManagement({ user }) {
 
                 qrData.push({
                   userId: userId,
-                  name: student.name || student.username || `Student ${userId}`,
+                  name: getFullName(student) || student.username || `Student ${userId}`,
                   username: student.username,
                   qrCode: qrCodeData.qrCode || null,
                   studentNumber: student.studentNumber,
@@ -317,7 +317,7 @@ export default function TeacherQRCodeManagement({ user }) {
             if (qrCodeData) {
               allStudents.push({
                 userId: userId,
-                name: student.name || student.username || `Student ${userId}`,
+                name: getFullName(student) || student.username || `Student ${userId}`,
                 username: student.username,
                 qrCode: qrCodeData.qrCode || null,
                 studentNumber: student.studentNumber,

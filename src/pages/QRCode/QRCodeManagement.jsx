@@ -160,7 +160,7 @@ export default function StudentQRCodeGenerator() {
               // Add to QR data - include all students, even without QR codes
               qrData.push({
                 userId: userId,
-                name: student.name || student.username || `Student ${userId}`,
+                name: getFullName(student) || student.username || `Student ${userId}`,
                 username: student.username,
                 qrCode: qrCodeData.qrCode || null, // null if no QR code
                 studentNumber: student.studentNumber,
@@ -261,9 +261,16 @@ export default function StudentQRCodeGenerator() {
             const qrCodeData = qrCodeResponse?.data || qrCodeResponse;
 
             if (qrCodeData) {
+              // Normalize teacher data - extract name from user object
+              const normalizedTeacher = {
+                ...teacher,
+                firstName: teacher.user?.firstName || teacher.firstName || teacher.first_name,
+                lastName: teacher.user?.lastName || teacher.lastName || teacher.last_name
+              };
+
               // Merge teacher data with QR code data
               const enrichedTeacher = {
-                ...teacher,
+                ...normalizedTeacher,
                 qrCode: qrCodeData.qrCode,
                 hasQrCode: qrCodeData.hasQrCode
               };
@@ -273,10 +280,10 @@ export default function StudentQRCodeGenerator() {
               // Add to QR data - include all teachers, even without QR codes
               qrData.push({
                 userId: userId,
-                name: teacher.name || teacher.username || `Teacher ${userId}`,
-                username: teacher.username,
+                name: getFullName(normalizedTeacher) || teacher.user?.username || teacher.username || `Teacher ${userId}`,
+                username: teacher.user?.username || teacher.username,
                 qrCode: qrCodeData.qrCode || null, // null if no QR code
-                email: teacher.email,
+                email: teacher.user?.email || teacher.email,
                 teacherNumber: teacher.teacherNumber || teacher.teacher_number,
                 hasQrCode: qrCodeData.hasQrCode,
                 schoolName: schoolName,
@@ -364,7 +371,7 @@ export default function StudentQRCodeGenerator() {
               if (qrCodeData) {
                 allQrCodes.push({
                   userId: userId,
-                  name: student.name || student.username || `Student ${userId}`,
+                  name: getFullName(student) || student.username || `Student ${userId}`,
                   username: student.username,
                   qrCode: qrCodeData.qrCode || null,
                   studentNumber: student.studentNumber,
@@ -431,16 +438,23 @@ export default function StudentQRCodeGenerator() {
               const userId = teacher.user?.id || teacher.userId || teacher.user_id || teacher.id;
               if (!userId) continue;
 
+              // Normalize teacher data - extract name from user object
+              const normalizedTeacher = {
+                ...teacher,
+                firstName: teacher.user?.firstName || teacher.firstName || teacher.first_name,
+                lastName: teacher.user?.lastName || teacher.lastName || teacher.last_name
+              };
+
               const qrCodeResponse = await userService.getQRCodeByUserId(userId);
               const qrCodeData = qrCodeResponse?.data || qrCodeResponse;
 
               if (qrCodeData) {
                 allQrCodes.push({
                   userId: userId,
-                  name: teacher.name || teacher.username || `Teacher ${userId}`,
-                  username: teacher.username,
+                  name: getFullName(normalizedTeacher) || teacher.user?.username || teacher.username || `Teacher ${userId}`,
+                  username: teacher.user?.username || teacher.username,
                   qrCode: qrCodeData.qrCode || null,
-                  email: teacher.email,
+                  email: teacher.user?.email || teacher.email,
                   teacherNumber: teacher.teacher_number || teacher.teacherNumber,
                   hasQrCode: qrCodeData.hasQrCode,
                   schoolName: schoolName,
