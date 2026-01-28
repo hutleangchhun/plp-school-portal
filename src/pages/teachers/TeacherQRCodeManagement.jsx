@@ -129,7 +129,7 @@ export default function TeacherQRCodeManagement({ user }) {
         });
 
         if (response.success && response.data) {
-          // Enrich students with QR codes
+          // Enrich students with QR codes from optimized endpoint
           const enrichedStudents = [];
           const qrData = [];
 
@@ -142,31 +142,27 @@ export default function TeacherQRCodeManagement({ user }) {
                 continue;
               }
 
-              // Fetch full user data with QR code
-              const userResponse = await userService.getUserByID(userId);
-              const userData = userResponse?.data || userResponse;
+              // Fetch only QR code data using optimized endpoint
+              const qrCodeResponse = await userService.getQRCodeByUserId(userId);
+              const qrCodeData = qrCodeResponse?.data || qrCodeResponse;
 
-              if (userData) {
+              if (qrCodeData) {
                 const enrichedStudent = {
                   ...student,
-                  qrCode: userData.qr_code,
-                  qrToken: userData.qr_token,
-                  qrGeneratedAt: userData.qr_generated_at,
-                  username: userData.username || student.username,
-                  email: userData.email || student.email,
-                  name: student.name || `${userData.first_name || ''} ${userData.last_name || ''}`.trim()
+                  qrCode: qrCodeData.qrCode,
+                  hasQrCode: qrCodeData.hasQrCode
                 };
 
                 enrichedStudents.push(enrichedStudent);
 
                 qrData.push({
                   userId: userId,
-                  name: getFullName(userData, enrichedStudent.name),
-                  username: enrichedStudent.username,
-                  qrCode: userData.qr_code || null,
+                  name: student.name || student.username || `Student ${userId}`,
+                  username: student.username,
+                  qrCode: qrCodeData.qrCode || null,
                   studentNumber: student.studentNumber,
-                  email: enrichedStudent.email,
-                  hasQrCode: !!userData.qr_code,
+                  email: student.email,
+                  hasQrCode: qrCodeData.hasQrCode,
                   schoolName: schoolName,
                   role: t('student', 'Student'),
                   class: {
@@ -179,7 +175,7 @@ export default function TeacherQRCodeManagement({ user }) {
                 });
               }
             } catch (err) {
-              console.warn(`Failed to fetch user data for student:`, err);
+              console.warn(`Failed to fetch QR code data for student ${student.userId}:`, err);
             }
           }
 
@@ -309,26 +305,24 @@ export default function TeacherQRCodeManagement({ user }) {
           break;
         }
 
-        // Enrich each student with QR code data
+        // Enrich each student with QR code data from optimized endpoint
         for (const student of response.data) {
           try {
             const userId = student.userId || student.user?.id || student.id;
             if (!userId) continue;
 
-            const userResponse = await userService.getUserByID(userId);
-            const userData = userResponse?.data || userResponse;
+            const qrCodeResponse = await userService.getQRCodeByUserId(userId);
+            const qrCodeData = qrCodeResponse?.data || qrCodeResponse;
 
-            if (userData) {
+            if (qrCodeData) {
               allStudents.push({
                 userId: userId,
-                name: userData.first_name && userData.last_name
-                  ? `${userData.first_name} ${userData.last_name}`
-                  : userData.username,
-                username: userData.username,
-                qrCode: userData.qr_code || null,
+                name: student.name || student.username || `Student ${userId}`,
+                username: student.username,
+                qrCode: qrCodeData.qrCode || null,
                 studentNumber: student.studentNumber,
-                email: userData.email,
-                hasQrCode: !!userData.qr_code,
+                email: student.email,
+                hasQrCode: qrCodeData.hasQrCode,
                 schoolName: schoolName,
                 role: t('student', 'Student'),
                 class: {
@@ -341,7 +335,7 @@ export default function TeacherQRCodeManagement({ user }) {
               });
             }
           } catch (err) {
-            console.warn(`Failed to fetch user data for student:`, err);
+            console.warn(`Failed to fetch QR code data for student ${student.userId}:`, err);
           }
         }
 

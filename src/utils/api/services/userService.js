@@ -251,6 +251,19 @@ const userService = {
   },
 
   /**
+   * Get QR code for a user by ID using /users/qr-code/{userId} endpoint (GET method)
+   * Optimized endpoint that returns only QR code data without full user payload
+   * @param {string|number} userId - User ID
+   * @returns {Promise<Object>} QR code data {userId, qrCode, hasQrCode}
+   */
+  getQRCodeByUserId: async (userId) => {
+    if (!userId) {
+      throw new Error('User ID is required to fetch QR code');
+    }
+    return get(ENDPOINTS.USERS.GET_QR_CODE(userId));
+  },
+
+  /**
    * Upload profile picture using /users/my-account/profile-picture route (PATCH method)
    * @param {File} file - Profile picture file
    * @param {string|number} [userId] - Optional user ID for specific user upload (uses /users/{id}/upload-profile)
