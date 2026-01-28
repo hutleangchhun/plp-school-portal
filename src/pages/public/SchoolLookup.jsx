@@ -433,7 +433,7 @@ const SchoolLookup = () => {
                 onValueChange={handleDistrictChange}
                 options={districts.map((district) => ({
                   value: district.districtCode,
-                  label: district.districtNameKh || district.district_name_kh || district.districtNameEn || district.district_name_en
+                  label: district.districtNameKh || district.district_name_kh
                 }))}
                 placeholder={t('selectDistrict', 'Select District')}
                 disabled={loading || !selectedProvince}
