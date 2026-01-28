@@ -22,70 +22,50 @@ import {
 } from "lucide-react";
 
 /**
- * Subject and Skills Configuration for Score Input
- * Defines all subjects with their skill categories
+ * Subject Configuration for Score Input (New DTO Structure)
+ * Each subject maps to a single score field (0-10 scale)
  */
-const SUBJECT_SKILLS = {
+const SUBJECTS = {
   khmer: {
     name: "Khmer",
-    skills: ["Listening", "Writing", "Reading", "Speaking"],
+    apiField: "khmer",
+    translationKey: "khmer",
   },
   math: {
     name: "Math",
-    skills: ["Number", "Geometry", "Statistics"],
+    apiField: "math",
+    translationKey: "math",
   },
   science: {
     name: "Science",
-    skills: ["Basic Concepts", "Experiments", "Analysis"],
+    apiField: "science",
+    translationKey: "science",
   },
-  ethics: {
-    name: "Ethics-Civic Studies",
-    skills: ["Ethics", "Civic Studies"],
+  socialStudies: {
+    name: "Social Studies",
+    apiField: "socialStudies",
+    translationKey: "ethics", // Maps to old translation key "ethics"
   },
   sport: {
     name: "Sport",
-    skills: ["Physical Fitness", "Skills", "Participation"],
+    apiField: "sport",
+    translationKey: "sport",
   },
-  health: {
+  healthHygiene: {
     name: "Health - Hygiene",
-    skills: ["Health", "Hygiene"],
+    apiField: "healthHygiene",
+    translationKey: "health", // Maps to old translation key "health"
   },
-  life_skills: {
-    name: "Life Skills Education",
-    skills: ["Problem Solving", "Communication", "Creativity"],
+  lifeSkills: {
+    name: "Life Skills",
+    apiField: "lifeSkills",
+    translationKey: "life_skills", // Maps to old translation key "life_skills"
   },
-  foreign_lang: {
-    name: "Foreign Languages",
-    skills: ["Listening", "Speaking", "Reading", "Writing"],
+  foreignLanguage: {
+    name: "Foreign Language",
+    apiField: "foreignLanguage",
+    translationKey: "foreign_lang", // Maps to old translation key "foreign_lang"
   },
-};
-
-/**
- * Mapping of subject + skill combinations to API field names
- */
-const SUBJECT_SKILL_TO_API_FIELD = {
-  khmer_Listening: "khmerListening",
-  khmer_Writing: "khmerWriting",
-  khmer_Reading: "khmerReading",
-  khmer_Speaking: "khmerSpeaking",
-  math_Number: "mathNumber",
-  math_Geometry: "mathGeometry",
-  math_Statistics: "mathStatistic",
-  "science_Basic Concepts": "science",
-  ethics_Ethics: "socialStudies",
-  "ethics_Civic Studies": "socialStudies",
-  "sport_Physical Fitness": "sport",
-  sport_Skills: "sport",
-  sport_Participation: "sport",
-  health_Health: "healthHygiene",
-  health_Hygiene: "healthHygiene",
-  "life_skills_Problem Solving": "lifeSkills",
-  life_skills_Communication: "lifeSkills",
-  life_skills_Creativity: "lifeSkills",
-  foreign_lang_Listening: "foreignLanguage",
-  foreign_lang_Speaking: "foreignLanguage",
-  foreign_lang_Reading: "foreignLanguage",
-  foreign_lang_Writing: "foreignLanguage",
 };
 
 /**
@@ -119,7 +99,7 @@ export default function ScoreInputTab({
   // State for Score Input
   const [classStudents, setClassStudents] = useState([]);
   const [classStudentsLoading, setClassStudentsLoading] = useState(false);
-  const [scoreData, setScoreData] = useState({}); // { studentId: { subjectKey: { skillName: score } } }
+  const [scoreData, setScoreData] = useState({}); // { studentId: { subjectKey: score (0-10) } }
   const [savingScores, setSavingScores] = useState(false);
 
   // State for Exam History Modal
@@ -216,11 +196,8 @@ export default function ScoreInputTab({
           const studentId = student.studentId || student.id;
 
           initialScores[studentId] = {};
-          Object.keys(SUBJECT_SKILLS).forEach((subjectKey) => {
-            initialScores[studentId][subjectKey] = {};
-            SUBJECT_SKILLS[subjectKey].skills.forEach((skill) => {
-              initialScores[studentId][subjectKey][skill] = "";
-            });
+          Object.keys(SUBJECTS).forEach((subjectKey) => {
+            initialScores[studentId][subjectKey] = "";
           });
         });
 
@@ -247,17 +224,14 @@ export default function ScoreInputTab({
    * Handle score input change
    */
   const handleScoreChange = useCallback(
-    (studentId, subjectKey, skill, value) => {
+    (studentId, subjectKey, value) => {
       // Allow typing freely, but validate and clamp on complete numbers
       if (value === "" || value === ".") {
         setScoreData((prev) => ({
           ...prev,
           [studentId]: {
             ...prev[studentId],
-            [subjectKey]: {
-              ...prev[studentId]?.[subjectKey],
-              [skill]: value,
-            },
+            [subjectKey]: value,
           },
         }));
         return;
@@ -271,10 +245,7 @@ export default function ScoreInputTab({
             ...prev,
             [studentId]: {
               ...prev[studentId],
-              [subjectKey]: {
-                ...prev[studentId]?.[subjectKey],
-                [skill]: value,
-              },
+              [subjectKey]: value,
             },
           }));
         } else {
@@ -283,10 +254,7 @@ export default function ScoreInputTab({
             ...prev,
             [studentId]: {
               ...prev[studentId],
-              [subjectKey]: {
-                ...prev[studentId]?.[subjectKey],
-                [skill]: clampedValue,
-              },
+              [subjectKey]: clampedValue,
             },
           }));
         }
@@ -295,10 +263,7 @@ export default function ScoreInputTab({
           ...prev,
           [studentId]: {
             ...prev[studentId],
-            [subjectKey]: {
-              ...prev[studentId]?.[subjectKey],
-              [skill]: value,
-            },
+            [subjectKey]: value,
           },
         }));
       }
@@ -307,34 +272,19 @@ export default function ScoreInputTab({
   );
 
   /**
-   * Get all skill cells in order for keyboard navigation
+   * Get all subject cells in order for keyboard navigation
    */
-  const getAllSkillCells = useMemo(() => {
+  const getAllSubjectCells = useMemo(() => {
     const cells = [];
     classStudents.forEach((student, rowIndex) => {
       const studentId = student.studentId || student.id;
-      Object.entries(SUBJECT_SKILLS).forEach(([subjectKey, subject]) => {
-        const hasSubheader = ["khmer", "math"].includes(subjectKey);
-        if (hasSubheader) {
-          subject.skills.forEach((skill, skillIndex) => {
-            cells.push({
-              rowIndex,
-              studentId,
-              subjectKey,
-              skill,
-              cellId: `cell-${rowIndex}-${subjectKey}-${skillIndex}`,
-            });
-          });
-        } else {
-          const firstSkill = subject.skills[0];
-          cells.push({
-            rowIndex,
-            studentId,
-            subjectKey,
-            skill: firstSkill,
-            cellId: `cell-${rowIndex}-${subjectKey}-0`,
-          });
-        }
+      Object.entries(SUBJECTS).forEach(([subjectKey], cellIndex) => {
+        cells.push({
+          rowIndex,
+          studentId,
+          subjectKey,
+          cellId: `cell-${rowIndex}-${subjectKey}`,
+        });
       });
     });
     return cells;
@@ -344,23 +294,19 @@ export default function ScoreInputTab({
    * Handle keyboard navigation in score table
    */
   const handleScoreCellKeyDown = useCallback(
-    (e, rowIndex, subjectKey, skill, studentId) => {
-      const currentCellIndex = getAllSkillCells.findIndex(
+    (e, rowIndex, subjectKey, studentId) => {
+      const currentCellIndex = getAllSubjectCells.findIndex(
         (cell) =>
           cell.rowIndex === rowIndex &&
           cell.studentId === studentId &&
-          cell.subjectKey === subjectKey &&
-          cell.skill === skill,
+          cell.subjectKey === subjectKey,
       );
 
       if (currentCellIndex === -1) return;
 
       let nextCellIndex = -1;
-      const totalCells = getAllSkillCells.length;
-      const cellsPerRow = Object.values(SUBJECT_SKILLS).reduce(
-        (sum, subject) => sum + subject.skills.length,
-        0,
-      );
+      const totalCells = getAllSubjectCells.length;
+      const cellsPerRow = Object.keys(SUBJECTS).length;
 
       switch (e.key) {
         case "Tab":
@@ -409,7 +355,7 @@ export default function ScoreInputTab({
       }
 
       // Focus the next cell
-      const nextCell = getAllSkillCells[nextCellIndex];
+      const nextCell = getAllSubjectCells[nextCellIndex];
       if (nextCell) {
         const nextInput = document
           .getElementById(nextCell.cellId)
@@ -422,7 +368,7 @@ export default function ScoreInputTab({
         }
       }
     },
-    [getAllSkillCells],
+    [getAllSubjectCells],
   );
 
   /**
@@ -438,33 +384,14 @@ export default function ScoreInputTab({
 
       // Validate that all required cells have values
       const missingCells = [];
-      let studentRowCount = 0;
 
       Object.entries(scoreData).forEach(([studentId, subjects]) => {
-        studentRowCount++;
-        Object.entries(subjects).forEach(([subjectKey, skills]) => {
-          const hasSubheader = ["khmer", "math"].includes(subjectKey);
-
-          if (hasSubheader) {
-            Object.entries(skills).forEach(([skill, score]) => {
-              if (score === "") {
-                missingCells.push({
-                  studentId,
-                  subject: SUBJECT_SKILLS[subjectKey].name,
-                  skill,
-                });
-              }
+        Object.entries(subjects).forEach(([subjectKey, score]) => {
+          if (score === "") {
+            missingCells.push({
+              studentId,
+              subject: SUBJECTS[subjectKey].name,
             });
-          } else {
-            const firstSkill = SUBJECT_SKILLS[subjectKey].skills[0];
-            const score = skills[firstSkill];
-            if (score === "") {
-              missingCells.push({
-                studentId,
-                subject: SUBJECT_SKILLS[subjectKey].name,
-                skill: "All",
-              });
-            }
           }
         });
       });
@@ -489,7 +416,7 @@ export default function ScoreInputTab({
         return;
       }
 
-      // Transform scoreData to flat API format
+      // Transform scoreData to API format
       const recordsByStudent = {};
 
       Object.entries(scoreData).forEach(([studentId, subjects]) => {
@@ -504,18 +431,11 @@ export default function ScoreInputTab({
           };
         }
 
-        Object.entries(subjects).forEach(([subjectKey, skills]) => {
-          Object.entries(skills).forEach(([skill, score]) => {
-            if (score !== "") {
-              const fieldKey = `${subjectKey}_${skill}`;
-              const apiFieldName = SUBJECT_SKILL_TO_API_FIELD[fieldKey];
-
-              if (apiFieldName) {
-                recordsByStudent[studentIdNum][apiFieldName] =
-                  parseFloat(score);
-              }
-            }
-          });
+        Object.entries(subjects).forEach(([subjectKey, score]) => {
+          if (score !== "") {
+            const apiFieldName = SUBJECTS[subjectKey].apiField;
+            recordsByStudent[studentIdNum][apiFieldName] = parseFloat(score);
+          }
         });
       });
 
@@ -586,27 +506,11 @@ export default function ScoreInputTab({
 
         // Validate all required cells for this student
         const missingCells = [];
-        Object.entries(studentScores).forEach(([subjectKey, skills]) => {
-          const hasSubheader = ["khmer", "math"].includes(subjectKey);
-
-          if (hasSubheader) {
-            Object.entries(skills).forEach(([skill, score]) => {
-              if (score === "") {
-                missingCells.push({
-                  subject: SUBJECT_SKILLS[subjectKey].name,
-                  skill,
-                });
-              }
+        Object.entries(studentScores).forEach(([subjectKey, score]) => {
+          if (score === "") {
+            missingCells.push({
+              subject: SUBJECTS[subjectKey].name,
             });
-          } else {
-            const firstSkill = SUBJECT_SKILLS[subjectKey].skills[0];
-            const score = skills[firstSkill];
-            if (score === "") {
-              missingCells.push({
-                subject: SUBJECT_SKILLS[subjectKey].name,
-                skill: "All",
-              });
-            }
           }
         });
 
@@ -618,7 +522,7 @@ export default function ScoreInputTab({
             ) +
             "\n" +
             missingCells
-              .map((cell) => `${cell.subject} - ${cell.skill}`)
+              .map((cell) => `${cell.subject}`)
               .join("\n");
           showError(errorMessage);
           setSavingStudentId(null);
@@ -634,17 +538,11 @@ export default function ScoreInputTab({
           classId: selectedClass || null,
         };
 
-        Object.entries(studentScores).forEach(([subjectKey, skills]) => {
-          Object.entries(skills).forEach(([skill, score]) => {
-            if (score !== "") {
-              const fieldKey = `${subjectKey}_${skill}`;
-              const apiFieldName = SUBJECT_SKILL_TO_API_FIELD[fieldKey];
-
-              if (apiFieldName) {
-                recordData[apiFieldName] = parseFloat(score);
-              }
-            }
-          });
+        Object.entries(studentScores).forEach(([subjectKey, score]) => {
+          if (score !== "") {
+            const apiFieldName = SUBJECTS[subjectKey].apiField;
+            recordData[apiFieldName] = parseFloat(score);
+          }
         });
 
         // Submit single student's record
@@ -660,11 +558,7 @@ export default function ScoreInputTab({
             const updated = { ...prev };
             Object.keys(updated[targetStudentId] || {}).forEach(
               (subjectKey) => {
-                Object.keys(
-                  updated[targetStudentId][subjectKey] || {}
-                ).forEach((skill) => {
-                  updated[targetStudentId][subjectKey][skill] = "";
-                });
+                updated[targetStudentId][subjectKey] = "";
               }
             );
             return updated;
@@ -793,6 +687,15 @@ export default function ScoreInputTab({
     if (examSubject.includes("khmer")) return "khmer";
     if (examSubject.includes("math") || examSubject.includes("mathematics"))
       return "math";
+    if (examSubject.includes("science")) return "science";
+    if (examSubject.includes("social") || examSubject.includes("social studies") || examSubject.includes("ethics"))
+      return "socialStudies";
+    if (examSubject.includes("sport")) return "sport";
+    if (examSubject.includes("health") || examSubject.includes("hygiene"))
+      return "healthHygiene";
+    if (examSubject.includes("life skills")) return "lifeSkills";
+    if (examSubject.includes("foreign") || examSubject.includes("language"))
+      return "foreignLanguage";
 
     return "khmer";
   };
@@ -850,16 +753,12 @@ export default function ScoreInputTab({
     const studentId =
       selectedStudentForHistory.student.studentId ||
       selectedStudentForHistory.student.id;
-    const { subject, skills } = skillSelectionData;
+    const { subject, score } = skillSelectionData;
 
     setScoreData((prev) => {
       const updated = { ...prev };
       if (!updated[studentId]) updated[studentId] = {};
-      if (!updated[studentId][subject]) updated[studentId][subject] = {};
-
-      Object.entries(skills).forEach(([skill, value]) => {
-        updated[studentId][subject][skill] = value;
-      });
+      updated[studentId][subject] = score;
 
       return updated;
     });
@@ -871,10 +770,9 @@ export default function ScoreInputTab({
       status: "success",
     }));
 
-    const skillNames = Object.keys(skills).join(", ");
-    const subjectName = SUBJECT_SKILLS[subject]?.name || subject;
+    const subjectName = SUBJECTS[subject]?.name || subject;
     showSuccess(
-      t("examDataApplied", `Applied ${skillNames} to ${subjectName}`),
+      t("examDataApplied", `Applied ${score} to ${subjectName}`),
     );
 
     setTimeout(() => {
@@ -937,75 +835,40 @@ export default function ScoreInputTab({
             >
               <table className="min-w-full border-collapse bg-white">
                 <thead className="sticky top-0 z-20 border-b border-gray-200">
-                  {/* Main Header Row */}
+                  {/* Header Row */}
                   <tr className="border-b border-gray-300 bg-gradient-to-r from-blue-600 to-blue-700">
                     <th
-                      rowSpan={2}
                       className="px-6 py-3 text-left text-sm font-bold text-white border-r border-blue-500 min-w-80 bg-gradient-to-r from-blue-600 to-blue-700 sticky left-0 z-30"
                     >
                       {t("studentName", "Student Name")}
                     </th>
-                    {Object.entries(SUBJECT_SKILLS).map(
+                    {Object.entries(SUBJECTS).map(
                       ([subjectKey, subject]) => {
-                        const hasSubheader = [
-                          "khmer",
-                          "math",
-                        ].includes(subjectKey);
                         return (
                           <th
                             key={subjectKey}
-                            colSpan={subject.skills.length}
-                            rowSpan={hasSubheader ? 1 : 2}
                             className="px-3 py-3 text-center text-xs font-bold text-white border-r border-blue-500"
                           >
-                            {t(subjectKey, subject.name)}
+                            {t(subject.translationKey, subject.name)}
                           </th>
                         );
                       },
                     )}
                     <th
-                      rowSpan={2}
                       className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-green-600 to-green-700"
                     >
                       {t("totalScore", "Total Score")}
                     </th>
                     <th
-                      rowSpan={2}
                       className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-purple-600 to-purple-700"
                     >
                       {t("average", "Average")}
                     </th>
                     <th
-                      rowSpan={2}
                       className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-orange-600 to-orange-700"
                     >
                       {t("grading", "Grade")}
                     </th>
-                  </tr>
-                  {/* Sub Header Row */}
-                  <tr className="border-b border-gray-200 bg-blue-50">
-                    {Object.entries(SUBJECT_SKILLS).map(
-                      ([subjectKey, subject]) => {
-                        const hasSubheader = [
-                          "khmer",
-                          "math",
-                        ].includes(subjectKey);
-                        if (!hasSubheader) return null;
-                        return subject.skills.map((skill) => (
-                          <th
-                            key={`${subjectKey}-${skill}`}
-                            className="px-3 py-3 text-center text-xs font-semibold text-blue-900 border-r border-blue-200 bg-blue-50"
-                          >
-                            {t(
-                              skill
-                                .toLowerCase()
-                                .replace(/\s+/g, "_"),
-                              skill,
-                            )}
-                          </th>
-                        ));
-                      },
-                    )}
                   </tr>
                 </thead>
                 <tbody className="bg-white">
@@ -1086,123 +949,56 @@ export default function ScoreInputTab({
                             </div>
                           </div>
                         </td>
-                        {Object.entries(SUBJECT_SKILLS).map(
-                          ([subjectKey, subject]) => {
-                            const hasSubheader = [
-                              "khmer",
-                              "math",
-                            ].includes(subjectKey);
-
-                            if (hasSubheader) {
-                              return subject.skills.map(
-                                (skill, skillIndex) => (
-                                  <td
-                                    key={`${rowIndex}-${subjectKey}-${skillIndex}`}
-                                    id={`cell-${rowIndex}-${subjectKey}-${skillIndex}`}
-                                    className="border-r border-gray-200 relative cursor-pointer bg-white hover:bg-blue-50"
-                                  >
-                                    <input
-                                      type="text"
-                                      inputMode="decimal"
-                                      value={
-                                        scoreData[studentId]?.[
-                                          subjectKey
-                                        ]?.[skill] ?? ""
-                                      }
-                                      onChange={(e) => {
-                                        e.stopPropagation();
-                                        let val = e.target.value;
-                                        if (
-                                          /^\d*\.?\d*$/.test(val)
-                                        ) {
-                                          if (val.startsWith(".")) {
-                                            val = "0" + val;
-                                          }
-                                          handleScoreChange(
-                                            studentId,
-                                            subjectKey,
-                                            skill,
-                                            val,
-                                          );
-                                        }
-                                      }}
-                                      onClick={(e) =>
-                                        e.stopPropagation()
-                                      }
-                                      onKeyDown={(e) =>
-                                        handleScoreCellKeyDown(
-                                          e,
-                                          rowIndex,
-                                          subjectKey,
-                                          skill,
-                                          studentId,
-                                        )
-                                      }
-                                      className="w-full h-full p-4 text-sm border-0 focus:border focus:ring-1 bg-white focus:border-blue-500 focus:ring-blue-500 text-center"
-                                    />
-                                  </td>
-                                ),
-                              );
-                            } else {
-                              const firstSkill = subject.skills[0];
-                              return (
-                                <td
-                                  key={`${rowIndex}-${subjectKey}`}
-                                  id={`cell-${rowIndex}-${subjectKey}-0`}
-                                  colSpan={subject.skills.length}
-                                  className="border-r border-gray-200 relative cursor-pointer bg-white hover:bg-blue-50"
-                                >
-                                  <input
-                                    type="text"
-                                    inputMode="decimal"
-                                    value={
-                                      scoreData[studentId]?.[
-                                        subjectKey
-                                      ]?.[firstSkill] ?? ""
-                                    }
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      let filtered =
-                                        e.target.value.replace(
-                                          /[^\d.]/g,
-                                          "",
-                                        );
-                                      const parts =
-                                        filtered.split(".");
-                                      if (parts.length > 2) {
-                                        filtered =
-                                          parts[0] +
-                                          "." +
-                                          parts.slice(1).join("");
-                                      }
-                                      subject.skills.forEach(
-                                        (skill) => {
-                                          handleScoreChange(
-                                            studentId,
-                                            subjectKey,
-                                            skill,
-                                            filtered,
-                                          );
-                                        },
+                        {Object.entries(SUBJECTS).map(
+                          ([subjectKey]) => {
+                            return (
+                              <td
+                                key={`${rowIndex}-${subjectKey}`}
+                                id={`cell-${rowIndex}-${subjectKey}`}
+                                className="border-r border-gray-200 relative cursor-pointer bg-white hover:bg-blue-50"
+                              >
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={
+                                    scoreData[studentId]?.[subjectKey] ?? ""
+                                  }
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    let filtered =
+                                      e.target.value.replace(
+                                        /[^\d.]/g,
+                                        "",
                                       );
-                                    }}
-                                    onClick={(e) =>
-                                      e.stopPropagation()
+                                    const parts =
+                                      filtered.split(".");
+                                    if (parts.length > 2) {
+                                      filtered =
+                                        parts[0] +
+                                        "." +
+                                        parts.slice(1).join("");
                                     }
-                                    onKeyDown={(e) =>
-                                      handleScoreCellKeyDown(
-                                        e,
-                                        rowIndex,
-                                        subjectKey,
-                                        firstSkill,
-                                        studentId,
-                                      )
-                                    }
-                                    className="w-full h-full p-4 text-sm border-0 focus:border focus:ring-1 bg-white focus:border-blue-500 focus:ring-blue-500 text-center p-0"
-                                  />
-                                </td>
-                              );
-                            }
+                                    handleScoreChange(
+                                      studentId,
+                                      subjectKey,
+                                      filtered,
+                                    );
+                                  }}
+                                  onClick={(e) =>
+                                    e.stopPropagation()
+                                  }
+                                  onKeyDown={(e) =>
+                                    handleScoreCellKeyDown(
+                                      e,
+                                      rowIndex,
+                                      subjectKey,
+                                      studentId,
+                                    )
+                                  }
+                                  className="w-full h-full p-4 text-sm border-0 focus:border focus:ring-1 bg-white focus:border-blue-500 focus:ring-blue-500 text-center"
+                                />
+                              </td>
+                            );
                           },
                         )}
 
@@ -1210,33 +1006,12 @@ export default function ScoreInputTab({
                         <td className="px-4 py-4 text-center text-sm font-bold text-gray-900 border-r border-gray-200 bg-green-50">
                           {(() => {
                             let total = 0;
-                            Object.entries(SUBJECT_SKILLS).forEach(
-                              ([subjectKey, subject]) => {
-                                const hasSubheader = [
-                                  "khmer",
-                                  "math",
-                                ].includes(subjectKey);
-                                if (hasSubheader) {
-                                  subject.skills.forEach(
-                                    (skill) => {
-                                      const score = parseFloat(
-                                        scoreData[studentId]?.[
-                                          subjectKey
-                                        ]?.[skill] || 0,
-                                      );
-                                      total += score;
-                                    },
-                                  );
-                                } else {
-                                  const firstSkill =
-                                    subject.skills[0];
-                                  const score = parseFloat(
-                                    scoreData[studentId]?.[
-                                      subjectKey
-                                    ]?.[firstSkill] || 0,
-                                  );
-                                  total += score;
-                                }
+                            Object.entries(SUBJECTS).forEach(
+                              ([subjectKey]) => {
+                                const score = parseFloat(
+                                  scoreData[studentId]?.[subjectKey] || 0,
+                                );
+                                total += score;
                               },
                             );
                             return total.toFixed(2);
@@ -1248,38 +1023,14 @@ export default function ScoreInputTab({
                           {(() => {
                             let total = 0;
                             let count = 0;
-                            Object.entries(SUBJECT_SKILLS).forEach(
-                              ([subjectKey, subject]) => {
-                                const hasSubheader = [
-                                  "khmer",
-                                  "math",
-                                ].includes(subjectKey);
-                                if (hasSubheader) {
-                                  subject.skills.forEach(
-                                    (skill) => {
-                                      const score = parseFloat(
-                                        scoreData[studentId]?.[
-                                          subjectKey
-                                        ]?.[skill] || 0,
-                                      );
-                                      if (score > 0) {
-                                        total += score;
-                                        count++;
-                                      }
-                                    },
-                                  );
-                                } else {
-                                  const firstSkill =
-                                    subject.skills[0];
-                                  const score = parseFloat(
-                                    scoreData[studentId]?.[
-                                      subjectKey
-                                    ]?.[firstSkill] || 0,
-                                  );
-                                  if (score > 0) {
-                                    total += score;
-                                    count++;
-                                  }
+                            Object.entries(SUBJECTS).forEach(
+                              ([subjectKey]) => {
+                                const score = parseFloat(
+                                  scoreData[studentId]?.[subjectKey] || 0,
+                                );
+                                if (score > 0) {
+                                  total += score;
+                                  count++;
                                 }
                               },
                             );
@@ -1294,38 +1045,14 @@ export default function ScoreInputTab({
                           {(() => {
                             let total = 0;
                             let count = 0;
-                            Object.entries(SUBJECT_SKILLS).forEach(
-                              ([subjectKey, subject]) => {
-                                const hasSubheader = [
-                                  "khmer",
-                                  "math",
-                                ].includes(subjectKey);
-                                if (hasSubheader) {
-                                  subject.skills.forEach(
-                                    (skill) => {
-                                      const score = parseFloat(
-                                        scoreData[studentId]?.[
-                                          subjectKey
-                                        ]?.[skill] || 0,
-                                      );
-                                      if (score > 0) {
-                                        total += score;
-                                        count++;
-                                      }
-                                    },
-                                  );
-                                } else {
-                                  const firstSkill =
-                                    subject.skills[0];
-                                  const score = parseFloat(
-                                    scoreData[studentId]?.[
-                                      subjectKey
-                                    ]?.[firstSkill] || 0,
-                                  );
-                                  if (score > 0) {
-                                    total += score;
-                                    count++;
-                                  }
+                            Object.entries(SUBJECTS).forEach(
+                              ([subjectKey]) => {
+                                const score = parseFloat(
+                                  scoreData[studentId]?.[subjectKey] || 0,
+                                );
+                                if (score > 0) {
+                                  total += score;
+                                  count++;
                                 }
                               },
                             );
@@ -1538,8 +1265,8 @@ export default function ScoreInputTab({
             <ExamSkillSelectionView
               exam={examForSkillSelection}
               subject={selectedSkillSubject}
-              subjectName={SUBJECT_SKILLS[selectedSkillSubject]?.name}
-              skills={SUBJECT_SKILLS[selectedSkillSubject]?.skills || []}
+              subjectName={SUBJECTS[selectedSkillSubject]?.name}
+              skills={[]}
               selectedSkills={selectedSkillsForApply}
               skillValues={skillValues}
               onSkillToggle={(skill) => {

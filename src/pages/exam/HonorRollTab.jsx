@@ -30,14 +30,14 @@ const toKhmerNumerals = (num) => {
 
 /**
  * Helper function to get grade letter
- * @param {number} average - Average score
+ * @param {number} average - Average score (0-10 scale)
  * @returns {string} Grade letter
  */
 const getGrade = (average) => {
-  if (average >= 90) return "A";
-  if (average >= 80) return "B";
-  if (average >= 70) return "C";
-  if (average >= 60) return "D";
+  if (average >= 8.5) return "A";
+  if (average >= 7) return "B";
+  if (average >= 5.5) return "C";
+  if (average >= 4) return "D";
   return "F";
 };
 
@@ -226,15 +226,10 @@ export default function HonorRollTab({
     const studentsWithAverages = monthlyRecords.map((record) => {
       const studentName = getFullName(record.student || {}, "Unknown");
 
-      // Calculate total average (all subjects)
+      // Calculate total average (all subjects) - new subject-based structure
       const allScores = [
-        record.khmerListening,
-        record.khmerWriting,
-        record.khmerReading,
-        record.khmerSpeaking,
-        record.mathNumber,
-        record.mathGeometry,
-        record.mathStatistic,
+        record.khmer,
+        record.math,
         record.science,
         record.socialStudies,
         record.sport,

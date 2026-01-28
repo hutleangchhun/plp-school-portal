@@ -295,15 +295,10 @@ export default function ExamRecordsTab({
       const studentName = getFullName(record.student || {}, "Unknown");
       const studentGender = genderToKhmer(record.student?.gender);
 
-      // Calculate total average (all subjects)
+      // Calculate total average (all subjects) - new subject-based structure
       const allScores = [
-        record.khmerListening,
-        record.khmerWriting,
-        record.khmerReading,
-        record.khmerSpeaking,
-        record.mathNumber,
-        record.mathGeometry,
-        record.mathStatistic,
+        record.khmer,
+        record.math,
         record.science,
         record.socialStudies,
         record.sport,
