@@ -157,17 +157,18 @@ export default function Dashboard({ user: initialUser }) {
       }
 
       // Fetch school information and statistics if we have school ID
-      if (accountData && accountData.school_id) {
+      const schoolId = authUser?.teacher?.schoolId || authUser?.schoolId || authUser?.school_id;
+      if (accountData && schoolId) {
         try {
           console.log("📊 Dashboard: Account data:", {
             roleId: accountData.roleId,
             role_id: accountData.role_id,
-            schoolId: accountData.school_id,
+            schoolId: schoolId,
           });
 
           // Get school information
           const schoolResponse = await schoolService.getSchoolInfo(
-            accountData.school_id
+            schoolId
           );
           const schoolData = schoolResponse?.data || schoolResponse;
           if (schoolData && (schoolData.id || schoolData.schoolId)) {
@@ -182,7 +183,7 @@ export default function Dashboard({ user: initialUser }) {
             );
             const distributionResponse =
               await dashboardService.getSchoolDistribution({
-                schoolId: accountData.school_id,
+                schoolId: schoolId,
               });
 
             console.log("📊 Distribution response:", distributionResponse);
@@ -229,7 +230,7 @@ export default function Dashboard({ user: initialUser }) {
             // For non-directors, use the original approach
             // Get classes count - fetch all classes without limit
             const classesResponse = await classService.getBySchool(
-              accountData.school_id,
+              schoolId,
               {
                 page: 1,
                 limit: 9999, // No practical limit - fetch all classes
@@ -241,7 +242,7 @@ export default function Dashboard({ user: initialUser }) {
             // Get total students count - fetch all students without pagination
             const studentsResponse =
               await studentService.getStudentsBySchoolClasses(
-                accountData.school_id,
+                schoolId,
                 {
                   page: 1,
                   limit: 9999, // No practical limit - fetch all students
@@ -257,7 +258,7 @@ export default function Dashboard({ user: initialUser }) {
 
             // Get teachers count from the teachers endpoint - fetch all teachers
             const teachersResponse = await teacherService.getTeachersBySchool(
-              accountData.school_id,
+              schoolId,
               {
                 page: 1,
                 limit: 200, // API max limit is 100
@@ -477,10 +478,13 @@ export default function Dashboard({ user: initialUser }) {
                             return placeData;
                           }
                           if (placeData && typeof placeData === "object") {
+                            const communeName = placeData.communeNameKh || placeData.commune_name_kh;
+                            const districtName = placeData.districtNameKh || placeData.district_name_kh;
+                            const provinceName = placeData.provinceNameKh || placeData.province_name_kh;
                             return [
-                              placeData.commune_name_kh,
-                              placeData.district_name_kh,
-                              placeData.province_name_kh,
+                              communeName,
+                              districtName,
+                              provinceName,
                             ]
                               .filter(Boolean)
                               .join(", ");
@@ -655,31 +659,9 @@ export default function Dashboard({ user: initialUser }) {
           </div>
            */}
           {/* Student Demographics Charts - Combined into single component to avoid duplicate API calls */}
-          <div className="">
-            <StudentDemographicsChart
-              schoolId={
-                user?.teacher?.schoolId ||
-                user?.school_id ||
-                user?.school?.id ||
-                user?.teacher?.school?.id ||
-                "76525"
-              }
-              showBothTabs={true}
-            />
-          </div>
+          
 
-          {/* BMI Distribution Pie Chart */}
-          <div className="">
-            <BMIPieChart
-              schoolId={
-                user?.teacher?.schoolId ||
-                user?.school_id ||
-                user?.school?.id ||
-                user?.teacher?.school?.id ||
-                "76525"
-              }
-            />
-          </div>
+          
         </FadeInSection>
 
         {/* Welcome Alert */}
