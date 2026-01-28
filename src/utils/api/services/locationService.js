@@ -1,4 +1,4 @@
-import { get } from '../client';
+import { get, getPublic } from '../client';
 import { ENDPOINTS } from '../config';
 
 const locationService = {
@@ -8,7 +8,7 @@ const locationService = {
    */
   getProvinces: async () => {
     try {
-      const response = await get(ENDPOINTS.LOCATION.BASE);
+      const response = await getPublic(ENDPOINTS.LOCATION.BASE);
       console.log('Provinces response:', response);
       return response;
     } catch (error) {
@@ -24,7 +24,7 @@ const locationService = {
    */
   getDistrictsByProvince: async (provinceId) => {
     try {
-      const response = await get(ENDPOINTS.LOCATION.DISTRICTS(provinceId));
+      const response = await getPublic(ENDPOINTS.LOCATION.DISTRICTS(provinceId));
       return response;
     } catch (error) {
       console.error('Error fetching districts:', error);
@@ -33,7 +33,7 @@ const locationService = {
   },
   getCommunesByDistrict: async (provinceId, districtId) => {
     try {
-      const response = await get(ENDPOINTS.LOCATION.COMMUNES(provinceId, districtId));
+      const response = await getPublic(ENDPOINTS.LOCATION.COMMUNES(provinceId, districtId));
       return response;
     } catch (error) {
       console.error('Error fetching communes:', error);
@@ -42,7 +42,7 @@ const locationService = {
   },
   getVillagesByCommune: async (provinceId, districtId, communeId) => {
     try {
-      const response = await get(ENDPOINTS.LOCATION.VILLAGES(provinceId, districtId, communeId));
+      const response = await getPublic(ENDPOINTS.LOCATION.VILLAGES(provinceId, districtId, communeId));
       return response;
     } catch (error) {
       console.error('Error fetching villages:', error);
@@ -56,7 +56,7 @@ const locationService = {
    */
   getAllZones: async () => {
     try {
-      const response = await get(ENDPOINTS.LOCATION.ZONES);
+      const response = await getPublic(ENDPOINTS.LOCATION.ZONES);
       console.log('Zones response:', response);
       return response;
     } catch (error) {

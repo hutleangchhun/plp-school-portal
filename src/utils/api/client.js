@@ -204,6 +204,47 @@ apiClient.interceptors.response.use(
 );
 
 /**
+ * Unauthenticated API client for public endpoints (no Authorization header)
+ */
+const publicApiClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+});
+
+// Response interceptor for public API client (simplified, no auth redirect)
+publicApiClient.interceptors.response.use(
+  (response) => {
+    return response.data;
+  },
+  (error) => {
+    if (error.response) {
+      const { status, data } = error.response;
+      console.error('Public API error:', { status, message: data?.message });
+      return Promise.reject({
+        status,
+        message: data?.message || 'An error occurred',
+        errors: data?.errors,
+        data: data?.data
+      });
+    } else if (error.request) {
+      return Promise.reject({
+        status: 0,
+        message: 'No response received from server. Please check your internet connection.'
+      });
+    } else {
+      return Promise.reject({
+        status: -1,
+        message: error.message || 'Error setting up request'
+      });
+    }
+  }
+);
+
+/**
  * Make a GET request
  * @param {string} url - The URL to make the request to
  * @param {Object} params - Query parameters
@@ -213,6 +254,22 @@ apiClient.interceptors.response.use(
 export const get = async (url, params = {}, headers = {}) => {
   try {
     const response = await apiClient.get(url, { params, headers });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Make an unauthenticated GET request (for public endpoints like location data)
+ * @param {string} url - The URL to make the request to
+ * @param {Object} params - Query parameters
+ * @param {Object} headers - Custom headers
+ * @returns {Promise<Object>} The response data
+ */
+export const getPublic = async (url, params = {}, headers = {}) => {
+  try {
+    const response = await publicApiClient.get(url, { params, headers });
     return response;
   } catch (error) {
     throw error;
