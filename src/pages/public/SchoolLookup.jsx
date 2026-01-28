@@ -139,12 +139,12 @@ const SchoolLookup = () => {
   };
 
 
-  const loadSchools = async (districtCode) => {
-    console.log('📍 loadSchools called with districtCode:', districtCode);
+  const loadSchools = async (districtId) => {
+    console.log('📍 loadSchools called with districtId:', districtId);
     console.log('📍 Available districts:', districts);
 
-    if (!districtCode) {
-      console.warn('⚠️ No districtCode provided');
+    if (!districtId) {
+      console.warn('⚠️ No districtId provided');
       setSchools([]);
       return;
     }
@@ -152,31 +152,20 @@ const SchoolLookup = () => {
     try {
       setSchoolsLoading(true);
 
-      // Find the district object
-      const districtObj = districts.find(d => d.districtCode === districtCode);
+      // The districtId is already the numeric ID from the dropdown (district.id)
+      const numericDistrictId = parseInt(districtId);
+      console.log('🔍 DEBUG: Numeric district ID:', numericDistrictId, 'Type:', typeof numericDistrictId);
+
+      // Find the district object for reference
+      const districtObj = districts.find(d => d.id === numericDistrictId);
       console.log('🔍 DEBUG: Found district object:', districtObj);
-      console.log('🔍 DEBUG: Looking for match - districtCode:', districtCode, 'Type:', typeof districtCode);
 
       if (!districtObj) {
-        console.error('❌ District not found in districts list');
-        throw new Error('District not found in the districts list');
+        console.warn('⚠️ District object not found (this is ok, we have the ID):', numericDistrictId);
       }
 
-      // Check all possible ID fields
-      const possibleIds = [
-        districtObj.id,
-        districtObj.district_id,
-        districtObj.districtId
-      ];
-
-      const districtId = possibleIds.find(id => id != null);
-      if (!districtId) {
-        console.error('❌ No valid district ID found in:', districtObj);
-        throw new Error('District ID is missing from district object');
-      }
-
-      console.log('🔍 DEBUG: Loading schools for district ID:', districtId);
-      const response = await schoolService.getSchoolsByDistrict(districtId);
+      console.log('🔍 DEBUG: Loading schools for district ID:', numericDistrictId);
+      const response = await schoolService.getSchoolsByDistrict(numericDistrictId);
       console.log('Schools by district response:', response);
 
       if (response && response.data) {
@@ -214,20 +203,20 @@ const SchoolLookup = () => {
     }
   };
 
-  const handleDistrictChange = (districtCode) => {
-    console.log('🔍 DEBUG: handleDistrictChange called with:', districtCode);
-    console.log('🔍 DEBUG: districts array:', districts);
-    setSelectedDistrict(districtCode);
+  const handleDistrictChange = (districtId) => {
+    console.log('🔍 DEBUG: handleDistrictChange called with districtId:', districtId);
+    console.log('🔍 DEBUG: districtId type:', typeof districtId);
+    setSelectedDistrict(districtId);
     setSelectedSchool('');
     setShowUsers(false);
     setUsers([]);
     setSchools([]); // Clear schools first
 
-    if (districtCode) {
-      console.log('🔍 DEBUG: Calling loadSchools with districtCode:', districtCode);
-      loadSchools(districtCode);
+    if (districtId) {
+      console.log('🔍 DEBUG: Calling loadSchools with districtId:', districtId);
+      loadSchools(districtId);
     } else {
-      console.warn('⚠️ District code is empty or null');
+      console.warn('⚠️ District ID is empty or null');
     }
   };
 
@@ -442,8 +431,8 @@ const SchoolLookup = () => {
                 value={selectedDistrict}
                 onValueChange={handleDistrictChange}
                 options={districts.map((district) => ({
-                  value: district.id.toString(),
-                  label: district.district_name_kh
+                  value: district.id,
+                  label: district.districtNameKh || district.districtNameEn
                 }))}
                 placeholder={t('selectDistrict', 'Select District')}
                 disabled={loading || !selectedProvince}
