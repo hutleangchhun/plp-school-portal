@@ -164,7 +164,7 @@ export default function ProfileOverviewTab({
             {showDropdown && (
               <div className="absolute z-10 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200">
                 <div className="py-2">
-                  {formData.profile_picture && (
+                  {formData.profilePicture && (
                     <Button
                       type="button"
                       onClick={handleViewPicture}
@@ -295,7 +295,7 @@ export default function ProfileOverviewTab({
             <div className="grid grid-cols-1 gap-3 lg:gap-6 lg:grid-cols-4">
               {/* Last Name */}
               <div>
-                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
                   {t('lastName')} *
                 </label>
                 <div className="relative">
@@ -304,11 +304,11 @@ export default function ProfileOverviewTab({
                   </div>
                   <input
                     type="text"
-                    name="last_name"
-                    id="last_name"
+                    name="lastName"
+                    id="lastName"
                     required
                     className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:scale-[1.01]"
-                    value={formData.last_name}
+                    value={formData.lastName}
                     onChange={handleInputChange}
                     placeholder={t('enterLastName')}
                   />
@@ -316,7 +316,7 @@ export default function ProfileOverviewTab({
               </div>
               {/* First Name */}
               <div>
-                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
                   {t('firstName')} *
                 </label>
                 <div className="relative">
@@ -325,11 +325,11 @@ export default function ProfileOverviewTab({
                   </div>
                   <input
                     type="text"
-                    name="first_name"
-                    id="first_name"
+                    name="firstName"
+                    id="firstName"
                     required
                     className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                    value={formData.first_name}
+                    value={formData.firstName}
                     onChange={handleInputChange}
                     placeholder={t('enterFirstName')}
                   />
@@ -356,7 +356,7 @@ export default function ProfileOverviewTab({
                   {t('dateOfBirth')} *
                 </label>
                 <DatePickerWithDropdowns
-                  value={formData.date_of_birth ? new Date(formData.date_of_birth) : null}
+                  value={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
                   onChange={handleDateChange}
                   placeholder={t('selectDate')}
                   className="w-full"
@@ -386,8 +386,8 @@ export default function ProfileOverviewTab({
                 </label>
                 <Dropdown
                   options={[{ value: '', label: t('selectEthnicGroup') }, ...baseEthnicGroupOptions]}
-                  value={formData.ethnic_group}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, ethnic_group: value }))}
+                  value={formData.ethnicGroup}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, ethnicGroup: value }))}
                   placeholder={t('selectEthnicGroup')}
                   contentClassName="max-h-[200px] overflow-y-auto"
                   className="w-full"
@@ -396,7 +396,7 @@ export default function ProfileOverviewTab({
 
               {/* Weight */}
               <div>
-                <label htmlFor="weight_kg" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="weightKg" className="block text-sm font-medium text-gray-700 mb-1">
                   {t('weight')} ({t('kg')})
                 </label>
                 <div className="relative">
@@ -405,20 +405,20 @@ export default function ProfileOverviewTab({
                   </div>
                   <input
                     type="text"
-                    name="weight_kg"
-                    id="weight_kg"
+                    name="weightKg"
+                    id="weightKg"
                     className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] ${isWeightInvalid()
                         ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                         : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
                       }`}
-                    value={formData.weight_kg}
+                    value={formData.weightKg}
                     onChange={handleInputChange}
                     onBlur={(e) => {
                       const converted = convertWeightToKg(e.target.value);
                       setFormData((prev) => {
-                        const updated = { ...prev, weight_kg: converted };
-                        if (updated.height_cm) {
-                          updated.bmi = calculateBMI(converted, updated.height_cm);
+                        const updated = { ...prev, weightKg: converted };
+                        if (updated.heightCm) {
+                          updated.bmi = calculateBMI(converted, updated.heightCm);
                         }
                         return updated;
                       });
@@ -430,7 +430,7 @@ export default function ProfileOverviewTab({
 
               {/* Height */}
               <div>
-                <label htmlFor="height_cm" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="heightCm" className="block text-sm font-medium text-gray-700 mb-1">
                   {t('height')} ({t('cm')})
                 </label>
                 <div className="relative">
@@ -439,20 +439,20 @@ export default function ProfileOverviewTab({
                   </div>
                   <input
                     type="text"
-                    name="height_cm"
-                    id="height_cm"
+                    name="heightCm"
+                    id="heightCm"
                     className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] ${isHeightInvalid()
                         ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                         : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
                       }`}
-                    value={formData.height_cm}
+                    value={formData.heightCm}
                     onChange={handleInputChange}
                     onBlur={(e) => {
                       const converted = convertHeightToCm(e.target.value);
                       setFormData((prev) => {
-                        const updated = { ...prev, height_cm: converted };
-                        if (updated.weight_kg) {
-                          updated.bmi = calculateBMI(updated.weight_kg, converted);
+                        const updated = { ...prev, heightCm: converted };
+                        if (updated.weightKg) {
+                          updated.bmi = calculateBMI(updated.weightKg, converted);
                         }
                         return updated;
                       });
@@ -971,8 +971,8 @@ function EmploymentInformationCard({
           </label>
           <Dropdown
             options={[{ value: '', label: t('selectEmploymentType') }, ...employmentTypeOptions]}
-            value={formData.employment_type}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, employment_type: value }))}
+            value={formData.employmentType}
+            onValueChange={(value) => setFormData((prev) => ({ ...prev, employmentType: value }))}
             placeholder={t('selectEmploymentType')}
             className="w-full"
           />
@@ -984,8 +984,8 @@ function EmploymentInformationCard({
           </label>
           <Dropdown
             options={[{ value: '', label: t('selectTeachingType') }, ...teachingTypeOptions]}
-            value={formData.teaching_type}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, teaching_type: value }))}
+            value={formData.teachingType}
+            onValueChange={(value) => setFormData((prev) => ({ ...prev, teachingType: value }))}
             placeholder={t('selectTeachingType')}
             className="w-full"
           />
@@ -997,8 +997,8 @@ function EmploymentInformationCard({
           </label>
           <Dropdown
             options={[{ value: '', label: t('selectTeacherStatus') }, ...teacherStatusOptions]}
-            value={formData.teacher_status}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, teacher_status: value }))}
+            value={formData.teacherStatus}
+            onValueChange={(value) => setFormData((prev) => ({ ...prev, teacherStatus: value }))}
             placeholder={t('selectTeacherStatus')}
             className="w-full"
           />
@@ -1029,8 +1029,8 @@ function EmploymentInformationCard({
             </label>
             <Dropdown
               options={[{ value: '', label: t('selectEducationLevel') }, ...educationLevelOptions]}
-              value={formData.education_level}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, education_level: value }))}
+              value={formData.educationLevel}
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, educationLevel: value }))}
               placeholder={t('selectEducationLevel')}
               className="w-full"
             />
@@ -1042,8 +1042,8 @@ function EmploymentInformationCard({
             </label>
             <Dropdown
               options={[{ value: '', label: t('selectTrainingType') }, ...trainingTypeOptions]}
-              value={formData.training_type}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, training_type: value }))}
+              value={formData.trainingType}
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, trainingType: value }))}
               placeholder={t('selectTrainingType')}
               className="w-full"
             />
@@ -1076,25 +1076,25 @@ function FamilyInformationCard({
           </label>
           <Dropdown
             options={[{ value: '', label: t('selectMaritalStatus') }, ...maritalStatusOptions]}
-            value={formData.teacher_family.living_status}
+            value={formData.teacherFamily.livingStatus}
             onValueChange={(value) => {
               setFormData((prev) => {
                 let nextTeacherFamily = {
-                  ...prev.teacher_family,
-                  living_status: value,
+                  ...prev.teacherFamily,
+                  livingStatus: value,
                 };
 
                 // Single: clear spouse info and children
                 if (value === 'នៅលីវ') {
                   nextTeacherFamily = {
-                    living_status: value,
-                    spouse_info: {
-                      spouse_name: '',
-                      spouse_occupation: '',
-                      spouse_place_of_birth: '',
-                      spouse_phone: '',
+                    livingStatus: value,
+                    spouseInfo: {
+                      spouseName: '',
+                      spouseOccupation: '',
+                      spousePlaceOfBirth: '',
+                      spousePhone: '',
                     },
-                    number_of_children: '',
+                    numberOfChildren: '',
                     children: [],
                   };
                 }
@@ -1102,29 +1102,29 @@ function FamilyInformationCard({
                 // Widow/Divorced: no spouse info, but allow children
                 if (value === 'ពោះម៉ាយ') {
                   nextTeacherFamily = {
-                    living_status: value,
-                    spouse_info: {
-                      spouse_name: '',
-                      spouse_occupation: '',
-                      spouse_place_of_birth: '',
-                      spouse_phone: '',
+                    livingStatus: value,
+                    spouseInfo: {
+                      spouseName: '',
+                      spouseOccupation: '',
+                      spousePlaceOfBirth: '',
+                      spousePhone: '',
                     },
-                    number_of_children: prev.teacher_family?.number_of_children || '',
-                    children: Array.isArray(prev.teacher_family?.children) ? prev.teacher_family.children : [],
+                    numberOfChildren: prev.teacherFamily?.numberOfChildren || '',
+                    children: Array.isArray(prev.teacherFamily?.children) ? prev.teacherFamily.children : [],
                   };
                 }
 
                 // Married: keep spouse/children data
                 if (value === 'រៀបការ') {
                   nextTeacherFamily = {
-                    ...prev.teacher_family,
-                    living_status: value,
+                    ...prev.teacherFamily,
+                    livingStatus: value,
                   };
                 }
 
                 return {
                   ...prev,
-                  teacher_family: nextTeacherFamily,
+                  teacherFamily: nextTeacherFamily,
                 };
               });
             }}
@@ -1134,25 +1134,25 @@ function FamilyInformationCard({
         </div>
 
         {/* Spouse Information - Show only if married */}
-        {formData.teacher_family.living_status === 'រៀបការ' && (
+        {formData.teacherFamily.livingStatus === 'រៀបការ' && (
           <>
             <div>
-              <label htmlFor="spouse_name" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="spouseName" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('partnerName')}
               </label>
               <input
                 type="text"
-                id="spouse_name"
+                id="spouseName"
                 className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                value={formData.teacher_family.spouse_info.spouse_name}
+                value={formData.teacherFamily.spouseInfo.spouseName}
                 onChange={(e) => {
                   setFormData((prev) => ({
                     ...prev,
-                    teacher_family: {
-                      ...prev.teacher_family,
-                      spouse_info: {
-                        ...prev.teacher_family.spouse_info,
-                        spouse_name: e.target.value,
+                    teacherFamily: {
+                      ...prev.teacherFamily,
+                      spouseInfo: {
+                        ...prev.teacherFamily.spouseInfo,
+                        spouseName: e.target.value,
                       },
                     },
                   }));
@@ -1162,20 +1162,20 @@ function FamilyInformationCard({
             </div>
 
             <div>
-              <label htmlFor="spouse_occupation" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="spouseOccupation" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('partnerJobPlace')}
               </label>
               <Dropdown
                 options={[{ value: '', label: t('selectSpouseJob') }, ...spouseJobOptions]}
-                value={formData.teacher_family.spouse_info.spouse_occupation}
+                value={formData.teacherFamily.spouseInfo.spouseOccupation}
                 onValueChange={(value) => {
                   setFormData((prev) => ({
                     ...prev,
-                    teacher_family: {
-                      ...prev.teacher_family,
-                      spouse_info: {
-                        ...prev.teacher_family.spouse_info,
-                        spouse_occupation: value,
+                    teacherFamily: {
+                      ...prev.teacherFamily,
+                      spouseInfo: {
+                        ...prev.teacherFamily.spouseInfo,
+                        spouseOccupation: value,
                       },
                     },
                   }));
@@ -1186,22 +1186,22 @@ function FamilyInformationCard({
             </div>
 
             <div>
-              <label htmlFor="spouse_phone" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="spousePhone" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('partnerPhone')}
               </label>
               <input
                 type="tel"
-                id="spouse_phone"
+                id="spousePhone"
                 className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                value={formData.teacher_family.spouse_info.spouse_phone}
+                value={formData.teacherFamily.spouseInfo.spousePhone}
                 onChange={(e) => {
                   setFormData((prev) => ({
                     ...prev,
-                    teacher_family: {
-                      ...prev.teacher_family,
-                      spouse_info: {
-                        ...prev.teacher_family.spouse_info,
-                        spouse_phone: e.target.value,
+                    teacherFamily: {
+                      ...prev.teacherFamily,
+                      spouseInfo: {
+                        ...prev.teacherFamily.spouseInfo,
+                        spousePhone: e.target.value,
                       },
                     },
                   }));
@@ -1211,22 +1211,22 @@ function FamilyInformationCard({
             </div>
 
             <div>
-              <label htmlFor="spouse_place_of_birth" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="spousePlaceOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('placeOfBirth')}
               </label>
               <input
                 type="text"
-                id="spouse_place_of_birth"
+                id="spousePlaceOfBirth"
                 className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                value={formData.teacher_family.spouse_info.spouse_place_of_birth}
+                value={formData.teacherFamily.spouseInfo.spousePlaceOfBirth}
                 onChange={(e) => {
                   setFormData((prev) => ({
                     ...prev,
-                    teacher_family: {
-                      ...prev.teacher_family,
-                      spouse_info: {
-                        ...prev.teacher_family.spouse_info,
-                        spouse_place_of_birth: e.target.value,
+                    teacherFamily: {
+                      ...prev.teacherFamily,
+                      spouseInfo: {
+                        ...prev.teacherFamily.spouseInfo,
+                        spousePlaceOfBirth: e.target.value,
                       },
                     },
                   }));
@@ -1238,23 +1238,23 @@ function FamilyInformationCard({
         )}
 
         {/* Number of Children - Show when not single */}
-        {formData.teacher_family.living_status && formData.teacher_family.living_status !== 'នៅលីវ' && (
+        {formData.teacherFamily.livingStatus && formData.teacherFamily.livingStatus !== 'នៅលីវ' && (
           <div>
-            <label htmlFor="number_of_children" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="numberOfChildren" className="block text-sm font-medium text-gray-700 mb-1">
               {t('numberOfChildren')}
             </label>
             <input
               type="number"
-              id="number_of_children"
+              id="numberOfChildren"
               min="0"
               className="mt-1 block w-full rounded-md shadow-sm text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-              value={formData.teacher_family.number_of_children}
+              value={formData.teacherFamily.numberOfChildren}
               onChange={(e) => {
                 setFormData((prev) => ({
                   ...prev,
-                  teacher_family: {
-                    ...prev.teacher_family,
-                    number_of_children: e.target.value,
+                  teacherFamily: {
+                    ...prev.teacherFamily,
+                    numberOfChildren: e.target.value,
                   },
                 }));
               }}
@@ -1265,32 +1265,32 @@ function FamilyInformationCard({
       </div>
 
       {/* Children List */}
-      {formData.teacher_family.number_of_children && parseInt(formData.teacher_family.number_of_children) > 0 && (
+      {formData.teacherFamily.numberOfChildren && parseInt(formData.teacherFamily.numberOfChildren) > 0 && (
         <div className="mt-6 border-t pt-6">
           <h5 className="text-sm font-semibold text-gray-900 mb-4">{t('childrenInformation')}</h5>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Array.from({ length: parseInt(formData.teacher_family.number_of_children) || 0 }).map((_, index) => (
+            {Array.from({ length: parseInt(formData.teacherFamily.numberOfChildren) || 0 }).map((_, index) => (
               <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-md">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
-                    <label htmlFor={`child_name_${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor={`childName_${index}`} className="block text-sm font-medium text-gray-700 mb-1">
                       {t('childName')} {index + 1}
                     </label>
                     <input
                       type="text"
-                      id={`child_name_${index}`}
-                      value={formData.teacher_family.children[index]?.child_name || ''}
+                      id={`childName_${index}`}
+                      value={formData.teacherFamily.children[index]?.childName || ''}
                       onChange={(e) => {
                         setFormData((prev) => {
-                          const newChildren = [...prev.teacher_family.children];
+                          const newChildren = [...prev.teacherFamily.children];
                           if (!newChildren[index]) {
-                            newChildren[index] = { child_name: '' };
+                            newChildren[index] = { childName: '' };
                           }
-                          newChildren[index].child_name = e.target.value;
+                          newChildren[index].childName = e.target.value;
                           return {
                             ...prev,
-                            teacher_family: {
-                              ...prev.teacher_family,
+                            teacherFamily: {
+                              ...prev.teacherFamily,
                               children: newChildren,
                             },
                           };
@@ -1305,14 +1305,14 @@ function FamilyInformationCard({
                     className="mt-6 inline-flex items-center justify-center h-10 w-10 border border-red-300 text-xs font-medium rounded text-red-700 bg-red-50"
                     onClick={() => {
                       setFormData((prev) => {
-                        const prevCount = parseInt(prev.teacher_family.number_of_children) || 0;
-                        const newChildren = (prev.teacher_family.children || []).filter((_, i) => i !== index);
+                        const prevCount = parseInt(prev.teacherFamily.numberOfChildren) || 0;
+                        const newChildren = (prev.teacherFamily.children || []).filter((_, i) => i !== index);
                         const newCount = Math.max(0, prevCount - 1);
                         return {
                           ...prev,
-                          teacher_family: {
-                            ...prev.teacher_family,
-                            number_of_children: newCount ? String(newCount) : '',
+                          teacherFamily: {
+                            ...prev.teacherFamily,
+                            numberOfChildren: newCount ? String(newCount) : '',
                             children: newChildren,
                           },
                         };

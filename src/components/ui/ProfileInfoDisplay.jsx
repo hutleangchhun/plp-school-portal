@@ -20,14 +20,14 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
           </h3>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:gap-6 lg:grid-cols-4">
-          <InfoField label={t('lastName')} value={formData.last_name} />
-          <InfoField label={t('firstName')} value={formData.first_name} />
+          <InfoField label={t('lastName')} value={formData.lastName} />
+          <InfoField label={t('firstName')} value={formData.firstName} />
           <InfoField label={t('gender')} value={formData.gender === 'MALE' ? t('male') : t('female')} />
-          <InfoField label={t('dateOfBirth')} value={formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : '-'} />
+          <InfoField label={t('dateOfBirth')} value={formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString() : '-'} />
           <InfoField label={t('nationality')} value={formData.nationality} />
-          <InfoField label={t('ethnicGroup')} value={formData.ethnic_group} />
-          <InfoField label={`${t('weight')} (${t('kg')})`} value={formData.weight_kg} />
-          <InfoField label={`${t('height')} (${t('cm')})`} value={formData.height_cm} />
+          <InfoField label={t('ethnicGroup')} value={formData.ethnicGroup} />
+          <InfoField label={`${t('weight')} (${t('kg')})`} value={formData.weightKg} />
+          <InfoField label={`${t('height')} (${t('cm')})`} value={formData.heightCm} />
 
           {/* Accessibility */}
           {formData.accessibility && formData.accessibility.length > 0 && (
@@ -53,8 +53,8 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
           {formData.roleNameKh && (
             <InfoField label={t('role')} value={`${formData.roleNameKh} (${formData.roleNameEn})`} />
           )}
-          {formData.school_name && (
-            <InfoField label={t('school')} value={formData.school_name} />
+          {formData.schoolName && (
+            <InfoField label={t('school')} value={formData.schoolName} />
           )}
         </div>
       </div>
@@ -67,10 +67,10 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
           </h3>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:gap-6 lg:grid-cols-4">
-          <InfoField label={t('province')} value={formData.residence?.province_name} />
-          <InfoField label={t('district')} value={formData.residence?.district_name} />
-          <InfoField label={t('commune')} value={formData.residence?.commune_name} />
-          <InfoField label={t('village')} value={formData.residence?.village_name} />
+          <InfoField label={t('province')} value={formData.residence?.provinceNameKh || formData.residence?.provinceName} />
+          <InfoField label={t('district')} value={formData.residence?.districtNameKh || formData.residence?.districtName} />
+          <InfoField label={t('commune')} value={formData.residence?.communeNameKh || formData.residence?.communeName} />
+          <InfoField label={t('village')} value={formData.residence?.villageNameKh || formData.residence?.villageName} />
         </div>
       </div>
 
@@ -82,10 +82,10 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
           </h3>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:gap-6 lg:grid-cols-4">
-          <InfoField label={t('province')} value={formData.placeOfBirth?.province_name} />
-          <InfoField label={t('district')} value={formData.placeOfBirth?.district_name} />
-          <InfoField label={t('commune')} value={formData.placeOfBirth?.commune_name} />
-          <InfoField label={t('village')} value={formData.placeOfBirth?.village_name} />
+          <InfoField label={t('province')} value={formData.placeOfBirth?.provinceNameKh || formData.placeOfBirth?.provinceName} />
+          <InfoField label={t('district')} value={formData.placeOfBirth?.districtNameKh || formData.placeOfBirth?.districtName} />
+          <InfoField label={t('commune')} value={formData.placeOfBirth?.communeNameKh || formData.placeOfBirth?.communeName} />
+          <InfoField label={t('village')} value={formData.placeOfBirth?.villageNameKh || formData.placeOfBirth?.villageName} />
         </div>
       </div>
 
@@ -98,13 +98,13 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:gap-6 lg:grid-cols-4">
           <InfoField label={t('gradeLevel')} value={formData.gradeLevel} />
-          <InfoField label={t('employmentType')} value={formData.employment_type} />
-          <InfoField label={t('salaryType')} value={formData.salary_type_name || formData.salary_type} />
-          <InfoField label={t('teachingType')} value={formData.teaching_type} />
-          <InfoField label={t('teacherStatus')} value={formData.teacher_status} />
+          <InfoField label={t('employmentType')} value={formData.employmentType} />
+          <InfoField label={t('salaryType')} value={formData.salaryTypeName || formData.salaryType} />
+          <InfoField label={t('teachingType')} value={formData.teachingType} />
+          <InfoField label={t('teacherStatus')} value={formData.teacherStatus} />
           <InfoField label={t('subjects')} value={Array.isArray(formData.subject) ? formData.subject.join(', ') : '-'} />
-          <InfoField label={t('teacherNumber')} value={formData.teacher_number} />
-          <InfoField label={t('hireDate')} value={formData.hire_date ? new Date(formData.hire_date).toLocaleDateString() : '-'} />
+          <InfoField label={t('teacherNumber')} value={formData.teacherNumber} />
+          <InfoField label={t('hireDate')} value={formData.hireDate ? new Date(formData.hireDate).toLocaleDateString() : '-'} />
         </div>
 
         {/* BMI Information Subsection */}
@@ -146,12 +146,12 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
         )}
 
         {/* Training Information Subsection */}
-        {(formData.education_level || formData.training_type) && (
+        {(formData.educationLevel || formData.trainingType) && (
           <div className="mt-8 border-t border-gray-200 pt-6">
             <h4 className="text-base font-medium text-gray-900 mb-4">{t('trainingInformation')}</h4>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:gap-6 lg:grid-cols-2">
-              <InfoField label={t('educationLevel')} value={formData.education_level} />
-              <InfoField label={t('trainingType')} value={formData.training_type} />
+              <InfoField label={t('educationLevel')} value={formData.educationLevel} />
+              <InfoField label={t('trainingType')} value={formData.trainingType} />
             </div>
           </div>
         )}
@@ -239,46 +239,46 @@ export default function ProfileInfoDisplay({ formData, calculateBMI, getBMICateg
         })()}
 
         {/* Family Information Subsection */}
-        {formData.teacher_family && (formData.teacher_family.living_status || formData.teacher_family.spouse_info || formData.teacher_family.children) && (
+        {formData.teacherFamily && (formData.teacherFamily.livingStatus || formData.teacherFamily.spouseInfo || formData.teacherFamily.children) && (
           <div className="mt-8 border-t border-gray-200 pt-6">
             <h4 className="text-base font-medium text-gray-900 mb-4">{t('familyInformation')}</h4>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:gap-6 lg:grid-cols-2">
-              <InfoField label={t('maritalStatus')} value={formData.teacher_family.living_status} />
+              <InfoField label={t('maritalStatus')} value={formData.teacherFamily.livingStatus} />
 
               {/* Spouse Information */}
-              {formData.teacher_family.spouse_info && (
+              {formData.teacherFamily.spouseInfo && (
                 <>
-                  {formData.teacher_family.spouse_info.spouse_name && (
-                    <InfoField label={t('partnerName')} value={formData.teacher_family.spouse_info.spouse_name} />
+                  {formData.teacherFamily.spouseInfo.spouseName && (
+                    <InfoField label={t('partnerName')} value={formData.teacherFamily.spouseInfo.spouseName} />
                   )}
-                  {formData.teacher_family.spouse_info.spouse_occupation && (
-                    <InfoField label={t('partnerJobPlace')} value={formData.teacher_family.spouse_info.spouse_occupation} />
+                  {formData.teacherFamily.spouseInfo.spouseOccupation && (
+                    <InfoField label={t('partnerJobPlace')} value={formData.teacherFamily.spouseInfo.spouseOccupation} />
                   )}
-                  {formData.teacher_family.spouse_info.spouse_phone && (
-                    <InfoField label={t('partnerPhone')} value={formData.teacher_family.spouse_info.spouse_phone} />
+                  {formData.teacherFamily.spouseInfo.spousePhone && (
+                    <InfoField label={t('partnerPhone')} value={formData.teacherFamily.spouseInfo.spousePhone} />
                   )}
-                  {formData.teacher_family.spouse_info.spouse_place_of_birth && (
-                    <InfoField label={`${t('partnerName')} ${t('placeOfBirth')}`} value={formData.teacher_family.spouse_info.spouse_place_of_birth} />
+                  {formData.teacherFamily.spouseInfo.spousePlaceOfBirth && (
+                    <InfoField label={`${t('partnerName')} ${t('placeOfBirth')}`} value={formData.teacherFamily.spouseInfo.spousePlaceOfBirth} />
                   )}
                 </>
               )}
 
               {/* Number of Children */}
-              {formData.teacher_family.number_of_children && (
-                <InfoField label={t('numberOfChildren')} value={formData.teacher_family.number_of_children} />
+              {formData.teacherFamily.numberOfChildren && (
+                <InfoField label={t('numberOfChildren')} value={formData.teacherFamily.numberOfChildren} />
               )}
             </div>
 
             {/* Children List */}
-            {formData.teacher_family.children && formData.teacher_family.children.length > 0 && (
+            {formData.teacherFamily.children && formData.teacherFamily.children.length > 0 && (
               <div className="mt-6 border-t pt-6">
                 <h5 className="text-sm font-semibold text-gray-900 mb-4">{t('childrenInformation')}</h5>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {formData.teacher_family.children.map((child, index) => (
-                    child && child.child_name && (
+                  {formData.teacherFamily.children.map((child, index) => (
+                    child && child.childName && (
                       <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-md">
                         <p className="text-sm font-medium text-gray-600">{t('childName')} {index + 1}</p>
-                        <p className="text-sm text-gray-900 font-medium mt-1">{child.child_name}</p>
+                        <p className="text-sm text-gray-900 font-medium mt-1">{child.childName}</p>
                       </div>
                     )
                   ))}

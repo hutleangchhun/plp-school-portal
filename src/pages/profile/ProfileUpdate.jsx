@@ -30,37 +30,37 @@ export default function ProfileUpdate({ user, setUser }) {
   const [formData, setFormData] = useState({
     id: '',
     username: '',
-    first_name: '',
-    last_name: '',
+    firstName: '',
+    lastName: '',
     fullname: '',
     email: '',
     roleId: '',
     role: '',
     newPassword: '',
-    date_of_birth: '',
+    dateOfBirth: '',
     gender: 'MALE',
-    profile_picture: '',
+    profilePicture: '',
     phone: '',
-    teacher_number: '',
+    teacherNumber: '',
     nationality: nationalityOptionsProfile[0]?.value || 'ខ្មែរ',
     roleNameEn: '',
     roleNameKh: '',
-    school_name: '',
-    weight_kg: '',
-    height_cm: '',
+    schoolName: '',
+    weightKg: '',
+    heightCm: '',
     bmi: '',
     // Additional fields from API payload
     accessibility: [],
-    employment_type: '',
-    ethnic_group: '',
+    employmentType: '',
+    ethnicGroup: '',
     gradeLevel: '',
-    hire_date: '',
-    salary_type: '',
-    salary_type_name: '',
-    education_level: '',
-    training_type: '',
-    teaching_type: '',
-    teacher_status: '',
+    hireDate: '',
+    salaryType: '',
+    salaryTypeName: '',
+    educationLevel: '',
+    trainingType: '',
+    teachingType: '',
+    teacherStatus: '',
     subject: [],
     appointed: false,
     burden: false,
@@ -100,15 +100,15 @@ export default function ProfileUpdate({ user, setUser }) {
       villageId: ''
     },
     // Family information
-    teacher_family: {
-      living_status: '',
-      spouse_info: {
-        spouse_name: '',
-        spouse_occupation: '',
-        spouse_place_of_birth: '',
-        spouse_phone: ''
+    teacherFamily: {
+      livingStatus: '',
+      spouseInfo: {
+        spouseName: '',
+        spouseOccupation: '',
+        spousePlaceOfBirth: '',
+        spousePhone: ''
       },
-      number_of_children: '',
+      numberOfChildren: '',
       children: []
     },
     // Legacy fields for backward compatibility
@@ -488,14 +488,29 @@ export default function ProfileUpdate({ user, setUser }) {
           console.log('=== USER DATA DEBUG ===');
           console.log('Full userData object:', userData);
           console.log('Available keys:', Object.keys(userData));
-          console.log('profile_picture value:', userData?.profile_picture);
-          console.log('profile_picture_url value:', userData?.profile_picture_url);
+          console.log('profilePicture value:', userData?.profilePicture);
+          console.log('profilePicture_url value:', userData?.profilePicture_url);
           console.log('profilePicture value:', userData?.profilePicture);
           console.log('=== END USER DATA DEBUG ===');
         }
 
+        // Convert API response from snake_case to camelCase
+        const convertSnakeToCamel = (obj) => {
+          if (!obj || typeof obj !== 'object') return obj;
+          if (Array.isArray(obj)) return obj.map(convertSnakeToCamel);
+
+          const converted = {};
+          for (const [key, value] of Object.entries(obj)) {
+            // Convert snake_case to camelCase
+            const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+            converted[camelKey] = convertSnakeToCamel(value);
+          }
+          return converted;
+        };
+
         // Normalize userData to handle incomplete payloads gracefully
-        const normalizedData = userData;
+        // Convert API response to camelCase while keeping original data as fallback
+        const normalizedData = { ...convertSnakeToCamel(userData), ...userData };
 
         // Try to extract a valid user ID from various possible fields
         const possibleUserIds = [
@@ -525,36 +540,36 @@ export default function ProfileUpdate({ user, setUser }) {
         const newFormData = {
           id: extractedUserId || '',
           username: normalizedData.username || '',
-          first_name: normalizedData.first_name || '',
-          last_name: normalizedData.last_name || '',
+          firstName: normalizedData.firstName || '',
+          lastName: normalizedData.lastName || '',
           fullname: normalizedData.fullname || '',
           email: normalizedData.email || '',
           roleId: roleIdString,
           newPassword: '',
-          date_of_birth: normalizedData.date_of_birth || '',
+          dateOfBirth: normalizedData.dateOfBirth || '',
           gender: normalizedData.gender || 'MALE',
-          profile_picture: normalizedData.profile_picture || '',
+          profilePicture: normalizedData.profilePicture || '',
           phone: normalizedData.phone || '',
-          teacher_number: normalizedData.teacher_number || teacher.teacher_number || '',
+          teacherNumber: normalizedData.teacherNumber || teacher.teacherNumber || '',
           nationality: normalizedData.nationality || 'ខ្មែរ',
           roleNameEn: normalizedData.roleNameEn || (selectedRole?.label) || '',
           roleNameKh: normalizedData.roleNameKh || (selectedRole?.label) || '',
-          school_name: teacher.school?.name || normalizedData.school_name || '',
-          weight_kg: normalizedData.weight_kg || '',
-          height_cm: normalizedData.height_cm || '',
+          schoolName: teacher.school?.name || normalizedData.schoolName || '',
+          weightKg: normalizedData.weightKg || '',
+          heightCm: normalizedData.heightCm || '',
           bmi: normalizedData.bmi || '',
           // Additional fields from API payload - check both top level and nested teacher object
           accessibility: normalizedData.accessibility || [],
-          employment_type: normalizedData.employment_type || teacher.employment_type || '',
-          ethnic_group: normalizedData.ethnic_group || '',
+          employmentType: normalizedData.employmentType || teacher.employmentType || '',
+          ethnicGroup: normalizedData.ethnicGroup || '',
           gradeLevel: normalizedData.gradeLevel || teacher.gradeLevel || '',
-          hire_date: normalizedData.hire_date || teacher.hire_date || '',
+          hireDate: normalizedData.hireDate || teacher.hireDate || '',
           role: normalizedData.role || normalizedData.roleId || '',
-          salary_type: (normalizedData.salaryTypeId || teacher.salaryTypeId) ? String(normalizedData.salaryTypeId || teacher.salaryTypeId) : '',
-          education_level: normalizedData.educationLevel || teacher.educationLevel || '',
-          training_type: normalizedData.trainingType || teacher.trainingType || '',
-          teaching_type: normalizedData.teachingType || teacher.teachingType || '',
-          teacher_status: normalizedData.teacherStatus || teacher.teacherStatus || '',
+          salaryType: (normalizedData.salaryTypeId || teacher.salaryTypeId) ? String(normalizedData.salaryTypeId || teacher.salaryTypeId) : '',
+          educationLevel: normalizedData.educationLevel || teacher.educationLevel || '',
+          trainingType: normalizedData.trainingType || teacher.trainingType || '',
+          teachingType: normalizedData.teachingType || teacher.teachingType || '',
+          teacherStatus: normalizedData.teacherStatus || teacher.teacherStatus || '',
           subject: Array.isArray(normalizedData.subject) ? normalizedData.subject : (Array.isArray(teacher.subject) ? teacher.subject : []),
           appointed: typeof normalizedData.appointed === 'boolean' ? normalizedData.appointed : (typeof teacher.appointed === 'boolean' ? teacher.appointed : false),
           burden: typeof normalizedData.burden === 'boolean' ? normalizedData.burden : (typeof teacher.burden === 'boolean' ? teacher.burden : false),
@@ -650,47 +665,51 @@ export default function ProfileUpdate({ user, setUser }) {
               };
             }
           })(),
-          // Handle nested residence object with full location data (Khmer names prioritized)
-          // Handle nested residence object with full location data (Khmer names prioritized)
-          // Ensure IDs are strings to match dropdown values
+          // Handle nested residence object with full location data (Khmer names prioritized, camelCase)
           residence: {
             provinceId: String(normalizedData.residence?.provinceId || normalizedData.province_id || ''),
-            province_name: normalizedData.residence?.province?.province_name_kh || normalizedData.residence?.province?.province_name_en || normalizedData.residence?.province?.['_name_kh'] || normalizedData.residence?.province?.['_name_en'] || '',
+            provinceName: normalizedData.residence?.province?.provinceNameEn || '',
+            provinceNameKh: normalizedData.residence?.province?.provinceNameKh || '',
             districtId: String(normalizedData.residence?.districtId || normalizedData.district_id || ''),
-            district_code: normalizedData.residence?.district?.district_code || normalizedData.residence?.district?.code || normalizedData.residence?.district?.['_code'] || normalizedData.district_code || String(normalizedData.residence?.districtId || normalizedData.district_id || ''),
-            district_name: normalizedData.residence?.district?.district_name_kh || normalizedData.residence?.district?.district_name_en || normalizedData.residence?.district?.['_name_kh'] || normalizedData.residence?.district?.['_name_en'] || '',
+            districtCode: normalizedData.residence?.district?.districtCode || normalizedData.residence?.district?.code || normalizedData.district_code || String(normalizedData.residence?.districtId || normalizedData.district_id || ''),
+            districtName: normalizedData.residence?.district?.districtNameEn || '',
+            districtNameKh: normalizedData.residence?.district?.districtNameKh || '',
             communeId: String(normalizedData.residence?.communeId || normalizedData.commune_id || ''),
-            commune_code: normalizedData.residence?.commune?.commune_code || normalizedData.residence?.commune?.code || normalizedData.residence?.commune?.['_code'] || normalizedData.commune_code || String(normalizedData.residence?.communeId || normalizedData.commune_id || ''),
-            commune_name: normalizedData.residence?.commune?.commune_name_kh || normalizedData.residence?.commune?.commune_name_en || normalizedData.residence?.commune?.['_name_kh'] || normalizedData.residence?.commune?.['_name_en'] || '',
+            communeCode: normalizedData.residence?.commune?.communeCode || normalizedData.residence?.commune?.code || normalizedData.commune_code || String(normalizedData.residence?.communeId || normalizedData.commune_id || ''),
+            communeName: normalizedData.residence?.commune?.communeNameEn || '',
+            communeNameKh: normalizedData.residence?.commune?.communeNameKh || '',
             villageId: String(normalizedData.residence?.villageId || normalizedData.village_id || ''),
-            village_name: normalizedData.residence?.village?.village_name_kh || normalizedData.residence?.village?.village_name_en || normalizedData.residence?.village?.['_name_kh'] || normalizedData.residence?.village?.['_name_en'] || ''
+            villageName: normalizedData.residence?.village?.villageNameEn || '',
+            villageNameKh: normalizedData.residence?.village?.villageNameKh || ''
           },
-          // Handle nested placeOfBirth object with full location data (Khmer names prioritized)
-          // Handle nested placeOfBirth object with full location data (Khmer names prioritized)
-          // Ensure IDs are strings to match dropdown values
+          // Handle nested placeOfBirth object with full location data (Khmer names prioritized, camelCase)
           placeOfBirth: {
             provinceId: String(normalizedData.placeOfBirth?.provinceId || normalizedData.residence?.provinceId || normalizedData.province_id || ''),
-            province_name: normalizedData.placeOfBirth?.province?.province_name_kh || normalizedData.placeOfBirth?.province?.province_name_en || normalizedData.residence?.province?.province_name_kh || '',
+            provinceName: normalizedData.placeOfBirth?.province?.provinceNameEn || normalizedData.residence?.province?.provinceNameEn || '',
+            provinceNameKh: normalizedData.placeOfBirth?.province?.provinceNameKh || normalizedData.residence?.province?.provinceNameKh || '',
             districtId: String(normalizedData.placeOfBirth?.districtId || normalizedData.residence?.districtId || normalizedData.district_id || ''),
-            district_code: normalizedData.placeOfBirth?.district?.district_code || normalizedData.placeOfBirth?.district?.code || normalizedData.placeOfBirth?.district?.['_code'] || normalizedData.residence?.district?.district_code || String(normalizedData.placeOfBirth?.districtId || normalizedData.residence?.districtId || normalizedData.district_id || ''),
-            district_name: normalizedData.placeOfBirth?.district?.district_name_kh || normalizedData.placeOfBirth?.district?.district_name_en || normalizedData.placeOfBirth?.district?.['_name_kh'] || normalizedData.placeOfBirth?.district?.['_name_en'] || normalizedData.residence?.district?.district_name_kh || '',
+            districtCode: normalizedData.placeOfBirth?.district?.districtCode || normalizedData.placeOfBirth?.district?.code || normalizedData.residence?.district?.districtCode || String(normalizedData.placeOfBirth?.districtId || normalizedData.residence?.districtId || normalizedData.district_id || ''),
+            districtName: normalizedData.placeOfBirth?.district?.districtNameEn || normalizedData.residence?.district?.districtNameEn || '',
+            districtNameKh: normalizedData.placeOfBirth?.district?.districtNameKh || normalizedData.residence?.district?.districtNameKh || '',
             communeId: String(normalizedData.placeOfBirth?.communeId || normalizedData.residence?.communeId || normalizedData.commune_id || ''),
-            commune_code: normalizedData.placeOfBirth?.commune?.commune_code || normalizedData.placeOfBirth?.commune?.code || normalizedData.placeOfBirth?.commune?.['_code'] || normalizedData.residence?.commune?.commune_code || String(normalizedData.placeOfBirth?.communeId || normalizedData.residence?.communeId || normalizedData.commune_id || ''),
-            commune_name: normalizedData.placeOfBirth?.commune?.commune_name_kh || normalizedData.placeOfBirth?.commune?.commune_name_en || normalizedData.placeOfBirth?.commune?.['_name_kh'] || normalizedData.placeOfBirth?.commune?.['_name_en'] || normalizedData.residence?.commune?.commune_name_kh || '',
+            communeCode: normalizedData.placeOfBirth?.commune?.communeCode || normalizedData.placeOfBirth?.commune?.code || normalizedData.residence?.commune?.communeCode || String(normalizedData.placeOfBirth?.communeId || normalizedData.residence?.communeId || normalizedData.commune_id || ''),
+            communeName: normalizedData.placeOfBirth?.commune?.communeNameEn || normalizedData.residence?.commune?.communeNameEn || '',
+            communeNameKh: normalizedData.placeOfBirth?.commune?.communeNameKh || normalizedData.residence?.commune?.communeNameKh || '',
             villageId: String(normalizedData.placeOfBirth?.villageId || normalizedData.residence?.villageId || normalizedData.village_id || ''),
-            village_name: normalizedData.placeOfBirth?.village?.village_name_kh || normalizedData.placeOfBirth?.village?.village_name_en || normalizedData.placeOfBirth?.village?.['_name_kh'] || normalizedData.placeOfBirth?.village?.['_name_en'] || normalizedData.residence?.village?.village_name_kh || ''
+            villageName: normalizedData.placeOfBirth?.village?.villageNameEn || normalizedData.residence?.village?.villageNameEn || '',
+            villageNameKh: normalizedData.placeOfBirth?.village?.villageNameKh || normalizedData.residence?.village?.villageNameKh || ''
           },
-          // Handle teacher family information
-          teacher_family: {
-            living_status: teacher.teacher_family?.living_status || normalizedData.teacher_family?.living_status || '',
-            spouse_info: {
-              spouse_name: teacher.teacher_family?.spouse_info?.spouse_name || normalizedData.teacher_family?.spouse_info?.spouse_name || '',
-              spouse_occupation: teacher.teacher_family?.spouse_info?.spouse_occupation || normalizedData.teacher_family?.spouse_info?.spouse_occupation || '',
-              spouse_place_of_birth: teacher.teacher_family?.spouse_info?.spouse_place_of_birth || normalizedData.teacher_family?.spouse_info?.spouse_place_of_birth || '',
-              spouse_phone: teacher.teacher_family?.spouse_info?.spouse_phone || normalizedData.teacher_family?.spouse_info?.spouse_phone || ''
+          // Handle teacher family information (camelCase)
+          teacherFamily: {
+            livingStatus: teacher.teacherFamily?.livingStatus || teacher.teacher_family?.living_status || normalizedData.teacherFamily?.livingStatus || normalizedData.teacher_family?.living_status || '',
+            spouseInfo: {
+              spouseName: teacher.teacherFamily?.spouseInfo?.spouseName || teacher.teacher_family?.spouse_info?.spouse_name || normalizedData.teacherFamily?.spouseInfo?.spouseName || normalizedData.teacher_family?.spouse_info?.spouse_name || '',
+              spouseOccupation: teacher.teacherFamily?.spouseInfo?.spouseOccupation || teacher.teacher_family?.spouse_info?.spouse_occupation || normalizedData.teacherFamily?.spouseInfo?.spouseOccupation || normalizedData.teacher_family?.spouse_info?.spouse_occupation || '',
+              spousePlaceOfBirth: teacher.teacherFamily?.spouseInfo?.spousePlaceOfBirth || teacher.teacher_family?.spouse_info?.spouse_place_of_birth || normalizedData.teacherFamily?.spouseInfo?.spousePlaceOfBirth || normalizedData.teacher_family?.spouse_info?.spouse_place_of_birth || '',
+              spousePhone: teacher.teacherFamily?.spouseInfo?.spousePhone || teacher.teacher_family?.spouse_info?.spouse_phone || normalizedData.teacherFamily?.spouseInfo?.spousePhone || normalizedData.teacher_family?.spouse_info?.spouse_phone || ''
             },
-            number_of_children: teacher.teacher_family?.number_of_children || normalizedData.teacher_family?.number_of_children || '',
-            children: Array.isArray(teacher.teacher_family?.children) ? teacher.teacher_family.children : (Array.isArray(normalizedData.teacher_family?.children) ? normalizedData.teacher_family.children : [])
+            numberOfChildren: teacher.teacherFamily?.numberOfChildren || teacher.teacher_family?.number_of_children || normalizedData.teacherFamily?.numberOfChildren || normalizedData.teacher_family?.number_of_children || '',
+            children: Array.isArray(teacher.teacherFamily?.children) ? teacher.teacherFamily.children : (Array.isArray(teacher.teacher_family?.children) ? teacher.teacher_family.children : (Array.isArray(normalizedData.teacherFamily?.children) ? normalizedData.teacherFamily.children : (Array.isArray(normalizedData.teacher_family?.children) ? normalizedData.teacher_family.children : [])))
           },
           // Legacy fields for backward compatibility
           provinceId: normalizedData.residence?.provinceId || normalizedData.province_id || '',
@@ -706,9 +725,8 @@ export default function ProfileUpdate({ user, setUser }) {
         setFormData(newFormData);
         setOriginalUsername(newFormData.username || '');
         setOriginalEmail(newFormData.email || '');
-        setOriginalTeacherNumber(newFormData.teacher_number || '');
+        setOriginalTeacherNumber(newFormData.teacherNumber || '');
         setTeacherNumberAvailable(null);
-        console.log('User data loaded into form, keys present:', Object.keys(newFormData).filter(k => newFormData[k]));
 
         // Fetch officer data separately if not included in user response
         if (!newFormData.provincialOfficer && !newFormData.districtOfficer && !newFormData.communeOfficer) {
@@ -734,8 +752,8 @@ export default function ProfileUpdate({ user, setUser }) {
         }
 
         // Fetch salary type name if salary type ID and employment type exist
-        const currentEmploymentType = newFormData.employment_type;
-        const currentSalaryTypeId = newFormData.salary_type;
+        const currentEmploymentType = newFormData.employmentType;
+        const currentSalaryTypeId = newFormData.salaryType;
 
         if (currentSalaryTypeId && currentEmploymentType) {
           try {
@@ -745,7 +763,7 @@ export default function ProfileUpdate({ user, setUser }) {
               if (selectedSalaryType) {
                 setFormData(prev => ({
                   ...prev,
-                  salary_type_name: selectedSalaryType.name
+                  salaryTypeName: selectedSalaryType.name
                 }));
               }
             }
@@ -1020,8 +1038,8 @@ export default function ProfileUpdate({ user, setUser }) {
 
   // Calculate BMI
   const calculateBMI = () => {
-    const weight = parseFloat(formData.weight_kg);
-    const height = parseFloat(formData.height_cm);
+    const weight = parseFloat(formData.weightKg);
+    const height = parseFloat(formData.heightCm);
 
     if (!weight || !height || weight <= 0 || height <= 0) {
       return null;
@@ -1105,24 +1123,24 @@ export default function ProfileUpdate({ user, setUser }) {
         personalInfo: {
           username: formData.username,
           email: formData.email,
-          firstName: formData.first_name,
-          lastName: formData.last_name,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
           fullName: formData.fullname,
           gender: formData.gender,
           phone: formData.phone,
-          dateOfBirth: formData.date_of_birth,
+          dateOfBirth: formData.dateOfBirth,
           nationality: formData.nationality
         },
         teacherInfo: {
           role: formData.roleNameKh,
-          teacherNumber: formData.teacher_number,
-          employmentType: formData.employment_type,
-          hireDate: formData.hire_date,
+          teacherNumber: formData.teacherNumber,
+          employmentType: formData.employmentType,
+          hireDate: formData.hireDate,
           gradeLevel: formData.gradeLevel
         },
         healthInfo: {
-          weight: formData.weight_kg,
-          height: formData.height_cm,
+          weight: formData.weightKg,
+          height: formData.heightCm,
           bmi: calculateBMI()
         },
         locationInfo: {
@@ -1130,7 +1148,7 @@ export default function ProfileUpdate({ user, setUser }) {
           placeOfBirth: formData.placeOfBirth
         },
         additionalInfo: {
-          ethnicity: formData.ethnic_group,
+          ethnicity: formData.ethnicGroup,
           accessibility: formData.accessibility
         },
         downloadedAt: new Date().toISOString()
@@ -1712,9 +1730,9 @@ export default function ProfileUpdate({ user, setUser }) {
   };
 
   const isWeightInvalid = () => {
-    const { weight_kg } = formData;
-    if (!weight_kg) return false;
-    const weightStr = String(weight_kg).trim();
+    const { weightKg } = formData;
+    if (!weightKg) return false;
+    const weightStr = String(weightKg).trim();
     const weightRegex = /^[0-9]{1,3}(\.[0-9]{1,2})?$/; // numeric(5,2)
     if (!weightRegex.test(weightStr)) return true;
     const w = parseFloat(weightStr);
@@ -1722,9 +1740,9 @@ export default function ProfileUpdate({ user, setUser }) {
   };
 
   const isHeightInvalid = () => {
-    const { height_cm } = formData;
-    if (!height_cm) return false;
-    const heightStr = String(height_cm).trim();
+    const { heightCm } = formData;
+    if (!heightCm) return false;
+    const heightStr = String(heightCm).trim();
     const heightRegex = /^[0-9]{1,3}(\.[0-9])?$/; // numeric(4,1)
     if (!heightRegex.test(heightStr)) return true;
     const h = parseFloat(heightStr);
@@ -1747,33 +1765,33 @@ export default function ProfileUpdate({ user, setUser }) {
 
   const isProfileSubmitDisabled =
     loading ||
-    !formData.first_name?.trim() ||
-    !formData.last_name?.trim() ||
+    !formData.firstName?.trim() ||
+    !formData.lastName?.trim() ||
     !formData.gender ||
-    !formData.date_of_birth ||
+    !formData.dateOfBirth ||
     !formData.nationality ||
     !formData.username?.trim() ||
     usernameAvailable === false ||
     (formData.email?.trim() && emailAvailable === false) ||
     (formData.email?.trim() && emailAvailable === null && (formData.email || '') !== (originalEmail || '')) ||
-    (formData.teacher_number?.trim() && teacherNumberAvailable === false) ||
+    (formData.teacherNumber?.trim() && teacherNumberAvailable === false) ||
     isPhysicalInvalid();
 
   const buildTeacherFamilyPayload = () => {
-    const tf = formData.teacher_family || {};
+    const tf = formData.teacherFamily || {};
     const rawChildren = Array.isArray(tf.children) ? tf.children : [];
 
-    const numberOfChildrenRaw = tf.number_of_children;
+    const numberOfChildrenRaw = tf.numberOfChildren || tf.number_of_children;
     const parsedNumber =
       numberOfChildrenRaw === '' || numberOfChildrenRaw === null || numberOfChildrenRaw === undefined
         ? undefined
         : parseInt(numberOfChildrenRaw, 10);
 
     const cleanedChildren = rawChildren
-      .map(child => ({ child_name: (child?.child_name || '').trim() }))
-      .filter(child => child.child_name);
+      .map(child => ({ childName: (child?.childName || child?.child_name || '').trim() }))
+      .filter(child => child.childName);
 
-    // Align children array with number_of_children
+    // Align children array with numberOfChildren
     let effectiveChildren = cleanedChildren;
 
     if (typeof parsedNumber === 'number' && !Number.isNaN(parsedNumber)) {
@@ -1785,14 +1803,14 @@ export default function ProfileUpdate({ user, setUser }) {
     }
 
     const payload = {
-      living_status: tf.living_status || undefined,
-      spouse_info: {
-        spouse_name: tf.spouse_info?.spouse_name || undefined,
-        spouse_occupation: tf.spouse_info?.spouse_occupation || undefined,
-        spouse_place_of_birth: tf.spouse_info?.spouse_place_of_birth || undefined,
-        spouse_phone: tf.spouse_info?.spouse_phone || undefined
+      livingStatus: tf.livingStatus || tf.living_status || undefined,
+      spouseInfo: {
+        spouseName: tf.spouseInfo?.spouseName || tf.spouse_info?.spouse_name || undefined,
+        spouseOccupation: tf.spouseInfo?.spouseOccupation || tf.spouse_info?.spouse_occupation || undefined,
+        spousePlaceOfBirth: tf.spouseInfo?.spousePlaceOfBirth || tf.spouse_info?.spouse_place_of_birth || undefined,
+        spousePhone: tf.spouseInfo?.spousePhone || tf.spouse_info?.spouse_phone || undefined
       },
-      number_of_children:
+      numberOfChildren:
         typeof parsedNumber === 'number' && !Number.isNaN(parsedNumber) ? parsedNumber : undefined,
       children: effectiveChildren.length > 0 ? effectiveChildren : undefined
     };
@@ -1826,24 +1844,24 @@ export default function ProfileUpdate({ user, setUser }) {
       const updateData = {
         // Basic Personal Information
         username: formData.username?.trim() || undefined,
-        first_name: formData.first_name?.trim() || undefined,
-        last_name: formData.last_name?.trim() || undefined,
+        firstName: formData.firstName?.trim() || undefined,
+        lastName: formData.lastName?.trim() || undefined,
         email: formData.email?.trim() || undefined,
         phone: formData.phone?.trim() || undefined,
 
         // Date & Identity
-        date_of_birth: formData.date_of_birth || undefined,
+        dateOfBirth: formData.dateOfBirth || undefined,
         gender: formData.gender || undefined,
         nationality: formData.nationality?.trim() || undefined,
-        profile_picture: profilePictureUrl || formData.profile_picture || undefined,
+        profilePicture: profilePictureUrl || formData.profilePicture || undefined,
 
         // Physical Information
-        weight_kg: formData.weight_kg ? parseFloat(formData.weight_kg) : undefined,
-        height_cm: formData.height_cm ? parseFloat(formData.height_cm) : undefined,
+        weightKg: formData.weightKg ? parseFloat(formData.weightKg) : undefined,
+        heightCm: formData.heightCm ? parseFloat(formData.heightCm) : undefined,
         bmi: formData.bmi ? parseFloat(formData.bmi) : undefined,
 
         // Location Information
-        ethnic_group: formData.ethnic_group?.trim() || undefined,
+        ethnicGroup: formData.ethnicGroup?.trim() || undefined,
         residence: {
           provinceId: selectedResidenceProvince || formData.residence?.provinceId || undefined,
           districtId: selectedResidenceDistrict || formData.residence?.districtId || undefined,
@@ -1861,15 +1879,15 @@ export default function ProfileUpdate({ user, setUser }) {
         accessibility: formData.accessibility && formData.accessibility.length > 0 ? formData.accessibility : undefined,
 
         // Teacher-Specific Fields
-        employment_type: formData.employment_type || undefined,
-        salaryTypeId: formData.salary_type ? parseInt(formData.salary_type) : undefined,
-        educationLevel: formData.education_level || undefined,
-        trainingType: formData.training_type || undefined,
-        teachingType: formData.teaching_type || undefined,
-        teacherStatus: formData.teacher_status || undefined,
+        employmentType: formData.employmentType || undefined,
+        salaryTypeId: formData.salaryType ? parseInt(formData.salaryType) : undefined,
+        educationLevel: formData.educationLevel || undefined,
+        trainingType: formData.trainingType || undefined,
+        teachingType: formData.teachingType || undefined,
+        teacherStatus: formData.teacherStatus || undefined,
         subject: formData.subject && formData.subject.length > 0 ? formData.subject : undefined,
         gradeLevel: formData.gradeLevel === null ? null : (formData.gradeLevel?.trim() || undefined),
-        hire_date: formData.hire_date || undefined,
+        hireDate: formData.hireDate || undefined,
         appointed: typeof formData.appointed === 'boolean' ? formData.appointed : undefined,
         burden: typeof formData.burden === 'boolean' ? formData.burden : undefined,
 
@@ -1881,7 +1899,7 @@ export default function ProfileUpdate({ user, setUser }) {
         bookIds: formData.bookIds && formData.bookIds.length > 0 ? formData.bookIds : null,
 
         // Family Information
-        teacher_family: buildTeacherFamilyPayload()
+        teacherFamily: buildTeacherFamilyPayload()
       };
 
       // Add password if provided
@@ -1897,7 +1915,7 @@ export default function ProfileUpdate({ user, setUser }) {
           return acc;
         }
 
-        // For objects (residence, placeOfBirth, teacher_family), only keep if they have at least one defined value
+        // For objects (residence, placeOfBirth, teacherFamily), only keep if they have at least one defined value
         if (typeof updateData[k] === 'object' && updateData[k] !== null) {
           const hasDefinedValue = Object.values(updateData[k]).some(v => v !== undefined && v !== null && v !== '');
           if (hasDefinedValue) {
@@ -1950,32 +1968,32 @@ export default function ProfileUpdate({ user, setUser }) {
         ...prev,
         id: response.id || prev.id,
         username: response.username || prev.username,
-        first_name: response.first_name || prev.first_name,
-        last_name: response.last_name || prev.last_name,
+        firstName: response.firstName || prev.firstName,
+        lastName: response.lastName || prev.lastName,
         email: response.email || prev.email,
         roleId: response.roleId || prev.roleId,
         role: response.role || prev.role,
-        date_of_birth: response.date_of_birth || prev.date_of_birth,
+        dateOfBirth: response.dateOfBirth || prev.dateOfBirth,
         gender: response.gender || prev.gender,
         phone: response.phone || prev.phone,
-        profile_picture: response.profile_picture || prev.profile_picture,
+        profilePicture: response.profilePicture || prev.profilePicture,
         nationality: response.nationality || prev.nationality,
-        weight_kg: response.weight_kg || prev.weight_kg,
-        height_cm: response.height_cm || prev.height_cm,
+        weightKg: response.weightKg || prev.weightKg,
+        heightCm: response.heightCm || prev.heightCm,
         bmi: response.bmi || prev.bmi,
-        teacher_number: response.teacher_number || prev.teacher_number,
+        teacherNumber: response.teacherNumber || prev.teacherNumber,
         // Additional fields - check both top level and nested teacher object
         accessibility: response.accessibility || teacher.accessibility || prev.accessibility,
-        employment_type: response.employment_type || teacher.employment_type || prev.employment_type,
-        ethnic_group: response.ethnic_group || prev.ethnic_group,
+        employmentType: response.employmentType || teacher.employmentType || prev.employmentType,
+        ethnicGroup: response.ethnicGroup || prev.ethnicGroup,
         gradeLevel: response.gradeLevel || teacher.gradeLevel || prev.gradeLevel,
-        hire_date: response.hire_date || teacher.hire_date || prev.hire_date,
-        salary_type: response.salaryTypeId ? String(response.salaryTypeId) : prev.salary_type,
-        salary_type_name: prev.salary_type_name,
-        education_level: response.educationLevel || teacher.educationLevel || prev.education_level,
-        training_type: response.trainingType || teacher.trainingType || prev.training_type,
-        teaching_type: response.teachingType || teacher.teachingType || prev.teaching_type,
-        teacher_status: response.teacherStatus || teacher.teacherStatus || prev.teacher_status,
+        hireDate: response.hireDate || teacher.hireDate || prev.hireDate,
+        salaryType: response.salaryTypeId ? String(response.salaryTypeId) : prev.salaryType,
+        salaryTypeName: prev.salaryTypeName,
+        educationLevel: response.educationLevel || teacher.educationLevel || prev.educationLevel,
+        trainingType: response.trainingType || teacher.trainingType || prev.trainingType,
+        teachingType: response.teachingType || teacher.teachingType || prev.teachingType,
+        teacherStatus: response.teacherStatus || teacher.teacherStatus || prev.teacherStatus,
         subject: Array.isArray(response.subject) ? response.subject : (Array.isArray(teacher.subject) ? teacher.subject : prev.subject),
         appointed: typeof response.appointed === 'boolean' ? response.appointed : (typeof teacher.appointed === 'boolean' ? teacher.appointed : prev.appointed),
         burden: typeof response.burden === 'boolean' ? response.burden : (typeof teacher.burden === 'boolean' ? teacher.burden : prev.burden),
@@ -2009,11 +2027,11 @@ export default function ProfileUpdate({ user, setUser }) {
         const teacher = freshUserData.teacher || {};
         setFormData(prev => ({
           ...prev,
-          profile_picture: freshUserData.profile_picture || prev.profile_picture,
-          employment_type: freshUserData.employment_type || teacher.employment_type || prev.employment_type,
-          ethnic_group: freshUserData.ethnic_group || prev.ethnic_group,
+          profilePicture: freshUserData.profilePicture || prev.profilePicture,
+          employmentType: freshUserData.employmentType || teacher.employmentType || prev.employmentType,
+          ethnicGroup: freshUserData.ethnicGroup || prev.ethnicGroup,
           gradeLevel: freshUserData.gradeLevel || teacher.gradeLevel || prev.gradeLevel,
-          hire_date: freshUserData.hire_date || teacher.hire_date || prev.hire_date,
+          hireDate: freshUserData.hireDate || teacher.hireDate || prev.hireDate,
           accessibility: freshUserData.accessibility || teacher.accessibility || prev.accessibility
         }));
       } catch (refreshError) {
@@ -2077,8 +2095,8 @@ export default function ProfileUpdate({ user, setUser }) {
       }
     }
 
-    // Handle teacher_number validation
-    if (name === 'teacher_number') {
+    // Handle teacherNumber validation
+    if (name === 'teacherNumber') {
       const trimmedTeacherNumber = value?.trim() || '';
 
       // If teacher number is unchanged from the original, treat it as available
@@ -2108,7 +2126,7 @@ export default function ProfileUpdate({ user, setUser }) {
   const handleDateChange = useStableCallback((date) => {
     setFormData(prev => ({
       ...prev,
-      date_of_birth: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : ''
+      dateOfBirth: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : ''
     }));
   }, []);
 
@@ -2204,7 +2222,7 @@ export default function ProfileUpdate({ user, setUser }) {
       try {
         const response = await api.user.uploadProfilePicture(profilePictureFile, userId);
         console.log('Upload successful:', response);
-        return response.profile_picture || response.url || response.path;
+        return response.profilePicture || response.url || response.path;
       } catch (uploadError) {
         console.error('Upload error details:', uploadError);
 
@@ -2239,11 +2257,11 @@ export default function ProfileUpdate({ user, setUser }) {
   };
 
   const validatePhysicalFields = () => {
-    const { weight_kg, height_cm } = formData;
+    const { weightKg, heightCm } = formData;
 
     // Allow empty values (both fields are optional)
-    if (weight_kg) {
-      const weightStr = String(weight_kg).trim();
+    if (weightKg) {
+      const weightStr = String(weightKg).trim();
       const weightRegex = /^[0-9]{1,3}(\.[0-9]{1,2})?$/; // numeric(5,2)
       if (!weightRegex.test(weightStr)) {
         showError(
@@ -2266,8 +2284,8 @@ export default function ProfileUpdate({ user, setUser }) {
       }
     }
 
-    if (height_cm) {
-      const heightStr = String(height_cm).trim();
+    if (heightCm) {
+      const heightStr = String(heightCm).trim();
       const heightRegex = /^[0-9]{1,3}(\.[0-9])?$/; // numeric(4,1)
       if (!heightRegex.test(heightStr)) {
         showError(
@@ -2329,11 +2347,11 @@ export default function ProfileUpdate({ user, setUser }) {
       showError(t('usernameRequired'));
       return false;
     }
-    if (!formData.first_name.trim()) {
+    if (!formData.firstName.trim()) {
       showError(t('firstNameRequired'));
       return false;
     }
-    if (!formData.last_name.trim()) {
+    if (!formData.lastName.trim()) {
       showError(t('lastNameRequired'));
       return false;
     }
@@ -2597,7 +2615,7 @@ export default function ProfileUpdate({ user, setUser }) {
       </Tabs>
 
       {/* Image Modal */}
-      {showImageModal && formData.profile_picture && (
+      {showImageModal && formData.profilePicture && (
         <div
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
           onClick={() => setShowImageModal(false)}
@@ -2612,7 +2630,7 @@ export default function ProfileUpdate({ user, setUser }) {
               <X className="w-6 h-6" />
             </Button>
             <img
-              src={utils.user.getProfilePictureUrl({ profile_picture: formData.profile_picture })}
+              src={utils.user.getProfilePictureUrl({ profilePicture: formData.profilePicture })}
               alt="Profile"
               className="max-w-full max-h-full object-contain"
               onClick={(e) => e.stopPropagation()}
