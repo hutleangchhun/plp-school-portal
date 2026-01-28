@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, ArrowRightLeft, MinusCircle, Trash2, Users } from 'lucide-react';
+import { User, ArrowRightLeft, MinusCircle, Users } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Button } from '../ui/Button';
 import Modal from '../ui/Modal';
@@ -82,21 +82,11 @@ const StudentActionsModal = ({
     }
   }, [isOpen, classes]);
 
-  // Get unique grade levels from all available classes
+  // Get all grade level options from formOptions
   const getGradeLevelOptionsFiltered = () => {
-    const uniqueLevels = new Set();
-    classes.forEach(cls => {
-      if (cls.gradeLevel) {
-        uniqueLevels.add(String(cls.gradeLevel));
-      }
-    });
-
-    // Filter gradeLevelOptions to only include levels present in available classes
-    const availableOptions = gradeLevelOptions.filter(opt => uniqueLevels.has(opt.value));
-
     return [
       { value: 'all', label: t('allGradeLevels', 'All Grade Levels') },
-      ...availableOptions
+      ...gradeLevelOptions
     ];
   };
 
@@ -224,6 +214,7 @@ const StudentActionsModal = ({
                 placeholder={t('chooseGradeLevel', 'Choose grade level...')}
                 minWidth="w-full"
                 disabled={loadingClasses}
+                maxHeight="max-h-[250px]"
               />
             </div>
 
