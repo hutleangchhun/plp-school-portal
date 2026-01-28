@@ -214,11 +214,10 @@ const SchoolLookup = () => {
     setSelectedSchool('');
     setShowUsers(false);
     setUsers([]);
+    setSchools([]); // Clear schools first
 
     if (districtCode) {
       loadSchools(districtCode);
-    } else {
-      setSchools([]);
     }
   };
 
