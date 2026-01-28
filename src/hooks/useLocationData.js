@@ -175,7 +175,10 @@ export const useLocationData = (initialValues = {}) => {
 
 
   const loadDistricts = useStableCallback(async (provinceId) => {
+    if (!provinceId) return [];
+
     console.log(`[useLocationData] loadDistricts(${provinceId}) - cache:`, !!districtsCache[provinceId], 'promise:', !!districtPromises[provinceId]);
+
     // Check cache first
     if (districtsCache[provinceId]) {
       console.log(`[useLocationData] Using cached districts for province ${provinceId}`);
@@ -188,14 +191,14 @@ export const useLocationData = (initialValues = {}) => {
         originalData: district
       }));
       setDistricts(formattedDistricts);
-      return;
+      return formattedDistricts;
     }
 
     // Check if already fetching
     if (districtPromises[provinceId]) {
       try {
         await districtPromises[provinceId];
-        // Recursively call to use cache
+        // Now it should be in cache
         return loadDistricts(provinceId);
       } catch {
         // Continue with new request
@@ -205,13 +208,11 @@ export const useLocationData = (initialValues = {}) => {
     setLoadingDistricts(true);
     try {
       // Create and store promise immediately to prevent race conditions
-      // This ensures simultaneous calls to the same province share the same request
       if (!districtPromises[provinceId]) {
         console.log(`[useLocationData] Making API call for districts in province ${provinceId}`);
         districtPromises[provinceId] = locationService.getDistrictsByProvince(provinceId);
-      } else {
-        console.log(`[useLocationData] Reusing existing promise for districts in province ${provinceId}`);
       }
+
       const data = await districtPromises[provinceId];
 
       // Cache the raw data
@@ -227,16 +228,15 @@ export const useLocationData = (initialValues = {}) => {
       }));
       setDistricts(formattedDistricts);
       notifyDistricts(provinceId, formattedDistricts);
+      return formattedDistricts;
     } catch (error) {
       console.error('Error loading districts:', error);
       showError(t('errorFetchingData'));
       districtsCache[provinceId] = [];
-      // Clear promise on error so next call retries
       districtPromises[provinceId] = null;
+      return [];
     } finally {
       setLoadingDistricts(false);
-      // Don't clear promise - keep it for subsequent calls to reuse
-      // This ensures multiple rapid calls to the same province use the same API request
     }
   }, [showError, t]);
 
@@ -278,15 +278,22 @@ export const useLocationData = (initialValues = {}) => {
   // Track if we've already initiated a fetch for this component instance (to prevent Strict Mode doubles)
   const communesFetchInitiatedRef = useRef(false);
 
-  const loadCommunes = useCallback(async () => {
-    if (!selectedProvinceData || !selectedDistrictData) return;
+  const loadCommunes = useCallback(async (provinceId, districtId) => {
+    const pId = provinceId || selectedProvinceData?.id;
+    const dId = districtId || selectedDistrictData?.id;
 
-    const cacheKey = `${selectedProvinceData.id}-${selectedDistrictData.id}`;
+    if (!pId || !dId) return [];
+
+    const cacheKey = `${pId}-${dId}`;
 
     // Prevent Strict Mode from triggering duplicate fetches
-    if (communesFetchInitiatedRef.current) {
+    if (communesFetchInitiatedRef.current && !provinceId) {
       console.log(`[useLocationData] loadCommunes(${cacheKey}) already initiated - skipping (Strict Mode)`);
-      return;
+      return communesCache[cacheKey] ? communesCache[cacheKey].map(c => ({
+        value: c.id.toString(),
+        label: c.communeNameKh || c.commune_name_kh || c.commune_name_en || `Commune ${c.id}`,
+        originalData: c
+      })) : [];
     }
 
     console.log(`[useLocationData] loadCommunes(${cacheKey}) - cache:`, !!communesCache[cacheKey], 'promise:', !!communePromises[cacheKey]);
@@ -303,33 +310,27 @@ export const useLocationData = (initialValues = {}) => {
         originalData: commune
       }));
       setCommunes(formattedCommunes);
-      return;
+      return formattedCommunes;
     }
 
     // Check if already fetching
     if (communePromises[cacheKey]) {
       try {
         await communePromises[cacheKey];
-        return loadCommunes();
+        return loadCommunes(provinceId, districtId);
       } catch {
         // Continue with new request
       }
     }
 
-    communesFetchInitiatedRef.current = true;
+    if (!provinceId) communesFetchInitiatedRef.current = true;
     setLoadingCommunes(true);
     try {
-      // Create and store promise immediately to prevent race conditions
-      // This ensures simultaneous calls to the same district use the same request
       if (!communePromises[cacheKey]) {
         console.log(`[useLocationData] Making API call for communes in ${cacheKey}`);
-        communePromises[cacheKey] = locationService.getCommunesByDistrict(
-          selectedProvinceData.id,
-          selectedDistrictData.id
-        );
-      } else {
-        console.log(`[useLocationData] Reusing existing promise for communes in ${cacheKey}`);
+        communePromises[cacheKey] = locationService.getCommunesByDistrict(pId, dId);
       }
+
       const data = await communePromises[cacheKey];
 
       // Cache the raw data
@@ -345,14 +346,15 @@ export const useLocationData = (initialValues = {}) => {
       }));
       setCommunes(formattedCommunes);
       notifyCommunes(cacheKey, formattedCommunes);
+      return formattedCommunes;
     } catch (error) {
       console.error('Error loading communes:', error);
       showError(t('errorFetchingData'));
       communesCache[cacheKey] = [];
+      communePromises[cacheKey] = null;
+      return [];
     } finally {
       setLoadingCommunes(false);
-      // Don't clear promise - keep it for subsequent calls to reuse
-      // This ensures multiple rapid calls to the same district use the same API request
     }
   }, [selectedProvinceData, selectedDistrictData, showError, t]);
 
@@ -374,15 +376,23 @@ export const useLocationData = (initialValues = {}) => {
   // Track if we've already initiated a fetch for villages (to prevent Strict Mode doubles)
   const villagesFetchInitiatedRef = useRef(false);
 
-  const loadVillages = useCallback(async () => {
-    if (!selectedProvinceData || !selectedDistrictData || !selectedCommuneData) return;
+  const loadVillages = useCallback(async (provinceId, districtId, communeId) => {
+    const pId = provinceId || selectedProvinceData?.id;
+    const dId = districtId || selectedDistrictData?.id;
+    const cId = communeId || selectedCommuneData?.id;
 
-    const cacheKey = `${selectedProvinceData.id}-${selectedDistrictData.id}-${selectedCommuneData.id}`;
+    if (!pId || !dId || !cId) return [];
+
+    const cacheKey = `${pId}-${dId}-${cId}`;
 
     // Prevent Strict Mode from triggering duplicate fetches
-    if (villagesFetchInitiatedRef.current) {
+    if (villagesFetchInitiatedRef.current && !provinceId) {
       console.log(`[useLocationData] loadVillages(${cacheKey}) already initiated - skipping (Strict Mode)`);
-      return;
+      return villagesCache[cacheKey] ? villagesCache[cacheKey].map(v => ({
+        value: v.id.toString(),
+        label: v.villageNameKh || v.village_name_kh || v.village_name_en || `Village ${v.id}`,
+        originalData: v
+      })) : [];
     }
 
     console.log(`[useLocationData] loadVillages(${cacheKey}) - cache:`, !!villagesCache[cacheKey], 'promise:', !!villagePromises[cacheKey]);
@@ -399,34 +409,27 @@ export const useLocationData = (initialValues = {}) => {
         originalData: village
       }));
       setVillages(formattedVillages);
-      return;
+      return formattedVillages;
     }
 
     // Check if already fetching
     if (villagePromises[cacheKey]) {
       try {
         await villagePromises[cacheKey];
-        return loadVillages();
+        return loadVillages(provinceId, districtId, communeId);
       } catch {
         // Continue with new request
       }
     }
 
-    villagesFetchInitiatedRef.current = true;
+    if (!provinceId) villagesFetchInitiatedRef.current = true;
     setLoadingVillages(true);
     try {
-      // Create and store promise immediately to prevent race conditions
-      // This ensures simultaneous calls to the same commune use the same request
       if (!villagePromises[cacheKey]) {
         console.log(`[useLocationData] Making API call for villages in ${cacheKey}`);
-        villagePromises[cacheKey] = locationService.getVillagesByCommune(
-          selectedProvinceData.id,
-          selectedDistrictData.id,
-          selectedCommuneData.id
-        );
-      } else {
-        console.log(`[useLocationData] Reusing existing promise for villages in ${cacheKey}`);
+        villagePromises[cacheKey] = locationService.getVillagesByCommune(pId, dId, cId);
       }
+
       const data = await villagePromises[cacheKey];
 
       // Cache the raw data
@@ -442,14 +445,15 @@ export const useLocationData = (initialValues = {}) => {
       }));
       setVillages(formattedVillages);
       notifyVillages(cacheKey, formattedVillages);
+      return formattedVillages;
     } catch (error) {
       console.error('Error loading villages:', error);
       showError(t('errorFetchingData'));
       villagesCache[cacheKey] = [];
+      villagePromises[cacheKey] = null;
+      return [];
     } finally {
       setLoadingVillages(false);
-      // Don't clear promise - keep it for subsequent calls to reuse
-      // This ensures multiple rapid calls to the same commune use the same API request
     }
   }, [selectedProvinceData, selectedDistrictData, selectedCommuneData, showError, t]);
 
@@ -580,10 +584,8 @@ export const useLocationData = (initialValues = {}) => {
 
   // Set initial values from props with optimized parallel loading
   const setInitialValues = useCallback(async (values) => {
-    // Wait for provinces to load if they haven't yet (this handles the case where setInitialValues is called before provinces are loaded)
     let provincesList = provinces;
     if (provincesList.length === 0 && provincesCache) {
-      // Use cache if available while waiting for state to update
       const formattedProvinces = provincesCache.map(province => ({
         value: province.id.toString(),
         label: language === 'km'
@@ -597,39 +599,25 @@ export const useLocationData = (initialValues = {}) => {
       provincesList = formattedProvinces;
     }
 
-    // Skip if provinces haven't loaded yet
     if (provincesList.length === 0) return;
-
     if (!values.provinceId) return;
 
     const provinceId = values.provinceId.toString();
     setSelectedProvince(provinceId);
 
-    // Set provinces list in state so dropdown displays them
     if (provinces.length === 0 && provincesList.length > 0) {
       setProvinces(provincesList);
     }
 
-    // Find and set province data
     const provinceData = provincesList.find(p => p.value === provinceId);
     if (!provinceData) return;
 
     setSelectedProvinceData(provinceData.originalData);
 
     try {
-      // Always load districts first
-      const districtData = await locationService.getDistrictsByProvince(values.provinceId);
-      const formattedDistricts = Array.isArray(districtData) ? districtData.map(district => ({
-        value: district.id.toString(),
-        label: district.districtNameKh || district.district_name_kh || district.district_name_en || `District ${district.id}`,
-        labelKh: district.districtNameKh || district.district_name_kh,
-        labelEn: district.district_name_en,
-        code: district.districtCode || district.district_code,
-        originalData: district
-      })) : [];
-      setDistricts(formattedDistricts);
+      // Use loadDistricts instead of direct API call to share promise cache
+      const formattedDistricts = await loadDistricts(values.provinceId);
 
-      // Set district if provided
       if (values.districtId) {
         const districtId = values.districtId.toString();
         setSelectedDistrict(districtId);
@@ -638,68 +626,25 @@ export const useLocationData = (initialValues = {}) => {
         if (districtDataObj) {
           setSelectedDistrictData(districtDataObj.originalData);
 
-          // Prepare parallel API calls for communes and villages if we have all required data
-          const apiCalls = [];
+          // Use loadCommunes to share promise cache
+          const formattedCommunes = await loadCommunes(values.provinceId, districtDataObj.originalData.id);
 
-          // Load communes if commune or village is provided
-          if (values.communeId || values.villageId) {
-            const communeCall = locationService.getCommunesByDistrict(
-              values.provinceId,
-              districtDataObj.originalData.id
-            ).then(communeData => {
-              const formattedCommunes = Array.isArray(communeData) ? communeData.map(commune => ({
-                value: commune.id.toString(),
-                label: commune.communeNameKh || commune.commune_name_kh || commune.commune_name_en || `Commune ${commune.id}`,
-                labelKh: commune.communeNameKh || commune.commune_name_kh,
-                labelEn: commune.commune_name_en,
-                code: commune.communeCode || commune.commune_code,
-                originalData: commune
-              })) : [];
-              setCommunes(formattedCommunes);
+          if (values.communeId) {
+            const communeId = values.communeId.toString();
+            setSelectedCommune(communeId);
 
-              if (values.communeId) {
-                const communeId = values.communeId.toString();
-                setSelectedCommune(communeId);
+            const communeDataObj = formattedCommunes.find(c => c.value === communeId);
+            if (communeDataObj) {
+              setSelectedCommuneData(communeDataObj.originalData);
 
-                const communeDataObj = formattedCommunes.find(c => c.value === communeId);
-                if (communeDataObj) {
-                  setSelectedCommuneData(communeDataObj.originalData);
-                  return communeDataObj.originalData;
-                }
-              }
-              return null;
-            });
-            apiCalls.push(communeCall);
-          }
-
-          // Execute API calls in parallel
-          if (apiCalls.length > 0) {
-            const [communeDataObj] = await Promise.all(apiCalls);
-
-            // Load villages if provided and we have commune data
-            if (values.villageId && communeDataObj) {
-              try {
-                const villageData = await locationService.getVillagesByCommune(
+              // Use loadVillages to share promise cache
+              if (values.villageId) {
+                await loadVillages(
                   values.provinceId,
                   districtDataObj.originalData.id,
-                  communeDataObj.id
+                  communeDataObj.originalData.id
                 );
-                const formattedVillages = Array.isArray(villageData) ? villageData.map(village => ({
-                  value: village.id.toString(),
-                  label: village.villageNameKh || village.village_name_kh || village.village_name_en || `Village ${village.id}`,
-                  labelKh: village.villageNameKh || village.village_name_kh,
-                  labelEn: village.village_name_en,
-                  code: village.villageCode || village.village_code,
-                  originalData: village
-                })) : [];
-                setVillages(formattedVillages);
-
-                if (values.villageId) {
-                  const villageId = values.villageId.toString();
-                  setSelectedVillage(villageId);
-                }
-              } catch (error) {
-                console.error('Error loading initial villages:', error);
+                setSelectedVillage(values.villageId.toString());
               }
             }
           }
@@ -708,7 +653,7 @@ export const useLocationData = (initialValues = {}) => {
     } catch (error) {
       console.error('Error loading initial location data:', error);
     }
-  }, [provinces]);
+  }, [provinces, loadDistricts, loadCommunes, loadVillages, language]);
 
   return {
     // Data

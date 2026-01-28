@@ -74,8 +74,8 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
     if (!student.ethnic_group && !student.ethnicGroup) missingFields.push(t('ethnicGroup', 'Ethnic Group'));
 
     // Health information
-    if (!student.weight_kg) missingFields.push(t('weight', 'Weight'));
-    if (!student.height_cm) missingFields.push(t('height', 'Height'));
+    if (!student.weight_kg && !student.weightKg && !student.weight) missingFields.push(t('weight', 'Weight'));
+    if (!student.height_cm && !student.heightCm && !student.height) missingFields.push(t('height', 'Height'));
 
     // Address information
     if (!student.residence) missingFields.push(t('currentResidence', 'Residence Information'));
@@ -162,17 +162,17 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
               <InfoItem
                 icon={User}
                 label={t('firstName', 'First Name')}
-                value={student.first_name || student.firstName || getEmptyDisplay()}
+                value={student.firstName || student.first_name || getEmptyDisplay()}
               />
               <InfoItem
                 icon={User}
                 label={t('lastName', 'Last Name')}
-                value={student.last_name || student.lastName || getEmptyDisplay()}
+                value={student.lastName || student.last_name || getEmptyDisplay()}
               />
               <InfoItem
                 icon={Calendar}
                 label={t('dateOfBirth', 'Date of Birth')}
-                value={formatDate(student.date_of_birth || student.dateOfBirth)}
+                value={formatDate(student.dateOfBirth || student.date_of_birth)}
               />
               <InfoItem
                 icon={User}
@@ -187,7 +187,7 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
               <InfoItem
                 icon={User}
                 label={t('ethnicGroup', 'Ethnic Group')}
-                value={student.ethnic_group || student.ethnicGroup || getEmptyDisplay()}
+                value={student.ethnicGroup || student.ethnic_group || getEmptyDisplay()}
               />
             </div>
           </div>
@@ -238,24 +238,27 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <InfoItem
                 label={t('studentNumber', 'Student Number')}
-                value={student.student.studentNumber || getEmptyDisplay()}
+                value={student.student?.studentNumber || student.studentNumber || getEmptyDisplay()}
               />
               <InfoItem
                 label={t('gradeLevel', 'Grade Level')}
-                value={student.student.gradeLevel || getEmptyDisplay()}
+                value={student.student?.gradeLevel || student.gradeLevel || getEmptyDisplay()}
               />
               <InfoItem
                 label={t('academicYear', 'Academic Year')}
-                value={student.student.academicYear || getEmptyDisplay()}
+                value={student.student?.academicYear || student.academicYear || getEmptyDisplay()}
               />
               <InfoItem
                 label={t('isKindergartener', 'Is Kindergartener')}
-                value={student.student.isKidgardener ? t('yes', 'Yes') : t('no', 'No')}
+                value={(student.student?.isKidgardener || student.isKidgardener || student.is_kidgardener) ? t('yes', 'Yes') : t('no', 'No')}
               />
-              {student.student.poorCard_grade && (
+              {(student.student?.poorCardGrade || student.student?.poorCard_grade || student.poorCardGrade || student.poorCard_grade) && (
                 <InfoItem
                   label={t('poorCardGrade', 'Poor Card Grade')}
-                  value={student.student.poorCard_grade === '1' ? 'កម្រិត 1' : student.student.poorCard_grade === '2' ? 'កម្រិត 2' : student.student.poorCard_grade}
+                  value={(() => {
+                    const grade = student.student?.poorCardGrade || student.student?.poorCard_grade || student.poorCardGrade || student.poorCard_grade;
+                    return grade === '1' ? 'កម្រិត 1' : grade === '2' ? 'កម្រិត 2' : grade;
+                  })()}
                 />
               )}
             </div>
@@ -466,17 +469,17 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {(student.weight_kg || student.height_cm) && (
+              {(student.weightKg || student.weight_kg || student.weight || student.heightCm || student.height_cm || student.height) && (
                 <>
                   <InfoItem
                     icon={Weight}
                     label={t('weight', 'Weight (kg)')}
-                    value={student.weight_kg ? `${student.weight_kg} kg` : getEmptyDisplay()}
+                    value={(student.weightKg || student.weight_kg || student.weight) ? `${student.weightKg || student.weight_kg || student.weight} kg` : getEmptyDisplay()}
                   />
                   <InfoItem
                     icon={Ruler}
                     label={t('height', 'Height (cm)')}
-                    value={student.height_cm ? `${student.height_cm} cm` : getEmptyDisplay()}
+                    value={(student.heightCm || student.height_cm || student.height) ? `${student.heightCm || student.height_cm || student.height} cm` : getEmptyDisplay()}
                   />
                 </>
               )}
@@ -554,27 +557,19 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <InfoItem
                 label={t('province', 'Province')}
-                value={student.residence.province
-                  ? `${student.residence.province.province_name_kh}`
-                  : getEmptyDisplay()}
+                value={student.residence?.province?.provinceNameKh || student.residence?.province?.province_name_kh || getEmptyDisplay()}
               />
               <InfoItem
                 label={t('district', 'District')}
-                value={student.residence.district
-                  ? `${student.residence.district.district_name_kh}`
-                  : getEmptyDisplay()}
+                value={student.residence?.district?.districtNameKh || student.residence?.district?.district_name_kh || getEmptyDisplay()}
               />
               <InfoItem
                 label={t('commune', 'Commune')}
-                value={student.residence.commune
-                  ? `${student.residence.commune.commune_name_kh}`
-                  : getEmptyDisplay()}
+                value={student.residence?.commune?.communeNameKh || student.residence?.commune?.commune_name_kh || getEmptyDisplay()}
               />
               <InfoItem
                 label={t('village', 'Village')}
-                value={student.residence.village
-                  ? `${student.residence.village.village_name_kh}`
-                  : getEmptyDisplay()}
+                value={student.residence?.village?.villageNameKh || student.residence?.village?.village_name_kh || getEmptyDisplay()}
               />
             </div>
           </div>
@@ -594,27 +589,19 @@ export default function StudentViewModal({ isOpen, onClose, student }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <InfoItem
                 label={t('province', 'Province')}
-                value={student.placeOfBirth.province
-                  ? `${student.placeOfBirth.province.province_name_kh}`
-                  : getEmptyDisplay()}
+                value={student.placeOfBirth?.province?.provinceNameKh || student.placeOfBirth?.province?.province_name_kh || getEmptyDisplay()}
               />
               <InfoItem
                 label={t('district', 'District')}
-                value={student.placeOfBirth.district
-                  ? `${student.placeOfBirth.district.district_name_kh}`
-                  : getEmptyDisplay()}
+                value={student.placeOfBirth?.district?.districtNameKh || student.placeOfBirth?.district?.district_name_kh || getEmptyDisplay()}
               />
               <InfoItem
                 label={t('commune', 'Commune')}
-                value={student.placeOfBirth.commune
-                  ? `${student.placeOfBirth.commune.commune_name_kh}`
-                  : getEmptyDisplay()}
+                value={student.placeOfBirth?.commune?.communeNameKh || student.placeOfBirth?.commune?.commune_name_kh || getEmptyDisplay()}
               />
               <InfoItem
                 label={t('village', 'Village')}
-                value={student.placeOfBirth.village
-                  ? `${student.placeOfBirth.village.village_name_kh}`
-                  : getEmptyDisplay()}
+                value={student.placeOfBirth?.village?.villageNameKh || student.placeOfBirth?.village?.village_name_kh || getEmptyDisplay()}
               />
             </div>
           </div>

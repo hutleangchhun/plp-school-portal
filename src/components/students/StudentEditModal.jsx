@@ -306,32 +306,32 @@ const StudentEditModal = () => {
         gender: fullData.gender || '',
         dateOfBirth: fullData.dateOfBirth ? new Date(fullData.dateOfBirth) : (fullData.date_of_birth ? new Date(fullData.date_of_birth) : null),
         nationality: fullData.nationality || '',
-        profilePicture: fullData.profile_picture || fullData.profilePicture || '',
+        profilePicture: fullData.profilePicture || fullData.profile_picture || '',
         newPassword: '', // Always empty for security
-        weight: fullData.weight_kg || fullData.weight || '',
-        height: fullData.height_cm || fullData.height || '',
+        weight: fullData.weightKg || fullData.weight_kg || fullData.weight || '',
+        height: fullData.heightCm || fullData.height_cm || fullData.height || '',
         bmi: fullData.bmi || '',
-        ethnicGroup: fullData.ethnic_group || fullData.ethnicGroup || '',
+        ethnicGroup: fullData.ethnicGroup || fullData.ethnic_group || '',
         accessibility: Array.isArray(fullData.accessibility) ? fullData.accessibility : [],
         // Extract academic fields from nested student object (camelCase)
         academicYear: (studentObj.academicYear || fullData.academicYear || ''),
         gradeLevel: (studentObj.gradeLevel || fullData.gradeLevel || ''),
-        isKindergarten: studentObj.isKidgardener !== undefined ? studentObj.isKidgardener : (studentObj.is_kidgardener || fullData.is_kidgardener || fullData.isKindergarten || false),
+        isKindergarten: studentObj.isKidgardener !== undefined ? studentObj.isKidgardener : (studentObj.is_kidgardener || fullData.is_kidgardener || fullData.is_kindergarten || fullData.isKindergarten || false),
         studentNumber: (studentObj.studentNumber || fullData.studentNumber || ''),
         poorCardGrade: (studentObj.poorCardGrade || fullData.poorCard_grade || fullData.poorCardGrade || ''),
         bookIds: Array.isArray(fullData.bookIds) ? fullData.bookIds : [],
         extraLearningTool,
         residence: {
-          provinceId: fullData.residence?.provinceId || fullData.province_id || '',
-          districtId: fullData.residence?.districtId || fullData.district_id || '',
-          communeId: fullData.residence?.communeId || fullData.commune_id || '',
-          villageId: fullData.residence?.villageId || fullData.village_id || ''
+          provinceId: studentObj.residence?.provinceId || fullData.residence?.provinceId || fullData.province_id || '',
+          districtId: studentObj.residence?.districtId || fullData.residence?.districtId || fullData.district_id || '',
+          communeId: studentObj.residence?.communeId || fullData.residence?.communeId || fullData.commune_id || '',
+          villageId: studentObj.residence?.villageId || fullData.residence?.villageId || fullData.village_id || ''
         },
         placeOfBirth: {
-          provinceId: fullData.placeOfBirth?.provinceId || fullData.residence?.provinceId || fullData.province_id || '',
-          districtId: fullData.placeOfBirth?.districtId || fullData.residence?.districtId || fullData.district_id || '',
-          communeId: fullData.placeOfBirth?.communeId || fullData.residence?.communeId || fullData.commune_id || '',
-          villageId: fullData.placeOfBirth?.villageId || fullData.residence?.villageId || fullData.village_id || ''
+          provinceId: studentObj.placeOfBirth?.provinceId || fullData.placeOfBirth?.provinceId || fullData.residence?.provinceId || fullData.province_id || '',
+          districtId: studentObj.placeOfBirth?.districtId || fullData.placeOfBirth?.districtId || fullData.residence?.districtId || fullData.district_id || '',
+          communeId: studentObj.placeOfBirth?.communeId || fullData.placeOfBirth?.communeId || fullData.residence?.communeId || fullData.commune_id || '',
+          villageId: studentObj.placeOfBirth?.villageId || fullData.placeOfBirth?.villageId || fullData.residence?.villageId || fullData.village_id || ''
         }
       });
       setOriginalUsername(initialUsername || '');
@@ -349,7 +349,7 @@ const StudentEditModal = () => {
       });
 
       // Initialize dropdown selections
-      const res = fullData.residence || {};
+      const res = studentObj.residence || fullData.residence || {};
       setResidenceInitialValues({
         provinceId: res.provinceId || fullData.province_id || '',
         districtId: res.districtId || fullData.district_id || '',
@@ -357,7 +357,7 @@ const StudentEditModal = () => {
         villageId: res.villageId || fullData.village_id || ''
       });
 
-      const birth = fullData.placeOfBirth || {};
+      const birth = studentObj.placeOfBirth || fullData.placeOfBirth || {};
       setBirthInitialValues({
         provinceId: birth.provinceId || res.provinceId || fullData.province_id || '',
         districtId: birth.districtId || res.districtId || fullData.district_id || '',
@@ -849,41 +849,51 @@ const StudentEditModal = () => {
         return `${y}-${m}-${day}`;
       };
 
+      const normalizeLocation = (loc) => {
+        if (!loc) return undefined;
+        const normalized = {};
+        if (loc.provinceId) normalized.provinceId = parseInt(loc.provinceId);
+        if (loc.districtId) normalized.districtId = parseInt(loc.districtId);
+        if (loc.communeId) normalized.communeId = parseInt(loc.communeId);
+        if (loc.villageId) normalized.villageId = parseInt(loc.villageId);
+        return Object.keys(normalized).length > 0 ? normalized : undefined;
+      };
+
       const payload = {
-        first_name: editForm.firstName?.trim(),
-        last_name: editForm.lastName?.trim(),
+        firstName: editForm.firstName?.trim(),
+        lastName: editForm.lastName?.trim(),
         email: editForm.email?.trim() || undefined,
         phone: editForm.phone?.trim() || undefined,
-        date_of_birth: formatDate(editForm.dateOfBirth),
+        dateOfBirth: formatDate(editForm.dateOfBirth),
         gender: editForm.gender || undefined,
         nationality: editForm.nationality?.trim() || undefined,
-        profile_picture: editForm.profilePicture || undefined,
-        weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
-        height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
+        profilePicture: editForm.profilePicture || undefined,
+        weightKg: editForm.weight ? parseFloat(editForm.weight) : undefined,
+        heightCm: editForm.height ? parseFloat(editForm.height) : undefined,
         bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
-        ethnic_group: editForm.ethnicGroup?.trim() || undefined,
+        ethnicGroup: editForm.ethnicGroup?.trim() || undefined,
         accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
         academicYear: editForm.academicYear || undefined,
         gradeLevel: editForm.gradeLevel || undefined,
         isKindergarten: editForm.isKindergarten || undefined,
         studentNumber: editForm.studentNumber?.trim() || undefined,
-        poorCard_grade: editForm.poorCardGrade || undefined,
+        poorCardGrade: editForm.poorCardGrade || undefined,
         // Always include bookIds: array when there are items, null when none
         bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
         // Include extraLearningTool with values
         extraLearningTool: editForm.extraLearningTool || undefined,
-        residence: {
-          provinceId: selectedResidenceProvince ? Number(selectedResidenceProvince) : (editForm.residence.provinceId ? Number(editForm.residence.provinceId) : undefined),
-          districtId: selectedResidenceDistrict ? Number(selectedResidenceDistrict) : (editForm.residence.districtId ? Number(editForm.residence.districtId) : undefined),
-          communeId: selectedResidenceCommune ? Number(selectedResidenceCommune) : (editForm.residence.communeId ? Number(editForm.residence.communeId) : undefined),
-          villageId: selectedResidenceVillage ? Number(selectedResidenceVillage) : (editForm.residence.villageId ? Number(editForm.residence.villageId) : undefined),
-        },
-        placeOfBirth: {
-          provinceId: selectedBirthProvince ? Number(selectedBirthProvince) : (editForm.placeOfBirth.provinceId ? Number(editForm.placeOfBirth.provinceId) : undefined),
-          districtId: selectedBirthDistrict ? Number(selectedBirthDistrict) : (editForm.placeOfBirth.districtId ? Number(editForm.placeOfBirth.districtId) : undefined),
-          communeId: selectedBirthCommune ? Number(selectedBirthCommune) : (editForm.placeOfBirth.communeId ? Number(editForm.placeOfBirth.communeId) : undefined),
-          villageId: selectedBirthVillage ? Number(selectedBirthVillage) : (editForm.placeOfBirth.villageId ? Number(editForm.placeOfBirth.villageId) : undefined),
-        }
+        residence: normalizeLocation({
+          provinceId: selectedResidenceProvince || editForm.residence.provinceId,
+          districtId: selectedResidenceDistrict || editForm.residence.districtId,
+          communeId: selectedResidenceCommune || editForm.residence.communeId,
+          villageId: selectedResidenceVillage || editForm.residence.villageId,
+        }),
+        placeOfBirth: normalizeLocation({
+          provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId,
+          districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId,
+          communeId: selectedBirthCommune || editForm.placeOfBirth.communeId,
+          villageId: selectedBirthVillage || editForm.placeOfBirth.villageId,
+        })
       };
 
       // Add password if provided
