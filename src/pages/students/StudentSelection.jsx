@@ -163,7 +163,7 @@ const StudentSelection = () => {
     gender: "",
     dateOfBirth: null, // Date object for DatePicker
     gradeLevel: "",
-    classId: "any", // Filter by class assignment: 'any', 'null', or specific class ID
+    classId: "null", // Default: 'null' for students without class only. User can change to 'all' to see all students (with disabled for those with classId)
     createdAt: null, // Date object for specific creation date
   });
   const [showSelectedStudentsSidebar, setShowSelectedStudentsSidebar] =
@@ -207,8 +207,8 @@ const StudentSelection = () => {
 
         // Get school ID from my-account endpoint (ONLY ONCE HERE)
         const accountData = await userService.getMyAccount();
-        if (!accountData || !accountData.school_id) {
-          console.error("No school_id found in account data:", accountData);
+        if (!accountData) {
+          console.error("No account data returned from API");
           showError(
             t("noSchoolIdFound", "No school ID found for your account")
           );
@@ -218,7 +218,25 @@ const StudentSelection = () => {
           return;
         }
 
-        const fetchedSchoolId = accountData.school_id;
+        // Try multiple possible field names for school_id
+        let fetchedSchoolId =
+          accountData.school_id ||
+          accountData.schoolId ||
+          accountData.school?.id ||
+          accountData.school?.schoolId;
+
+        if (!fetchedSchoolId) {
+          console.error("No school_id found in account data:", accountData);
+          console.log("Available fields in accountData:", Object.keys(accountData));
+          showError(
+            t("noSchoolIdFound", "No school ID found for your account")
+          );
+          setClasses([]);
+          setClassesLoaded(true);
+          fetchingClassesRef.current = false;
+          return;
+        }
+
         console.log("✅ School ID fetched from account:", fetchedSchoolId);
 
         // Set school ID immediately
@@ -351,9 +369,9 @@ const StudentSelection = () => {
       // gradeLevel is sent to API as gradeLevel parameter (only if not 'all')
       if (filters.gradeLevel && filters.gradeLevel !== 'all') filterParams.gradeLevel = filters.gradeLevel;
 
-      // Add class filter
+      // Add class filter - send classId to API (including 'null' for students without class, or 'any' for all)
       if (filters.classId && filters.classId !== "any") {
-        filterParams.classId = filters.classId; // 'null' for no class, or specific class ID
+        filterParams.classId = filters.classId; // 'null' for students without class, or specific class ID
       }
 
       // Add createdAt filter
@@ -670,14 +688,14 @@ const StudentSelection = () => {
                   filters.gender ||
                   filters.dateOfBirth ||
                   filters.gradeLevel !== "" ||
-                  filters.classId !== "any" ||
+                  filters.classId !== "null" ||
                   filters.createdAt) && (
                   <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
                     {(filters.academicYear ? 1 : 0) +
                       (filters.gender ? 1 : 0) +
                       (filters.dateOfBirth ? 1 : 0) +
                       (filters.gradeLevel !== "" ? 1 : 0) +
-                      (filters.classId !== "any" ? 1 : 0) +
+                      (filters.classId !== "null" ? 1 : 0) +
                       (filters.createdAt ? 1 : 0)}
                   </span>
                 )}
@@ -689,13 +707,13 @@ const StudentSelection = () => {
               filters.gender ||
               filters.dateOfBirth ||
               filters.gradeLevel !== "" ||
-              filters.classId !== "any" ||
+              filters.classId !== "null" ||
               filters.createdAt) && (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-blue-900">
                   {t("activeFilters", "Active Filters")}:
                 </span>
-                {filters.classId !== "any" && (
+                {filters.classId !== "null" && (
                   <Badge color="purple" variant="outline" size="sm">
                     {t("class", "Class")}:{" "}
                     {filters.classId === "null"
@@ -776,7 +794,7 @@ const StudentSelection = () => {
             filters.gender ||
             filters.dateOfBirth ||
             filters.gradeLevel !== "" ||
-            filters.classId !== "any" ||
+            filters.classId !== "null" ||
             filters.createdAt
           }
           onClearFilters={() => {
@@ -786,7 +804,7 @@ const StudentSelection = () => {
               gender: "",
               dateOfBirth: null,
               gradeLevel: "",
-              classId: "any",
+              classId: "null",
               createdAt: null,
             });
           }}
@@ -1008,27 +1026,69 @@ const StudentSelection = () => {
               </div>
             ) : students.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
-                {students.map((student) => {
-                  // Check if student has a class assigned
-                  const hasClass = !!(
-                    student.class?.name ||
-                    student.class_name ||
-                    student.class?.id ||
-                    student.class_id
-                  );
-                  const isSelected = actualIsSelected(student.id);
+                {(() => {
+                  // Determine which students to display based on filter
+                  const studentsToDisplay = students.filter((student) => {
+                    const hasClass = !!(
+                      student.class?.name ||
+                      student.class_name ||
+                      student.class?.id ||
+                      student.class?.classId ||
+                      student.class_id ||
+                      student.classId
+                    );
 
-                  return (
-                    <div
-                      key={student.id}
-                      className={`group transition-all duration-150 border rounded-sm p-4 ${
-                        hasClass
-                          ? "bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed"
-                          : isSelected
-                          ? " border-blue-500"
-                          : "hover:bg-gray-50/50 border-gray-100"
-                      }`}
-                    >
+                    // If filter is "null", only show students WITHOUT class
+                    if (filters.classId === "null") {
+                      return !hasClass;
+                    }
+
+                    // If filter is "all" or specific classId, show all students
+                    return true;
+                  });
+
+                  const studentsWithoutClass = students.filter((student) => {
+                    const hasClass = !!(
+                      student.class?.name ||
+                      student.class_name ||
+                      student.class?.id ||
+                      student.class?.classId ||
+                      student.class_id ||
+                      student.classId
+                    );
+                    return !hasClass;
+                  });
+
+                  if (studentsWithoutClass.length < students.length) {
+                    console.log(`📊 Student summary: ${students.length} total students, ${studentsWithoutClass.length} without class, ${students.length - studentsWithoutClass.length} with class`);
+                    console.log(`📋 Displaying: ${studentsToDisplay.length} students (filter: classId=${filters.classId})`);
+                  } else if (students.length > 0) {
+                    console.log(`📊 All ${students.length} students have no class assigned`);
+                  }
+
+                  return studentsToDisplay.map((student) => {
+                    // Check if student has a class assigned
+                    const hasClass = !!(
+                      student.class?.name ||
+                      student.class_name ||
+                      student.class?.id ||
+                      student.class?.classId ||
+                      student.class_id ||
+                      student.classId
+                    );
+                    const isSelected = actualIsSelected(student.id);
+
+                    return (
+                      <div
+                        key={student.id}
+                        className={`group transition-all duration-150 border rounded-sm p-4 ${
+                          hasClass
+                            ? "bg-gray-50 border-gray-200 opacity-50 cursor-not-allowed pointer-events-none"
+                            : isSelected
+                            ? " border-blue-500"
+                            : "hover:bg-gray-50/50 border-gray-100"
+                        }`}
+                      >
                       <div className="flex items-center space-x-4">
                         <div className="flex-shrink-0">
                           <input
@@ -1037,14 +1097,15 @@ const StudentSelection = () => {
                             type="checkbox"
                             className={`h-4 w-4 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 border-gray-300 rounded-sm transition-colors ${
                               hasClass
-                                ? "text-gray-400 cursor-not-allowed"
+                                ? "text-gray-300 cursor-not-allowed bg-gray-200 opacity-60"
                                 : "text-blue-600 cursor-pointer"
                             }`}
-                            checked={isSelected}
+                            checked={isSelected && !hasClass}
                             onChange={() =>
                               !hasClass && actualHandleSelectStudent(student)
                             }
                             disabled={hasClass}
+                            title={hasClass ? "Student already has a class assignment" : ""}
                           />
                         </div>
 
@@ -1130,7 +1191,8 @@ const StudentSelection = () => {
                       </div>
                     </div>
                   );
-                })}
+                  });
+                })()}
               </div>
             ) : (
               <div className="flex items-center justify-center min-h-[400px] p-6">
@@ -1156,7 +1218,7 @@ const StudentSelection = () => {
                     filters.gender ||
                     filters.dateOfBirth ||
                     filters.gradeLevel ||
-                    filters.classId !== "any" ||
+                    filters.classId !== "null" ||
                     filters.createdAt) && (
                     <Button
                       onClick={() =>
@@ -1166,7 +1228,7 @@ const StudentSelection = () => {
                           gender: "",
                           dateOfBirth: null,
                           gradeLevel: "",
-                          classId: "any",
+                          classId: "null",
                           createdAt: null,
                         })
                       }

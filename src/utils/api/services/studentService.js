@@ -867,6 +867,7 @@ export const studentService = {
         search: search.trim()
       };
 
+      // Send classId parameter if provided (including 'null' for students without class)
       if (classId) {
         apiParams.classId = String(classId);
       }
@@ -1039,7 +1040,10 @@ export const studentService = {
       // Handle different API response structures
       const user = student.user || student;
       const classInfo = student.class || {};
-      
+
+      // Extract classId from various possible locations
+      const classIdValue = student.classId || student.class_id;
+
       // Prefer studentId (e.g., student_number) as display id if present
       let finalId = student.student_id || student.studentId;
       
@@ -1097,16 +1101,16 @@ export const studentService = {
         schoolCode: schoolInfo.code,
         school: Object.keys(schoolInfo).length ? schoolInfo : undefined,
         class:
-          student.class === null && !student.class_id && !student.class_name
+          student.class === null && !classIdValue && !student.class_name
             ? null
-            : {
-                id: student.class_id || classInfo.classId || classInfo.id,
-                classId: student.class_id || classInfo.classId || classInfo.id,
+            : classIdValue || classInfo.classId || classInfo.id ? {
+                id: classIdValue || classInfo.classId || classInfo.id,
+                classId: classIdValue || classInfo.classId || classInfo.id,
                 name: student.class_name || classInfo.name,
                 gradeLevel: student.class_grade_level || student.grade_level || classInfo.gradeLevel,
                 section: student.section || classInfo.section,
                 academicYear: student.class_academic_year || student.academic_year || classInfo.academicYear,
-              },
+              } : null,
         averageScore: student.averageScore || 0,
         timeSpent: student.timeSpent || 0,
         scores: student.scores || [],
