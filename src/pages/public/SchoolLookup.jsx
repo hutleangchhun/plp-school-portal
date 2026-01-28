@@ -415,7 +415,7 @@ const SchoolLookup = () => {
                 onValueChange={handleProvinceChange}
                 options={provinces.map((province) => ({
                   value: province.id.toString(),
-                  label: province.provinceNameKh || province.provinceNameEn
+                  label: province.provinceNameEn
                 }))}
                 placeholder={t('selectProvince', 'Select Province')}
                 disabled={loading}
