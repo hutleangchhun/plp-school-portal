@@ -190,7 +190,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
   // Extract nested teacher data if it exists
   const teacherData = displayTeacher.teacher || displayTeacher;
   const schoolData = teacherData.school || displayTeacher.school;
-  const familyData = teacherData.teacher_family || displayTeacher.teacher_family || {};
+  const familyData = teacherData.teacherFamily || teacherData.teacher_family || displayTeacher.teacherFamily || displayTeacher.teacher_family || {};
   const residence = displayTeacher.residence || {};
   const birthPlace = displayTeacher.placeOfBirth || {};
 
@@ -217,12 +217,12 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
   // Helper function to check if personal information exists
   const hasPersonalInfo = () => {
     return !!(
-      displayTeacher.first_name || displayTeacher.firstName ||
-      displayTeacher.last_name || displayTeacher.lastName ||
-      displayTeacher.date_of_birth || displayTeacher.dateOfBirth ||
+      displayTeacher.firstName || displayTeacher.first_name ||
+      displayTeacher.lastName || displayTeacher.last_name ||
+      displayTeacher.dateOfBirth || displayTeacher.date_of_birth ||
       displayTeacher.gender ||
       displayTeacher.nationality ||
-      displayTeacher.ethnic_group || displayTeacher.ethnicGroup
+      displayTeacher.ethnicGroup || displayTeacher.ethnic_group
     );
   };
 
@@ -236,18 +236,18 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
     const missingFields = [];
 
     // Required personal information (support both snake_case and camelCase)
-    if (!displayTeacher.first_name && !displayTeacher.firstName) missingFields.push(t('firstName', 'First Name'));
-    if (!displayTeacher.last_name && !displayTeacher.lastName) missingFields.push(t('lastName', 'Last Name'));
-    if (!displayTeacher.date_of_birth && !displayTeacher.dateOfBirth) missingFields.push(t('dateOfBirth', 'Date of Birth'));
+    if (!displayTeacher.firstName && !displayTeacher.first_name) missingFields.push(t('firstName', 'First Name'));
+    if (!displayTeacher.lastName && !displayTeacher.last_name) missingFields.push(t('lastName', 'Last Name'));
+    if (!displayTeacher.dateOfBirth && !displayTeacher.date_of_birth) missingFields.push(t('dateOfBirth', 'Date of Birth'));
     if (!displayTeacher.gender) missingFields.push(t('gender', 'Gender'));
     if (!displayTeacher.email) missingFields.push(t('email', 'Email'));
     if (!displayTeacher.phone) missingFields.push(t('phone', 'Phone'));
     if (!displayTeacher.nationality) missingFields.push(t('nationality', 'Nationality'));
-    if (!displayTeacher.ethnic_group && !displayTeacher.ethnicGroup) missingFields.push(t('ethnicGroup', 'Ethnic Group'));
+    if (!displayTeacher.ethnicGroup && !displayTeacher.ethnic_group) missingFields.push(t('ethnicGroup', 'Ethnic Group'));
 
     // Employment information
-    if (!teacherData.employment_type && !teacherData.employmentType) missingFields.push(t('employmentType', 'Employment Type'));
-    if (!teacherData.hire_date && !teacherData.hireDate) missingFields.push(t('hireDate', 'Hire Date'));
+    if (!teacherData.employmentType && !teacherData.employment_type) missingFields.push(t('employmentType', 'Employment Type'));
+    if (!teacherData.hireDate && !teacherData.hire_date) missingFields.push(t('hireDate', 'Hire Date'));
 
     return missingFields;
   };
@@ -330,7 +330,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             <InfoItem
               icon={Calendar}
               label={t('dateOfBirth', 'Date of Birth')}
-              value={formatDate(displayTeacher.date_of_birth)}
+              value={formatDate(displayTeacher.dateOfBirth || displayTeacher.date_of_birth)}
             />
             <InfoItem
               icon={User}
@@ -345,7 +345,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             <InfoItem
               icon={User}
               label={t('ethnicGroup', 'Ethnic Group')}
-              value={displayTeacher.ethnic_group || getEmptyDisplay()}
+              value={(displayTeacher.ethnicGroup || displayTeacher.ethnic_group) || getEmptyDisplay()}
             />
           </div>
         </div>
@@ -408,7 +408,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             <InfoItem
               icon={Building}
               label={t('employmentType', 'Employment Type')}
-              value={(teacherData.employment_type || teacherData.employmentType) || getEmptyDisplay()}
+              value={(teacherData.employmentType || teacherData.employment_type) || getEmptyDisplay()}
             />
             <InfoItem
               icon={BookOpen}
@@ -438,7 +438,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
             <InfoItem
               icon={Calendar}
               label={t('hireDate', 'Hire Date')}
-              value={formatDate(teacherData.hire_date || teacherData.hireDate)}
+              value={formatDate(teacherData.hireDate || teacherData.hire_date)}
             />
             <InfoItem
               icon={Hash}
@@ -446,7 +446,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
               value={salaryTypeName || (teacherData.salaryTypeId ? String(teacherData.salaryTypeId) : getEmptyDisplay())}
             />
             {(() => {
-              const rawHireDate = teacherData.hire_date || teacherData.hireDate;
+              const rawHireDate = teacherData.hireDate || teacherData.hire_date;
               const expText = calculateExperience(rawHireDate, {
                 years: t('years', 'years'),
                 months: t('months', 'months'),
@@ -700,7 +700,7 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
         )}
 
         {/* Family Information */}
-        {(familyData && (familyData.living_status || familyData.spouse_info || familyData.number_of_children || (Array.isArray(familyData.children) && familyData.children.length > 0))) && (
+        {(familyData && (familyData.livingStatus || familyData.living_status || familyData.spouseInfo || familyData.spouse_info || familyData.numberOfChildren || familyData.number_of_children || (Array.isArray(familyData.children) && familyData.children.length > 0))) && (
           <div className="border-t pt-4">
             <div className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4 flex items-center justify-start">
               <div className='bg-blue-500 p-2 rounded-sm'>
@@ -714,53 +714,53 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
               <InfoItem
                 icon={User}
                 label={t('maritalStatus', 'Marital Status')}
-                value={familyData.living_status || getEmptyDisplay()}
+                value={(familyData.livingStatus || familyData.living_status) || getEmptyDisplay()}
               />
-              {familyData.living_status === 'រៀបការ' && familyData.spouse_info && (
+              {((familyData.livingStatus || familyData.living_status) === 'រៀបការ' && (familyData.spouseInfo || familyData.spouse_info)) && (
                 <InfoItem
                   icon={User}
                   label={t('partnerName', 'Spouse Name')}
-                  value={familyData.spouse_info.spouse_name || getEmptyDisplay()}
+                  value={(familyData.spouseInfo?.spouseName || familyData.spouse_info?.spouse_name) || getEmptyDisplay()}
                 />
               )}
-              {familyData.living_status === 'រៀបការ' && familyData.spouse_info && (
+              {((familyData.livingStatus || familyData.living_status) === 'រៀបការ' && (familyData.spouseInfo || familyData.spouse_info)) && (
                 <InfoItem
                   icon={Building}
                   label={t('partnerJobPlace', 'Spouse Occupation')}
-                  value={familyData.spouse_info.spouse_occupation || getEmptyDisplay()}
+                  value={(familyData.spouseInfo?.spouseOccupation || familyData.spouse_info?.spouse_occupation) || getEmptyDisplay()}
                 />
               )}
-              {familyData.living_status === 'រៀបការ' && familyData.spouse_info && (
+              {((familyData.livingStatus || familyData.living_status) === 'រៀបការ' && (familyData.spouseInfo || familyData.spouse_info)) && (
                 <InfoItem
                   icon={MapPin}
                   label={t('partnerPlaceOfBirth', 'Spouse Place of Birth')}
-                  value={familyData.spouse_info.spouse_place_of_birth || getEmptyDisplay()}
+                  value={(familyData.spouseInfo?.spousePlaceOfBirth || familyData.spouse_info?.spouse_place_of_birth) || getEmptyDisplay()}
                 />
               )}
-              {familyData.living_status === 'រៀបការ' && familyData.spouse_info && (
+              {((familyData.livingStatus || familyData.living_status) === 'រៀបការ' && (familyData.spouseInfo || familyData.spouse_info)) && (
                 <InfoItem
                   icon={Phone}
                   label={t('partnerPhone', 'Spouse Phone')}
-                  value={familyData.spouse_info.spouse_phone || getEmptyDisplay()}
+                  value={(familyData.spouseInfo?.spousePhone || familyData.spouse_info?.spouse_phone) || getEmptyDisplay()}
                 />
               )}
-              {familyData.living_status !== 'នៅលីវ' && familyData.number_of_children !== undefined && familyData.number_of_children !== null && familyData.number_of_children !== '' && (
+              {(familyData.livingStatus || familyData.living_status) !== 'នៅលីវ' && (familyData.numberOfChildren !== undefined && familyData.numberOfChildren !== null && familyData.numberOfChildren !== '' || familyData.number_of_children !== undefined && familyData.number_of_children !== null && familyData.number_of_children !== '') && (
                 <InfoItem
                   icon={User}
                   label={t('numberOfChildren', 'Number of Children')}
-                  value={String(familyData.number_of_children)}
+                  value={String(familyData.numberOfChildren !== undefined ? familyData.numberOfChildren : familyData.number_of_children)}
                 />
               )}
             </div>
 
-            {familyData.living_status !== 'នៅលីវ' && Array.isArray(familyData.children) && familyData.children.length > 0 && (
+            {(familyData.livingStatus || familyData.living_status) !== 'នៅលីវ' && Array.isArray(familyData.children) && familyData.children.length > 0 && (
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {familyData.children.map((child, index) => (
                   <InfoItem
                     key={index}
                     icon={User}
                     label={`${t('childName', 'Child Name')} ${index + 1}`}
-                    value={child.child_name || ''}
+                    value={child.childName || child.child_name || ''}
                   />
                 ))}
               </div>
@@ -783,22 +783,22 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
               <InfoItem
                 icon={MapPin}
                 label={t('province', 'Province')}
-                value={residence.province?.province_name_kh || residence.province?.province_name_en || getEmptyDisplay()}
+                value={residence.province?.provinceNameKh || residence.province?.province_name_kh || residence.province?.provinceNameEn || residence.province?.province_name_en || getEmptyDisplay()}
               />
               <InfoItem
                 icon={MapPin}
                 label={t('district', 'District')}
-                value={residence.district?.district_name_kh || residence.district?.district_name_en || getEmptyDisplay()}
+                value={residence.district?.districtNameKh || residence.district?.district_name_kh || residence.district?.districtNameEn || residence.district?.district_name_en || getEmptyDisplay()}
               />
               <InfoItem
                 icon={MapPin}
                 label={t('commune', 'Commune')}
-                value={residence.commune?.commune_name_kh || residence.commune?.commune_name_en || getEmptyDisplay()}
+                value={residence.commune?.communeNameKh || residence.commune?.commune_name_kh || residence.commune?.communeNameEn || residence.commune?.commune_name_en || getEmptyDisplay()}
               />
               <InfoItem
                 icon={MapPin}
                 label={t('village', 'Village')}
-                value={residence.village?.village_name_kh || residence.village?.village_name_en || getEmptyDisplay()}
+                value={residence.village?.villageNameKh || residence.village?.village_name_kh || residence.village?.villageNameEn || residence.village?.village_name_en || getEmptyDisplay()}
               />
             </div>
           </div>
@@ -819,22 +819,22 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
               <InfoItem
                 icon={MapPin}
                 label={t('province', 'Province')}
-                value={birthPlace.province?.province_name_kh || birthPlace.province?.province_name_en || getEmptyDisplay()}
+                value={birthPlace.province?.provinceNameKh || birthPlace.province?.province_name_kh || birthPlace.province?.provinceNameEn || birthPlace.province?.province_name_en || getEmptyDisplay()}
               />
               <InfoItem
                 icon={MapPin}
                 label={t('district', 'District')}
-                value={birthPlace.district?.district_name_kh || birthPlace.district?.district_name_en || getEmptyDisplay()}
+                value={birthPlace.district?.districtNameKh || birthPlace.district?.district_name_kh || birthPlace.district?.districtNameEn || birthPlace.district?.district_name_en || getEmptyDisplay()}
               />
               <InfoItem
                 icon={MapPin}
                 label={t('commune', 'Commune')}
-                value={birthPlace.commune?.commune_name_kh || birthPlace.commune?.commune_name_en || getEmptyDisplay()}
+                value={birthPlace.commune?.communeNameKh || birthPlace.commune?.commune_name_kh || birthPlace.commune?.communeNameEn || birthPlace.commune?.commune_name_en || getEmptyDisplay()}
               />
               <InfoItem
                 icon={MapPin}
                 label={t('village', 'Village')}
-                value={birthPlace.village?.village_name_kh || birthPlace.village?.village_name_en || getEmptyDisplay()}
+                value={birthPlace.village?.villageNameKh || birthPlace.village?.village_name_kh || birthPlace.village?.villageNameEn || birthPlace.village?.village_name_en || getEmptyDisplay()}
               />
             </div>
           </div>
@@ -855,12 +855,12 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
               <InfoItem
                 icon={Weight}
                 label={t('weight', 'Weight (kg)')}
-                value={(displayTeacher.weight_kg || displayTeacher.weight) ? `${displayTeacher.weight_kg || displayTeacher.weight} kg` : getEmptyDisplay()}
+                value={(displayTeacher.weightKg || displayTeacher.weight_kg || displayTeacher.weight) ? `${displayTeacher.weightKg || displayTeacher.weight_kg || displayTeacher.weight} kg` : getEmptyDisplay()}
               />
               <InfoItem
                 icon={Ruler}
                 label={t('height', 'Height (cm)')}
-                value={(displayTeacher.height_cm || displayTeacher.height) ? `${displayTeacher.height_cm || displayTeacher.height} cm` : getEmptyDisplay()}
+                value={(displayTeacher.heightCm || displayTeacher.height_cm || displayTeacher.height) ? `${displayTeacher.heightCm || displayTeacher.height_cm || displayTeacher.height} cm` : getEmptyDisplay()}
               />
               {(() => {
                 const bmiSource = displayTeacher.bmi;

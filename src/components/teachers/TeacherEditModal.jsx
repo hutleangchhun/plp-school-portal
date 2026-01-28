@@ -56,6 +56,8 @@ const TeacherEditModal = () => {
   const usernameDebounceRef = useRef(null);
   const emailDebounceRef = useRef(null);
   const teacherNumberDebounceRef = useRef(null);
+  const residenceCascadingRef = useRef(false); // Track residence cascade operations to prevent loops
+  const birthCascadingRef = useRef(false); // Track birth place cascade operations to prevent loops
 
   const [editForm, setEditForm] = useState({
     firstName: '',
@@ -75,18 +77,18 @@ const TeacherEditModal = () => {
     ethnicGroup: '',
     gradeLevel: null, // Single grade level as string or null for មិនមាន
     accessibility: [],
-    employment_type: '',
-    salary_type: '',
-    education_level: '',
-    training_type: '',
-    teaching_type: '',
-    teacher_status: '',
+    employmentType: '',
+    salaryType: '',
+    educationLevel: '',
+    trainingType: '',
+    teachingType: '',
+    teacherStatus: '',
     subject: [],
     role: '',
-    teacher_number: '',
+    teacherNumber: '',
     appointed: false,
     burden: false,
-    hire_date: null,
+    hireDate: null,
     bookIds: [],
     teacherExtraLearningTool: {
       reading_material_package: {
@@ -110,25 +112,33 @@ const TeacherEditModal = () => {
     },
     residence: {
       provinceId: '',
+      provinceNameKh: '',
       districtId: '',
+      districtNameKh: '',
       communeId: '',
-      villageId: ''
+      communeNameKh: '',
+      villageId: '',
+      villageNameKh: ''
     },
     placeOfBirth: {
       provinceId: '',
+      provinceNameKh: '',
       districtId: '',
+      districtNameKh: '',
       communeId: '',
-      villageId: ''
+      communeNameKh: '',
+      villageId: '',
+      villageNameKh: ''
     },
-    teacher_family: {
-      living_status: '',
-      spouse_info: {
-        spouse_name: '',
-        spouse_occupation: '',
-        spouse_place_of_birth: '',
-        spouse_phone: ''
+    teacherFamily: {
+      livingStatus: '',
+      spouseInfo: {
+        spouseName: '',
+        spouseOccupation: '',
+        spousePlaceOfBirth: '',
+        spousePhone: ''
       },
-      number_of_children: '',
+      numberOfChildren: '',
       children: []
     }
   });
@@ -139,15 +149,19 @@ const TeacherEditModal = () => {
     selectedDistrict: selectedResidenceDistrict,
     selectedCommune: selectedResidenceCommune,
     selectedVillage: selectedResidenceVillage,
-    handleProvinceChange: handleResidenceProvinceChange,
-    handleDistrictChange: handleResidenceDistrictChange,
-    handleCommuneChange: handleResidenceCommuneChange,
-    handleVillageChange: handleResidenceVillageChange,
+    handleProvinceChange: handleResidenceProvinceChangeBase,
+    handleDistrictChange: handleResidenceDistrictChangeBase,
+    handleCommuneChange: handleResidenceCommuneChangeBase,
+    handleVillageChange: handleResidenceVillageChangeBase,
     getProvinceOptions: getResidenceProvinceOptions,
     getDistrictOptions: getResidenceDistrictOptions,
     getCommuneOptions: getResidenceCommuneOptions,
     getVillageOptions: getResidenceVillageOptions,
-    setInitialValues: setResidenceInitialValues
+    setInitialValues: setResidenceInitialValues,
+    provinces: residenceProvinces,
+    districts: residenceDistricts,
+    communes: residenceCommunes,
+    villages: residenceVillages
   } = useLocationData();
 
   // Location data hooks for place of birth
@@ -156,16 +170,247 @@ const TeacherEditModal = () => {
     selectedDistrict: selectedBirthDistrict,
     selectedCommune: selectedBirthCommune,
     selectedVillage: selectedBirthVillage,
-    handleProvinceChange: handleBirthProvinceChange,
-    handleDistrictChange: handleBirthDistrictChange,
-    handleCommuneChange: handleBirthCommuneChange,
-    handleVillageChange: handleBirthVillageChange,
+    handleProvinceChange: handleBirthProvinceChangeBase,
+    handleDistrictChange: handleBirthDistrictChangeBase,
+    handleCommuneChange: handleBirthCommuneChangeBase,
+    handleVillageChange: handleBirthVillageChangeBase,
     getProvinceOptions: getBirthProvinceOptions,
     getDistrictOptions: getBirthDistrictOptions,
     getCommuneOptions: getBirthCommuneOptions,
     getVillageOptions: getBirthVillageOptions,
-    setInitialValues: setBirthInitialValues
+    setInitialValues: setBirthInitialValues,
+    provinces: birthProvinces,
+    districts: birthDistricts,
+    communes: birthCommunes,
+    villages: birthVillages
   } = useLocationData();
+
+  // Wrapper functions for residence location changes (cascading handled by useEffect)
+  const handleResidenceProvinceChange = (value) => {
+    handleResidenceProvinceChangeBase(value);
+  };
+
+  const handleResidenceDistrictChange = (value) => {
+    handleResidenceDistrictChangeBase(value);
+  };
+
+  const handleResidenceCommuneChange = (value) => {
+    handleResidenceCommuneChangeBase(value);
+  };
+
+  const handleResidenceVillageChange = (value) => {
+    handleResidenceVillageChangeBase(value);
+  };
+
+  // Wrapper functions for place of birth location changes (cascading handled by useEffect)
+  const handleBirthProvinceChange = (value) => {
+    handleBirthProvinceChangeBase(value);
+  };
+
+  const handleBirthDistrictChange = (value) => {
+    handleBirthDistrictChangeBase(value);
+  };
+
+  const handleBirthCommuneChange = (value) => {
+    handleBirthCommuneChangeBase(value);
+  };
+
+  const handleBirthVillageChange = (value) => {
+    handleBirthVillageChangeBase(value);
+  };
+
+  // Effect to capture Khmer names when selected locations change
+  useEffect(() => {
+    if (selectedResidenceProvince) {
+      const selected = residenceProvinces.find(p => p.value === selectedResidenceProvince);
+      setEditForm(prev => ({
+        ...prev,
+        residence: {
+          ...prev.residence,
+          provinceNameKh: selected?.label || selected?.labelKh || ''
+        }
+      }));
+    }
+  }, [selectedResidenceProvince, residenceProvinces]);
+
+  useEffect(() => {
+    if (selectedResidenceDistrict) {
+      const selected = residenceDistricts.find(d => d.value === selectedResidenceDistrict);
+      setEditForm(prev => ({
+        ...prev,
+        residence: {
+          ...prev.residence,
+          districtNameKh: selected?.label || selected?.labelKh || ''
+        }
+      }));
+    }
+  }, [selectedResidenceDistrict, residenceDistricts]);
+
+  useEffect(() => {
+    if (selectedResidenceCommune) {
+      const selected = residenceCommunes.find(c => c.value === selectedResidenceCommune);
+      setEditForm(prev => ({
+        ...prev,
+        residence: {
+          ...prev.residence,
+          communeNameKh: selected?.label || selected?.labelKh || ''
+        }
+      }));
+    }
+  }, [selectedResidenceCommune, residenceCommunes]);
+
+  useEffect(() => {
+    if (selectedResidenceVillage) {
+      const selected = residenceVillages.find(v => v.value === selectedResidenceVillage);
+      setEditForm(prev => ({
+        ...prev,
+        residence: {
+          ...prev.residence,
+          villageNameKh: selected?.label || selected?.labelKh || ''
+        }
+      }));
+    }
+  }, [selectedResidenceVillage, residenceVillages]);
+
+  // Cascade: Auto-select province by ID when loaded for residence
+  useEffect(() => {
+    if (residenceProvinces.length > 0 && editForm.residence.provinceId && !selectedResidenceProvince && !residenceCascadingRef.current) {
+      residenceCascadingRef.current = true;
+      handleResidenceProvinceChange(editForm.residence.provinceId.toString());
+      residenceCascadingRef.current = false;
+    }
+  }, [residenceProvinces.length, editForm.residence.provinceId, selectedResidenceProvince]);
+
+  // Cascade: Auto-select district by ID when loaded for residence
+  useEffect(() => {
+    if (residenceDistricts.length > 0 && editForm.residence.districtId && !selectedResidenceDistrict && !residenceCascadingRef.current) {
+      residenceCascadingRef.current = true;
+      handleResidenceDistrictChangeBase(editForm.residence.districtId.toString());
+      residenceCascadingRef.current = false;
+    }
+  }, [residenceDistricts.length, editForm.residence.districtId, selectedResidenceDistrict]);
+
+  // Cascade: Auto-select commune by ID when loaded for residence
+  useEffect(() => {
+    if (residenceCommunes.length > 0 && editForm.residence.communeId && !selectedResidenceCommune && !residenceCascadingRef.current) {
+      residenceCascadingRef.current = true;
+      handleResidenceCommuneChangeBase(editForm.residence.communeId.toString());
+      residenceCascadingRef.current = false;
+    }
+  }, [residenceCommunes.length, editForm.residence.communeId, selectedResidenceCommune]);
+
+  // Cascade: Auto-select village by ID when loaded for residence
+  useEffect(() => {
+    if (residenceVillages.length > 0 && editForm.residence.villageId && !selectedResidenceVillage && !residenceCascadingRef.current) {
+      residenceCascadingRef.current = true;
+      handleResidenceVillageChangeBase(editForm.residence.villageId.toString());
+      residenceCascadingRef.current = false;
+    }
+  }, [residenceVillages.length, editForm.residence.villageId, selectedResidenceVillage]);
+
+  // Cascade: Auto-select province by ID when loaded for place of birth
+  useEffect(() => {
+    console.log('[TeacherEditModal] Birth province cascade - conditions:', {
+      birthProvincesLength: birthProvinces.length,
+      formProvinceId: editForm.placeOfBirth.provinceId,
+      selectedBirthProvince,
+      cascadingInProgress: birthCascadingRef.current
+    });
+
+    if (birthProvinces.length > 0 && editForm.placeOfBirth.provinceId && !selectedBirthProvince && !birthCascadingRef.current) {
+      console.log('[TeacherEditModal] AUTO-SELECTING birth province:', editForm.placeOfBirth.provinceId.toString());
+      birthCascadingRef.current = true;
+      handleBirthProvinceChange(editForm.placeOfBirth.provinceId.toString());
+      birthCascadingRef.current = false;
+    }
+  }, [birthProvinces.length, editForm.placeOfBirth.provinceId, selectedBirthProvince]);
+
+  // Cascade: Auto-select district by ID when loaded for place of birth
+  useEffect(() => {
+    if (birthDistricts.length > 0 && editForm.placeOfBirth.districtId && !selectedBirthDistrict && !birthCascadingRef.current) {
+      birthCascadingRef.current = true;
+      handleBirthDistrictChangeBase(editForm.placeOfBirth.districtId.toString());
+      birthCascadingRef.current = false;
+    }
+  }, [birthDistricts.length, editForm.placeOfBirth.districtId, selectedBirthDistrict]);
+
+  // Cascade: Auto-select commune by ID when loaded for place of birth
+  useEffect(() => {
+    if (birthCommunes.length > 0 && editForm.placeOfBirth.communeId && !selectedBirthCommune && !birthCascadingRef.current) {
+      birthCascadingRef.current = true;
+      handleBirthCommuneChangeBase(editForm.placeOfBirth.communeId.toString());
+      birthCascadingRef.current = false;
+    }
+  }, [birthCommunes.length, editForm.placeOfBirth.communeId, selectedBirthCommune]);
+
+  // Cascade: Auto-select village by ID when loaded for place of birth
+  useEffect(() => {
+    if (birthVillages.length > 0 && editForm.placeOfBirth.villageId && !selectedBirthVillage && !birthCascadingRef.current) {
+      birthCascadingRef.current = true;
+      handleBirthVillageChangeBase(editForm.placeOfBirth.villageId.toString());
+      birthCascadingRef.current = false;
+    }
+  }, [birthVillages.length, editForm.placeOfBirth.villageId, selectedBirthVillage]);
+
+  // Effects for place of birth location names
+  useEffect(() => {
+    console.log('[TeacherEditModal] Birth province name capture effect - selectedBirthProvince:', selectedBirthProvince);
+    if (selectedBirthProvince) {
+      const selected = birthProvinces.find(p => p.value === selectedBirthProvince);
+      console.log('[TeacherEditModal] Found birth province:', {
+        value: selected?.value,
+        label: selected?.label,
+        labelKh: selected?.labelKh,
+        selected
+      });
+      setEditForm(prev => ({
+        ...prev,
+        placeOfBirth: {
+          ...prev.placeOfBirth,
+          provinceNameKh: selected?.label || selected?.labelKh || ''
+        }
+      }));
+    }
+  }, [selectedBirthProvince, birthProvinces]);
+
+  useEffect(() => {
+    if (selectedBirthDistrict) {
+      const selected = birthDistricts.find(d => d.value === selectedBirthDistrict);
+      setEditForm(prev => ({
+        ...prev,
+        placeOfBirth: {
+          ...prev.placeOfBirth,
+          districtNameKh: selected?.label || selected?.labelKh || ''
+        }
+      }));
+    }
+  }, [selectedBirthDistrict, birthDistricts]);
+
+  useEffect(() => {
+    if (selectedBirthCommune) {
+      const selected = birthCommunes.find(c => c.value === selectedBirthCommune);
+      setEditForm(prev => ({
+        ...prev,
+        placeOfBirth: {
+          ...prev.placeOfBirth,
+          communeNameKh: selected?.label || selected?.labelKh || ''
+        }
+      }));
+    }
+  }, [selectedBirthCommune, birthCommunes]);
+
+  useEffect(() => {
+    if (selectedBirthVillage) {
+      const selected = birthVillages.find(v => v.value === selectedBirthVillage);
+      setEditForm(prev => ({
+        ...prev,
+        placeOfBirth: {
+          ...prev.placeOfBirth,
+          villageNameKh: selected?.label || selected?.labelKh || ''
+        }
+      }));
+    }
+  }, [selectedBirthVillage, birthVillages]);
 
   // Fetch teacher data if editing
   useEffect(() => {
@@ -272,8 +517,8 @@ const TeacherEditModal = () => {
         return '';
       };
 
-      const weight = fullData.weight_kg || fullData.weight || '';
-      const height = fullData.height_cm || fullData.height || '';
+      const weight = fullData.weightKg || '';
+      const height = fullData.heightCm || '';
       const bmiSource = fullData.bmi;
       const bmiValue =
         bmiSource && typeof bmiSource === 'object'
@@ -284,11 +529,11 @@ const TeacherEditModal = () => {
       // Extract teacher-specific fields from nested teacher object if available
       const teacherData = fullData.teacher || fullData;
 
-      // Initialize family data from API response (prefer nested teacher.teacher_family)
-      const familyData = teacherData.teacher_family || fullData.teacher_family || {};
+      // Initialize family data from API response (prefer nested teacher.teacherFamily)
+      const familyData = teacherData.teacherFamily || fullData.teacherFamily || {};
       const childrenArray = Array.isArray(familyData.children)
         ? familyData.children.map(child => ({
-            child_name: child.child_name || '',
+            childName: child.childName || '',
             status: child.status || ''
           }))
         : [];
@@ -387,58 +632,66 @@ const TeacherEditModal = () => {
       }
 
       setEditForm({
-        firstName: fullData.firstName || fullData.first_name || '',
-        lastName: fullData.lastName || fullData.last_name || '',
+        firstName: fullData.firstName || '',
+        lastName: fullData.lastName || '',
         username: fullData.username || '',
         email: fullData.email || '',
         phone: fullData.phone || '',
         gender: fullData.gender || '',
-        dateOfBirth: fullData.dateOfBirth ? new Date(fullData.dateOfBirth) : (fullData.date_of_birth ? new Date(fullData.date_of_birth) : null),
+        dateOfBirth: fullData.dateOfBirth ? new Date(fullData.dateOfBirth) : null,
         nationality: fullData.nationality || '',
-        profilePicture: fullData.profile_picture || fullData.profilePicture || '',
+        profilePicture: fullData.profilePicture || '',
         newPassword: '', // Always empty for security
         weight: weight,
         height: height,
         bmi: bmi,
-        ethnicGroup: fullData.ethnic_group || fullData.ethnicGroup || '',
+        ethnicGroup: fullData.ethnicGroup || '',
         gradeLevel: teacherData.gradeLevel !== undefined ? teacherData.gradeLevel : null,
         accessibility: Array.isArray(fullData.accessibility) ? fullData.accessibility : [],
-        employment_type: teacherData.employment_type || '',
-        salary_type: teacherData.salaryTypeId ? String(teacherData.salaryTypeId) : '',
-        education_level: teacherData.educationLevel || '',
-        training_type: teacherData.trainingType || '',
-        teaching_type: teacherData.teachingType || '',
-        teacher_status: teacherData.teacherStatus || '',
+        employmentType: teacherData.employmentType || '',
+        salaryType: teacherData.salaryTypeId ? String(teacherData.salaryTypeId) : '',
+        educationLevel: teacherData.educationLevel || '',
+        trainingType: teacherData.trainingType || '',
+        teachingType: teacherData.teachingType || '',
+        teacherStatus: teacherData.teacherStatus || '',
         subject: Array.isArray(teacherData.subject) ? teacherData.subject : [],
         role: fullData.roleId ? String(fullData.roleId) : '',
-        teacher_number: teacherData.teacher_number || teacherData.teacherNumber || '',
+        teacherNumber: teacherData.teacherNumber || '',
         appointed: typeof teacherData.appointed === 'boolean' ? teacherData.appointed : false,
         burden: typeof teacherData.burden === 'boolean' ? teacherData.burden : false,
-        hire_date: teacherData.hire_date ? new Date(teacherData.hire_date) : null,
+        hireDate: teacherData.hireDate ? new Date(teacherData.hireDate) : null,
         bookIds: Array.isArray(fullData.bookIds) ? fullData.bookIds : [],
         teacherExtraLearningTool,
         extraLearningTool,
         residence: {
-          provinceId: fullData.residence?.provinceId || fullData.province_id || '',
-          districtId: fullData.residence?.districtId || fullData.district_id || '',
-          communeId: fullData.residence?.communeId || fullData.commune_id || '',
-          villageId: fullData.residence?.villageId || fullData.village_id || ''
+          provinceId: fullData.residence?.provinceId || teacherData.residence?.provinceId || '',
+          provinceNameKh: fullData.residence?.provinceNameKh || teacherData.residence?.provinceNameKh || '',
+          districtId: fullData.residence?.districtId || teacherData.residence?.districtId || '',
+          districtNameKh: fullData.residence?.districtNameKh || teacherData.residence?.districtNameKh || '',
+          communeId: fullData.residence?.communeId || teacherData.residence?.communeId || '',
+          communeNameKh: fullData.residence?.communeNameKh || teacherData.residence?.communeNameKh || '',
+          villageId: fullData.residence?.villageId || teacherData.residence?.villageId || '',
+          villageNameKh: fullData.residence?.villageNameKh || teacherData.residence?.villageNameKh || ''
         },
         placeOfBirth: {
-          provinceId: fullData.placeOfBirth?.provinceId || fullData.residence?.provinceId || fullData.province_id || '',
-          districtId: fullData.placeOfBirth?.districtId || fullData.residence?.districtId || fullData.district_id || '',
-          communeId: fullData.placeOfBirth?.communeId || fullData.residence?.communeId || fullData.commune_id || '',
-          villageId: fullData.placeOfBirth?.villageId || fullData.residence?.villageId || fullData.village_id || ''
+          provinceId: fullData.placeOfBirth?.provinceId || teacherData.placeOfBirth?.provinceId || '',
+          provinceNameKh: fullData.placeOfBirth?.provinceNameKh || teacherData.placeOfBirth?.provinceNameKh || '',
+          districtId: fullData.placeOfBirth?.districtId || teacherData.placeOfBirth?.districtId || '',
+          districtNameKh: fullData.placeOfBirth?.districtNameKh || teacherData.placeOfBirth?.districtNameKh || '',
+          communeId: fullData.placeOfBirth?.communeId || teacherData.placeOfBirth?.communeId || '',
+          communeNameKh: fullData.placeOfBirth?.communeNameKh || teacherData.placeOfBirth?.communeNameKh || '',
+          villageId: fullData.placeOfBirth?.villageId || teacherData.placeOfBirth?.villageId || '',
+          villageNameKh: fullData.placeOfBirth?.villageNameKh || teacherData.placeOfBirth?.villageNameKh || ''
         },
-        teacher_family: {
-          living_status: familyData.living_status || '',
-          spouse_info: {
-            spouse_name: familyData.spouse_info?.spouse_name || '',
-            spouse_occupation: familyData.spouse_info?.spouse_occupation || '',
-            spouse_place_of_birth: familyData.spouse_info?.spouse_place_of_birth || '',
-            spouse_phone: familyData.spouse_info?.spouse_phone || ''
+        teacherFamily: {
+          livingStatus: familyData.livingStatus || '',
+          spouseInfo: {
+            spouseName: familyData.spouseInfo?.spouseName || '',
+            spouseOccupation: familyData.spouseInfo?.spouseOccupation || '',
+            spousePlaceOfBirth: familyData.spouseInfo?.spousePlaceOfBirth || '',
+            spousePhone: familyData.spouseInfo?.spousePhone || ''
           },
-          number_of_children: familyData.number_of_children || '',
+          numberOfChildren: familyData.numberOfChildren || '',
           children: childrenArray
         }
       });
@@ -447,7 +700,7 @@ const TeacherEditModal = () => {
       setUsernameAvailable(null);
       setOriginalEmail(fullData.email || '');
       setEmailAvailable(null);
-      setOriginalTeacherNumber((teacherData.teacher_number || teacherData.teacherNumber) || '');
+      setOriginalTeacherNumber(teacherData.teacherNumber || '');
       setTeacherNumberAvailable(null);
 
       // Log gradeLevels from API response for debugging
@@ -458,20 +711,28 @@ const TeacherEditModal = () => {
       });
 
       // Initialize dropdown selections
-      const res = fullData.residence || {};
+      const res = fullData.residence || teacherData.residence || {};
       setResidenceInitialValues({
-        provinceId: res.provinceId || fullData.province_id || '',
-        districtId: res.districtId || fullData.district_id || '',
-        communeId: res.communeId || fullData.commune_id || '',
-        villageId: res.villageId || fullData.village_id || ''
+        provinceId: res.provinceId || '',
+        provinceNameKh: res.provinceNameKh || '',
+        districtId: res.districtId || '',
+        districtNameKh: res.districtNameKh || '',
+        communeId: res.communeId || '',
+        communeNameKh: res.communeNameKh || '',
+        villageId: res.villageId || '',
+        villageNameKh: res.villageNameKh || ''
       });
 
-      const birth = fullData.placeOfBirth || {};
+      const birth = fullData.placeOfBirth || teacherData.placeOfBirth || {};
       setBirthInitialValues({
         provinceId: birth.provinceId || '',
+        provinceNameKh: birth.provinceNameKh || '',
         districtId: birth.districtId || '',
+        districtNameKh: birth.districtNameKh || '',
         communeId: birth.communeId || '',
-        villageId: birth.villageId || ''
+        communeNameKh: birth.communeNameKh || '',
+        villageId: birth.villageId || '',
+        villageNameKh: birth.villageNameKh || ''
       });
     } catch (error) {
       console.error('Error initializing form data:', error);
@@ -675,10 +936,10 @@ const TeacherEditModal = () => {
   };
 
   const buildTeacherFamilyPayload = () => {
-    const tf = editForm.teacher_family || {};
+    const tf = editForm.teacherFamily || {};
     const rawChildren = Array.isArray(tf.children) ? tf.children : [];
 
-    const numberOfChildrenRaw = tf.number_of_children;
+    const numberOfChildrenRaw = tf.numberOfChildren;
     const parsedNumber =
       numberOfChildrenRaw === '' || numberOfChildrenRaw === null || numberOfChildrenRaw === undefined
         ? undefined
@@ -686,13 +947,13 @@ const TeacherEditModal = () => {
 
     const cleanedChildren = rawChildren
       .map(child => ({
-        child_name: (child?.child_name || '').trim(),
+        childName: (child?.childName || '').trim(),
         status: (child?.status || '').toString().trim() || undefined
       }))
       // Keep only children that have a non-empty name, same as before
-      .filter(child => child.child_name);
+      .filter(child => child.childName);
 
-    // Align children array with number_of_children to avoid sending
+    // Align children array with numberOfChildren to avoid sending
     // an outdated longer children list when the count has been reduced.
     let effectiveChildren = cleanedChildren;
 
@@ -707,14 +968,14 @@ const TeacherEditModal = () => {
     }
 
     const payload = {
-      living_status: tf.living_status || undefined,
-      spouse_info: {
-        spouse_name: tf.spouse_info?.spouse_name || undefined,
-        spouse_occupation: tf.spouse_info?.spouse_occupation || undefined,
-        spouse_place_of_birth: tf.spouse_info?.spouse_place_of_birth || undefined,
-        spouse_phone: tf.spouse_info?.spouse_phone || undefined
+      livingStatus: tf.livingStatus || undefined,
+      spouseInfo: {
+        spouseName: tf.spouseInfo?.spouseName || undefined,
+        spouseOccupation: tf.spouseInfo?.spouseOccupation || undefined,
+        spousePlaceOfBirth: tf.spouseInfo?.spousePlaceOfBirth || undefined,
+        spousePhone: tf.spouseInfo?.spousePhone || undefined
       },
-      number_of_children:
+      numberOfChildren:
         typeof parsedNumber === 'number' && !Number.isNaN(parsedNumber) ? parsedNumber : undefined,
       children: effectiveChildren.length > 0 ? effectiveChildren : undefined
     };
@@ -802,14 +1063,14 @@ const TeacherEditModal = () => {
       });
     }
 
-    if (!editForm.employment_type) {
+    if (!editForm.employmentType) {
       errorsList.push({
         field: t('employmentType', 'ប្រភេទការងារ'),
         messages: [t('fieldRequired', 'ត្រូវបំពេញជាចាំបាច់')]
       });
     }
 
-    if (!editForm.hire_date) {
+    if (!editForm.hireDate) {
       errorsList.push({
         field: t('hireDate', 'ថ្ងៃឡើងងារ'),
         messages: [t('fieldRequired', 'ត្រូវបំពេញជាចាំបាច់')]
@@ -853,7 +1114,7 @@ const TeacherEditModal = () => {
     }
 
     // Teacher number validation (if provided)
-    if (editForm.teacher_number?.trim() && teacherNumberAvailable === false) {
+    if (editForm.teacherNumber?.trim() && teacherNumberAvailable === false) {
       errorsList.push({
         field: t('teacherNumber', 'អត្តលេខគ្រូ'),
         messages: [t('teacherNumberNotAvailable', 'អត្តលេខគ្រូនេះត្រូវបានប្រើរួចហើយ')]
@@ -1011,6 +1272,16 @@ const TeacherEditModal = () => {
         return `${y}-${m}-${day}`;
       };
 
+      const normalizeLocation = (loc) => {
+        if (!loc) return undefined;
+        const normalized = {};
+        if (loc.provinceId) normalized.provinceId = parseInt(loc.provinceId);
+        if (loc.districtId) normalized.districtId = parseInt(loc.districtId);
+        if (loc.communeId) normalized.communeId = parseInt(loc.communeId);
+        if (loc.villageId) normalized.villageId = parseInt(loc.villageId);
+        return Object.keys(normalized).length > 0 ? normalized : undefined;
+      };
+
       if (mode === 'create') {
         // CREATE MODE: Create a new teacher
         if (!editForm.username || !editForm.firstName || !editForm.lastName || !editForm.password) {
@@ -1020,54 +1291,54 @@ const TeacherEditModal = () => {
         const createPayload = {
           // Basic Personal Information
           username: editForm.username.trim(),
-          first_name: editForm.firstName.trim(),
-          last_name: editForm.lastName.trim(),
+          firstName: editForm.firstName.trim(),
+          lastName: editForm.lastName.trim(),
           email: editForm.email?.trim() || undefined,
           phone: editForm.phone?.trim() || undefined,
           password: editForm.password.trim(),
           roleId: editForm.role ? parseInt(editForm.role) : 8,
 
           // Date & Identity
-          date_of_birth: formatDate(editForm.dateOfBirth),
+          dateOfBirth: formatDate(editForm.dateOfBirth),
           gender: editForm.gender || undefined,
           nationality: editForm.nationality?.trim() || undefined,
-          profile_picture: editForm.profilePicture || undefined,
+          profilePicture: editForm.profilePicture || undefined,
 
           // Physical Information
-          weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
-          height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
+          weightKg: editForm.weight ? parseFloat(editForm.weight) : undefined,
+          heightCm: editForm.height ? parseFloat(editForm.height) : undefined,
           bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
 
           // Location Information
-          ethnic_group: editForm.ethnicGroup?.trim() || undefined,
-          residence: {
-            provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
-            districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
-            communeId: selectedResidenceCommune || editForm.residence.communeId || undefined,
-            villageId: selectedResidenceVillage || editForm.residence.villageId || undefined,
-          },
-          placeOfBirth: {
-            provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId || undefined,
-            districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId || undefined,
-            communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
-            villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
-          },
+          ethnicGroup: editForm.ethnicGroup?.trim() || undefined,
+          residence: normalizeLocation({
+            provinceId: selectedResidenceProvince || editForm.residence.provinceId,
+            districtId: selectedResidenceDistrict || editForm.residence.districtId,
+            communeId: selectedResidenceCommune || editForm.residence.communeId,
+            villageId: selectedResidenceVillage || editForm.residence.villageId,
+          }),
+          placeOfBirth: normalizeLocation({
+            provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId,
+            districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId,
+            communeId: selectedBirthCommune || editForm.placeOfBirth.communeId,
+            villageId: selectedBirthVillage || editForm.placeOfBirth.villageId,
+          }),
 
           // Health & Accessibility
           accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
 
           // Teacher-Specific Fields
-          teacher_number: editForm.teacher_number || undefined,
+          teacherNumber: editForm.teacherNumber || undefined,
           schoolId: schoolId || undefined,
           gradeLevel: editForm.gradeLevel === null ? null : (editForm.gradeLevel?.trim() || undefined),
-          employment_type: editForm.employment_type || undefined,
-          salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
-          educationLevel: editForm.education_level || undefined,
-          trainingType: editForm.training_type || undefined,
-          teachingType: editForm.teaching_type || undefined,
-          teacherStatus: editForm.teacher_status || undefined,
+          employmentType: editForm.employmentType || undefined,
+          salaryTypeId: editForm.salaryType ? parseInt(editForm.salaryType) : undefined,
+          educationLevel: editForm.educationLevel || undefined,
+          trainingType: editForm.trainingType || undefined,
+          teachingType: editForm.teachingType || undefined,
+          teacherStatus: editForm.teacherStatus || undefined,
           subject: editForm.subject.length > 0 ? editForm.subject : undefined,
-          hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
+          hireDate: editForm.hireDate ? formatDate(editForm.hireDate) : undefined,
           appointed: editForm.appointed,
           burden: editForm.burden,
 
@@ -1079,7 +1350,7 @@ const TeacherEditModal = () => {
           bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
 
           // Family Information
-          teacher_family: buildTeacherFamilyPayload()
+          teacherFamily: buildTeacherFamilyPayload()
         };
 
         // Remove undefined/empty values - but keep bookIds, gradeLevel, and teacherExtraLearningTool even when null
@@ -1130,7 +1401,7 @@ const TeacherEditModal = () => {
         // EDIT MODE: Update existing teacher
         if (!teacher) return;
 
-        const userId = teacher.userId || teacher.user_id || teacher.id;
+        const userId = teacher.userId || teacher.id;
         if (!userId) {
           throw new Error('User ID is required to update teacher information');
         }
@@ -1138,53 +1409,53 @@ const TeacherEditModal = () => {
         const updatePayload = {
           // Basic Personal Information
           username: editForm.username?.trim(),
-          first_name: editForm.firstName?.trim(),
-          last_name: editForm.lastName?.trim(),
+          firstName: editForm.firstName?.trim(),
+          lastName: editForm.lastName?.trim(),
           email: editForm.email?.trim() || undefined,
           phone: editForm.phone?.trim() || undefined,
           roleId: editForm.role ? parseInt(editForm.role) : undefined,
 
           // Date & Identity
-          date_of_birth: formatDate(editForm.dateOfBirth),
+          dateOfBirth: formatDate(editForm.dateOfBirth),
           gender: editForm.gender || undefined,
           nationality: editForm.nationality?.trim() || undefined,
-          profile_picture: editForm.profilePicture || undefined,
+          profilePicture: editForm.profilePicture || undefined,
 
           // Physical Information
-          weight_kg: editForm.weight ? parseFloat(editForm.weight) : undefined,
-          height_cm: editForm.height ? parseFloat(editForm.height) : undefined,
+          weightKg: editForm.weight ? parseFloat(editForm.weight) : undefined,
+          heightCm: editForm.height ? parseFloat(editForm.height) : undefined,
           bmi: editForm.bmi ? parseFloat(editForm.bmi) : undefined,
 
           // Location Information
-          ethnic_group: editForm.ethnicGroup?.trim() || undefined,
-          residence: {
-            provinceId: selectedResidenceProvince || editForm.residence.provinceId || undefined,
-            districtId: selectedResidenceDistrict || editForm.residence.districtId || undefined,
-            communeId: selectedResidenceCommune || editForm.residence.communeId || undefined,
-            villageId: selectedResidenceVillage || editForm.residence.villageId || undefined,
-          },
-          placeOfBirth: {
-            provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId || undefined,
-            districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId || undefined,
-            communeId: selectedBirthCommune || editForm.placeOfBirth.communeId || undefined,
-            villageId: selectedBirthVillage || editForm.placeOfBirth.villageId || undefined,
-          },
+          ethnicGroup: editForm.ethnicGroup?.trim() || undefined,
+          residence: normalizeLocation({
+            provinceId: selectedResidenceProvince || editForm.residence.provinceId,
+            districtId: selectedResidenceDistrict || editForm.residence.districtId,
+            communeId: selectedResidenceCommune || editForm.residence.communeId,
+            villageId: selectedResidenceVillage || editForm.residence.villageId,
+          }),
+          placeOfBirth: normalizeLocation({
+            provinceId: selectedBirthProvince || editForm.placeOfBirth.provinceId,
+            districtId: selectedBirthDistrict || editForm.placeOfBirth.districtId,
+            communeId: selectedBirthCommune || editForm.placeOfBirth.communeId,
+            villageId: selectedBirthVillage || editForm.placeOfBirth.villageId,
+          }),
 
           // Health & Accessibility
           accessibility: editForm.accessibility.length > 0 ? editForm.accessibility : undefined,
 
           // Teacher-Specific Fields
-          teacher_number: editForm.teacher_number || undefined,
+          teacherNumber: editForm.teacherNumber || undefined,
           schoolId: schoolId || undefined,
           gradeLevel: editForm.gradeLevel === null ? null : (editForm.gradeLevel?.trim() || undefined),
-          employment_type: editForm.employment_type || undefined,
-          salaryTypeId: editForm.salary_type ? parseInt(editForm.salary_type) : undefined,
-          educationLevel: editForm.education_level || undefined,
-          trainingType: editForm.training_type || undefined,
-          teachingType: editForm.teaching_type || undefined,
-          teacherStatus: editForm.teacher_status || undefined,
+          employmentType: editForm.employmentType || undefined,
+          salaryTypeId: editForm.salaryType ? parseInt(editForm.salaryType) : undefined,
+          educationLevel: editForm.educationLevel || undefined,
+          trainingType: editForm.trainingType || undefined,
+          teachingType: editForm.teachingType || undefined,
+          teacherStatus: editForm.teacherStatus || undefined,
           subject: editForm.subject.length > 0 ? editForm.subject : undefined,
-          hire_date: editForm.hire_date ? formatDate(editForm.hire_date) : undefined,
+          hireDate: editForm.hireDate ? formatDate(editForm.hireDate) : undefined,
           appointed: typeof editForm.appointed === 'boolean' ? editForm.appointed : undefined,
           burden: typeof editForm.burden === 'boolean' ? editForm.burden : undefined,
 
@@ -1195,7 +1466,7 @@ const TeacherEditModal = () => {
           bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
 
           // Family Information
-          teacher_family: buildTeacherFamilyPayload()
+          teacherFamily: buildTeacherFamilyPayload()
         };
 
         // Add password if provided
@@ -1264,8 +1535,8 @@ const TeacherEditModal = () => {
     !editForm.dateOfBirth ||
     !editForm.nationality ||
     !editForm.username?.trim() ||
-    !editForm.employment_type ||
-    !editForm.hire_date ||
+    !editForm.employmentType ||
+    !editForm.hireDate ||
     !editForm.role ||
     (mode === 'create' && !editForm.password?.trim()) ||
     (mode === 'create' && isPasswordInvalid()) ||
@@ -1273,7 +1544,7 @@ const TeacherEditModal = () => {
     usernameAvailable === false ||
     (editForm.email?.trim() && emailAvailable === false) ||
     (editForm.email?.trim() && emailAvailable === null && (editForm.email || '') !== (originalEmail || '')) ||
-    (editForm.teacher_number?.trim() && teacherNumberAvailable === false) ||
+    (editForm.teacherNumber?.trim() && teacherNumberAvailable === false) ||
     isPhysicalInvalid() ||
     isUsernameInvalid();
 
@@ -1572,8 +1843,8 @@ const TeacherEditModal = () => {
                 { value: '', label: t('selectEmploymentType', 'Select Type') },
                 ...employmentTypeOptions
               ]}
-              value={editForm.employment_type}
-              onValueChange={(value) => handleFormChange('employment_type', value)}
+              value={editForm.employmentType}
+              onValueChange={(value) => handleFormChange('employmentType', value)}
               placeholder={t('selectEmploymentType', 'Select Type')}
               required
               minWidth="w-full"
@@ -1585,11 +1856,11 @@ const TeacherEditModal = () => {
               {t('salaryType', 'Salary Type')}
             </label>
             <SalaryTypeDropdown
-              employmentType={editForm.employment_type}
-              value={editForm.salary_type}
-              onValueChange={(value) => handleFormChange('salary_type', value)}
+              employmentType={editForm.employmentType}
+              value={editForm.salaryType}
+              onValueChange={(value) => handleFormChange('salaryType', value)}
               placeholder={t('selectSalaryType', 'Select Salary Type')}
-              disabled={!editForm.employment_type}
+              disabled={!editForm.employmentType}
             />
           </div>
 
@@ -1602,8 +1873,8 @@ const TeacherEditModal = () => {
                 { value: '', label: t('selectTeachingType', 'Select Teaching Type') },
                 ...teachingTypeOptions
               ]}
-              value={editForm.teaching_type}
-              onValueChange={(value) => handleFormChange('teaching_type', value)}
+              value={editForm.teachingType}
+              onValueChange={(value) => handleFormChange('teachingType', value)}
               placeholder={t('selectTeachingType', 'Select Teaching Type')}
               contentClassName="max-h-[200px] overflow-y-auto"
               disabled={false}
@@ -1620,8 +1891,8 @@ const TeacherEditModal = () => {
                 { value: '', label: t('selectTeacherStatus', 'Select Teacher Status') },
                 ...teacherStatusOptions
               ]}
-              value={editForm.teacher_status}
-              onValueChange={(value) => handleFormChange('teacher_status', value)}
+              value={editForm.teacherStatus}
+              onValueChange={(value) => handleFormChange('teacherStatus', value)}
               placeholder={t('selectTeacherStatus', 'Select Teacher Status')}
               contentClassName="max-h-[200px] overflow-y-auto"
               disabled={false}
@@ -1654,7 +1925,7 @@ const TeacherEditModal = () => {
             )}
           </div>
 
-          {(editForm.employment_type === 'កិច្ចសន្យា' || editForm.employment_type === 'កិច្ចព្រមព្រៀង') && (
+          {(editForm.employmentType === 'កិច្ចសន្យា' || editForm.employmentType === 'កិច្ចព្រមព្រៀង') && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('subjects', 'Subjects')}
@@ -1672,30 +1943,30 @@ const TeacherEditModal = () => {
           )}
 
           <div>
-            <label htmlFor="teacher_number" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="teacherNumber" className="block text-sm font-medium text-gray-700 mb-1">
               {t('teacherNumber', 'Teacher Number')}
             </label>
             <div className="relative">
               <input
                 type="text"
-                id="teacher_number"
-                value={editForm.teacher_number}
-                onChange={(e) => handleFormChange('teacher_number', e.target.value)}
+                id="teacherNumber"
+                value={editForm.teacherNumber}
+                onChange={(e) => handleFormChange('teacherNumber', e.target.value)}
                 className={`mt-1 block w-full rounded-md shadow-sm text-sm transition-all duration-300 border focus:scale-[1.01] hover:shadow-md ${
-                  editForm.teacher_number && teacherNumberAvailable === false
+                  editForm.teacherNumber && teacherNumberAvailable === false
                     ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                    : editForm.teacher_number && teacherNumberAvailable === true
+                    : editForm.teacherNumber && teacherNumberAvailable === true
                       ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
                       : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
                 }`}
                 placeholder={t('teacherNumber', 'e.g., T00000001')}
               />
-              {editForm.teacher_number && teacherNumberAvailable === false && (
+              {editForm.teacherNumber && teacherNumberAvailable === false && (
                 <div className="mt-1 text-xs text-red-600 flex items-center gap-1">
                   ✕ {t('teacherNumberExists', 'This teacher number is already in use')}
                 </div>
               )}
-              {editForm.teacher_number && teacherNumberAvailable === true && (
+              {editForm.teacherNumber && teacherNumberAvailable === true && (
                 <div className="mt-1 text-xs text-green-600 flex items-center gap-1">
                   ✓ {t('teacherNumberAvailable', 'Teacher number is available')}
                 </div>
@@ -1704,12 +1975,12 @@ const TeacherEditModal = () => {
           </div>
 
           <div>
-            <label htmlFor="hire_date" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="hireDate" className="block text-sm font-medium text-gray-700 mb-1">
               {t('hireDate', 'Hire Date')} *
             </label>
             <DatePickerWithDropdowns
-              date={editForm.hire_date}
-              onChange={(date) => handleFormChange('hire_date', date)}
+              date={editForm.hireDate}
+              onChange={(date) => handleFormChange('hireDate', date)}
               required
               placeholder={t('pickDate', 'Pick a date')}
             />
@@ -1767,8 +2038,8 @@ const TeacherEditModal = () => {
                   { value: '', label: t('selectEducationLevel', 'Select Education Level') },
                   ...educationLevelOptions
                 ]}
-                value={editForm.education_level}
-                onValueChange={(value) => handleFormChange('education_level', value)}
+                value={editForm.educationLevel}
+                onValueChange={(value) => handleFormChange('educationLevel', value)}
                 placeholder={t('selectEducationLevel', 'Select Education Level')}
                 contentClassName="max-h-[200px] overflow-y-auto"
                 disabled={false}
@@ -1785,8 +2056,8 @@ const TeacherEditModal = () => {
                   { value: '', label: t('selectTrainingType', 'Select Training Type') },
                   ...trainingTypeOptions
                 ]}
-                value={editForm.training_type}
-                onValueChange={(value) => handleFormChange('training_type', value)}
+                value={editForm.trainingType}
+                onValueChange={(value) => handleFormChange('trainingType', value)}
                 placeholder={t('selectTrainingType', 'Select Training Type')}
                 contentClassName="max-h-[200px] overflow-y-auto"
                 disabled={false}
@@ -1923,26 +2194,26 @@ const TeacherEditModal = () => {
                   { value: '', label: t('selectMaritalStatus', 'Select Marital Status') },
                   ...maritalStatusOptions
                 ]}
-                value={editForm.teacher_family.living_status}
+                value={editForm.teacherFamily.livingStatus}
                 onValueChange={(value) => {
-                  // Update teacher_family based on selected living_status
+                  // Update teacher_family based on selected livingStatus
                   setEditForm(prev => {
                     let nextTeacherFamily = {
-                      ...prev.teacher_family,
-                      living_status: value
+                      ...prev.teacherFamily,
+                      livingStatus: value
                     };
 
                     // Single: clear spouse info and children
                     if (value === 'នៅលីវ') {
                       nextTeacherFamily = {
-                        living_status: value,
-                        spouse_info: {
-                          spouse_name: '',
-                          spouse_occupation: '',
-                          spouse_place_of_birth: '',
-                          spouse_phone: ''
+                        livingStatus: value,
+                        spouseInfo: {
+                          spouseName: '',
+                          spouseOccupation: '',
+                          spousePlaceOfBirth: '',
+                          spousePhone: ''
                         },
-                        number_of_children: '',
+                        numberOfChildren: '',
                         children: []
                       };
                     }
@@ -1950,29 +2221,29 @@ const TeacherEditModal = () => {
                     // Widow/Divorced (ពោះម៉ាយ): no spouse info, but allow children
                     if (value === 'ពោះម៉ាយ') {
                       nextTeacherFamily = {
-                        living_status: value,
-                        spouse_info: {
-                          spouse_name: '',
-                          spouse_occupation: '',
-                          spouse_place_of_birth: '',
-                          spouse_phone: ''
+                        livingStatus: value,
+                        spouseInfo: {
+                          spouseName: '',
+                          spouseOccupation: '',
+                          spousePlaceOfBirth: '',
+                          spousePhone: ''
                         },
-                        number_of_children: prev.teacher_family?.number_of_children || '',
-                        children: Array.isArray(prev.teacher_family?.children) ? prev.teacher_family.children : []
+                        numberOfChildren: prev.teacherFamily?.numberOfChildren || '',
+                        children: Array.isArray(prev.teacherFamily?.children) ? prev.teacherFamily.children : []
                       };
                     }
 
-                    // Married (រៀបការ): keep spouse/children data but ensure living_status syncs
+                    // Married (រៀបការ): keep spouse/children data but ensure livingStatus syncs
                     if (value === 'រៀបការ') {
                       nextTeacherFamily = {
-                        ...prev.teacher_family,
-                        living_status: value
+                        ...prev.teacherFamily,
+                        livingStatus: value
                       };
                     }
 
                     return {
                       ...prev,
-                      teacher_family: nextTeacherFamily
+                      teacherFamily: nextTeacherFamily
                     };
                   });
                 }}
@@ -1982,25 +2253,25 @@ const TeacherEditModal = () => {
                 className='w-full'
               />
             </div>
-            {/* Spouse Information - Show only if living_status is Married (រៀបការ) */}
-            {editForm.teacher_family.living_status === 'រៀបការ' && (
+            {/* Spouse Information - Show only if livingStatus is Married (រៀបការ) */}
+            {editForm.teacherFamily.livingStatus === 'រៀបការ' && (
               <>
                 <div>
-                  <label htmlFor="spouse_name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="spouseName" className="block text-sm font-medium text-gray-700 mb-1">
                     {t('partnerName', 'Spouse Name')}
                   </label>
                   <input
                     type="text"
-                    id="spouse_name"
-                    value={editForm.teacher_family.spouse_info.spouse_name}
+                    id="spouseName"
+                    value={editForm.teacherFamily.spouseInfo.spouseName}
                     onChange={(e) => {
                       setEditForm(prev => ({
                         ...prev,
-                        teacher_family: {
-                          ...prev.teacher_family,
-                          spouse_info: {
-                            ...prev.teacher_family.spouse_info,
-                            spouse_name: e.target.value
+                        teacherFamily: {
+                          ...prev.teacherFamily,
+                          spouseInfo: {
+                            ...prev.teacherFamily.spouseInfo,
+                            spouseName: e.target.value
                           }
                         }
                       }));
@@ -2011,7 +2282,7 @@ const TeacherEditModal = () => {
                 </div>
                 <div>
                   <label
-                    htmlFor="spouse_occupation"
+                    htmlFor="spouseOccupation"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
                     {t('partnerJobPlace', 'Spouse Occupation')}
@@ -2021,15 +2292,15 @@ const TeacherEditModal = () => {
                     options={[
                       ...spouseJobOptions, // Your grouped job options
                     ]}
-                    value={editForm.teacher_family.spouse_info.spouse_occupation}
+                    value={editForm.teacherFamily.spouseInfo.spouseOccupation}
                     onValueChange={(value) => {
                       setEditForm((prev) => ({
                         ...prev,
-                        teacher_family: {
-                          ...prev.teacher_family,
-                          spouse_info: {
-                            ...prev.teacher_family.spouse_info,
-                            spouse_occupation: value,
+                        teacherFamily: {
+                          ...prev.teacherFamily,
+                          spouseInfo: {
+                            ...prev.teacherFamily.spouseInfo,
+                            spouseOccupation: value,
                           },
                         },
                       }));
@@ -2042,21 +2313,21 @@ const TeacherEditModal = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="spouse_phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="spousePhone" className="block text-sm font-medium text-gray-700 mb-1">
                     {t('partnerPhone', 'Spouse Phone')}
                   </label>
                   <input
                     type="tel"
-                    id="spouse_phone"
-                    value={editForm.teacher_family.spouse_info.spouse_phone}
+                    id="spousePhone"
+                    value={editForm.teacherFamily.spouseInfo.spousePhone}
                     onChange={(e) => {
                       setEditForm(prev => ({
                         ...prev,
-                        teacher_family: {
-                          ...prev.teacher_family,
-                          spouse_info: {
-                            ...prev.teacher_family.spouse_info,
-                            spouse_phone: e.target.value
+                        teacherFamily: {
+                          ...prev.teacherFamily,
+                          spouseInfo: {
+                            ...prev.teacherFamily.spouseInfo,
+                            spousePhone: e.target.value
                           }
                         }
                       }));
@@ -2067,21 +2338,21 @@ const TeacherEditModal = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="spouse_place_of_birth" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="spousePlaceOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
                     {t('placeOfBirth', 'Spouse Place of Birth')}
                   </label>
                   <input
                     type="text"
-                    id="spouse_place_of_birth"
-                    value={editForm.teacher_family.spouse_info.spouse_place_of_birth}
+                    id="spousePlaceOfBirth"
+                    value={editForm.teacherFamily.spouseInfo.spousePlaceOfBirth}
                     onChange={(e) => {
                       setEditForm(prev => ({
                         ...prev,
-                        teacher_family: {
-                          ...prev.teacher_family,
-                          spouse_info: {
-                            ...prev.teacher_family.spouse_info,
-                            spouse_place_of_birth: e.target.value
+                        teacherFamily: {
+                          ...prev.teacherFamily,
+                          spouseInfo: {
+                            ...prev.teacherFamily.spouseInfo,
+                            spousePlaceOfBirth: e.target.value
                           }
                         }
                       }));
@@ -2093,23 +2364,23 @@ const TeacherEditModal = () => {
               </>
             )}
 
-            {/* Number of Children - Show when living_status is not Single (នៅលីវ) */}
-            {editForm.teacher_family.living_status && editForm.teacher_family.living_status !== 'នៅលីវ' && (
+            {/* Number of Children - Show when livingStatus is not Single (នៅលីវ) */}
+            {editForm.teacherFamily.livingStatus && editForm.teacherFamily.livingStatus !== 'នៅលីវ' && (
               <div>
-                <label htmlFor="number_of_children" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="numberOfChildren" className="block text-sm font-medium text-gray-700 mb-1">
                   {t('numberOfChildren', 'Number of Children')}
                 </label>
                 <input
                   type="number"
-                  id="number_of_children"
+                  id="numberOfChildren"
                   min="0"
-                  value={editForm.teacher_family.number_of_children}
+                  value={editForm.teacherFamily.numberOfChildren}
                   onChange={(e) => {
                     setEditForm(prev => ({
                       ...prev,
-                      teacher_family: {
-                        ...prev.teacher_family,
-                        number_of_children: e.target.value
+                      teacherFamily: {
+                        ...prev.teacherFamily,
+                        numberOfChildren: e.target.value
                       }
                     }));
                   }}
@@ -2120,34 +2391,34 @@ const TeacherEditModal = () => {
             )}
           </div>
 
-          {/* Children List - Show when number_of_children > 0 */}
-          {editForm.teacher_family.number_of_children && parseInt(editForm.teacher_family.number_of_children) > 0 && (
+          {/* Children List - Show when numberOfChildren > 0 */}
+          {editForm.teacherFamily.numberOfChildren && parseInt(editForm.teacherFamily.numberOfChildren) > 0 && (
             <div className="mt-6 border-t pt-6">
               <h4 className="text-md font-semibold text-gray-900 mb-4">{t('childrenInformation', 'Children Information')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Array.from({ length: parseInt(editForm.teacher_family.number_of_children) || 0 }).map((_, index) => (
+                {Array.from({ length: parseInt(editForm.teacherFamily.numberOfChildren) || 0 }).map((_, index) => (
                   <div key={index} className="p-4 bg-gray-50 border border-gray-200 rounded-md">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 space-y-3">
                         <div>
-                          <label htmlFor={`child_name_${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                          <label htmlFor={`childName_${index}`} className="block text-sm font-medium text-gray-700 mb-1">
                             {t('childName', 'Child Name')} {index + 1}
                           </label>
                           <input
                             type="text"
-                            id={`child_name_${index}`}
-                            value={editForm.teacher_family.children[index]?.child_name || ''}
+                            id={`childName_${index}`}
+                            value={editForm.teacherFamily.children[index]?.childName || ''}
                             onChange={(e) => {
                               setEditForm(prev => {
-                                const newChildren = [...prev.teacher_family.children];
+                                const newChildren = [...prev.teacherFamily.children];
                                 if (!newChildren[index]) {
-                                  newChildren[index] = { child_name: '', status: '' };
+                                  newChildren[index] = { childName: '', status: '' };
                                 }
-                                newChildren[index].child_name = e.target.value;
+                                newChildren[index].childName = e.target.value;
                                 return {
                                   ...prev,
-                                  teacher_family: {
-                                    ...prev.teacher_family,
+                                  teacherFamily: {
+                                    ...prev.teacherFamily,
                                     children: newChildren
                                   }
                                 };
@@ -2164,18 +2435,18 @@ const TeacherEditModal = () => {
                           <Dropdown
                             id={`child_status_${index}`}
                             options={childStatusOptions}
-                            value={editForm.teacher_family.children[index]?.status || ''}
+                            value={editForm.teacherFamily.children[index]?.status || ''}
                             onValueChange={(value) => {
                               setEditForm(prev => {
-                                const newChildren = [...prev.teacher_family.children];
+                                const newChildren = [...prev.teacherFamily.children];
                                 if (!newChildren[index]) {
-                                  newChildren[index] = { child_name: '', status: '' };
+                                  newChildren[index] = { childName: '', status: '' };
                                 }
                                 newChildren[index].status = value;
                                 return {
                                   ...prev,
-                                  teacher_family: {
-                                    ...prev.teacher_family,
+                                  teacherFamily: {
+                                    ...prev.teacherFamily,
                                     children: newChildren
                                   }
                                 };
@@ -2193,14 +2464,14 @@ const TeacherEditModal = () => {
                         className="mt-6 inline-flex items-center justify-center h-10 w-10 border border-red-300 text-xs font-medium rounded text-red-700 bg-red-50 hover:bg-red-100"
                         onClick={() => {
                           setEditForm(prev => {
-                            const prevCount = parseInt(prev.teacher_family.number_of_children) || 0;
-                            const newChildren = (prev.teacher_family.children || []).filter((_, i) => i !== index);
+                            const prevCount = parseInt(prev.teacherFamily.numberOfChildren) || 0;
+                            const newChildren = (prev.teacherFamily.children || []).filter((_, i) => i !== index);
                             const newCount = Math.max(0, prevCount - 1);
                             return {
                               ...prev,
-                              teacher_family: {
-                                ...prev.teacher_family,
-                                number_of_children: newCount ? String(newCount) : '',
+                              teacherFamily: {
+                                ...prev.teacherFamily,
+                                numberOfChildren: newCount ? String(newCount) : '',
                                 children: newChildren
                               }
                             };
@@ -2488,6 +2759,7 @@ const TeacherEditModal = () => {
             />
           </div>
         </div>
+
       </div>
 
       {/* Place of Birth Card */}
@@ -2555,6 +2827,7 @@ const TeacherEditModal = () => {
             />
           </div>
         </div>
+
       </div>
     </form>
   );

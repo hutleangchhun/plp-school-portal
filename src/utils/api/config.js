@@ -97,8 +97,8 @@ const ENDPOINTS = {
   LOCATION: {
     BASE: '/locations/provinces',
     DISTRICTS: (provinceId) => `/locations/districts?province_id=${provinceId}`,
-    COMMUNES: (provinceId, districtCode) => `/locations/communes?district_code=${districtCode}&province_id=${provinceId}`,
-    VILLAGES: (provinceId, districtCode, communeCode) => `/locations/villages?commune_code=${communeCode}&district_code=${districtCode}&province_id=${provinceId}`,
+    COMMUNES: (provinceId, districtId) => `/locations/communes?district_id=${districtId}&province_id=${provinceId}`,
+    VILLAGES: (provinceId, districtId, communeId) => `/locations/villages?commune_id=${communeId}&district_id=${districtId}&province_id=${provinceId}`,
     ZONES: '/zones',
   },
   STUDENTS: {

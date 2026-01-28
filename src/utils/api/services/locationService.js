@@ -31,18 +31,18 @@ const locationService = {
       throw error;
     }
   },
-  getCommunesByDistrict: async (provinceId, districtCode) => {
+  getCommunesByDistrict: async (provinceId, districtId) => {
     try {
-      const response = await get(ENDPOINTS.LOCATION.COMMUNES(provinceId, districtCode));
+      const response = await get(ENDPOINTS.LOCATION.COMMUNES(provinceId, districtId));
       return response;
     } catch (error) {
       console.error('Error fetching communes:', error);
       throw error;
     }
   },
-  getVillagesByCommune: async (provinceId, districtCode, communeCode) => {
+  getVillagesByCommune: async (provinceId, districtId, communeId) => {
     try {
-      const response = await get(ENDPOINTS.LOCATION.VILLAGES(provinceId, districtCode, communeCode));
+      const response = await get(ENDPOINTS.LOCATION.VILLAGES(provinceId, districtId, communeId));
       return response;
     } catch (error) {
       console.error('Error fetching villages:', error);
