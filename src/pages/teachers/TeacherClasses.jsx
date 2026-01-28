@@ -13,11 +13,11 @@ export default function TeacherClasses({ user }) {
     async function fetchClasses() {
       if (!user) return;
       try {
-        // Fetch classes assigned to this teacher/user using the BY_USER endpoint
-        const res = await classService.getClassByUser(user.id);
+        // Fetch classes assigned to this teacher/user
+        const res = await classService.getMyClasses();
         console.log('Classes for user:', res);
-        if (res.success && Array.isArray(res.classes)) {
-          setClasses(res.classes);
+        if (res.data && Array.isArray(res.data)) {
+          setClasses(res.data);
         }
       } catch (error) {
         console.error('Error fetching classes:', error);

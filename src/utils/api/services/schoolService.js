@@ -129,27 +129,38 @@ export const schoolService = {
             console.log('🌐 API: Getting schools by district ID:', districtId);
             const endpoint = ENDPOINTS.SCHOOLS.SCHOOL_BY_DISTRICT(districtId);
             console.log('🌐 API: Full endpoint URL:', endpoint);
-            
+
             const response = await handleApiResponse(() =>
                 apiClient_.get(endpoint)
             );
-            
-            console.log('🌐 API: Raw response status:', response?.status);
-            console.log('🌐 API: Raw response headers:', response?.headers);
-            console.log('🌐 API: Raw schools by district API response:', response);
-            
-            if (response.data && Array.isArray(response.data)) {
-                console.log(`🌐 API: Found ${response.data.length} schools`);
-                const formattedData = response.data.map(school => {
-                    console.log('Raw school before formatting:', school);
+
+            console.log('🌐 API: Raw response:', response);
+
+            // The response structure is { success: true, data: { data: [...], total, page, ... } }
+            const schoolsData = response.data?.data || response.data;
+
+            if (schoolsData && Array.isArray(schoolsData)) {
+                console.log(`🌐 API: Found ${schoolsData.length} schools`);
+                const formattedData = schoolsData.map(school => {
                     const formatted = schoolService.utils.formatSchoolData(school);
-                    console.log('Formatted school:', formatted);
                     return formatted;
                 });
-                return { data: formattedData };
+                return {
+                    data: formattedData,
+                    total: response.data?.total || response.total,
+                    page: response.data?.page || response.page,
+                    limit: response.data?.limit || response.limit,
+                    totalPages: response.data?.totalPages || response.totalPages
+                };
             } else {
-                console.warn('🌐 API: No data or data is not an array:', response.data);
-                return { data: [] };
+                console.warn('🌐 API: No data or data is not an array:', schoolsData);
+                return {
+                    data: [],
+                    total: 0,
+                    page: 1,
+                    limit: 0,
+                    totalPages: 0
+                };
             }
         } catch (error) {
             console.error('🌐 API: Error fetching schools by district:', error);

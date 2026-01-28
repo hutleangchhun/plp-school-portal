@@ -149,7 +149,7 @@ const SchoolLookup = () => {
       setSchoolsLoading(true);
 
       // Find the district object
-      const districtObj = districts.find(d => d.district_code === districtCode);
+      const districtObj = districts.find(d => d.districtCode === districtCode);
       console.log('🔍 DEBUG: Found district object:', districtObj);
 
       if (!districtObj) {
@@ -159,8 +159,8 @@ const SchoolLookup = () => {
 
       // Check all possible ID fields
       const possibleIds = [
-        districtObj.district_id,
         districtObj.id,
+        districtObj.district_id,
         districtObj.districtId
       ];
 
@@ -313,7 +313,7 @@ const SchoolLookup = () => {
 
     const query = searchQuery.toLowerCase().trim();
     return users.filter(user => {
-      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
+      const fullName = `${user.lastName || ''} ${user.firstName || ''}`.toLowerCase();
       const username = (user.username || '').toLowerCase();
       const email = (user.email || '').toLowerCase();
 
@@ -329,7 +329,7 @@ const SchoolLookup = () => {
       accessor: 'name',
       render: (teacher) => (
         <div className="font-medium text-gray-900">
-          {`${teacher.first_name || ''} ${teacher.last_name || ''}`.trim()}
+          {`${teacher.lastName || ''} ${teacher.firstName || ''}`.trim()}
         </div>
       )
     },
@@ -416,11 +416,10 @@ const SchoolLookup = () => {
                 onValueChange={handleProvinceChange}
                 options={provinces.map((province) => ({
                   value: province.id.toString(),
-                  label: province.province_name_kh || province.province_name_en
+                  label: province.provinceNameKh || province.provinceNameEn
                 }))}
                 placeholder={t('selectProvince', 'Select Province')}
                 disabled={loading}
-                className="w-full h-12 text-base"
                 minWidth="w-full"
               />
             </div>
@@ -434,13 +433,12 @@ const SchoolLookup = () => {
                 value={selectedDistrict}
                 onValueChange={handleDistrictChange}
                 options={districts.map((district) => ({
-                  value: district.district_code,
-                  label: district.district_name_kh || district.district_name_en
+                  value: district.districtCode,
+                  label: district.districtNameKh || district.districtNameEn
                 }))}
                 placeholder={t('selectDistrict', 'Select District')}
                 disabled={loading || !selectedProvince}
-                className="w-full h-12 text-base"
-                minWidth="w-full"
+                minWidth='w-full'
               />
             </div>
 
@@ -477,8 +475,7 @@ const SchoolLookup = () => {
                 options={roleOptions}
                 placeholder={t('selectRole', 'Select Role')}
                 disabled={!selectedSchool}
-                className="w-full h-12 text-base"
-                minWidth="w-full"
+                minWidth='w-full'
               />
             </div>
           </div>
