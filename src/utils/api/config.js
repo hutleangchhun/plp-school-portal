@@ -135,7 +135,7 @@ const ENDPOINTS = {
     GET_BY_ID: (teacherId) => `/teachers/${teacherId}`,
     TEACHER_ID: (teacherId) => `/teachers/${teacherId}`,
     UPDATE: (teacherId) => `/teachers/${teacherId}`,
-    TEACHER_BY_SCHOOL: (schoolId) => `/teachers?school_id=${schoolId}`,
+    TEACHER_BY_SCHOOL: () => `/teachers`,
     TRANSFER_SCHOOL: (teacherId) => `/teachers/${teacherId}/school`,
     CHECK_NUMBER: (teacherNumber) => `/teachers/check-number/${teacherNumber}`,
     CLASSES: (teacherId) => `/teachers/${teacherId}/classes`,

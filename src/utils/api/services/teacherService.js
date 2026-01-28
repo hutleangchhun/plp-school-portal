@@ -4,15 +4,19 @@ import { ENDPOINTS } from '../config.js';
 export const teacherService = {
     // Fetch all Teacher in one school
     getTeachersBySchool: async (schoolId, params = {}) => {
-        const { search, grade_level, page, limit, is_active, roleId } = params;
+        const { search, gradeLevel, grade_level, page, limit, isActive, is_active, roleId } = params;
 
         // Build query parameters
-        const queryParams = {};
+        const queryParams = {
+            schoolId: schoolId // Add schoolId as query parameter
+        };
         if (search && search.trim()) {
             queryParams.search = search.trim();
         }
-        if (grade_level) {
-            queryParams.grade_level = grade_level;
+        // Support both camelCase and snake_case for backward compatibility
+        const finalGradeLevel = gradeLevel || grade_level;
+        if (finalGradeLevel) {
+            queryParams.gradeLevel = finalGradeLevel;
         }
         if (page) {
             queryParams.page = page;
@@ -20,15 +24,17 @@ export const teacherService = {
         if (limit) {
             queryParams.limit = limit;
         }
-        if (is_active !== undefined && is_active !== null) {
-            queryParams.is_active = is_active;
+        // Support both camelCase and snake_case for backward compatibility
+        const finalIsActive = isActive !== undefined ? isActive : is_active;
+        if (finalIsActive !== undefined && finalIsActive !== null) {
+            queryParams.isActive = finalIsActive;
         }
         if (roleId && roleId !== '') {
             queryParams.roleId = roleId;
         }
 
         const response = await handleApiResponse(() =>
-            apiClient_.get(ENDPOINTS.TEACHERS.TEACHER_BY_SCHOOL(schoolId), { params: queryParams })
+            apiClient_.get(ENDPOINTS.TEACHERS.TEACHER_BY_SCHOOL(), { params: queryParams })
         );
 
         // Extract data from response

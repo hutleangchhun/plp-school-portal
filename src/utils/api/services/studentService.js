@@ -968,14 +968,17 @@ export const studentService = {
         student.student_id ||                   // Flattened student_id
         student.id;                             // Last resort fallback
 
+      const firstName = user.firstName || user.first_name || '';
+      const lastName = user.lastName || user.last_name || '';
+
       return {
         id: student.studentId || student.student_id,
         userId: user.id || student.user_id,
         studentId: student.studentId || student.student_id,
         studentNumber: studentNumber,
-        name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown Student',
-        firstName: user.first_name || '',
-        lastName: user.last_name || '',
+        name: `${firstName} ${lastName}`.trim() || user.username || 'Unknown Student',
+        firstName: firstName,
+        lastName: lastName,
         email: user.email || '',
         phone: user.phone || '',
         gender: user.gender || '',

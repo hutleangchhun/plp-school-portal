@@ -187,14 +187,14 @@ export default function TeachersManagement() {
       const userData = localStorage.getItem('user');
       if (userData) {
         const user = JSON.parse(userData);
-        const userSchoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId;
-        
+        const userSchoolId = user?.teacher?.schoolId || user?.schoolId || user?.school_id;
+
         if (userSchoolId) {
           console.log('✅ School ID fetched from localStorage:', userSchoolId);
           setSchoolId(userSchoolId);
           setSchoolName(user?.teacher?.schoolName || user?.school?.name || '');
         } else {
-          console.error('No school_id found in localStorage user data');
+          console.error('No schoolId found in localStorage user data');
           showError(t('noSchoolIdFound', 'No school ID found for your account'));
         }
       } else {
@@ -258,10 +258,10 @@ export default function TeachersManagement() {
         requestParams.search = searchTerm.trim();
       }
       if (selectedGradeLevel && selectedGradeLevel !== '') {
-        requestParams.grade_level = selectedGradeLevel;
+        requestParams.gradeLevel = selectedGradeLevel;
       }
       if (selectedStatusFilter !== '') {
-        requestParams.is_active = selectedStatusFilter === 'true';
+        requestParams.isActive = selectedStatusFilter === 'true';
       }
       if (selectedRoleId && selectedRoleId !== '') {
         requestParams.roleId = selectedRoleId;
@@ -286,9 +286,10 @@ export default function TeachersManagement() {
 
       // Map backend data structure to component format
       data = data.map(teacher => {
-        // Determine active status from teacher.is_active field (primary source)
-        // Falls back to status field if is_active is not available
-        const isActive = teacher.is_active !== undefined
+        // Determine active status - handle both camelCase and snake_case from API
+        const isActive = teacher.isActive !== undefined
+          ? teacher.isActive
+          : teacher.is_active !== undefined
           ? teacher.is_active
           : teacher.status === 'ACTIVE';
 
@@ -297,17 +298,17 @@ export default function TeachersManagement() {
           teacherId: teacher.teacherId,
           userId: teacher.userId,
           username: teacher.user?.username || '',
-          firstName: teacher.user?.first_name || '',
-          lastName: teacher.user?.last_name || '',
+          firstName: teacher.user?.firstName || '',
+          lastName: teacher.user?.lastName || '',
           name: getFullName(teacher.user, ''),
           email: teacher.user?.email || '',
           phone: teacher.user?.phone || '',
           gender: teacher.user?.gender || '',
           schoolId: teacher.schoolId,
           schoolName: teacher.school?.name || '',
-          hireDate: teacher.hire_date,
+          hireDate: teacher.hireDate || teacher.hire_date || null,
           gradeLevel: teacher.gradeLevel || null,
-          employmentType: teacher.employment_type || '',
+          employmentType: teacher.employmentType || teacher.employment_type || '',
           roleId: teacher.roleId,
           status: teacher.status,
           isActive: isActive,
