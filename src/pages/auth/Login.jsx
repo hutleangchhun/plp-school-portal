@@ -57,11 +57,23 @@ export default function Login({ setUser }) {
         password: formData.password
       });
 
-      // Handle account selection requirement
       if (response.requiresSelection && response.accounts) {
         setAvailableAccounts(response.accounts);
         setShowAccountSelection(true);
         setLoading(false);
+        return;
+      }
+
+      // Handle 2FA requirement
+      if (response.mfaRequired) {
+        // Store user info briefly for the 2FA verification page if available
+        if (response.user) {
+          sessionStorage.setItem('mfa_user', JSON.stringify(response.user));
+        }
+        if (response.mfaToken) {
+          sessionStorage.setItem('mfa_token', response.mfaToken);
+        }
+        navigate('/auth/2fa/verify');
         return;
       }
 

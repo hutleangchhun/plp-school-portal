@@ -63,6 +63,9 @@ const ENDPOINTS = {
     ME: '/auth/me',
     RESET_PASSWORD: '/auth/reset-password',
     SECONDARY_ROLES: '/auth/secondary-roles',
+    GENERATE_2FA: '/auth/2fa/generate',
+    ENABLE_2FA: '/auth/2fa/enable',
+    AUTHENTICATE_2FA: '/auth/2fa/authenticate',
   },
   USERS: {
     BASE: '/users',

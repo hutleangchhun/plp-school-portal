@@ -21,6 +21,7 @@ import SchoolManagement from './pages/admin/SchoolManagement';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
+import TwoFactorVerify from './pages/auth/TwoFactorVerify';
 import StudentRegistration from './pages/auth/StudentRegistration';
 import SchoolLookup from './pages/public/SchoolLookup';
 import Layout from './components/layout/Layout';
@@ -78,18 +79,30 @@ function AppContent() {
   // Check authentication and sync with localStorage
   const checkAuth = () => {
     const isAuth = api.auth.isAuthenticated();
+    console.log('🔄 checkAuth: isAuth=', isAuth);
+    
     if (isAuth) {
       const userData = utils.user.getUserData();
+      console.log('👤 checkAuth: userData=', userData);
+      
+      if (!userData) {
+        console.warn('⚠️ No user data found despite being authenticated');
+        setUser(null);
+        return;
+      }
+
+      const roleId = userData.roleId ?? userData.role_id;
+      const normalizedRoleId = parseInt(roleId);
 
       // Allow teachers (roleId=8), directors (roleId=14), admin (roleId=1), and restricted roles (roleId 15-21)
-      if (userData && ![8, 14, 1, 15, 16, 17, 18, 19, 20, 21].includes(userData.roleId)) {
-        console.warn('Non-authorized user detected. Logging out.');
+      if (![8, 14, 1, 15, 16, 17, 18, 19, 20, 21].includes(normalizedRoleId)) {
+        console.warn('❌ Non-authorized user detected. roleId=', roleId, 'Logging out.');
         utils.user.removeUserData();
         setUser(null);
         return;
       }
 
-      setUser(userData);
+      setUser({ ...userData, roleId: normalizedRoleId });
     } else {
       setUser(null);
     }
@@ -144,6 +157,17 @@ function AppContent() {
              user && user.roleId === 14 ? <Navigate to="/dashboard" replace /> :
              user && [15, 16, 17, 18, 19, 20, 21].includes(user.roleId) ? <Navigate to="/my-attendance" replace /> :
              <Navigate to="/login" replace />)
+          }
+        />
+        <Route
+          path="/auth/2fa/verify"
+          element={
+            !user ? <TwoFactorVerify setUser={setUser} /> :
+            (user && user.roleId === 8 ? <Navigate to="/teacher-dashboard" replace /> :
+             user && user.roleId === 1 ? <Navigate to="/admin-dashboard" replace /> :
+             user && user.roleId === 14 ? <Navigate to="/dashboard" replace /> :
+             user && [15, 16, 17, 18, 19, 20, 21].includes(user.roleId) ? <Navigate to="/my-attendance" replace /> :
+             <Navigate to="/dashboard" replace />)
           }
         />
 

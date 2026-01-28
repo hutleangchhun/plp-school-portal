@@ -13,6 +13,8 @@ export default function ConfirmDialog({
   confirmText,
   cancelText,
   loading = false,
+  error = null,
+  isAlert = false,
   disabledReason = null
 }) {
   const { t } = useLanguage();
@@ -53,9 +55,15 @@ export default function ConfirmDialog({
   const config = typeConfig[type];
   const IconComponent = config.icon;
 
-  const handleConfirm = async () => {
-    await onConfirm();
-    onClose();
+  const handleConfirm = async (e) => {
+    e?.preventDefault();
+    try {
+      await onConfirm();
+      onClose();
+    } catch (err) {
+      console.error('ConfirmDialog action failed:', err);
+      // Dialog remains open, error should be passed via props
+    }
   };
 
   return (
@@ -85,23 +93,31 @@ export default function ConfirmDialog({
           </div>
           
           <div className="bg-gray-50 px-3 py-3 sm:px-4 sm:py-3 lg:px-6 rounded-b-sm">
+            {error && (
+              <div className="flex items-center gap-2 p-3 mb-3 bg-red-50 border border-red-100 rounded-md text-red-600">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                <p className="text-xs sm:text-sm font-medium">{error}</p>
+              </div>
+            )}
             {disabledReason && (
               <p className="text-xs sm:text-sm text-gray-700 mb-3 p-2">
                 {disabledReason}
               </p>
             )}
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
-              <AlertDialog.Cancel asChild>
-                <Button
-                  type="button"
-                  disabled={loading}
-                  variant="outline"
-                  size="sm"
-                  className="w-full sm:w-auto text-xs sm:text-sm"
-                >
-                  {cancelText || t('បោះបង់', 'Cancel')}
-                </Button>
-              </AlertDialog.Cancel>
+              {!isAlert && (
+                <AlertDialog.Cancel asChild>
+                  <Button
+                    type="button"
+                    disabled={loading}
+                    variant="outline"
+                    size="sm"
+                    className="w-full sm:w-auto text-xs sm:text-sm"
+                  >
+                    {cancelText || t('បោះបង់', 'Cancel')}
+                  </Button>
+                </AlertDialog.Cancel>
+              )}
               <AlertDialog.Action asChild>
                 <Button
                   type="button"

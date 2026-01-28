@@ -13,7 +13,7 @@ const userService = {
   getMyAccount: async () => {
     const response = await get(ENDPOINTS.USERS.MY_ACCOUNT);
     console.log('My account response:', response);
-    return response;
+    return userUtils.normalizeUserData(response);
   },
 
   /**
@@ -31,7 +31,8 @@ const userService = {
 
   getUserByID: async (userId) => {
     // UPDATE_USER is a function that builds the URL, so call it with userId
-    return get(ENDPOINTS.USERS.UPDATE_USER(userId));
+    const response = await get(ENDPOINTS.USERS.UPDATE_USER(userId));
+    return userUtils.normalizeUserData(response);
   },
 
   /**
@@ -821,13 +822,53 @@ const userUtils = {
   },
 
   /**
+   * Normalize user data to ensure all flags and role IDs are consistent
+   * @param {Object} userData - Raw user data from API
+   * @returns {Object} Normalized user data
+   */
+  normalizeUserData: (userData) => {
+    if (!userData) return null;
+
+    // Robust check for 2FA flag across all naming conventions and types
+    const raw2FA = userData.isTwoFactorEnabled ?? userData.is_two_factor_enabled ?? userData.twoFactorEnabled;
+    const is2FAEnabled = raw2FA === true || raw2FA === 1 || raw2FA === '1' || raw2FA === 'true';
+
+    // Normalize roleId to a number
+    let normalizedRoleId = userData.roleId ?? userData.role_id;
+    if (normalizedRoleId !== undefined && normalizedRoleId !== null) {
+      normalizedRoleId = parseInt(normalizedRoleId);
+    }
+
+    return {
+      ...userData,
+      roleId: normalizedRoleId,
+      isTwoFactorEnabled: is2FAEnabled,
+      // Ensure camelCase versions of common properties exist
+      firstName: userData.firstName ?? userData.first_name,
+      lastName: userData.lastName ?? userData.last_name,
+      profilePicture: userData.profilePicture ?? userData.profile_picture
+    };
+  },
+
+  /**
    * Get user data from localStorage
    * @returns {Object|null} User data or null if not found
    */
   getUserData: () => {
     try {
       const userData = localStorage.getItem('user');
-      return userData ? JSON.parse(userData) : null;
+      if (!userData) return null;
+
+      const parsedUser = JSON.parse(userData);
+      const normalizedUser = userUtils.normalizeUserData(parsedUser);
+
+      console.log('👤 userUtils.getUserData:', {
+        is2FAEnabled: normalizedUser.isTwoFactorEnabled,
+        roleId: normalizedUser.roleId,
+        hasNormalized: true
+      });
+
+      return normalizedUser;
     } catch (error) {
       console.error('Error getting user data from localStorage:', error);
       return null;

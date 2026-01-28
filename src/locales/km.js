@@ -847,6 +847,18 @@ export const km = {
   permissionDenied: 'អនុញ្ញាតឱ្យចូលប្រើ',
   serverError: 'បញ្ហាម៉ាស៊ីនមេ',
   usernameAndPhonenumber: 'ឈ្មោះអ្នកប្រើប្រាស់​ ឬលេខទូរស័ព្ទ',
+  faEnterCode: 'សូមបញ្ចូលលេខកូដ 6 ខ្ទង់ដែលបានផ្ញើទៅកាន់អ៊ីមែលរបស់អ្នក',
+  verificationCode: 'លេខកូដផ្ទៀងផ្ទាត់',
+  verify: 'ផ្ទៀងផ្ទាត់',
+  backToLogin: 'ត្រឡប់ទៅកាន់កន្លែងចូលប្រព័ន្ធ',
+  verifying: 'កំពុងផ្ទៀងផ្ទាត់...',
+  invalidVerificationCode: 'លេខកូដផ្ទៀងផ្ទាត់មិនត្រឹមត្រូវ',
+  tooManyAttempts: 'មានការព្យាយាមច្រើនពេក។ សូមព្យាយាមម្ដងទៀតក្នុងរយៈពេល 15 នាទី។',
+  verificationFailed: 'ការផ្ទៀងផ្ទាត់បានបរាជ័យ',
+  ok: 'យល់ព្រម',
+  '2faErrorMessage': 'លេខកូដផ្ទៀងផ្ទាត់ដែលអ្នកបានបញ្ចូលមិនត្រឹមត្រូវ ឬបានហួសសុពលភាព។ សូមព្យាយាមម្ដងទៀត។',
+  '2faConfirmMessage': 'តើអ្នកប្រាកដថាចង់ផ្ទៀងផ្ទាត់លេខកូដ 6 ខ្ទង់នេះមែនទេ?',
+
 
 
   // Student Selection
@@ -1943,7 +1955,7 @@ export const km = {
   noAgeData: 'មិនមានទិន្នន័យការបែងចែកតាមអាយុ',
 
 
-  
+
 };
 
 // Inserted translations - Teacher Active/Inactive Status

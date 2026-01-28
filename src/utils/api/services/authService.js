@@ -141,6 +141,32 @@ const fetchAndIntegrateSecondaryRoles = async (user) => {
 };
 
 /**
+ * Helper function to normalize user data across different auth flows
+ * @param {Object} user - Raw user object from API
+ * @returns {Object} Normalized user object
+ */
+const normalizeUserData = (user) => {
+  if (!user) return null;
+
+  // Robust check for 2FA flag
+  const raw2FA = user.isTwoFactorEnabled ?? user.is_two_factor_enabled ?? user.twoFactorEnabled;
+  const is2FAEnabled = raw2FA === true || raw2FA === 1 || raw2FA === '1' || raw2FA === 'true';
+
+  return {
+    ...user,
+    isDirector: user.roleId === 14,
+    is_director: user.roleId === 14,
+    isTwoFactorEnabled: is2FAEnabled,
+    // Preserve multi-role data structure
+    roles: user.roles || [user.roleEn],
+    officerRoles: user.officerRoles || [],
+    provincialOfficer: user.provincialOfficer || null,
+    districtOfficer: user.districtOfficer || null,
+    communeOfficer: user.communeOfficer || null
+  };
+};
+
+/**
  * Authentication API Service
  * Handles all authentication-related API operations
  */
@@ -168,6 +194,15 @@ export const authService = {
       };
     }
 
+    // Handle MFA requirement
+    if (responseData.mfaRequired) {
+      return {
+        mfaRequired: true,
+        mfaToken: responseData.mfaToken,
+        user: responseData.user
+      };
+    }
+
     // If login successful, save token and fetch fresh user data
     if (response.success) {
       // Handle both response structures: { data: { accessToken, user } } and { accessToken, user, data: {...} }
@@ -182,19 +217,8 @@ export const authService = {
         };
       }
 
-      // Normalize user data: roleId = 14 is the primary director role
-      // Also preserve multi-role data (officerRoles, provincialOfficer, etc.)
-      const normalizedUser = {
-        ...user,
-        isDirector: user.roleId === 14,
-        is_director: user.roleId === 14,
-        // Preserve multi-role data structure
-        roles: user.roles || [user.roleEn],
-        officerRoles: user.officerRoles || [],
-        provincialOfficer: user.provincialOfficer || null,
-        districtOfficer: user.districtOfficer || null,
-        communeOfficer: user.communeOfficer || null
-      };
+      // Normalize user data using shared helper
+      const normalizedUser = normalizeUserData(user);
 
       // Allow users with roleId = 8 (teachers), roleId = 14 (directors), roleId = 1 (admin), and roleId 15-21 (restricted roles)
       // Teacher: roleId = 8
@@ -273,7 +297,7 @@ export const authService = {
    * @returns {Promise<Object>} Refresh response with new token
    */
   refreshToken: async () => {
-    const response = await handleApiResponse(() => 
+    const response = await handleApiResponse(() =>
       apiClient_.post(ENDPOINTS.AUTH.REFRESH)
     );
 
@@ -415,6 +439,62 @@ export const authService = {
         success: true,
         data: { accessToken, user: normalizedUser }
       };
+    }
+
+    return response;
+  },
+
+  /**
+   * Generate 2FA secret and QR code
+   * @returns {Promise<Object>} Response with qrCodeDataUri
+   */
+  generate2FA: async () => {
+    return handleApiResponse(() =>
+      apiClient_.post(ENDPOINTS.AUTH.GENERATE_2FA)
+    );
+  },
+
+  /**
+   * Enable 2FA for the current user
+   * @param {string} code - 6-digit verification code
+   * @returns {Promise<Object>} Verification response
+   */
+  enable2FA: async (code) => {
+    return handleApiResponse(() =>
+      apiClient_.post(ENDPOINTS.AUTH.ENABLE_2FA, { code })
+    );
+  },
+
+  /**
+   * Authenticate with 2FA token during login
+   * @param {string} mfaToken - MFA token from initial login
+   * @param {string} code - 6-digit verification code
+   * @returns {Promise<Object>} Login response with token and user data
+   */
+  authenticate2FA: async (mfaToken, code) => {
+    const response = await handleApiResponse(() =>
+      apiClient_.post(ENDPOINTS.AUTH.AUTHENTICATE_2FA, { mfaToken, code })
+    );
+
+    if (response.success) {
+      const responseData = response.data || response;
+      const parsedData = responseData.accessToken ? responseData : responseData.data;
+      const { accessToken, user } = parsedData;
+
+      if (user && accessToken) {
+        tokenManager.setToken(accessToken);
+
+        // Normalize user data
+        const normalizedUser = normalizeUserData(user);
+
+        // Enrich user data with secondary roles and teacher classes just like regular login
+        const [userWithSecondaryRoles] = await Promise.all([
+          fetchAndIntegrateSecondaryRoles(normalizedUser),
+          fetchAndStoreTeacherClasses(normalizedUser)
+        ]);
+
+        userUtils.saveUserData(userWithSecondaryRoles);
+      }
     }
 
     return response;

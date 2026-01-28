@@ -66,6 +66,31 @@ export function ProtectedRoute({ children, path, user, fallbackPath }) {
     return <Navigate to="/login" replace />;
   }
 
+  // Admin 2FA enforcement
+  if (user && (user.roleId === 1 || user.roleId === '1')) {
+    const isProfilePage = path === '/profile';
+    const isVerifyPage = path === '/auth/2fa/verify';
+    
+    // Check both camelCase and snake_case for maximum robustness
+    const raw2FA = user.isTwoFactorEnabled ?? user.is_two_factor_enabled ?? user.twoFactorEnabled;
+    const is2FAEnabled = raw2FA === true || raw2FA === 1 || raw2FA === '1' || raw2FA === 'true';
+    
+    console.log('🛡️ ProtectedRoute Admin 2FA Check:', {
+      path,
+      isProfilePage,
+      isVerifyPage,
+      raw2FA,
+      is2FAEnabled,
+      roleId: user.roleId,
+      fullUser: user
+    });
+
+    if (!is2FAEnabled && !isProfilePage && !isVerifyPage) {
+      console.warn('⚠️ Admin 2FA not enabled, redirecting to /profile');
+      return <Navigate to="/profile" replace />;
+    }
+  }
+
   // Skip route permission checks for API/static file paths
   // These are served by Nginx and should not trigger route permission checks
   const isApiOrStaticPath = path && (
