@@ -152,12 +152,12 @@ const SchoolLookup = () => {
     try {
       setSchoolsLoading(true);
 
-      // The districtId is already the numeric ID from the dropdown (district.id)
-      const numericDistrictId = parseInt(districtId);
+      // The districtId comes as a string from the dropdown, convert to number
+      const numericDistrictId = parseInt(districtId, 10);
       console.log('🔍 DEBUG: Numeric district ID:', numericDistrictId, 'Type:', typeof numericDistrictId);
 
       // Find the district object for reference
-      const districtObj = districts.find(d => d.id === numericDistrictId);
+      const districtObj = districts.find(d => d.id === numericDistrictId || d.id.toString() === districtId);
       console.log('🔍 DEBUG: Found district object:', districtObj);
 
       if (!districtObj) {
@@ -431,7 +431,7 @@ const SchoolLookup = () => {
                 value={selectedDistrict}
                 onValueChange={handleDistrictChange}
                 options={districts.map((district) => ({
-                  value: district.id,
+                  value: district.id.toString(),
                   label: district.districtNameKh || district.districtNameEn
                 }))}
                 placeholder={t('selectDistrict', 'Select District')}
