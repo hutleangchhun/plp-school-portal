@@ -284,9 +284,15 @@ export const getStaticAssetBaseUrl = () => {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
 
-    // In production, we proxy /uploads/ through the same domain to avoid Mixed Content errors
-    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.105' || hostname === '192.168.155.115') {
-      return ''; // Empty string means use current origin (e.g., /uploads/...)
+    // In production, we proxy /api/files/ through the same domain to avoid Mixed Content errors
+    // Handles both deployments: plp-sms.moeys.gov.kh and plp-teacher-portal.vercel.app
+    if (
+      hostname === 'plp-sms.moeys.gov.kh' ||
+      hostname === 'plp-teacher-portal.vercel.app' ||
+      hostname === '192.168.155.105' ||
+      hostname === '192.168.155.115'
+    ) {
+      return ''; // Empty string means use current origin (e.g., /api/files/...)
     }
 
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
