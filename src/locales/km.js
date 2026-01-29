@@ -497,7 +497,7 @@ export const km = {
   noStudentOrClassSelected: 'មិនមានសិស្សឬថ្នាក់គោលដៅត្រូវបានជ្រើសរើស',
   noClasses: 'មិនមានថ្នាក់',
   updateStudent: 'កែប្រែព័ត៌មានសិស្ស',
-  downloadQRCode: 'ទាញយក QR Code សិស្ស',
+  downloadQRCode: 'ទាញយក QR Code',
   disableStudent: 'បិទគណនីសិស្ស',
   enableStudent: 'បើកគណនីសិស្ស',
   studentDisabledSuccess: 'បានបិទគណនីសិស្សដោយជោគជ័យ',
@@ -1793,6 +1793,12 @@ export const km = {
   passwordRequirements: 'បច្ចេកទេសក្នុងការប្រើប្រាស់លេខសម្ងាត់',
   passwordValid: 'លេខកូដសម្ងាត់អាចប្រើប្រាស់បាន',
   passwordResetSuccess: 'លេខកូដសម្ងាត់ផ្លាស់ប្ដូរបានជោគជ័យ',
+  enableTeacher: 'បើកគណនីគ្រូបង្រៀន',
+  disableTeacher: 'បិទគណនីគ្រូបង្រៀន',
+  teacherAccountEnabled: 'គណនីគ្រូបង្រៀនត្រូវបានបើកប្រើដោយជោគជ័យ',
+  teacherAccountDisabled: 'គណនីគ្រូបង្រៀនត្រូវបានបិទប្រើដោយជោគជ័យ',
+  errorEnablingTeacher: 'កំហុសក្នុងការបើកប្រើគណនីគ្រូបង្រៀន',
+  errorDisablingTeacher: 'កំហុសក្នុងការបិទប្រើគណនីគ្រូបង្រៀន',
 
 
 

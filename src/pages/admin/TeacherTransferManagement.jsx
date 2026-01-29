@@ -98,7 +98,7 @@ const TeacherTransferManagement = () => {
   // Pagination state
   const [teacherPagination, setTeacherPagination] = useState({
     page: 1,
-    limit: 9,
+    limit: 10,
     total: 0,
     pages: 1
   });
@@ -108,7 +108,7 @@ const TeacherTransferManagement = () => {
     { value: 9, label: '9' },
     { value: 20, label: '20' },
     { value: 50, label: '50' },
-    { value: 100, label: '100' }
+    { value: 10, label: '10' }
   ];
 
   // Fetch provinces and all teachers on component mount
@@ -121,10 +121,26 @@ const TeacherTransferManagement = () => {
     try {
       clearError();
       const response = await locationService.getProvinces();
-      const provincesData = response.data || response;
+      console.log('Provinces API response:', response);
+
+      // Handle various response formats
+      let provincesData = [];
+      if (Array.isArray(response)) {
+        provincesData = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        provincesData = response.data;
+      } else if (response?.data) {
+        provincesData = [response.data];
+      } else if (response && typeof response === 'object') {
+        const arrayProp = Object.values(response).find(v => Array.isArray(v));
+        provincesData = arrayProp || [];
+      }
+
+      console.log('Provinces loaded:', provincesData.length);
       setSourceProvinces(provincesData);
       setTargetProvinces(provincesData);
     } catch (err) {
+      console.error('Error loading provinces:', err);
       handleError(err, {
         toastMessage: t('failedToLoadProvinces', 'Failed to load provinces'),
       });
@@ -384,10 +400,23 @@ const TeacherTransferManagement = () => {
     try {
       setSourceLoading(true);
       const response = await locationService.getDistrictsByProvince(String(provinceId));
-      const districtsData = response.data || response;
-      setSourceDistricts(Array.isArray(districtsData) ? districtsData : []);
+      console.log('Province response:', response);
+
+      // Handle various response formats
+      let districtsData = [];
+      if (Array.isArray(response)) {
+        districtsData = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        districtsData = response.data;
+      } else if (response?.data) {
+        districtsData = [response.data];
+      }
+
+      console.log('Districts loaded:', districtsData.length);
+      setSourceDistricts(districtsData);
       setSourceSchools([]);
     } catch (err) {
+      console.error('Error loading districts:', err);
       handleError(err, {
         toastMessage: t('failedToLoadDistricts', 'Failed to load districts'),
       });
@@ -399,31 +428,82 @@ const TeacherTransferManagement = () => {
   };
 
   const handleSourceDistrictChange = async (districtCode) => {
+    console.log('🔵 handleSourceDistrictChange CALLED with:', districtCode, 'Type:', typeof districtCode);
+    console.log('Current sourceDistricts:', sourceDistricts);
+    console.log('District codes available:', sourceDistricts.map(d => ({ district_code: d.district_code, districtCode: d.districtCode, code: d.code })));
+
     setSelectedSourceDistrict(districtCode);
     setSelectedSourceSchool('');
     setTeachers([]);
     setAllSelectedTeacherIds(new Set());
     setSelectedTeachersMap(new Map());
-    setTeacherPagination({ page: 1, limit: 50, total: 0, pages: 1 });
+    setTeacherPagination({ page: 1, limit: 9, total: 0, pages: 1 });
 
     if (!districtCode) {
+      console.log('District code is empty/falsy, returning early');
       setSourceSchools([]);
       return;
     }
 
     try {
+      console.log('🟡 Setting sourceLoading to true');
       setSourceLoading(true);
-      const districtObj = sourceDistricts.find(d => d.district_code === districtCode);
-      const districtId = districtObj?.district_id || districtObj?.id || districtObj?.districtId;
+
+      // Find district by ID (which is now used as the dropdown value)
+      let districtObj = sourceDistricts.find(d =>
+        String(d.id || d.district_id || d.districtId) === String(districtCode)
+      );
+
+      if (!districtObj) {
+        console.log('Not found by ID, trying by district_code:', districtCode);
+        districtObj = sourceDistricts.find(d => d.district_code === districtCode);
+      }
+
+      if (!districtObj) {
+        console.error('❌ District not found!');
+        console.error('Looking for district ID:', districtCode);
+        console.error('Available districts:', sourceDistricts);
+        throw new Error('District not found');
+      }
+
+      console.log('✅ District object found:', districtObj);
+
+      // Extract district ID for the API call
+      const districtId = districtObj?.id || districtObj?.district_id || districtObj?.districtId;
+
+      console.log('Extracted districtId for API call:', districtId, 'From object:', districtObj);
 
       if (!districtId) {
+        console.error('❌ District ID not found in object:', districtObj);
         throw new Error('District ID not found');
       }
 
+      console.log('🟢 About to call schoolService.getSchoolsByDistrict with districtId:', districtId);
+
       const response = await schoolService.getSchoolsByDistrict(districtId);
-      const schoolsData = response.data || [];
-      setSourceSchools(Array.isArray(schoolsData) ? schoolsData : []);
+      console.log('Schools API response:', response);
+
+      // Handle various response formats
+      let schoolsData = [];
+      if (Array.isArray(response)) {
+        // Direct array response
+        schoolsData = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        // response.data is an array
+        schoolsData = response.data;
+      } else if (response?.data) {
+        // response.data is an object, wrap it
+        schoolsData = [response.data];
+      } else if (response && typeof response === 'object') {
+        // Try to find array in response object
+        const arrayProp = Object.values(response).find(v => Array.isArray(v));
+        schoolsData = arrayProp || [];
+      }
+
+      console.log('Schools parsed successfully. Count:', schoolsData.length, 'Data:', schoolsData);
+      setSourceSchools(schoolsData);
     } catch (err) {
+      console.error('Error loading schools:', err);
       handleError(err, {
         toastMessage: t('failedToLoadSchools', 'Failed to load schools'),
       });
@@ -535,10 +615,23 @@ const TeacherTransferManagement = () => {
     try {
       setTargetLoading(true);
       const response = await locationService.getDistrictsByProvince(String(provinceId));
-      const districtsData = response.data || response;
-      setTargetDistricts(Array.isArray(districtsData) ? districtsData : []);
+      console.log('Target province response:', response);
+
+      // Handle various response formats
+      let districtsData = [];
+      if (Array.isArray(response)) {
+        districtsData = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        districtsData = response.data;
+      } else if (response?.data) {
+        districtsData = [response.data];
+      }
+
+      console.log('Target districts loaded:', districtsData.length);
+      setTargetDistricts(districtsData);
       setTargetSchools([]);
     } catch (err) {
+      console.error('Error loading target districts:', err);
       handleError(err, {
         toastMessage: t('failedToLoadDistricts', 'Failed to load districts'),
       });
@@ -550,27 +643,71 @@ const TeacherTransferManagement = () => {
   };
 
   const handleTargetDistrictChange = async (districtCode) => {
+    console.log('🔵 handleTargetDistrictChange CALLED with:', districtCode);
     setSelectedTargetDistrict(districtCode);
     setSelectedTargetSchool('');
 
     if (!districtCode) {
+      console.log('District code is empty, clearing schools');
       setTargetSchools([]);
       return;
     }
 
     try {
       setTargetLoading(true);
-      const districtObj = targetDistricts.find(d => d.district_code === districtCode);
-      const districtId = districtObj?.district_id || districtObj?.id || districtObj?.districtId;
+      console.log('🟡 Looking for target district with ID:', districtCode);
+
+      // Find district by ID
+      let districtObj = targetDistricts.find(d =>
+        String(d.id || d.district_id || d.districtId) === String(districtCode)
+      );
+
+      if (!districtObj) {
+        console.log('Not found by ID, trying by district_code:', districtCode);
+        districtObj = targetDistricts.find(d => d.district_code === districtCode);
+      }
+
+      if (!districtObj) {
+        console.error('❌ Target district not found:', districtCode, 'Available:', targetDistricts);
+        throw new Error('District not found');
+      }
+
+      console.log('✅ Target district object found:', districtObj);
+
+      // Extract district ID for the API call
+      const districtId = districtObj?.id || districtObj?.district_id || districtObj?.districtId;
 
       if (!districtId) {
+        console.error('❌ Target district ID not found in object:', districtObj);
         throw new Error('District ID not found');
       }
 
+      console.log('🟢 About to call schoolService.getSchoolsByDistrict with districtId:', districtId);
+
       const response = await schoolService.getSchoolsByDistrict(districtId);
-      const schoolsData = response.data || [];
-      setTargetSchools(Array.isArray(schoolsData) ? schoolsData : []);
+      console.log('Target schools API response:', response);
+
+      // Handle various response formats
+      let schoolsData = [];
+      if (Array.isArray(response)) {
+        // Direct array response
+        schoolsData = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        // response.data is an array
+        schoolsData = response.data;
+      } else if (response?.data) {
+        // response.data is an object, wrap it
+        schoolsData = [response.data];
+      } else if (response && typeof response === 'object') {
+        // Try to find array in response object
+        const arrayProp = Object.values(response).find(v => Array.isArray(v));
+        schoolsData = arrayProp || [];
+      }
+
+      console.log('Target schools parsed successfully. Count:', schoolsData.length);
+      setTargetSchools(schoolsData);
     } catch (err) {
+      console.error('Error loading target schools:', err);
       handleError(err, {
         toastMessage: t('failedToLoadSchools', 'Failed to load schools'),
       });
@@ -818,7 +955,7 @@ const TeacherTransferManagement = () => {
         while (hasMore) {
           const response = await api.teacher.getTeachersBySchool(selectedSourceSchool, {
             page: page,
-            limit: 100,
+            limit: 10,
             search: searchQuery.trim() || undefined
           });
 
@@ -860,7 +997,7 @@ const TeacherTransferManagement = () => {
         while (hasMore) {
           const response = await api.teacher.getAllTeachers({
             page: page,
-            limit: 100,
+            limit: 10,
             search: searchQuery.trim() || undefined
           });
 
@@ -1098,14 +1235,16 @@ const TeacherTransferManagement = () => {
   const getProvinceOptions = (provinces) => {
     return provinces.map(province => ({
       value: province.id.toString(),
-      label: province.province_name_kh || province.province_name_en,
+      label: province.provinceNameKh || province.province_name_en,
     }));
   };
 
   const getDistrictOptions = (districts) => {
     return districts.map(district => ({
-      value: district.district_code,
-      label: district.district_name_kh || district.district_name_en,
+      value: String(district.id || district.district_id || district.districtId || district.district_code),
+      label: district.districtNameKh || district.district_name_en,
+      districtCode: district.district_code,
+      districtId: district.id || district.district_id || district.districtId,
     }));
   };
 
@@ -1154,7 +1293,7 @@ const TeacherTransferManagement = () => {
     },
     {
       key: 'name',
-      header: t('teacherName', 'Teacher Name'),
+      header: t('name', 'Name'),
       accessor: 'firstName',
       render: (teacher) => (
         <div className="flex flex-col">
@@ -1339,12 +1478,12 @@ const TeacherTransferManagement = () => {
                     <span className="text-xs font-semibold text-blue-900">{t('activeFilters', 'Active Filters')}:</span>
                     {selectedSourceProvince && (
                       <Badge color="blue" variant="filled" size="sm">
-                        {t('province', 'Province')}: {sourceProvinces.find(p => p.id.toString() === selectedSourceProvince)?.province_name_kh || sourceProvinces.find(p => p.id.toString() === selectedSourceProvince)?.province_name_en}
+                        {t('province', 'Province')}: {sourceProvinces.find(p => p.id.toString() === selectedSourceProvince)?.provinceNameKh || sourceProvinces.find(p => p.id.toString() === selectedSourceProvince)?.province_name_en}
                       </Badge>
                     )}
                     {selectedSourceDistrict && (
                       <Badge color="blue" variant="filled" size="sm">
-                        {t('district', 'District')}: {sourceDistricts.find(d => d.district_code === selectedSourceDistrict)?.district_name_kh || sourceDistricts.find(d => d.district_code === selectedSourceDistrict)?.district_name_en}
+                        {t('district', 'District')}: {sourceDistricts.find(d => d.district_code === selectedSourceDistrict)?.districtNameKh || sourceDistricts.find(d => d.district_code === selectedSourceDistrict)?.district_name_en}
                       </Badge>
                     )}
                     {selectedSourceSchool && (
@@ -1693,11 +1832,10 @@ const TeacherTransferManagement = () => {
       <SidebarFilter
         isOpen={isSourceFilterOpen}
         onClose={() => setIsSourceFilterOpen(false)}
-        title={t('filters', 'Filters')}
-        subtitle={t('selectSourceSchoolDesc', 'Choose the school where teachers are currently assigned')}
-        hasFilters={Boolean(selectedSourceProvince || selectedSourceDistrict || selectedSourceSchool || (selectedStatusFilter && selectedStatusFilter !== 'all') || selectedRoleFilter)}
-        overlayClassName="bg-gray-500/75"
+        title={t('filterBySchool', 'Filter by School')}
         onApply={handleApplySourceFilters}
+        onReset={handleResetSourceFilters}
+        applyDisabled={sourceLoading}
       >
         <div className="space-y-4">
           <div>
