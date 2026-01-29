@@ -46,9 +46,9 @@ export default function Dropdown({
           sideOffset={sideOffset}
           onWheel={(e) => e.stopPropagation()}
         >
-          {options.map((option) => (
+          {options.map((option, index) => (
             <DropdownMenu.Item
-              key={option.value}
+              key={option.value || `option-${index}`}
               onSelect={() => onValueChange(option.value)}
               className={`flex items-center px-3 py-2 text-sm rounded-sm transition-colors focus:outline-none ${
                 option.disabled

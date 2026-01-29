@@ -497,6 +497,15 @@ export const km = {
   noStudentOrClassSelected: 'មិនមានសិស្សឬថ្នាក់គោលដៅត្រូវបានជ្រើសរើស',
   noClasses: 'មិនមានថ្នាក់',
   updateStudent: 'កែប្រែព័ត៌មានសិស្ស',
+  downloadQRCode: 'ទាញយក QR Code សិស្ស',
+  disableStudent: 'បិទគណនីសិស្ស',
+  enableStudent: 'បើកគណនីសិស្ស',
+  studentDisabledSuccess: 'បានបិទគណនីសិស្សដោយជោគជ័យ',
+  studentEnabledSuccess: 'បានបើកគណនីសិស្សដោយជោគជ័យ',
+  failedToDisableStudent: 'បរាជ័យក្នុងការបិទគណនីសិស្ស',
+  failedToEnableStudent: 'បរាជ័យក្នុងការបើកគណនីសិស្ស',
+  confirmDisableStudentMessage: 'តើអ្នកប្រាកដថាចង់បិទគណនីសិស្សនេះ? សកម្មភាពនេះនឹងធ្វើឱ្យសិស្សមិនអាចចូលប្រើប្រាស់ប្រព័ន្ធបានទៀត។',
+  confirmEnableStudentMessage: 'តើអ្នកប្រាកដថាចង់បើកគណនីសិស្សនេះ? សកម្មភាពនេះនឹងអនុញ្ញាតឱ្យសិស្សអាចចូលប្រើប្រាស់ប្រព័ន្ធវិញ។',
 
   // Student filters
   classFilter: 'ស្ថានភាពថ្នាក់',

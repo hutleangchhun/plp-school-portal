@@ -24,8 +24,10 @@ export default function SidebarFilter({
   children,
   actionsContent,
   onApply,
+  onReset,
   onClearFilters,
   hasFilters = false,
+  applyDisabled = false,
   overlayClassName = ''
 }) {
   const { t } = useLanguage();
@@ -95,18 +97,22 @@ export default function SidebarFilter({
 
         {/* Footer */}
         <div className="border-t border-gray-200 p-4 space-y-2">
-          {hasFilters && (
+          {(onReset || onClearFilters) && (
             <Button
               onClick={() => {
-                onClearFilters();
+                if (onReset) {
+                  onReset();
+                } else if (onClearFilters) {
+                  onClearFilters();
+                }
                 onClose();
               }}
-              variant="danger"
+              variant="outline"
               size="sm"
               className="w-full flex items-center justify-center gap-2"
             >
               <X className="h-4 w-4" />
-              {t('clearFilters', 'Clear Filters')}
+              {t('resetFilters', 'Reset Filters')}
             </Button>
           )}
           <Button
@@ -116,8 +122,9 @@ export default function SidebarFilter({
             variant="primary"
             size="sm"
             className="w-full"
+            disabled={applyDisabled}
           >
-            {t('apply', 'Apply Filters')}
+            {t('applyFilters', 'Apply Filters')}
           </Button>
         </div>
       </div>

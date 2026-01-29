@@ -18,7 +18,7 @@ export const studentService = {
    * @returns {Promise<Object>} Response with student data and pagination info
    */
   async getStudents(params = {}) {
-    const { page = 1, limit = 10, search = '', status = undefined, roleId = 9, classId, gradeLevel } = params;
+    const { page = 1, limit = 10, search = '', status = undefined, roleId = 9, classId, gradeLevel, schoolId } = params;
 
     // Normalize status: accept 'active' | 'inactive' | '' | boolean
     let normalizedStatus = status;
@@ -40,6 +40,9 @@ export const studentService = {
     if (classId !== undefined) queryParams.classId = classId;
     if (gradeLevel !== undefined && gradeLevel !== null && gradeLevel !== '' && gradeLevel !== 'all') {
       queryParams.gradeLevel = gradeLevel;
+    }
+    if (schoolId !== undefined && schoolId !== null && schoolId !== '') {
+      queryParams.schoolId = schoolId;
     }
 
     const response = await handleApiResponse(() =>

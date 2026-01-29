@@ -1,10 +1,9 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { useToast } from '../../contexts/ToastContext';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Badge } from '../../components/ui/Badge';
@@ -12,8 +11,7 @@ import { Button } from '../../components/ui/Button';
 import Dropdown from '../../components/ui/Dropdown';
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
 import Modal from '../../components/ui/Modal';
-import Pagination from '../../components/ui/Pagination';
-import EmptyState from '../../components/ui/EmptyState';
+import { Table } from '../../components/ui/Table';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import StudentContextMenu from '../../components/admin/StudentContextMenu';
 import ResetPasswordModal from '../../components/admin/ResetPasswordModal';
@@ -41,8 +39,11 @@ const StudentTransferManagement = () => {
   const [sourceDistricts, setSourceDistricts] = useState([]);
   const [sourceSchools, setSourceSchools] = useState([]);
   const [selectedSourceProvince, setSelectedSourceProvince] = useState('');
+  const [selectedSourceProvinceName, setSelectedSourceProvinceName] = useState('');
   const [selectedSourceDistrict, setSelectedSourceDistrict] = useState('');
+  const [selectedSourceDistrictName, setSelectedSourceDistrictName] = useState('');
   const [selectedSourceSchool, setSelectedSourceSchool] = useState('');
+  const [selectedSourceSchoolName, setSelectedSourceSchoolName] = useState('');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
 
@@ -143,12 +144,14 @@ const StudentTransferManagement = () => {
         statusParam = false;
       }
 
+      // Fetch students with filters (note: province & district are UI-only, not sent to API)
       const response = await studentService.getStudents({
         page,
         limit: actualLimit,
         search: search.trim() || '',
         gradeLevel: selectedGradeLevel && selectedGradeLevel !== 'all' ? selectedGradeLevel : undefined,
         status: statusParam,
+        schoolId: selectedSourceSchool,
       });
 
       const mappedStudents = (response.data || []).map(student => ({
@@ -221,129 +224,7 @@ const StudentTransferManagement = () => {
     } finally {
       setFetchingStudents(false);
     }
-  }, [clearError, handleError, selectedGradeLevel, selectedStatusFilter, t]);
-
-  const fetchStudentsForSchool = useCallback(async (schoolId, page = 1, search = '', limit = studentPagination.limit) => {
-    if (!schoolId) {
-      setStudents([]);
-      const actualLimit = typeof limit === 'number' ? limit : parseInt(limit);
-      setStudentPagination({ page: 1, limit: actualLimit, total: 0, pages: 1 });
-      return;
-    }
-
-    try {
-      setFetchingStudents(true);
-      clearError();
-
-      const actualLimit = typeof limit === 'number' ? limit : parseInt(limit);
-
-      // Convert status filter to API parameter format
-      let statusParam = undefined;
-      if (selectedStatusFilter === 'active') {
-        statusParam = true;
-      } else if (selectedStatusFilter === 'inactive') {
-        statusParam = false;
-      }
-
-      const response = await studentService.getStudentsBySchool(schoolId, {
-        page,
-        limit: actualLimit,
-        search: search.trim() || undefined,
-        gradeLevel: selectedGradeLevel && selectedGradeLevel !== 'all' ? selectedGradeLevel : undefined,
-        status: statusParam,
-      });
-
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to load students');
-      }
-
-      const mappedStudents = (response.data || []).map(student => ({
-        id: student.studentId || student.id,
-        studentId: student.studentId || student.id,
-        userId: student.userId,
-        username: student.username,
-        firstName: student.firstName,
-        lastName: student.lastName,
-        email: student.email,
-        phone: student.phone,
-        gradeLevel: student.gradeLevel,
-        class: student.class,
-        classId: student.class?.classId || student.class?.id,
-        schoolId: schoolId,
-        // Use already-formatted data from formatStudentData
-        schoolName: student.schoolName,
-        isActive: student.isActive, // Already mapped by formatStudentData
-        currentClass: student.class,
-        rawStudent: student
-      }));
-
-      // Fetch school details and class info if needed
-      const studentsWithSchoolInfo = await Promise.all(
-        mappedStudents.map(async (student) => {
-          let updatedStudent = student;
-
-          // Fetch school info if not already available
-          if (!student.schoolName && student.schoolId) {
-            try {
-              const schoolResponse = await schoolService.getSchoolById(student.schoolId);
-              if (schoolResponse && schoolResponse.data) {
-                updatedStudent = {
-                  ...updatedStudent,
-                  schoolName: schoolResponse.data.name || ''
-                };
-              }
-            } catch (err) {
-              console.error(`Failed to fetch school info for student ${student.id}:`, err);
-            }
-          }
-
-          // Fetch class info if student has a classId
-          if (student.classId) {
-            try {
-              const classResponse = await classService.getClassById(student.classId);
-              updatedStudent = {
-                ...updatedStudent,
-                currentClass: classResponse
-              };
-            } catch (err) {
-              console.error(`Failed to fetch class info for student ${student.id}:`, err);
-            }
-          }
-
-          return updatedStudent;
-        })
-      );
-
-      // Filtering is now done on the backend via API parameters
-      setStudents(studentsWithSchoolInfo);
-
-      if (response.pagination) {
-        setStudentPagination(prev => ({
-          ...prev,
-          page,
-          limit: actualLimit,
-          total: response.pagination.total,
-          pages: response.pagination.pages || response.pagination.totalPages || Math.ceil(response.pagination.total / actualLimit),
-        }));
-      } else {
-        const totalPages = Math.ceil((studentsWithSchoolInfo?.length || 0) / actualLimit);
-        setStudentPagination(prev => ({
-          ...prev,
-          page,
-          limit: actualLimit,
-          total: studentsWithSchoolInfo?.length || 0,
-          pages: totalPages,
-        }));
-      }
-    } catch (err) {
-      handleError(err, {
-        toastMessage: t('failedToLoadStudents', 'Failed to load students'),
-      });
-      setStudents([]);
-    } finally {
-      setFetchingStudents(false);
-    }
-  }, [clearError, handleError, selectedGradeLevel, selectedStatusFilter, t]);
+  }, [clearError, handleError, selectedGradeLevel, selectedStatusFilter, selectedSourceSchool, t]);
 
   const handleSearchChange = (value) => {
     setSearchQuery(value);
@@ -356,7 +237,7 @@ const StudentTransferManagement = () => {
     setStudentPagination(prev => ({ ...prev, page: 1 }));
 
     if (selectedSourceSchool) {
-      fetchStudentsForSchool(selectedSourceSchool, 1, searchQuery, studentPagination.limit);
+      fetchStudentsGlobal(1, searchQuery, studentPagination.limit);
     } else {
       fetchStudentsGlobal(1, searchQuery, studentPagination.limit);
     }
@@ -370,8 +251,14 @@ const StudentTransferManagement = () => {
 
   const handleSourceProvinceChange = async (provinceId) => {
     setSelectedSourceProvince(provinceId);
+    // Store the province name
+    const provinceObj = sourceProvinces.find(p => p.id.toString() === provinceId);
+    setSelectedSourceProvinceName(provinceObj?.provinceNameKh || provinceObj?.province_name_en || '');
+
     setSelectedSourceDistrict('');
+    setSelectedSourceDistrictName('');
     setSelectedSourceSchool('');
+    setSelectedSourceSchoolName('');
     setStudents([]);
     setSelectedStudentIds(new Set());
     setSelectedStudentsMap(new Map());
@@ -385,8 +272,11 @@ const StudentTransferManagement = () => {
 
     try {
       setSourceLoading(true);
-      const response = await locationService.getDistrictsByProvince(String(provinceId));
+      // Convert province ID to number if it's a string (from dropdown value)
+      const numericProvinceId = typeof provinceId === 'string' ? parseInt(provinceId, 10) : provinceId;
+      const response = await locationService.getDistrictsByProvince(numericProvinceId);
       const districtsData = response.data || response;
+      console.log('Districts response:', { response, districtsData, isArray: Array.isArray(districtsData), provinceId, numericProvinceId });
       setSourceDistricts(Array.isArray(districtsData) ? districtsData : []);
       setSourceSchools([]);
     } catch (err) {
@@ -402,11 +292,16 @@ const StudentTransferManagement = () => {
 
   const handleSourceDistrictChange = async (districtCode) => {
     setSelectedSourceDistrict(districtCode);
+    // Store the district name
+    const districtObj = sourceDistricts.find(d => String(d.district_code) === districtCode);
+    setSelectedSourceDistrictName(districtObj?.districtNameKh || districtObj?.district_name_en || '');
+
     setSelectedSourceSchool('');
+    setSelectedSourceSchoolName('');
     setStudents([]);
     setSelectedStudentIds(new Set());
     setSelectedStudentsMap(new Map());
-    setStudentPagination({ page: 1, limit: 50, total: 0, pages: 1 });
+    setStudentPagination({ page: 1, limit: 9, total: 0, pages: 1 });
 
     if (!districtCode) {
       setSourceSchools([]);
@@ -415,15 +310,30 @@ const StudentTransferManagement = () => {
 
     try {
       setSourceLoading(true);
-      const districtObj = sourceDistricts.find(d => d.district_code === districtCode);
-      const districtId = districtObj?.district_id || districtObj?.id || districtObj?.districtId;
+      // Find district by district_code or id
+      const districtObj = sourceDistricts.find(d =>
+        String(d.district_code) === districtCode || String(d.id) === districtCode
+      );
 
-      if (!districtId) {
-        throw new Error('District ID not found');
+      if (!districtObj) {
+        throw new Error('District not found');
       }
 
-      const response = await schoolService.getSchoolsByDistrict(districtId);
+      // Extract district ID - try multiple property names
+      const districtId = districtObj.district_id || districtObj.id || districtObj.districtId;
+
+      if (!districtId) {
+        console.warn('District ID not found, using district code as fallback:', districtCode);
+        // Use district code as fallback ID
+        const fallbackId = districtObj.district_code || districtObj.id;
+        if (!fallbackId) {
+          throw new Error('No valid district identifier found');
+        }
+      }
+
+      const response = await schoolService.getSchoolsByDistrict(districtId || districtObj.district_code || districtObj.id);
       const schoolsData = response.data || [];
+      console.log('Schools response:', { districtCode, districtObj, districtId, schoolsCount: schoolsData.length });
       setSourceSchools(Array.isArray(schoolsData) ? schoolsData : []);
     } catch (err) {
       handleError(err, {
@@ -437,6 +347,10 @@ const StudentTransferManagement = () => {
 
   const handleSourceSchoolChange = (value) => {
     setSelectedSourceSchool(value);
+    // Store the school name
+    const schoolObj = sourceSchools.find(s => s.id.toString() === value);
+    setSelectedSourceSchoolName(schoolObj?.name || '');
+
     setSearchQuery('');
     setStudentPagination({ page: 1, limit: 9, total: 0, pages: 1 });
     setStudents([]);
@@ -446,8 +360,11 @@ const StudentTransferManagement = () => {
 
   const handleResetSourceFilters = () => {
     setSelectedSourceProvince('');
+    setSelectedSourceProvinceName('');
     setSelectedSourceDistrict('');
+    setSelectedSourceDistrictName('');
     setSelectedSourceSchool('');
+    setSelectedSourceSchoolName('');
     setSelectedGradeLevel('all');
     setSelectedStatusFilter('all');
     setSourceDistricts([]);
@@ -465,12 +382,7 @@ const StudentTransferManagement = () => {
   };
 
   const handleApplySourceFilters = () => {
-    if (selectedSourceSchool) {
-      fetchStudentsForSchool(selectedSourceSchool, 1, searchQuery, studentPagination.limit);
-    } else {
-      // If no specific school selected, fetch all students
-      fetchStudentsGlobal(1, searchQuery, studentPagination.limit);
-    }
+    fetchStudentsGlobal(1, searchQuery, studentPagination.limit);
     setIsSourceFilterOpen(false);
   };
 
@@ -478,7 +390,7 @@ const StudentTransferManagement = () => {
     if (newPage >= 1 && newPage <= studentPagination.pages) {
       setStudentPagination(prev => ({ ...prev, page: newPage }));
       if (selectedSourceSchool) {
-        fetchStudentsForSchool(selectedSourceSchool, newPage, searchQuery, studentPagination.limit);
+        fetchStudentsGlobal(newPage, searchQuery, studentPagination.limit);
       } else {
         fetchStudentsGlobal(newPage, searchQuery, studentPagination.limit);
       }
@@ -488,7 +400,7 @@ const StudentTransferManagement = () => {
   const handleLimitChange = (newLimit) => {
     setStudentPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
     if (selectedSourceSchool) {
-      fetchStudentsForSchool(selectedSourceSchool, 1, searchQuery, newLimit);
+      fetchStudentsGlobal(1, searchQuery, newLimit);
     } else {
       fetchStudentsGlobal(1, searchQuery, newLimit);
     }
@@ -584,7 +496,9 @@ const StudentTransferManagement = () => {
 
     try {
       setTargetLoading(true);
-      const response = await locationService.getDistrictsByProvince(String(provinceId));
+      // Convert province ID to number if it's a string (from dropdown value)
+      const numericProvinceId = typeof provinceId === 'string' ? parseInt(provinceId, 10) : provinceId;
+      const response = await locationService.getDistrictsByProvince(numericProvinceId);
       const districtsData = response.data || response;
       setTargetDistricts(Array.isArray(districtsData) ? districtsData : []);
       setTargetSchools([]);
@@ -612,15 +526,30 @@ const StudentTransferManagement = () => {
 
     try {
       setTargetLoading(true);
-      const districtObj = targetDistricts.find(d => d.district_code === districtCode);
-      const districtId = districtObj?.district_id || districtObj?.id || districtObj?.districtId;
+      // Find district by district_code or id
+      const districtObj = targetDistricts.find(d =>
+        String(d.district_code) === districtCode || String(d.id) === districtCode
+      );
 
-      if (!districtId) {
-        throw new Error('District ID not found');
+      if (!districtObj) {
+        throw new Error('District not found');
       }
 
-      const response = await schoolService.getSchoolsByDistrict(districtId);
+      // Extract district ID - try multiple property names
+      const districtId = districtObj.district_id || districtObj.id || districtObj.districtId;
+
+      if (!districtId) {
+        console.warn('District ID not found, using district code as fallback:', districtCode);
+        // Use district code as fallback ID
+        const fallbackId = districtObj.district_code || districtObj.id;
+        if (!fallbackId) {
+          throw new Error('No valid district identifier found');
+        }
+      }
+
+      const response = await schoolService.getSchoolsByDistrict(districtId || districtObj.district_code || districtObj.id);
       const schoolsData = response.data || [];
+      console.log('Schools response:', { districtCode, districtObj, districtId, schoolsCount: schoolsData.length });
       setTargetSchools(Array.isArray(schoolsData) ? schoolsData : []);
     } catch (err) {
       handleError(err, {
@@ -825,7 +754,7 @@ const StudentTransferManagement = () => {
 
         // Optionally refetch to ensure consistency
         if (selectedSourceSchool) {
-          fetchStudentsForSchool(selectedSourceSchool, studentPagination.page, searchQuery, studentPagination.limit);
+          fetchStudentsGlobal(studentPagination.page, searchQuery, studentPagination.limit);
         } else {
           fetchStudentsGlobal(studentPagination.page, searchQuery, studentPagination.limit);
         }
@@ -1111,7 +1040,7 @@ const StudentTransferManagement = () => {
         closeTransferModal();
         setSelectedStudentIds(new Set());
         setSelectedStudentsMap(new Map());
-        fetchStudentsForSchool(selectedSourceSchool, studentPagination.page, searchQuery);
+        fetchStudentsGlobal(studentPagination.page, searchQuery, studentPagination.limit);
       }
 
       if (failed > 0) {
@@ -1177,7 +1106,7 @@ const StudentTransferManagement = () => {
         closeTransferModal();
 
         // Refetch students with current filters to refresh data while preserving filters
-        fetchStudentsForSchool(selectedSourceSchool, studentPagination.page, searchQuery);
+        fetchStudentsGlobal(studentPagination.page, searchQuery, studentPagination.limit);
       }
 
       if (failed > 0) {
@@ -1194,24 +1123,30 @@ const StudentTransferManagement = () => {
   };
 
   const getProvinceOptions = (provinces) => {
-    return provinces.map(province => ({
-      value: province.id.toString(),
-      label: province.province_name_kh || province.province_name_en,
-    }));
+    return provinces
+      .filter(province => province.id)
+      .map(province => ({
+        value: province.id.toString(),
+        label: province.provinceNameKh || province.province_name_en,
+      }));
   };
 
   const getDistrictOptions = (districts) => {
-    return districts.map(district => ({
-      value: district.district_code,
-      label: district.district_name_kh || district.district_name_en,
+    const options = districts.map(district => ({
+      value: String(district.district_code || district.id || ''),
+      label: district.districtNameKh || district.district_name_en || district.name || 'Unknown',
     }));
+    console.log('District options:', { districtsCount: districts.length, optionsCount: options.length, options });
+    return options.filter(opt => opt.value && opt.value !== 'undefined' && opt.value !== '');
   };
 
   const getSchoolOptions = (schools) => {
-    return schools.map(school => ({
-      value: school.id.toString(),
-      label: school.name || `School ${school.id}`,
+    const options = schools.map(school => ({
+      value: String(school.id || school.schoolId || ''),
+      label: school.name || school.schoolName || `School ${school.id || school.schoolId || 'Unknown'}`,
     }));
+    console.log('School options:', { schoolsCount: schools.length, optionsCount: options.length, options });
+    return options.filter(opt => opt.value && opt.value !== 'undefined' && opt.value !== '');
   };
   
   const gradeLevelOptions = [
@@ -1231,16 +1166,132 @@ const StudentTransferManagement = () => {
   const targetDistrictOptions = getDistrictOptions(targetDistricts);
   const targetSchoolOptions = getSchoolOptions(targetSchools);
 
-  // Load students on initial page load if not already loaded
-  useEffect(() => {
-    if (!initialLoading && students.length === 0) {
-      if (selectedSourceSchool) {
-        fetchStudentsForSchool(selectedSourceSchool, 1, '', studentPagination.limit);
-      } else {
-        fetchStudentsGlobal(1, '', studentPagination.limit);
+  // Table columns definition
+  const tableColumns = useMemo(() => [
+    {
+      key: 'select',
+      header: (
+        <input
+          type="checkbox"
+          checked={selectedStudentIds.size === students.length && students.length > 0}
+          onChange={handleSelectAllStudents}
+          disabled={fetchingStudents}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+      ),
+      headerClassName: 'w-12',
+      cellClassName: 'w-12',
+      disableSort: true,
+      render: (student) => (
+        <input
+          type="checkbox"
+          checked={selectedStudentIds.has(student.id)}
+          onChange={(e) => {
+            e.stopPropagation();
+            handleSelectStudent(student);
+          }}
+          disabled={student.isActive === false}
+          className={`w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 ${
+            student.isActive === false
+              ? 'cursor-not-allowed opacity-50 bg-gray-100'
+              : 'cursor-pointer'
+          }`}
+        />
+      )
+    },
+    {
+      key: 'name',
+      header: t('studentName', 'Student Name'),
+      accessor: 'firstName',
+      render: (student) => (
+        <div className="flex flex-col">
+          <span className="font-medium text-gray-900 line-clamp-2">{getFullName(student)}</span>
+          <span className="text-xs text-gray-500">{student.username}</span>
+        </div>
+      )
+    },
+    {
+      key: 'class',
+      header: t('class', 'Class'),
+      render: (student) => {
+        if (student.currentClass?.gradeLevel !== undefined && student.currentClass?.gradeLevel !== null) {
+          return formatClassIdentifier(student.currentClass.gradeLevel, student.currentClass.section);
+        }
+        return student.classId ? t('loadingClass', 'Loading...') : t('noClasses', 'No class');
       }
+    },
+    {
+      key: 'school',
+      header: t('school', 'School'),
+      accessor: 'schoolName',
+      responsive: 'hidden md:table-cell',
+      render: (student) => student.schoolName || '-'
+    },
+    {
+      key: 'gradeLevel',
+      header: t('gradeLevel', 'Grade'),
+      accessor: 'gradeLevel',
+      responsive: 'hidden lg:table-cell',
+      cellClassName: 'text-center',
+      render: (student) => student.gradeLevel ? (
+        <div className="text-gray-700 flex justify-start">
+          {sharedGradeLevelOptions.find(opt => opt.value === String(student.gradeLevel))?.label || student.gradeLevel}
+        </div>
+      ) : '-'
+    },
+    {
+      key: 'status',
+      header: t('status', 'Status'),
+      responsive: 'hidden sm:table-cell',
+      cellClassName: 'text-center',
+      render: (student) => student.isActive === false ? (
+        <Badge color="red" variant="filled" size="sm">
+          {t('inactive', 'Inactive')}
+        </Badge>
+      ) : (
+        <Badge color="green" variant="filled" size="sm">
+          {t('active', 'Active')}
+        </Badge>
+      )
+    },
+    {
+      key: 'actions',
+      header: t('actions', 'Actions'),
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+      disableSort: true,
+      render: (student) => (
+        <StudentContextMenu
+          student={student}
+          onResetPassword={handleResetPassword}
+          onDelete={handleDeleteStudent}
+          onToggleActiveStatus={handleToggleUserStatus}
+          onDownloadQRCode={handleDownloadQRCode}
+        >
+          <button
+            onClick={(e) => e.stopPropagation()}
+            className="p-1.5 text-gray-500 hover:text-gray-900 transition-colors rounded hover:bg-gray-100"
+            title={t('moreActions', 'More actions')}
+          >
+            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 6a2 2 0 11-4 0 2 2 0 014 0zM10 12a2 2 0 11-4 0 2 2 0 014 0zM10 18a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </button>
+        </StudentContextMenu>
+      )
     }
-  }, [initialLoading, selectedSourceSchool, students.length, fetchStudentsGlobal, fetchStudentsForSchool, studentPagination.limit]);
+  ], [selectedStudentIds, students.length, fetchingStudents, t, handleSelectAllStudents, handleSelectStudent, getFullName, formatClassIdentifier, handleResetPassword, handleDeleteStudent, handleToggleUserStatus, handleDownloadQRCode]);
+
+  // Load students only on initial page load
+  const hasInitializedRef = useRef(false);
+
+  useEffect(() => {
+    // Only fetch once on initial load
+    if (!initialLoading && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      fetchStudentsGlobal(1, '', studentPagination.limit);
+    }
+  }, [initialLoading]);
 
   if (initialLoading) {
     return <PageLoader message={t('loadingProvinces', 'Loading provinces...')} className="min-h-screen bg-gray-50" />;
@@ -1289,14 +1340,14 @@ const StudentTransferManagement = () => {
           )}
 
           <FadeInSection delay={250}>
-            <Card className="border border-gray-200 shadow-md hover:shadow-lg transition-shadow rounded-sm">
-              <CardHeader className="space-y-4 bg-white border-b border-gray-200">
+            <div className="border border-gray-200 shadow-md hover:shadow-lg transition-shadow rounded-sm bg-white">
+              <div className="space-y-4 bg-white border-b border-gray-200 p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                       <span className="inline-block w-1 h-6 bg-green-600 rounded"></span>
                       <span>{t('selectStudent', 'Select Student')}</span>
-                    </CardTitle>
+                    </h2>
                     <p className="text-sm text-gray-600 mt-1">
                       {studentPagination.total > 0
                         ? `${t('showing', 'Showing')} ${(studentPagination.page - 1) * studentPagination.limit + 1}-${Math.min(studentPagination.page * studentPagination.limit, studentPagination.total)} ${t('of', 'of')} ${studentPagination.total}`
@@ -1355,17 +1406,17 @@ const StudentTransferManagement = () => {
                       <span className="text-xs font-semibold text-blue-900">{t('activeFilters', 'Active Filters')}:</span>
                       {selectedSourceProvince && (
                         <Badge color="blue" variant="filled" size="sm">
-                          {t('province', 'Province')}: {sourceProvinces.find(p => p.id.toString() === selectedSourceProvince)?.province_name_kh || sourceProvinces.find(p => p.id.toString() === selectedSourceProvince)?.province_name_en}
+                          {t('province', 'Province')}: {selectedSourceProvinceName}
                         </Badge>
                       )}
                       {selectedSourceDistrict && (
                         <Badge color="blue" variant="filled" size="sm">
-                          {t('district', 'District')}: {sourceDistricts.find(d => d.district_code === selectedSourceDistrict)?.district_name_kh || sourceDistricts.find(d => d.district_code === selectedSourceDistrict)?.district_name_en}
+                          {t('district', 'District')}: {selectedSourceDistrictName}
                         </Badge>
                       )}
                       {selectedSourceSchool && (
                         <Badge color="green" variant="filled" size="sm">
-                          {t('school', 'School')}: {sourceSchools.find(s => s.id.toString() === selectedSourceSchool)?.name}
+                          {t('school', 'School')}: {selectedSourceSchoolName}
                         </Badge>
                       )}
                       {selectedGradeLevel && selectedGradeLevel !== 'all' && (
@@ -1409,121 +1460,37 @@ const StudentTransferManagement = () => {
                     </Button>
                   </form>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {fetchingStudents ? (
-                  <div className="flex items-center justify-center py-12">
-                    <PageLoader message={t('loadingStudents', 'Loading students...')} />
-                  </div>
-                ) : students.length === 0 ? (
-                  <EmptyState
-                    icon={Users}
-                    title={t('noStudentsFound', 'No Students Found')}
-                    description={t('noStudentsInSchool', 'No students available in this school')}
-                    variant="neutral"
-                  />
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
-                      {students.map((student) => (
-                        <StudentContextMenu
-                          key={student.id}
-                          student={student}
-                          onResetPassword={handleResetPassword}
-                          onDelete={handleDeleteStudent}
-                          onToggleActiveStatus={handleToggleUserStatus}
-                          onDownloadQRCode={handleDownloadQRCode}
-                        >
-                          <div
-                            className={
-                              `bg-white rounded-sm border hover:border-blue-400 hover:shadow-md transition-all duration-200 flex justify-between items-start p-4 ` +
-                              (student.isActive === false ? 'opacity-50 ' : '') +
-                              (selectedStudentIds.has(student.id)
-                                ? 'border-blue-500 ring-2 ring-blue-200'
-                                : 'border-gray-200')
-                            }
-                          >
-                          <div className="space-3">
-                            <div>
-                              <label
-                                htmlFor={`student-${student.id}`}
-                                className="font-semibold text-gray-900 text-sm cursor-pointer line-clamp-2 hover:text-blue-600"
-                              >
-                                {getFullName(student)}
-                              </label>
-                              <div className="text-xs text-gray-500">
-                                {student.username}
-                              </div>
-                              {/* Display current class if available */}
-                              {student.currentClass && student.currentClass.gradeLevel !== undefined && student.currentClass.gradeLevel !== null ? (
-                                <div className="text-xs text-gray-600 font-medium mt-1">
-                                  {t('class', 'Class')}: {formatClassIdentifier(student.currentClass.gradeLevel, student.currentClass.section)}
-                                </div>
-                              ) : student.classId ? (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {t('loadingClass', 'Loading class...')}
-                                </div>
-                              ) : (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {t('noClassAssigned', 'No class assigned')}
-                                </div>
-                              )}
-                              {student.schoolName && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {student.schoolName}
-                                </div>
-                              )}
-                              <div className="flex flex-wrap items-center gap-2 mt-1">
-                                {student.isActive === false && (
-                                  <Badge color="red" variant="filled" size="sm">
-                                    {t('inactive', 'Inactive')}
-                                  </Badge>
-                                )}
-                                {student.gradeLevel && (
-                                  <Badge color="blue" variant="outlined" size="sm">
-                                    {t('gradeLevelShort', 'Grade')} {student.gradeLevel}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-start">
-                            <input
-                              type="checkbox"
-                              id={`student-${student.id}`}
-                              checked={selectedStudentIds.has(student.id)}
-                              onChange={() => handleSelectStudent(student)}
-                              disabled={student.isActive === false}
-                              className={`w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 mt-0.5 ${
-                                student.isActive === false
-                                  ? 'cursor-not-allowed opacity-50 bg-gray-100'
-                                  : 'cursor-pointer'
-                              }`}
-                            />
-                          </div>
-                          </div>
-                        </StudentContextMenu>
-                      ))}
-                    </div>
-
-                    {/* Pagination Component with built-in Limit Selector */}
-                    <Pagination
-                      currentPage={studentPagination.page}
-                      totalPages={studentPagination.pages}
-                      total={studentPagination.total}
-                      limit={studentPagination.limit}
-                      onPageChange={handleStudentPageChange}
-                      onLimitChange={handleLimitChange}
-                      limitOptions={limitOptions.map(opt => opt.value)}
-                      showLimitSelector={true}
-                      t={t}
-                      showFirstLast={true}
-                      showInfo={true}
-                    />
-                  </>
-                )}
-              </CardContent>
-            </Card>
+              </div>
+              <div className="p-6">
+                <Table
+                  columns={tableColumns}
+                  data={students}
+                  loading={fetchingStudents}
+                  emptyMessage={t('noStudentsFound', 'No Students Found')}
+                  emptyDescription={t('noStudentsInSchool', 'No students available in this school')}
+                  emptyIcon={Users}
+                  emptyVariant="neutral"
+                  showPagination={true}
+                  pagination={{
+                    page: studentPagination.page,
+                    pages: studentPagination.pages,
+                    total: studentPagination.total,
+                    limit: studentPagination.limit
+                  }}
+                  onPageChange={handleStudentPageChange}
+                  onLimitChange={handleLimitChange}
+                  limitOptions={limitOptions.map(opt => opt.value)}
+                  showLimitSelector={true}
+                  enableSort={true}
+                  defaultSortKey="name"
+                  defaultSortDir="asc"
+                  t={t}
+                  rowClassName="hover:bg-blue-50"
+                  dense={false}
+                  stickyHeader={true}
+                />
+              </div>
+            </div>
           </FadeInSection>
         </div>
       </PageTransition>
