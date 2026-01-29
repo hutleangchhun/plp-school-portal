@@ -411,7 +411,7 @@ export default function SchoolSettingsPage({ user }) {
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-200 rounded-sm transition-colors"
               title={t('back') || 'Back'}
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -439,7 +439,7 @@ export default function SchoolSettingsPage({ user }) {
         )}
 
         {/* School Settings Form */}
-        <FadeInSection className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        <FadeInSection className="bg-white rounded-sm border border-gray-200 shadow-sm p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Two Column Layout: Image Left, Data Right */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -459,7 +459,7 @@ export default function SchoolSettingsPage({ user }) {
                       }}
                     >
                       {imageError ? (
-                        <div className="w-full aspect-square rounded-lg bg-red-50 border-2 border-red-300 flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                        <div className="w-full aspect-square rounded-sm bg-red-50 border-2 border-red-300 flex items-center justify-center group-hover:bg-red-100 transition-colors">
                           <div className="text-center">
                             <span className="text-xs text-red-600 font-medium block">
                               {t('imageLoadFailed') || 'Image failed to load'}
@@ -474,15 +474,15 @@ export default function SchoolSettingsPage({ user }) {
                           <img
                             src={previewUrl}
                             alt="School profile"
-                            className="w-full aspect-square rounded-lg object-cover border border-gray-200 group-hover:opacity-75 transition-opacity bg-white"
+                            className="w-full aspect-square rounded-sm object-cover border border-gray-200 group-hover:opacity-75 transition-opacity bg-white"
                             onError={handleImageLoadError}
                           />
-                          <div className="absolute inset-0 rounded-lg bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <div className="absolute inset-0 rounded-sm bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                             <span className="text-white text-xs font-medium">{t('clickToChan', 'Click to change')}</span>
                           </div>
                         </div>
                       ) : (
-                        <div className="w-full aspect-square rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center group-hover:bg-gray-50 transition-colors">
+                        <div className="w-full aspect-square rounded-sm bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center group-hover:bg-gray-50 transition-colors">
                           <span className="text-xs text-gray-500 text-center px-2">
                             {t('clickToUpload') || 'Click to upload image'}
                           </span>
@@ -505,7 +505,7 @@ export default function SchoolSettingsPage({ user }) {
                   />
 
                   {/* File Info */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="bg-blue-50 border border-blue-200 rounded-sm p-3">
                     <p className="text-xs font-medium text-blue-900 mb-2">
                       {t('supportedFormats') || 'Supported Formats'}
                     </p>
@@ -541,7 +541,7 @@ export default function SchoolSettingsPage({ user }) {
                         value={formData.name}
                         onChange={handleInputChange}
                         disabled={!isEditMode || submitting}
-                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                         placeholder={t('enterSchoolName') || 'Enter school name'}
                       />
                     </div>
@@ -558,7 +558,7 @@ export default function SchoolSettingsPage({ user }) {
                         value={formData.code}
                         onChange={handleInputChange}
                         disabled={true}
-                        className="w-full px-4 py-2 border text-sm border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                        className="w-full px-4 py-2 border text-sm border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                         placeholder={t('enterSchoolCode') || 'Enter school code'}
                       />
                     </div>
@@ -678,7 +678,7 @@ export default function SchoolSettingsPage({ user }) {
                         value={formData.gpsLatitude}
                         onChange={handleInputChange}
                         disabled={!isEditMode || submitting}
-                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                         placeholder="11.5678901"
                       />
                     </div>
@@ -695,7 +695,7 @@ export default function SchoolSettingsPage({ user }) {
                         value={formData.gpsLongitude}
                         onChange={handleInputChange}
                         disabled={!isEditMode || submitting}
-                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                         placeholder="104.9123456"
                       />
                     </div>
@@ -727,7 +727,7 @@ export default function SchoolSettingsPage({ user }) {
             </div>
 
             {/* Footer actions: Edit in view mode, Cancel + Save in edit mode */}
-            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+            <div className="flex justify-end gap-3 pt-6 pb-12 border-t border-gray-200">
               {!isEditMode ? (
                 <Button
                   type="button"
