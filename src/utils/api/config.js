@@ -306,6 +306,15 @@ export const getBookCoverUrl = (coverBookFilename) => {
   return `${getStaticAssetBaseUrl()}/uploads/books/${coverBookFilename}`;
 };
 
+// Function to get school profile image URL from filename
+// Uses the /api/files/ endpoint which nginx proxies to /api/v1/files/ on the backend
+export const getSchoolProfileUrl = (profileFilename) => {
+  if (!profileFilename) {
+    return null;
+  }
+  return `${getStaticAssetBaseUrl()}/api/files/school_profile/${profileFilename}`;
+};
+
 // Function to test API availability
 export const testApiConnection = async (baseUrl) => {
   try {

@@ -11,7 +11,7 @@ import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import Dropdown from '../../components/ui/Dropdown';
 import { schoolService } from '../../utils/api/services/schoolService';
-import { getStaticAssetBaseUrl } from '../../utils/api/config';
+import { getSchoolProfileUrl } from '../../utils/api/config';
 import SchoolLocationMap from '../../components/ui/SchoolLocationMap';
 
 /**
@@ -87,10 +87,8 @@ export default function SchoolSettingsPage({ user }) {
       return relativePath;
     }
 
-    // Construct full URL from relative path
-    // School profile images are stored in /api/v1/files/school_profile/ directory
-    const baseUrl = getStaticAssetBaseUrl();
-    return `${baseUrl}/api/v1/files/school_profile/${relativePath}`;
+    // Use the config function to construct the school profile URL
+    return getSchoolProfileUrl(relativePath);
   }, []);
 
   // Fetch school data
