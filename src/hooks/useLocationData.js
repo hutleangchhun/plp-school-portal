@@ -523,14 +523,14 @@ export const useLocationData = (initialValues = {}) => {
   // Get option arrays with loading placeholders
   const getProvinceOptions = () => {
     if (loadingProvinces) {
-      return [{ value: '', label: t('loadingProvinces'), disabled: true }];
+      return [{ value: '', label: t('loadingProvinces') || 'Loading Provinces...', disabled: true }];
     }
     return provinces;
   };
 
   const getDistrictOptions = () => {
     if (loadingDistricts) {
-      return [{ value: '', label: t('loadingDistricts'), disabled: true }];
+      return [{ value: '', label: t('loadingDistricts') || 'Loading Districts...', disabled: true }];
     }
     if (!selectedProvince) {
       return [];
@@ -540,7 +540,7 @@ export const useLocationData = (initialValues = {}) => {
 
   const getCommuneOptions = () => {
     if (loadingCommunes) {
-      return [{ value: '', label: t('loadingCommunes'), disabled: true }];
+      return [{ value: '', label: t('loadingCommunes') || 'Loading Communes...', disabled: true }];
     }
     if (!selectedDistrict) {
       return [];
@@ -550,7 +550,7 @@ export const useLocationData = (initialValues = {}) => {
 
   const getVillageOptions = () => {
     if (loadingVillages) {
-      return [{ value: '', label: t('loadingVillages'), disabled: true }];
+      return [{ value: '', label: t('loadingVillages') || 'Loading Villages...', disabled: true }];
     }
     if (!selectedCommune) {
       return [];

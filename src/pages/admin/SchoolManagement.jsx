@@ -210,19 +210,35 @@ const SchoolManagement = () => {
     }
   };
 
-  const loadCommunes = async (districtCode) => {
+  const loadCommunes = async (districtCodeOrId) => {
     try {
       setLoading(true);
 
-      if (!districtCode || districtCode === '') {
-        throw new Error('District code is required');
+      if (!districtCodeOrId || districtCodeOrId === '') {
+        throw new Error('District code or ID is required');
       }
 
       if (!selectedProvince) {
         throw new Error('Province ID is required');
       }
 
-      const response = await locationService.getCommunesByDistrict(selectedProvince, districtCode);
+      // If we receive a district code, find the corresponding district object to get the numeric ID
+      let districtId = districtCodeOrId;
+
+      // Check if the input looks like a code (string) rather than an ID (numeric)
+      if (String(districtCodeOrId).length > 2) {
+        // This looks like a code, find the district object
+        const districtObj = districts.find(d =>
+          (d.district_code === districtCodeOrId) || (d.districtCode === districtCodeOrId)
+        );
+
+        if (districtObj) {
+          // Extract numeric ID from the district object
+          districtId = districtObj.district_id || districtObj.districtId || districtObj.id;
+        }
+      }
+
+      const response = await locationService.getCommunesByDistrict(selectedProvince, districtId);
 
       if (response && (response.data || Array.isArray(response))) {
         const communesData = response.data || response;
@@ -259,25 +275,31 @@ const SchoolManagement = () => {
       return;
     }
 
+    // Declare districtId outside try block so it's accessible in catch block
+    let districtId = null;
+
     try {
       setSchoolsLoading(true);
       clearError();
 
       // Find the district object to get the district ID
-      const districtObj = districts.find(d => d.district_code === districtCode);
+      // Support both camelCase (districtCode) and snake_case (district_code) property names
+      const districtObj = districts.find(d =>
+        (d.district_code === districtCode) || (d.districtCode === districtCode)
+      );
 
       if (!districtObj) {
-        throw new Error('District not found in the districts list');
+        throw new Error(`District not found in the districts list for code: ${districtCode}`);
       }
 
       // Check all possible ID fields
       const possibleIds = [
         districtObj.district_id,
-        districtObj.id,
-        districtObj.districtId
+        districtObj.districtId,
+        districtObj.id
       ];
 
-      const districtId = possibleIds.find(id => id != null);
+      districtId = possibleIds.find(id => id != null);
       if (!districtId) {
         throw new Error('District ID is missing from district object');
       }
@@ -483,9 +505,12 @@ const SchoolManagement = () => {
 
         // Add current location filters
         if (selectedProvince && selectedDistrict) {
-          const districtObj = districts.find(d => d.district_code === selectedDistrict);
+          // Support both camelCase (districtCode) and snake_case (district_code) property names
+          const districtObj = districts.find(d =>
+            (d.district_code === selectedDistrict) || (d.districtCode === selectedDistrict)
+          );
           if (districtObj) {
-            const districtId = districtObj.district_id || districtObj.id || districtObj.districtId;
+            const districtId = districtObj.district_id || districtObj.districtId || districtObj.id;
             if (selectedProvince) params.append('provinceId', selectedProvince);
             params.append('districtId', districtId);
             if (selectedCommune) params.append('communeCode', selectedCommune);
@@ -641,9 +666,12 @@ const SchoolManagement = () => {
 
       // Add current filters
       if (selectedProvince && selectedDistrict) {
-        const districtObj = districts.find(d => d.district_code === selectedDistrict);
+        // Support both camelCase (districtCode) and snake_case (district_code) property names
+        const districtObj = districts.find(d =>
+          (d.district_code === selectedDistrict) || (d.districtCode === selectedDistrict)
+        );
         if (districtObj) {
-          const districtId = districtObj.district_id || districtObj.id || districtObj.districtId;
+          const districtId = districtObj.district_id || districtObj.districtId || districtObj.id;
           if (selectedProvince) params.append('provinceId', selectedProvince);
           params.append('districtId', districtId);
           if (selectedCommune) params.append('communeCode', selectedCommune);
@@ -713,16 +741,89 @@ const SchoolManagement = () => {
     setIsModalOpen(true);
   };
 
+  // Helper function to extract location data from placeObject and resolve IDs/codes
+  const extractLocationData = useCallback((placeObject) => {
+    if (!placeObject) {
+      return { provinceId: '', districtCode: '', districtId: '', communeCode: '', communeId: '' };
+    }
+
+    // Extract IDs (API uses camelCase: provinceId, districtId, districtCode, communeId, communeCode)
+    // Also support snake_case for backward compatibility
+    const provinceId = placeObject.provinceId || placeObject.province_id;
+    const districtId = placeObject.districtId || placeObject.district_id;
+    const districtCode = placeObject.districtCode || placeObject.district_code;
+    const communeId = placeObject.communeId || placeObject.commune_id;
+    const communeCode = placeObject.communeCode || placeObject.commune_code;
+
+    // If we have IDs, use them; if we only have names, try to find IDs from loaded location data
+    let resolvedProvinceId = provinceId;
+    let resolvedDistrictId = districtId;
+    let resolvedDistrictCode = districtCode;
+    let resolvedCommuneId = communeId;
+    let resolvedCommuneCode = communeCode;
+
+    // If we have province name but no province ID, try to find it from loaded provinces
+    if (!resolvedProvinceId && (placeObject.provinceNameKh || placeObject.province_name_kh || placeObject.provinceNameEn || placeObject.province_name_en)) {
+      const matchedProvince = provinces.find(
+        p => p.provinceNameKh === placeObject.provinceNameKh ||
+             p.province_name_kh === placeObject.province_name_kh ||
+             p.provinceNameEn === placeObject.provinceNameEn ||
+             p.province_name_en === placeObject.province_name_en ||
+             p.name === placeObject.provinceNameKh ||
+             p.name === placeObject.province_name_kh
+      );
+      if (matchedProvince) {
+        resolvedProvinceId = matchedProvince.id;
+      }
+    }
+
+    // If we have district name but no district ID, try to find it from loaded districts
+    if (!resolvedDistrictId && (placeObject.districtNameKh || placeObject.district_name_kh || placeObject.districtNameEn || placeObject.district_name_en) && resolvedProvinceId) {
+      const matchedDistrict = districts.find(
+        d => d.districtNameKh === placeObject.districtNameKh ||
+             d.district_name_kh === placeObject.district_name_kh ||
+             d.districtNameEn === placeObject.districtNameEn ||
+             d.district_name_en === placeObject.district_name_en ||
+             d.name === placeObject.districtNameKh ||
+             d.name === placeObject.district_name_kh
+      );
+      if (matchedDistrict) {
+        resolvedDistrictId = matchedDistrict.id;
+        resolvedDistrictCode = matchedDistrict.districtCode || matchedDistrict.district_code || matchedDistrict.code;
+      }
+    }
+
+    // If we have commune name but no commune ID, try to find it from loaded communes
+    if (!resolvedCommuneId && (placeObject.communeNameKh || placeObject.commune_name_kh || placeObject.communeNameEn || placeObject.commune_name_en) && resolvedDistrictCode) {
+      const matchedCommune = communes.find(
+        c => c.communeNameKh === placeObject.communeNameKh ||
+             c.commune_name_kh === placeObject.commune_name_kh ||
+             c.communeNameEn === placeObject.communeNameEn ||
+             c.commune_name_en === placeObject.commune_name_en ||
+             c.name === placeObject.communeNameKh ||
+             c.name === placeObject.commune_name_kh
+      );
+      if (matchedCommune) {
+        resolvedCommuneId = matchedCommune.id;
+        resolvedCommuneCode = matchedCommune.communeCode || matchedCommune.commune_code || matchedCommune.code;
+      }
+    }
+
+    return {
+      provinceId: resolvedProvinceId ? String(resolvedProvinceId) : '',
+      districtCode: resolvedDistrictCode ? String(resolvedDistrictCode) : '',
+      districtId: resolvedDistrictId ? String(resolvedDistrictId) : '',
+      communeCode: resolvedCommuneCode ? String(resolvedCommuneCode) : '',
+      communeId: resolvedCommuneId ? String(resolvedCommuneId) : ''
+    };
+  }, [provinces, districts, communes]);
+
   const openEditModal = (school) => {
     setModalMode('edit');
     setSelectedSchool(school);
 
-    // Determine correct property names for location data
-    const provinceId = school.placeObject?.province_id || school.placeObject?.provinceId;
-    const districtId = school.placeObject?.district_id || school.placeObject?.districtId;
-    const districtCode = school.placeObject?.district_code || school.placeObject?.districtCode;
-    const communeId = school.placeObject?.commune_id || school.placeObject?.communeId;
-    const communeCode = school.placeObject?.commune_code || school.placeObject?.communeCode;
+    // Extract location data with ID resolution
+    const locationData = extractLocationData(school.placeObject);
 
     setFormData({
       name: school.name || '',
@@ -732,12 +833,11 @@ const SchoolManagement = () => {
       projectTypeId: school.projectTypeId ? String(school.projectTypeId) : '',
       status: school.status || 'ACTIVE',
       place: {
-        // Convert to strings to match dropdown option values (which are stringified)
-        provinceId: provinceId ? String(provinceId) : '',
-        districtCode: (districtCode) ? String(districtCode) : '',
-        districtId: (districtId) ? String(districtId) : '',
-        communeCode: communeCode ? String(communeCode) : '',
-        communeId: communeId ? String(communeId) : '',
+        provinceId: locationData.provinceId,
+        districtCode: locationData.districtCode,
+        districtId: locationData.districtId,
+        communeCode: locationData.communeCode,
+        communeId: locationData.communeId,
         gpsLatitude: school.placeObject?.gpsLatitude || '',
         gpsLongitude: school.placeObject?.gpsLongitude || ''
       }
@@ -745,12 +845,12 @@ const SchoolManagement = () => {
     setIsModalOpen(true);
 
     // Load districts if province is selected
-    if (provinceId) {
-      loadDistrictsForModal(provinceId);
+    if (locationData.provinceId) {
+      loadDistrictsForModal(locationData.provinceId);
     }
     // Load communes if district is selected
-    if (districtCode && provinceId) {
-      loadCommunesForModal(districtCode, provinceId);
+    if (locationData.districtCode && locationData.provinceId) {
+      loadCommunesForModal(locationData.districtCode, locationData.provinceId);
     }
   };
 
@@ -777,14 +877,17 @@ const SchoolManagement = () => {
 
   const handleModalDistrictChange = (districtCode) => {
     // Find the selected district to extract its ID
-    const selectedDistrict = districts.find(d => String(d.district_code || d.code) === districtCode);
+    // Support both camelCase (districtCode) and snake_case (district_code) property names
+    const selectedDistrict = districts.find(d =>
+      String(d.district_code || d.districtCode || d.code) === districtCode
+    );
 
     setFormData({
       ...formData,
       place: {
         ...formData.place,
         districtCode,
-        districtId: selectedDistrict ? String(selectedDistrict.districtId || selectedDistrict.id) : '',
+        districtId: selectedDistrict ? String(selectedDistrict.districtId || selectedDistrict.district_id || selectedDistrict.id) : '',
         communeCode: '',
         communeId: ''
       }
@@ -799,14 +902,17 @@ const SchoolManagement = () => {
 
   const handleModalCommuneChange = (communeCode) => {
     // Find the selected commune to extract its ID
-    const selectedCommune = communes.find(c => String(c.commune_code || c.code) === communeCode);
+    // Support both camelCase (communeCode) and snake_case (commune_code) property names
+    const selectedCommune = communes.find(c =>
+      String(c.commune_code || c.communeCode || c.code) === communeCode
+    );
 
     setFormData({
       ...formData,
       place: {
         ...formData.place,
         communeCode,
-        communeId: selectedCommune ? String(selectedCommune.communeId || selectedCommune.id) : ''
+        communeId: selectedCommune ? String(selectedCommune.communeId || selectedCommune.commune_id || selectedCommune.id) : ''
       }
     });
   };
@@ -825,12 +931,28 @@ const SchoolManagement = () => {
     }
   };
 
-  const loadCommunesForModal = async (districtCode, provinceId) => {
+  const loadCommunesForModal = async (districtCodeOrId, provinceId) => {
     try {
-      // Fix: getCommunesByDistrict expects (provinceId, districtCode) not (districtCode, provinceId)
+      // If we receive a district code, find the corresponding district object to get the numeric ID
+      let districtId = districtCodeOrId;
+
+      // Check if the input looks like a code (string) rather than an ID (numeric)
+      if (String(districtCodeOrId).length > 2) {
+        // This looks like a code, find the district object
+        const districtObj = districts.find(d =>
+          (d.district_code === districtCodeOrId) || (d.districtCode === districtCodeOrId)
+        );
+
+        if (districtObj) {
+          // Extract numeric ID from the district object
+          districtId = districtObj.district_id || districtObj.districtId || districtObj.id;
+        }
+      }
+
+      // getCommunesByDistrict expects (provinceId, districtId)
       const response = await locationService.getCommunesByDistrict(
         String(provinceId),
-        String(districtCode)
+        String(districtId)
       );
       if (response && (response.data || Array.isArray(response))) {
         const communesData = response.data || response;
@@ -1077,10 +1199,10 @@ const SchoolManagement = () => {
                 value={selectedProvince}
                 onValueChange={handleProvinceChange}
                 options={[
-                  { value: '', label: `${t('showAll', 'Show All')}` },
+                  { value: '', label: t('showAll', 'Show All') || 'Show All' },
                   ...provinces.map((province) => ({
                     value: province.id.toString(),
-                    label: province.province_name_kh || province.province_name_en
+                    label: province.provinceNameKh || province.province_name_kh || province.provinceNameEn || province.province_name_en || province.name_kh || province.name_en || `Province ${province.id}`
                   }))
                 ]}
                 placeholder={t('selectProvince', 'Select Province')}
@@ -1100,10 +1222,10 @@ const SchoolManagement = () => {
                 value={selectedDistrict}
                 onValueChange={handleDistrictChange}
                 options={[
-                  { value: '', label: `${t('showAll', 'Show All')}` },
+                  { value: '', label: t('showAll', 'Show All') || 'Show All' },
                   ...districts.map((district) => ({
-                    value: district.district_code,
-                    label: district.district_name_kh || district.district_name_en
+                    value: district.district_code || district.districtCode,
+                    label: district.districtNameKh || district.district_name_kh || district.districtNameEn || district.district_name_en || district.name_kh || district.name_en || `District ${district.district_code || district.districtCode}`
                   }))
                 ]}
                 placeholder={t('selectDistrict', 'Select District')}
@@ -1123,10 +1245,10 @@ const SchoolManagement = () => {
                 value={selectedCommune}
                 onValueChange={handleCommuneChange}
                 options={[
-                  { value: '', label: `${t('showAll', 'Show All')}` },
+                  { value: '', label: t('showAll', 'Show All') || 'Show All' },
                   ...communes.map((commune) => ({
-                    value: commune.commune_code,
-                    label: commune.commune_name_kh || commune.commune_name_en
+                    value: commune.commune_code || commune.communeCode,
+                    label: commune.communeNameKh || commune.commune_name_kh || commune.communeNameEn || commune.commune_name_en || commune.name_kh || commune.name_en || `Commune ${commune.commune_code || commune.communeCode}`
                   }))
                 ]}
                 placeholder={t('selectCommune', 'Select Commune')}
@@ -1216,7 +1338,7 @@ const SchoolManagement = () => {
                   header: t('province', 'Province'),
                   render: (school) => (
                     <div className="text-sm text-gray-600 max-w-xs truncate">
-                      {school.placeObject?.province_name_kh || school.placeObject?.province_name_en || '-'}
+                      {school.placeObject?.provinceNameKh || school.placeObject?.province_name_kh || school.placeObject?.provinceNameEn || school.placeObject?.province_name_en || '-'}
                     </div>
                   )
                 },
@@ -1225,7 +1347,7 @@ const SchoolManagement = () => {
                   header: t('district', 'District'),
                   render: (school) => (
                     <div className="text-sm text-gray-600 max-w-xs truncate">
-                      {school.placeObject?.district_name_kh || school.placeObject?.district_name_en || '-'}
+                      {school.placeObject?.districtNameKh || school.placeObject?.district_name_kh || school.placeObject?.districtNameEn || school.placeObject?.district_name_en || '-'}
                     </div>
                   )
                 },
@@ -1234,7 +1356,7 @@ const SchoolManagement = () => {
                   header: t('commune', 'Commune'),
                   render: (school) => (
                     <div className="text-sm text-gray-600 max-w-xs truncate">
-                      {school.placeObject?.commune_name_kh || school.placeObject?.commune_name_en || '-'}
+                      {school.placeObject?.communeNameKh || school.placeObject?.commune_name_kh || school.placeObject?.communeNameEn || school.placeObject?.commune_name_en || '-'}
                     </div>
                   )
                 },
@@ -1434,7 +1556,7 @@ const SchoolManagement = () => {
                   onValueChange={handleModalProvinceChange}
                   options={provinces.map(prov => ({
                     value: String(prov.id || prov.province_id),
-                    label: prov.province_name_kh || prov.province_name_en || prov.name_kh || prov.name_en || prov.name
+                    label: prov.province_name_kh || prov.province_name_en || prov.name_kh || prov.name_en || prov.name || `Province ${prov.id || prov.province_id}`
                   }))}
                   placeholder={t('selectProvince', 'Select Province')}
                   className="w-full"
@@ -1453,7 +1575,7 @@ const SchoolManagement = () => {
                   onValueChange={handleModalDistrictChange}
                   options={districts.map(dist => ({
                     value: String(dist.district_code || dist.code),
-                    label: dist.district_name_kh || dist.district_name_en || dist.name_kh || dist.name_en || dist.name
+                    label: dist.district_name_kh || dist.district_name_en || dist.name_kh || dist.name_en || dist.name || `District ${dist.district_code || dist.code}`
                   }))}
                   placeholder={t('selectDistrict', 'Select District')}
                   disabled={!formData.place.provinceId}
@@ -1473,7 +1595,7 @@ const SchoolManagement = () => {
                   onValueChange={handleModalCommuneChange}
                   options={communes.map(comm => ({
                     value: String(comm.commune_code || comm.code),
-                    label: comm.commune_name_kh || comm.commune_name_en || comm.name_kh || comm.name_en || comm.name
+                    label: comm.commune_name_kh || comm.commune_name_en || comm.name_kh || comm.name_en || comm.name || `Commune ${comm.commune_code || comm.code}`
                   }))}
                   placeholder={t('selectCommune', 'Select Commune')}
                   disabled={!formData.place.districtCode}

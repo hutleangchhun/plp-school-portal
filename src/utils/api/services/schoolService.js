@@ -331,11 +331,11 @@ export const schoolService = {
                 if (typeof school.place === 'string') {
                     placeText = school.place;
                 } else if (typeof school.place === 'object') {
-                    // Format place object as readable string
+                    // Format place object as readable string (API uses camelCase: communeNameKh, districtNameKh, provinceNameKh)
                     const parts = [
-                        school.place.commune_name_kh || school.place.commune_name_en,
-                        school.place.district_name_kh || school.place.district_name_en,
-                        school.place.province_name_kh || school.place.province_name_en
+                        school.place.communeNameKh || school.place.commune_name_kh || school.place.communeNameEn || school.place.commune_name_en,
+                        school.place.districtNameKh || school.place.district_name_kh || school.place.districtNameEn || school.place.district_name_en,
+                        school.place.provinceNameKh || school.place.province_name_kh || school.place.provinceNameEn || school.place.province_name_en
                     ].filter(Boolean);
                     placeText = parts.join(', ');
                 }
