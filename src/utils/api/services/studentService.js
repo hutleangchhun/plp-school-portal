@@ -173,6 +173,16 @@ export const studentService = {
   async getBulkRegistrationStatus(batchId) {
     console.log(`📊 Checking bulk registration status for batch: ${batchId}`);
 
+    // Guard against undefined batchId
+    if (!batchId) {
+      console.error('❌ batchId is undefined in getBulkRegistrationStatus');
+      return Promise.reject({
+        status: 400,
+        message: 'Invalid batch ID: batchId is undefined',
+        errors: ['Batch ID is required to check status']
+      });
+    }
+
     // Check for debug mode errors
     if (typeof window !== 'undefined' && window.__DEBUG_API && batchId.startsWith('debug_batch_')) {
       const debugState = window.__DEBUG_API.getDebugState?.() || {};

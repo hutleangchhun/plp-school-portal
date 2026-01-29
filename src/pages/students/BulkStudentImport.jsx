@@ -1432,14 +1432,14 @@ export default function BulkStudentImport() {
       const transformedData = validStudents.map(student => {
         // Build the base student object with required fields
         const studentData = {
-          first_name: student.firstName.trim(),
-          last_name: student.lastName.trim(),
+          firstName: student.firstName.trim(),
+          lastName: student.lastName.trim(),
           username: student.username.trim() || `${student.firstName.trim().toLowerCase()}.${student.lastName.trim().toLowerCase()}`,
           password: student.password.trim() || 'Student@123', // Default password for required field
-          date_of_birth: convertDateFormat(student.dateOfBirth),
+          dateOfBirth: convertDateFormat(student.dateOfBirth),
           gender: student.gender ? student.gender.toUpperCase() : undefined,
-          school_id: schoolId, // Use school from authenticated user
-          // Note: student_number is NOT included - backend will auto-generate it
+          schoolId: schoolId, // Use school from authenticated user
+          // Note: studentNumber is NOT included - backend will auto-generate it
         };
 
         // Add optional fields only if they have values
@@ -1464,23 +1464,23 @@ export default function BulkStudentImport() {
         // }
 
         if (student.gradeLevel && student.gradeLevel.trim()) {
-          studentData.grade_level = parseInt(student.gradeLevel.trim());
+          studentData.gradeLevel = parseInt(student.gradeLevel.trim());
         }
 
         // Add class ID if provided (optional direct class assignment)
         if (student.classId && student.classId.toString().trim()) {
-          studentData.class_id = parseInt(student.classId.toString().trim());
+          studentData.classId = parseInt(student.classId.toString().trim());
         }
 
         if (student.residenceFullAddress && student.residenceFullAddress.trim()) {
           studentData.residence = {
-            full_address: student.residenceFullAddress.trim()
+            fullAddress: student.residenceFullAddress.trim()
           };
         }
 
         // Add ethnic group if provided
         if (student.ethnicGroup && student.ethnicGroup.trim()) {
-          studentData.ethnic_group = student.ethnicGroup.trim();
+          studentData.ethnicGroup = student.ethnicGroup.trim();
         }
 
         // Add accessibility if provided - convert to Khmer labels
@@ -1498,13 +1498,13 @@ export default function BulkStudentImport() {
         if (student.fatherFirstName && student.fatherFirstName.trim()) {
           const normalizedFatherPhone = normalizePhoneNumber(student.fatherPhone);
           parents.push({
-            first_name: student.fatherFirstName.trim(),
-            last_name: student.fatherLastName.trim() || '',
+            firstName: student.fatherFirstName.trim(),
+            lastName: student.fatherLastName.trim() || '',
             phone: normalizedFatherPhone || undefined,
             gender: 'MALE',
             occupation: student.fatherOccupation.trim() || undefined,
             residence: student.fatherResidenceFullAddress && student.fatherResidenceFullAddress.trim() ? {
-              full_address: student.fatherResidenceFullAddress.trim()
+              fullAddress: student.fatherResidenceFullAddress.trim()
             } : undefined,
             relationship: 'FATHER'
           });
@@ -1514,13 +1514,13 @@ export default function BulkStudentImport() {
         if (student.motherFirstName && student.motherFirstName.trim()) {
           const normalizedMotherPhone = normalizePhoneNumber(student.motherPhone);
           parents.push({
-            first_name: student.motherFirstName.trim(),
-            last_name: student.motherLastName.trim() || '',
+            firstName: student.motherFirstName.trim(),
+            lastName: student.motherLastName.trim() || '',
             phone: normalizedMotherPhone || undefined,
             gender: 'FEMALE',
             occupation: student.motherOccupation.trim() || undefined,
             residence: student.motherResidenceFullAddress && student.motherResidenceFullAddress.trim() ? {
-              full_address: student.motherResidenceFullAddress.trim()
+              fullAddress: student.motherResidenceFullAddress.trim()
             } : undefined,
             relationship: 'MOTHER'
           });
@@ -1558,7 +1558,14 @@ export default function BulkStudentImport() {
         const response = await studentService.bulkRegister(transformedData);
 
         // Extract batch ID and initial response data
-        const { batch_id: batchId, success_count: initialSuccessCount, failed_count: initialFailureCount } = response.data || response;
+        const responseData = response.data || response;
+        const batchId = responseData.batchId;
+        const initialSuccessCount = responseData.successCount || 0;
+        const initialFailureCount = responseData.failedCount || 0;
+
+        if (!batchId) {
+          throw new Error('No batch ID received from bulk registration. Server response is invalid.');
+        }
 
         console.log(`Bulk registration queued with batch ID: ${batchId}`);
         console.log(`Initial response - Success: ${initialSuccessCount}, Failed: ${initialFailureCount}`);
@@ -1589,9 +1596,9 @@ export default function BulkStudentImport() {
               results: batchResults = [],
               completed = 0,
               total = 0,
-              is_complete = false,
-              success_count: apiSuccessCount = 0,
-              failed_count: apiFailureCount = 0
+              isComplete: apiIsComplete = false,
+              successCount: apiSuccessCount = 0,
+              failedCount: apiFailureCount = 0
             } = statusData;
 
             // Calculate success and failure counts from results
@@ -1607,7 +1614,7 @@ export default function BulkStudentImport() {
               lastCompletedCount = completed;
             }
 
-            console.log(`Batch status - Completed: ${completed}/${total}, Success: ${successCount}, Failed: ${failureCount}, Is Complete: ${is_complete}`);
+            console.log(`Batch status - Completed: ${completed}/${total}, Success: ${successCount}, Failed: ${failureCount}, Is Complete: ${apiIsComplete}`);
 
             // Update progress
             setProcessedCount(completed);
@@ -1637,7 +1644,7 @@ export default function BulkStudentImport() {
               setIsImporting(false);
             }
             // Check if batch is complete (normal completion)
-            else if (is_complete) {
+            else if (apiIsComplete) {
               isComplete = true;
               console.log(`✅ Batch processing complete: ${successCount} successful, ${failureCount} failed`);
               setIsImporting(false);
