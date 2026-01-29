@@ -1,10 +1,11 @@
-import React from 'react';
-import * as ContextMenu from '@radix-ui/react-context-menu';
+import React, { useState } from 'react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Lock, Copy, Trash2, Ban, QrCode } from 'lucide-react';
 
 const TeacherContextMenu = ({ children, teacher, onResetPassword, onDelete, onToggleActiveStatus, onDownloadQRCode }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
 
@@ -78,59 +79,60 @@ const TeacherContextMenu = ({ children, teacher, onResetPassword, onDelete, onTo
   };
 
   return (
-    <ContextMenu.Root>
-      <ContextMenu.Trigger asChild>
+    <DropdownMenu.Root open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenu.Trigger asChild>
         {children}
-      </ContextMenu.Trigger>
+      </DropdownMenu.Trigger>
 
-      <ContextMenu.Portal>
-        <ContextMenu.Content
-          className="p-2 bg-white border border-gray-200 rounded-sm border border-gray-200 shadow-lg z-50 overflow-hidden"
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          className="p-2 bg-white border border-gray-200 rounded-sm shadow-lg z-50 overflow-hidden"
           sideOffset={5}
+          align="end"
         >
           {/* Reset Password Option */}
-          <ContextMenu.Item
+          <DropdownMenu.Item
             onSelect={handleResetPassword}
-            className="px-3 py-2.5 text-sm text-gray-700 cursor-pointer flex items-center space-x-2 hover:bg-blue-50 hover:text-blue-700 transition-colors focus:outline-none focus:bg-blue-50"
+            className="px-3 py-2.5 text-sm text-gray-700 cursor-pointer flex items-center space-x-2 hover:bg-blue-50 hover:text-blue-700 transition-colors focus:outline-none focus:bg-blue-50 rounded"
           >
             <Lock className="w-4 h-4" />
             <span>{t('resetPassword', 'Reset Password')}</span>
-          </ContextMenu.Item>
+          </DropdownMenu.Item>
 
-          <ContextMenu.Separator className="bg-gray-200 h-px" />
+          <DropdownMenu.Separator className="bg-gray-200 h-px" />
 
           {/* Copy Username Option */}
-          <ContextMenu.Item
+          <DropdownMenu.Item
             onSelect={handleCopyUsername}
-            className="px-3 py-2.5 text-sm text-gray-700 cursor-pointer flex items-center space-x-2 hover:bg-blue-50 hover:text-blue-700 transition-colors focus:outline-none focus:bg-blue-50"
+            className="px-3 py-2.5 text-sm text-gray-700 cursor-pointer flex items-center space-x-2 hover:bg-blue-50 hover:text-blue-700 transition-colors focus:outline-none focus:bg-blue-50 rounded"
           >
             <Copy className="w-4 h-4" />
             <span>{t('copyUsername', 'Copy Username')}</span>
-          </ContextMenu.Item>
+          </DropdownMenu.Item>
 
           {onDownloadQRCode && (
             <>
-              <ContextMenu.Separator className="bg-gray-200 h-px" />
+              <DropdownMenu.Separator className="bg-gray-200 h-px" />
 
               {/* Download QR Code Option */}
-              <ContextMenu.Item
+              <DropdownMenu.Item
                 onSelect={handleDownloadQRCode}
-                className="px-3 py-2.5 text-sm text-gray-700 cursor-pointer flex items-center space-x-2 hover:bg-blue-50 hover:text-blue-700 transition-colors focus:outline-none focus:bg-blue-50"
+                className="px-3 py-2.5 text-sm text-gray-700 cursor-pointer flex items-center space-x-2 hover:bg-blue-50 hover:text-blue-700 transition-colors focus:outline-none focus:bg-blue-50 rounded"
               >
                 <QrCode className="w-4 h-4" />
                 <span>{t('downloadQRCode', 'Download QR Code')}</span>
-              </ContextMenu.Item>
+              </DropdownMenu.Item>
             </>
           )}
 
           {onToggleActiveStatus && (
             <>
-              <ContextMenu.Separator className="bg-gray-200 h-px" />
+              <DropdownMenu.Separator className="bg-gray-200 h-px" />
 
               {/* Toggle Active Status Option */}
-              <ContextMenu.Item
+              <DropdownMenu.Item
                 onSelect={handleToggleStatus}
-                className="px-3 py-2.5 text-sm text-yellow-600 cursor-pointer flex items-center space-x-2 hover:bg-yellow-50 hover:text-yellow-700 transition-colors focus:outline-none focus:bg-yellow-50"
+                className="px-3 py-2.5 text-sm text-yellow-600 cursor-pointer flex items-center space-x-2 hover:bg-yellow-50 hover:text-yellow-700 transition-colors focus:outline-none focus:bg-yellow-50 rounded"
               >
                 <Ban className="w-4 h-4" />
                 <span>
@@ -138,28 +140,28 @@ const TeacherContextMenu = ({ children, teacher, onResetPassword, onDelete, onTo
                     ? t('disableTeacher', 'Disable Teacher')
                     : t('enableTeacher', 'Enable Teacher')}
                 </span>
-              </ContextMenu.Item>
+              </DropdownMenu.Item>
             </>
           )}
 
           {onDelete && (
             <>
-              <ContextMenu.Separator className="bg-gray-200 h-px" />
+              <DropdownMenu.Separator className="bg-gray-200 h-px" />
 
               {/* Delete User Option */}
-              <ContextMenu.Item
+              <DropdownMenu.Item
                 onSelect={handleDelete}
-                className="px-3 py-2.5 text-sm text-red-600 cursor-pointer flex items-center space-x-2 hover:bg-red-50 hover:text-red-700 transition-colors focus:outline-none focus:bg-red-50"
+                className="px-3 py-2.5 text-sm text-red-600 cursor-pointer flex items-center space-x-2 hover:bg-red-50 hover:text-red-700 transition-colors focus:outline-none focus:bg-red-50 rounded"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>{t('deleteUser', 'Delete User')}</span>
-              </ContextMenu.Item>
+              </DropdownMenu.Item>
             </>
           )}
 
-        </ContextMenu.Content>
-      </ContextMenu.Portal>
-    </ContextMenu.Root>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 };
 

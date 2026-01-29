@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
@@ -12,8 +12,7 @@ import { Button } from '../../components/ui/Button';
 import Dropdown from '../../components/ui/Dropdown';
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
 import Modal from '../../components/ui/Modal';
-import Pagination from '../../components/ui/Pagination';
-import EmptyState from '../../components/ui/EmptyState';
+import { Table } from '../../components/ui/Table';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import TeacherContextMenu from '../../components/admin/TeacherContextMenu';
 import ResetPasswordModal from '../../components/admin/ResetPasswordModal';
@@ -164,8 +163,8 @@ const TeacherTransferManagement = () => {
         teacherId: teacher.teacherId,
         userId: teacher.userId,
         username: teacher.user?.username || '',
-        firstName: teacher.user?.first_name || '',
-        lastName: teacher.user?.last_name || '',
+        firstName: teacher.user?.firstName || '',
+        lastName: teacher.user?.lastName || '',
         email: teacher.user?.email || '',
         phone: teacher.user?.phone || '',
         gradeLevel: teacher.gradeLevel || null,
@@ -174,7 +173,7 @@ const TeacherTransferManagement = () => {
         schoolName: teacher.school?.name || '',
         status: teacher.status,
         classes: teacher.classes || [],
-        isActive: teacher.is_active !== false // Map is_active from API to isActive
+        isActive: teacher.isActive !== false // Use isActive from API
       }));
 
       // Fetch school details for teachers that don't have schoolName
@@ -275,8 +274,8 @@ const TeacherTransferManagement = () => {
         teacherId: teacher.teacherId,
         userId: teacher.userId,
         username: teacher.user?.username || '',
-        firstName: teacher.user?.first_name || '',
-        lastName: teacher.user?.last_name || '',
+        firstName: teacher.user?.firstName || '',
+        lastName: teacher.user?.lastName || '',
         email: teacher.user?.email || '',
         phone: teacher.user?.phone || '',
         gradeLevel: teacher.gradeLevel || null,
@@ -284,7 +283,7 @@ const TeacherTransferManagement = () => {
         schoolId: teacher.schoolId,
         status: teacher.status,
         classes: teacher.classes || [],
-        isActive: teacher.is_active !== false // Map is_active from API to isActive
+        isActive: teacher.isActive !== false // Use isActive from API
       }));
 
       // Fetch school details for teachers that don't have schoolName
@@ -1125,6 +1124,106 @@ const TeacherTransferManagement = () => {
   const targetDistrictOptions = getDistrictOptions(targetDistricts);
   const targetSchoolOptions = getSchoolOptions(targetSchools);
 
+  // Define table columns for teachers
+  const tableColumns = useMemo(() => [
+    {
+      key: 'select',
+      header: (
+        <input
+          type="checkbox"
+          checked={allSelectedTeacherIds.size === teachers.length && teachers.length > 0}
+          onChange={handleSelectAllTeachers}
+          disabled={fetchingTeachers}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+      ),
+      headerClassName: 'w-12',
+      cellClassName: 'w-12',
+      disableSort: true,
+      render: (teacher) => (
+        <input
+          type="checkbox"
+          checked={allSelectedTeacherIds.has(teacher.id)}
+          onChange={() => handleSelectTeacher(teacher)}
+          disabled={teacher.isActive === false}
+          className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+            teacher.isActive === false ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+          }`}
+        />
+      )
+    },
+    {
+      key: 'name',
+      header: t('teacherName', 'Teacher Name'),
+      accessor: 'firstName',
+      render: (teacher) => (
+        <div className="flex flex-col">
+          <span className="font-medium text-gray-900 line-clamp-2">{getFullName(teacher)}</span>
+          <span className="text-xs text-gray-500">{teacher.username}</span>
+        </div>
+      )
+    },
+    {
+      key: 'school',
+      header: t('school', 'School'),
+      accessor: 'schoolName',
+      responsive: 'hidden md:table-cell',
+      render: (teacher) => teacher.schoolName || '-'
+    },
+    {
+      key: 'role',
+      header: t('role', 'Role'),
+      responsive: 'hidden lg:table-cell',
+      cellClassName: 'text-center',
+      render: (teacher) => teacher.roleId ? (
+        <div className="text-gray-700 flex justify-start">
+          {getRoleName(teacher.roleId)}
+        </div>
+      ) : '-'
+    },
+    {
+      key: 'status',
+      header: t('status', 'Status'),
+      responsive: 'hidden sm:table-cell',
+      cellClassName: 'text-center',
+      render: (teacher) => teacher.isActive === false ? (
+        <Badge color="red" variant="filled" size="sm">
+          {t('inactive', 'Inactive')}
+        </Badge>
+      ) : (
+        <Badge color="green" variant="filled" size="sm">
+          {t('active', 'Active')}
+        </Badge>
+      )
+    },
+    {
+      key: 'actions',
+      header: t('actions', 'Actions'),
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+      disableSort: true,
+      render: (teacher) => (
+        <TeacherContextMenu
+          teacher={teacher}
+          onResetPassword={handleResetPassword}
+          onDelete={handleDeleteUser}
+          onToggleActiveStatus={handleToggleUserStatus}
+          onDownloadQRCode={handleDownloadQRCode}
+        >
+          <button
+            onClick={(e) => e.stopPropagation()}
+            className="p-1.5 text-gray-500 hover:text-gray-900 transition-colors rounded hover:bg-gray-100"
+            title={t('moreActions', 'More actions')}
+          >
+            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 6a2 2 0 11-4 0 2 2 0 014 0zM10 12a2 2 0 11-4 0 2 2 0 014 0zM10 18a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </button>
+        </TeacherContextMenu>
+      )
+    }
+  ], [allSelectedTeacherIds, teachers.length, fetchingTeachers, t, handleSelectAllTeachers, handleSelectTeacher, getFullName, handleResetPassword, handleDeleteUser, handleToggleUserStatus, handleDownloadQRCode]);
+
   if (initialLoading) {
     return <PageLoader message={t('loadingProvinces', 'Loading provinces...')} className="min-h-screen bg-gray-50" />;
   }
@@ -1297,119 +1396,33 @@ const TeacherTransferManagement = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {fetchingTeachers ? (
-                <div className="flex items-center justify-center py-12">
-                  <PageLoader message={t('loadingTeachers', 'Loading teachers...')} />
-                </div>
-              ) : teachers.length === 0 ? (
-                <EmptyState
-                  icon={Users}
-                  title={t('noTeachersFound', 'No Teachers Found')}
-                  description={t('noTeachersInSchool', 'No teachers available in this school')}
-                  variant="neutral"
-                />
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
-                    {teachers.map((teacher) => (
-                      <TeacherContextMenu
-                        key={teacher.id}
-                        teacher={teacher}
-                        onResetPassword={handleResetPassword}
-                        onDelete={handleDeleteUser}
-                        onToggleActiveStatus={handleToggleUserStatus}
-                        onDownloadQRCode={handleDownloadQRCode}
-                      >
-                        <div
-                          className={
-                            `bg-white rounded-sm border hover:border-blue-400 hover:shadow-md transition-all duration-200 flex justify-between items-start p-4 ` +
-                            (teacher.isActive === false ? 'opacity-50 ' : '') +
-                            (allSelectedTeacherIds.has(teacher.id)
-                              ? 'border-blue-500 ring-2 ring-blue-200'
-                              : 'border-gray-200')
-                          }
-                        >
-                        <div className="space-3">
-                          <div>
-                            {/* Teacher name */}
-                            <div>
-                              <label
-                                htmlFor={`teacher-${teacher.id}`}
-                                className="font-semibold text-gray-900 text-sm cursor-pointer line-clamp-2 hover:text-blue-600"
-                              >
-                                {getFullName(teacher)}
-                              </label>
-                            </div>
-
-                            {/* Username */}
-                            <div className="text-xs text-gray-500">
-                              {teacher.username}
-                            </div>
-
-                            {/* School */}
-                            {teacher.schoolName && (
-                              <div className="text-xs text-gray-500">
-                                {teacher.schoolName}
-                              </div>
-                            )}
-
-                            {/* Grade level and role */}
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                              {teacher.isActive === false && (
-                                <Badge color="red" variant="filled" size="sm">
-                                  {t('inactive', 'Inactive')}
-                                </Badge>
-                              )}
-                              {teacher.gradeLevel && (
-                                <Badge color="blue" variant="outlined" size="sm">
-                                  {t('gradeLevelShort', 'Grade')} {teacher.gradeLevel}
-                                </Badge>
-                              )}
-                              {teacher.roleId && (
-                                <Badge color="blue" variant="outline" size="sm">
-                                  {getRoleName(teacher.roleId)}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        {/* Checkbox */}
-                        <div className="flex items-start">
-                          <input
-                            type="checkbox"
-                            id={`teacher-${teacher.id}`}
-                            checked={allSelectedTeacherIds.has(teacher.id)}
-                            onChange={() => handleSelectTeacher(teacher)}
-                            disabled={teacher.isActive === false}
-                            className={`w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 mt-0.5 ${
-                              teacher.isActive === false
-                                ? 'cursor-not-allowed opacity-50 bg-gray-100'
-                                : 'cursor-pointer'
-                            }`}
-                          />
-                        </div>
-
-                        </div>
-                      </TeacherContextMenu>
-                    ))}
-                  </div>
-
-                  {/* Pagination Component with built-in Limit Selector */}
-                  <Pagination
-                    currentPage={teacherPagination.page}
-                    totalPages={teacherPagination.pages}
-                    total={teacherPagination.total}
-                    limit={teacherPagination.limit}
-                    onPageChange={handleTeacherPageChange}
-                    onLimitChange={handleLimitChange}
-                    limitOptions={limitOptions.map(opt => opt.value)}
-                    showLimitSelector={true}
-                    t={t}
-                    showFirstLast={true}
-                    showInfo={true}
-                  />
-                </>
-              )}
+              <Table
+                columns={tableColumns}
+                data={teachers}
+                loading={fetchingTeachers}
+                emptyMessage={t('noTeachersFound', 'No Teachers Found')}
+                emptyDescription={t('noTeachersInSchool', 'No teachers available in this school')}
+                emptyIcon={Users}
+                emptyVariant="neutral"
+                showPagination={true}
+                pagination={{
+                  page: teacherPagination.page,
+                  pages: teacherPagination.pages,
+                  total: teacherPagination.total,
+                  limit: teacherPagination.limit
+                }}
+                onPageChange={handleTeacherPageChange}
+                onLimitChange={handleLimitChange}
+                limitOptions={limitOptions.map(opt => opt.value)}
+                showLimitSelector={true}
+                enableSort={true}
+                defaultSortKey="name"
+                defaultSortDir="asc"
+                t={t}
+                rowClassName="hover:bg-blue-50"
+                dense={false}
+                stickyHeader={true}
+              />
             </CardContent>
           </Card>
         </FadeInSection>
