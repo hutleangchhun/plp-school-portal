@@ -4,13 +4,13 @@ import { ArrowLeft, Save, Loader } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
+import { useLocationData } from '../../hooks/useLocationData';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { Button } from '../../components/ui/Button';
 import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import Dropdown from '../../components/ui/Dropdown';
 import { schoolService } from '../../utils/api/services/schoolService';
-import locationService from '../../utils/api/services/locationService';
 import { getStaticAssetBaseUrl } from '../../utils/api/config';
 import SchoolLocationMap from '../../components/ui/SchoolLocationMap';
 
@@ -24,6 +24,32 @@ export default function SchoolSettingsPage({ user }) {
   const { showSuccess, showError } = useToast();
   const { error, handleError, clearError, retry } = useErrorHandler();
 
+  // Initialize location data hook
+  const {
+    provinces,
+    districts,
+    communes,
+    villages,
+    loadingProvinces,
+    loadingDistricts,
+    loadingCommunes,
+    loadingVillages,
+    selectedProvince,
+    selectedDistrict,
+    selectedCommune,
+    selectedVillage,
+    handleProvinceChange,
+    handleDistrictChange,
+    handleCommuneChange,
+    handleVillageChange,
+    getProvinceOptions,
+    getDistrictOptions,
+    getCommuneOptions,
+    getVillageOptions,
+    setInitialValues,
+    resetSelections
+  } = useLocationData();
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -35,13 +61,6 @@ export default function SchoolSettingsPage({ user }) {
     status: 'ACTIVE',
     schoolType: '',
     projectTypeId: '',
-    province_id: '',
-    district_code: '',
-    district_id: '', // Store numeric ID for API submission
-    commune_code: '',
-    commune_id: '', // Store numeric ID for API submission
-    village_code: '',
-    village_id: '', // Store numeric ID for API submission
     gpsLatitude: '',
     gpsLongitude: ''
   });
@@ -49,11 +68,7 @@ export default function SchoolSettingsPage({ user }) {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [imageError, setImageError] = useState(false);
 
-  // Location cascade state
-  const [provinces, setProvinces] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [communes, setCommunes] = useState([]);
-  const [villages, setVillages] = useState([]);
+  // Project types state (location cascade state is now managed by useLocationData hook)
   const [projectTypes, setProjectTypes] = useState([]);
 
   const schoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId;
@@ -73,9 +88,9 @@ export default function SchoolSettingsPage({ user }) {
     }
 
     // Construct full URL from relative path
-    // Backend serves static files from /uploads/ directory at the server root
+    // School profile images are stored in /api/v1/files/school_profile/ directory
     const baseUrl = getStaticAssetBaseUrl();
-    return `${baseUrl}/uploads/${relativePath}`;
+    return `${baseUrl}/api/v1/files/school_profile/${relativePath}`;
   }, []);
 
   // Fetch school data
@@ -97,14 +112,6 @@ export default function SchoolSettingsPage({ user }) {
             status: response.data.status || 'ACTIVE',
             schoolType: response.data.schoolType || response.data.school_type || '',
             projectTypeId: response.data.projectTypeId ? String(response.data.projectTypeId) : '',
-            // Extract location data from nested place object
-            province_id: placeData.provinceId ? String(placeData.provinceId) : '',
-            district_code: (placeData.district_code || placeData.districtCode) ? String(placeData.district_code || placeData.districtCode) : '',
-            district_id: placeData.districtId ? String(placeData.districtId) : '',
-            commune_code: (placeData.commune_code || placeData.communeCode) ? String(placeData.commune_code || placeData.communeCode) : '',
-            commune_id: placeData.communeId ? String(placeData.communeId) : '',
-            village_code: (placeData.village_code || placeData.villageCode) ? String(placeData.village_code || placeData.villageCode) : '',
-            village_id: placeData.villageId ? String(placeData.villageId) : '',
             gpsLatitude: placeData.gpsLatitude !== undefined && placeData.gpsLatitude !== null ? String(placeData.gpsLatitude) : '',
             gpsLongitude: placeData.gpsLongitude !== undefined && placeData.gpsLongitude !== null ? String(placeData.gpsLongitude) : ''
           };
@@ -112,6 +119,17 @@ export default function SchoolSettingsPage({ user }) {
           console.log('📍 Form data set:', newFormData);
           console.log('📍 Project type ID:', newFormData.projectTypeId);
           setFormData(newFormData);
+
+          // Initialize location dropdowns using the hook's setInitialValues
+          if (placeData.provinceId) {
+            setInitialValues({
+              provinceId: placeData.provinceId,
+              districtId: placeData.districtId || '',
+              communeId: placeData.communeId || '',
+              villageId: placeData.villageId || ''
+            });
+          }
+
           if (response.data.profile) {
             // Store the full image URL
             const fullImageUrl = getFullImageUrl(response.data.profile);
@@ -137,60 +155,7 @@ export default function SchoolSettingsPage({ user }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolId]);
 
-  // Load districts, communes, and villages when school data is loaded with location data
-  useEffect(() => {
-    const loadLocationCascade = async () => {
-      const provinceId = schoolData?.place?.provinceId;
 
-      if (!provinceId) {
-        console.log('⚠️ No provinceId found in school data');
-        setDistricts([]);
-        setCommunes([]);
-        return;
-      }
-
-      try {
-        console.log('📍 Loading location cascade for province:', provinceId);
-
-        // Fetch districts for the current province
-        const distResponse = await locationService.getDistrictsByProvince(provinceId);
-        console.log('📍 Districts fetched:', distResponse?.data || distResponse);
-        setDistricts(distResponse?.data || distResponse || []);
-
-        const districtCode = schoolData?.place?.district_code;
-        if (districtCode) {
-          // Fetch communes for the current district
-          const commResponse = await locationService.getCommunesByDistrict(provinceId, districtCode);
-          setCommunes(commResponse?.data || commResponse || []);
-        } else {
-          setCommunes([]);
-        }
-      } catch (err) {
-        console.error('Error loading location cascade:', err);
-        setDistricts([]);
-        setCommunes([]);
-      }
-    };
-
-    if (schoolData?.place) {
-      loadLocationCascade();
-    }
-  }, [schoolData?.place]);
-
-  // Fetch provinces on mount
-  useEffect(() => {
-    const fetchProvinces = async () => {
-      try {
-        const response = await locationService.getProvinces();
-        console.log('📍 Provinces fetched:', response?.data || response);
-        setProvinces(response?.data || response || []);
-      } catch (err) {
-        console.error('Error fetching provinces:', err);
-        setProvinces([]);
-      }
-    };
-    fetchProvinces();
-  }, []);
 
   // Fetch school project types on mount
   useEffect(() => {
@@ -248,87 +213,7 @@ export default function SchoolSettingsPage({ user }) {
     );
   }, [formData.gpsLatitude, formData.gpsLongitude]);
 
-  // Fetch districts when province changes (only when user manually changes it, not on initial load)
-  useEffect(() => {
-    const fetchDistricts = async () => {
-      if (!formData.province_id) {
-        setDistricts([]);
-        setCommunes([]);
-        return;
-      }
 
-      // Skip if this is the initial load from schoolData
-      if (schoolData?.place?.provinceId && formData.province_id === String(schoolData.place.provinceId)) {
-        return;
-      }
-
-      try {
-        const response = await locationService.getDistrictsByProvince(formData.province_id);
-        setDistricts(response?.data || response || []);
-        console.log('📍 Districts loaded:', response?.data || response);
-        setCommunes([]);
-      } catch (err) {
-        console.error('Error fetching districts:', err);
-        setDistricts([]);
-        setCommunes([]);
-      }
-    };
-    fetchDistricts();
-  }, [formData.province_id, schoolData?.place?.provinceId]);
-
-  // Fetch communes when district changes (only when user manually changes it, not on initial load)
-  useEffect(() => {
-    const fetchCommunes = async () => {
-      if (!formData.province_id || !formData.district_code) {
-        setCommunes([]);
-        return;
-      }
-
-      // Skip if this is the initial load from schoolData
-      if (schoolData?.place?.district_code && formData.district_code === String(schoolData.place.district_code)) {
-        return;
-      }
-
-      try {
-        const response = await locationService.getCommunesByDistrict(formData.province_id, formData.district_code);
-        console.log('📍 Communes loaded:', response?.data || response);
-        setCommunes(response?.data || response || []);
-      } catch (err) {
-        console.error('Error fetching communes:', err);
-        setCommunes([]);
-      }
-    };
-    fetchCommunes();
-  }, [formData.province_id, formData.district_code, schoolData?.place?.district_code]);
-
-  // Fetch villages when commune changes (only when user manually changes it, not on initial load)
-  useEffect(() => {
-    const fetchVillages = async () => {
-      if (!formData.province_id || !formData.district_code || !formData.commune_code) {
-        setVillages([]);
-        return;
-      }
-
-      // Skip if this is the initial load from schoolData
-      if (schoolData?.place?.commune_code && formData.commune_code === String(schoolData.place.commune_code)) {
-        return;
-      }
-
-      try {
-        const response = await locationService.getVillagesByCommune(
-          formData.province_id,
-          formData.district_code,
-          formData.commune_code
-        );
-        console.log('📍 Villages loaded:', response?.data || response);
-        setVillages(response?.data || response || []);
-      } catch (err) {
-        console.error('Error fetching villages:', err);
-        setVillages([]);
-      }
-    };
-    fetchVillages();
-  }, [formData.province_id, formData.district_code, formData.commune_code, schoolData?.place?.commune_code]);
 
   // Handle profile image selection
   const handleImageChange = useCallback((e) => {
@@ -365,65 +250,30 @@ export default function SchoolSettingsPage({ user }) {
     }));
   }, [isEditMode, submitting]);
 
-  // Handle province selection
-  const handleProvinceChange = useCallback((value) => {
+  // Wrapper handlers for location changes (hook manages cascade automatically)
+  const handleProvinceChangeWrapper = useCallback((value) => {
     if (!isEditMode || submitting) return;
     console.log('📍 Province selected:', value);
-    setFormData(prev => ({
-      ...prev,
-      province_id: value,
-      // Clear district and communes when province changes
-      district_code: '',
-      district_id: '',
-      commune_code: '',
-      commune_id: ''
-    }));
-  }, [isEditMode, submitting]);
+    handleProvinceChange(value);
+  }, [isEditMode, submitting, handleProvinceChange]);
 
-  // Handle district selection - capture both code and ID
-  const handleDistrictChange = useCallback((value) => {
+  const handleDistrictChangeWrapper = useCallback((value) => {
     if (!isEditMode || submitting) return;
-    const selectedDistrict = districts.find(d => String(d.district_code || d.code) === value);
-    console.log('📍 District selected:', value, selectedDistrict);
-    setFormData(prev => ({
-      ...prev,
-      district_code: value,
-      // Use districtId from API response, fallback to id
-      district_id: selectedDistrict ? String(selectedDistrict.districtId || selectedDistrict.id) : '',
-      // Clear communes when district changes
-      commune_code: '',
-      commune_id: ''
-    }));
-  }, [districts, isEditMode, submitting]);
+    console.log('📍 District selected:', value);
+    handleDistrictChange(value);
+  }, [isEditMode, submitting, handleDistrictChange]);
 
-  // Handle commune selection - capture both code and ID
-  const handleCommuneChange = useCallback((value) => {
+  const handleCommuneChangeWrapper = useCallback((value) => {
     if (!isEditMode || submitting) return;
-    const selectedCommune = communes.find(c => String(c.commune_code || c.code) === value);
-    console.log('📍 Commune selected:', value, selectedCommune);
-    setFormData(prev => ({
-      ...prev,
-      commune_code: value,
-      // Use communeId from API response, fallback to id
-      commune_id: selectedCommune ? String(selectedCommune.communeId || selectedCommune.id) : '',
-      // Clear village when commune changes
-      village_code: '',
-      village_id: ''
-    }));
-  }, [communes, isEditMode, submitting]);
+    console.log('📍 Commune selected:', value);
+    handleCommuneChange(value);
+  }, [isEditMode, submitting, handleCommuneChange]);
 
-  // Handle village selection - capture both code and ID
-  const handleVillageChange = useCallback((value) => {
+  const handleVillageChangeWrapper = useCallback((value) => {
     if (!isEditMode || submitting) return;
-    const selectedVillage = villages.find(v => String(v.village_code || v.code) === value);
-    console.log('📍 Village selected:', value, selectedVillage);
-    setFormData(prev => ({
-      ...prev,
-      village_code: value,
-      // Use villageId from API response, fallback to id
-      village_id: selectedVillage ? String(selectedVillage.villageId || selectedVillage.id) : ''
-    }));
-  }, [villages, isEditMode, submitting]);
+    console.log('📍 Village selected:', value);
+    handleVillageChange(value);
+  }, [isEditMode, submitting, handleVillageChange]);
 
   // Handle school type selection
   const handleSchoolTypeChange = useCallback((value) => {
@@ -484,37 +334,27 @@ export default function SchoolSettingsPage({ user }) {
         payload.projectTypeId = parseInt(formData.projectTypeId);
       }
 
+      // Helper function to normalize location data
+      const normalizeLocation = (loc) => {
+        if (!loc) return undefined;
+        const normalized = {};
+        if (loc.provinceId) normalized.provinceId = parseInt(loc.provinceId);
+        if (loc.districtId) normalized.districtId = parseInt(loc.districtId);
+        if (loc.communeId) normalized.communeId = parseInt(loc.communeId);
+        if (loc.villageId) normalized.villageId = parseInt(loc.villageId);
+        return Object.keys(normalized).length > 0 ? normalized : undefined;
+      };
+
       // Add location data in nested place object format (as expected by API)
-      const placeData = {};
-      if (formData.province_id) {
-        placeData.provinceId = parseInt(formData.province_id);
-      }
-      if (formData.district_id) {
-        placeData.districtId = parseInt(formData.district_id);
-      }
-      if (formData.commune_id) {
-        placeData.communeId = parseInt(formData.commune_id);
-      }
-      if (formData.village_id) {
-        placeData.villageId = parseInt(formData.village_id);
-      }
-
-      if (formData.gpsLatitude) {
-        const lat = parseFloat(formData.gpsLatitude);
-        if (!Number.isNaN(lat)) {
-          placeData.gpsLatitude = lat;
-        }
-      }
-      if (formData.gpsLongitude) {
-        const lng = parseFloat(formData.gpsLongitude);
-        if (!Number.isNaN(lng)) {
-          placeData.gpsLongitude = lng;
-        }
-      }
-
-      if (Object.keys(placeData).length > 0) {
-        payload.place = placeData;
-      }
+      // Use hook's selected values (which are numeric IDs)
+      payload.place = normalizeLocation({
+        provinceId: selectedProvince,
+        districtId: selectedDistrict,
+        communeId: selectedCommune,
+        villageId: selectedVillage,
+        gpsLatitude: formData.gpsLatitude ? parseFloat(formData.gpsLatitude) : undefined,
+        gpsLongitude: formData.gpsLongitude ? parseFloat(formData.gpsLongitude) : undefined
+      });
 
       // Step 1: Upload profile image if provided (separate POST request)
       if (profileImage) {
@@ -531,7 +371,7 @@ export default function SchoolSettingsPage({ user }) {
       console.log('📤 Submitting school update with payload:', {
         schoolType: payload.schoolType,
         projectTypeId: payload.projectTypeId,
-        place: placeData
+        place: payload.place
       });
       const response = await schoolService.updateSchool(schoolId, payload);
 
@@ -557,7 +397,7 @@ export default function SchoolSettingsPage({ user }) {
     } finally {
       setSubmitting(false);
     }
-  }, [formData, profileImage, schoolId, showSuccess, showError, t, isEditMode]);
+  }, [formData, profileImage, schoolId, showSuccess, showError, t, isEditMode, selectedProvince, selectedDistrict, selectedCommune, selectedVillage]);
 
   if (loading && !schoolData) {
     return <PageLoader />;
@@ -776,11 +616,11 @@ export default function SchoolSettingsPage({ user }) {
                         {t('province') || 'Province'}
                       </label>
                       <Dropdown
-                        value={formData.province_id}
-                        onValueChange={handleProvinceChange}
-                        options={provinces.map(prov => ({
-                          value: String(prov.id || prov.province_id),
-                          label: prov.province_name_kh || prov.province_name_en || prov.name_kh || prov.name_en || prov.name
+                        value={selectedProvince}
+                        onValueChange={handleProvinceChangeWrapper}
+                        options={getProvinceOptions().map(prov => ({
+                          value: prov.value,
+                          label: prov.label
                         }))}
                         placeholder={t('selectProvince') || 'Select Province'}
                         disabled={submitting}
@@ -795,14 +635,14 @@ export default function SchoolSettingsPage({ user }) {
                         {t('district') || 'District'}
                       </label>
                       <Dropdown
-                        value={formData.district_code}
-                        onValueChange={handleDistrictChange}
-                        options={districts.map(dist => ({
-                          value: String(dist.district_code || dist.code),
-                          label: dist.district_name_kh || dist.district_name_en || dist.name_kh || dist.name_en || dist.name
+                        value={selectedDistrict}
+                        onValueChange={handleDistrictChangeWrapper}
+                        options={getDistrictOptions().map(dist => ({
+                          value: dist.value,
+                          label: dist.label
                         }))}
                         placeholder={t('selectDistrict') || 'Select District'}
-                        disabled={!isEditMode || submitting || !formData.province_id}
+                        disabled={!isEditMode || submitting || !selectedProvince}
                         className={`w-full ${!isEditMode ? 'pointer-events-none opacity-80' : ''}`}
                         maxHeight="max-h-60"
                       />
@@ -814,14 +654,14 @@ export default function SchoolSettingsPage({ user }) {
                         {t('commune') || 'Commune'}
                       </label>
                       <Dropdown
-                        value={formData.commune_code}
-                        onValueChange={handleCommuneChange}
-                        options={communes.map(comm => ({
-                          value: String(comm.commune_code || comm.code),
-                          label: comm.commune_name_kh || comm.commune_name_en || comm.name_kh || comm.name_en || comm.name
+                        value={selectedCommune}
+                        onValueChange={handleCommuneChangeWrapper}
+                        options={getCommuneOptions().map(comm => ({
+                          value: comm.value,
+                          label: comm.label
                         }))}
                         placeholder={t('selectCommune') || 'Select Commune'}
-                        disabled={!isEditMode || submitting || !formData.district_code}
+                        disabled={!isEditMode || submitting || !selectedDistrict}
                         className={`w-full ${!isEditMode ? 'pointer-events-none opacity-80' : ''}`}
                         maxHeight="max-h-60"
                       />
