@@ -1296,7 +1296,7 @@ const TeacherEditModal = () => {
           email: editForm.email?.trim() || undefined,
           phone: editForm.phone?.trim() || undefined,
           password: editForm.password.trim(),
-          roleId: editForm.role ? parseInt(editForm.role) : 8,
+          roleId: editForm.role ? parseInt(editForm.role) : undefined,
 
           // Date & Identity
           dateOfBirth: formatDate(editForm.dateOfBirth),
@@ -1339,12 +1339,11 @@ const TeacherEditModal = () => {
           teacherStatus: editForm.teacherStatus || undefined,
           subject: editForm.subject.length > 0 ? editForm.subject : undefined,
           hireDate: editForm.hireDate ? formatDate(editForm.hireDate) : undefined,
-          appointed: editForm.appointed,
-          burden: editForm.burden,
+          appointed: typeof editForm.appointed === 'boolean' ? editForm.appointed : undefined,
+          burden: typeof editForm.burden === 'boolean' ? editForm.burden : undefined,
 
           // Teacher Learning Tools
           teacherExtraLearningTool: editForm.teacherExtraLearningTool || undefined,
-          extraLearningTool: editForm.extraLearningTool || undefined,
 
           // Books Assignment
           bookIds: editForm.bookIds.length > 0 ? editForm.bookIds : null,
@@ -1356,7 +1355,7 @@ const TeacherEditModal = () => {
         // Remove undefined/empty values - but keep bookIds, gradeLevel, and teacherExtraLearningTool even when null
         const cleanPayload = Object.keys(createPayload).reduce((acc, k) => {
           // Special cases: keep bookIds, gradeLevel, and learning tool objects even when null/false so backend sees explicit values
-          if (k === 'bookIds' || k === 'gradeLevel' || k === 'teacherExtraLearningTool' || k === 'extraLearningTool') {
+          if (k === 'bookIds' || k === 'gradeLevel' || k === 'teacherExtraLearningTool') {
             acc[k] = createPayload[k];
             return acc;
           }
@@ -1477,7 +1476,7 @@ const TeacherEditModal = () => {
         // Remove undefined/empty values - but keep bookIds, gradeLevel, and learning tool objects even when null
         const cleanUpdatePayload = Object.keys(updatePayload).reduce((acc, k) => {
           // Special cases: keep bookIds, gradeLevel, and learning tool objects even when null/false so backend sees explicit values
-          if (k === 'bookIds' || k === 'gradeLevel' || k === 'teacherExtraLearningTool' || k === 'extraLearningTool') {
+          if (k === 'bookIds' || k === 'gradeLevel' || k === 'teacherExtraLearningTool') {
             acc[k] = updatePayload[k];
             return acc;
           }

@@ -545,31 +545,30 @@ const userService = {
       return Object.keys(converted).length > 0 ? converted : undefined;
     };
 
-    // Build payload for teacher creation.
-    // This is designed to mirror the rich createPayload from TeacherEditModal (create mode)
-    // so that all teacher fields are sent on create, not just a subset.
+    // Build payload for teacher creation in camelCase
+    // The API expects camelCase field names (not snake_case)
     const payload = {
       // Basic Personal Information
       username: teacherData.username?.trim(),
-      first_name: teacherData.first_name || teacherData.firstName,
-      last_name: teacherData.last_name || teacherData.lastName,
+      firstName: teacherData.firstName?.trim(),
+      lastName: teacherData.lastName?.trim(),
       email: teacherData.email?.trim(),
       password: teacherData.password?.trim(),
-      roleId: teacherData.roleId || 8, // Default to teacher role
+      roleId: teacherData.roleId,
 
       // Date & Identity
-      date_of_birth: teacherData.date_of_birth || teacherData.dateOfBirth,
+      dateOfBirth: teacherData.dateOfBirth,
       gender: teacherData.gender,
       nationality: teacherData.nationality?.trim(),
-      profile_picture: teacherData.profile_picture || teacherData.profilePicture,
+      profilePicture: teacherData.profilePicture,
 
       // Physical Information
-      weight_kg: teacherData.weight_kg || (teacherData.weight ? parseFloat(teacherData.weight) : undefined),
-      height_cm: teacherData.height_cm || (teacherData.height ? parseFloat(teacherData.height) : undefined),
-      bmi: teacherData.bmi ? parseFloat(teacherData.bmi) : undefined,
+      weightKg: teacherData.weightKg,
+      heightCm: teacherData.heightCm,
+      bmi: teacherData.bmi,
 
       // Location & Ethnicity
-      ethnic_group: teacherData.ethnic_group || teacherData.ethnicGroup?.trim(),
+      ethnicGroup: teacherData.ethnicGroup?.trim(),
       // Include location fields with numeric IDs
       residence: convertLocationIds(teacherData.residence),
       placeOfBirth: convertLocationIds(teacherData.placeOfBirth),
@@ -579,17 +578,17 @@ const userService = {
 
       // Teacher-Specific Fields
       // Preserve gradeLevel = 0 by using nullish coalescing instead of ||
-      gradeLevel: teacherData.gradeLevel ?? teacherData.grade_level,
-      teacher_number: teacherData.teacher_number,
+      gradeLevel: teacherData.gradeLevel,
+      teacherNumber: teacherData.teacherNumber,
       schoolId: teacherData.schoolId,
-      employment_type: teacherData.employment_type || teacherData.employmentType,
-      salaryTypeId: teacherData.salaryTypeId || (teacherData.salary_type ? parseInt(teacherData.salary_type) : undefined),
-      educationLevel: teacherData.educationLevel || teacherData.education_level,
-      trainingType: teacherData.trainingType || teacherData.training_type,
-      teachingType: teacherData.teachingType || teacherData.teaching_type,
-      teacherStatus: teacherData.teacherStatus || teacherData.teacher_status,
+      employmentType: teacherData.employmentType,
+      salaryTypeId: teacherData.salaryTypeId,
+      educationLevel: teacherData.educationLevel,
+      trainingType: teacherData.trainingType,
+      teachingType: teacherData.teachingType,
+      teacherStatus: teacherData.teacherStatus,
       subject: Array.isArray(teacherData.subject) && teacherData.subject.length > 0 ? teacherData.subject : undefined,
-      hire_date: teacherData.hire_date || teacherData.hireDate,
+      hireDate: teacherData.hireDate,
       appointed: typeof teacherData.appointed === 'boolean' ? teacherData.appointed : undefined,
       burden: typeof teacherData.burden === 'boolean' ? teacherData.burden : undefined,
 
@@ -600,7 +599,7 @@ const userService = {
       bookIds: Array.isArray(teacherData.bookIds) ? (teacherData.bookIds.length > 0 ? teacherData.bookIds : null) : undefined,
 
       // Family Information
-      teacher_family: teacherData.teacher_family,
+      teacherFamily: teacherData.teacherFamily,
     };
 
     // Remove undefined/null values to avoid sending empty fields
