@@ -224,7 +224,7 @@ export default function TeacherAttendance() {
             const user = item.user || {};
             const firstName = user.firstName || '';
             const lastName = user.lastName || '';
-            const fullName = `${firstName} ${lastName}`.trim() || 'Unknown';
+            const fullName = `${lastName} ${firstName}`.trim() || 'Unknown';
 
             return {
               id: Number(item.userId), // User ID
