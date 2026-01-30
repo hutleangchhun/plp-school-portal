@@ -683,7 +683,7 @@ const userService = {
 
     console.log(`Updating user ${userId} active status to: ${isActive}`);
     return patch(ENDPOINTS.USERS.ACTIVE_STATUS(userId), {
-      is_active: isActive
+      isActive: isActive
     });
   },
 
