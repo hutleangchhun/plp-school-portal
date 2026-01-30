@@ -1049,7 +1049,7 @@ export default function TeachersManagement() {
             disabled={loadingViewTeacherId === (teacher.id || teacher.teacherId || teacher.userId)}
           >
             {loadingViewTeacherId === (teacher.id || teacher.teacherId || teacher.userId) ? (
-              <LoadingSpinner size="sm" variant="success" />
+              <LoadingSpinner size="sm" variant="primary" />
             ) : (
               <Eye className="h-4 w-4" />
             )}
