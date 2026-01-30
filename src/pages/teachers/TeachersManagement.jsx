@@ -116,6 +116,7 @@ export default function TeachersManagement() {
   const [tableLoading, setTableLoading] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [loadingViewTeacherId, setLoadingViewTeacherId] = useState(null);
   const fetchingRef = useRef(false);
   const lastFetchParams = useRef(null);
   const searchTimeoutRef = useRef(null);
@@ -819,10 +820,59 @@ export default function TeachersManagement() {
   };
 
   // Handle view teacher
-  const handleViewTeacher = (teacher) => {
+  const handleViewTeacher = async (teacher) => {
     console.log('View button clicked for teacher:', teacher);
-    setViewingTeacher(teacher);
-    setShowViewModal(true);
+    const teacherId = teacher.id || teacher.teacherId || teacher.userId;
+
+    // Set loading state for this specific teacher
+    setLoadingViewTeacherId(teacherId);
+
+    try {
+      // Fetch full teacher data before opening modal
+      const userId = teacher.userId || teacher.id;
+
+      if (userId) {
+        console.log('Fetching full teacher data for userId:', userId);
+        const response = await userService.getUserByID(userId);
+        console.log('Full teacher data fetched:', response);
+
+        // Handle different response formats
+        let fullTeacherData = teacher;
+        if (response) {
+          if (response.data) {
+            fullTeacherData = response.data;
+          } else if (response.id || response.username || response.first_name) {
+            fullTeacherData = response;
+          }
+        }
+
+        // Merge fetched data with original teacher object to preserve teacherId, userId, etc.
+        // This ensures the modal has all the IDs it needs for additional API calls
+        const mergedTeacherData = {
+          ...fullTeacherData,
+          teacherId: teacher.teacherId || teacher.id,
+          userId: teacher.userId || teacher.id,
+          id: teacher.id || teacher.teacherId || teacher.userId,
+        };
+
+        // Set the merged teacher data and show modal
+        setViewingTeacher(mergedTeacherData);
+      } else {
+        // No userId, use provided teacher data
+        setViewingTeacher(teacher);
+      }
+
+      setShowViewModal(true);
+    } catch (error) {
+      console.error('Error fetching teacher data:', error);
+      showError(t('failedToLoadTeacherDetails', 'Failed to load teacher details'));
+      // Still open modal with basic data
+      setViewingTeacher(teacher);
+      setShowViewModal(true);
+    } finally {
+      // Clear loading state
+      setLoadingViewTeacherId(null);
+    }
   };
 
   // Handle add teacher button click - navigate to create page
@@ -996,8 +1046,13 @@ export default function TeachersManagement() {
             size="sm"
             className="text-green-600 hover:text-green-900 hover:bg-green-50 hover:scale-110"
             title={t('viewTeacher', 'View teacher details')}
+            disabled={loadingViewTeacherId === (teacher.id || teacher.teacherId || teacher.userId)}
           >
-            <Eye className="h-4 w-4" />
+            {loadingViewTeacherId === (teacher.id || teacher.teacherId || teacher.userId) ? (
+              <LoadingSpinner size="sm" variant="success" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
           </Button>
           <Button
             onClick={(e) => {

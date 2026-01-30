@@ -35,10 +35,26 @@ export default function TeacherViewModal({ isOpen, onClose, teacher }) {
   const [teacherClasses, setTeacherClasses] = useState([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
 
-  // Fetch full teacher data when modal opens
+  // Fetch full teacher data when modal opens (only if data is not already complete)
   useEffect(() => {
     if (!isOpen || !teacher) {
       setFullTeacherData(null);
+      return;
+    }
+
+    // Check if teacher data is already complete (has detailed fields)
+    // If it has firstName, email, etc., it's likely already fetched from parent component
+    const hasDetailedData = !!(
+      teacher.firstName || teacher.first_name ||
+      teacher.email ||
+      teacher.dateOfBirth || teacher.date_of_birth
+    );
+
+    if (hasDetailedData) {
+      // Data is already complete, no need to fetch
+      console.log('Teacher data already complete, skipping API call');
+      setFullTeacherData(teacher);
+      setLoading(false);
       return;
     }
 
