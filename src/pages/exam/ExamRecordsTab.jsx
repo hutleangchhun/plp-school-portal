@@ -90,11 +90,10 @@ export default function ExamRecordsTab({
         progress: 70,
       }));
 
-      // Ensure correct MIME type for Excel files
-      const excelBlob = blob.type !==
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      // Ensure correct MIME type for PDF files
+      const pdfBlob = blob.type !== "application/pdf"
         ? new Blob([blob], {
-            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            type: "application/pdf",
           })
         : blob;
 
@@ -104,10 +103,10 @@ export default function ExamRecordsTab({
       }));
 
       // Download the file
-      const url = window.URL.createObjectURL(excelBlob);
+      const url = window.URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `student-exams-records-${year}-${month}.xlsx`;
+      link.download = `student-exams-records-${year}-${month}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

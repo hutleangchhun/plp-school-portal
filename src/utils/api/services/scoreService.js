@@ -243,8 +243,8 @@ export const scoreService = {
         throw new Error('Class ID, year, and month are required');
       }
 
-      // Build full URL
-      const relativeUrl = ENDPOINTS.STUDENT_MONTHLY_EXAM.EXPORT.CLASS(classId, year, month);
+      // Build full URL (PDF export)
+      const relativeUrl = ENDPOINTS.STUDENT_MONTHLY_EXAM.EXPORT.CLASS_PDF(classId, year, month);
       const url = relativeUrl.startsWith('http') ? relativeUrl : `${API_BASE_URL}${relativeUrl}`;
 
       // Get token properly

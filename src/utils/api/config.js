@@ -194,7 +194,8 @@ const ENDPOINTS = {
     BASE: '/student-monthly-exam',
     BULK: '/student-monthly-exam/bulk',
     EXPORT: {
-      CLASS: (classId, year, month) => `/student-monthly-exam/export/class/${classId}?year=${year}&month=${month}`,
+      CLASS: (classId, year, month) => `/student-monthly-exam/export/excel/class/${classId}?year=${year}&month=${month}`,
+      CLASS_PDF: (classId, year, month) => `/student-monthly-exam/export/pdf/class/${classId}?year=${year}&month=${month}`,
     },
   },
   UPLOAD: {
