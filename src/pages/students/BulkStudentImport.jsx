@@ -25,6 +25,205 @@ import { classService } from '../../utils/api/services/classService';
 import Dropdown from '../../components/ui/Dropdown';
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
 
+/**
+ * Translate API error messages from English to Khmer
+ */
+const translateApiError = (errorMessage) => {
+  if (!errorMessage) return 'មិនស្គាល់កំហុស';
+
+  const message = errorMessage.toLowerCase();
+
+  // Username conflicts
+  if (message.includes('username') && message.includes('already exists')) {
+    const usernameMatch = errorMessage.match(/username\s+"?([^"\s]+)"?\s+already exists/i);
+    const username = usernameMatch ? usernameMatch[1] : '';
+    return `ឈ្មោះអ្នកប្រើ "${username}" មានរួចហើយ`;
+  }
+
+  // Email conflicts
+  if (message.includes('email') && message.includes('already exists')) {
+    const emailMatch = errorMessage.match(/email\s+"?([^"\s]+)"?\s+already exists/i);
+    const email = emailMatch ? emailMatch[1] : '';
+    return `អ៊ីមែល "${email}" មានរួចហើយ`;
+  }
+
+  // User conflicts (general)
+  if (message.includes('user with') && message.includes('already exists')) {
+    if (message.includes('username')) {
+      return 'ឈ្មោះអ្នកប្រើនេះមានរួចហើយ';
+    }
+    if (message.includes('email')) {
+      return 'អ៊ីមែលនេះមានរួចហើយ';
+    }
+    return 'អ្នកប្រើនេះមានរួចហើយក្នុងប្រព័ន្ធ';
+  }
+
+  // Student number conflicts
+  if (message.includes('student number') && message.includes('already exists')) {
+    const numberMatch = errorMessage.match(/student number\s+"([^"]+)"\s+already exists/i);
+    const studentNumber = numberMatch ? numberMatch[1] : '';
+    return `លេខសិស្ស "${studentNumber}" មានរួចហើយ`;
+  }
+
+  if (message.includes('student id already exists')) {
+    return 'លេខសម្គាល់សិស្សមានរួចហើយក្នុងប្រព័ន្ធ';
+  }
+
+  // School not found
+  if (message.includes('school') && message.includes('not found')) {
+    const schoolIdMatch = errorMessage.match(/school with id\s+(\d+)\s+not found/i);
+    const schoolId = schoolIdMatch ? schoolIdMatch[1] : '';
+    return schoolId ? `រកមិនឃើញសាលាលេខ ${schoolId}` : 'រកមិនឃើញសាលា';
+  }
+
+  // Class not found
+  if (message.includes('class') && message.includes('not found')) {
+    const classIdMatch = errorMessage.match(/class with id\s+(\d+)\s+not found/i);
+    const classId = classIdMatch ? classIdMatch[1] : '';
+    return classId ? `រកមិនឃើញថ្នាក់លេខ ${classId}` : 'រកមិនឃើញថ្នាក់';
+  }
+
+  // Class doesn't belong to school
+  if (message.includes('does not belong to school')) {
+    return 'ថ្នាក់នេះមិនមានក្នុងសាលានេះទេ';
+  }
+
+  // Registration in progress
+  if (message.includes('registration already in progress')) {
+    return 'ការចុះឈ្មោះកំពុងដំណើរការសម្រាប់អ្នកប្រើប្រាស់នេះ';
+  }
+
+  // Database lock conflict
+  if (message.includes('database lock conflict') || message.includes('lock not available')) {
+    return 'មានការចុះឈ្មោះផ្សេងកំពុងដំណើរការ។ សូមព្យាយាមម្តងទៀត';
+  }
+
+  // Concurrent transaction conflict
+  if (message.includes('concurrent transaction conflict') || message.includes('serialization failure')) {
+    return 'មានការប្រើប្រាស់ក្នុងពេលតែមួយ។ សូមព្យាយាមម្តងទៀត';
+  }
+
+  // Database constraint violations - null values
+  if (message.includes('null value') && message.includes('password_hash')) {
+    return 'ពាក្យសម្ងាត់ត្រូវបានទាមទារ។ សូមផ្តល់ពាក្យសម្ងាត់';
+  }
+
+  if (message.includes('null value') && message.includes('violates not-null constraint')) {
+    // Extract column name if possible
+    const columnMatch = errorMessage.match(/column "([^"]+)"/i);
+    const columnName = columnMatch ? columnMatch[1] : '';
+
+    if (columnName) {
+      const fieldTranslations = {
+        'username': 'ឈ្មោះអ្នកប្រើ',
+        'first_name': 'នាម',
+        'last_name': 'គោត្តនាម',
+        'email': 'អ៊ីមែល',
+        'date_of_birth': 'ថ្ងៃខែឆ្នាំកំណើត',
+        'gender': 'ភេទ',
+        'school_id': 'លេខសាលា',
+        'password_hash': 'ពាក្យសម្ងាត់'
+      };
+
+      const khmerField = fieldTranslations[columnName] || columnName;
+      return `ខ្វះព័ត៌មាន${khmerField}។ សូមបំពេញទិន្នន័យ`;
+    }
+
+    return 'ខ្វះព័ត៌មានចាំបាច់។ សូមបំពេញទិន្នន័យ';
+  }
+
+  // Value too long
+  if (message.includes('exceed') && message.includes('maximum allowed length')) {
+    return 'ទិន្នន័យមួយចំនួនវែងពេក។ សូមកាត់បន្ថយ';
+  }
+
+  // Parent username too long
+  if (message.includes('parent username') && message.includes('too long')) {
+    return 'ឈ្មោះឪពុកម្តាយវែងពេក។ សូមកាត់បន្ថយ';
+  }
+
+  // Lock wait timeout
+  if (message.includes('lock wait timeout') || message.includes('deadlock detected')) {
+    return 'ប្រព័ន្ធកំពុងមានអ្នកប្រើច្រើន។ សូមព្យាយាមម្តងទៀត ឬព្យាយាមពេលក្រោយ';
+  }
+
+  // No batch ID (queue error)
+  if (message.includes('no batch id')) {
+    return 'ការនាំចូលបានបរាជ័យ។ សូមសាកល្បងម្តងទៀត';
+  }
+
+  // District ID not found
+  if (message.includes('district id not found')) {
+    return 'រកមិនឃើញខណ្ឌ/ស្រុក';
+  }
+
+  // Network errors
+  if (message.includes('network error') || message.includes('failed to fetch')) {
+    return 'មានបញ្ហាក្នុងការតភ្ជាប់បណ្តាញ។ សូមពិនិត្យអ៊ីនធឺណិត';
+  }
+
+  if (message.includes('timeout') || message.includes('timed out')) {
+    return 'អស់ពេលក្នុងការតភ្ជាប់។ សូមព្យាយាមម្តងទៀត';
+  }
+
+  // Server errors
+  if (message.includes('internal server error') || message.includes('500')) {
+    return 'មានបញ្ហាក្នុងម៉ាស៊ីនមេ។ សូមព្យាយាមម្តងទៀតក្រោយមក';
+  }
+
+  if (message.includes('service unavailable') || message.includes('503')) {
+    return 'សេវាកម្មមិនអាចប្រើបានទេ។ សូមព្យាយាមម្តងទៀតក្រោយមក';
+  }
+
+  if (message.includes('gateway timeout') || message.includes('504')) {
+    return 'ម៉ាស៊ីនមេមិនអាចភ្ជាប់បាន។ សូមព្យាយាមម្តងទៀត';
+  }
+
+  // Validation errors
+  if (message.includes('validation failed') || message.includes('validation error')) {
+    return 'ការផ្ទៀងផ្ទាត់ទិន្នន័យបានបរាជ័យ។ សូមពិនិត្យឡើងវិញ';
+  }
+
+  if (message.includes('invalid') && message.includes('format')) {
+    return 'ទម្រង់ទិន្នន័យមិនត្រឹមត្រូវ';
+  }
+
+  if (message.includes('required field') || message.includes('is required')) {
+    return 'ខ្វះព័ត៌មានត្រូវបំបេញកន្លែងមាន * សូមបំពេញទិន្នន័យ';
+  }
+
+  // Bad request
+  if (message.includes('bad request') || message.includes('400')) {
+    return 'មានបញ្ហាក្នុងការបញ្ជូនទិន្នន័យ។ សូមពិនិត្យទិន្នន័យ និងបញ្ជូនម្តងទៀត';
+  }
+
+  // Unauthorized
+  if (message.includes('unauthorized') || message.includes('401')) {
+    return 'អ្នកមិនមានសិទ្ធិ។';
+  }
+
+  // Forbidden
+  if (message.includes('forbidden') || message.includes('403')) {
+    return 'ការចូលប្រើត្រូវបានបដិសេធ';
+  }
+
+  // Not found
+  if (message.includes('not found') || message.includes('404')) {
+    return 'រកមិនឃើញ';
+  }
+
+  // Connection errors
+  if (message.includes('connection refused') || message.includes('econnrefused')) {
+    return 'មិនអាចតភ្ជាប់ទៅម៉ាស៊ីនមេ';
+  }
+
+  if (message.includes('connection reset') || message.includes('econnreset')) {
+    return 'ការតភ្ជាប់ត្រូវបានផ្តាច់។ សូមព្យាយាមម្តងទៀត';
+  }
+
+  // Default: return original message with prefix
+  return `កំហុស: ${errorMessage}`;
+};
 
 export default function BulkStudentImport() {
   const navigate = useNavigate();
@@ -401,6 +600,8 @@ export default function BulkStudentImport() {
               );
             } catch (err) {
               console.error('Error fetching school details:', err);
+              const translatedError = translateApiError(err.message || err.response?.data?.message);
+              showError('មិនអាចទាញយកព័ត៌មានសាលា៖ ' + translatedError);
             }
           } else {
             console.warn('⚠️ Director user has no school ID in userData:', userData);
@@ -415,12 +616,14 @@ export default function BulkStudentImport() {
             }
           } catch (error) {
             console.error('Error loading provinces:', error);
-            showError('មិនអាចផ្ទុកខេត្ត។');
+            const translatedError = translateApiError(error.message || error.response?.data?.message);
+            showError('មិនអាចផ្ទុកខេត្ត៖ ' + translatedError);
           }
         }
       } catch (error) {
         console.error('Error loading user account:', error);
-        showError('មិនអាចផ្ទុកព័ត៌មានគណនីរបស់អ្នក។');
+        const translatedError = translateApiError(error.message || error.response?.data?.message);
+        showError('មិនអាចផ្ទុកព័ត៌មានគណនីរបស់អ្នក៖ ' + translatedError);
       } finally {
         setInitialLoading(false);
       }
@@ -451,7 +654,8 @@ export default function BulkStudentImport() {
         }
       } catch (error) {
         console.error('Error loading districts:', error);
-        showError('មិនអាចផ្ទុកស្រុក។');
+        const translatedError = translateApiError(error.message || error.response?.data?.message);
+        showError('មិនអាចផ្ទុកស្រុក៖ ' + translatedError);
         setDistricts([]);
       } finally {
         setLoadingDistricts(false);
@@ -494,7 +698,8 @@ export default function BulkStudentImport() {
         }
       } catch (error) {
         console.error('Error loading schools:', error);
-        showError('មិនអាចផ្ទុកសាលា។');
+        const translatedError = translateApiError(error.message || error.response?.data?.message);
+        showError('មិនអាចផ្ទុកសាលា៖ ' + translatedError);
         setSchools([]);
       } finally {
         setLoadingSchools(false);
@@ -557,7 +762,8 @@ export default function BulkStudentImport() {
         }
       } catch (error) {
         console.error('Error fetching school details:', error);
-        showError('មិនអាចទាញយកព័ត៌មានសាលា។');
+        const translatedError = translateApiError(error.message || error.response?.data?.message);
+        showError('មិនអាចទាញយកព័ត៌មានសាលា៖ ' + translatedError);
       } finally {
         setLoadingSchools(false);
       }
@@ -1366,6 +1572,7 @@ export default function BulkStudentImport() {
           student.gender &&
           (student.schoolId || student.schoolId === 0);
 
+        // Note: password is optional here because we provide a default 'Student@123' if missing
         return hasRequiredFields;
       });
 
@@ -1430,12 +1637,17 @@ export default function BulkStudentImport() {
 
       // Transform data for API - match the expected format with required/optional fields
       const transformedData = validStudents.map(student => {
+        // Safely get password value with fallback
+        const passwordValue = (student.password && typeof student.password === 'string' && student.password.trim())
+          ? student.password.trim()
+          : 'Student@123';
+
         // Build the base student object with required fields
         const studentData = {
           firstName: student.firstName.trim(),
           lastName: student.lastName.trim(),
           username: student.username.trim() || `${student.firstName.trim().toLowerCase()}.${student.lastName.trim().toLowerCase()}`,
-          password: student.password.trim() || 'Student@123', // Default password for required field
+          password: passwordValue, // Always provide a password
           dateOfBirth: convertDateFormat(student.dateOfBirth),
           gender: student.gender ? student.gender.toUpperCase() : undefined,
           schoolId: schoolId, // Use school from authenticated user
@@ -1628,7 +1840,7 @@ export default function BulkStudentImport() {
                     ...result,
                     processing: false,
                     success: batchResult.success === true,
-                    error: batchResult.error || null
+                    error: batchResult.error ? translateApiError(batchResult.error) : null
                   };
                 }
                 return result;
@@ -1663,7 +1875,7 @@ export default function BulkStudentImport() {
                     ...result,
                     processing: false,
                     success: batchResult.success === true,
-                    error: batchResult.error || null
+                    error: batchResult.error ? translateApiError(batchResult.error) : null
                   };
                 }
 
@@ -1812,7 +2024,8 @@ export default function BulkStudentImport() {
       } catch (err) {
         console.error('Bulk registration error:', err);
         setIsImporting(false);
-        showError('💥 ការនាំចូលបានបរាជ័យ៖ ' + (err.message || 'មិនស្គាល់កំហុស'), { duration: 7000 });
+        const translatedError = translateApiError(err.message || err.response?.data?.message);
+        showError('💥 ការនាំចូលបានបរាជ័យ៖ ' + translatedError, { duration: 7000 });
       }
 
       stopLoading(loadingKey);
@@ -1822,24 +2035,29 @@ export default function BulkStudentImport() {
       // Mark all as failed in progress tracker
       setIsImporting(false);
       if (importResults.length > 0) {
+        const translatedError = translateApiError(err.message || err.response?.data?.message || 'Unknown error');
         const failedResults = importResults.map(result => ({
           ...result,
           processing: false,
           success: false,
-          error: err.message || 'Unknown error'
+          error: translatedError
         }));
         setImportResults(failedResults);
       }
 
+      // Get translated error message
+      const errorMessage = err.response?.data?.message || err.message;
+      const translatedError = translateApiError(errorMessage);
+
       // Show specific error toast based on error type
       if (err.response?.status === 400) {
-        showError('❌ កំហុសក្នុងការផ្ទៀងផ្ទាត់ទិន្នន័យ៖ សូមពិនិត្យទិន្នន័យសិស្សឡើងវិញ', { duration: 8000 });
+        showError('❌ កំហុសក្នុងការផ្ទៀងផ្ទាត់ទិន្នន័យ៖ ' + translatedError, { duration: 8000 });
       } else if (err.response?.status === 500) {
-        showError('🔧 មានបញ្ហាក្នុងម៉ាស៊ីនមេ៖ សូមព្យាយាមម្តងទៀតក្រោយមក', { duration: 6000 });
+        showError('🔧 មានបញ្ហាក្នុងម៉ាស៊ីនមេ៖ ' + translatedError, { duration: 6000 });
       } else if (err.message?.includes('network') || err.message?.includes('timeout')) {
-        showError('🌐 កំហុសក្នុងការតភ្ជាប់បណ្តាញ៖ សូមពិនិត្យអ៊ីនធឺណិតរបស់អ្នក', { duration: 6000 });
+        showError('🌐 កំហុសក្នុងការតភ្ជាប់បណ្តាញ៖ ' + translatedError, { duration: 6000 });
       } else {
-        showError('💥 ការនាំចូលបានបរាជ័យ៖ ' + (err.message || 'មិនស្គាល់កំហុស'), { duration: 7000 });
+        showError('💥 ការនាំចូលបានបរាជ័យ៖ ' + translatedError, { duration: 7000 });
       }
 
       handleError(err, {
