@@ -1,4 +1,4 @@
-import { get, post, patch, put, del, uploadFile, uploadFilePatch } from '../client';
+import { get, getPublic, post, patch, put, del, uploadFile, uploadFilePatch } from '../client';
 import { ENDPOINTS, getStaticAssetBaseUrl } from '../config';
 
 /**
@@ -508,7 +508,8 @@ const userService = {
     const url = `${ENDPOINTS.USERS.PUBLIC_SCHOOL_USERS(schoolId)}?${queryParams}`;
     console.log('🌐 Loading users from:', url);
 
-    const response = await get(url);
+    // Use getPublic for unauthenticated access (public SchoolLookup page)
+    const response = await getPublic(url);
 
     // Transform response to normalize pagination format
     if (response && response.pagination) {

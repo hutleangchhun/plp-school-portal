@@ -1,4 +1,4 @@
-import { apiClient_, handleApiResponse } from '../client.js';
+import { apiClient_, publicApiClient, handleApiResponse } from '../client.js';
 import { ENDPOINTS } from '../config.js';
 
 export const schoolService = {
@@ -113,7 +113,7 @@ export const schoolService = {
                     const formatted = schoolService.utils.formatSchoolData(school);
                     console.log('Formatted school:', formatted);
                     return formatted;
-                }   );
+                });
 
                 return { data: formattedData };
             }
@@ -130,8 +130,9 @@ export const schoolService = {
             const endpoint = ENDPOINTS.SCHOOLS.SCHOOL_BY_DISTRICT(districtId);
             console.log('🌐 API: Full endpoint URL:', endpoint);
 
+            // Use publicApiClient for unauthenticated access (public SchoolLookup page)
             const response = await handleApiResponse(() =>
-                apiClient_.get(endpoint)
+                publicApiClient.get(endpoint)
             );
 
             console.log('🌐 API: Raw response:', response);

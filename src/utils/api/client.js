@@ -139,7 +139,7 @@ apiClient.interceptors.response.use(
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx
       const { status, data } = error.response;
-      
+
       // Handle specific status codes
       if (status === 401) {
         // Unauthorized - clear auth data
@@ -176,7 +176,7 @@ apiClient.interceptors.response.use(
         // Server error
         console.error('Server error occurred');
       }
-      
+
       // Return error with status and message
       return Promise.reject({
         status,
@@ -187,7 +187,7 @@ apiClient.interceptors.response.use(
     } else if (error.request) {
       // The request was made but no response was received
       console.error('No response received from server. Please check your internet connection.');
-      
+
       return Promise.reject({
         status: 0,
         message: 'No response received from server. Please check your internet connection.'
@@ -523,5 +523,5 @@ export const tokenManager = {
 };
 
 
-export { apiClient as apiClient_ };
+export { apiClient as apiClient_, publicApiClient };
 export default apiClient;
