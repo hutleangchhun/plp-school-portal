@@ -19,6 +19,7 @@ import SchoolAttendanceCountModal from '../../components/attendance/SchoolAttend
 import Badge from '@/components/ui/Badge';
 import { Eye, Calendar } from 'lucide-react';
 import { DatePickerWithDropdowns } from '@/components/ui/date-picker-with-dropdowns';
+import { formatNumberWithCommas } from '@/utils/formatters';
 
 const SchoolCoverageTable = ({
   data = [],
@@ -243,7 +244,11 @@ const SchoolAttendanceList = () => {
   const [schoolsData, setSchoolsData] = useState([]);
   const [schoolSummary, setSchoolSummary] = useState({
     schoolsWithStudentAttendance: 0,
-    schoolsWithTeacherAttendance: 0
+    schoolsWithTeacherAttendance: 0,
+    totalStudentsInSchoolsWithAttendance: 0,
+    totalTeachersInSchoolsWithAttendance: 0,
+    totalStudentsWithAttendance: 0,
+    totalTeachersWithAttendance: 0
   });
   const [pagination, setPagination] = useState({
     page: 1,
@@ -369,7 +374,12 @@ const SchoolAttendanceList = () => {
         // Store overall summary counts from the API (not just current page)
         setSchoolSummary({
           schoolsWithStudentAttendance: data.schoolsWithStudentAttendance || 0,
-          schoolsWithTeacherAttendance: data.schoolsWithTeacherAttendance || 0
+          schoolsWithTeacherAttendance: data.schoolsWithTeacherAttendance || 0,
+          totalStudentsInSchoolsWithAttendance: data.totalStudentsInSchoolsWithAttendance || 0,
+          totalTeachersInSchoolsWithAttendance: data.totalTeachersInSchoolsWithAttendance || 0,
+          totalStudentsWithAttendance: data.totalStudentsWithAttendance || 0,
+          totalTeachersWithAttendance: data.totalTeachersWithAttendance || 0,
+          
         });
       } else {
         setSchoolsData([]);
@@ -544,12 +554,12 @@ const SchoolAttendanceList = () => {
           <div className="flex flex-wrap gap-2 mb-6">
             {filters.province && (
               <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100">
-                {t('province', 'Province')}: {provinces.find(p => p.id === parseInt(filters.province))?.province_name_kh || filters.province}
+                {t('province', 'Province')}: {provinces.find(p => p.id === parseInt(filters.province))?.provinceNameKh || filters.province}
               </Badge>
             )}
             {filters.district && (
               <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100">
-                {t('district', 'District')}: {districts.find(d => d.id === parseInt(filters.district))?.district_name_kh || filters.district}
+                {t('district', 'District')}: {districts.find(d => d.id === parseInt(filters.district))?.districtNameKh || filters.district}
               </Badge>
             )}
             {filters.filterMode === 'single' && filters.date && (
@@ -572,11 +582,11 @@ const SchoolAttendanceList = () => {
         )}
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <StatsCard
             title={t('totalSchools', 'Total Schools')}
-            value={pagination.totalSchools}
-            icon={School}
+            value={formatNumberWithCommas(pagination.totalSchools)}
+            
             enhanced
             responsive
             gradientFrom="from-blue-500"
@@ -585,8 +595,8 @@ const SchoolAttendanceList = () => {
 
           <StatsCard
             title={t('withStudentData', 'With Student Data')}
-            value={schoolSummary.schoolsWithStudentAttendance}
-            icon={Users}
+            value={formatNumberWithCommas(schoolSummary.schoolsWithStudentAttendance)}
+           
             enhanced
             responsive
             gradientFrom="from-green-500"
@@ -595,8 +605,24 @@ const SchoolAttendanceList = () => {
 
           <StatsCard
             title={t('withTeacherData', 'With Teacher Data')}
-            value={schoolSummary.schoolsWithTeacherAttendance}
-            icon={Users}
+            value={formatNumberWithCommas(schoolSummary.schoolsWithTeacherAttendance)}
+            
+            enhanced
+            responsive
+            gradientFrom="from-purple-500"
+            gradientTo="to-purple-600"
+          />
+          <StatsCard
+            title={t('totalStudentsAttendance', 'Total Students With Attendance')}
+            value={`${formatNumberWithCommas(schoolSummary.totalStudentsWithAttendance)} / ${formatNumberWithCommas(schoolSummary.totalStudentsInSchoolsWithAttendance)} `}            
+            enhanced
+            responsive
+            gradientFrom="from-purple-500"
+            gradientTo="to-purple-600"
+          />
+          <StatsCard
+            title={t('totalTeachersAttendance', 'Total Teachers With Attendance')}
+            value={`${formatNumberWithCommas(schoolSummary.totalTeachersWithAttendance)} / ${formatNumberWithCommas(schoolSummary.totalTeachersInSchoolsWithAttendance)} `}            
             enhanced
             responsive
             gradientFrom="from-purple-500"
@@ -650,7 +676,7 @@ const SchoolAttendanceList = () => {
             <SearchableDropdown
               options={provinces.map((p) => ({
                 value: p.id,
-                label: p.province_name_kh || p.province_name_en
+                label: p.provinceNameKh || p.province_name_en
               }))}
               value={tempFilters.province}
               onValueChange={handleProvinceChange}
@@ -667,7 +693,7 @@ const SchoolAttendanceList = () => {
             <SearchableDropdown
               options={districts.map((d) => ({
                 value: d.id,
-                label: d.district_name_kh || d.district_name_en
+                label: d.districtNameKh || d.districtCode
               }))}
               value={tempFilters.district}
               onValueChange={handleDistrictChange}

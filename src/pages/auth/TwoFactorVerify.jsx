@@ -42,7 +42,11 @@ export default function TwoFactorVerify({ setUser }) {
     setError('');
     try {
       const mfaToken = sessionStorage.getItem('mfa_token');
+      console.log('🔐 Starting 2FA authentication with token:', mfaToken ? 'present' : 'missing');
+      
       const response = await api.auth.authenticate2FA(mfaToken, verificationCode);
+      console.log('✅ 2FA authenticate response:', response);
+      
       if (response.success) {
         // Clear MFA data from session
         sessionStorage.removeItem('mfa_user');
@@ -50,9 +54,35 @@ export default function TwoFactorVerify({ setUser }) {
 
         // authService.authenticate2FA already saves token and user data
         const freshUser = utils.user.getUserData();
+        console.log('👤 Fresh user data from localStorage:', freshUser);
+        console.log('🔑 User roleId:', freshUser?.roleId, 'Type:', typeof freshUser?.roleId);
+        
         setUser(freshUser);
 
         showSuccess(t('loginSuccessful', 'Login successful!'));
+
+        // Navigate to appropriate dashboard based on roleId
+        if (freshUser?.roleId === 1) {
+          console.log('🎯 Navigating admin user to /admin-dashboard');
+          // Admin users go to admin dashboard
+          navigate('/admin-dashboard', { replace: true });
+        } else if (freshUser?.roleId === 14) {
+          console.log('🎯 Navigating director to /dashboard');
+          // Directors go to director dashboard
+          navigate('/dashboard', { replace: true });
+        } else if (freshUser?.roleId === 8) {
+          console.log('🎯 Navigating teacher to /teacher-dashboard');
+          // Teachers go to teacher dashboard
+          navigate('/teacher-dashboard', { replace: true });
+        } else if (freshUser?.roleId && [15, 16, 17, 18, 19, 20, 21].includes(freshUser.roleId)) {
+          console.log('🎯 Navigating restricted role to /my-attendance');
+          // Restricted roles go to their attendance page
+          navigate('/my-attendance', { replace: true });
+        } else {
+          console.log('🎯 Fallback navigation to /dashboard, roleId:', freshUser?.roleId);
+          // Fallback to dashboard
+          navigate('/dashboard', { replace: true });
+        }
       } else {
         const errorMessage = response.error || t('invalid2FACode', 'Invalid verification code');
         setError(errorMessage);

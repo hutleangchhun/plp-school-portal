@@ -12,6 +12,7 @@ import { Building2, Users, BookOpen, User, Shield, Award, Briefcase } from 'luci
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import Badge from '@/components/ui/Badge';
+import { formatNumberWithCommas } from '@/utils/formatters';
 
 const AdminDashboard = ({ user: initialUser }) => {
   const { t } = useLanguage();
@@ -175,7 +176,7 @@ const AdminDashboard = ({ user: initialUser }) => {
         <FadeInSection delay={200} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <StatsCard
             title={t('totalSchools', 'Total Schools')}
-            value={systemStats.totalSchools}
+            value={formatNumberWithCommas(systemStats.totalSchools)}
             enhanced={true}
             gradientFrom="from-blue-500"
             gradientTo="to-blue-600"
@@ -185,7 +186,7 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           <StatsCard
             title={t('totalStudents', 'Total Students')}
-            value={systemStats.totalStudents}
+            value={formatNumberWithCommas(systemStats.totalStudents)}
             enhanced={true}
             gradientFrom="from-green-500"
             gradientTo="to-green-600"
@@ -195,7 +196,7 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           <StatsCard
             title={t('studentsWithClass', 'Students With Class')}
-            value={systemStats.totalStudentsWithClass}
+            value={formatNumberWithCommas(systemStats.totalStudentsWithClass)}
             enhanced={true}
             gradientFrom="from-emerald-500"
             gradientTo="to-emerald-600"
@@ -205,7 +206,7 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           <StatsCard
             title={t('studentsNoClass', 'Students No Class')}
-            value={systemStats.totalStudentsNoClass}
+            value={formatNumberWithCommas(systemStats.totalStudentsNoClass)}
             enhanced={true}
             gradientFrom="from-amber-500"
             gradientTo="to-amber-600"
@@ -215,7 +216,7 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           <StatsCard
             title={t('totalTeachers', 'Total Teachers')}
-            value={systemStats.totalTeachers}
+            value={formatNumberWithCommas(systemStats.totalTeachers)}
             enhanced={true}
             gradientFrom="from-purple-500"
             gradientTo="to-purple-600"
@@ -225,7 +226,7 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           <StatsCard
             title={t('totalClasses', 'Total Classes')}
-            value={systemStats.totalClasses}
+            value={formatNumberWithCommas(systemStats.totalClasses)}
             enhanced={true}
             gradientFrom="from-orange-500"
             gradientTo="to-orange-600"
@@ -238,7 +239,7 @@ const AdminDashboard = ({ user: initialUser }) => {
         <FadeInSection delay={250} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-6">
           <StatsCard
             title={t('totalDirectors', 'Total Directors')}
-            value={systemStats.totalDirectors}
+            value={formatNumberWithCommas(systemStats.totalDirectors)}
             enhanced={true}
             gradientFrom="from-rose-500"
             gradientTo="to-rose-600"
@@ -248,7 +249,7 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           <StatsCard
             title={t('totalDeputyPrincipals', 'Deputy Principals')}
-            value={systemStats.totalDeputyPrincipals}
+            value={formatNumberWithCommas(systemStats.totalDeputyPrincipals)}
             enhanced={true}
             gradientFrom="from-pink-500"
             gradientTo="to-pink-600"
@@ -258,7 +259,7 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           <StatsCard
             title={t('totalSecretaries', 'Secretaries')}
-            value={systemStats.totalSecretaries}
+            value={formatNumberWithCommas(systemStats.totalSecretaries)}
             enhanced={true}
             gradientFrom="from-cyan-500"
             gradientTo="to-cyan-600"
@@ -268,7 +269,7 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           <StatsCard
             title={t('totalTreasurers', 'Treasurers')}
-            value={systemStats.totalTreasurers}
+            value={formatNumberWithCommas(systemStats.totalTreasurers)}
             enhanced={true}
             gradientFrom="from-teal-500"
             gradientTo="to-teal-600"
@@ -278,7 +279,7 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           <StatsCard
             title={t('totalLibrarians', 'Librarians')}
-            value={systemStats.totalLibrarians}
+            value={formatNumberWithCommas(systemStats.totalLibrarians)}
             enhanced={true}
             gradientFrom="from-indigo-500"
             gradientTo="to-indigo-600"
@@ -288,7 +289,7 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           <StatsCard
             title={t('totalWorkshop', 'Workshop Staff')}
-            value={systemStats.totalWorkshop}
+            value={formatNumberWithCommas(systemStats.totalWorkshop)}
             enhanced={true}
             gradientFrom="from-amber-500"
             gradientTo="to-amber-600"
@@ -298,7 +299,7 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           <StatsCard
             title={t('totalSecurity', 'Security Staff')}
-            value={systemStats.totalSecurity}
+            value={formatNumberWithCommas(systemStats.totalSecurity)}
             enhanced={true}
             gradientFrom="from-slate-500"
             gradientTo="to-slate-600"
@@ -308,7 +309,7 @@ const AdminDashboard = ({ user: initialUser }) => {
 
           <StatsCard
             title={t('totalTeacherIct', 'ICT Teachers')}
-            value={systemStats.totalTeacherIct}
+            value={formatNumberWithCommas(systemStats.totalTeacherIct)}
             enhanced={true}
             gradientFrom="from-lime-500"
             gradientTo="to-lime-600"

@@ -50,11 +50,17 @@ export default function SearchableDropdown({
     } else {
       // Default client-side filtering
       const filtered = options.filter(option => {
-        const labelMatch = option.label.toLowerCase().includes(searchTerm.toLowerCase());
-        // Also search in secondary info if enabled
-        const secondaryMatch = showSecondaryInfo && option[secondaryInfoKey]
-          ? option[secondaryInfoKey].toLowerCase().includes(searchTerm.toLowerCase())
+        // Safely check if label exists and is a string
+        const labelMatch = option.label && typeof option.label === 'string'
+          ? option.label.toLowerCase().includes(searchTerm.toLowerCase())
           : false;
+        
+        // Also search in secondary info if enabled
+        const secondaryValue = option[secondaryInfoKey];
+        const secondaryMatch = showSecondaryInfo && secondaryValue && typeof secondaryValue === 'string'
+          ? secondaryValue.toLowerCase().includes(searchTerm.toLowerCase())
+          : false;
+        
         return labelMatch || secondaryMatch;
       });
       setFilteredOptions(filtered);

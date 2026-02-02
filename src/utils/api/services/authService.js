@@ -485,7 +485,21 @@ export const authService = {
         tokenManager.setToken(accessToken);
 
         // Normalize user data
-        const normalizedUser = normalizeUserData(user);
+        // IMPORTANT: If user successfully completed 2FA, they MUST have 2FA enabled
+        // Explicitly set isTwoFactorEnabled to true to ensure ProtectedRoute doesn't redirect
+        const normalizedUser = {
+          ...normalizeUserData(user),
+          isTwoFactorEnabled: true,
+          is_two_factor_enabled: true,
+          twoFactorEnabled: true
+        };
+
+        console.log('✅ 2FA authentication successful, user data normalized with 2FA enabled:', {
+          userId: normalizedUser.id,
+          username: normalizedUser.username,
+          roleId: normalizedUser.roleId,
+          isTwoFactorEnabled: normalizedUser.isTwoFactorEnabled
+        });
 
         // Enrich user data with secondary roles and teacher classes just like regular login
         const [userWithSecondaryRoles] = await Promise.all([

@@ -102,6 +102,29 @@ export const formatNumber = (num) => {
 };
 
 /**
+ * Format a number with comma separators (explicit version)
+ * Formats numbers like 345000 to "345,000"
+ * @param {number|string} num - Number to format
+ * @returns {string} Formatted number string with commas
+ * @example
+ * formatNumberWithCommas(345000) // "345,000"
+ * formatNumberWithCommas(1234567) // "1,234,567"
+ * formatNumberWithCommas(123) // "123"
+ */
+export const formatNumberWithCommas = (num) => {
+  if (num === null || num === undefined || num === '') return '';
+
+  // Convert to number if string
+  const number = typeof num === 'string' ? parseFloat(num) : num;
+
+  // Check if valid number
+  if (isNaN(number)) return '';
+
+  // Use toLocaleString for comma formatting
+  return number.toLocaleString('en-US');
+};
+
+/**
  * Format a percentage
  * @param {number} value - Decimal value (0.85 = 85%)
  * @param {number} decimals - Number of decimal places
@@ -131,11 +154,11 @@ export const truncateText = (text, maxLength = 50) => {
  */
 export const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 Bytes';
-  
+
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
@@ -146,15 +169,15 @@ export const formatFileSize = (bytes) => {
  */
 export const formatPhoneNumber = (phone) => {
   if (!phone) return '';
-  
+
   // Remove all non-numeric characters
   const cleaned = phone.replace(/\D/g, '');
-  
+
   // Format as (XXX) XXX-XXXX for 10 digits
   if (cleaned.length === 10) {
     return `(${cleaned.substring(0, 3)}) ${cleaned.substring(3, 6)}-${cleaned.substring(6)}`;
   }
-  
+
   // Return original if not 10 digits
   return phone;
 };
@@ -166,7 +189,7 @@ export const formatPhoneNumber = (phone) => {
  */
 export const formatName = (name) => {
   if (!name) return '';
-  
+
   return name
     .toLowerCase()
     .split(' ')
@@ -182,7 +205,7 @@ export const formatName = (name) => {
  */
 export const formatCurrency = (amount, currency = 'USD') => {
   if (amount === null || amount === undefined) return '';
-  
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency
