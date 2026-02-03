@@ -31,11 +31,48 @@ export default function StatsCard({
   titleColor = 'text-gray-600',
   enhanced = false,
   hoverColor = 'hover:border-blue-200',
-  gradientFrom = 'from-blue-500',
   gradientTo = 'to-blue-600',
   responsive = false,
-  clickable = false
+  clickable = false,
+  loading = false
 }) {
+  if (loading) {
+    if (enhanced) {
+      return (
+        <div className={`bg-white ${responsive ? 'rounded-sm sm:rounded-sm p-3 sm:p-4 lg:p-6' : 'rounded-md p-6'} border border-gray-100 ${responsive ? 'sm:border-2' : 'border-2'} shadow-sm ${className}`}>
+          <div className={`flex ${responsive ? 'flex-col sm:flex-row items-center sm:items-start text-center sm:text-left' : 'items-center'} animate-pulse`}>
+            {Icon && (
+              <div className={`flex-shrink-0 ${responsive ? 'mb-2 sm:mb-0' : ''}`}>
+                <div className={`${responsive ? 'h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12' : 'h-12 w-12'} bg-gray-200 rounded-md ${responsive ? 'mx-auto' : ''}`}></div>
+              </div>
+            )}
+            <div className={`${Icon ? (responsive ? 'sm:ml-3 lg:ml-4' : 'ml-4') : ''} flex-1 min-w-0 w-full`}>
+              <div className={`h-4 bg-gray-200 rounded w-1/2 mb-2 ${responsive ? 'mx-auto sm:mx-0' : ''}`}></div>
+              <div className={`h-8 bg-gray-200 rounded w-3/4 ${responsive ? 'mx-auto sm:mx-0' : ''}`}></div>
+              {subtitle && <div className={`h-3 bg-gray-200 rounded w-1/3 mt-2 ${responsive ? 'mx-auto sm:mx-0' : ''}`}></div>}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Simple mode loading
+    return (
+      <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
+        <div className="flex items-center animate-pulse">
+          {Icon && (
+            <div className={`h-12 w-12 bg-gray-200 rounded-lg`}></div>
+          )}
+          <div className={`${Icon ? 'ml-4' : ''} flex-1`}>
+            <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+            <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+            {subtitle && <div className="h-3 bg-gray-200 rounded w-1/4 mt-2"></div>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (enhanced) {
     return (
       <div className={`bg-white ${responsive ? 'rounded-sm sm:rounded-sm p-3 sm:p-4 lg:p-6' : 'rounded-md p-6'} border border-gray-100 ${responsive ? 'sm:border-2' : 'border-2'} shadow-sm hover:shadow-lg hover:scale-[1.02] ${hoverColor} transition-all duration-300 ${clickable ? 'cursor-pointer' : ''} group ${className}`}>

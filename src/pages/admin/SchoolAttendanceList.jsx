@@ -20,6 +20,7 @@ import Badge from '@/components/ui/Badge';
 import { Eye, Calendar } from 'lucide-react';
 import { DatePickerWithDropdowns } from '@/components/ui/date-picker-with-dropdowns';
 import { formatNumberWithCommas } from '@/utils/formatters';
+import TeacherAttendanceTimingChart from '../../components/charts/TeacherAttendanceTimingChart';
 
 const SchoolCoverageTable = ({
   data = [],
@@ -248,7 +249,42 @@ const SchoolAttendanceList = () => {
     totalStudentsInSchoolsWithAttendance: 0,
     totalTeachersInSchoolsWithAttendance: 0,
     totalStudentsWithAttendance: 0,
-    totalTeachersWithAttendance: 0
+    totalTeachersWithAttendance: 0,
+    totalTeachersPresentCount: 0,
+    totalTeachersAbsentCount: 0,
+    totalTeachersLateCount: 0,
+    totalTeachersLeaveCount: 0,
+    teachersWithoutCheckInOut: 0,
+    teachersWithoutCheckInOutPresent: 0,
+    teachersWithoutCheckInOutAbsent: 0,
+    teachersWithoutCheckInOutLate: 0,
+    teachersWithoutCheckInOutLeave: 0,
+    teacherAttendanceTiming: {
+      session7am: {
+        leftoverBefore: 0,
+        before30min: 0,
+        before15min: 0,
+        after15min: 0,
+        after30min: 0,
+        leftoverAfter: 0
+      },
+      session11am: {
+        leftoverBefore: 0,
+        before30min: 0,
+        before15min: 0,
+        after15min: 0,
+        after30min: 0,
+        leftoverAfter: 0
+      },
+      session1pm: {
+        leftoverBefore: 0,
+        before30min: 0,
+        before15min: 0,
+        after15min: 0,
+        after30min: 0,
+        leftoverAfter: 0
+      }
+    }
   });
   const [pagination, setPagination] = useState({
     page: 1,
@@ -379,7 +415,41 @@ const SchoolAttendanceList = () => {
           totalTeachersInSchoolsWithAttendance: data.totalTeachersInSchoolsWithAttendance || 0,
           totalStudentsWithAttendance: data.totalStudentsWithAttendance || 0,
           totalTeachersWithAttendance: data.totalTeachersWithAttendance || 0,
-          
+          totalTeachersPresentCount: data.totalTeachersPresentCount || 0,
+          totalTeachersAbsentCount: data.totalTeachersAbsentCount || 0,
+          totalTeachersLateCount: data.totalTeachersLateCount || 0,
+          totalTeachersLeaveCount: data.totalTeachersLeaveCount || 0,
+          teachersWithoutCheckInOut: data.teachersWithoutCheckInOut || 0,
+          teachersWithoutCheckInOutPresent: data.teachersWithoutCheckInOutPresent || 0,
+          teachersWithoutCheckInOutAbsent: data.teachersWithoutCheckInOutAbsent || 0,
+          teachersWithoutCheckInOutLate: data.teachersWithoutCheckInOutLate || 0,
+          teachersWithoutCheckInOutLeave: data.teachersWithoutCheckInOutLeave || 0,
+          teacherAttendanceTiming: data.teacherAttendanceTiming || {
+            session7am: {
+              leftoverBefore: 0,
+              before30min: 0,
+              before15min: 0,
+              after15min: 0,
+              after30min: 0,
+              leftoverAfter: 0
+            },
+            session11am: {
+              leftoverBefore: 0,
+              before30min: 0,
+              before15min: 0,
+              after15min: 0,
+              after30min: 0,
+              leftoverAfter: 0
+            },
+            session1pm: {
+              leftoverBefore: 0,
+              before30min: 0,
+              before15min: 0,
+              after15min: 0,
+              after30min: 0,
+              leftoverAfter: 0
+            }
+          }
         });
       } else {
         setSchoolsData([]);
@@ -582,53 +652,85 @@ const SchoolAttendanceList = () => {
         )}
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <StatsCard
             title={t('totalSchools', 'Total Schools')}
             value={formatNumberWithCommas(pagination.totalSchools)}
-            
+
             enhanced
             responsive
             gradientFrom="from-blue-500"
             gradientTo="to-blue-600"
+            loading={loading}
           />
 
           <StatsCard
             title={t('withStudentData', 'With Student Data')}
             value={formatNumberWithCommas(schoolSummary.schoolsWithStudentAttendance)}
-           
+
             enhanced
             responsive
             gradientFrom="from-green-500"
             gradientTo="to-green-600"
+            loading={loading}
           />
 
           <StatsCard
             title={t('withTeacherData', 'With Teacher Data')}
             value={formatNumberWithCommas(schoolSummary.schoolsWithTeacherAttendance)}
-            
+
             enhanced
             responsive
             gradientFrom="from-purple-500"
             gradientTo="to-purple-600"
+            loading={loading}
           />
           <StatsCard
             title={t('totalStudentsAttendance', 'Total Students With Attendance')}
-            value={`${formatNumberWithCommas(schoolSummary.totalStudentsWithAttendance)} / ${formatNumberWithCommas(schoolSummary.totalStudentsInSchoolsWithAttendance)} `}            
+            value={`${formatNumberWithCommas(schoolSummary.totalStudentsWithAttendance)} / ${formatNumberWithCommas(schoolSummary.totalStudentsInSchoolsWithAttendance)} `}
             enhanced
             responsive
             gradientFrom="from-purple-500"
             gradientTo="to-purple-600"
+            loading={loading}
           />
           <StatsCard
             title={t('totalTeachersAttendance', 'Total Teachers With Attendance')}
-            value={`${formatNumberWithCommas(schoolSummary.totalTeachersWithAttendance)} / ${formatNumberWithCommas(schoolSummary.totalTeachersInSchoolsWithAttendance)} `}            
+            value={`${formatNumberWithCommas(schoolSummary.totalTeachersWithAttendance)} / ${formatNumberWithCommas(schoolSummary.totalTeachersInSchoolsWithAttendance)} `}
+            enhanced
+            subtitle={
+              schoolSummary.totalTeachersInSchoolsWithAttendance > 0
+                ? `${((schoolSummary.totalTeachersWithAttendance / schoolSummary.totalTeachersInSchoolsWithAttendance) * 100).toFixed(1)}%`
+                : '0%'
+            }
+            responsive
+            gradientFrom="from-indigo-500"
+            gradientTo="to-indigo-600"
+            loading={loading}
+          />
+          <StatsCard
+            title={t('teachersWithoutCheckInOut', 'Teachers Without Check-In/Out')}
+            value={formatNumberWithCommas(schoolSummary.teachersWithoutCheckInOut)}
+            subtitle={
+              schoolSummary.totalTeachersInSchoolsWithAttendance > 0
+                ? `${((schoolSummary.teachersWithoutCheckInOut / schoolSummary.totalTeachersInSchoolsWithAttendance) * 100).toFixed(1)}% ${t('ofTotal', 'of total')}`
+                : '0.0%'
+            }
             enhanced
             responsive
-            gradientFrom="from-purple-500"
-            gradientTo="to-purple-600"
+            gradientFrom="from-gray-500"
+            gradientTo="to-gray-600"
+            loading={loading}
           />
+          
         </div>
+
+        {/* Teacher Attendance Timing Breakdown */}
+        <TeacherAttendanceTimingChart 
+          teacherAttendanceTiming={schoolSummary.teacherAttendanceTiming}
+          totalTeachersPresentCount={schoolSummary.totalTeachersPresentCount}
+          loading={loading}
+        />
 
         {/* Schools List */}
         <Card className="rounded-sm">

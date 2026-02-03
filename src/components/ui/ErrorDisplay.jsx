@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, RefreshCw, Wifi, Server, AlertTriangle } from 'lucide-react';
+import { X, RefreshCw, Wifi, Server, AlertTriangle, Lock, Ban, FileQuestion, Clock, Timer } from 'lucide-react';
 import { Button } from './Button';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -14,20 +14,78 @@ const ErrorDisplay = ({
 
   if (!error) return null;
 
+  // Get HTTP status code from error object
+  const statusCode = error.statusCode || error.status || error.response?.status;
+
   const getErrorIcon = () => {
+    // Handle specific HTTP status codes first
+    if (statusCode) {
+      switch (statusCode) {
+        case 401:
+          return <Lock className="h-10 w-10 text-orange-500" />;
+        case 403:
+          return <Ban className="h-10 w-10 text-red-500" />;
+        case 404:
+          return <FileQuestion className="h-10 w-10 text-blue-500" />;
+        case 408:
+        case 504:
+          return <Clock className="h-10 w-10 text-yellow-500" />;
+        case 429:
+          return <Timer className="h-10 w-10 text-orange-500" />;
+        case 500:
+        case 502:
+        case 503:
+          return <Server className="h-10 w-10 text-red-500" />;
+        default:
+          break;
+      }
+    }
+
+    // Fallback to error type
     switch (error.type) {
       case 'network':
         return <Wifi className="h-10 w-10 text-red-500" />;
       case 'server':
         return <Server className="h-10 w-10 text-red-500" />;
       case 'auth':
-        return <AlertTriangle className="h-10 w-10 text-red-500" />;
+        return <AlertTriangle className="h-10 w-10 text-orange-500" />;
       default:
         return <X className="h-10 w-10 text-red-500" />;
     }
   };
 
   const getErrorTitle = () => {
+    // Handle specific HTTP status codes first
+    if (statusCode) {
+      switch (statusCode) {
+        case 400:
+          return t('badRequest', 'Bad Request');
+        case 401:
+          return t('unauthorized', 'Unauthorized');
+        case 403:
+          return t('forbidden', 'Access Forbidden');
+        case 404:
+          return t('notFound', 'Not Found');
+        case 408:
+          return t('requestTimeout', 'Request Timeout');
+        case 409:
+          return t('conflict', 'Conflict');
+        case 429:
+          return t('tooManyRequests', 'Too Many Requests');
+        case 500:
+          return t('internalServerError', 'Internal Server Error');
+        case 502:
+          return t('badGateway', 'Bad Gateway');
+        case 503:
+          return t('serviceUnavailable', 'Service Unavailable');
+        case 504:
+          return t('gatewayTimeout', 'Gateway Timeout');
+        default:
+          return t('httpError', `Error ${statusCode}`);
+      }
+    }
+
+    // Fallback to error type
     switch (error.type) {
       case 'network':
         return t('networkError', 'Network Error');
@@ -41,6 +99,37 @@ const ErrorDisplay = ({
   };
 
   const getErrorDescription = () => {
+    // Handle specific HTTP status codes first
+    if (statusCode) {
+      switch (statusCode) {
+        case 400:
+          return t('badRequestDesc', 'The request was invalid. Please check your input and try again.');
+        case 401:
+          return t('unauthorizedDesc', 'Your session has expired or you are not logged in. Please login again.');
+        case 403:
+          return t('forbiddenDesc', 'You do not have permission to access this resource.');
+        case 404:
+          return t('notFoundDesc', 'The requested resource could not be found.');
+        case 408:
+          return t('requestTimeoutDesc', 'The request took too long to complete. Please try again.');
+        case 409:
+          return t('conflictDesc', 'There was a conflict with the current state. Please refresh and try again.');
+        case 429:
+          return t('tooManyRequestsDesc', 'Too many requests. Please wait a moment and try again.');
+        case 500:
+          return t('internalServerErrorDesc', 'An internal server error occurred. Please try again later.');
+        case 502:
+          return t('badGatewayDesc', 'The server received an invalid response. Please try again later.');
+        case 503:
+          return t('serviceUnavailableDesc', 'The service is temporarily unavailable. Please try again later.');
+        case 504:
+          return t('gatewayTimeoutDesc', 'The server took too long to respond. Please try again.');
+        default:
+          return t('httpErrorDesc', 'An error occurred while processing your request.');
+      }
+    }
+
+    // Fallback to error type
     switch (error.type) {
       case 'network':
         return t('networkErrorDesc', 'Please check your internet connection and try again.');

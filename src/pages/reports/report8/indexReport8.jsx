@@ -8,30 +8,54 @@ import { getFullName } from '../../../utils/usernameUtils';
  * Report 8 Preview Component - BMI Report
  * Displays student BMI data in a table format
  */
-export function Report8Preview({ data }) {
+export function Report8Preview({ data, serverPagination, onPageChange, limit = 10, onLimitChange }) {
   const { t } = useLanguage();
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const [localCurrentPage, setLocalCurrentPage] = useState(1);
+  const itemsPerPage = limit;
 
-  if (!data || data.length === 0) {
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    if (data && !Array.isArray(data)) {
+        console.error('Report8Preview received invalid data (not an array):', data);
+    }
     return null; // Don't show anything when there are no records
   }
 
-  // Calculate pagination
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentData = data.slice(startIndex, endIndex);
+  // Determine if we are using server-side pagination or local pagination
+  const isServerSide = !!serverPagination;
 
-  const pagination = {
-    page: currentPage,
-    pages: totalPages,
-    total: data.length,
-    limit: itemsPerPage
-  };
+  // Pagination logic
+  let pagination;
+  let currentData;
+  let startIndex;
+
+  if (isServerSide) {
+    // Server-side pagination
+    pagination = serverPagination;
+    currentData = data; // Data is already paginated from server
+    startIndex = (serverPagination.page - 1) * serverPagination.limit;
+  } else {
+    // Client-side pagination (legacy fallback)
+    const totalPages = Math.ceil(data.length / itemsPerPage);
+    startIndex = (localCurrentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    currentData = data.slice(startIndex, endIndex);
+
+    pagination = {
+      page: localCurrentPage,
+      pages: totalPages,
+      total: data.length,
+      limit: itemsPerPage
+    };
+  }
 
   const handlePageChange = (page) => {
-    setCurrentPage(page);
+    if (isServerSide) {
+      if (onPageChange) {
+        onPageChange(page);
+      }
+    } else {
+      setLocalCurrentPage(page);
+    }
   };
 
   // Define table columns
@@ -51,30 +75,40 @@ export function Report8Preview({ data }) {
     {
       key: 'gender',
       header: t('gender', 'ភេទ'),
-      accessor: 'gender'
+      render: (student) => {
+          const gender = student.gender;
+          if (gender === 'MALE' || gender === 'Male' || gender === 'M') return 'ប្រុស';
+          if (gender === 'FEMALE' || gender === 'Female' || gender === 'F') return 'ស្រី';
+          return gender;
+      }
     },
     {
       key: 'class',
       header: t('class', 'ថ្នាក់'),
       render: (student) => {
-        if (student.class?.gradeLevel !== undefined && student.class?.gradeLevel !== null) {
-          const rawGradeLevel = String(student.class.gradeLevel);
+        // Handle flattened structure or nested class object
+        const gradeLevel = student.gradeLevel ?? student.class?.gradeLevel;
+        const section = student.section ?? student.class?.section;
+        const className = student.className ?? student.class?.name;
+
+        if (gradeLevel !== undefined && gradeLevel !== null) {
+          const rawGradeLevel = String(gradeLevel);
           const displayGradeLevel =
             rawGradeLevel === '0'
               ? t('grade0', 'Kindergarten')
               : rawGradeLevel;
 
-          return `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, student.class.section)}`;
+          return `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, section)}`;
         }
 
-        return student.class?.name || '';
+        return className || '';
       }
     },
     {
       key: 'height',
       header: t('height', 'កម្ពស់ (cm)'),
       render: (student) => {
-        const height = student.height_cm || student.height;
+        const height = student.heightCm || student.height_cm || student.height;
         return height ? `${parseFloat(height).toFixed(1)} cm` : '';
       }
     },
@@ -82,7 +116,7 @@ export function Report8Preview({ data }) {
       key: 'weight',
       header: t('weight', 'ទម្ងន់ (kg)'),
       render: (student) => {
-        const weight = student.weight_kg || student.weight;
+        const weight = student.weightKg || student.weight_kg || student.weight;
         return weight ? `${parseFloat(weight).toFixed(2)} kg` : '';
       }
     },
@@ -96,29 +130,58 @@ export function Report8Preview({ data }) {
       key: 'bmiStatus',
       header: t('bmiStatus', 'ស្ថានភាព BMI'),
       render: (student) => {
-        // Determine status based on sd_grade
+        // Try to get status from new API fields first
         let status = 'unknown';
-        let categoryKhmer = 'មិនបានកំណត់';
-
-        if (student.sd_grade && typeof student.sd_grade.grade === 'number') {
-          const currentGrade = student.sd_grade.grade;
-
-          if (currentGrade <= -3) {
+        let categoryKhmer = student.bmiStatus || 'មិនបានកំណត់';
+        
+        // Map English status to Khmer if needed (though API seems to return English text like "Normal Weight (-1SD to 1SD)")
+        // Basic mapping based on keywords if the API returns English
+        const statusStr = (student.bmiStatus || '').toLowerCase();
+        
+        if (statusStr.includes('severe thinness') || statusStr.includes('-3sd')) {
             status = 'thinness_grade_3';
             categoryKhmer = 'ស្គមខ្លាំង';
-          } else if (currentGrade === -2) {
-            status = 'thinness_grade_2';
-            categoryKhmer = 'ស្គម';
-          } else if (currentGrade === -1 || currentGrade === 0 || currentGrade === 1) {
+        } else if (statusStr.includes('thinness') || statusStr.includes('-2sd')) {
+             status = 'thinness_grade_2';
+             categoryKhmer = 'ស្គម';
+        } else if (statusStr.includes('normal') || statusStr.includes('1sd')) {
             status = 'normal';
             categoryKhmer = 'ទម្ងន់ធម្មតា';
-          } else if (currentGrade === 2) {
+        } else if (statusStr.includes('overweight') || statusStr.includes('2sd')) {
             status = 'overweight';
             categoryKhmer = 'លើសទម្ងន់';
-          } else if (currentGrade >= 3) {
+        } else if (statusStr.includes('obesity') || statusStr.includes('3sd')) {
             status = 'obesity';
             categoryKhmer = 'ធាត់';
-          }
+        } else {
+             // Fallback to SD grade logic if bmiStatus string parsing failed or wasn't present
+            if (student.sd_grade && typeof student.sd_grade.grade === 'number') {
+                const currentGrade = student.sd_grade.grade;
+                if (currentGrade <= -3) {
+                    status = 'thinness_grade_3';
+                    categoryKhmer = 'ស្គមខ្លាំង';
+                } else if (currentGrade === -2) {
+                    status = 'thinness_grade_2';
+                    categoryKhmer = 'ស្គម';
+                } else if (currentGrade === -1 || currentGrade === 0 || currentGrade === 1) {
+                    status = 'normal';
+                    categoryKhmer = 'ទម្ងន់ធម្មតា';
+                } else if (currentGrade === 2) {
+                    status = 'overweight';
+                    categoryKhmer = 'លើសទម្ងន់';
+                } else if (currentGrade >= 3) {
+                    status = 'obesity';
+                    categoryKhmer = 'ធាត់';
+                }
+            } else if (student.zScore !== null && student.zScore !== undefined) {
+                 // Fallback to zScore if available
+                 const z = student.zScore;
+                 if (z <= -3) { status = 'thinness_grade_3'; categoryKhmer = 'ស្គមខ្លាំង'; }
+                 else if (z <= -2) { status = 'thinness_grade_2'; categoryKhmer = 'ស្គម'; }
+                 else if (z <= 1) { status = 'normal'; categoryKhmer = 'ទម្ងន់ធម្មតា'; }
+                 else if (z <= 2) { status = 'overweight'; categoryKhmer = 'លើសទម្ងន់'; }
+                 else { status = 'obesity'; categoryKhmer = 'ធាត់'; }
+            }
         }
 
         const statusColor = {
@@ -126,82 +189,58 @@ export function Report8Preview({ data }) {
           'thinness_grade_2': 'bg-blue-100 text-blue-800',
           'normal': 'bg-green-100 text-green-800',
           'overweight': 'bg-yellow-100 text-yellow-800',
-          'obesity': 'bg-red-100 text-red-800'
+          'obesity': 'bg-red-100 text-red-800',
+          'unknown': 'bg-gray-100 text-gray-800'
         };
 
         return (
-          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${statusColor[status] || 'bg-gray-100 text-gray-800'}`}>
+          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${statusColor[status]}`}>
             {categoryKhmer}
           </span>
         );
       }
     },
     {
-      key: 'sdGrade',
+      key: 'zScore',
       header: t('sdGrade', 'មាត្រដ្ឋាន'),
       render: (student) => {
-        if (!student.sd_grade) return '';
-        const { grade, bmiAtGrade } = student.sd_grade;
-        return `${grade}SD`;
+          if (student.zScore !== undefined && student.zScore !== null) {
+              return `${student.zScore.toFixed(2)} SD`;
+          }
+          if (student.sd_grade) {
+               const { grade } = student.sd_grade;
+               return `${grade}SD`;
+          }
+          return '';
       }
     },
     {
       key: 'age',
       header: t('age', 'អាយុ'),
-      accessor: 'age'
-    },
-    {
-      key: 'ageInYears',
-      header: t('ageInYears', 'អាយុជាឆ្នាំ'),
-      accessor: 'ageInYears'
+      render: (student) => student.age || student.ageInYears || ''
     },
     {
       key: 'ageInYearsAndMonths',
       header: t('ageInYearsAndMonths', 'អាយុជាឆ្នាំនិងខែ'),
-      accessor: 'ageInYearsAndMonths'
-    },
-    {
-      key: 'ageInMonths',
-      header: t('ageInMonths', 'អាយុជាខែ'),
-      accessor: 'ageInMonths'
+      render: (student) => {
+          if (student.ageInYearsAndMonths) return student.ageInYearsAndMonths;
+          if (student.ageInYears && student.ageInMonths) {
+               const years = student.ageInYears;
+               const months = student.ageInMonths % 12;
+               return months > 0 ? `${years} ឆ្នាំ ${months} ខែ` : `${years} ឆ្នាំ`;
+          }
+          return '';
+      }
     },
     {
       key: 'recordDate',
       header: t('recordDate', 'កាលបរិច្ឆេទកត់ត្រា'),
       render: (student) => {
-        const dateField = student.recorded_at || student.recordDate;
+        const dateField = student.recordedAt || student.recorded_at || student.recordDate;
         return dateField ? new Date(dateField).toLocaleDateString('km-KH') : '';
       }
     }
   ];
-
-  // Calculate BMI statistics
-  const bmiStats = data.reduce((acc, record) => {
-    if (record.bmi && typeof record.bmi === 'number' && !isNaN(record.bmi)) {
-      acc.totalWithBmi++;
-      acc.totalBmi += record.bmi;
-
-      // Count by category
-      const category = record.bmi_category || 'Undefined';
-      acc.categories[category] = (acc.categories[category] || 0) + 1;
-
-      // Track min/max
-      if (record.bmi < acc.minBmi) acc.minBmi = record.bmi;
-      if (record.bmi > acc.maxBmi) acc.maxBmi = record.bmi;
-    } else {
-      acc.noData++;
-    }
-    return acc;
-  }, {
-    totalWithBmi: 0,
-    totalBmi: 0,
-    noData: 0,
-    categories: {},
-    minBmi: Infinity,
-    maxBmi: -Infinity
-  });
-
-  const averageBmi = bmiStats.totalWithBmi > 0 ? (bmiStats.totalBmi / bmiStats.totalWithBmi).toFixed(1) : 0;
 
   return (
     <div className="space-y-6">
@@ -211,7 +250,7 @@ export function Report8Preview({ data }) {
           {t('bmiReportData', 'ទិន្នន័យរបាយការណ៍ BMI')}
         </h4>
         <span className="text-sm text-gray-500">
-          {data.length} {t('records', 'កំណត់ត្រា')}
+          {pagination.total} {t('records', 'កំណត់ត្រា')}
         </span>
       </div>
 
@@ -222,6 +261,15 @@ export function Report8Preview({ data }) {
         showPagination={true}
         pagination={pagination}
         onPageChange={handlePageChange}
+        // Pass limit selector props to use the built-in Pagination component features
+        showLimitSelector={!!isServerSide && !!onLimitChange}
+        onLimitChange={(newLimit) => {
+            if (onLimitChange) {
+                onLimitChange(newLimit);
+                if (onPageChange) onPageChange(1); // Reset to page 1
+            }
+        }}
+        limitOptions={[10, 20, 50, 100]}
         t={t}
         emptyMessage={t('noDataFound', 'រកមិនឃើញទិន្នន័យ')}
         emptyDescription={t('noStudentData', 'មិនមានទិន្នន័យសិស្សដើម្បីបង្ហាញ')}

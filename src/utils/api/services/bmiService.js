@@ -1,5 +1,8 @@
-import { apiClient_, handleApiResponse } from '../client.js';
-import { ENDPOINTS } from '../config.js';
+import axios from 'axios';
+import { apiClient_, handleApiResponse, tokenManager } from '../client.js';
+import { ENDPOINTS, HTTPS_CONFIG } from '../config.js';
+// Removed unused import: getApiBaseUrl
+
 
 /**
  * BMI API Service
@@ -22,17 +25,17 @@ export const bmiService = {
       }
 
       const queryParams = {};
-      
+
       // Add year filter if provided
       if (params.year) {
         queryParams.year = params.year;
       }
-      
+
       // Add limit if provided
       if (params.limit) {
         queryParams.limit = params.limit;
       }
-      
+
       // Add page if provided
       if (params.page) {
         queryParams.page = params.page;
@@ -202,7 +205,7 @@ export const bmiService = {
       console.log('📊 Fetching BMI history for multiple users:', userIds.length, 'users');
 
       // Fetch BMI history for each user
-      const bmiPromises = userIds.map(userId => 
+      const bmiPromises = userIds.map(userId =>
         this.getBmiHistoryByUser(userId, params)
       );
 
@@ -252,6 +255,164 @@ export const bmiService = {
   },
 
   /**
+   * Get BMI report for students with pagination and filtering
+   * @param {Object} params - Query parameters
+   * @param {string|number} params.schoolId - School ID
+   * @param {string|number} [params.classId] - Class ID (optional)
+   * @param {string} [params.year] - Academic year (optional)
+   * @param {number} [params.page] - Page number (default: 1)
+   * @param {number} [params.limit] - Records per page (default: 20)
+   * @returns {Promise<Object>} Response with students data and pagination
+   */
+  async getStudentBmiReport(params = {}) {
+    try {
+      const queryParams = {
+        page: params.page || 1,
+        limit: params.limit || 10
+      };
+
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+      if (params.classId) queryParams.classId = params.classId;
+      if (params.year) queryParams.academicYear = params.year;
+      if (params.academicYear) queryParams.academicYear = params.academicYear;
+
+      console.log('📊 Fetching student BMI report with params:', queryParams);
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.BMI.STUDENTS_REPORT, {
+          params: queryParams
+        })
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch student BMI report');
+      }
+
+      // Handle different response structures
+      // Case 1: response.data is the array (standard)
+      // Case 2: response.data is an object containing { data: [], pagination: {} } (nested)
+      // Case 3: response.data is an object with flat pagination fields { data: [], total: 100, page: 1 }
+      let studentsData = [];
+      let paginationData = response.pagination; // Try top level first
+
+      const apiBody = response.data;
+
+      if (Array.isArray(apiBody)) {
+        studentsData = apiBody;
+      } else if (apiBody && Array.isArray(apiBody.data)) {
+        studentsData = apiBody.data;
+
+        // Extract pagination
+        if (apiBody.pagination) {
+          // Standard nested pagination object
+          paginationData = apiBody.pagination;
+        } else if (apiBody.meta && apiBody.meta.pagination) {
+          // Meta pagination object
+          paginationData = apiBody.meta.pagination;
+        } else if (apiBody.total !== undefined || apiBody.totalPages !== undefined) {
+          // Flat pagination fields
+          paginationData = {
+            page: apiBody.page || apiBody.current_page || queryParams.page,
+            limit: apiBody.limit || apiBody.per_page || queryParams.limit,
+            total: apiBody.total || apiBody.totalDocs || 0,
+            pages: apiBody.totalPages || apiBody.last_page || 0
+          };
+
+          // Calculate pages if missing but total exists
+          if (!paginationData.pages && paginationData.total && paginationData.limit) {
+            paginationData.pages = Math.ceil(paginationData.total / paginationData.limit);
+          }
+        }
+      }
+
+
+      // Ensure pages is calculated if missing but total exists (for all cases)
+      if (paginationData && !paginationData.pages && paginationData.total && paginationData.limit) {
+        paginationData.pages = Math.ceil(paginationData.total / paginationData.limit);
+      }
+
+      console.log(`✅ BMI Service extracted ${studentsData.length} records. Pagination:`, paginationData);
+
+      return {
+        success: true,
+        data: studentsData,
+        pagination: paginationData
+      };
+    } catch (error) {
+      console.error('❌ Error in getStudentBmiReport:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch student BMI report',
+        data: []
+      };
+    }
+  },
+
+  /**
+   * Export BMI report for students
+   * @param {Object} params - Query parameters (same as getStudentBmiReport)
+   * @returns {Promise<Blob>} Blob data for file download
+   */
+  async exportStudentBmiReport(params = {}) {
+    try {
+      const queryParams = {};
+      if (params.schoolId) queryParams.schoolId = params.schoolId;
+      if (params.classId) queryParams.classId = params.classId;
+      if (params.year) queryParams.academicYear = params.year;
+      if (params.academicYear) queryParams.academicYear = params.academicYear;
+
+      console.log('📥 Exporting student BMI report with params:', queryParams);
+
+      // Use raw axios to handle Blob response and headers correctly
+      // This avoids the default interceptor which swallows headers and returns response.data directly
+      const token = tokenManager.getToken();
+
+      // Construct full URL since we're using raw axios
+      // We can use apiClient_.defaults.baseURL, but imports might be circular or complex
+      // Safer to rely on HTTPS_CONFIG or fallback
+      const baseURL = apiClient_.defaults.baseURL || '/api/v1';
+
+      const response = await axios.get(`${baseURL}${ENDPOINTS.BMI.STUDENTS_REPORT_EXPORT}`, {
+        params: queryParams,
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/json'
+        }
+      });
+
+      return {
+        success: true,
+        data: response.data,
+        headers: response.headers
+      };
+    } catch (error) {
+      console.error('❌ Error in exportStudentBmiReport:', error);
+
+      // If response is a Blob (which happens when responseType is blob but server returns error JSON)
+      // we need to parse it to get the error message
+      if (error.response && error.response.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const errorJson = JSON.parse(text);
+          return {
+            success: false,
+            error: errorJson.message || errorJson.error || 'Failed to export BMI report (Server Error)',
+            status: error.response.status
+          };
+        } catch (e) {
+          // Failed to parse blob text
+        }
+      }
+
+      return {
+        success: false,
+        error: error.message || 'Failed to export BMI report'
+      };
+    }
+  },
+
+  /**
    * Utility functions for BMI data transformation
    */
   utils: {
@@ -275,14 +436,14 @@ export const bmiService = {
         gender: studentInfo.gender,
         dateOfBirth: studentInfo.dateOfBirth || studentInfo.date_of_birth,
         class: studentInfo.class,
-        
+
         // BMI information
         height: bmiRecord.height_cm || bmiRecord.height,
         weight: bmiRecord.weight_kg || bmiRecord.weight,
         bmi: bmiRecord.bmi,
         bmiCategory: this.getBmiCategory(bmiRecord.bmi),
         recordDate: bmiRecord.recorded_at || bmiRecord.createdAt || bmiRecord.created_at,
-        
+
         // Academic information
         academicYear: bmiRecord.academic_year || studentInfo.academicYear,
         gradeLevel: studentInfo.gradeLevel || studentInfo.class?.gradeLevel
@@ -296,7 +457,7 @@ export const bmiService = {
      */
     getBmiCategory(bmi) {
       if (!bmi || isNaN(bmi)) return 'មិនបានកំណត់';
-      
+
       if (bmi < 18.5) return 'ស្គម';
       if (bmi >= 18.5 && bmi < 25) return 'ធម្មតា';
       if (bmi >= 25 && bmi < 30) return 'លើសទម្ងន់';
@@ -313,7 +474,7 @@ export const bmiService = {
       if (!heightCm || !weightKg || heightCm <= 0 || weightKg <= 0) {
         return null;
       }
-      
+
       const heightM = heightCm / 100;
       const bmi = weightKg / (heightM * heightM);
       return Math.round(bmi * 100) / 100;

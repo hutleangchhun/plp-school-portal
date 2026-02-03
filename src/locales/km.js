@@ -192,6 +192,32 @@ export const km = {
   loadingUserData: 'កំពុងទាញយកព័ត៌មាន...',
   updating: 'កំពុងកែប្រែ...',
 
+  // HTTP Status Code Errors
+  badRequest: 'សំណើមិនត្រឹមត្រូវ',
+  badRequestDesc: 'សំណើមិនត្រឹមត្រូវ។ សូមពិនិត្យព័ត៌មានដែលបានបញ្ចូល ហើយព្យាយាមម្តងទៀត។',
+  unauthorized: 'មិនមានការអនុញ្ញាត',
+  unauthorizedDesc: 'គណនីរបស់អ្នកបានផុតកំណត់ ឬអ្នកមិនបានចូលប្រើប្រាស់។ សូមចូលម្តងទៀត។',
+  forbidden: 'ហាមឃាត់ការចូលប្រើ',
+  forbiddenDesc: 'អ្នកមិនមានសិទ្ធិចូលប្រើប្រាស់នោះទេ។',
+  notFound: 'រកមិនឃើញ',
+  notFoundDesc: 'រកមិនឃើញទំព័រដែលបានស្នើសុំ។',
+  requestTimeout: 'អស់ពេលសំណើ',
+  requestTimeoutDesc: 'សំណើត្រូវការពេលយូរពេក។ សូមព្យាយាមម្តងទៀត។',
+  conflict: 'មានជម្លោះ',
+  conflictDesc: 'មានជម្លោះជាមួយទំព័រដែលបានស្នើសុំ។ សូមធ្វើបច្ចុប្បន្នភាព ហើយព្យាយាមម្តងទៀត។',
+  tooManyRequests: 'សំណើច្រើនពេក',
+  tooManyRequestsDesc: 'សំណើច្រើនពេក។ សូមរង់ចាំបន្តិច ហើយព្យាយាមម្តងទៀត។',
+  internalServerError: 'កំហុសម៉ាស៊ីនមេ',
+  internalServerErrorDesc: 'មានកំហុសម៉ាស៊ីនមេ។ សូមព្យាយាមម្តងទៀតនៅពេលក្រោយ។',
+  badGateway: 'Gateway មិនត្រឹមត្រូវ',
+  badGatewayDesc: 'ម៉ាស៊ីនមេទទួលបានការឆ្លើយតបមិនត្រឹមត្រូវ។ សូមព្យាយាមម្តងទៀតនៅពេលក្រោយ។',
+  serviceUnavailable: 'សេវាកម្មមិនមាន',
+  serviceUnavailableDesc: 'សេវាកម្មមិនមានជាបណ្តោះអាសន្ន។ សូមព្យាយាមម្តងទៀតនៅពេលក្រោយ។',
+  gatewayTimeout: 'Gateway អស់ពេលកំណត់',
+  gatewayTimeoutDesc: 'ម៉ាស៊ីនមេត្រូវការពេលយូរពេកក្នុងការឆ្លើយតប។ សូមព្យាយាមម្តងទៀត។',
+  httpError: 'កំហុស HTTP',
+  httpErrorDesc: 'មានកំហុសកើតឡើងក្នុងការដំណើរការសំណើរបស់អ្នក។',
+
   //profile update
   profileOverview: 'ផ្លាស់ប្ដូរព័ត៌មានផ្ទាល់ខ្លួន',
   resetPassword: 'ផ្លាស់ប្ដូរពាក្យសម្ងាត់',
@@ -1320,6 +1346,19 @@ export const km = {
   totalRecords: 'ទិន្នន័យសរុប',
   withStudentData: 'សាលារៀនមានទិន្នន័យសិស្ស',
   withTeacherData: 'សាលារៀនមានទិន្នន័យគ្រូ',
+  avgTeacherAttendance: 'អត្រាវត្តមានគ្រូជាមធ្យម',
+  teacherAttendanceTiming: 'ពេលវេលាវត្តមានគ្រូ',
+  morningShiftAttendance: 'វេនព្រឹក',
+  afternoonShiftAttendance: 'វេនថ្ងៃ',
+  eveningShiftAttendance: 'វេនល្ងាច',
+  leftoverBefore: 'មកមុនច្រើន (>30 នាទី)',
+  before30min: 'មកមុន (15-30 នាទី)',
+  before15min: 'មកទាន់ម៉ោង (0-15 នាទី)',
+  after15min: 'យឺត (0-15 នាទី)',
+  after30min: 'យឺត (15-30 នាទី)',
+  leftoverAfter: 'យឺតច្រើន (>30 នាទី)',
+  teachersWithoutCheckInOut: 'គ្រូមិនបានធ្វើវត្តមាន',
+  ofTotal: 'នៃចំនួនសរុប',
   totalAttendance: 'វត្តមានសរុប',
   schoolAttendanceNote: 'នេះបង្ហាញចំនួនកំណត់ត្រាវត្តមានសរុបសម្រាប់សាលារៀននេះ។ សម្រាប់របាយការណ៍វត្តមានលម្អិត សូមចូលទៅទំព័រវត្តមានសរុប។',
   loadingSchools: 'កំពុងផ្ទុកសាលារៀន...',
@@ -2036,3 +2075,12 @@ export const km = {
 // Inserted translations - Teacher Active/Inactive Status
 km.active = 'សកម្ម';
 km.inactive = 'អសកម្ម';
+
+// QR Code translations
+km.qrCodeGenerated = 'បានបង្កើត QR Code ដោយជោគជ័យ';
+km.qrCodeDownloaded = 'បានទាញយក QR Code ដោយជោគជ័យ';
+km.failedToGenerateQRCode = 'បរាជ័យក្នុងការបង្កើត QR Code។ សូមប្រាកដថាមានពាក្យសម្ងាត់ត្រឹមត្រូវ។';
+km.downloadQRCodeFailed = 'បរាជ័យក្នុងការទាញយក QR Code';
+km.noQRCodeAvailable = 'គ្មាន QR Code សម្រាប់អ្នកប្រើប្រាស់នេះ';
+km.invalidStudent = 'ទិន្នន័យសិស្សមិនត្រឹមត្រូវ';
+km.invalidTeacher = 'ទិន្នន័យគ្រូមិនត្រឹមត្រូវ';

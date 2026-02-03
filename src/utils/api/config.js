@@ -163,6 +163,10 @@ const ENDPOINTS = {
     GRADES: (subjectId) => `/subjects/${subjectId}/grades`,
     ATTENDANCE: (subjectId) => `/subjects/${subjectId}/attendance`,
   },
+  SUB_SUBJECTS: {
+    BASE: '/sub-subjects',
+    BY_SUBJECT: (subjectId) => `/sub-subjects/by-subject/${subjectId}`,
+  },
   ATTENDANCE: {
     BASE: '/attendance',
     DASHBOARD: {
@@ -225,6 +229,8 @@ const ENDPOINTS = {
     BY_USER: (userId) => `/users/${userId}/bmi-history`,
     ALL_USERS_REPORT: '/bmi-report/all-users',
     DASHBOARD: (level) => `/bmi-dashboard/${level}`,
+    STUDENTS_REPORT: '/bmi-report/students',
+    STUDENTS_REPORT_EXPORT: '/bmi-report/students/export',
   },
   DASHBOARD: {
     BASE: '/dashboard',
@@ -259,6 +265,15 @@ const ENDPOINTS = {
     ALL_USERS: '/rate-limit/all-users',
     CONCURRENT_STATS: '/rate-limit/concurrent/stats',
     HOURLY_USAGE: '/api/usage/hourly',
+  },
+  EXAM_SCORE: {
+    TEMPLATE: {
+      BASE: '/exam-score/template',
+      BY_ID: (id) => `/exam-score/template/${id}`,
+    },
+    APPLY_TEMPLATE: '/exam-score/apply-template',
+    SCORES: '/exam-score/scores',
+    SCORE_BY_ID: (id) => `/exam-score/scores/${id}`,
   },
 };
 
