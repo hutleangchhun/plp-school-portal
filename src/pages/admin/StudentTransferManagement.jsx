@@ -26,6 +26,7 @@ import classService from '../../utils/api/services/classService';
 import { studentService } from '../../utils/api/services/studentService';
 import { downloadSingleQRCode } from '../../utils/qrCodeDownloadUtils';
 import { gradeLevelOptions as sharedGradeLevelOptions } from '../../utils/formOptions';
+import { getStaticAssetBaseUrl } from '../../utils/api/config';
 import { Users, ListFilter, RotateCcw, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -787,25 +788,60 @@ const StudentTransferManagement = () => {
     try {
       setDownloadingQRCode(true);
 
-      // Fetch full user data including QR code
-      const userResponse = await userService.getUserByID(student.userId);
-      const userData = userResponse?.data || userResponse;
+      // Use dedicated QR code endpoint instead of fetching full user data
+      const qrResponse = await userService.getQRCodeByUserId(student.userId);
+      
+      let qrCodeData = qrResponse?.qrCode || qrResponse?.qr_code || qrResponse?.data?.qrCode || qrResponse?.data?.qr_code;
 
-      if (!userData || !userData.qr_code) {
-        showError(t('noQRCodeAvailable', 'No QR code available for this student'));
-        return;
+      // If QR code doesn't exist, generate it
+      if (!qrCodeData) {
+        console.log('QR code not found, generating new one for user:', student.username);
+        
+        try {
+          // Generate QR code using username and a default password
+          // Note: You may want to use the actual password or prompt the user
+          const generateResponse = await userService.generateQRCode(
+            student.username,
+            student.username // Using username as default password - adjust as needed
+          );
+          
+          qrCodeData = generateResponse?.qr_code || generateResponse?.data?.qr_code;
+          
+          if (!qrCodeData) {
+            showError(t('failedToGenerateQRCode', 'Failed to generate QR code. Please ensure the student has a valid password.'));
+            return;
+          }
+          
+          showSuccess(t('qrCodeGenerated', 'QR code generated successfully'));
+        } catch (genError) {
+          console.error('Error generating QR code:', genError);
+          showError(t('failedToGenerateQRCode', 'Failed to generate QR code. The student may need to set a password first.'));
+          return;
+        }
+      }
+
+      // Convert file path to full URL if needed
+      // QR codes can be either:
+      // 1. Base64 data URL (starts with "data:")
+      // 2. File path (e.g., "userqr/qr_migrated_2643816_1768567814011.png")
+      let qrCodeUrl = qrCodeData;
+      if (qrCodeData && !qrCodeData.startsWith('data:')) {
+        // It's a file path, convert to full URL
+        const baseUrl = getStaticAssetBaseUrl();
+        qrCodeUrl = `${baseUrl}/api/files/${qrCodeData}`;
+        console.log('Converted QR code path to URL:', qrCodeUrl);
       }
 
       // Prepare QR code data structure matching downloadSingleQRCode requirements
-      const qrCodeData = {
+      const qrCodeDownloadData = {
         userId: student.userId,
         name: getFullName(student),
-        username: student.username || userData.username,
-        qrCode: userData.qr_code,
+        username: student.username,
+        qrCode: qrCodeUrl,
         schoolName: student.schoolName || '',
         schoolId: student.schoolId,
         studentNumber: student.studentId || student.id,
-        email: student.email || userData.email,
+        email: student.email,
         hasQrCode: true,
         role: t('student', 'Student'),
         class: student.currentClass || student.class || null,
@@ -813,7 +849,7 @@ const StudentTransferManagement = () => {
       };
 
       // Download using utility function
-      await downloadSingleQRCode(qrCodeData, 'student', t, showError);
+      await downloadSingleQRCode(qrCodeDownloadData, 'student', t, showError);
 
       showSuccess(t('qrCodeDownloaded', 'QR code downloaded successfully'));
     } catch (err) {

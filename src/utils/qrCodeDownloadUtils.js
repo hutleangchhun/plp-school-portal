@@ -709,9 +709,6 @@ async function generatePDFForChunk(
 export const downloadSingleQRCode = async (qrCode, cardType, t, showError) => {
   try {
     const { default: html2canvas } = await import("html2canvas");
-    const { createQRCodeDownloadCard } = await import(
-      "../components/qr-code/QRCodeDownloadCard"
-    );
 
     const element = createQRCodeDownloadCard(qrCode, cardType, t);
     document.body.appendChild(element);
