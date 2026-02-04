@@ -631,8 +631,14 @@ export const km = {
   selectDateRange: 'ជ្រើសរើសជួរថ្ងៃទី',
   selectSingleDate: 'ជ្រើសរើសថ្ងៃតែមួយ',
   approveAttendance: 'អនុម័តវត្តមាន',
-  totalTeachersAttendance: 'សរុបគ្រូចុះអវត្តមាន',
-  totalStudentsAttendance: 'សរុបសិស្សចុះអវត្តមាន',
+  totalTeachersAttendance: 'សរុបគ្រូចុះវត្តមាន',
+  totalStudentsAttendance: 'សរុបសិស្សចុះវត្តមាន',
+  teacherPresent: 'គ្រូមានវត្តមាន',
+  teacherAbsent: 'គ្រូអវត្តមាន',
+  teacherLate: 'គ្រូយឺត',
+  teacherLeave: 'គ្រូសុំច្បាប់',
+  totalShiftAttendance: 'សរុបវត្តមានតាមវេន',
+  totalTeachersWithAttendance: 'សរុបគ្រូដែលមានវត្តមាន',
 
 
 
@@ -1357,7 +1363,7 @@ export const km = {
   after15min: 'យឺត (0-15 នាទី)',
   after30min: 'យឺត (15-30 នាទី)',
   leftoverAfter: 'យឺតច្រើន (>30 នាទី)',
-  teachersWithoutCheckInOut: 'គ្រូមិនបានធ្វើវត្តមាន',
+  teachersWithoutCheckInOut: 'គ្រូមិនបានធ្វើវត្តមានផ្ទាល់ខ្លូន',
   ofTotal: 'នៃចំនួនសរុប',
   totalAttendance: 'វត្តមានសរុប',
   schoolAttendanceNote: 'នេះបង្ហាញចំនួនកំណត់ត្រាវត្តមានសរុបសម្រាប់សាលារៀននេះ។ សម្រាប់របាយការណ៍វត្តមានលម្អិត សូមចូលទៅទំព័រវត្តមានសរុប។',

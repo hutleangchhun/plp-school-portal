@@ -708,56 +708,22 @@ const SchoolAttendanceList = () => {
             gradientTo="to-indigo-600"
             loading={loading}
           />
-          <StatsCard
-            title={t('teachersWithoutCheckInOut', 'Teachers Without Check-In/Out')}
-            value={formatNumberWithCommas(schoolSummary.teachersWithoutCheckInOut)}
-            subtitle={
-              schoolSummary.totalTeachersInSchoolsWithAttendance > 0
-                ? `${((schoolSummary.teachersWithoutCheckInOut / schoolSummary.totalTeachersInSchoolsWithAttendance) * 100).toFixed(1)}% ${t('ofTotal', 'of total')}`
-                : '0.0%'
-            }
-            enhanced
-            responsive
-            gradientFrom="from-gray-500"
-            gradientTo="to-gray-600"
-            loading={loading}
-          />
-          
         </div>
 
         {/* Teacher Attendance Timing Breakdown */}
-        <TeacherAttendanceTimingChart 
+        <TeacherAttendanceTimingChart
           teacherAttendanceTiming={schoolSummary.teacherAttendanceTiming}
           totalTeachersPresentCount={schoolSummary.totalTeachersPresentCount}
+          teachersWithoutCheckInOut={schoolSummary.teachersWithoutCheckInOut}
+          totalTeachersWithAttendance={schoolSummary.totalTeachersWithAttendance}
+          totalTeachersInSchoolsWithAttendance={schoolSummary.totalTeachersInSchoolsWithAttendance}
+          totalTeachersLateCount={schoolSummary.totalTeachersLateCount}
+          totalTeachersLeaveCount={schoolSummary.totalTeachersLeaveCount}
+          totalTeachersAbsentCount={schoolSummary.totalTeachersAbsentCount}
           loading={loading}
         />
 
-        {/* Schools List */}
-        <Card className="rounded-sm">
-          <CardHeader>
-            <CardTitle>{t('schools', 'Schools')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <SchoolCoverageTable
-              data={schoolsData}
-              loading={loading}
-              pagination={pagination}
-              onPageChange={(newPage) => {
-                if (newPage < 1 || newPage > pagination.totalPages) return;
-                fetchSchools(newPage);
-              }}
-              onLimitChange={(newLimit) => {
-                setPagination(prev => ({
-                  ...prev,
-                  limit: newLimit,
-                  page: 1
-                }));
-                fetchSchools(1, newLimit);
-              }}
-              onViewDetails={handleViewAttendanceCount}
-            />
-          </CardContent>
-        </Card>
+        
       </div>
 
       {/* Filter Sidebar */}

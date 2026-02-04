@@ -1,9 +1,20 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { formatNumberWithCommas } from '@/utils/formatters';
+import StatsCard from '../ui/StatsCard';
 
-const TeacherAttendanceTimingChart = ({ teacherAttendanceTiming, totalTeachersPresentCount, loading = false }) => {
+const TeacherAttendanceTimingChart = ({
+  teacherAttendanceTiming,
+  totalTeachersPresentCount,
+  teachersWithoutCheckInOut,
+  totalTeachersWithAttendance,
+  totalTeachersInSchoolsWithAttendance,
+  totalTeachersLateCount,
+  totalTeachersLeaveCount,
+  totalTeachersAbsentCount,
+  loading = false
+}) => {
   const { t } = useLanguage();
 
   if (loading) {
@@ -192,14 +203,88 @@ const TeacherAttendanceTimingChart = ({ teacherAttendanceTiming, totalTeachersPr
           {t('teacherAttendanceTiming', 'Teacher Attendance Timing')}
         </h3>
         <p className="text-sm text-gray-600 mt-1">
-          {t('totalShiftAttendance', 'Total across all shifts')}: <span className="font-semibold">{formatNumberWithCommas(totalAllShifts)}</span> | 
+          {t('totalShiftAttendance', 'Total across all shifts')}: <span className="font-semibold">{formatNumberWithCommas(totalAllShifts)}</span> |
           {' '}{t('totalTeachersWithAttendance', 'Total teachers with attendance')}: <span className="font-semibold">{formatNumberWithCommas(totalTeachersPresentCount)}</span>
         </p>
+      </div>
+
+      {/* Teacher Attendance Status Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+        <StatsCard
+          title={t('teachersWithoutCheckInOut', 'Teachers Without Check-In/Out')}
+          value={formatNumberWithCommas(teachersWithoutCheckInOut)}
+          subtitle={
+            totalTeachersInSchoolsWithAttendance > 0
+              ? `${((teachersWithoutCheckInOut / totalTeachersInSchoolsWithAttendance) * 100).toFixed(1)}% ${t('ofTotal', 'of total')}`
+              : '0.0%'
+          }
+          enhanced
+          responsive
+          gradientFrom="from-gray-500"
+          gradientTo="to-gray-600"
+          loading={loading}
+        />
+        <StatsCard
+          title={t('teacherPresent', 'Teachers Present')}
+          value={formatNumberWithCommas(totalTeachersPresentCount)}
+          subtitle={
+            totalTeachersWithAttendance > 0
+              ? `${((totalTeachersPresentCount / totalTeachersWithAttendance) * 100).toFixed(1)}% ${t('ofTotal', 'of total')}`
+              : '0.0%'
+          }
+          enhanced
+          responsive
+          gradientFrom="from-green-500"
+          gradientTo="to-green-600"
+          loading={loading}
+        />
+        <StatsCard
+          title={t('teacherLate', 'Teachers Late')}
+          value={formatNumberWithCommas(totalTeachersLateCount)}
+          subtitle={
+            totalTeachersWithAttendance > 0
+              ? `${((totalTeachersLateCount / totalTeachersWithAttendance) * 100).toFixed(1)}% ${t('ofTotal', 'of total')}`
+              : '0.0%'
+          }
+          enhanced
+          responsive
+          gradientFrom="from-yellow-500"
+          gradientTo="to-yellow-600"
+          loading={loading}
+        />
+        <StatsCard
+          title={t('teacherLeave', 'Teachers on Leave')}
+          value={formatNumberWithCommas(totalTeachersLeaveCount)}
+          subtitle={
+            totalTeachersWithAttendance > 0
+              ? `${((totalTeachersLeaveCount / totalTeachersWithAttendance) * 100).toFixed(1)}% ${t('ofTotal', 'of total')}`
+              : '0.0%'
+          }
+          enhanced
+          responsive
+          gradientFrom="from-blue-500"
+          gradientTo="to-blue-600"
+          loading={loading}
+        />
+        <StatsCard
+          title={t('teacherAbsent', 'Teachers Absent')}
+          value={formatNumberWithCommas(totalTeachersAbsentCount)}
+          subtitle={
+            totalTeachersWithAttendance > 0
+              ? `${((totalTeachersAbsentCount / totalTeachersWithAttendance) * 100).toFixed(1)}% ${t('ofTotal', 'of total')}`
+              : '0.0%'
+          }
+          enhanced
+          responsive
+          gradientFrom="from-red-500"
+          gradientTo="to-red-600"
+          loading={loading}
+        />
       </div>
       <ResponsiveContainer width="100%" height={400}>
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+          margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
