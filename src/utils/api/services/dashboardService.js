@@ -535,6 +535,7 @@ export const dashboardService = {
    * @param {number} [params.provinceId] - Province ID to filter by
    * @param {number} [params.districtId] - District ID to filter by
    * @param {number} [params.schoolId] - School ID to filter by
+   * @param {number} [params.roleId] - Role ID to filter by
    * @returns {Promise<Object>} Response with employment type statistics
    */
   async getTeacherEmploymentTypeStats(params = {}) {
@@ -556,6 +557,10 @@ export const dashboardService = {
 
       if (params.schoolId) {
         queryParams.push(`schoolId=${params.schoolId}`);
+      }
+
+      if (params.roleId) {
+        queryParams.push(`roleId=${params.roleId}`);
       }
 
       if (queryParams.length > 0) {

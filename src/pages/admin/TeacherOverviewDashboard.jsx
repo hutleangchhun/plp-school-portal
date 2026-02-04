@@ -255,7 +255,7 @@ const TeacherOverviewDashboard = () => {
               <SearchableDropdown
                 options={provinces.map((p) => ({
                   value: p.id,
-                  label: p.province_name_kh,
+                  label: p.provinceNameKh,
                 }))}
                 value={tempProvince}
                 onValueChange={handleProvinceChange}
@@ -272,7 +272,7 @@ const TeacherOverviewDashboard = () => {
               <SearchableDropdown
                 options={districts.map((d) => ({
                   value: d.id,
-                  label: d.district_name_kh || d.district_name_en || d.name,
+                  label: d.districtNameKh || d.district_name_en || d.name,
                 }))}
                 value={tempDistrict}
                 onValueChange={handleDistrictChange}
@@ -318,7 +318,7 @@ const TeacherOverviewDashboard = () => {
           </div>
         </SidebarFilter>
 
-        {/* Teacher Demographics Section */}
+        {/* Teacher Demographics Section 
         <FadeInSection delay={300} className="mb-6">
           <Card className="border border-gray-200 shadow-sm rounded-md">
             <CardHeader className="pb-4">
@@ -336,6 +336,7 @@ const TeacherOverviewDashboard = () => {
             </CardContent>
           </Card>
         </FadeInSection>
+        */}
 
         {/* Employment Type Statistics */}
         <FadeInSection delay={400} className="mb-6">

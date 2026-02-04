@@ -65,6 +65,8 @@ const TeacherEmploymentTypeTab = ({ filters }) => {
         params.districtId = parseInt(filters.selectedDistrict, 10);
       if (filters.selectedSchool)
         params.schoolId = parseInt(filters.selectedSchool, 10);
+      if (filters.selectedRole)
+        params.roleId = parseInt(filters.selectedRole, 10);
 
       const response = await dashboardService.getTeacherEmploymentTypeStats(
         params
@@ -105,6 +107,7 @@ const TeacherEmploymentTypeTab = ({ filters }) => {
     filters?.selectedProvince,
     filters?.selectedDistrict,
     filters?.selectedSchool,
+    filters?.selectedRole,
     handleError,
     clearError,
     t,
@@ -126,19 +129,17 @@ const TeacherEmploymentTypeTab = ({ filters }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <StatsCard
             title={t("totalTeachers", "Total Teachers")}
-            value={employmentStats.overall?.totalTeachers || 0}
+            value={chartData.reduce((sum, item) => sum + item.count, 0)}
             iconBgColor="bg-blue-100"
             iconColor="text-blue-600"
             valueColor="text-blue-600"
             enhanced
             responsive
           />
-          
+
           <StatsCard
             title={t("employmentTypes", "Employment Types")}
-            value={
-              Object.keys(employmentStats.employmentTypeCounts || {}).length
-            }
+            value={chartData.length}
             iconBgColor="bg-green-100"
             iconColor="text-green-600"
             valueColor="text-green-600"
@@ -182,7 +183,7 @@ const TeacherEmploymentTypeTab = ({ filters }) => {
                       {chartData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={colors[index % colors.length]}
+                          fill={entry.name === "មិនបានបំពេញ" ? "#ef4444" : colors[index % colors.length]}
                         />
                       ))}
                     </Bar>
@@ -219,20 +220,18 @@ const TeacherEmploymentTypeTab = ({ filters }) => {
                   </thead>
                   <tbody>
                     {chartData.map((item, index) => {
+                      // Calculate total from sum of all counts
+                      const total = chartData.reduce((sum, entry) => sum + entry.count, 0);
                       const percentage =
-                        employmentStats.overall?.totalTeachers > 0
-                          ? (
-                              (item.count /
-                                employmentStats.overall.totalTeachers) *
-                              100
-                            ).toFixed(2)
+                        total > 0
+                          ? ((item.count / total) * 100).toFixed(2)
                           : 0;
                       return (
                         <tr
                           key={index}
                           className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
                         >
-                          <td className="px-4 py-3 text-gray-900">
+                          <td className={`px-4 py-3 ${item.name === "មិនបានបំពេញ" ? "text-red-500 font-semibold" : "text-gray-900"}`}>
                             {item.name}
                           </td>
                           <td className="px-4 py-3 text-right text-gray-600 font-semibold">

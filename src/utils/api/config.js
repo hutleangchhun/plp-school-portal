@@ -169,6 +169,9 @@ const ENDPOINTS = {
   },
   ATTENDANCE: {
     BASE: '/attendance',
+    BULK_QUEUE: '/attendance/bulk/queue',
+    BULK_STATUS: (jobId) => `/attendance/bulk/status/${jobId}`,
+    QUEUE_LENGTH: '/attendance/bulk/queue-length',
     DASHBOARD: {
       BASE: '/attendance-dashboard',
       PRIMARY: '/attendance-dashboard/primary',

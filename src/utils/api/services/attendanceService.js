@@ -276,6 +276,75 @@ export const attendanceService = {
   },
 
   /**
+   * Queue bulk attendance records for CREATE (POST)
+   * POST /attendance/bulk/queue
+   * @param {Array<Object>} records - Array of NEW attendance records to queue
+   * @param {number} records[].userId - User ID (student)
+   * @param {number} records[].classId - Class ID
+   * @param {string} records[].date - Date (YYYY-MM-DD)
+   * @param {string} records[].status - Status (PRESENT, ABSENT, LATE, LEAVE)
+   * @param {string} [records[].reason] - Optional reason for absence/lateness
+   * @returns {Promise<Object>} Job ID and queue status
+   */
+  async queueBulkAttendance(records) {
+    return handleApiResponse(() =>
+      apiClient_.post(ENDPOINTS.ATTENDANCE.BULK_QUEUE, { records })
+    );
+  },
+
+  /**
+   * Queue bulk attendance updates (PUT)
+   * PUT /attendance/bulk/queue
+   * @param {Array<Object>} records - Array of attendance records to UPDATE
+   * @param {number} records[].id - Attendance record ID (required)
+   * @param {string} [records[].status] - Status (PRESENT, ABSENT, LATE, LEAVE)
+   * @param {string} [records[].reason] - Optional reason for absence/lateness
+   * @returns {Promise<Object>} Job ID and queue status
+   */
+  async updateBulkAttendance(records) {
+    return handleApiResponse(() =>
+      apiClient_.put(ENDPOINTS.ATTENDANCE.BULK_QUEUE, { records })
+    );
+  },
+
+  /**
+   * Check the status of a queued bulk attendance job
+   * GET /attendance/bulk/status/:jobId
+   * @param {string} jobId - The job ID returned from queueBulkAttendance
+   * @returns {Promise<Object>} Job status with progress information
+   * @example
+   * const status = await getBulkJobStatus("job-id-here");
+   * // {
+   * //   jobId: "uuid",
+   * //   status: "completed",
+   * //   totalRecords: 100,
+   * //   processedRecords: 100,
+   * //   successfulRecords: 95,
+   * //   failedRecords: 5,
+   * //   results: { successful: [...], failed: [...] }
+   * // }
+   */
+  async getBulkJobStatus(jobId) {
+    return handleApiResponse(() =>
+      apiClient_.get(ENDPOINTS.ATTENDANCE.BULK_STATUS(jobId))
+    );
+  },
+
+  /**
+   * Get the current queue length
+   * GET /attendance/bulk/queue-length
+   * @returns {Promise<Object>} Current queue length
+   * @example
+   * const queueInfo = await getQueueLength();
+   * // { queueLength: 5 }
+   */
+  async getQueueLength() {
+    return handleApiResponse(() =>
+      apiClient_.get(ENDPOINTS.ATTENDANCE.QUEUE_LENGTH)
+    );
+  },
+
+  /**
    * Get teacher attendance with consolidated data
    * GET /teachers/teacher-attendance/:schoolId
    * Combines teachers, settings, and attendance in a single optimized call

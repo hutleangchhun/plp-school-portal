@@ -30,6 +30,11 @@ export default function TeacherAttendance({ user }) {
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showWarning, setShowWarning] = useState(true);
+
+  // Redis Queue State
+  const [jobId, setJobId] = useState(null);
+  const [jobStatus, setJobStatus] = useState(null);
+  const [processingJob, setProcessingJob] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -268,29 +273,35 @@ export default function TeacherAttendance({ user }) {
           console.log('=== ATTENDANCE MERGE DEBUG ===');
           console.log('Attendance from API (attendanceMap):', attendanceMap);
           // Merge with existing attendance state to preserve selections from other pages
-          // Only add students that either have API data OR don't exist in previous state
           setAttendance(prev => {
             console.log('Previous attendance state:', prev);
             const merged = { ...prev };
-            
+
             // Add students from current page
             studentsList.forEach(student => {
               const studentUserId = Number(student.userId || student.id);
-              
-              // If student has attendance from API, use it
-              if (attendanceMap[studentUserId]) {
+
+              // PRIORITY ORDER:
+              // 1. If user already made a local change (status !== null), keep it
+              // 2. Otherwise, use API data if available
+              // 3. Otherwise, initialize as null
+
+              if (prev[studentUserId] && prev[studentUserId].status !== null) {
+                // Keep local changes - don't overwrite with API data
+                // User already selected a status (could be different from API)
+                console.log(`Preserving local change for user ${studentUserId}:`, prev[studentUserId]);
+              } else if (attendanceMap[studentUserId]) {
+                // No local change yet, use API data
                 merged[studentUserId] = attendanceMap[studentUserId];
-              }
-              // If student doesn't exist in previous state, initialize with null
-              else if (!prev[studentUserId]) {
+              } else {
+                // No local change and no API data, initialize
                 merged[studentUserId] = {
                   status: null,
                   reason: ''
                 };
               }
-              // Otherwise, keep the previous value (user's selection)
             });
-            
+
             console.log('Final merged attendance state:', merged);
             return merged;
           });
@@ -315,6 +326,95 @@ export default function TeacherAttendance({ user }) {
       mounted = false;
     };
   }, [selectedClassId, selectedDate, currentPage, initialLoading, showError, studentsPerPage]);
+
+  // Poll job status when processing
+  useEffect(() => {
+    if (!processingJob || !jobId) return;
+
+    let mounted = true;
+    let pollInterval;
+
+    const pollJobStatus = async () => {
+      try {
+        console.log('Polling job status for:', jobId);
+        const response = await attendanceService.getBulkJobStatus(jobId);
+
+        if (!mounted) return;
+
+        if (response.success && response.data) {
+          const status = response.data;
+          setJobStatus(status);
+
+          console.log('Job status:', status.status, `${status.processedRecords}/${status.totalRecords}`);
+
+          // Check if job is completed
+          if (status.status === 'completed' || status.status === 'failed') {
+            setProcessingJob(false);
+
+            if (status.status === 'completed') {
+              const { successfulRecords = 0, failedRecords = 0, totalRecords = 0 } = status;
+
+              if (failedRecords > 0) {
+                showError(
+                  t('attendancePartialSuccess',
+                    `Attendance saved with some errors: ${successfulRecords}/${totalRecords} successful, ${failedRecords} failed`
+                  )
+                );
+                console.warn('Failed records:', status.results?.failed);
+              } else {
+                showSuccess(
+                  t('attendanceSavedSuccess',
+                    `Attendance saved successfully! ${successfulRecords} records processed`
+                  )
+                );
+              }
+
+              // Reload attendance to reflect changes
+              const attendanceResponse = await attendanceService.getAttendance({
+                classId: selectedClassId,
+                date: formatDateToString(selectedDate),
+                page: 1,
+                limit: 100
+              });
+
+              if (attendanceResponse.success && attendanceResponse.data) {
+                const existingMap = {};
+                attendanceResponse.data.forEach(record => {
+                  existingMap[record.userId] = record.id;
+                });
+                setExistingAttendance(existingMap);
+              }
+            } else {
+              showError(t('attendanceProcessingFailed', 'Attendance processing failed'));
+            }
+
+            // Clear job data
+            setJobId(null);
+            setJobStatus(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error polling job status:', error);
+        if (mounted) {
+          setProcessingJob(false);
+          showError(t('attendanceStatusCheckFailed', 'Failed to check processing status'));
+        }
+      }
+    };
+
+    // Initial poll
+    pollJobStatus();
+
+    // Set up polling interval (every 2 seconds)
+    pollInterval = setInterval(pollJobStatus, 2000);
+
+    return () => {
+      mounted = false;
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    };
+  }, [processingJob, jobId, selectedClassId, selectedDate, showError, showSuccess, t]);
 
   // Handle status change for a student
   const handleStatusChange = (studentUserId, status) => {
@@ -355,27 +455,58 @@ export default function TeacherAttendance({ user }) {
     }));
   };
 
-  // Mark all as present (only for current page)
-  const handleMarkAllPresent = () => {
+  // Mark all as present - ALL students across ALL pages
+  const handleMarkAllPresent = async () => {
     // Prevent editing if the date is in the past
     if (isReadOnly) {
       showError(t('cannotEditPastAttendance', 'Cannot edit attendance for past dates'));
       return;
     }
 
-    const newAttendance = { ...attendance };
-    students.forEach(student => {
-      const studentUserId = student.userId || student.id;
-      newAttendance[studentUserId] = {
-        status: 'PRESENT',
-        reason: ''
-      };
-    });
-    setAttendance(newAttendance);
-    showSuccess(t('markedAllPresent', 'Marked all students on this page as present'));
+    // Show confirmation dialog
+    const confirmMarkAll = window.confirm(
+      `${t('confirmMarkAllPresent', 'Mark All Present?')}\n\n` +
+      `${t('confirmMarkAllMessage', `This will mark ALL ${totalStudents} students in this class as present across all ${totalPages} pages. Are you sure?`)}`
+    );
+
+    if (!confirmMarkAll) return;
+
+    try {
+      setStudentsLoading(true);
+
+      // Fetch ALL students from the class (not just current page)
+      const allStudentsResponse = await studentService.getMyStudents({
+        classId: selectedClassId,
+        page: 1,
+        limit: totalStudents || 1000 // Fetch all students at once
+      });
+
+      if (allStudentsResponse.success && allStudentsResponse.data) {
+        const newAttendance = { ...attendance };
+
+        // Mark ALL students as present
+        allStudentsResponse.data.forEach(student => {
+          const studentUserId = student.userId || student.id;
+          newAttendance[studentUserId] = {
+            status: 'PRESENT',
+            reason: ''
+          };
+        });
+
+        setAttendance(newAttendance);
+        showSuccess(
+          t('markedAllPresentSuccess', `Successfully marked all ${allStudentsResponse.data.length} students as present!`)
+        );
+      }
+    } catch (error) {
+      console.error('Error marking all students present:', error);
+      showError(t('markAllPresentFailed', 'Failed to mark all students as present'));
+    } finally {
+      setStudentsLoading(false);
+    }
   };
 
-  // Save attendance
+  // Save attendance using Redis bulk queue
   const handleSaveAttendance = async () => {
     // Prevent saving if the date is in the past
     if (isReadOnly) {
@@ -386,57 +517,97 @@ export default function TeacherAttendance({ user }) {
     try {
       setSaving(true);
 
+      // Format date as YYYY-MM-DD (backend expects this format, not ISO)
       const selectedDateStr = formatDateToString(selectedDate);
 
-      const promises = students.map(async (student) => {
-        const studentUserId = student.userId || student.id;
-        const attendanceData = attendance[studentUserId];
+      // Collect ALL attendance records from the attendance state (across all pages)
+      // Separate into creates (POST) and updates (PUT)
+      const createRecords = [];
+      const updateRecords = [];
 
+      Object.entries(attendance).forEach(([userId, attendanceData]) => {
         // Skip if no status selected
         if (!attendanceData || !attendanceData.status) return;
 
-        const payload = {
-          classId: parseInt(selectedClassId),
-          userId: studentUserId,
-          date: selectedDateStr,
-          status: attendanceData.status,
-          reason: attendanceData.reason || null
-        };
+        // Check if this student already has an attendance record
+        const existingRecordId = existingAttendance[userId];
 
-        // Check if attendance record already exists
-        const existingId = existingAttendance[studentUserId];
-
-        if (existingId) {
-          // Update existing record using PATCH
-          return attendanceService.updateAttendance(existingId, payload);
+        if (existingRecordId) {
+          // Update existing record (PUT) - only send id and changed fields
+          updateRecords.push({
+            id: existingRecordId,
+            status: attendanceData.status,
+            reason: attendanceData.reason || null
+          });
         } else {
-          // Create new record using POST
-          return attendanceService.createAttendance(payload);
+          // Create new record (POST) - send all required fields
+          createRecords.push({
+            classId: parseInt(selectedClassId),
+            userId: parseInt(userId),
+            date: selectedDateStr,
+            status: attendanceData.status,
+            reason: attendanceData.reason || null
+          });
         }
       });
 
-      await Promise.all(promises.filter(Boolean)); // Filter out undefined promises
+      const totalRecords = createRecords.length + updateRecords.length;
+      if (totalRecords === 0) {
+        showError(t('noAttendanceToSave', 'No attendance records to save'));
+        setSaving(false);
+        return;
+      }
 
-      showSuccess(t('attendanceSavedSuccess', 'Attendance saved successfully'));
-
-      // Reload attendance to get the updated records
-      const attendanceResponse = await attendanceService.getAttendance({
-        classId: selectedClassId,
-        date: selectedDate,
-        page: 1,
-        limit: 100
+      console.log('🚀 Queueing attendance records:', {
+        creates: createRecords.length,
+        updates: updateRecords.length,
+        total: totalRecords
       });
+      console.log('📦 Sample CREATE record:', createRecords[0]);
+      console.log('📦 Sample UPDATE record:', updateRecords[0]);
 
-      if (attendanceResponse.success && attendanceResponse.data) {
-        const existingMap = {};
-        attendanceResponse.data.forEach(record => {
-          existingMap[record.userId] = record.id;
-        });
-        setExistingAttendance(existingMap);
+      let response;
+
+      // Send creates and updates using appropriate HTTP methods
+      if (createRecords.length > 0 && updateRecords.length > 0) {
+        // Both creates and updates - send two separate requests
+        console.log('📤 Sending creates (POST):', createRecords);
+        const createResponse = await attendanceService.queueBulkAttendance(createRecords);
+
+        console.log('📤 Sending updates (PUT):', updateRecords);
+        const updateResponse = await attendanceService.updateBulkAttendance(updateRecords);
+
+        // Use the first response for job tracking (you may want to track both)
+        response = createResponse.success ? createResponse : updateResponse;
+      } else if (createRecords.length > 0) {
+        // Only creates - use POST
+        console.log('📤 Sending creates only (POST):', createRecords);
+        response = await attendanceService.queueBulkAttendance(createRecords);
+      } else {
+        // Only updates - use PUT
+        console.log('📤 Sending updates only (PUT):', updateRecords);
+        response = await attendanceService.updateBulkAttendance(updateRecords);
+      }
+
+      if (response.success && response.data?.jobId) {
+        const { jobId: newJobId } = response.data;
+
+        console.log(`✅ Queued ${totalRecords} records (${createRecords.length} creates, ${updateRecords.length} updates). Job ID: ${newJobId}`);
+
+        setJobId(newJobId);
+        setProcessingJob(true);
+
+        showSuccess(
+          t('attendanceQueued', `Attendance queued successfully! Processing ${totalRecords} records (${createRecords.length} new, ${updateRecords.length} updates)...`)
+        );
+      } else {
+        throw new Error('Failed to queue attendance records');
       }
     } catch (error) {
-      console.error('Error saving attendance:', error);
-      showError(t('attendanceSaveFailed', 'Failed to save attendance'));
+      console.error('Error queueing attendance:', error);
+      showError(t('attendanceQueueFailed', 'Failed to queue attendance records'));
+      setSaving(false);
+      setProcessingJob(false);
     } finally {
       setSaving(false);
     }
@@ -505,20 +676,22 @@ export default function TeacherAttendance({ user }) {
       <div>
         <FadeInSection>
           {/* Filters */}
-          <div className="p-6">
+          <div className="p-3 sm:p-6">
             {/* Header */}
             <div className="mb-4">
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                 {t('attendance', 'Attendance')}
               </h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-xs sm:text-sm text-gray-600 mt-1">
                 {t('markStudentAttendance', 'Mark student attendance for your classes')}
               </p>
             </div>
-            <div className="flex gap-4 items-start">
+
+            {/* Filters Grid - Responsive Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
               {/* Class Selector */}
-              <div className="w-full sm:w-auto">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="w-full">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   {t('class', 'Class')}
                 </label>
                 <Dropdown
@@ -526,13 +699,13 @@ export default function TeacherAttendance({ user }) {
                   onValueChange={setSelectedClassId}
                   options={classDropdownOptions}
                   placeholder={t('selectClass', 'Select class...')}
-                  minWidth="min-w-[200px] sm:min-w-[250px]"
+                  minWidth="w-full"
                 />
               </div>
 
               {/* Date Selector */}
-              <div className="w-full sm:w-auto">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="w-full">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   {t('date', 'Date')} <span className="text-red-500">*</span>
                 </label>
                 <DatePickerWithDropdowns
@@ -553,7 +726,7 @@ export default function TeacherAttendance({ user }) {
                     }
                   }}
                   placeholder={t('pickDate', 'Pick a date')}
-                  className="min-w-[200px] sm:min-w-[250px]"
+                  className="w-full"
                   toDate={new Date()} // Limit to today
                   fromYear={new Date().getFullYear() - 1} // Allow selecting dates from last year
                 />
@@ -563,66 +736,120 @@ export default function TeacherAttendance({ user }) {
                   </p>
                 )}
               </div>
+            </div>
 
-              {/* Actions */}
-              <div className="w-full sm:w-auto sm:ml-auto flex gap-2 sm:mt-7">
-                <Button
-                  onClick={handleMarkAllPresent}
-                  variant="outline"
-                  size="sm"
-                  disabled={studentsLoading || students.length === 0 || isReadOnly}
-                >
-                  <Check className="h-4 w-4 mr-2" />
-                  {t('markAllPresent', 'Mark All Present')}
-                </Button>
+            {/* Actions - Stacked on mobile, inline on larger screens */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <Button
+                onClick={handleMarkAllPresent}
+                variant="outline"
+                size="sm"
+                disabled={studentsLoading || students.length === 0 || isReadOnly}
+                className="w-full sm:w-auto"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">{t('markAllPresent', 'Mark All Present')}</span>
+                <span className="sm:hidden">{t('allPresent', 'All Present')}</span>
+              </Button>
 
-                {/* Export Component */}
-                <AttendanceExport
-                  students={students}
-                  attendance={attendance}
-                  className={classes.find(cls => String(cls.classId || cls.id) === selectedClassId)?.name || 'Unknown-Class'}
-                  schoolName={user?.school?.name || user?.schoolName || 'សាលា'}
-                  selectedDate={selectedDate}
-                  exportType="daily"
-                  disabled={studentsLoading}
-                />
+              {/* Export Component */}
+              <AttendanceExport
+                students={students}
+                attendance={attendance}
+                className={classes.find(cls => String(cls.classId || cls.id) === selectedClassId)?.name || 'Unknown-Class'}
+                schoolName={user?.school?.name || user?.schoolName || 'សាលា'}
+                selectedDate={selectedDate}
+                exportType="daily"
+                disabled={studentsLoading}
+              />
 
-                <Button
-                  onClick={handleSaveAttendance}
-                  disabled={saving || studentsLoading || students.length === 0 || isReadOnly}
-                  size="sm"
-                >
-                  {saving ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-2" />
-                  )}
-                  {saving ? t('saving', 'Saving...') : t('save', 'Save')}
-                </Button>
-              </div>
+              <Button
+                onClick={handleSaveAttendance}
+                disabled={saving || processingJob || studentsLoading || students.length === 0 || isReadOnly}
+                size="sm"
+                className="w-full sm:w-auto sm:ml-auto"
+              >
+                {(saving || processingJob) ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {saving
+                  ? t('queueing', 'Queueing...')
+                  : processingJob
+                    ? t('processing', 'Processing...')
+                    : t('save', 'Save')}
+              </Button>
             </div>
 
             {/* Past Date Warning */}
             {isReadOnly && showWarning && (
-              <div className="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 hover:scale-99 transition-transform">
-                <div className="flex items-start justify-between">
-                  <div className="flex">
+              <div className="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-3 sm:p-4 hover:scale-99 transition-transform rounded-r-md">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start flex-1 min-w-0">
                     <div className="flex-shrink-0">
-                      <AlertCircle className="h-5 w-5 text-yellow-600" />
+                      <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
                     </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-yellow-700">
+                    <div className="ml-2 sm:ml-3 flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm text-yellow-700 break-words">
                         {t('viewingPastAttendance', 'You are viewing attendance for a past date. Editing is disabled.')}
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setShowWarning(false)}
-                    className="ml-3 flex-shrink-0 inline-flex text-yellow-600 hover:text-yellow-800 focus:outline-none transition-colors"
+                    className="flex-shrink-0 text-yellow-600 hover:text-yellow-800 focus:outline-none transition-colors"
                     aria-label={t('close', 'Close')}
                   >
-                    <X className="h-5 w-5" />
+                    <X className="h-4 w-4 sm:h-5 sm:w-5" />
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* Processing Progress Banner */}
+            {processingJob && jobStatus && (
+              <div className="mt-4 bg-blue-50 border-l-4 border-blue-400 p-3 sm:p-4 shadow-sm rounded-r-md">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <div className="flex-shrink-0">
+                    <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 animate-spin" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xs sm:text-sm font-medium text-blue-800 mb-2">
+                      {t('processingAttendance', 'Processing Attendance Records')}
+                    </h3>
+                    <div className="space-y-2">
+                      {/* Progress Text */}
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-blue-700">
+                        <span className="font-medium">
+                          {t('progress', 'Progress')}
+                        </span>
+                        <span className="font-semibold">
+                          {jobStatus.processedRecords || 0}/{jobStatus.totalRecords || 0}
+                        </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="relative w-full bg-blue-200 rounded-full h-2 sm:h-2.5 overflow-hidden">
+                        <div
+                          className="absolute inset-y-0 left-0 bg-blue-600 rounded-full transition-all duration-300 ease-out"
+                          style={{
+                            width: `${jobStatus.totalRecords > 0
+                              ? ((jobStatus.processedRecords || 0) / jobStatus.totalRecords) * 100
+                              : 0
+                            }%`
+                          }}
+                        />
+                      </div>
+
+                      {/* Status Message */}
+                      <p className="text-xs text-blue-600 leading-relaxed">
+                        {jobStatus.status === 'processing'
+                          ? t('pleaseWait', 'Please wait while we process your attendance records...')
+                          : t('almostDone', 'Almost done...')}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -641,8 +868,76 @@ export default function TeacherAttendance({ user }) {
               description={t('noStudentsInClass', 'There are no students in this class.')}
             />
           ) : (
-            <div className="p-4 sm:p-6 overflow-hidden">
-              <div className="overflow-x-auto rounded-sm shadow">
+            <div className="p-3 sm:p-6 overflow-hidden">
+              {/* Mobile Card View - Visible on small screens */}
+              <div className="block lg:hidden space-y-3">
+                {students.map((student) => {
+                  const studentUserId = Number(student.userId || student.id);
+                  const studentAttendance = attendance[studentUserId] || { status: null, reason: '' };
+                  const hasStatus = studentAttendance.status !== null;
+
+                  return (
+                    <div key={studentUserId} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                      {/* Student Name */}
+                      <div className="font-medium text-gray-900 mb-3 text-sm">
+                        {getFullName(student, student.username)}
+                      </div>
+
+                      {/* Status Buttons */}
+                      <div className="mb-3">
+                        <label className="block text-xs font-medium text-gray-700 mb-2">
+                          {t('status', 'Status')}
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {attendanceStatuses.map(status => {
+                            const StatusIcon = status.icon;
+                            const isSelected = hasStatus && studentAttendance.status === status.value;
+                            return (
+                              <button
+                                key={status.value}
+                                onClick={() => handleStatusChange(studentUserId, status.value)}
+                                disabled={isReadOnly}
+                                className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-md transition-all border ${isSelected
+                                    ? `${status.bgColor} ${status.textColor} border-${status.borderColor}-300`
+                                    : `bg-white border-2 border-gray-200 text-gray-600 ${isReadOnly ? '' : 'hover:bg-gray-50 active:bg-gray-100'}`
+                                  } ${isReadOnly && !isSelected ? 'opacity-50' : ''} ${isReadOnly ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                title={status.label}
+                              >
+                                <StatusIcon className="h-4 w-4" />
+                                <span className="text-xs font-medium">{status.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Reason Input */}
+                      {(studentAttendance.status === 'ABSENT' || studentAttendance.status === 'LATE' || studentAttendance.status === 'LEAVE') && (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-2">
+                            {t('reason', 'Reason')}
+                          </label>
+                          <input
+                            type="text"
+                            value={studentAttendance.reason}
+                            onChange={(e) => handleReasonChange(studentUserId, e.target.value)}
+                            placeholder={t('enterReason', 'Enter reason...')}
+                            disabled={isReadOnly}
+                            readOnly={isReadOnly}
+                            className={`block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isReadOnly
+                                ? 'bg-gray-50 cursor-not-allowed text-gray-500'
+                                : 'bg-white'
+                              }`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View - Hidden on small screens */}
+              <div className="hidden lg:block overflow-x-auto rounded-sm shadow">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead>
                     <tr className='bg-blue-500'>
@@ -674,7 +969,7 @@ export default function TeacherAttendance({ user }) {
                       }
 
                       return (
-                        <tr key={studentUserId} className="hover:bg-gray-50">
+                        <tr key={studentUserId} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="ml-4">
@@ -701,7 +996,7 @@ export default function TeacherAttendance({ user }) {
                                     title={isReadOnly ? t('cannotEditPastAttendance', 'Cannot edit attendance for past dates') : status.label}
                                   >
                                     <StatusIcon className="h-4 w-4" />
-                                    <span className="text-xs font-medium hidden sm:inline">{status.label}</span>
+                                    <span className="text-xs font-medium hidden xl:inline">{status.label}</span>
                                   </button>
                                 );
                               })}
@@ -713,11 +1008,7 @@ export default function TeacherAttendance({ user }) {
                                 type="text"
                                 value={studentAttendance.reason}
                                 onChange={(e) => handleReasonChange(studentUserId, e.target.value)}
-                                placeholder={
-                                  studentAttendance.status === 'LEAVE'
-                                    ? t('reason', 'Enter reason...')
-                                    : t('reason', 'Enter reason...')
-                                }
+                                placeholder={t('enterReason', 'Enter reason...')}
                                 disabled={isReadOnly}
                                 readOnly={isReadOnly}
                                 className={`block w-full p-3 border border-none ring-none outline-none rounded-md text-sm focus:outline-none focus:ring-none focus:border-none ${isReadOnly
