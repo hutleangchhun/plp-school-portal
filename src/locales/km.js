@@ -639,6 +639,8 @@ export const km = {
   teacherLeave: 'គ្រូសុំច្បាប់',
   totalShiftAttendance: 'សរុបវត្តមានតាមវេន',
   totalTeachersWithAttendance: 'សរុបគ្រូដែលមានវត្តមាន',
+  numberOfTeachers: 'ចំនួនគ្រូ',
+  schoolCoverageList: 'សាលារៀនដែលមានការចុះវត្តមាន',
 
 
 
@@ -1353,7 +1355,7 @@ export const km = {
   withStudentData: 'សាលារៀនមានទិន្នន័យសិស្ស',
   withTeacherData: 'សាលារៀនមានទិន្នន័យគ្រូ',
   avgTeacherAttendance: 'អត្រាវត្តមានគ្រូជាមធ្យម',
-  teacherAttendanceTiming: 'ពេលវេលាវត្តមានគ្រូ',
+  teacherAttendanceTiming: 'ពេលវេលាគ្រូចុះវត្តមាន',
   morningShiftAttendance: 'វេនព្រឹក',
   afternoonShiftAttendance: 'វេនថ្ងៃ',
   eveningShiftAttendance: 'វេនល្ងាច',

@@ -26,9 +26,9 @@ const SchoolCoverageTable = ({
   data = [],
   loading,
   pagination = {},
-  onPageChange = () => {},
-  onLimitChange = () => {},
-  onViewDetails = () => {}
+  onPageChange = () => { },
+  onLimitChange = () => { },
+  onViewDetails = () => { }
 }) => {
   const { t } = useLanguage();
   const [sortConfig, setSortConfig] = useState({ key: 'schoolName', direction: 'asc' });
@@ -109,7 +109,7 @@ const SchoolCoverageTable = ({
   );
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white rounded-sm shadow-sm border border-gray-200">
       <div className="p-6 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900">
           {t('schoolCoverageList', 'Schools with Attendance Data')}
@@ -321,7 +321,7 @@ const SchoolAttendanceList = () => {
   // Selected school for detail modal
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  
+
   // New modal for attendance counts
   const [attendanceCountModalOpen, setAttendanceCountModalOpen] = useState(false);
 
@@ -500,13 +500,13 @@ const SchoolAttendanceList = () => {
   };
 
   const handleResetFilters = () => {
-    const resetFilters = { 
-      province: '', 
-      district: '', 
-      date: '', 
-      startDate: '', 
-      endDate: '', 
-      filterMode: 'single' 
+    const resetFilters = {
+      province: '',
+      district: '',
+      date: '',
+      startDate: '',
+      endDate: '',
+      filterMode: 'single'
     };
     setFilters(resetFilters);
     setTempFilters(resetFilters);
@@ -606,14 +606,14 @@ const SchoolAttendanceList = () => {
                 <Filter className="h-4 w-4" />
                 {t('filters', 'Filters')}
                 {(filters.province || filters.district || filters.date || filters.startDate || filters.endDate) && (
-                <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-white text-blue-600 rounded-full">
-                  {[
-                    filters.province,
-                    filters.district,
-                    filters.filterMode === 'single' ? filters.date : (filters.startDate || filters.endDate)
-                  ].filter(Boolean).length}
-                </span>
-              )}
+                  <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-white text-blue-600 rounded-full">
+                    {[
+                      filters.province,
+                      filters.district,
+                      filters.filterMode === 'single' ? filters.date : (filters.startDate || filters.endDate)
+                    ].filter(Boolean).length}
+                  </span>
+                )}
               </Button>
             </div>
           </div>
@@ -642,7 +642,7 @@ const SchoolAttendanceList = () => {
                 {t('period', 'Period')}: {filters.startDate || '...'} {t('to', 'to')} {filters.endDate || '...'}
               </Badge>
             )}
-            <button 
+            <button
               onClick={handleResetFilters}
               className="text-xs text-red-600 hover:text-red-800 font-medium underline px-2"
             >
@@ -723,8 +723,28 @@ const SchoolAttendanceList = () => {
           loading={loading}
         />
 
-        
+        <SchoolCoverageTable
+          data={schoolsData}
+          loading={loading}
+          pagination={pagination}
+          onPageChange={(newPage) => {
+            if (newPage < 1 || newPage > pagination.totalPages) return;
+            fetchSchools(newPage);
+          }}
+          onLimitChange={(newLimit) => {
+            setPagination(prev => ({
+              ...prev,
+              limit: newLimit,
+              page: 1
+            }));
+            fetchSchools(1, newLimit);
+          }}
+          onViewDetails={handleViewAttendanceCount}
+        />
+
+
       </div>
+
 
       {/* Filter Sidebar */}
       <SidebarFilter
@@ -776,24 +796,22 @@ const SchoolAttendanceList = () => {
             <label className="block text-sm font-medium text-gray-700 mb-4">
               {t('filterByDate', 'Filter by Date')}
             </label>
-            
+
             <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
               <button
-                className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
-                  tempFilters.filterMode === 'single' 
-                    ? 'bg-white text-blue-600 shadow-sm' 
+                className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${tempFilters.filterMode === 'single'
+                    ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
                 onClick={() => setTempFilters(prev => ({ ...prev, filterMode: 'single' }))}
               >
                 {t('singleDate', 'Single Date')}
               </button>
               <button
-                className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
-                  tempFilters.filterMode === 'range' 
-                    ? 'bg-white text-blue-600 shadow-sm' 
+                className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${tempFilters.filterMode === 'range'
+                    ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
                 onClick={() => setTempFilters(prev => ({ ...prev, filterMode: 'range' }))}
               >
                 {t('dateRange', 'Date Range')}

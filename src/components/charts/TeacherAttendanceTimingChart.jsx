@@ -197,14 +197,13 @@ const TeacherAttendanceTimingChart = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+    <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6 mb-6">
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-900">
           {t('teacherAttendanceTiming', 'Teacher Attendance Timing')}
         </h3>
         <p className="text-sm text-gray-600 mt-1">
-          {t('totalShiftAttendance', 'Total across all shifts')}: <span className="font-semibold">{formatNumberWithCommas(totalAllShifts)}</span> |
-          {' '}{t('totalTeachersWithAttendance', 'Total teachers with attendance')}: <span className="font-semibold">{formatNumberWithCommas(totalTeachersPresentCount)}</span>
+          {t('totalShiftAttendance', 'Total across all shifts')}: <span className="font-semibold">{formatNumberWithCommas(totalAllShifts)}</span> 
         </p>
       </div>
 
