@@ -557,7 +557,7 @@ const UserRegistrationDashboard = () => {
                   }}
                   options={provinces.map((p) => ({
                     value: String(p.id ?? p.province_id ?? ''),
-                    label: p.province_name_kh || p.province_name_en || p.name || 'Unknown',
+                    label: p.provinceNameKh || p.province_name_en || p.name || 'Unknown',
                   }))}
                   placeholder={t('selectProvince', 'Select Province')}
                   minWidth="w-full"
@@ -581,7 +581,7 @@ const UserRegistrationDashboard = () => {
                   }}
                   options={districts.map((d) => ({
                     value: String(d.id ?? d.district_id ?? ''),
-                    label: d.district_name_kh || d.district_name_en || d.name || 'Unknown',
+                    label: d.districtNameKh || d.district_name_en || d.name || 'Unknown',
                   }))}
                   placeholder={t('selectDistrict', 'Select District')}
                   minWidth="w-full"

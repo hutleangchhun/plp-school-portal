@@ -11,6 +11,7 @@ import Dropdown from '../ui/Dropdown';
 import SidebarFilter from '../ui/SidebarFilter';
 import { RefreshCcw, SlidersHorizontal, TrendingUp } from 'lucide-react';
 import CustomTooltip from '../ui/TooltipChart';
+import { getDynamicRoleOptions } from '../../utils/formOptions';
 
 const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersChange = null }) => {
   const { t } = useLanguage();
@@ -296,17 +297,7 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
             onValueChange={handleRoleChange}
             options={[
               { value: '', label: t('allRoles', 'All Roles') },
-              { value: '8', label: t('teacher', 'Teacher') },
-              { value: '9', label: t('student', 'Student') },
-              { value: '10', label: t('parent', 'Parent') },
-              { value: '14', label: t('principal', 'Principal') },
-              { value: '15', label: t('deputyPrincipal', 'Deputy Principal') },
-              { value: '16', label: t('schoolSecretary', 'School Secretary') },
-              { value: '17', label: t('schoolTreasurer', 'School Treasurer') },
-              { value: '18', label: t('schoolLibrarian', 'School Librarian') },
-              { value: '19', label: t('schoolWorkshop', 'School Workshop') },
-              { value: '20', label: t('schoolSecurity', 'School Security') },
-              { value: '21', label: t('teacherIct', 'Teacher ICT') },
+              ...getDynamicRoleOptions({ includeStudent: true })
             ]}
             placeholder={t('selectRole', 'Select Role')}
             className='w-full'
@@ -326,7 +317,7 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
               ...provinces.map((province) => ({
                 value: province.id?.toString?.() || String(province.id || ''),
                 label:
-                  province.province_name_kh ||
+                  province.provinceNameKh ||
                   province.province_name_en ||
                   province.name ||
                   'Unknown Province',
@@ -350,7 +341,7 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
               ...districts.map((district) => ({
                 value: district.id?.toString?.() || String(district.id || ''),
                 label:
-                  district.district_name_kh ||
+                  district.districtNameKh ||
                   district.district_name_en ||
                   district.name ||
                   'Unknown District',
@@ -371,7 +362,7 @@ const FieldCompletenessChart = ({ className = "", sharedFilters = {}, onFiltersC
             value={selectedSchool}
             onValueChange={handleSchoolChange}
             options={[
-              { value: '', label: t('allSchools', 'All Schools') },
+              { value: '', label: t('allSchool', 'All School') },
               ...schools.map((school) => ({
                 value: school.id?.toString?.() || String(school.id || ''),
                 label:

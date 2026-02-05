@@ -5,6 +5,7 @@ import { Accessibility } from "lucide-react";
 export const km = {
   // Common
   loading: 'កំពុងផ្ទុក...',
+  primaryEducationDepartment: 'នាយកដ្ឋានបឋមសិក្សា',
   save: 'រក្សាទុក',
   cancel: 'បោះបង់',
   confirm: 'បញ្ជាក់',
@@ -176,10 +177,10 @@ export const km = {
   // Validation messages
   usernameRequiredMsg: 'ឈ្មោះអ្នកប្រើត្រូវបានទាមទារ',
   firstNameRequiredMsg: 'នាមខ្លួនត្រូវបានទាមទារ',
-  lastNameRequiredMsg: 'នាមគ្រួសារត្រូវបានទាមទារ',
+  lastNameRequiredMsg: 'នាមត្រកូលត្រូវបានទាមទារ',
   emailRequiredMsg: 'អ៊ីមែលត្រូវបានទាមទារ',
   validEmailRequired: 'សូមបញ្ចូលអាសយដ្ឋានអ៊ីមែលត្រឹមត្រូវ',
-  passwordMinLength: 'ពាក្យសម្ងាត់ថ្មីត្រូវតែមានយ៉ាងតិច៦តួអក្សរ',
+  passwordMinLength: 'ពាក្យសម្ងាត់ថ្មីត្រូវតែមានយ៉ាងតិច8តួអក្សរ',
   validPhoneRequired: 'សូមបញ្ចូលលេខទូរស័ព្ទត្រឹមត្រូវ',
 
   // Messages
@@ -1255,7 +1256,7 @@ export const km = {
 
   // Additional organization info
   organizationSchoolPortal: 'ប្រព័ន្ធរដ្ឋបាលសម្រាប់សាលារៀន',
-  primaryEducationDepartment: 'នាយកដ្ឋានបឋមសិក្សា',
+
   moeysOfCambodia: 'ក្រសួងអប់រំ យុវជន និងកីឡា',
   schoolInformation: 'ព័ត៌មានសាលារៀន',
   schoolId: 'លេខសាលារៀន',
@@ -1402,6 +1403,7 @@ export const km = {
   // Search and filter
   clearSearch: 'សម្អាតការស្វែងរក',
   filteredFrom: 'បានត្រងចេញពី',
+  allSchool: 'សាលារៀនទាំងអស់',
 
   // Bulk operations and selections
   moveSelectedToMaster: 'ផ្លាស់ទីអ្នកដែលបានជ្រើសរើសទៅថ្នាក់មេ',
@@ -2077,7 +2079,32 @@ export const km = {
   selectSubSubject: 'ជ្រើសរើសមុខវិជ្ជារង (ស្រេចចិត្ត)',
   none: 'គ្មាន (មុខវិជ្ជាចម្បង)',
 
-
+  // Officer Registration
+  officerRegistration: 'ការចុះឈ្មោះ',
+  officerRegistrationDesc: 'ចុះឈ្មោះមន្ត្រីថ្មីសម្រាប់ថ្នាក់រាជធានីខេត្ត ស្រុក ឬឃុំ',
+  selectOfficerRole: 'ជ្រើសរើសតួនាទីមន្ត្រី',
+  provincialOfficerRole: 'មន្ត្រីការិយាល័យអប់រំ យុវជន និងកីឡាខេត្ត (Role 4)',
+  districtOfficerRole: 'មន្ត្រីការិយាល័យអប់រំ យុវជន និងកីឡាក្រុង ស្រុក ខណ្ឌ (Role 5)',
+  communeOfficerRole: 'មន្ត្រីការិយាល័យអប់រំ យុវជន និងកីឡាឃុំ (Role 23)',
+  position: 'តួនាទី',
+  department: 'នាយកដ្ឋាន',
+  registerOfficer: 'ចុះឈ្មោះមន្ត្រី',
+  officerRegisteredSuccess: 'ចុះឈ្មោះមន្ត្រីជោគជ័យ',
+  fixValidationErrors: 'សូមកែសម្រួលកំហុសទិន្នន័យ',
+  validationUsername: 'ឈ្មោះអ្នកប្រើប្រាស់ត្រូវមានយ៉ាងតិច ៣ តួអក្សរ',
+  validationDateOfBirth: 'សូមជ្រើសរើសថ្ងៃខែឆ្នាំកំណើត',
+  roleAndLocation: 'តួនាទី និងទីតាំង',
+  other: 'ផ្សេងៗ',
+  selectGender: 'ជ្រើសរើសភេទ',
+  sectionPersonalInformation: 'ព័ត៌មានផ្ទាល់ខ្លួន',
+  selectProvinces: 'ជ្រើសរើសរាជធានី/ខេត្ត',
+  selectDistricts: 'ជ្រើសរើសក្រុង/ស្រុក/ខណ្ឌ',
+  selectSchools: 'ជ្រើសរើសសាលារៀន',
+  selectCommunes: 'ជ្រើសរើសឃុំ/សង្កាត់',
+  provinces: 'រាជធានី/ខេត្ត',
+  districts: 'ក្រុង/ស្រុក/ខណ្ឌ',
+  schools: 'សាលារៀន',
+  communes: 'ឃុំ/សង្កាត់',
 };
 
 // Inserted translations - Teacher Active/Inactive Status

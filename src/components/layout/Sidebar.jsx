@@ -24,7 +24,8 @@ import {
   ClipboardList,
   Database,
   CalendarDays,
-  Briefcase
+  Briefcase,
+  UserPlus
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -107,6 +108,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/school-attendance': CalendarCheck,
     '/admin/student-demographics': Database,
     '/admin/teacher-overview': Database,
+    '/admin/officer-registration': UserPlus,
     '/multi-role-dashboard': Briefcase,
     'attendance': Calendar, // Parent item for attendance dropdown
     'attendanceManagement': ClipboardList, // Parent item for attendance management dropdown
@@ -151,6 +153,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/bmi-report': 'blue',
     '/admin/school-attendance': 'blue',
     '/admin/teacher-overview': 'blue',
+    '/admin/officer-registration': 'blue',
     '/multi-role-dashboard': 'blue',
     'attendance': 'blue', // Parent item for attendance dropdown
     'attendanceManagement': 'blue', // Parent item for attendance management dropdown

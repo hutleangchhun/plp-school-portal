@@ -301,7 +301,7 @@ const SchoolDistributionChart = ({
                 ...provinces.map((province) => ({
                   value: province.id.toString(),
                   label:
-                    province.province_name_kh ||
+                    province.provinceNameKh ||
                     province.province_name_en ||
                     province.name ||
                     'Unknown Province',
@@ -327,7 +327,7 @@ const SchoolDistributionChart = ({
                     ? district.id.toString()
                     : district.district_code || district.code || district.id,
                   label:
-                    district.district_name_kh ||
+                    district.districtNameKh ||
                     district.district_name_en ||
                     district.name ||
                     'Unknown District',

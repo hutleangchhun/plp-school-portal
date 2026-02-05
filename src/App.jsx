@@ -17,6 +17,7 @@ import AttendanceOverview from './pages/admin/AttendanceOverview';
 import SchoolAttendanceList from './pages/admin/SchoolAttendanceList';
 import TeacherOverviewDashboard from './pages/admin/TeacherOverviewDashboard';
 import UserRegistrationDashboard from './pages/admin/UserRegistrationDashboard';
+import OfficerRegistration from './pages/admin/OfficerRegistration';
 import SchoolManagement from './pages/admin/SchoolManagement';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -310,6 +311,15 @@ function AppContent() {
             </ProtectedRoute>
           }>
             <Route index element={<UserRegistrationDashboard />} />
+          </Route>
+
+          {/* Admin Officer Registration route - role ID 1 only */}
+          <Route path="admin/officer-registration" element={
+            <ProtectedRoute path="/admin/officer-registration" user={user}>
+              <DashboardLayout user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }>
+            <Route index element={<OfficerRegistration />} />
           </Route>
 
           {/* Admin School Management route - role ID 1 only (enforced by routePermissions) */}

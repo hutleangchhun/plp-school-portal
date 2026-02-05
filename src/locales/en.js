@@ -25,7 +25,7 @@ export const en = {
   loadingChartData: 'Loading Chart Data...',
 
 
-  
+
   // Error handling
   networkError: 'Network Error',
   serverError: 'Server Error',
@@ -38,7 +38,7 @@ export const en = {
   failedToParseUserData: 'Failed to parse user data',
   failedToFetchClasses: 'Failed to fetch classes',
   checkConnection: 'Please check your connection and try again.',
-  
+
   // Navigation
   dashboard: 'Dashboard',
   schoolPortal: 'School Portal',
@@ -46,7 +46,7 @@ export const en = {
   profile: 'Profile',
   logout: 'Logout',
 
-  
+
   // Profile
   profileInformation: 'Profile Information',
   personalInformation: 'Personal Information',
@@ -59,7 +59,7 @@ export const en = {
   province: 'Province',
   gpsCoordinates: 'GPS Coordinates',
   selectProvince: 'Select Province',
-  selectDistrict: 'Select District', 
+  selectDistrict: 'Select District',
   selectCommune: 'Select Commune',
   selectVillage: 'Select Village',
   loadingProvinces: 'Loading provinces...',
@@ -67,7 +67,7 @@ export const en = {
   loadingCommunes: 'Loading communes...',
   loadingVillages: 'Loading villages...',
   currentResidence: 'Current Residence',
-  
+
   // Form fields
   username: 'Username',
   usernameRequired: 'Username *',
@@ -98,13 +98,13 @@ export const en = {
   selectGradeLevel: 'Select Grade Level',
   teacherInformation: 'Teacher Information',
   updateYourPersionalDetails: 'Update your personal details and preferences',
-  
+
   // Location fields
   provinceId: 'Province ID',
   districtId: 'District ID',
   communeId: 'Commune ID',
   villageId: 'Village ID',
-  
+
   // User info display
   fullName: 'Full name',
   role: 'Role',
@@ -121,7 +121,7 @@ export const en = {
   provincialOfficer: 'Provincial Officer',
   districtOfficer: 'District Officer',
   communeOfficer: 'Commune Officer',
-  
+
   // Validation messages
   usernameRequiredMsg: 'Username is required',
   firstNameRequiredMsg: 'First name is required',
@@ -130,24 +130,24 @@ export const en = {
   validEmailRequired: 'Please enter a valid email address',
   passwordMinLength: 'New password must be at least 6 characters',
   validPhoneRequired: 'Please enter a valid phone number',
-  
+
   // Messages
   profileUpdatedSuccess: 'Profile updated successfully!',
   updateFailed: 'Update failed',
   requestTimeout: 'Request timed out. Please try again.',
   loadingUserData: 'Loading user data...',
   updating: 'Updating...',
-  
+
   // Dialogs
   confirmUpdate: 'Confirm Update',
   confirmUpdateMessage: 'Are you sure you want to update your profile information?',
   confirmLogout: 'Confirm Logout',
   confirmLogoutMessage: 'Are you sure you want to logout?',
-  
+
   // Gender display
   genderMale: 'Male',
   genderFemale: 'Female',
-  
+
   // Profile picture
   currentPicture: 'Current picture:',
   newPicturePreview: 'New picture preview:',
@@ -424,7 +424,7 @@ export const en = {
   // Other
   address: 'Address',
   contact: 'Contact',
-  
+
   // StudentsManagement component
   failedLoadAvailableStudents: 'Failed to load available students',
   studentsAddedSuccess: 'Students added successfully',
@@ -434,7 +434,7 @@ export const en = {
   noStudentsAvailableAdd: 'There are no students available to add.',
   noStudentsFound: 'No students found',
   addStudentsToClass: 'Add Students to Class',
-  
+
   // Table and UI elements
   name: 'Name',
   noName: 'No Name',
@@ -450,7 +450,7 @@ export const en = {
   failedRemoveStudent: 'Failed to remove student',
   filterByGrade: 'Filter by grade',
   allGrades: 'All Grades',
-  
+
   // Pagination
   showing: 'Showing',
   to: 'to',
@@ -458,7 +458,7 @@ export const en = {
   results: 'results',
   previous: 'Previous',
   next: 'Next',
-  
+
   // Bulk operations
   studentsRemovedSuccess: 'Students removed successfully',
   failedRemoveStudents: 'Failed to remove students',
@@ -467,8 +467,8 @@ export const en = {
   studentsFromClass: 'students from your class? This action cannot be undone.',
   clearSelection: 'Clear Selection',
   suggestion: 'Suggestion',
-  
-  
+
+
   // Export functionality
   export: 'Export',
   exportSuccess: 'Data exported successfully',
@@ -480,7 +480,7 @@ export const en = {
   generated: 'Generated',
   totalStudents: 'Total Students',
   totalSchool: 'Total Schools',
-  
+
   // Login page
   signInToAccount: 'Sign in to your account',
   enterUsername: 'Enter your username',
@@ -488,7 +488,7 @@ export const en = {
   signingIn: 'Signing in...',
   signIn: 'Sign in',
   usernameAndPhonenumber: 'Username or Phone Number',
-  
+
   // Student Selection
   studentSelection: 'Student Selection',
   selectStudentsForAction: 'Select students to add to class',
@@ -519,17 +519,17 @@ export const en = {
   deselectAllOnPage: 'Deselect all students on this page',
   viewSelectedStudents: 'View Selected Students',
 
-  
+
   // Class selection
   allClasses: 'All Classes',
-  
+
   // General UI
   errorFetchingData: 'Error fetching data',
   noDataFound: 'No data found',
   errorPerformingAction: 'Error performing action',
   withSelected: 'With selected...',
   updateStatus: 'Update Status',
-  
+
   // Additional missing translations
   selectAllClasses: 'Select All Classes',
   manageClasses: 'Manage Classes',
@@ -540,7 +540,7 @@ export const en = {
   noClassesAvailable: 'No Classes Available',
   selectedGradeLevelNoClasses: 'The selected grade level has no classes available.',
   searchStudentsByNameOrEmail: 'Search students by name or email...',
-  
+
   // Toast and action messages  
   studentAssignmentSuccess: 'Student assigned to class successfully',
   studentsAssignmentSuccess: 'Students assigned to class successfully',
@@ -549,7 +549,7 @@ export const en = {
   operationFailed: 'Operation failed',
   pleaseSelectClass: 'Please select a class first',
   pleaseSelectStudents: 'Please select students first',
-  
+
   // Additional UI elements
   showingResults: 'Showing results',
   fromTotal: 'from total',
@@ -559,7 +559,7 @@ export const en = {
   performAction: 'Perform action',
   confirmAction: 'Confirm action',
   actionCompleted: 'Action completed',
-  
+
   // Dashboard specific  
   loadingDashboard: 'Loading dashboard...',
   error: 'Error',
@@ -567,15 +567,15 @@ export const en = {
   notAssigned: 'Not assigned',
   placeOfBirth: 'Place of Birth',
   residence: 'Residence',
-  
+
   // Navigation items that might be missing  
   myGrades: 'My Grades',
   myAttendance: 'My Attendance',
   myAssignments: 'My Assignments',
-  
+
   // Additional fallback text that might appear
   Dashboard: 'Dashboard',
-  Students: 'Students', 
+  Students: 'Students',
   Classes: 'Classes',
   'Loading dashboard...': 'Loading dashboard...',
   'Not assigned': 'Not assigned',
@@ -583,10 +583,10 @@ export const en = {
   Retry: 'Retry',
   Edit: 'Edit',
   Refresh: 'Refresh',
-  
+
   // Stats cards
   'Total Classes': 'Total Classes',
-  'Total Students': 'Total Students', 
+  'Total Students': 'Total Students',
   'Active Today': 'Active Today',
   'Average Load': 'Average Load',
   totalClasses: 'Total Classes',
@@ -600,14 +600,14 @@ export const en = {
   totalTeacherIct: 'ICT Teachers',
   activeToday: 'Active Today',
   averageLoad: 'Average Load',
-  
+
   // Common alt texts and titles
   Remove: 'Remove',
   'Profile Preview': 'Profile Preview',
   'MoEYS Logo': 'MoEYS Logo',
   'PLP Logo': 'PLP Logo',
   Profile: 'Profile',
-  
+
   // Classes Management specific
   Teacher: 'Teacher',
   'Teacher:': 'Teacher:',
@@ -620,7 +620,7 @@ export const en = {
   searchTeachers: 'Search teachers...',
   hireDate: 'Hire Date',
   updateTeacher: 'Update Teacher',
-  
+
   // Days of the week
   Monday: 'Monday',
   Tuesday: 'Tuesday',
@@ -639,7 +639,7 @@ export const en = {
   'Mon, Wed, Fri': 'Mon, Wed, Fri',
   'Tue, Thu': 'Tue, Thu',
   'Mon-Fri': 'Mon-Fri',
-  
+
   // Grade levels
   'Grade': 'Grade',
   'Grade 1': 'Grade 1',
@@ -654,7 +654,7 @@ export const en = {
   'Grade 10': 'Grade 10',
   'Grade 11': 'Grade 11',
   'Grade 12': 'Grade 12',
-  
+
   // Subject names (common ones)
   'Subject 1': 'Subject 1',
   'Subject 2': 'Subject 2',
@@ -664,7 +664,7 @@ export const en = {
   Khmer: 'Khmer',
   History: 'History',
   Geography: 'Geography',
-  
+
   // Class sections
   'Section A': 'Section A',
   'Section B': 'Section B',
@@ -672,26 +672,26 @@ export const en = {
   '(A)': '(A)',
   '(B)': '(B)',
   '(C)': '(C)',
-  
+
   // Room numbers
   'Room 21': 'Room 21',
   'Room ': 'Room ',
-  
+
   // Dashboard specific translations
   goodMorning: 'Good Morning',
-  goodAfternoon: 'Good Afternoon', 
+  goodAfternoon: 'Good Afternoon',
   goodEvening: 'Good Evening',
   lastUpdated: 'Last Updated',
   liveUpdates: 'Live Updates',
   liveMode: 'Live Mode',
   manualMode: 'Manual Mode',
   failedToLoadDashboard: 'Failed to load dashboard data',
-  
+
   // Dashboard stats
   dashboardClasses: 'Classes',
   assignedStudents: 'Assigned Students',
   inYourClasses: 'In Your Classes',
-  unassignedStudents: 'Unassigned Students', 
+  unassignedStudents: 'Unassigned Students',
   awaitingAssignment: 'Awaiting Assignment',
   avgEnrollment: 'Avg Enrollment',
   studentsPerClass: 'Students Per Class',
@@ -701,11 +701,11 @@ export const en = {
   descending: 'Sort descending',
   schoolFilters: 'School filters',
   schoolFiltersDesc: 'Filter and sort schools for the chart',
-  
-  
+
+
   // User data validation
   noValidUserData: 'No valid user data received from API',
-  
+
   // Dashboard quick actions and components
   quickActions: 'Quick Actions',
   dashboardAssignStudents: 'Assign Students',
@@ -718,7 +718,7 @@ export const en = {
   totalEnrolled: 'Total Enrolled',
   avgPerClass: 'Average Per Class',
   studentsCount: 'Students',
-  
+
   // Export functionality
   exportToExcel: 'Export to Excel',
   exportToCSV: 'Export to CSV',
@@ -728,7 +728,7 @@ export const en = {
   month: 'Month',
   year: 'Year',
   allClassesFilter: 'All Classes',
-  
+
   // Grade levels for dropdown
   grade0: 'Kindergarten',
   grade1: 'Grade 1',
@@ -743,19 +743,19 @@ export const en = {
   grade10: 'Grade 10',
   grade11: 'Grade 11',
   grade12: 'Grade 12',
-  
+
   // Achievement categories
   academic: 'Academic',
   sports: 'Sports',
   arts: 'Arts',
   leadership: 'Leadership',
   adding: 'Adding...',
-  
+
   // Accessibility and UI
   closeNotification: 'Close notification',
   closeWelcomeMessage: 'Close welcome message',
   pagination: 'Pagination',
-  
+
   // Additional organization info
   organizationSchoolPortal: 'School Portal',
   primaryEducationDepartment: 'Primary Education Department',
@@ -775,11 +775,11 @@ export const en = {
   isKindergarten: 'Is Kindergarten',
   yes: 'Yes',
   no: 'No',
-  
+
   // Form placeholders
   sectionPlaceholder: 'e.g., A, B, C',
   capacityPlaceholder: 'Maximum 200 students',
-  
+
   // Loading states
   loadingText: 'Loading...',
   loadingClasses: 'Loading classes...',
@@ -787,7 +787,7 @@ export const en = {
   loadingStudentSelection: 'Loading student selection...',
   loadingProfile: 'Loading profile...',
   loadingPage: 'Loading page...',
-  
+
   // Additional student management messages
   noClassesAssigned: 'No classes assigned',
   noSchoolIdFound: 'No school ID found for your account',
@@ -880,9 +880,9 @@ export const en = {
   allDistricts: 'All Districts',
   selectDistrict: 'Select District',
 
- //report
-   totalRecords: 'Total Records',
-   totalStudents: 'Total Students',
+  //report
+  totalRecords: 'Total Records',
+  totalStudents: 'Total Students',
   unknownEthnicGroup: 'Khmer', // Unknown ethnic group defaults to Khmer (majority)
   count: 'Count',
   students: 'Students',
@@ -1819,8 +1819,8 @@ export const en = {
   willBeTransferredTo: 'Will Be Transferred To',
 
   //sidebar
-    teacherOverview: 'Teacher Overview',
-    teacherOverviewDesc: 'View all teachers data distribution in the system',
+  teacherOverview: 'Teacher Overview',
+  teacherOverviewDesc: 'View all teachers data distribution in the system',
 
   //schedule
   noSchedule: 'No Schedule',
@@ -1951,4 +1951,31 @@ export const en = {
   inactive: 'Inactive',
   actions: 'Actions',
   showAll: 'Show All',
+
+  // Officer Registration
+  officerRegistration: 'Officer Registration',
+  officerRegistrationDesc: 'Register new officers for Provincial, District, or Commune levels.',
+  selectOfficerRole: 'Select Officer Role',
+  provincialOfficerRole: 'Provincial Officer (Role 4)',
+  districtOfficerRole: 'District Officer (Role 5)',
+  communeOfficerRole: 'Commune Officer (Role 23)',
+  position: 'Position',
+  department: 'Department',
+  registerOfficer: 'Register Officer',
+  officerRegisteredSuccess: 'Officer registered successfully',
+  fixValidationErrors: 'Please fix validation errors',
+  validationUsername: 'Username must be at least 3 characters',
+  validationDateOfBirth: 'Date of birth is required',
+  roleAndLocation: 'Role & Location',
+  other: 'Other',
+  selectGender: 'Select Gender',
+  sectionPersonalInformation: 'Personal Information',
+  selectProvinces: 'Select Provinces',
+  selectDistricts: 'Select Districts',
+  selectSchools: 'Select Schools',
+  selectCommunes: 'Select Communes',
+  provinces: 'Provinces',
+  districts: 'Districts',
+  schools: 'Schools',
+  communes: 'Communes',
 };  

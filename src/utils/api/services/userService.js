@@ -703,98 +703,18 @@ const userService = {
       throw error;
     }
   },
-
   /**
-   * Create provincial officer role
-   * @param {Object} data - Officer data { userId, provinceId, position, department }
-   * @returns {Promise<Object>} Created provincial officer data
-   */
-  createProvincialOfficer: async (data) => {
-    console.log('📤 Creating provincial officer:', data);
-    return post('/provincial-officers', data);
-  },
+     * Register a new officer (User + Role)
+     * @param {string} role - 'provincial', 'district', or 'commune'
+     * @param {Object} data - Registration data including user info and location
+     * @returns {Promise<Object>} Registration response
+     */
+  registerOfficer: async (role, data) => {
+    // Role is now handled via roleId in the payload, but we keep the parameter for logging
+    const endpoint = '/users/officer';
 
-  /**
-   * Update provincial officer role by user ID
-   * @param {string|number} userId - User ID
-   * @param {Object} data - Officer data to update { provinceId?, position?, department?, is_active? }
-   * @returns {Promise<Object>} Updated provincial officer data
-   */
-  updateProvincialOfficer: async (userId, data) => {
-    console.log('📤 Updating provincial officer for user:', userId, data);
-    return put(`/provincial-officers/user/${userId}`, data);
-  },
-
-  /**
-   * Create district officer role
-   * @param {Object} data - Officer data { userId, provinceId, districtId, position, department }
-   * @returns {Promise<Object>} Created district officer data
-   */
-  createDistrictOfficer: async (data) => {
-    console.log('📤 Creating district officer:', data);
-    return post('/district-officers', data);
-  },
-
-  /**
-   * Update district officer role by user ID
-   * @param {string|number} userId - User ID
-   * @param {Object} data - Officer data to update { provinceId?, districtId?, position?, department? }
-   * @returns {Promise<Object>} Updated district officer data
-   */
-  updateDistrictOfficer: async (userId, data) => {
-    console.log('📤 Updating district officer for user:', userId, data);
-    return put(`/district-officers/user/${userId}`, data);
-  },
-
-  /**
-   * Create commune officer role
-   * @param {Object} data - Officer data { userId, provinceId, districtId, communeId, position, department }
-   * @returns {Promise<Object>} Created commune officer data
-   */
-  createCommuneOfficer: async (data) => {
-    console.log('📤 Creating commune officer:', data);
-    return post('/commune-officers', data);
-  },
-
-  /**
-   * Update commune officer role by user ID
-   * @param {string|number} userId - User ID
-   * @param {Object} data - Officer data to update { provinceId?, districtId?, communeId?, position?, department? }
-   * @returns {Promise<Object>} Updated commune officer data
-   */
-  updateCommuneOfficer: async (userId, data) => {
-    console.log('📤 Updating commune officer for user:', userId, data);
-    return put(`/commune-officers/user/${userId}`, data);
-  },
-
-  /**
-   * Delete provincial officer role by user ID
-   * @param {string|number} userId - User ID
-   * @returns {Promise<Object>} Delete response message
-   */
-  deleteProvincialOfficer: async (userId) => {
-    console.log('🗑️ Deleting provincial officer for user:', userId);
-    return del(`/provincial-officers/user/${userId}`);
-  },
-
-  /**
-   * Delete district officer role by user ID
-   * @param {string|number} userId - User ID
-   * @returns {Promise<Object>} Delete response message
-   */
-  deleteDistrictOfficer: async (userId) => {
-    console.log('🗑️ Deleting district officer for user:', userId);
-    return del(`/district-officers/user/${userId}`);
-  },
-
-  /**
-   * Delete commune officer role by user ID
-   * @param {string|number} userId - User ID
-   * @returns {Promise<Object>} Delete response message
-   */
-  deleteCommuneOfficer: async (userId) => {
-    console.log('🗑️ Deleting commune officer for user:', userId);
-    return del(`/commune-officers/user/${userId}`);
+    console.log(`Registering ${role} officer (unified endpoint) with payload:`, data);
+    return post(endpoint, data);
   }
 };
 
