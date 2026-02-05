@@ -1521,7 +1521,8 @@ const SchoolManagement = () => {
                   options={[
                     { value: 'សាលារដ្ឋ', label: 'សាលារដ្ឋ (State/Public)' },
                     { value: 'សាលាឯកជន', label: 'សាលាឯកជន (Private)' },
-                    { value: 'សាលាអង្គការ', label: 'សាលាអង្គការ (NGO)' }
+                    { value: 'សាលាអង្គការ', label: 'សាលាអង្គការ (NGO)' },
+                    { value: 'សិប្បនិម្មិត', label: 'សិប្បនិម្មិត (Testing)' }
                   ]}
                   placeholder={t('selectSchoolType', 'Select School Type')}
                   className="w-full"
