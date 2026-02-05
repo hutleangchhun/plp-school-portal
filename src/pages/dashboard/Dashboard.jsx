@@ -386,12 +386,12 @@ export default function Dashboard({ user: initialUser }) {
         {/* School Information Card */}
         {schoolInfo && (
           <FadeInSection delay={100} className="mb-6">
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="bg-white border border-gray-200 rounded-sm overflow-hidden">
               <div className="p-6 sm:p-8">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-gray-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-sm flex items-center justify-center shadow-md flex-shrink-0">
                       <Building className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                     </div>
                     <div>
@@ -520,7 +520,7 @@ export default function Dashboard({ user: initialUser }) {
 
         {/* School Statistics - Combined */}
         <FadeInSection delay={200} className="mb-6">
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6">
+          <div className="bg-white rounded-sm border border-gray-200 shadow-sm p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               {t("schoolStatistics", "School Statistics")}
             </h3>
