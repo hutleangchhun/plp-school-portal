@@ -22,17 +22,17 @@ import { useReport1Data, Report1Preview } from './report1/indexReport1';
 import { useReport4Data, Report4Preview, exportReport4ToExcel } from './report4/indexReport4';
 import { useReport6Data, Report6Preview, exportReport6ToExcel } from './report6/indexReport6';
 import { useReport8Data, Report8Preview } from './report8/indexReport8';
-import { 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
   ResponsiveContainer,
   LabelList
 } from 'recharts';
@@ -108,7 +108,7 @@ export default function Reports() {
   useEffect(() => {
     // Reset page to 1 whenever filters change for BMI report
     if (selectedReport === 'report8') {
-        setBmiPage(1);
+      setBmiPage(1);
     }
     // We don't want to trigger fetch here immediately because fetchReportData depends on bmiPage
     // and we want the page change effect to handle it or the main effect
@@ -360,17 +360,17 @@ export default function Reports() {
             try {
               const userId = student.userId || student.user?.id || student.id;
               const studentId = student.studentId || student.id;
-              
+
               // Fetch full student details
               const fullStudentResponse = await studentService.getStudentById(userId);
-              
+
               if (!fullStudentResponse.success || !fullStudentResponse.data) {
                 console.warn(`⚠️ Could not fetch full details for user ${userId}`);
                 return student; // Return basic student if full details fail
               }
-              
+
               const fullStudent = fullStudentResponse.data;
-              
+
               // Merge basic student info with full details
               return {
                 ...student,
@@ -414,10 +414,10 @@ export default function Reports() {
       } else if (selectedReport === 'report8') {
         // For report8 (BMI report) - fetch students with BMI history using new endpoint
         console.log('📊 Fetching students with BMI history for report8');
-        
+
         const bmiParams = {
-            page: bmiPage,
-            limit: bmiLimit
+          page: bmiPage,
+          limit: bmiLimit
         };
 
         if (schoolId) bmiParams.schoolId = schoolId;
@@ -427,25 +427,26 @@ export default function Reports() {
         const bmiResponse = await bmiService.getStudentBmiReport(bmiParams);
 
         if (bmiResponse.success) {
-            setReportData(bmiResponse.data || []);
-            setBmiPagination(bmiResponse.pagination);
-            console.log(`✅ Fetched ${bmiResponse.data?.length} BMI records (Page ${bmiPage})`);
+          setReportData(bmiResponse.data || []);
+          setBmiPagination(bmiResponse.pagination);
+          console.log(`✅ Fetched ${bmiResponse.data?.length} BMI records (Page ${bmiPage})`);
         } else {
-            console.warn('⚠️ Failed to fetch BMI report:', bmiResponse.error);
-            setReportData([]);
-            setBmiPagination(null);
-            showError(bmiResponse.error || 'Failed to fetch BMI report');
+          console.warn('⚠️ Failed to fetch BMI report:', bmiResponse.error);
+          setReportData([]);
+          setBmiPagination(null);
+          showError(bmiResponse.error || 'Failed to fetch BMI report');
         }
       } else if (['report1', 'report6'].includes(selectedReport)) {
         // For report1, report6 - fetch students with full details and parent information
         console.log(`📋 Fetching students with parent information for ${selectedReport}`);
-        
+
         // Step 1: Fetch all students from school in batches (API limit is 100 per page)
         // For report1, filter by selected class if specified
         let allBasicStudents = [];
         let currentPage = 1;
         let hasMorePages = true;
-        
+        let fetchedSchoolInfo = null;
+
         while (hasMorePages) {
           const fetchParams = {
             page: currentPage,
@@ -466,9 +467,9 @@ export default function Reports() {
           if (selectedReport === 'report6') {
             fetchParams.hasAccessibility = true; // Only fetch students with disabilities (no class filter)
           }
-          
+
           console.log(`📄 Fetching page ${currentPage} with limit 100...`, fetchParams);
-          
+
           const studentsResponse = await studentService.getStudentsBySchoolClasses(
             schoolId,
             fetchParams
@@ -477,9 +478,13 @@ export default function Reports() {
           if (studentsResponse.success) {
             const pageStudents = studentsResponse.data || [];
             allBasicStudents = [...allBasicStudents, ...pageStudents];
-            
+
+            if (!fetchedSchoolInfo && studentsResponse.schoolInfo) {
+              fetchedSchoolInfo = studentsResponse.schoolInfo;
+            }
+
             console.log(`✅ Page ${currentPage}: Fetched ${pageStudents.length} students (Total: ${allBasicStudents.length})`);
-            
+
             // Check if there are more pages
             const pagination = studentsResponse.pagination;
             if (pagination && currentPage < pagination.pages) {
@@ -492,7 +497,12 @@ export default function Reports() {
             hasMorePages = false;
           }
         }
-        
+
+        // Set school info if available
+        if (fetchedSchoolInfo) {
+          setSchoolInfo(fetchedSchoolInfo);
+        }
+
         console.log(`✅ Fetched total of ${allBasicStudents.length} students from school`);
 
         if (allBasicStudents.length > 0) {
@@ -516,24 +526,24 @@ export default function Reports() {
           console.log(`✅ Processed ${studentsWithFullData.length} students with accessibility data`);
           console.log('📊 Sample student data:', studentsWithFullData[0]);
           console.log('📊 Sample student class:', studentsWithFullData[0]?.class);
-          
+
           // Apply client-side filtering as backup (in case API filter doesn't work properly)
           let filteredData = studentsWithFullData;
-          
+
           if (selectedReport === 'report6') {
             // Filter students with actual disabilities
             filteredData = studentsWithFullData.filter(student => {
               const accessibility = student.accessibility || student.specialNeeds || student.special_needs || '';
-              const hasDisability = accessibility && 
-                                   accessibility !== '' && 
-                                   accessibility !== 'null' && 
-                                   accessibility !== 'none' &&
-                                   accessibility !== 'None';
+              const hasDisability = accessibility &&
+                accessibility !== '' &&
+                accessibility !== 'null' &&
+                accessibility !== 'none' &&
+                accessibility !== 'None';
               return hasDisability;
             });
             console.log(`🦽 Filtered ${filteredData.length} students with disabilities (from ${studentsWithFullData.length} total)`);
           }
-          
+
           setReportData(filteredData);
         } else {
           console.warn('⚠️ No students found');
@@ -674,36 +684,36 @@ export default function Reports() {
         if (schoolInfo?.id) bmiParams.schoolId = schoolInfo.id;
         // Fallback to user school ID if schoolInfo not set yet
         if (!bmiParams.schoolId) {
-             const userData = JSON.parse(localStorage.getItem('user') || '{}');
-             bmiParams.schoolId = userData?.school?.id || userData?.schoolId;
+          const userData = JSON.parse(localStorage.getItem('user') || '{}');
+          bmiParams.schoolId = userData?.school?.id || userData?.schoolId;
         }
 
         if (selectedYear) bmiParams.academicYear = selectedYear;
         // If class is selected, use it. Backend likely handles 'all' if not provided or provided as specific value
         if (selectedClass && selectedClass !== 'all') bmiParams.classId = selectedClass;
-        
+
         // Call the specific export endpoint
         const response = await bmiService.exportStudentBmiReport(bmiParams);
-        
+
         if (response.success && response.data) {
-             // Create a download link for the blob
-             const url = window.URL.createObjectURL(new Blob([response.data]));
-             const link = document.createElement('a');
-             link.href = url;
-             // Try to get filename from headers if available, or generate one
-             const fileName = `BMI_Report_${schoolName}_${selectedYear}.xlsx`;
-             link.setAttribute('download', fileName);
-             document.body.appendChild(link);
-             link.click();
-             link.parentNode.removeChild(link);
-             window.URL.revokeObjectURL(url); // Clean up
-             
-             // Manually trigger success since processAndExportReport is not used
-             showSuccess(t('reportExportedSuccessfully', `Report exported: ${reportName}`));
-             setLoading(false);
-             return; // Exit early to avoid error message below
+          // Create a download link for the blob
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          // Try to get filename from headers if available, or generate one
+          const fileName = `BMI_Report_${schoolName}_${selectedYear}.xlsx`;
+          link.setAttribute('download', fileName);
+          document.body.appendChild(link);
+          link.click();
+          link.parentNode.removeChild(link);
+          window.URL.revokeObjectURL(url); // Clean up
+
+          // Manually trigger success since processAndExportReport is not used
+          showSuccess(t('reportExportedSuccessfully', `Report exported: ${reportName}`));
+          setLoading(false);
+          return; // Exit early to avoid error message below
         } else {
-             throw new Error(response.error || 'Failed to export BMI report');
+          throw new Error(response.error || 'Failed to export BMI report');
         }
       } else if (selectedReport === 'report6') {
         // Special handling for Report 6 (Students with Disabilities) - use traditional Excel format
@@ -773,7 +783,7 @@ export default function Reports() {
           />
         );
       }
-      
+
       return (
         <EmptyState
           icon={BarChart3}
@@ -791,14 +801,14 @@ export default function Reports() {
         const genderCount = reportData.reduce((acc, student) => {
           // For report6, only count students with accessibility issues
           if (selectedReport === 'report6') {
-            const hasAccessibility = student.accessibility && 
-              student.accessibility !== '' && 
-              student.accessibility !== 'null' && 
+            const hasAccessibility = student.accessibility &&
+              student.accessibility !== '' &&
+              student.accessibility !== 'null' &&
               student.accessibility !== 'none' &&
               student.accessibility !== 'None';
             if (!hasAccessibility) return acc;
           }
-          
+
           const gender = student.gender || 'Unknown';
           acc[gender] = (acc[gender] || 0) + 1;
           return acc;
@@ -820,14 +830,14 @@ export default function Reports() {
         const parentStatus = reportData.reduce((acc, student) => {
           // For report6, only count students with accessibility issues
           if (selectedReport === 'report6') {
-            const hasAccessibility = student.accessibility && 
-              student.accessibility !== '' && 
-              student.accessibility !== 'null' && 
+            const hasAccessibility = student.accessibility &&
+              student.accessibility !== '' &&
+              student.accessibility !== 'null' &&
               student.accessibility !== 'none' &&
               student.accessibility !== 'None';
             if (!hasAccessibility) return acc;
           }
-          
+
           const parentCount = student.parents?.length || 0;
           if (parentCount === 0) acc.noParents = (acc.noParents || 0) + 1;
           else if (parentCount === 1) acc.oneParent = (acc.oneParent || 0) + 1;
@@ -836,7 +846,7 @@ export default function Reports() {
         }, {});
 
         // Special needs
-        const specialNeedsCount = reportData.filter(s => 
+        const specialNeedsCount = reportData.filter(s =>
           s.accessibility || s.specialNeeds || s.special_needs
         ).length;
 
@@ -854,24 +864,24 @@ export default function Reports() {
       if (selectedReport === 'report1') {
         return <Report1Preview data={reportData} />;
       }
-      
+
       if (selectedReport === 'report4') {
         return <Report4Preview data={reportData} />;
       }
-      
+
       if (selectedReport === 'report6') {
         return <Report6Preview data={reportData} />;
       }
-      
+
       if (selectedReport === 'report8') {
         return (
-            <Report8Preview 
-                data={reportData} 
-                serverPagination={bmiPagination}
-                onPageChange={(page) => setBmiPage(page)}
-                limit={bmiLimit}
-                onLimitChange={setBmiLimit}
-            />
+          <Report8Preview
+            data={reportData}
+            serverPagination={bmiPagination}
+            onPageChange={(page) => setBmiPage(page)}
+            limit={bmiLimit}
+            onLimitChange={setBmiLimit}
+          />
         );
       }
 
@@ -884,14 +894,14 @@ export default function Reports() {
           stats?.parentStatus.noParents || 0,
           1
         );
-        
+
 
         const getSummaryTitle = () => {
           if (selectedReport === 'report6') return t('studentsWithDisabilities', 'Students with Disabilities');
           if (selectedReport === 'report9') return t('ethnicMinorityStudents', 'Ethnic Minority Students');
           return t('totalStudents', 'Total Students');
         };
-        
+
         // Prepare chart data
         const parentStatusData = [
           { name: t('bothParents', 'មានឪពុកម្តាយទាំងពីរ'), value: stats?.parentStatus.bothParents || 0, color: '#10b981' },
@@ -910,20 +920,20 @@ export default function Reports() {
         const accessibilityData = {};
         reportData.forEach(student => {
           const accessibility = student.accessibility;
-          
+
           // Skip students without accessibility data
-          if (!accessibility || 
-              accessibility === '' || 
-              accessibility === 'null' || 
-              accessibility === 'none' ||
-              accessibility === 'None') {
+          if (!accessibility ||
+            accessibility === '' ||
+            accessibility === 'null' ||
+            accessibility === 'none' ||
+            accessibility === 'None') {
             return;
           }
-          
-          const accessibilityLabel = Array.isArray(accessibility) 
-            ? accessibility.join(', ') 
+
+          const accessibilityLabel = Array.isArray(accessibility)
+            ? accessibility.join(', ')
             : accessibility;
-            
+
           accessibilityData[accessibilityLabel] = (accessibilityData[accessibilityLabel] || 0) + 1;
         });
 
@@ -935,7 +945,7 @@ export default function Reports() {
 
         return (
           <div className="space-y-6">
-            
+
 
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1253,12 +1263,12 @@ export default function Reports() {
                   {t('selectAcademicYear') || 'Select Academic Year'}
                 </label>
                 <Dropdown
-                    value={selectedYear}
-                    onValueChange={setSelectedYear}
-                    options={getAcademicYearOptions()}
-                    placeholder={t('selectAcademicYear', 'Select academic year...')}
-                    minWidth="w-full"
-                    maxHeight="max-h-56"
+                  value={selectedYear}
+                  onValueChange={setSelectedYear}
+                  options={getAcademicYearOptions()}
+                  placeholder={t('selectAcademicYear', 'Select academic year...')}
+                  minWidth="w-full"
+                  maxHeight="max-h-56"
                 />
               </div>
             )}
