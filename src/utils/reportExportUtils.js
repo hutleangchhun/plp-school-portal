@@ -16,23 +16,23 @@ export const transformStudentNameList = (rawData) => {
   if (!Array.isArray(rawData)) return [];
 
   return rawData.map((student, index) => {
-    console.log(`🔍 Transforming student ${index + 1}:`, { 
-      id: student.id, 
+    console.log(`🔍 Transforming student ${index + 1}:`, {
+      id: student.id,
       studentId: student.studentId,
       rawStudent: student,
       hasParents: !!student.parents,
-      parentsCount: student.parents?.length 
+      parentsCount: student.parents?.length
     });
 
     // Extract parent information - handle both array and nested structure
     const parents = student.parents || [];
-    const fatherData = parents.find(p => 
-      (p.relationship === 'FATHER' || p.relationship === 'father' || 
-       p.user?.relationship === 'FATHER' || p.user?.relationship === 'father')
+    const fatherData = parents.find(p =>
+    (p.relationship === 'FATHER' || p.relationship === 'father' ||
+      p.user?.relationship === 'FATHER' || p.user?.relationship === 'father')
     ) || {};
-    const motherData = parents.find(p => 
-      (p.relationship === 'MOTHER' || p.relationship === 'mother' ||
-       p.user?.relationship === 'MOTHER' || p.user?.relationship === 'mother')
+    const motherData = parents.find(p =>
+    (p.relationship === 'MOTHER' || p.relationship === 'mother' ||
+      p.user?.relationship === 'MOTHER' || p.user?.relationship === 'mother')
     ) || {};
 
     console.log(`👨‍👩‍👧 Parents found:`, { fatherData, motherData });
@@ -49,6 +49,11 @@ export const transformStudentNameList = (rawData) => {
       residence.district?.district_name_kh || residence.district?.name || '',
       residence.province?.province_name_kh || residence.province?.name || ''
     ].filter(Boolean).join(', ');
+
+    // Fallback: Use fullAddress if individual fields are missing
+    if (!studentAddress) {
+      studentAddress = residence.fullAddress || student.fullAddress || student.address || '';
+    }
 
     // Format father address - only if father exists
     const fatherResidence = fatherUser.residence || {};
@@ -224,7 +229,7 @@ export const transformStudentAbsenceReport = (rawData) => {
       const absences = student.attendances?.filter(a => a.status === 'ABSENT') || [];
       const leaves = student.attendances?.filter(a => a.status === 'LEAVE') || [];
       const totalAbsenceAndLeave = absences.length + leaves.length;
-      
+
       // Determine gender - handle both formats
       let gender = '';
       const genderValue = student.gender || '';
@@ -233,12 +238,12 @@ export const transformStudentAbsenceReport = (rawData) => {
       } else if (genderValue === 'FEMALE' || genderValue === 'F' || genderValue === 'female') {
         gender = 'ស្រី';
       }
-      
+
       // Use pre-formatted khmerName from Reports.jsx or construct it
-      const khmerName = student.khmerName || 
-                       `${student.lastName || ''} ${student.firstName || ''}`.trim() || 
-                       student.name || '';
-      
+      const khmerName = student.khmerName ||
+        `${student.lastName || ''} ${student.firstName || ''}`.trim() ||
+        student.name || '';
+
       return {
         no: index + 1,
         studentId: student.studentId || student.id,
@@ -292,18 +297,18 @@ export const transformDisabilityReport = (rawData) => {
   const studentsWithDisabilities = rawData.filter(student => {
     const accessibilityInfo = student.accessibility || student.specialNeeds || student.special_needs || '';
     // Only include students with valid accessibility data
-    return accessibilityInfo && 
-           accessibilityInfo !== '' && 
-           accessibilityInfo !== 'null' && 
-           accessibilityInfo !== 'none' &&
-           accessibilityInfo !== 'None';
+    return accessibilityInfo &&
+      accessibilityInfo !== '' &&
+      accessibilityInfo !== 'null' &&
+      accessibilityInfo !== 'none' &&
+      accessibilityInfo !== 'None';
   });
 
   return studentsWithDisabilities.map((student, index) => {
     // Extract accessibility/disability information
     const accessibilityInfo = student.accessibility || student.specialNeeds || student.special_needs || '';
-    const disabilityType = Array.isArray(accessibilityInfo) 
-      ? accessibilityInfo.join(', ') 
+    const disabilityType = Array.isArray(accessibilityInfo)
+      ? accessibilityInfo.join(', ')
       : accessibilityInfo;
 
     // Format gender
@@ -428,16 +433,16 @@ export const transformBmiReport = (rawData) => {
           const today = new Date();
           let years = today.getFullYear() - birthDate.getFullYear();
           let months = today.getMonth() - birthDate.getMonth();
-          
+
           if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
             years--;
             months += 12;
           }
-          
+
           if (today.getDate() < birthDate.getDate()) {
             months--;
           }
-          
+
           ageInYears = years.toString();
           ageInYearsAndMonths = months > 0 ? `${years} ឆ្នាំ ${months} ខែ` : `${years} ឆ្នាំ`;
           ageInMonths = (years * 12 + months).toString();
@@ -478,12 +483,12 @@ export const transformIndigenousMinorityReport = (rawData) => {
   const ethnicMinorityStudents = rawData.filter(student => {
     const ethnicGroup = student.ethnicGroup || student.ethnic_group || '';
     // Only include students with valid ethnic group data (not empty, not Khmer)
-    return ethnicGroup && 
-           ethnicGroup !== '' && 
-           ethnicGroup !== 'Unknown' && 
-           ethnicGroup !== 'unknown' && 
-           ethnicGroup !== 'null' &&
-           ethnicGroup !== 'ខ្មែរ';
+    return ethnicGroup &&
+      ethnicGroup !== '' &&
+      ethnicGroup !== 'Unknown' &&
+      ethnicGroup !== 'unknown' &&
+      ethnicGroup !== 'null' &&
+      ethnicGroup !== 'ខ្មែរ';
   });
 
   return ethnicMinorityStudents.map((student, index) => {
@@ -881,7 +886,7 @@ export const exportReportToExcel = async (
     // Add footer section with signature areas
     wsData.push([]); // Empty row
     wsData.push([]); // Empty row
-    
+
     // Signature row with three columns: left (teacher), center (empty), right (director)
     const signatureRow = new Array(columns.length).fill('');
     signatureRow[0] = 'គ្រូបង្រានរូបរ៉ាប់រង'; // Teacher signature (left)
@@ -890,7 +895,7 @@ export const exportReportToExcel = async (
       signatureRow[columns.length - 1] = 'នាយកសាលា'; // Director signature (right)
     }
     wsData.push(signatureRow);
-    
+
     wsData.push([]); // Empty row for signature space
     wsData.push([]); // Empty row for signature space
     wsData.push([]); // Empty row for signature space
@@ -909,7 +914,7 @@ export const exportReportToExcel = async (
     const numCols = columns.length;
     const dataEndRow = 10 + transformedData.length - 1; // Last data row
     const signatureRowIndex = dataEndRow + 3; // Signature row position
-    
+
     worksheet['!merges'] = [
       { s: { r: 0, c: 0 }, e: { r: 0, c: numCols - 1 } }, // Kingdom of Cambodia
       { s: { r: 1, c: 0 }, e: { r: 1, c: numCols - 1 } }, // Nation Religion King
@@ -1006,7 +1011,7 @@ export const exportStudentListWithParents = async (
 ) => {
   try {
     const dateStr = new Date().toISOString().split('T')[0];
-    
+
     // Build worksheet data
     const wsData = [];
 
@@ -1260,7 +1265,7 @@ export const exportStudentListWithParents = async (
     // Write file with class name if provided
     const sanitizedReportName = reportName.replace(/[^a-zA-Z0-9\u1780-\u17FF]/g, '_');
     const sanitizedClassName = className ? className.replace(/[^a-zA-Z0-9\u1780-\u17FF]/g, '_') : '';
-    const filename = sanitizedClassName 
+    const filename = sanitizedClassName
       ? `${sanitizedReportName}_${sanitizedClassName}_${dateStr}.xlsx`
       : `${sanitizedReportName}_${dateStr}.xlsx`;
     XLSX.writeFile(workbook, filename);
