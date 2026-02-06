@@ -43,7 +43,7 @@ export const transformStudentNameList = (rawData) => {
 
     // Format student address - handle nested location objects from API
     const residence = student.residence || {};
-    const studentAddress = [
+    let studentAddress = [
       residence.village?.village_name_kh || residence.village?.name || '',
       residence.commune?.commune_name_kh || residence.commune?.name || '',
       residence.district?.district_name_kh || residence.district?.name || '',
