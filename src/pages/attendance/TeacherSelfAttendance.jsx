@@ -847,7 +847,7 @@ export default function TeacherSelfAttendance() {
                   </div>
 
                   {/* Late Status Indicator */}
-                  <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="grid sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
                     <div className={`p-3 rounded-md ${isBeforeMorningCutoff ? 'bg-green-50 border border-green-300' : 'bg-orange-50 border border-orange-300'}`}>
                       <p className="text-xs font-medium text-gray-700">{t('morningShift', 'វេនព្រឹក')}</p>
                       <Badge color={isBeforeMorningCutoff ? 'green' : 'orange'} variant="outline" size="sm" className="mt-1">
@@ -1334,7 +1334,7 @@ export default function TeacherSelfAttendance() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('selectShift', 'ជ្រើសរើសវេន')} <span className='text-red-500'>*</span>
             </label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-3">
               <button
                 onClick={() => setSelectedShiftForSubmit('MORNING')}
                 className={`p-3 rounded-md border-2 transition-all ${selectedShiftForSubmit === 'MORNING'
@@ -1342,7 +1342,7 @@ export default function TeacherSelfAttendance() {
                   : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
               >
-                <p className="font-medium text-gray-900">{t('morning', 'ព្រឹក')}</p>
+                <p className="text-sm text-gray-900">{t('morningShift', 'ព្រឹក')}</p>
                 <p className="text-xs text-gray-600">{isBeforeMorningCutoff ? 'មុន' : 'ក្រោយ'} 7:00 AM</p>
                 <Badge color={isBeforeMorningCutoff ? 'green' : 'orange'} variant="filled" size="sm" className="mt-2">
                   {isBeforeMorningCutoff ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
@@ -1355,7 +1355,7 @@ export default function TeacherSelfAttendance() {
                   : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
               >
-                <p className="font-medium text-gray-900">{t('noon', 'ថ្ងៃត្រង់')}</p>
+                <p className="text-sm text-gray-900">{t('noonShift', 'ថ្ងៃត្រង់')}</p>
                 <p className="text-xs text-gray-600">{isBeforeNoonCutoff ? 'មុន' : 'ក្រោយ'} 11:00 AM</p>
                 <Badge color={isBeforeNoonCutoff ? 'green' : 'orange'} variant="filled" size="sm" className="mt-2">
                   {isBeforeNoonCutoff ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
@@ -1368,7 +1368,7 @@ export default function TeacherSelfAttendance() {
                   : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
               >
-                <p className="font-medium text-gray-900">{t('afternoon', 'រសៀល')}</p>
+                <p className="text-sm text-gray-900">{t('afternoonShift', 'រសៀល')}</p>
                 <p className="text-xs text-gray-600">{isBeforeAfternoonCutoff ? 'មុន' : 'ក្រោយ'} 1:00 PM</p>
                 <Badge color={isBeforeAfternoonCutoff ? 'green' : 'orange'} variant="filled" size="sm" className="mt-2">
                   {isBeforeAfternoonCutoff ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}

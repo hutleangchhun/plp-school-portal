@@ -1910,7 +1910,7 @@ export const km = {
   chooseShift: 'ជ្រើសរើសវេន...',
   allShifts: 'វេនទាំងអស់',
   morningShift: 'ព្រឹកម៉ោង (7:00-12:00)',
-  noonShift: 'វេនថ្ងៃត្រង់',
+  noonShift: 'ថ្ងៃត្រង់ (11:00-14:00)',
   afternoonShift: 'ល្ងាច ម៉ោង (13:00-17:00)',
   noShift: 'គ្មានវេន',
   morning: 'ព្រឹក',
