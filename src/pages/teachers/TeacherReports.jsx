@@ -6,15 +6,18 @@ import DynamicLoader from '../../components/ui/DynamicLoader';
 import Dropdown from '../../components/ui/Dropdown';
 import EmptyState from '../../components/ui/EmptyState';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
+import { YearPicker } from '../../components/ui/year-picker';
 import { processAndExportReport } from '../../utils/reportExportUtils';
 import { exportReport4SemesterToExcel } from '../../utils/report4SemesterExportUtils';
 import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
+import { teacherService } from '../../utils/api/services/teacherService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { parentService } from '../../utils/api/services/parentService';
 import { bmiService } from '../../utils/api/services/bmiService';
 import { Button } from '@/components/ui/Button';
 import { formatClassIdentifier } from '../../utils/helpers';
+import { getAcademicYearOptions } from '../../utils/formOptions';
 import { getFullName } from '../../utils/usernameUtils';
 // Modular report components
 import { useReport1Data, Report1Preview } from '../reports/report1/indexReport1';
@@ -48,8 +51,8 @@ export default function Reports() {
   const { showSuccess, showError } = useToast();
   const [selectedReport, setSelectedReport] = useState('report1');
   const [selectedPeriod, setSelectedPeriod] = useState('month');
-  const [selectedMonth, setSelectedMonth] = useState('');
-  const [selectedYear, setSelectedYear] = useState(`${new Date().getFullYear()}-${new Date().getFullYear() + 1}`);
+  const [selectedMonth, setSelectedMonth] = useState(`${new Date().getMonth() + 1}`);
+  const [selectedYear, setSelectedYear] = useState(`${new Date().getFullYear()}`);
   const [selectedSemesterStartDate, setSelectedSemesterStartDate] = useState(null);
   const [selectedSemesterEndDate, setSelectedSemesterEndDate] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -59,6 +62,11 @@ export default function Reports() {
   const [currentClassId, setCurrentClassId] = useState(null); // Currently selected class
   const [currentClassName, setCurrentClassName] = useState(''); // Display current class name
 
+  // BMI Report Pagination State
+  const [bmiPage, setBmiPage] = useState(1);
+  const [bmiPagination, setBmiPagination] = useState(null);
+  const [bmiLimit, setBmiLimit] = useState(10); // Default limit
+
   // Report Types - Only showing working reports (others are commented out for future implementation)
   const reportTypes = [
     // ✅ Working Reports
@@ -66,12 +74,12 @@ export default function Reports() {
     { value: 'report4', label: t('report4', 'បញ្ជីអវត្តមានសិស្ស') },
     { value: 'report6', label: t('report6', 'បញ្ជីឈ្មោះសិស្សមានពិការភាព') },
     { value: 'report8', label: t('report8', 'បញ្ជីឈ្មោះសិស្សមានទិន្នន័យ BMI') },
-    { value: 'report9', label: t('report9', 'បញ្ជីឈ្មោះសិស្សជាជនជាតិដើមភាគតិច') },
 
     // 🚧 Not Yet Implemented - Uncomment when ready
     // { value: 'report3', label: t('report3', 'បញ្ជីមធ្យមភាគសិស្ស') },
     // { value: 'report5', label: t('report5', 'បញ្ជីឈ្មោះសិស្សអាហារូបករណ៍') },
     // { value: 'report7', label: t('report7', 'បញ្ជីឈ្មោះសិស្សមានបញ្ហាសុខភាព') },
+    // { value: 'report9', label: t('report9', 'បញ្ជីឈ្មោះសិស្សជាជនជាតិដើមភាគតិច') },
     // { value: 'report10', label: t('report10', 'បញ្ជីឈ្មោះសិស្សផ្លាស់ប្ដូរថ្នាក់') },
     // { value: 'report11', label: t('report11', 'បញ្ជីឈ្មោះសិស្សបោះបង់ការសិក្សារ') },
     // { value: 'report12', label: t('report12', 'សៀវភៅតាមដាន') },
@@ -102,40 +110,36 @@ export default function Reports() {
     { value: '12', label: t('december', 'ធ្នូ') }
   ];
 
-  // Academic Year Options (2 years before, current year, and 2 years after)
-  const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 5 }, (_, i) => {
-    const startYear = currentYear - 2 + i; // Start from 2 years ago
-    const endYear = startYear + 1;
-    const academicYear = `${startYear}-${endYear}`;
-    return {
-      value: academicYear,
-      label: academicYear
-    };
-  });
-
   // Initialize: Fetch all teacher's classes on mount
   useEffect(() => {
     const initializeTeacherClasses = async () => {
       try {
         const userData = JSON.parse(localStorage.getItem('user') || '{}');
-        const userId = userData?.id || userData?.userId;
+        const teacherId = userData?.teacherId || userData?.teacher_id || userData?.id;
 
-        if (!userId) return;
+        if (!teacherId) {
+          console.warn('⚠️ No teacher ID found in user data');
+          return;
+        }
 
-        console.log('📚 Fetching all classes for current teacher (user ID:', userId, ')');
+        console.log('📚 Fetching all classes for teacher ID:', teacherId);
 
         // Get all classes assigned to this teacher
-        const response = await classService.getClassByUser(userId);
+        const response = await teacherService.getTeacherClasses(teacherId);
 
-        if (response.success && response.classes && response.classes.length > 0) {
-          console.log(`✅ Fetched ${response.classes.length} classes for teacher`);
+        console.log('📦 Teacher classes response:', response);
+
+        // Handle response - teacherService returns { success, data, classes }
+        const classes = response.classes || response.data || [];
+
+        if (response.success && classes.length > 0) {
+          console.log(`✅ Fetched ${classes.length} classes for teacher`);
 
           // Store all teacher classes
-          setTeacherClasses(response.classes);
+          setTeacherClasses(classes);
 
           // Auto-select the first class
-          const firstClass = response.classes[0];
+          const firstClass = classes[0];
           const classId = firstClass.id || firstClass.classId;
           const className = firstClass.name || `Class ${classId}`;
 
@@ -154,12 +158,21 @@ export default function Reports() {
     initializeTeacherClasses();
   }, []);
 
+  useEffect(() => {
+    // Reset page to 1 whenever filters change for BMI report
+    if (selectedReport === 'report8') {
+      setBmiPage(1);
+    }
+    // We don't want to trigger fetch here immediately because fetchReportData depends on bmiPage
+    // and we want the page change effect to handle it or the main effect
+  }, [selectedReport, selectedPeriod, selectedMonth, selectedYear, currentClassId]);
+
   // Fetch report data whenever dependencies change
   useEffect(() => {
     if (currentClassId) {
       fetchReportData();
     }
-  }, [selectedReport, selectedPeriod, selectedMonth, selectedYear, currentClassId, selectedSemesterStartDate, selectedSemesterEndDate]);
+  }, [selectedReport, selectedPeriod, selectedMonth, selectedYear, currentClassId, selectedSemesterStartDate, selectedSemesterEndDate, bmiPage, bmiLimit]);
 
   // Build class dropdown options from teacher's classes
   const getClassOptions = () => {
@@ -393,209 +406,29 @@ export default function Reports() {
         console.log('📊 Sample student class:', studentsWithAttendance[0]?.class);
         setReportData(studentsWithAttendance);
       } else if (selectedReport === 'report8') {
-        // For report8 (BMI report) - fetch students with BMI history
+        // For report8 (BMI report) - fetch students with BMI history using new endpoint
         console.log('📊 Fetching students with BMI history for report8');
 
-        // Step 1: Fetch all students from school in batches (API limit is 100 per page)
-        let allBasicStudents = [];
-        let currentPage = 1;
-        let hasMorePages = true;
+        const bmiParams = {
+          page: bmiPage,
+          limit: bmiLimit
+        };
 
-        while (hasMorePages) {
-          const fetchParams = {
-            page: currentPage,
-            limit: 100 // API maximum
-          };
+        if (schoolId) bmiParams.schoolId = schoolId;
+        if (selectedYear) bmiParams.academicYear = selectedYear;
+        if (currentClassId) bmiParams.classId = currentClassId;
 
-          // Add current class filter
-          if (currentClassId) {
-            fetchParams.classId = currentClassId;
-          }
+        const bmiResponse = await bmiService.getStudentBmiReport(bmiParams);
 
-          console.log(`📄 Fetching page ${currentPage} with limit 100...`, fetchParams);
-          // Filter debug logging removed to prevent performance issues
-
-          const studentsResponse = await studentService.getStudentsBySchoolClasses(
-            schoolId,
-            fetchParams
-          );
-
-          if (studentsResponse.success) {
-            const pageStudents = studentsResponse.data || [];
-            allBasicStudents = [...allBasicStudents, ...pageStudents];
-
-            console.log(`✅ Page ${currentPage}: Fetched ${pageStudents.length} students (Total: ${allBasicStudents.length})`);
-
-            // Check if there are more pages
-            const pagination = studentsResponse.pagination;
-            if (pagination && currentPage < pagination.pages) {
-              currentPage++;
-            } else {
-              hasMorePages = false;
-            }
-          } else {
-            console.warn(`⚠️ Failed to fetch page ${currentPage}`);
-            hasMorePages = false;
-          }
-        }
-
-        console.log(`✅ Fetched total of ${allBasicStudents.length} students from school`);
-
-        if (allBasicStudents.length > 0) {
-          // Step 2: For each student, fetch BMI history
-          const studentsWithBmiData = await Promise.all(
-            allBasicStudents.map(async (basicStudent) => {
-              try {
-                const userId = basicStudent.user?.id || basicStudent.userId;
-                const studentId = basicStudent.studentId || basicStudent.id;
-
-                console.log(`🔍 Fetching BMI history for user ID: ${userId}, student ID: ${studentId}`);
-
-                // Fetch BMI history for this user
-                const bmiParams = {};
-                if (selectedYear) {
-                  bmiParams.year = selectedYear;
-                }
-                bmiParams.limit = 1; // Get latest BMI record
-
-                const bmiResponse = await bmiService.getBmiHistoryByUser(userId, bmiParams);
-
-                let bmiData = null;
-                if (bmiResponse.success && bmiResponse.data && bmiResponse.data.length > 0) {
-                  bmiData = bmiResponse.data[0]; // Get the latest BMI record
-                  console.log(`✅ Got BMI data for ${basicStudent.firstName} ${basicStudent.lastName}:`, bmiData);
-                } else {
-                  console.log(`⚠️ No BMI data found for user ${userId}`);
-                }
-
-                // Format gender to Khmer - check multiple possible locations
-                const rawGender = basicStudent.gender ||
-                                basicStudent.user?.gender ||
-                                basicStudent.sex ||
-                                basicStudent.user?.sex ||
-                                '';
-
-                // Debug logging removed to prevent performance issues
-
-                let formattedGender = '';
-                if (rawGender === 'M' || rawGender === 'MALE' || rawGender === 'male' || rawGender === 'ប្រុស') {
-                  formattedGender = 'ប្រុស';
-                } else if (rawGender === 'F' || rawGender === 'FEMALE' || rawGender === 'female' || rawGender === 'ស្រី') {
-                  formattedGender = 'ស្រី';
-                } else {
-                  formattedGender = rawGender || '';
-                }
-
-                // Parse BMI as number for calculations
-                const bmiValue = bmiData?.bmi ? parseFloat(bmiData.bmi) : null;
-
-                // Calculate age from date of birth
-                let ageInYears = null;
-                let ageInYearsAndMonths = '';
-                let ageInMonths = null;
-                const dob = basicStudent.dateOfBirth || basicStudent.date_of_birth;
-                if (dob) {
-                  try {
-                    const birthDate = new Date(dob);
-                    if (!isNaN(birthDate.getTime())) {
-                      const today = new Date();
-                      let years = today.getFullYear() - birthDate.getFullYear();
-                      let months = today.getMonth() - birthDate.getMonth();
-
-                      if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
-                        years--;
-                        months += 12;
-                      }
-
-                      if (today.getDate() < birthDate.getDate()) {
-                        months--;
-                      }
-
-                      ageInYears = years;
-                      ageInYearsAndMonths = months > 0 ? `${years} ឆ្នាំ ${months} ខែ` : `${years} ឆ្នាំ`;
-                      ageInMonths = years * 12 + months;
-                    }
-                  } catch (e) {
-                    // Keep null if calculation fails
-                  }
-                }
-
-                return {
-                  ...basicStudent,
-                  userId: userId,
-                  studentId: studentId,
-                  firstName: basicStudent.firstName || basicStudent.first_name || '',
-                  lastName: basicStudent.lastName || basicStudent.last_name || '',
-                  khmerName: getFullName(basicStudent, ''),
-                  gender: formattedGender,
-                  dateOfBirth: basicStudent.dateOfBirth || basicStudent.date_of_birth,
-                  class: basicStudent.class,
-                  studentNumber: basicStudent.studentNumber || basicStudent.student_number || basicStudent.number || '',
-
-                  // BMI information
-                  height: bmiData?.height_cm || bmiData?.height || null,
-                  weight: bmiData?.weight_kg || bmiData?.weight || null,
-                  bmi: bmiValue,
-                  bmiCategory: bmiValue ? bmiService.utils.getBmiCategory(bmiValue) : 'មិនបានកំណត់',
-                  age: bmiData?.age || null,
-                  ageInYears: ageInYears,
-                  ageInYearsAndMonths: ageInYearsAndMonths,
-                  ageInMonths: ageInMonths,
-                  recordDate: bmiData?.recorded_at || bmiData?.createdAt || bmiData?.created_at || null,
-                  academicYear: selectedYear || basicStudent.academicYear,
-                  gradeLevel: basicStudent.gradeLevel || basicStudent.class?.gradeLevel
-                };
-              } catch (error) {
-                console.warn(`❌ Failed to fetch BMI data for student:`, error);
-
-                // Format gender to Khmer (same as success case)
-                const rawGender = basicStudent.gender ||
-                                basicStudent.user?.gender ||
-                                basicStudent.sex ||
-                                basicStudent.user?.sex ||
-                                '';
-
-                // Debug logging removed to prevent performance issues
-
-                let formattedGender = '';
-                if (rawGender === 'M' || rawGender === 'MALE' || rawGender === 'male' || rawGender === 'ប្រុស') {
-                  formattedGender = 'ប្រុស';
-                } else if (rawGender === 'F' || rawGender === 'FEMALE' || rawGender === 'female' || rawGender === 'ស្រី') {
-                  formattedGender = 'ស្រី';
-                } else {
-                  formattedGender = rawGender || '';
-                }
-
-                return {
-                  ...basicStudent,
-                  firstName: basicStudent.firstName || basicStudent.first_name || '',
-                  lastName: basicStudent.lastName || basicStudent.last_name || '',
-                  khmerName: getFullName(basicStudent, ''),
-                  gender: formattedGender,
-                  dateOfBirth: basicStudent.dateOfBirth || basicStudent.date_of_birth,
-                  class: basicStudent.class,
-                  studentNumber: basicStudent.studentNumber || basicStudent.student_number || basicStudent.number || '',
-                  height: null,
-                  weight: null,
-                  bmi: null,
-                  bmiCategory: 'មិនបានកំណត់',
-                  age: null,
-                  ageInYears: null,
-                  ageInYearsAndMonths: '',
-                  ageInMonths: null,
-                  recordDate: null
-                };
-              }
-            })
-          );
-
-          console.log(`✅ Processed ${studentsWithBmiData.length} students with BMI data`);
-          console.log('📊 Sample student BMI data:', studentsWithBmiData[0]);
-
-          setReportData(studentsWithBmiData);
+        if (bmiResponse.success) {
+          setReportData(bmiResponse.data || []);
+          setBmiPagination(bmiResponse.pagination);
+          console.log(`✅ Fetched ${bmiResponse.data?.length} BMI records (Page ${bmiPage})`);
         } else {
-          console.warn('⚠️ No students found');
+          console.warn('⚠️ Failed to fetch BMI report:', bmiResponse.error);
           setReportData([]);
+          setBmiPagination(null);
+          showError(bmiResponse.error || 'Failed to fetch BMI report');
         }
       } else if (['report1', 'report6', 'report9'].includes(selectedReport)) {
         // For report1, report6, report9 - fetch students with full details and parent information
@@ -949,6 +782,42 @@ export default function Reports() {
             endDate
           });
         }
+      } else if (selectedReport === 'report8') {
+        const bmiParams = {};
+        if (schoolInfo?.id) bmiParams.schoolId = schoolInfo.id;
+        // Fallback to user school ID if schoolInfo not set yet
+        if (!bmiParams.schoolId) {
+          const userData = JSON.parse(localStorage.getItem('user') || '{}');
+          bmiParams.schoolId = userData?.school?.id || userData?.schoolId;
+        }
+
+        if (selectedYear) bmiParams.academicYear = selectedYear;
+        // Use currentClassId for teacher reports
+        if (currentClassId) bmiParams.classId = currentClassId;
+
+        // Call the specific export endpoint
+        const response = await bmiService.exportStudentBmiReport(bmiParams);
+
+        if (response.success && response.data) {
+          // Create a download link for the blob
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          // Try to get filename from headers if available, or generate one
+          const fileName = `BMI_Report_${schoolName}_${selectedYear}.xlsx`;
+          link.setAttribute('download', fileName);
+          document.body.appendChild(link);
+          link.click();
+          link.parentNode.removeChild(link);
+          window.URL.revokeObjectURL(url); // Clean up
+
+          // Manually trigger success since processAndExportReport is not used
+          showSuccess(t('reportExportedSuccessfully', `Report exported: ${reportName}`));
+          setLoading(false);
+          return; // Exit early to avoid error message below
+        } else {
+          throw new Error(response.error || 'Failed to export BMI report');
+        }
       } else {
         // Process and export other reports with standard format
         result = await processAndExportReport(
@@ -1099,7 +968,15 @@ export default function Reports() {
       }
 
       if (selectedReport === 'report8') {
-        return <Report8Preview data={reportData} />;
+        return (
+          <Report8Preview
+            data={reportData}
+            serverPagination={bmiPagination}
+            onPageChange={(page) => setBmiPage(page)}
+            limit={bmiLimit}
+            onLimitChange={setBmiLimit}
+          />
+        );
       }
 
       if (selectedReport === 'report9') {
@@ -1457,19 +1334,18 @@ export default function Reports() {
 
             {/* Step 3a: Academic Year Filter - Shown for report8 */}
             {selectedReport === 'report8' && (
-              <div className="flex-shrink-0 min-w-[200px]">
+              <div className="flex-shrink-0 min-w-[250px]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="h-4 w-4 inline mr-1" />
-                  {t('selectAcademicYear') || 'Academic Year'}
+                  {t('selectAcademicYear') || 'Select Academic Year'}
                 </label>
                 <Dropdown
                   value={selectedYear}
                   onValueChange={setSelectedYear}
-                  options={yearOptions}
-                  placeholder={t('chooseYear', 'Choose academic year...')}
+                  options={getAcademicYearOptions()}
+                  placeholder={t('selectAcademicYear', 'Select academic year...')}
                   minWidth="w-full"
-                  maxHeight="max-h-40"
-                  itemsToShow={5}
+                  maxHeight="max-h-56"
                 />
               </div>
             )}
@@ -1541,20 +1417,18 @@ export default function Reports() {
                   </>
                 )}
 
-                {/* Year Dropdown */}
-                <div className="flex-shrink-0 min-w-[200px]">
+                {/* Year Picker */}
+                <div className="flex-shrink-0 min-w-[250px]">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Calendar className="h-4 w-4 inline mr-1" />
-                    {t('selectAcademicYear') || 'Select Year'}
+                    {t('selectYear') || 'Select Year'}
                   </label>
-                  <Dropdown
+                  <YearPicker
                     value={selectedYear}
-                    onValueChange={setSelectedYear}
-                    options={yearOptions}
+                    onChange={setSelectedYear}
                     placeholder={t('chooseYear', 'Choose year...')}
-                    minWidth="w-full"
-                    maxHeight="max-h-40"
-                    itemsToShow={5}
+                    fromYear={1900}
+                    toYear={3000}
                   />
                 </div>
               </>
@@ -1599,20 +1473,18 @@ export default function Reports() {
                   </div>
                 )}
 
-                {/* Year Dropdown */}
-                <div className="flex-shrink-0 min-w-[200px]">
+                {/* Year Picker */}
+                <div className="flex-shrink-0 min-w-[250px]">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Calendar className="h-4 w-4 inline mr-1" />
-                    {t('selectAcademicYear') || 'Select Year'}
+                    {t('selectYear') || 'Select Year'}
                   </label>
-                  <Dropdown
+                  <YearPicker
                     value={selectedYear}
-                    onValueChange={setSelectedYear}
-                    options={yearOptions}
+                    onChange={setSelectedYear}
                     placeholder={t('chooseYear', 'Choose year...')}
-                    minWidth="w-full"
-                    maxHeight="max-h-40"
-                    itemsToShow={5}
+                    fromYear={1900}
+                    toYear={3000}
                   />
                 </div>
               </>
