@@ -684,184 +684,182 @@ export default function TeacherAttendance({ user }) {
       <div className='p-3 sm:p-6'>
         <FadeInSection delay={100} className="my-4 mx-2">
           {/* Filters */}
-          <div className="">
-            {/* Header */}
-            <div className="mb-4">
-              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
-                {t('attendance', 'Attendance')}
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-600">
-                {t('markStudentAttendance', 'Mark student attendance for your classes')}
-              </p>
+          {/* Header */}
+          <div className="mb-4">
+            <h4 className="text-lg sm:text-2xl font-bold text-gray-900">
+              {t('attendance', 'Attendance')}
+            </h4>
+            <p className="text-xs sm:text-sm text-gray-600">
+              {t('markStudentAttendance', 'Mark student attendance for your classes')}
+            </p>
+          </div>
+
+          {/* Filters Grid - Responsive Layout */}
+          <div className="flex flex-col lg:flex-row items-end gap-4 mb-4">
+            {/* Class Selector */}
+            <div className="w-full">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                {t('class', 'Class')}
+              </label>
+              <Dropdown
+                value={selectedClassId}
+                onValueChange={setSelectedClassId}
+                options={classDropdownOptions}
+                placeholder={t('selectClass', 'Select class...')}
+                minWidth="w-full"
+              />
             </div>
 
-            {/* Filters Grid - Responsive Layout */}
-            <div className="flex flex-col lg:flex-row items-end gap-4 mb-4">
-              {/* Class Selector */}
-              <div className="w-full">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                  {t('class', 'Class')}
-                </label>
-                <Dropdown
-                  value={selectedClassId}
-                  onValueChange={setSelectedClassId}
-                  options={classDropdownOptions}
-                  placeholder={t('selectClass', 'Select class...')}
-                  minWidth="w-full"
-                />
-              </div>
+            {/* Date Selector */}
+            <div className="w-full">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                {t('date', 'Date')} <span className="text-red-500">*</span>
+              </label>
+              <DatePickerWithDropdowns
+                value={selectedDate}
+                onChange={(date) => {
+                  if (date) {
+                    // Check if trying to select future date
+                    const tempDate = new Date(date);
+                    tempDate.setHours(0, 0, 0, 0);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
 
-              {/* Date Selector */}
-              <div className="w-full">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                  {t('date', 'Date')} <span className="text-red-500">*</span>
-                </label>
-                <DatePickerWithDropdowns
-                  value={selectedDate}
-                  onChange={(date) => {
-                    if (date) {
-                      // Check if trying to select future date
-                      const tempDate = new Date(date);
-                      tempDate.setHours(0, 0, 0, 0);
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-
-                      if (tempDate > today) {
-                        showError(t('cannotMarkFutureAttendance', 'Cannot mark attendance for future dates. Please select today only.'));
-                        return;
-                      }
-                      setSelectedDate(date);
+                    if (tempDate > today) {
+                      showError(t('cannotMarkFutureAttendance', 'Cannot mark attendance for future dates. Please select today only.'));
+                      return;
                     }
-                  }}
-                  placeholder={t('pickDate', 'Pick a date')}
-                  className="w-full"
-                  toDate={new Date()} // Limit to today
-                  fromYear={new Date().getFullYear() - 1} // Allow selecting dates from last year
-                />
-                {isFutureDate() && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {t('futureDateSelected', 'Future date selected - cannot mark attendance')}
-                  </p>
-                )}
-              </div>
+                    setSelectedDate(date);
+                  }
+                }}
+                placeholder={t('pickDate', 'Pick a date')}
+                className="w-full"
+                toDate={new Date()} // Limit to today
+                fromYear={new Date().getFullYear() - 1} // Allow selecting dates from last year
+              />
+              {isFutureDate() && (
+                <p className="text-xs text-red-500 mt-1">
+                  {t('futureDateSelected', 'Future date selected - cannot mark attendance')}
+                </p>
+              )}
+            </div>
+            <Button
+              onClick={handleMarkAllPresent}
+              variant="outline"
+              size="sm"
+              disabled={studentsLoading || students.length === 0 || isReadOnly}
+              className="w-full lg:w-auto whitespace-nowrap"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">{t('markAllPresent', 'Mark All Present')}</span>
+              <span className="sm:hidden">{t('allPresent', 'All Present')}</span>
+            </Button>
+
+            <div className="grid grid-cols-2 gap-2 w-full lg:flex lg:w-auto lg:gap-2 lg:ml-auto">
+              {/* Export Component */}
+              <AttendanceExport
+                students={students}
+                attendance={attendance}
+                className={classes.find(cls => String(cls.classId || cls.id) === selectedClassId)?.name || 'Unknown-Class'}
+                schoolName={user?.school?.name || user?.schoolName || 'សាលា'}
+                selectedDate={selectedDate}
+                exportType="daily"
+                disabled={studentsLoading}
+                buttonClassName="w-full lg:w-auto whitespace-nowrap"
+                containerClassName="w-full lg:w-auto"
+              />
+
               <Button
-                onClick={handleMarkAllPresent}
-                variant="outline"
+                onClick={handleSaveAttendance}
+                disabled={saving || processingJob || studentsLoading || students.length === 0 || isReadOnly}
                 size="sm"
-                disabled={studentsLoading || students.length === 0 || isReadOnly}
                 className="w-full lg:w-auto whitespace-nowrap"
               >
-                <Check className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">{t('markAllPresent', 'Mark All Present')}</span>
-                <span className="sm:hidden">{t('allPresent', 'All Present')}</span>
+                {(saving || processingJob) ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {saving
+                  ? t('queueing', 'Queueing...')
+                  : processingJob
+                    ? t('processing', 'Processing...')
+                    : t('save', 'Save')}
               </Button>
+            </div>
+          </div>
 
-              <div className="grid grid-cols-2 gap-2 w-full lg:flex lg:w-auto lg:gap-2 lg:ml-auto">
-                {/* Export Component */}
-                <AttendanceExport
-                  students={students}
-                  attendance={attendance}
-                  className={classes.find(cls => String(cls.classId || cls.id) === selectedClassId)?.name || 'Unknown-Class'}
-                  schoolName={user?.school?.name || user?.schoolName || 'សាលា'}
-                  selectedDate={selectedDate}
-                  exportType="daily"
-                  disabled={studentsLoading}
-                  buttonClassName="w-full lg:w-auto whitespace-nowrap"
-                  containerClassName="w-full lg:w-auto"
-                />
-
-                <Button
-                  onClick={handleSaveAttendance}
-                  disabled={saving || processingJob || studentsLoading || students.length === 0 || isReadOnly}
-                  size="sm"
-                  className="w-full lg:w-auto whitespace-nowrap"
+          {/* Past Date Warning */}
+          {isReadOnly && showWarning && (
+            <div className="my-4 bg-yellow-50 border-l-4 border-yellow-400 p-3 sm:p-4 hover:scale-99 transition-transform rounded-r-md">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start flex-1 min-w-0">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
+                  </div>
+                  <div className="ml-2 sm:ml-3 flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm text-yellow-700 break-words">
+                      {t('viewingPastAttendance', 'You are viewing attendance for a past date. Editing is disabled.')}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowWarning(false)}
+                  className="flex-shrink-0 text-yellow-600 hover:text-yellow-800 focus:outline-none transition-colors"
+                  aria-label={t('close', 'Close')}
                 >
-                  {(saving || processingJob) ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-2" />
-                  )}
-                  {saving
-                    ? t('queueing', 'Queueing...')
-                    : processingJob
-                      ? t('processing', 'Processing...')
-                      : t('save', 'Save')}
-                </Button>
+                  <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                </button>
               </div>
             </div>
+          )}
 
-            {/* Past Date Warning */}
-            {isReadOnly && showWarning && (
-              <div className="my-4 bg-yellow-50 border-l-4 border-yellow-400 p-3 sm:p-4 hover:scale-99 transition-transform rounded-r-md">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start flex-1 min-w-0">
-                    <div className="flex-shrink-0">
-                      <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
-                    </div>
-                    <div className="ml-2 sm:ml-3 flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm text-yellow-700 break-words">
-                        {t('viewingPastAttendance', 'You are viewing attendance for a past date. Editing is disabled.')}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowWarning(false)}
-                    className="flex-shrink-0 text-yellow-600 hover:text-yellow-800 focus:outline-none transition-colors"
-                    aria-label={t('close', 'Close')}
-                  >
-                    <X className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </button>
+          {/* Processing Progress Banner */}
+          {processingJob && jobStatus && (
+            <div className="mt-4 bg-blue-50 border-l-4 border-blue-400 p-3 sm:p-4 shadow-sm rounded-r-md">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="flex-shrink-0">
+                  <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 animate-spin" />
                 </div>
-              </div>
-            )}
-
-            {/* Processing Progress Banner */}
-            {processingJob && jobStatus && (
-              <div className="mt-4 bg-blue-50 border-l-4 border-blue-400 p-3 sm:p-4 shadow-sm rounded-r-md">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <div className="flex-shrink-0">
-                    <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 animate-spin" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-xs sm:text-sm font-medium text-blue-800 mb-2">
-                      {t('processingAttendance', 'Processing Attendance Records')}
-                    </h3>
-                    <div className="space-y-2">
-                      {/* Progress Text */}
-                      <div className="flex items-center justify-between text-xs sm:text-sm text-blue-700">
-                        <span className="font-medium">
-                          {t('progress', 'Progress')}
-                        </span>
-                        <span className="font-semibold">
-                          {jobStatus.processedRecords || 0}/{jobStatus.totalRecords || 0}
-                        </span>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="relative w-full bg-blue-200 rounded-full h-2 sm:h-2.5 overflow-hidden">
-                        <div
-                          className="absolute inset-y-0 left-0 bg-blue-600 rounded-full transition-all duration-300 ease-out"
-                          style={{
-                            width: `${jobStatus.totalRecords > 0
-                              ? ((jobStatus.processedRecords || 0) / jobStatus.totalRecords) * 100
-                              : 0
-                              }%`
-                          }}
-                        />
-                      </div>
-
-                      {/* Status Message */}
-                      <p className="text-xs text-blue-600 leading-relaxed">
-                        {jobStatus.status === 'processing'
-                          ? t('pleaseWait', 'Please wait while we process your attendance records...')
-                          : t('almostDone', 'Almost done...')}
-                      </p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xs sm:text-sm font-medium text-blue-800 mb-2">
+                    {t('processingAttendance', 'Processing Attendance Records')}
+                  </h3>
+                  <div className="space-y-2">
+                    {/* Progress Text */}
+                    <div className="flex items-center justify-between text-xs sm:text-sm text-blue-700">
+                      <span className="font-medium">
+                        {t('progress', 'Progress')}
+                      </span>
+                      <span className="font-semibold">
+                        {jobStatus.processedRecords || 0}/{jobStatus.totalRecords || 0}
+                      </span>
                     </div>
+
+                    {/* Progress Bar */}
+                    <div className="relative w-full bg-blue-200 rounded-full h-2 sm:h-2.5 overflow-hidden">
+                      <div
+                        className="absolute inset-y-0 left-0 bg-blue-600 rounded-full transition-all duration-300 ease-out"
+                        style={{
+                          width: `${jobStatus.totalRecords > 0
+                            ? ((jobStatus.processedRecords || 0) / jobStatus.totalRecords) * 100
+                            : 0
+                            }%`
+                        }}
+                      />
+                    </div>
+
+                    {/* Status Message */}
+                    <p className="text-xs text-blue-600 leading-relaxed">
+                      {jobStatus.status === 'processing'
+                        ? t('pleaseWait', 'Please wait while we process your attendance records...')
+                        : t('almostDone', 'Almost done...')}
+                    </p>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Students List */}
           {studentsLoading ? (

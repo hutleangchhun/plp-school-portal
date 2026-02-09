@@ -5,7 +5,7 @@ const TelegramFloatingButton = () => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
-    <div className="fixed bottom-8 right-8 z-40">
+    <div className="fixed bottom-4 right-4 z-40">
       <a
         href="https://t.me/plp_sms_moeys_gov_kh"
         target="_blank"
