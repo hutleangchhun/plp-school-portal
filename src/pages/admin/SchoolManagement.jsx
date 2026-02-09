@@ -432,7 +432,7 @@ const SchoolManagement = () => {
           const schoolsData = response.data || [];
           const filteredByProvince = schoolsData.filter(school => {
             return school.placeObject?.provinceId === parseInt(provinceId) ||
-                   school.placeObject?.province_code === provinceId.toString();
+              school.placeObject?.province_code === provinceId.toString();
           });
           setSchools(filteredByProvince);
           setTotalSchools(filteredByProvince.length);
@@ -775,11 +775,11 @@ const SchoolManagement = () => {
     if (!resolvedProvinceId && (placeObject.provinceNameKh || placeObject.province_name_kh || placeObject.provinceNameEn || placeObject.province_name_en)) {
       const matchedProvince = provinces.find(
         p => p.provinceNameKh === placeObject.provinceNameKh ||
-             p.province_name_kh === placeObject.province_name_kh ||
-             p.provinceNameEn === placeObject.provinceNameEn ||
-             p.province_name_en === placeObject.province_name_en ||
-             p.name === placeObject.provinceNameKh ||
-             p.name === placeObject.province_name_kh
+          p.province_name_kh === placeObject.province_name_kh ||
+          p.provinceNameEn === placeObject.provinceNameEn ||
+          p.province_name_en === placeObject.province_name_en ||
+          p.name === placeObject.provinceNameKh ||
+          p.name === placeObject.province_name_kh
       );
       if (matchedProvince) {
         resolvedProvinceId = matchedProvince.id;
@@ -790,11 +790,11 @@ const SchoolManagement = () => {
     if (!resolvedDistrictId && (placeObject.districtNameKh || placeObject.district_name_kh || placeObject.districtNameEn || placeObject.district_name_en) && resolvedProvinceId) {
       const matchedDistrict = districts.find(
         d => d.districtNameKh === placeObject.districtNameKh ||
-             d.district_name_kh === placeObject.district_name_kh ||
-             d.districtNameEn === placeObject.districtNameEn ||
-             d.district_name_en === placeObject.district_name_en ||
-             d.name === placeObject.districtNameKh ||
-             d.name === placeObject.district_name_kh
+          d.district_name_kh === placeObject.district_name_kh ||
+          d.districtNameEn === placeObject.districtNameEn ||
+          d.district_name_en === placeObject.district_name_en ||
+          d.name === placeObject.districtNameKh ||
+          d.name === placeObject.district_name_kh
       );
       if (matchedDistrict) {
         resolvedDistrictId = matchedDistrict.id;
@@ -806,11 +806,11 @@ const SchoolManagement = () => {
     if (!resolvedCommuneId && (placeObject.communeNameKh || placeObject.commune_name_kh || placeObject.communeNameEn || placeObject.commune_name_en) && resolvedDistrictCode) {
       const matchedCommune = communes.find(
         c => c.communeNameKh === placeObject.communeNameKh ||
-             c.commune_name_kh === placeObject.commune_name_kh ||
-             c.communeNameEn === placeObject.communeNameEn ||
-             c.commune_name_en === placeObject.commune_name_en ||
-             c.name === placeObject.communeNameKh ||
-             c.name === placeObject.commune_name_kh
+          c.commune_name_kh === placeObject.commune_name_kh ||
+          c.communeNameEn === placeObject.communeNameEn ||
+          c.commune_name_en === placeObject.commune_name_en ||
+          c.name === placeObject.communeNameKh ||
+          c.name === placeObject.commune_name_kh
       );
       if (matchedCommune) {
         resolvedCommuneId = matchedCommune.id;
@@ -1176,10 +1176,10 @@ const SchoolManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4">
-      <div className="p-4 sm:p-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-2">
+      <div className="p-2 sm:p-4">
         {/* Header */}
-        <div className="mb-4">
+        <div className="mb-4 mx-2">
           <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
             {t('schoolManagementPage', 'School Management')}
           </h1>
@@ -1188,259 +1188,259 @@ const SchoolManagement = () => {
           </p>
         </div>
 
-        <div className='p-6 sm:p-6 mb-8 border border-gray-100 bg-white rounded-sm shadow-sm'>
+        <div className='p-6 sm:p-6 mb-8 border border-gray-100 bg-white rounded-sm shadow-md'>
           {/* Filter Form */}
-        <div className="">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">{t('schoolList', 'School List')}</h2>
-            <div className="flex gap-2">
-              <Button
-                onClick={openCreateModal}
-                variant="primary"
-                size="sm"
-                title={t('createSchool', 'Create School')}
-              >
-                <Plus className="h-5 w-5 mr-1" />
-                {t('createSchool', 'Create School')}
-              </Button>
-              {(selectedProvince || selectedDistrict || selectedCommune || searchQuery) && (
+          <div className="">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">{t('schoolList', 'School List')}</h2>
+              <div className="flex gap-2">
                 <Button
-                  onClick={() => {
-                    setSelectedProvince('');
-                    setSelectedDistrict('');
-                    setSelectedCommune('');
-                    setSchools([]);
-                    setShowSchools(false);
-                    setDistricts([]);
-                    setCommunes([]);
-                    setSearchQuery('');
-                    setCurrentPage(1);
-                  }}
-                  variant="success"
+                  onClick={openCreateModal}
+                  variant="primary"
                   size="sm"
-                  title={t('clearFilters', 'Clear Filters')}
+                  title={t('createSchool', 'Create School')}
                 >
-                  <RefreshCw className="h-5 w-5" />
+                  <Plus className="h-5 w-5 mr-1" />
+                  {t('createSchool', 'Create School')}
                 </Button>
-              )}
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 py-6">
-            {/* Province Selection */}
-            <div className="space-y-1">
-              <label className="block text-sm font-semibold text-gray-700">
-                {t('province', 'Province')}
-              </label>
-              <SearchableDropdown
-                value={selectedProvince}
-                onValueChange={handleProvinceChange}
-                options={[
-                  { value: '', label: t('showAll', 'Show All') || 'Show All' },
-                  ...provinces.map((province) => ({
-                    value: province.id.toString(),
-                    label: province.provinceNameKh || province.province_name_kh || province.provinceNameEn || province.province_name_en || province.name_kh || province.name_en || `Province ${province.id}`
-                  }))
-                ]}
-                placeholder={t('selectProvince', 'Select Province')}
-                searchPlaceholder={t('search', 'Search...')}
-                disabled={loading}
-                className="w-full h-12 text-base"
-                minWidth="w-full"
-              />
-            </div>
-
-            {/* District Selection */}
-            <div className="space-y-1">
-              <label className="block text-sm font-semibold text-gray-700">
-                {t('district', 'District')}
-              </label>
-              <SearchableDropdown
-                value={selectedDistrict}
-                onValueChange={handleDistrictChange}
-                options={[
-                  { value: '', label: t('showAll', 'Show All') || 'Show All' },
-                  ...districts.map((district) => ({
-                    value: district.district_code || district.districtCode,
-                    label: district.districtNameKh || district.district_name_kh || district.districtNameEn || district.district_name_en || district.name_kh || district.name_en || `District ${district.district_code || district.districtCode}`
-                  }))
-                ]}
-                placeholder={t('selectDistrict', 'Select District')}
-                searchPlaceholder={t('search', 'Search...')}
-                disabled={loading || !selectedProvince}
-                className="w-full h-12 text-base"
-                minWidth="w-full"
-              />
-            </div>
-
-            {/* Commune Selection */}
-            <div className="space-y-1">
-              <label className="block text-sm font-semibold text-gray-700">
-                {t('commune', 'Commune')}
-              </label>
-              <SearchableDropdown
-                value={selectedCommune}
-                onValueChange={handleCommuneChange}
-                options={[
-                  { value: '', label: t('showAll', 'Show All') || 'Show All' },
-                  ...communes.map((commune) => ({
-                    value: commune.commune_code || commune.communeCode,
-                    label: commune.communeNameKh || commune.commune_name_kh || commune.communeNameEn || commune.commune_name_en || commune.name_kh || commune.name_en || `Commune ${commune.commune_code || commune.communeCode}`
-                  }))
-                ]}
-                placeholder={t('selectCommune', 'Select Commune')}
-                searchPlaceholder={t('search', 'Search...')}
-                disabled={loading || !selectedDistrict}
-                className="w-full h-12 text-base"
-                minWidth="w-full"
-              />
-            </div>
-
-            {/* Search Schools */}
-            <div className="space-y-1">
-              <label className="block text-sm font-semibold text-gray-700">
-                {t('search', 'Search')}
-              </label>
-              <div className="relative w-full flex items-stretch">
-                <input
-                  type="text"
-                  className="flex-1 border border-gray-200 rounded-sm leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-colors"
-                  placeholder={t('search', 'Search by name or code...')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSearchButtonClick();
-                    }
-                  }}
-                />
-                {searchQuery && (
-                  <button
+                {(selectedProvince || selectedDistrict || selectedCommune || searchQuery) && (
+                  <Button
                     onClick={() => {
+                      setSelectedProvince('');
+                      setSelectedDistrict('');
+                      setSelectedCommune('');
+                      setSchools([]);
+                      setShowSchools(false);
+                      setDistricts([]);
+                      setCommunes([]);
                       setSearchQuery('');
                       setCurrentPage(1);
-                      // Reload data with current location filters only
-                      if (selectedProvince && selectedDistrict) {
-                        loadSchools(selectedDistrict, selectedCommune);
-                      } else if (selectedProvince) {
-                        loadSchoolsByProvince(selectedProvince);
-                      } else {
-                        loadAllSchools();
+                    }}
+                    variant="success"
+                    size="sm"
+                    title={t('clearFilters', 'Clear Filters')}
+                  >
+                    <RefreshCw className="h-5 w-5" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 py-6">
+              {/* Province Selection */}
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-gray-700">
+                  {t('province', 'Province')}
+                </label>
+                <SearchableDropdown
+                  value={selectedProvince}
+                  onValueChange={handleProvinceChange}
+                  options={[
+                    { value: '', label: t('showAll', 'Show All') || 'Show All' },
+                    ...provinces.map((province) => ({
+                      value: province.id.toString(),
+                      label: province.provinceNameKh || province.province_name_kh || province.provinceNameEn || province.province_name_en || province.name_kh || province.name_en || `Province ${province.id}`
+                    }))
+                  ]}
+                  placeholder={t('selectProvince', 'Select Province')}
+                  searchPlaceholder={t('search', 'Search...')}
+                  disabled={loading}
+                  className="w-full h-12 text-base"
+                  minWidth="w-full"
+                />
+              </div>
+
+              {/* District Selection */}
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-gray-700">
+                  {t('district', 'District')}
+                </label>
+                <SearchableDropdown
+                  value={selectedDistrict}
+                  onValueChange={handleDistrictChange}
+                  options={[
+                    { value: '', label: t('showAll', 'Show All') || 'Show All' },
+                    ...districts.map((district) => ({
+                      value: district.district_code || district.districtCode,
+                      label: district.districtNameKh || district.district_name_kh || district.districtNameEn || district.district_name_en || district.name_kh || district.name_en || `District ${district.district_code || district.districtCode}`
+                    }))
+                  ]}
+                  placeholder={t('selectDistrict', 'Select District')}
+                  searchPlaceholder={t('search', 'Search...')}
+                  disabled={loading || !selectedProvince}
+                  className="w-full h-12 text-base"
+                  minWidth="w-full"
+                />
+              </div>
+
+              {/* Commune Selection */}
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-gray-700">
+                  {t('commune', 'Commune')}
+                </label>
+                <SearchableDropdown
+                  value={selectedCommune}
+                  onValueChange={handleCommuneChange}
+                  options={[
+                    { value: '', label: t('showAll', 'Show All') || 'Show All' },
+                    ...communes.map((commune) => ({
+                      value: commune.commune_code || commune.communeCode,
+                      label: commune.communeNameKh || commune.commune_name_kh || commune.communeNameEn || commune.commune_name_en || commune.name_kh || commune.name_en || `Commune ${commune.commune_code || commune.communeCode}`
+                    }))
+                  ]}
+                  placeholder={t('selectCommune', 'Select Commune')}
+                  searchPlaceholder={t('search', 'Search...')}
+                  disabled={loading || !selectedDistrict}
+                  className="w-full h-12 text-base"
+                  minWidth="w-full"
+                />
+              </div>
+
+              {/* Search Schools */}
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-gray-700">
+                  {t('search', 'Search')}
+                </label>
+                <div className="relative w-full flex items-stretch">
+                  <input
+                    type="text"
+                    className="flex-1 border border-gray-200 rounded-sm leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-colors"
+                    placeholder={t('search', 'Search by name or code...')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSearchButtonClick();
                       }
                     }}
-                    className="absolute right-12 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
-                    title={t('search', 'Clear')}
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setCurrentPage(1);
+                        // Reload data with current location filters only
+                        if (selectedProvince && selectedDistrict) {
+                          loadSchools(selectedDistrict, selectedCommune);
+                        } else if (selectedProvince) {
+                          loadSchoolsByProvince(selectedProvince);
+                        } else {
+                          loadAllSchools();
+                        }
+                      }}
+                      className="absolute right-12 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+                      title={t('search', 'Clear')}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={handleSearchButtonClick}
+                    disabled={!searchQuery.trim()}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 rounded-md flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-50 text-blue-600"
+                    title={t('search', 'Search')}
                   >
-                    <X className="h-4 w-4" />
+                    <Search className="h-5 w-5" />
                   </button>
-                )}
-                <button
-                  onClick={handleSearchButtonClick}
-                  disabled={!searchQuery.trim()}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 rounded-md flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-50 text-blue-600"
-                  title={t('search', 'Search')}
-                >
-                  <Search className="h-5 w-5" />
-                </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Schools Section */}
-        {(showSchools || schoolsLoading) && (
-          <div className="space-y-4">
-            {/* Table with total schools count */}
-            {paginationLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <LoadingSpinner size="lg" variant="primary">
-                  {t('loadingPage', 'Loading page...')}
-                </LoadingSpinner>
-              </div>
-            ) : (
-            <Table
-              columns={[
-                {
-                  key: 'name',
-                  header: t('schoolName', 'School Name'),
-                  accessor: 'name'
-                },
-                {
-                  key: 'code',
-                  header: t('schoolCode', 'School Code'),
-                  accessor: 'code'
-                },
-                {
-                  key: 'province',
-                  header: t('province', 'Province'),
-                  render: (school) => (
-                    <div className="text-sm text-gray-600 max-w-xs truncate">
-                      {school.placeObject?.provinceNameKh || school.placeObject?.province_name_kh || school.placeObject?.provinceNameEn || school.placeObject?.province_name_en || '-'}
-                    </div>
-                  )
-                },
-                {
-                  key: 'district',
-                  header: t('district', 'District'),
-                  render: (school) => (
-                    <div className="text-sm text-gray-600 max-w-xs truncate">
-                      {school.placeObject?.districtNameKh || school.placeObject?.district_name_kh || school.placeObject?.districtNameEn || school.placeObject?.district_name_en || '-'}
-                    </div>
-                  )
-                },
-                {
-                  key: 'commune',
-                  header: t('commune', 'Commune'),
-                  render: (school) => (
-                    <div className="text-sm text-gray-600 max-w-xs truncate">
-                      {school.placeObject?.communeNameKh || school.placeObject?.commune_name_kh || school.placeObject?.communeNameEn || school.placeObject?.commune_name_en || '-'}
-                    </div>
-                  )
-                },
-                {
-                  key: 'actions',
-                  header: t('actions', 'Actions'),
-                  render: (school) => (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => openEditModal(school)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title={t('edit', 'Edit')}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSchool(school)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title={t('delete', 'Delete')}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )
-                }
-              ]}
-              data={paginatedSchools}
-              loading={schoolsLoading || paginationLoading}
-              emptyMessage={t('noSchoolsFound', 'No schools found')}
-              showPagination={true}
-              pagination={{
-                page: currentPage,
-                pages: totalPages,
-                limit: pageLimit,
-                total: totalSchools
-              }}
-              onPageChange={handlePageChange}
-              onLimitChange={handleLimitChange}
-              limitOptions={[10, 20, 50, 100]}
-              showLimitSelector={true}
-              t={t}
-              enableSort={true}
-              defaultSortKey="name"
-              disabled={paginationLoading}
-            />
-            )}
-          </div>
-        )}
+          {/* Schools Section */}
+          {(showSchools || schoolsLoading) && (
+            <div className="space-y-4">
+              {/* Table with total schools count */}
+              {paginationLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <LoadingSpinner size="lg" variant="primary">
+                    {t('loadingPage', 'Loading page...')}
+                  </LoadingSpinner>
+                </div>
+              ) : (
+                <Table
+                  columns={[
+                    {
+                      key: 'name',
+                      header: t('schoolName', 'School Name'),
+                      accessor: 'name'
+                    },
+                    {
+                      key: 'code',
+                      header: t('schoolCode', 'School Code'),
+                      accessor: 'code'
+                    },
+                    {
+                      key: 'province',
+                      header: t('province', 'Province'),
+                      render: (school) => (
+                        <div className="text-sm text-gray-600 max-w-xs truncate">
+                          {school.placeObject?.provinceNameKh || school.placeObject?.province_name_kh || school.placeObject?.provinceNameEn || school.placeObject?.province_name_en || '-'}
+                        </div>
+                      )
+                    },
+                    {
+                      key: 'district',
+                      header: t('district', 'District'),
+                      render: (school) => (
+                        <div className="text-sm text-gray-600 max-w-xs truncate">
+                          {school.placeObject?.districtNameKh || school.placeObject?.district_name_kh || school.placeObject?.districtNameEn || school.placeObject?.district_name_en || '-'}
+                        </div>
+                      )
+                    },
+                    {
+                      key: 'commune',
+                      header: t('commune', 'Commune'),
+                      render: (school) => (
+                        <div className="text-sm text-gray-600 max-w-xs truncate">
+                          {school.placeObject?.communeNameKh || school.placeObject?.commune_name_kh || school.placeObject?.communeNameEn || school.placeObject?.commune_name_en || '-'}
+                        </div>
+                      )
+                    },
+                    {
+                      key: 'actions',
+                      header: t('actions', 'Actions'),
+                      render: (school) => (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => openEditModal(school)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title={t('edit', 'Edit')}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSchool(school)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title={t('delete', 'Delete')}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )
+                    }
+                  ]}
+                  data={paginatedSchools}
+                  loading={schoolsLoading || paginationLoading}
+                  emptyMessage={t('noSchoolsFound', 'No schools found')}
+                  showPagination={true}
+                  pagination={{
+                    page: currentPage,
+                    pages: totalPages,
+                    limit: pageLimit,
+                    total: totalSchools
+                  }}
+                  onPageChange={handlePageChange}
+                  onLimitChange={handleLimitChange}
+                  limitOptions={[10, 20, 50, 100]}
+                  showLimitSelector={true}
+                  t={t}
+                  enableSort={true}
+                  defaultSortKey="name"
+                  disabled={paginationLoading}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
 

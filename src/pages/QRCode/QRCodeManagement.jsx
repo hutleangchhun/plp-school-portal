@@ -50,7 +50,8 @@ export default function StudentQRCodeGenerator() {
   const [studentLoading, setStudentLoading] = useState(false);
   const [studentCurrentPage, setStudentCurrentPage] = useState(1);
   const [studentTotalPages, setStudentTotalPages] = useState(1);
-  const studentItemsPerPage = 8;
+  const [studentItemsPerPage, setStudentItemsPerPage] = useState(8);
+  const [studentTotalCount, setStudentTotalCount] = useState(0);
 
   // Teacher tab state
   const [selectedTeacherGradeLevel, setSelectedTeacherGradeLevel] = useState('all');
@@ -59,7 +60,8 @@ export default function StudentQRCodeGenerator() {
   const [teacherLoading, setTeacherLoading] = useState(false);
   const [teacherCurrentPage, setTeacherCurrentPage] = useState(1);
   const [teacherTotalPages, setTeacherTotalPages] = useState(1);
-  const teacherItemsPerPage = 8;
+  const [teacherItemsPerPage, setTeacherItemsPerPage] = useState(8);
+  const [teacherTotalCount, setTeacherTotalCount] = useState(0);
 
   const cardRefsRef = useRef({});
   const [showDownloadModal, setShowDownloadModal] = useState(false);
@@ -183,15 +185,17 @@ export default function StudentQRCodeGenerator() {
             // Continue with next student
           }
         }
-        
+
         setStudents(enrichedStudents);
         setStudentQrCodes(qrData);
 
         // Handle pagination from response
         if (response.pagination) {
           setStudentTotalPages(response.pagination.pages || 1);
+          setStudentTotalCount(response.pagination.total || 0);
         } else {
           setStudentTotalPages(1);
+          setStudentTotalCount(enrichedStudents.length);
         }
       }
     } catch (err) {
@@ -204,14 +208,13 @@ export default function StudentQRCodeGenerator() {
 
   useEffect(() => {
     fetchStudents();
-  }, [schoolId, selectedClass, studentCurrentPage]);
+  }, [schoolId, selectedClass, studentCurrentPage, studentItemsPerPage]);
 
-  // 🔹 Fetch teachers when tab is active or grade level changes
   useEffect(() => {
     if (activeTab === 'teachers' && schoolId) {
       fetchTeachers();
     }
-  }, [activeTab, schoolId, selectedTeacherGradeLevel, teacherCurrentPage]);
+  }, [activeTab, schoolId, selectedTeacherGradeLevel, teacherCurrentPage, teacherItemsPerPage]);
 
 
   // 🔹 Fetch Teachers + QR Codes using getTeachersBySchool
@@ -303,8 +306,10 @@ export default function StudentQRCodeGenerator() {
         // Handle pagination from response
         if (response.pagination) {
           setTeacherTotalPages(response.pagination.pages || 1);
+          setTeacherTotalCount(response.pagination.total || 0);
         } else {
           setTeacherTotalPages(1);
+          setTeacherTotalCount(enrichedTeachers.length);
         }
       }
     } catch (err) {
@@ -769,9 +774,12 @@ export default function StudentQRCodeGenerator() {
                     <Pagination
                       currentPage={studentCurrentPage}
                       totalPages={studentTotalPages}
-                      total={studentQrCodes.length}
+                      total={studentTotalCount}
                       limit={studentItemsPerPage}
                       onPageChange={setStudentCurrentPage}
+                      onLimitChange={setStudentItemsPerPage}
+                      limitOptions={[8, 16, 24, 32, 48, 100]}
+                      showLimitSelector={true}
                       t={t}
                       className="border-t"
                     />
@@ -847,9 +855,12 @@ export default function StudentQRCodeGenerator() {
                     <Pagination
                       currentPage={teacherCurrentPage}
                       totalPages={teacherTotalPages}
-                      total={teacherQrCodes.length}
+                      total={teacherTotalCount}
                       limit={teacherItemsPerPage}
                       onPageChange={setTeacherCurrentPage}
+                      onLimitChange={setTeacherItemsPerPage}
+                      limitOptions={[8, 16, 24, 32, 48, 100]}
+                      showLimitSelector={true}
                       t={t}
                       className="border-t"
                     />

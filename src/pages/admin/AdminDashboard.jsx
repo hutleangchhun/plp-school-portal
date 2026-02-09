@@ -132,14 +132,11 @@ const AdminDashboard = ({ user: initialUser }) => {
     <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-3 sm:p-6">
         {/* System Overview Card */}
-        <FadeInSection delay={100} className="mb-6">
-          <Card className="border border-gray-200 shadow-sm rounded-md">
-            <CardHeader>
+        <FadeInSection delay={100} className="my-4 mx-2">
+          <div className="pb-2 space-y-2 flex flex-col sm:flex-row justify-between items-start">
+            <div>
               <div className="flex flex-col sm:flex-row items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-md shadow-md">
-                    <Building2 className="h-6 w-6 text-white" />
-                  </div>
+                <div className="flex items-center">
                   <div>
                     <CardTitle className="text-xl font-bold text-gray-900">
                       {t('systemOverview', 'System Overview')}
@@ -150,30 +147,23 @@ const AdminDashboard = ({ user: initialUser }) => {
                   </div>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <div>
               <div className="flex flex-wrap gap-3">
-                <Badge 
+                <Badge
                   color='green'
                   size='md'
+                  variant='filled'
                 >
                   {t('adminUser', 'Admin User')}
                 </Badge>
-                {user?.username && (
-                  <Badge
-                  color='orange'
-                  size='md'
-                  >
-                    {user.username}
-                  </Badge>
-                )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </FadeInSection>
 
         {/* System Statistics */}
-        <FadeInSection delay={200} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <FadeInSection delay={200} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-2">
           <StatsCard
             title={t('totalSchools', 'Total Schools')}
             value={formatNumberWithCommas(systemStats.totalSchools)}
@@ -236,7 +226,7 @@ const AdminDashboard = ({ user: initialUser }) => {
         </FadeInSection>
 
         {/* Additional Role Statistics */}
-        <FadeInSection delay={250} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-6">
+        <FadeInSection delay={250} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-2">
           <StatsCard
             title={t('totalDirectors', 'Total Directors')}
             value={formatNumberWithCommas(systemStats.totalDirectors)}
