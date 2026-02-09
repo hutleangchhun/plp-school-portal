@@ -92,7 +92,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/attendance': ListCheck,
     '/teacher-attendance': ListChecks,
     '/teacher-dashboard': (props) => <CustomIcon name="dashboard" {...props} />,
-    '/my-students': Users,
+    '/my-students': (props) => <CustomIcon name="student" {...props} />,
     '/my-attendance': UserRoundCheck,
     '/my-schedule': CalendarDays,
     '/school-schedule': CalendarDays,

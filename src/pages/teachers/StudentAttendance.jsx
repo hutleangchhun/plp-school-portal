@@ -35,13 +35,13 @@ export default function TeacherAttendance({ user }) {
   const [jobId, setJobId] = useState(null);
   const [jobStatus, setJobStatus] = useState(null);
   const [processingJob, setProcessingJob] = useState(false);
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalStudents, setTotalStudents] = useState(0);
   const [studentsPerPage, setStudentsPerPage] = useState(10);
-  
+
   // Refs to track previous class and date for detecting changes
   const prevClassIdRef = useRef(selectedClassId);
   const prevDateRef = useRef(selectedDate);
@@ -168,7 +168,7 @@ export default function TeacherAttendance({ user }) {
         // Check if class or date changed (not just page change)
         const classChanged = prevClassIdRef.current !== selectedClassId;
         const dateChanged = prevDateRef.current?.getTime() !== selectedDate?.getTime();
-        
+
         if (classChanged || dateChanged) {
           console.log('Class or date changed, clearing attendance state');
           setAttendance({});
@@ -177,7 +177,7 @@ export default function TeacherAttendance({ user }) {
           prevClassIdRef.current = selectedClassId;
           prevDateRef.current = selectedDate;
         }
-        
+
         setStudentsLoading(true);
 
         // Fetch students in the class with pagination
@@ -198,7 +198,7 @@ export default function TeacherAttendance({ user }) {
           const paginationInfo = studentsResponse.pagination || {};
           const total = paginationInfo.total || studentsList.length;
           const pages = paginationInfo.pages || Math.ceil(total / studentsPerPage);
-          
+
           console.log('=== PAGINATION DEBUG ===');
           console.log('Full API Response:', studentsResponse);
           console.log('Pagination Info:', paginationInfo);
@@ -359,6 +359,9 @@ export default function TeacherAttendance({ user }) {
                   t('attendancePartialSuccess',
                     `Attendance saved with some errors: ${successfulRecords}/${totalRecords} successful, ${failedRecords} failed`
                   )
+                    .replace('{successfulRecords}', successfulRecords)
+                    .replace('{totalRecords}', totalRecords)
+                    .replace('{failedRecords}', failedRecords)
                 );
                 console.warn('Failed records:', status.results?.failed);
               } else {
@@ -366,6 +369,7 @@ export default function TeacherAttendance({ user }) {
                   t('attendanceSavedSuccess',
                     `Attendance saved successfully! ${successfulRecords} records processed`
                   )
+                    .replace('{successfulRecords}', successfulRecords)
                 );
               }
 
@@ -463,13 +467,13 @@ export default function TeacherAttendance({ user }) {
       return;
     }
 
-    // Show confirmation dialog
-    const confirmMarkAll = window.confirm(
-      `${t('confirmMarkAllPresent', 'Mark All Present?')}\n\n` +
-      `${t('confirmMarkAllMessage', `This will mark ALL ${totalStudents} students in this class as present across all ${totalPages} pages. Are you sure?`)}`
-    );
+    // Show confirmation dialog - REMOVED per user request
+    // const confirmMarkAll = window.confirm(
+    //   `${t('confirmMarkAllPresent', 'Mark All Present?')}\n\n` +
+    //   `${t('confirmMarkAllMessage', `This will mark ALL ${totalStudents} students in this class as present across all ${totalPages} pages. Are you sure?`)}`
+    // );
 
-    if (!confirmMarkAll) return;
+    // if (!confirmMarkAll) return;
 
     try {
       setStudentsLoading(true);
@@ -496,6 +500,7 @@ export default function TeacherAttendance({ user }) {
         setAttendance(newAttendance);
         showSuccess(
           t('markedAllPresentSuccess', `Successfully marked all ${allStudentsResponse.data.length} students as present!`)
+            .replace('{count}', allStudentsResponse.data.length)
         );
       }
     } catch (error) {
@@ -599,6 +604,9 @@ export default function TeacherAttendance({ user }) {
 
         showSuccess(
           t('attendanceQueued', `Attendance queued successfully! Processing ${totalRecords} records (${createRecords.length} new, ${updateRecords.length} updates)...`)
+            .replace('{totalRecords}', totalRecords)
+            .replace('{createRecords}', createRecords.length)
+            .replace('{updateRecords}', updateRecords.length)
         );
       } else {
         throw new Error('Failed to queue attendance records');
@@ -672,23 +680,23 @@ export default function TeacherAttendance({ user }) {
   }
 
   return (
-    <PageTransition className='p-3 sm:p-4'>
-      <div>
-        <FadeInSection>
+    <PageTransition className='bg-gray-50'>
+      <div className='p-3 sm:p-6'>
+        <FadeInSection delay={100} className="my-4 mx-2">
           {/* Filters */}
-          <div className="p-3 sm:p-6">
+          <div className="">
             {/* Header */}
             <div className="mb-4">
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                 {t('attendance', 'Attendance')}
               </h1>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1">
+              <p className="text-xs sm:text-sm text-gray-600">
                 {t('markStudentAttendance', 'Mark student attendance for your classes')}
               </p>
             </div>
 
             {/* Filters Grid - Responsive Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            <div className="flex flex-col lg:flex-row items-end gap-4 mb-4">
               {/* Class Selector */}
               <div className="w-full">
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
@@ -736,55 +744,55 @@ export default function TeacherAttendance({ user }) {
                   </p>
                 )}
               </div>
-            </div>
-
-            {/* Actions - Stacked on mobile, inline on larger screens */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Button
                 onClick={handleMarkAllPresent}
                 variant="outline"
                 size="sm"
                 disabled={studentsLoading || students.length === 0 || isReadOnly}
-                className="w-full sm:w-auto"
+                className="w-full lg:w-auto whitespace-nowrap"
               >
                 <Check className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">{t('markAllPresent', 'Mark All Present')}</span>
                 <span className="sm:hidden">{t('allPresent', 'All Present')}</span>
               </Button>
 
-              {/* Export Component */}
-              <AttendanceExport
-                students={students}
-                attendance={attendance}
-                className={classes.find(cls => String(cls.classId || cls.id) === selectedClassId)?.name || 'Unknown-Class'}
-                schoolName={user?.school?.name || user?.schoolName || 'សាលា'}
-                selectedDate={selectedDate}
-                exportType="daily"
-                disabled={studentsLoading}
-              />
+              <div className="grid grid-cols-2 gap-2 w-full lg:flex lg:w-auto lg:gap-2 lg:ml-auto">
+                {/* Export Component */}
+                <AttendanceExport
+                  students={students}
+                  attendance={attendance}
+                  className={classes.find(cls => String(cls.classId || cls.id) === selectedClassId)?.name || 'Unknown-Class'}
+                  schoolName={user?.school?.name || user?.schoolName || 'សាលា'}
+                  selectedDate={selectedDate}
+                  exportType="daily"
+                  disabled={studentsLoading}
+                  buttonClassName="w-full lg:w-auto whitespace-nowrap"
+                  containerClassName="w-full lg:w-auto"
+                />
 
-              <Button
-                onClick={handleSaveAttendance}
-                disabled={saving || processingJob || studentsLoading || students.length === 0 || isReadOnly}
-                size="sm"
-                className="w-full sm:w-auto sm:ml-auto"
-              >
-                {(saving || processingJob) ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
-                {saving
-                  ? t('queueing', 'Queueing...')
-                  : processingJob
-                    ? t('processing', 'Processing...')
-                    : t('save', 'Save')}
-              </Button>
+                <Button
+                  onClick={handleSaveAttendance}
+                  disabled={saving || processingJob || studentsLoading || students.length === 0 || isReadOnly}
+                  size="sm"
+                  className="w-full lg:w-auto whitespace-nowrap"
+                >
+                  {(saving || processingJob) ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  {saving
+                    ? t('queueing', 'Queueing...')
+                    : processingJob
+                      ? t('processing', 'Processing...')
+                      : t('save', 'Save')}
+                </Button>
+              </div>
             </div>
 
             {/* Past Date Warning */}
             {isReadOnly && showWarning && (
-              <div className="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-3 sm:p-4 hover:scale-99 transition-transform rounded-r-md">
+              <div className="my-4 bg-yellow-50 border-l-4 border-yellow-400 p-3 sm:p-4 hover:scale-99 transition-transform rounded-r-md">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start flex-1 min-w-0">
                     <div className="flex-shrink-0">
@@ -837,7 +845,7 @@ export default function TeacherAttendance({ user }) {
                             width: `${jobStatus.totalRecords > 0
                               ? ((jobStatus.processedRecords || 0) / jobStatus.totalRecords) * 100
                               : 0
-                            }%`
+                              }%`
                           }}
                         />
                       </div>
@@ -868,7 +876,7 @@ export default function TeacherAttendance({ user }) {
               description={t('noStudentsInClass', 'There are no students in this class.')}
             />
           ) : (
-            <div className="p-3 sm:p-6 overflow-hidden">
+            <div className="overflow-hidden">
               {/* Mobile Card View - Visible on small screens */}
               <div className="block lg:hidden space-y-3">
                 {students.map((student) => {
@@ -877,7 +885,7 @@ export default function TeacherAttendance({ user }) {
                   const hasStatus = studentAttendance.status !== null;
 
                   return (
-                    <div key={studentUserId} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                    <div key={studentUserId} className="bg-white rounded-sm border border-gray-200 p-4 shadow-sm">
                       {/* Student Name */}
                       <div className="font-medium text-gray-900 mb-3 text-sm">
                         {getFullName(student, student.username)}
@@ -898,8 +906,8 @@ export default function TeacherAttendance({ user }) {
                                 onClick={() => handleStatusChange(studentUserId, status.value)}
                                 disabled={isReadOnly}
                                 className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-md transition-all border ${isSelected
-                                    ? `${status.bgColor} ${status.textColor} border-${status.borderColor}-300`
-                                    : `bg-white border-2 border-gray-200 text-gray-600 ${isReadOnly ? '' : 'hover:bg-gray-50 active:bg-gray-100'}`
+                                  ? `${status.bgColor} ${status.textColor} border-${status.borderColor}-300`
+                                  : `bg-white border-2 border-gray-200 text-gray-600 ${isReadOnly ? '' : 'hover:bg-gray-50 active:bg-gray-100'}`
                                   } ${isReadOnly && !isSelected ? 'opacity-50' : ''} ${isReadOnly ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                 title={status.label}
                               >
@@ -925,8 +933,8 @@ export default function TeacherAttendance({ user }) {
                             disabled={isReadOnly}
                             readOnly={isReadOnly}
                             className={`block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isReadOnly
-                                ? 'bg-gray-50 cursor-not-allowed text-gray-500'
-                                : 'bg-white'
+                              ? 'bg-gray-50 cursor-not-allowed text-gray-500'
+                              : 'bg-white'
                               }`}
                           />
                         </div>
@@ -990,8 +998,8 @@ export default function TeacherAttendance({ user }) {
                                     onClick={() => handleStatusChange(studentUserId, status.value)}
                                     disabled={isReadOnly}
                                     className={`flex items-center gap-2 px-3 py-2 rounded-sm transition-all border-0 ${isSelected
-                                        ? `${status.bgColor} ${status.textColor} border-${status.borderColor}-200`
-                                        : `bg-transparent border-2 border-gray-100 text-gray-600 ${isReadOnly ? '' : 'hover:bg-gray-100'}`
+                                      ? `${status.bgColor} ${status.textColor} border-${status.borderColor}-200`
+                                      : `bg-transparent border-2 border-gray-100 text-gray-600 ${isReadOnly ? '' : 'hover:bg-gray-100'}`
                                       } ${isReadOnly && !isSelected ? 'opacity-50' : ''} ${isReadOnly ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                     title={isReadOnly ? t('cannotEditPastAttendance', 'Cannot edit attendance for past dates') : status.label}
                                   >
@@ -1012,8 +1020,8 @@ export default function TeacherAttendance({ user }) {
                                 disabled={isReadOnly}
                                 readOnly={isReadOnly}
                                 className={`block w-full p-3 border border-none ring-none outline-none rounded-md text-sm focus:outline-none focus:ring-none focus:border-none ${isReadOnly
-                                    ? 'bg-gray-50 cursor-not-allowed text-gray-700'
-                                    : 'hover:bg-transparent'
+                                  ? 'bg-gray-50 cursor-not-allowed text-gray-700'
+                                  : 'hover:bg-transparent'
                                   }`}
                               />
                             )}
@@ -1024,7 +1032,7 @@ export default function TeacherAttendance({ user }) {
                   </tbody>
                 </table>
               </div>
-              
+
               {/* Pagination Controls */}
               <Pagination
                 currentPage={currentPage}

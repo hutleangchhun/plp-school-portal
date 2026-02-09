@@ -635,7 +635,8 @@ export const km = {
   pleaseSelectClassAbove: 'សូមជ្រើសរើសថ្នាក់នៅកក្នុងកម្រងខាងលើ',
   noStudentsInClass: 'មិនមានសិស្សនៅក្នុងថ្នាក់នេះទេ',
   enterReason: 'មូលហេតុ...',
-  markAllPresent: 'កំណត់សិស្សទាំងអស់ថាមាន៖ វត្តមាន',
+  markAllPresent: 'វត្តមានទាំងអស់',
+  allPresent: 'វត្តមានទាំងអស់',
   markStudentAttendance: 'កំណត់វត្តមានសិស្សប្រចាំថ្ងៃ',
   markedAllPresent: 'សិស្សទាំងអស់ត្រូវបានកំណត់ថាមាន៖ វត្តមាន',
   contactAdminToAssignClasses: 'សូមទាក់ទងអ្នកគ្រប់គ្រងរបស់អ្នកដើម្បីកំណត់ថ្នាក់',
@@ -661,7 +662,22 @@ export const km = {
   totalTeachersWithAttendance: 'សរុបគ្រូដែលមានវត្តមាន',
   numberOfTeachers: 'ចំនួនគ្រូ',
   schoolCoverageList: 'សាលារៀនដែលមានការចុះវត្តមាន',
-
+  markedAllPresentSuccess: 'អ្នកបានកំណត់សិស្សទាំងអស់ {count} នាក់ថា "មានវត្តមាន" ដោយជោគជ័យ!',
+  markAllPresentFailed: 'បរាជ័យក្នុងការកំណត់សិស្សទាំងអស់ជា "មានវត្តមាន"',
+  attendancePartialSuccess: 'បានរក្សាទុកវត្តមានដោយមានកំហុសខ្លះ៖ ជោគជ័យ {successfulRecords}/{totalRecords}, បរាជ័យ {failedRecords}',
+  attendanceProcessingFailed: 'ការព្យាយាមដំណើរការវត្តមានបានបរាជ័យ',
+  attendanceQueued: 'បានដាក់បញ្ចូលវត្តមានទៅក្នុងជួរដោយជោគជ័យ! កំពុងដំណើរការ {totalRecords} ទិន្នន័យ ({createRecords} ថ្មី, {updateRecords} កែប្រែ)...',
+  attendanceQueueFailed: 'បរាជ័យក្នុងការដាក់បញ្ចូលវត្តមានទៅក្នុងជួរ',
+  noAttendanceToSave: 'មិនមានទិន្នន័យវត្តមានដើម្បីរក្សាទុកទេ',
+  attendanceSavedSuccess: 'បានរក្សាទុកវត្តមានដោយជោគជ័យ! {successfulRecords} ទិន្នន័យត្រូវបានដំណើរការ',
+  cannotEditPastAttendance: 'មិនអាចកែប្រែវត្តមានសម្រាប់កាលបរិច្ឆេទពីមុនបានទេ',
+  futureDateSelected: 'បានជ្រើសរើសកាលបរិច្ឆេទអនាគត - មិនអាចកត់ត្រាវត្តមានបានទេ',
+  attendanceStatusCheckFailed: 'បរាជ័យក្នុងការពិនិត្យមើលស្ថានភាពដំណើរការ',
+  processingAttendance: 'កំពុងដំណើរការបញ្ជូនទិន្នន័យ',
+  progress: 'ដំណើរការ',
+  pleaseWait: 'សូមរង់ចាំ យើងកំពុងដំណើរការបញ្ជូនទិន្នន័យរបស់អ្នក...',
+  almostDone: 'ជិតរួចរាល់ហើយ...',
+  processing: 'កំពុងបញ្ជូន...',
 
 
   // Teacher Information

@@ -35,7 +35,9 @@ export default function AttendanceExport({
   exportType = 'monthly', // 'daily' or 'monthly'
   classId, // Required for API calls
   disabled = false,
-  onExportStart = null
+  onExportStart = null,
+  buttonClassName = '',
+  containerClassName = ''
 }) {
   // Default to current date if no selectedDate is provided and exportType is monthly
   const defaultSelectedDate = selectedDate || (exportType === 'monthly' ? new Date() : new Date());
@@ -78,12 +80,12 @@ export default function AttendanceExport({
     const now = new Date(effectiveDate);
     const year = now.getFullYear();
     const month = now.getMonth();
-    
+
     // First day of the month
     const startDate = new Date(year, month, 1);
     // Last day of the month
     const endDate = new Date(year, month + 1, 0);
-    
+
     return {
       startDate: formatDateToString(startDate),
       endDate: formatDateToString(endDate)
@@ -98,7 +100,7 @@ export default function AttendanceExport({
   // Fetch monthly attendance data for all students
   const fetchMonthlyAttendanceData = async () => {
     const { startDate, endDate } = getCurrentMonthRange();
-    
+
     try {
       // Fetch attendance data for the month
       const attendanceResponse = await attendanceService.getAttendance({
@@ -106,28 +108,28 @@ export default function AttendanceExport({
         startDate: startDate,
         endDate: endDate
       });
-      
+
       if (!attendanceResponse.success) {
         throw new Error('Failed to fetch attendance data');
       }
-      
+
       // Transform the fetched data into the expected format
       // Expected format: { userId: { date: { status, reason, ... }, ... }, ... }
       const transformedAttendance = {};
       attendanceResponse.data.forEach(record => {
         const userId = record.userId;
         const date = record.date;
-        
+
         if (!transformedAttendance[userId]) {
           transformedAttendance[userId] = {};
         }
-        
+
         transformedAttendance[userId][date] = {
           status: record.status,
           reason: record.reason
         };
       });
-      
+
       return transformedAttendance;
     } catch (error) {
       console.error('Error fetching monthly attendance data:', error);
@@ -167,9 +169,9 @@ export default function AttendanceExport({
 
           if (studentAttendance?.status) {
             const statusMark = studentAttendance.status === 'PRESENT' ? '' :
-                             studentAttendance.status === 'ABSENT' ? 'អច្ប' :
-                             studentAttendance.status === 'LEAVE' ? 'ច្ប' :
-                             studentAttendance.status === 'LATE' ? '' : '';
+              studentAttendance.status === 'ABSENT' ? 'អច្ប' :
+                studentAttendance.status === 'LEAVE' ? 'ច្ប' :
+                  studentAttendance.status === 'LATE' ? '' : '';
             row[day.toString()] = statusMark;
 
             // Count totals - only ABSENT and LEAVE
@@ -219,9 +221,9 @@ export default function AttendanceExport({
           // Check if this is the selected date
           if (day === currentDate.getDate() && studentAttendance.status) {
             const statusMark = studentAttendance.status === 'PRESENT' ? 'វត្ត' :
-                             studentAttendance.status === 'ABSENT' ? 'អច្ប' :
-                             studentAttendance.status === 'LEAVE' ? 'ច្ប' :
-                             studentAttendance.status === 'LATE' ? 'អ' : '';
+              studentAttendance.status === 'ABSENT' ? 'អច្ប' :
+                studentAttendance.status === 'LEAVE' ? 'ច្ប' :
+                  studentAttendance.status === 'LATE' ? 'អ' : '';
             row[day.toString()] = statusMark;
           } else {
             row[day.toString()] = '';
@@ -771,12 +773,13 @@ export default function AttendanceExport({
   };
 
   return (
-    <div className="relative">
+    <div className={`relative ${containerClassName}`}>
       <Button
         onClick={handleExportClick}
         variant="outline"
         size="sm"
         disabled={disabled || students.length === 0}
+        className={buttonClassName}
       >
         <Download className="h-4 w-4 mr-2" />
         {t('export', 'Export')}
