@@ -40,7 +40,7 @@ export const teacherService = {
         // Extract data from response
         const data = response?.data;
         const teachers = Array.isArray(data) ? data : (data?.data || []);
-        
+
         // Extract pagination metadata if available
         const pagination = data?.pagination || response?.pagination || null;
         const total = pagination?.total || data?.total || teachers.length;
@@ -206,7 +206,7 @@ export const teacherService = {
     getTeacherClasses: async (teacherId) => {
         console.log('🎯 Making API call to get teacher classes for teacherId:', teacherId);
         console.log('🎯 Endpoint URL:', ENDPOINTS.TEACHERS.CLASSES(teacherId));
-        
+
         const response = await handleApiResponse(() =>
             apiClient_.get(ENDPOINTS.TEACHERS.CLASSES(teacherId))
         );
@@ -220,7 +220,7 @@ export const teacherService = {
 
         // Classes are returned as a direct array from the new endpoint
         const classes = Array.isArray(apiResponse) ? apiResponse :
-                        (apiResponse?.classes && Array.isArray(apiResponse.classes) ? apiResponse.classes : []);
+            (apiResponse?.classes && Array.isArray(apiResponse.classes) ? apiResponse.classes : []);
         console.log('getTeacherClasses - Extracted classes:', classes);
 
         // Format classes with normalized field names
@@ -236,6 +236,7 @@ export const teacherService = {
             academicYear: cls.academicYear || cls.academic_year,
             maxStudents: cls.maxStudents || cls.max_students,
             status: cls.status || 'ACTIVE',
+            studentCount: cls.studentCount || 0,
             createdAt: cls.createdAt || cls.created_at,
             updatedAt: cls.updatedAt || cls.updated_at
         }));

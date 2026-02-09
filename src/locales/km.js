@@ -1214,7 +1214,7 @@ export const km = {
   totalWorkshop: 'រោងជាង',
   totalSecurity: 'ឆ្មាំសាលារៀន',
   totalTeacherIct: 'គ្រូបច្ចេកវិទ្យាព័ត៌មាន',
-  dashboardGreeting: 'សូមស្វាគមន៍មកកាន់ប្រព័ន្ធរដ្ធបាលសាលារៀន',
+  dashboardGreeting: 'សូមស្វាគមន៍មកកាន់ប្រព័ន្ធព័ត៌មានអ្នកប្រើប្រាស់',
   loadingAttendance: 'កំពុងទាញយកវត្តមាន...',
   noAttendanceData: 'មិនមានទិន្នន័យវត្តមាន',
   noAttendanceDataMessage: 'មិនមានទិន្នន័យវត្តមានសម្រាប់ថ្នាក់របស់អ្នកនៅពេលនេះ។',

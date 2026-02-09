@@ -1,22 +1,17 @@
 import { useState, useEffect } from 'react';
 import {
   Users,
-  BookOpen,
-  UserCheck,
-  Building2,
-  Mail,
-  Phone,
-  User,
   Shield,
-  Briefcase
+  Briefcase,
+  Calendar
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { teacherService } from '../../utils/api/services/teacherService';
 import { schoolService } from '../../utils/api/services/schoolService';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import DynamicLoader from '../../components/ui/DynamicLoader';
-import StatsCard from '../../components/ui/StatsCard';
 import Badge from '../../components/ui/Badge';
+import CustomIcon from '../../components/svg/CustomIcon';
 import { formatClassIdentifier } from '../../utils/helpers';
 import { canAccessTeacherFeatures } from '../../utils/routePermissions';
 
@@ -167,15 +162,20 @@ export default function TeacherDashboard({ user }) {
       <div className="">
         <FadeInSection>
           {/* Welcome Header */}
-          <div className="p-6 bg-white rounded-md border border-gray-200 mb-4">
-            <div className='flex justify-between'>
-              <div className='mb-8'>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900">
-                  {t('welcome', 'Welcome')}, {user?.name || user?.username || t('teacher', 'Teacher')}
-                </h1>
-                <p className="text-gray-600 text-xs sm:text-sm mt-2">
-                  {t('dashboardGreeting', "Here's an overview of your classes and students")}
-                </p>
+          <div className="p-6 bg-white rounded-sm border border-gray-200 mb-4">
+            <div className='flex justify-between items-start mb-6'>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-green-50 rounded-full border border-green-100">
+                  <CustomIcon name="bee" className="w-8 h-8" />
+                </div>
+                <div>
+                  <h1 className="text-lg sm:text-xl font-bold text-gray-900">
+                    {t('welcome', 'Welcome')}, {user?.lastName && user?.firstName ? `${user.lastName} ${user.firstName}` : user?.name || user?.username || t('teacher', 'Teacher')}
+                  </h1>
+                  <p className="text-gray-600 text-xs sm:text-sm mt-1">
+                    {t('dashboardGreeting', "Here's an overview of your classes and students")}
+                  </p>
+                </div>
               </div>
               <div>
                 {getUserRole() && (() => {
@@ -183,9 +183,9 @@ export default function TeacherDashboard({ user }) {
                   const IconComponent = role.Icon;
                   return (
                     <Badge
-                      variant="filled"
+                      variant="outline"
                       color={role.color}
-                      size="lg"
+                      size="sm"
                       className="flex items-center gap-2"
                     >
                       <IconComponent className="w-4 h-4" />
@@ -197,35 +197,23 @@ export default function TeacherDashboard({ user }) {
             </div>
             {/* Stats Grid - Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatsCard
-                title={t('school', 'School')}
-                value={schoolName || t('loading', 'Loading...')}
-                icon={Building2}
-                iconBgColor="bg-indigo-100"
-                iconColor="text-indigo-600"
-                className='shadow-none border-2 border-indigo-100'
-              />
-              <StatsCard
-                title={t('totalClasses', 'Total Classes')}
-                value={stats.totalClasses}
-                icon={BookOpen}
-                iconBgColor="bg-blue-100"
-                iconColor="text-blue-600"
-                className='shadow-none border-2 border-blue-100'
-              />
-              <StatsCard
-                title={t('totalStudents', 'Total Students')}
-                value={stats.totalStudents}
-                icon={Users}
-                iconBgColor="bg-purple-100"
-                iconColor="text-purple-600"
-                className='shadow-none border-2 border-purple-100'
-              />
+              <div>
+                <p className="text-xs text-gray-500 mb-1.5">{t('school', 'School')}</p>
+                <p className="text-base font-medium text-gray-900">{schoolName || t('loading', 'Loading...')}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1.5">{t('totalClasses', 'Total Classes')}</p>
+                <p className="text-base font-medium text-gray-900">{stats.totalClasses}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1.5">{t('totalStudents', 'Total Students')}</p>
+                <p className="text-base font-medium text-gray-900">{stats.totalStudents}</p>
+              </div>
             </div>
           </div>
           {/* User Information - Full Width */}
           <div className="mb-8">
-            <div className="bg-white rounded-md border border-gray-200 p-6">
+            <div className="bg-white rounded-sm border border-gray-200 p-6">
               <div className="flex mb-6">
                 <div className=''>
                   <h3 className="text-lg font-bold text-gray-900">
@@ -234,80 +222,109 @@ export default function TeacherDashboard({ user }) {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {/* Name */}
-                <div className="flex items-start gap-3  bg-gray-50 p-3 border-l-2 border-green-500">
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">{t('name', 'Name')}</p>
-                    <p className="text-sm font-medium text-gray-900 break-words">
-                      {user?.first_name && user?.last_name
-                        ? `${user.first_name} ${user.last_name}`
-                        : user?.first_name || user?.last_name || user?.name || user?.username || t('notAvailable', 'N/A')}
-                    </p>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className='space-y-2'>
+                  {/* Name */}
+                  <div className="flex items-start gap-3  bg-gray-50 p-3 border-l-2 border-green-500">
 
-                {/* Email */}
-                {user?.email && (
-                  <div className="flex items-start gap-3  bg-gray-50 p-3 border-l-2 border-indigo-500">
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-500 mb-1">{t('email', 'Email')}</p>
+                      <p className="text-xs text-gray-500 mb-1">{t('name', 'Name')}</p>
                       <p className="text-sm font-medium text-gray-900 break-words">
-                        {user.email}
+                        {user?.first_name && user?.last_name
+                          ? `${user.first_name} ${user.last_name}`
+                          : user?.first_name || user?.last_name || user?.name || user?.username || t('notAvailable', 'N/A')}
                       </p>
                     </div>
                   </div>
-                )}
 
-                {/* Phone */}
-                {user?.phone && (
-                  <div className="flex items-start gap-3  bg-gray-50 p-3 border-l-2 border-orange-500">
+                  {/* Email */}
+                  {user?.email && (
+                    <div className="flex items-start gap-3  bg-gray-50 p-3 border-l-2 border-indigo-500">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 mb-1">{t('email', 'Email')}</p>
+                        <p className="text-sm font-medium text-gray-900 break-words">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Phone */}
+                  {user?.phone && (
+                    <div className="flex items-start gap-3  bg-gray-50 p-3 border-l-2 border-orange-500">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 mb-1">{t('phone', 'Phone')}</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {user.phone}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* School */}
+                  <div className="flex items-start gap-3 bg-gray-50 p-3 border-l-2 border-purple-500">
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-500 mb-1">{t('phone', 'Phone')}</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {user.phone}
+                      <p className="text-xs text-gray-500 mb-1">{t('school', 'School')}</p>
+                      <p className="text-sm font-medium text-gray-900 break-words">
+                        {schoolName || t('loading', 'Loading...')}
                       </p>
                     </div>
-                  </div>
-                )}
-
-                {/* School */}
-                <div className="flex items-start gap-3 bg-gray-50 p-3 border-l-2 border-purple-500">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">{t('school', 'School')}</p>
-                    <p className="text-sm font-medium text-gray-900 break-words">
-                      {schoolName || t('loading', 'Loading...')}
-                    </p>
                   </div>
                 </div>
 
                 {/* Classes */}
-                <div className="flex items-start gap-3  bg-gray-50 p-3 border-l-2 border-blue-500">
+                <div className="flex items-start gap-3 bg-gray-50 p-3 border-l-2 border-blue-500">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-2">{t('myClasses', 'My Classes')}</p>
+                    <p className="text-sm font-bold text-gray-900 mb-2">{t('myClasses', 'My Classes')}</p>
                     {classes.length > 0 ? (
-                      <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto">
-                        {classes.map((cls) => {
+                      <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4 max-h-64 overflow-y-auto">
+                        {classes.map((cls, index) => {
                           const rawGradeLevel =
                             typeof cls.gradeLevel !== 'undefined' && cls.gradeLevel !== null
                               ? String(cls.gradeLevel)
                               : '';
-
                           const displayGradeLevel =
                             rawGradeLevel === '0'
                               ? t('grade0', 'Kindergarten')
                               : rawGradeLevel;
 
+                          // Defined colors for cycling
+                          const cardColors = [
+                            'border-l-4 border-l-blue-500',
+                            'border-l-4 border-l-green-500',
+                            'border-l-4 border-l-purple-500',
+                            'border-l-4 border-l-orange-500',
+                            'border-l-4 border-l-pink-500',
+                            'border-l-4 border-l-teal-500',
+                          ];
+                          const colorClass = cardColors[index % cardColors.length];
+
                           return (
-                            <Badge
+                            <div
                               key={cls.id || cls.classId}
-                              color="blue"
-                              variant="filled"
-                              size="sm"
+                              className={`bg-white p-3 rounded-sm border border-gray-200 shadow-sm hover:shadow-md transition-shadow min-w-[200px] ${colorClass}`}
                             >
-                              {`${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`}
-                            </Badge>
+                              <div className="flex justify-between items-center mb-2 gap-2">
+                                <span className="font-bold text-gray-900 text-sm">
+                                  {`${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, cls.section)}`}
+                                </span>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <div className="flex items-center text-xs text-gray-600">
+                                  <Users className="w-3.5 h-3.5 mr-2 text-gray-400" />
+                                  <span>
+                                    <span className="font-medium text-gray-900">{cls.studentCount || 0}</span>
+                                    <span className="text-gray-400 mx-1">/</span>
+                                    {cls.maxStudents} {t('students') || 'Students'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center text-xs text-gray-600">
+                                  <Calendar className="w-3.5 h-3.5 mr-2 text-gray-400" />
+                                  <span>{cls.academicYear}</span>
+                                </div>
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
