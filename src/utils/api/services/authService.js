@@ -512,7 +512,17 @@ export const authService = {
     }
 
     return response;
-  }
+  },
+
+  /**
+   * Disable 2FA for the current user
+   * @returns {Promise<Object>} Response message
+   */
+  disable2FA: async () => {
+    return handleApiResponse(() =>
+      apiClient_.post(ENDPOINTS.AUTH.DISABLE_2FA)
+    );
+  },
 };
 
 /**

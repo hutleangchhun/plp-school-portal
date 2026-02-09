@@ -66,6 +66,7 @@ const ENDPOINTS = {
     GENERATE_2FA: '/auth/2fa/generate',
     ENABLE_2FA: '/auth/2fa/enable',
     AUTHENTICATE_2FA: '/auth/2fa/authenticate',
+    DISABLE_2FA: '/auth/2fa/disable',
   },
   USERS: {
     BASE: '/users',

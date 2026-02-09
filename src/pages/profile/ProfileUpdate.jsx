@@ -22,6 +22,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Ta
 import ProfileOverviewTab from './tabs/ProfileOverviewTab';
 import ResetPasswordTab from './tabs/ResetPasswordTab';
 import AddRoleTab from './tabs/AddRoleTab';
+import TwoFactorTab from './tabs/TwoFactorTab';
 
 export default function ProfileUpdate({ user, setUser }) {
   const { t } = useLanguage();
@@ -193,7 +194,7 @@ export default function ProfileUpdate({ user, setUser }) {
   const handleResidenceProvinceChange = useCallback((value) => {
     setSelectedResidenceProvince(value);
     residenceLocation.handleProvinceChange(value);
-    
+
     setSelectedResidenceDistrict('');
     setSelectedResidenceCommune('');
     setSelectedResidenceVillage('');
@@ -1179,7 +1180,7 @@ export default function ProfileUpdate({ user, setUser }) {
     e.preventDefault();
 
     if (!secondaryRoleType) {
-      showError(t('secondaryRoleTypeRequired', 'សូមជ្រើសរើសតួនាទីបន្ថែមមួយ')); 
+      showError(t('secondaryRoleTypeRequired', 'សូមជ្រើសរើសតួនាទីបន្ថែមមួយ'));
       return;
     }
 
@@ -2467,7 +2468,7 @@ export default function ProfileUpdate({ user, setUser }) {
                   {t('profile', 'My Profile')}
                 </h1>
                 <p className="text-sm text-gray-600 mt-2">
-                  {t('updateYourPersionalDetails','Update your personal details and preferences')}
+                  {t('updateYourPersionalDetails', 'Update your personal details and preferences')}
                 </p>
               </div>
               <div className="flex gap-2 w-full sm:w-auto">
@@ -2500,117 +2501,122 @@ export default function ProfileUpdate({ user, setUser }) {
             <TabsTrigger value="overview">{t('profileOverview', 'Profile overview')}</TabsTrigger>
             <TabsTrigger value="sample1">{t('resetPassword', 'Reset password')}</TabsTrigger>
             <TabsTrigger value="sample2">{t('addRole', 'Add role')}</TabsTrigger>
+            <TabsTrigger value="two-factor">{t('twoFactorAuth', 'Two-Factor Auth')}</TabsTrigger>
           </TabsList>
         </div>
 
         <div className="mt-4">
 
-        <TabsContent value="overview">
-          <ProfileOverviewTab
-            formData={formData}
-            setFormData={setFormData}
-            isEditMode={isEditMode}
-            profilePictureFile={profilePictureFile}
-            setProfilePictureFile={setProfilePictureFile}
-            showDropdown={showDropdown}
-            setShowDropdown={setShowDropdown}
-            showUsernameSuggestions={showUsernameSuggestions}
-            setShowUsernameSuggestions={setShowUsernameSuggestions}
-            usernameSuggestions={usernameSuggestions}
-            setUsernameSuggestions={setUsernameSuggestions}
-            usernameAvailable={usernameAvailable}
-            setUsernameAvailable={setUsernameAvailable}
-            emailAvailable={emailAvailable}
-            setEmailAvailable={setEmailAvailable}
-            teacherNumberAvailable={teacherNumberAvailable}
-            setTeacherNumberAvailable={setTeacherNumberAvailable}
-            showPassword={showPassword}
-            setShowPassword={setShowPassword}
-            pictureUploading={pictureUploading}
-            dropdownRef={dropdownRef}
-            fileInputRef={fileInputRef}
-            usernameContainerRef={usernameContainerRef}
-            selectedResidenceProvince={selectedResidenceProvince}
-            selectedResidenceDistrict={selectedResidenceDistrict}
-            selectedResidenceCommune={selectedResidenceCommune}
-            selectedResidenceVillage={selectedResidenceVillage}
-            selectedBirthProvince={selectedBirthProvince}
-            selectedBirthDistrict={selectedBirthDistrict}
-            selectedBirthCommune={selectedBirthCommune}
-            selectedBirthVillage={selectedBirthVillage}
-            handleInputChange={handleInputChange}
-            handleDateChange={handleDateChange}
-            handleProfilePictureChange={handleProfilePictureChange}
-            handleViewPicture={handleViewPicture}
-            handleUploadClick={handleUploadClick}
-            handleSubmit={handleSubmit}
-            handleGenerateUsernameSuggestions={handleGenerateUsernameSuggestions}
-            handleChooseUsernameSuggestion={handleChooseUsernameSuggestion}
-            handleResidenceProvinceChange={handleResidenceProvinceChange}
-            handleResidenceDistrictChange={handleResidenceDistrictChange}
-            handleResidenceCommuneChange={handleResidenceCommuneChange}
-            handleResidenceVillageChange={handleResidenceVillageChange}
-            handleBirthProvinceChange={handleBirthProvinceChange}
-            handleBirthDistrictChange={handleBirthDistrictChange}
-            handleBirthCommuneChange={handleBirthCommuneChange}
-            handleBirthVillageChange={handleBirthVillageChange}
-            getResidenceProvinceOptions={getResidenceProvinceOptions}
-            getResidenceDistrictOptions={getResidenceDistrictOptions}
-            getResidenceCommuneOptions={getResidenceCommuneOptions}
-            getResidenceVillageOptions={getResidenceVillageOptions}
-            getBirthProvinceOptions={getBirthProvinceOptions}
-            getBirthDistrictOptions={getBirthDistrictOptions}
-            getBirthCommuneOptions={getBirthCommuneOptions}
-            getBirthVillageOptions={getBirthVillageOptions}
-            getPasswordStrength={getPasswordStrength}
-            isWeightInvalid={isWeightInvalid}
-            isHeightInvalid={isHeightInvalid}
-            getBMICategory={getBMICategory}
-            residenceLoadingProvinces={residenceLoadingProvinces}
-            birthLoadingProvinces={birthLoadingProvinces}
-            t={t}
-            user={user}
-          />
-        </TabsContent>
+          <TabsContent value="overview">
+            <ProfileOverviewTab
+              formData={formData}
+              setFormData={setFormData}
+              isEditMode={isEditMode}
+              profilePictureFile={profilePictureFile}
+              setProfilePictureFile={setProfilePictureFile}
+              showDropdown={showDropdown}
+              setShowDropdown={setShowDropdown}
+              showUsernameSuggestions={showUsernameSuggestions}
+              setShowUsernameSuggestions={setShowUsernameSuggestions}
+              usernameSuggestions={usernameSuggestions}
+              setUsernameSuggestions={setUsernameSuggestions}
+              usernameAvailable={usernameAvailable}
+              setUsernameAvailable={setUsernameAvailable}
+              emailAvailable={emailAvailable}
+              setEmailAvailable={setEmailAvailable}
+              teacherNumberAvailable={teacherNumberAvailable}
+              setTeacherNumberAvailable={setTeacherNumberAvailable}
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+              pictureUploading={pictureUploading}
+              dropdownRef={dropdownRef}
+              fileInputRef={fileInputRef}
+              usernameContainerRef={usernameContainerRef}
+              selectedResidenceProvince={selectedResidenceProvince}
+              selectedResidenceDistrict={selectedResidenceDistrict}
+              selectedResidenceCommune={selectedResidenceCommune}
+              selectedResidenceVillage={selectedResidenceVillage}
+              selectedBirthProvince={selectedBirthProvince}
+              selectedBirthDistrict={selectedBirthDistrict}
+              selectedBirthCommune={selectedBirthCommune}
+              selectedBirthVillage={selectedBirthVillage}
+              handleInputChange={handleInputChange}
+              handleDateChange={handleDateChange}
+              handleProfilePictureChange={handleProfilePictureChange}
+              handleViewPicture={handleViewPicture}
+              handleUploadClick={handleUploadClick}
+              handleSubmit={handleSubmit}
+              handleGenerateUsernameSuggestions={handleGenerateUsernameSuggestions}
+              handleChooseUsernameSuggestion={handleChooseUsernameSuggestion}
+              handleResidenceProvinceChange={handleResidenceProvinceChange}
+              handleResidenceDistrictChange={handleResidenceDistrictChange}
+              handleResidenceCommuneChange={handleResidenceCommuneChange}
+              handleResidenceVillageChange={handleResidenceVillageChange}
+              handleBirthProvinceChange={handleBirthProvinceChange}
+              handleBirthDistrictChange={handleBirthDistrictChange}
+              handleBirthCommuneChange={handleBirthCommuneChange}
+              handleBirthVillageChange={handleBirthVillageChange}
+              getResidenceProvinceOptions={getResidenceProvinceOptions}
+              getResidenceDistrictOptions={getResidenceDistrictOptions}
+              getResidenceCommuneOptions={getResidenceCommuneOptions}
+              getResidenceVillageOptions={getResidenceVillageOptions}
+              getBirthProvinceOptions={getBirthProvinceOptions}
+              getBirthDistrictOptions={getBirthDistrictOptions}
+              getBirthCommuneOptions={getBirthCommuneOptions}
+              getBirthVillageOptions={getBirthVillageOptions}
+              getPasswordStrength={getPasswordStrength}
+              isWeightInvalid={isWeightInvalid}
+              isHeightInvalid={isHeightInvalid}
+              getBMICategory={getBMICategory}
+              residenceLoadingProvinces={residenceLoadingProvinces}
+              birthLoadingProvinces={birthLoadingProvinces}
+              t={t}
+              user={user}
+            />
+          </TabsContent>
 
-        <TabsContent value="sample1">
-          <ResetPasswordTab
-            newPasswordInput={newPasswordInput}
-            setNewPasswordInput={setNewPasswordInput}
-            confirmNewPasswordInput={confirmNewPasswordInput}
-            setConfirmNewPasswordInput={setConfirmNewPasswordInput}
-            showNewPasswordTab={showNewPasswordTab}
-            setShowNewPasswordTab={setShowNewPasswordTab}
-            changePasswordLoading={changePasswordLoading}
-            handleChangePasswordSubmit={handleChangePasswordSubmit}
-            getPasswordStrength={getPasswordStrength}
-            t={t}
-          />
-        </TabsContent>
+          <TabsContent value="sample1">
+            <ResetPasswordTab
+              newPasswordInput={newPasswordInput}
+              setNewPasswordInput={setNewPasswordInput}
+              confirmNewPasswordInput={confirmNewPasswordInput}
+              setConfirmNewPasswordInput={setConfirmNewPasswordInput}
+              showNewPasswordTab={showNewPasswordTab}
+              setShowNewPasswordTab={setShowNewPasswordTab}
+              changePasswordLoading={changePasswordLoading}
+              handleChangePasswordSubmit={handleChangePasswordSubmit}
+              getPasswordStrength={getPasswordStrength}
+              t={t}
+            />
+          </TabsContent>
 
-        <TabsContent value="sample2">
-          <AddRoleTab
-            secondaryRoleType={secondaryRoleType}
-            handleRoleTypeChange={handleRoleTypeChange}
-            secondaryProvinceIds={secondaryProvinceIds}
-            handleSecondaryProvinceChange={handleSecondaryProvinceChange}
-            secondaryDistrictIds={secondaryDistrictIds}
-            handleSecondaryDistrictChange={handleSecondaryDistrictChange}
-            secondaryCommuneIds={secondaryCommuneIds}
-            setSecondaryCommuneIds={setSecondaryCommuneIds}
-            secondaryProvinces={secondaryProvinces}
-            secondaryDistricts={secondaryDistricts}
-            secondaryCommunes={secondaryCommunes}
-            secondaryLocationLoading={secondaryLocationLoading}
-            isEditingCommuneOfficer={isEditingCommuneOfficer}
-            secondaryRoleLoading={secondaryRoleLoading}
-            handleSecondaryRoleSubmit={handleSecondaryRoleSubmit}
-            handleDeleteSecondaryRole={handleDeleteSecondaryRole}
-            t={t}
-          />
-        </TabsContent>
+          <TabsContent value="sample2">
+            <AddRoleTab
+              secondaryRoleType={secondaryRoleType}
+              handleRoleTypeChange={handleRoleTypeChange}
+              secondaryProvinceIds={secondaryProvinceIds}
+              handleSecondaryProvinceChange={handleSecondaryProvinceChange}
+              secondaryDistrictIds={secondaryDistrictIds}
+              handleSecondaryDistrictChange={handleSecondaryDistrictChange}
+              secondaryCommuneIds={secondaryCommuneIds}
+              setSecondaryCommuneIds={setSecondaryCommuneIds}
+              secondaryProvinces={secondaryProvinces}
+              secondaryDistricts={secondaryDistricts}
+              secondaryCommunes={secondaryCommunes}
+              secondaryLocationLoading={secondaryLocationLoading}
+              isEditingCommuneOfficer={isEditingCommuneOfficer}
+              secondaryRoleLoading={secondaryRoleLoading}
+              handleSecondaryRoleSubmit={handleSecondaryRoleSubmit}
+              handleDeleteSecondaryRole={handleDeleteSecondaryRole}
+              t={t}
+            />
+          </TabsContent>
 
-      </div>
+          <TabsContent value="two-factor">
+            <TwoFactorTab user={user} setUser={setUser} t={t} />
+          </TabsContent>
+
+        </div>
 
       </Tabs>
 
