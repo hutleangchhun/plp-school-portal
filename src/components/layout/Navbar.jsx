@@ -4,8 +4,9 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useLanguage } from '../../contexts/LanguageContext';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import ProfileImage from '../ui/ProfileImage';
-// import NotificationDropdown from '../notifications/NotificationDropdown';
+import NotificationDropdown from '../notifications/NotificationDropdown';
 import { getFullName } from '../../utils/usernameUtils';
+import MinistryLogo from '../../assets/moeys-logo.png';
 
 const getPageTitle = (pathname) => {
   const path = pathname.split('/')[1];
@@ -35,9 +36,9 @@ export default function Navbar({
   setSidebarCollapsed
 }) {
   const { t } = useLanguage();
-const location = useLocation();
-const pageTitleKey = getPageTitle(location.pathname);
-const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+  const location = useLocation();
+  const pageTitleKey = getPageTitle(location.pathname);
+  const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
 
   const handleLogout = () => {
     if (onLogout) {
@@ -53,16 +54,26 @@ const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0 flex-1 mr-2">
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow-md hover:shadow-lg hover:scale-105 hover:from-blue-600 hover:to-blue-700 transition-all duration-200 group"
+              className="hover:scale-105 transition-all duration-200 group"
               aria-label="Toggle sidebar"
             >
-              <Menu className="h-5 w-5 group-hover:rotate-90 transition-transform duration-200" />
+              <Menu className="h-6 w-6 group-hover:rotate-90 transition-transform duration-200 text-gray-700" />
             </button>
-            <h1 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 truncate">
-              {translatedTitle}
-            </h1>
+
+            {/* Logo and App Name */}
+            <div className="flex items-center gap-2 ml-2">
+              <img
+                src={MinistryLogo}
+                alt="MoEYS Logo"
+                className="h-10 w-auto flex-shrink-0"
+              />
+              <span className="text-sm sm:text-base font-bold text-gray-700 hidden sm:inline-block">
+                {t('schoolManagement')}
+              </span>
+            </div>
+
           </div>
-          
+
           <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
             <div className="hidden sm:block">
               <LanguageSwitcher />
@@ -74,7 +85,7 @@ const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1
             {/* Profile Dropdown */}
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
-                <button className="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-700 hover:text-gray-900 rounded-md hover:bg-blue-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 border border-gray-200">
+                <button className="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-700 hover:text-gray-900 rounded-md hover:bg-blue-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                   <ProfileImage
                     user={user}
                     size="sm"
@@ -91,7 +102,7 @@ const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1
               </DropdownMenu.Trigger>
 
               <DropdownMenu.Portal>
-                <DropdownMenu.Content 
+                <DropdownMenu.Content
                   className="min-w-[160px] sm:min-w-[200px] bg-white rounded-md shadow-lg border border-gray-200 p-1 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
                   align="end"
                   sideOffset={5}
@@ -133,7 +144,7 @@ const translatedTitle = t(pageTitleKey) || pageTitleKey.replace(/([A-Z])/g, ' $1
                   )}
 
                   <DropdownMenu.Separator className="h-px bg-gray-200 my-1" />
-                  
+
                   <DropdownMenu.Item
                     onSelect={handleLogout}
                     className="flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-red-600 rounded-sm cursor-pointer transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none data-[highlighted]:bg-red-50 data-[highlighted]:text-red-700 data-[highlighted]:outline-none"

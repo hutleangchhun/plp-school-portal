@@ -276,19 +276,9 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
   };
 
   return (
-    <div className={`flex flex-col bg-white shadow-lg border-r border-slate-200 transition-all duration-200 ease-in-out overflow-hidden ${isCollapsed ? 'w-0 border-0' : 'w-60'
+    <div className={`fixed top-14 sm:top-16 left-0 bottom-0 z-20 flex flex-col bg-white shadow-lg border-r border-slate-200 transition-all duration-200 ease-in-out overflow-y-auto overflow-x-hidden ${isCollapsed ? 'w-0 border-0' : 'w-60'
       }`}>
-      {/* Header */}
-      <div className="flex items-center justify-center gap-3 px-3 py-5 border-b border-slate-200">
-        <img
-          src={MinistryLogo}
-          alt="MoEYS Logo"
-          className="h-10 w-auto flex-shrink-0"
-        />
-        <div>
-          <span className="text-base font-bold text-gray-700">{t('schoolManagement')}</span>
-        </div>
-      </div>
+
       {/* Navigation */}
       <nav className="flex-1 py-4 px-4 space-y-1">
         {navigationItems.map((item) => {
@@ -305,8 +295,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
                 <div
                   onClick={() => toggleDropdown(item.name)}
                   className={`flex items-center text-sm font-medium rounded-md transition-all duration-200 group relative cursor-pointer px-4 py-3 w-full ${isActive
-                      ? `${colorClasses.text} border shadow-sm`
-                      : `${colorClasses.text} border border-transparent`
+                    ? `${colorClasses.text} border shadow-sm`
+                    : `${colorClasses.text} border border-transparent`
                     }`}
                 >
                   <Icon
@@ -332,8 +322,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
                           key={child.name}
                           to={child.href}
                           className={`flex items-center text-sm font-medium rounded-md transition-all duration-200 group px-4 py-2.5 w-full ${childActive
-                              ? `${childColorClasses.text} border shadow-sm`
-                              : `${childColorClasses.text} border border-transparent`
+                            ? `${childColorClasses.text} border shadow-sm`
+                            : `${childColorClasses.text} border border-transparent`
                             }`}
                         >
                           <ChildIcon
@@ -355,8 +345,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
               <Link
                 to={item.href}
                 className={`flex items-center text-sm font-medium rounded-md transition-all duration-200 group relative px-4 py-3 w-full ${item.current
-                    ? `${colorClasses.text} border shadow-sm`
-                    : `${colorClasses.text} border border-transparent`
+                  ? `${colorClasses.text} border shadow-sm`
+                  : `${colorClasses.text} border border-transparent`
                   }`}
               >
                 <Icon
