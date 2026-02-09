@@ -30,6 +30,7 @@ import {
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
 import MinistryLogo from '../../assets/moeys-logo.png';
+import CustomIcon from '../svg/CustomIcon';
 
 export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
   const { t } = useLanguage();
@@ -83,24 +84,24 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
 
   // Icon mapping for routes
   const iconMap = {
-    '/dashboard': LayoutDashboard,
-    '/students': Users,
-    '/classes': BookOpen,
-    '/teachers': UserStar,
+    '/dashboard': (props) => <CustomIcon name="dashboard" {...props} />,
+    '/students': (props) => <CustomIcon name="student" {...props} />,
+    '/classes': (props) => <CustomIcon name="class" {...props} />,
+    '/teachers': (props) => <CustomIcon name="teacher" {...props} />,
     '/parents': UserCircle,
     '/attendance': ListCheck,
     '/teacher-attendance': ListChecks,
-    '/teacher-dashboard': LayoutDashboard,
+    '/teacher-dashboard': (props) => <CustomIcon name="dashboard" {...props} />,
     '/my-students': Users,
     '/my-attendance': UserRoundCheck,
     '/my-schedule': CalendarDays,
     '/school-schedule': CalendarDays,
-    '/qr-codes': QrCode,
+    '/qr-codes': (props) => <CustomIcon name="qrcode" {...props} />,
     '/exam-records': Award,
     '/my-students-exams': Award,
-    '/reports': BarChart3,
-    '/teacher-reports': BarChart3,
-    '/admin-dashboard': LayoutDashboard,
+    '/reports': (props) => <CustomIcon name="report" {...props} />,
+    '/teacher-reports': (props) => <CustomIcon name="report" {...props} />,
+    '/admin-dashboard': (props) => <CustomIcon name="dashboard" {...props} />,
     '/admin-logs': Activity,
     '/admin/teacher-transfer': UserStar,
     '/admin/student-transfer': Users,
