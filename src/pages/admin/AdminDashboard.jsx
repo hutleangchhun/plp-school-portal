@@ -21,6 +21,7 @@ const AdminDashboard = ({ user: initialUser }) => {
   const [user] = useState(initialUser);
   const [initialLoading, setInitialLoading] = useState(true);
   const [systemStats, setSystemStats] = useState({
+    totalSchools: 0,
     totalClasses: 0,
     totalStudents: 0,
     totalStudentsWithClass: 0,
@@ -28,12 +29,13 @@ const AdminDashboard = ({ user: initialUser }) => {
     totalTeachers: 0,
     totalDirectors: 0,
     totalDeputyPrincipals: 0,
-    totalSecretaries: 0,
-    totalTreasurers: 0,
-    totalLibrarians: 0,
-    totalWorkshop: 0,
-    totalSecurity: 0,
-    totalTeacherIct: 0
+    totalSchoolSecretaries: 0,
+    totalSchoolTreasurers: 0,
+    totalSchoolLibrarians: 0,
+    totalSchoolWorkshop: 0,
+    totalSchoolSecurity: 0,
+    totalTeacherIct: 0,
+    studentsByGradeLevel: []
   });
 
   // Shared filter state for both completeness charts
@@ -52,29 +54,14 @@ const AdminDashboard = ({ user: initialUser }) => {
     try {
       startLoading('fetchSystemStats', t('loadingDashboard', 'Loading dashboard...'));
 
-      // Fetch school distribution data which contains the stats
-      const response = await dashboardService.getSchoolDistribution();
+      // Fetch dashboard statistics from the new endpoint
+      const response = await dashboardService.getDashboardStatistics();
 
       if (response.success) {
-        setSystemStats({
-          totalSchools: response.summary.totalSchools,
-          totalStudents: response.summary.totalStudents,
-          totalStudentsWithClass: response.summary.totalStudentsWithClass,
-          totalStudentsNoClass: response.summary.totalStudentsNoClass,
-          totalTeachers: response.summary.totalTeachers,
-          totalClasses: response.summary.totalClasses,
-          totalDirectors: response.summary.totalDirectors,
-          totalDeputyPrincipals: response.summary.totalDeputyPrincipals,
-          totalSecretaries: response.summary.totalSecretaries,
-          totalTreasurers: response.summary.totalTreasurers,
-          totalLibrarians: response.summary.totalLibrarians,
-          totalWorkshop: response.summary.totalWorkshop,
-          totalSecurity: response.summary.totalSecurity,
-          totalTeacherIct: response.summary.totalTeacherIct
-        });
+        setSystemStats(response.data);
       } else {
-        console.error('Failed to fetch school distribution:', response.error);
-        throw new Error(response.error || 'Failed to load school distribution');
+        console.error('Failed to fetch dashboard statistics:', response.error);
+        throw new Error(response.error || 'Failed to load dashboard statistics');
       }
 
     } catch (error) {
@@ -152,8 +139,8 @@ const AdminDashboard = ({ user: initialUser }) => {
               <div className="flex flex-wrap gap-3">
                 <Badge
                   color='green'
-                  size='md'
-                  variant='filled'
+                  size='sm'
+                  variant='outline'
                 >
                   {t('adminUser', 'Admin User')}
                 </Badge>
@@ -162,150 +149,171 @@ const AdminDashboard = ({ user: initialUser }) => {
           </div>
         </FadeInSection>
 
-        {/* System Statistics */}
-        <FadeInSection delay={200} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-2">
-          <StatsCard
-            title={t('totalSchools', 'Total Schools')}
-            value={formatNumberWithCommas(systemStats.totalSchools)}
-            enhanced={true}
-            gradientFrom="from-blue-500"
-            gradientTo="to-blue-600"
-            hoverColor="hover:border-blue-200"
-            responsive={true}
-          />
+        {/* System Statistics - Grouped by Student and Staff */}
+        <FadeInSection delay={200} className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          {/* Student Statistics Card */}
+          <Card className="rounded-sm shadow-sm transition-shadow">
+            <CardHeader className="border-b bg-white pb-4">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg font-semibold text-gray-900">
+                  {t('studentStatistics', 'Student Statistics')}
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              {/* Top Row - Schools and Classes */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-gray-50 rounded-sm border border-gray-100">
+                  <p className="text-xs font-medium text-gray-500 mb-1">
+                    {t('totalSchools', 'Total Schools')}
+                  </p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {formatNumberWithCommas(systemStats.totalSchools)}
+                  </p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-sm border border-gray-100">
+                  <p className="text-xs font-medium text-gray-500 mb-1">
+                    {t('totalClasses', 'Total Classes')}
+                  </p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {formatNumberWithCommas(systemStats.totalClasses)}
+                  </p>
+                </div>
+              </div>
+              {/* Student Distribution */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-green-50 rounded-sm border border-green-100">
+                  <p className="text-xs font-medium text-green-700 mb-1">
+                    {t('studentsWithClass', 'With Class')}
+                  </p>
+                  <p className="text-lg font-bold text-green-900">
+                    {formatNumberWithCommas(systemStats.totalStudentsWithClass)}
+                  </p>
+                </div>
+                <div className="p-3 bg-amber-50 rounded-sm border border-amber-100">
+                  <p className="text-xs font-medium text-amber-700 mb-1">
+                    {t('studentsNoClass', 'No Class')}
+                  </p>
+                  <p className="text-lg font-bold text-amber-900">
+                    {formatNumberWithCommas(systemStats.totalStudentsNoClass)}
+                  </p>
+                </div>
+              </div>
 
-          <StatsCard
-            title={t('totalStudents', 'Total Students')}
-            value={formatNumberWithCommas(systemStats.totalStudents)}
-            enhanced={true}
-            gradientFrom="from-green-500"
-            gradientTo="to-green-600"
-            hoverColor="hover:border-green-200"
-            responsive={true}
-          />
+              {/* Students by Grade Level */}
+              {systemStats.studentsByGradeLevel && systemStats.studentsByGradeLevel.length > 0 && (
+                <div className="pt-3 border-t">
+                  <p className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+                    {t('studentsByGradeWithClasses', 'Students by Grade Level with Classes')}
+                  </p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {systemStats.studentsByGradeLevel.map((grade) => (
+                      <div key={grade.gradeLevel} className="p-4 bg-gray-50 rounded-sm border border-gray-100">
+                        <p className="text-xs text-gray-500 mb-0.5">
+                          {grade.gradeLevel === '0' ? 'កម្រិតមត្តេយ្យ' : `${t('grade', 'Grade')} ${grade.gradeLevel}`}
+                        </p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {formatNumberWithCommas(grade.count)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-          <StatsCard
-            title={t('studentsWithClass', 'Students With Class')}
-            value={formatNumberWithCommas(systemStats.totalStudentsWithClass)}
-            enhanced={true}
-            gradientFrom="from-emerald-500"
-            gradientTo="to-emerald-600"
-            hoverColor="hover:border-emerald-200"
-            responsive={true}
-          />
+          {/* Staff Statistics Card */}
+          <Card className="rounded-sm shadow-sm transition-shadow">
+            <CardHeader className="border-b bg-white pb-4">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg font-semibold text-gray-900">
+                  {t('staffStatistics', 'Staff Statistics')}
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              {/* Total Teachers - Highlighted */}
+              <div className="p-4 bg-purple-50 rounded-sm border border-purple-100">
+                <p className="text-xs font-medium text-purple-700 mb-1">
+                  {t('totalTeachers', 'Total Teachers')}
+                </p>
+                <p className="text-lg font-bold text-purple-900">
+                  {formatNumberWithCommas(systemStats.totalTeachers)}
+                </p>
+              </div>
 
-          <StatsCard
-            title={t('studentsNoClass', 'Students No Class')}
-            value={formatNumberWithCommas(systemStats.totalStudentsNoClass)}
-            enhanced={true}
-            gradientFrom="from-amber-500"
-            gradientTo="to-amber-600"
-            hoverColor="hover:border-amber-200"
-            responsive={true}
-          />
-
-          <StatsCard
-            title={t('totalTeachers', 'Total Teachers')}
-            value={formatNumberWithCommas(systemStats.totalTeachers)}
-            enhanced={true}
-            gradientFrom="from-purple-500"
-            gradientTo="to-purple-600"
-            hoverColor="hover:border-purple-200"
-            responsive={true}
-          />
-
-          <StatsCard
-            title={t('totalClasses', 'Total Classes')}
-            value={formatNumberWithCommas(systemStats.totalClasses)}
-            enhanced={true}
-            gradientFrom="from-orange-500"
-            gradientTo="to-orange-600"
-            hoverColor="hover:border-orange-200"
-            responsive={true}
-          />
-        </FadeInSection>
-
-        {/* Additional Role Statistics */}
-        <FadeInSection delay={250} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-2">
-          <StatsCard
-            title={t('totalDirectors', 'Total Directors')}
-            value={formatNumberWithCommas(systemStats.totalDirectors)}
-            enhanced={true}
-            gradientFrom="from-rose-500"
-            gradientTo="to-rose-600"
-            hoverColor="hover:border-rose-200"
-            responsive={true}
-          />
-
-          <StatsCard
-            title={t('totalDeputyPrincipals', 'Deputy Principals')}
-            value={formatNumberWithCommas(systemStats.totalDeputyPrincipals)}
-            enhanced={true}
-            gradientFrom="from-pink-500"
-            gradientTo="to-pink-600"
-            hoverColor="hover:border-pink-200"
-            responsive={true}
-          />
-
-          <StatsCard
-            title={t('totalSecretaries', 'Secretaries')}
-            value={formatNumberWithCommas(systemStats.totalSecretaries)}
-            enhanced={true}
-            gradientFrom="from-cyan-500"
-            gradientTo="to-cyan-600"
-            hoverColor="hover:border-cyan-200"
-            responsive={true}
-          />
-
-          <StatsCard
-            title={t('totalTreasurers', 'Treasurers')}
-            value={formatNumberWithCommas(systemStats.totalTreasurers)}
-            enhanced={true}
-            gradientFrom="from-teal-500"
-            gradientTo="to-teal-600"
-            hoverColor="hover:border-teal-200"
-            responsive={true}
-          />
-
-          <StatsCard
-            title={t('totalLibrarians', 'Librarians')}
-            value={formatNumberWithCommas(systemStats.totalLibrarians)}
-            enhanced={true}
-            gradientFrom="from-indigo-500"
-            gradientTo="to-indigo-600"
-            hoverColor="hover:border-indigo-200"
-            responsive={true}
-          />
-
-          <StatsCard
-            title={t('totalWorkshop', 'Workshop Staff')}
-            value={formatNumberWithCommas(systemStats.totalWorkshop)}
-            enhanced={true}
-            gradientFrom="from-amber-500"
-            gradientTo="to-amber-600"
-            hoverColor="hover:border-amber-200"
-            responsive={true}
-          />
-
-          <StatsCard
-            title={t('totalSecurity', 'Security Staff')}
-            value={formatNumberWithCommas(systemStats.totalSecurity)}
-            enhanced={true}
-            gradientFrom="from-slate-500"
-            gradientTo="to-slate-600"
-            hoverColor="hover:border-slate-200"
-            responsive={true}
-          />
-
-          <StatsCard
-            title={t('totalTeacherIct', 'ICT Teachers')}
-            value={formatNumberWithCommas(systemStats.totalTeacherIct)}
-            enhanced={true}
-            gradientFrom="from-lime-500"
-            gradientTo="to-lime-600"
-            hoverColor="hover:border-lime-200"
-            responsive={true}
-          />
+              {/* Leadership Roles */}
+              <div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-4 bg-gray-50 rounded-sm border border-gray-100">
+                    <p className="text-xs font-medium text-gray-500 mb-1">
+                      {t('totalDirectors', 'Directors')}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatNumberWithCommas(systemStats.totalDirectors)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-sm border border-gray-100">
+                    <p className="text-xs font-medium text-gray-500 mb-1">
+                      {t('totalDeputyPrincipals', 'Deputy')}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatNumberWithCommas(systemStats.totalDeputyPrincipals)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-sm border border-gray-100">
+                    <p className="text-xs text-gray-500 mb-0.5">
+                      {t('totalSecretaries', 'Secretary')}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatNumberWithCommas(systemStats.totalSchoolSecretaries)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-sm border border-gray-100">
+                    <p className="text-xs font-medium text-gray-500 mb-0.5">
+                      {t('totalTreasurers', 'Treasurer')}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatNumberWithCommas(systemStats.totalSchoolTreasurers)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-sm border border-gray-100">
+                    <p className="text-xs font-medium text-gray-500 mb-0.5">
+                      {t('totalLibrarians', 'Librarian')}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatNumberWithCommas(systemStats.totalSchoolLibrarians)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-sm border border-gray-100">
+                    <p className="text-xs font-medium text-gray-500 mb-0.5">
+                      {t('totalTeacherIct', 'ICT')}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatNumberWithCommas(systemStats.totalTeacherIct)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-sm border border-gray-100">
+                    <p className="text-xs font-medium text-gray-500 mb-0.5">
+                      {t('totalWorkshop', 'Workshop')}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatNumberWithCommas(systemStats.totalSchoolWorkshop)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-sm border border-gray-100">
+                    <p className="text-xs font-medium text-gray-500 mb-0.5">
+                      {t('totalSecurity', 'Security')}
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatNumberWithCommas(systemStats.totalSchoolSecurity)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </FadeInSection>
 
         {/* Charts Grid */}

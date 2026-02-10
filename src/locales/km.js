@@ -1246,6 +1246,9 @@ export const km = {
   systemOverviewDesc: 'ទិដ្ឋភាពទូទៅនៃទិន្នន័យរបស់ប្រព័ន្ធព័ត៌មានអ្នកប្រើប្រាស់',
   schoolStatistics: 'ស្ថិតិទូទៅក្នុងសាលារៀន',
   staffRoles: 'ស្ថិតិបុគ្គលិកក្នុងសាលារៀន',
+  studentStatistics: 'ស្ថិតិសិស្ស',
+  staffStatistics: 'ស្ថិតិបុគ្គលិក',
+  studentsByGradeWithClasses: 'បំណែងចែកសិស្សតាមកម្រិតថ្នាក់សម្រាប់សិស្សមានថ្នាក់',
 
 
   // Student management with master-class endpoint
@@ -2071,7 +2074,7 @@ export const km = {
   enterGradeLevel: 'បញ្ចូលកម្រិតថ្នាក់ (ឧ. ៣, ៤, ៥)',
   selectSubject: 'ជ្រើសរើសមុខវិជ្ជា',
   addSubject: 'បន្ថែមមុខវិជ្ជា',
-  subSubjectId: 'លេខសម្គាល់មុខវិជ្ជារង (ស្រេចចិត្ត)',
+  subSubjectId: 'លេខសម្គាល់មុខវិជ្ជារង (ជម្រើស)',
   applyTemplate: 'អនុវត្តគំរូ',
   applyTemplateDesc: 'អនុវត្តគំរូនេះទៅថ្នាក់សម្រាប់ខែ និងឆ្នាំជាក់លាក់',
   templateApplied: 'គំរូត្រូវបានអនុវត្ត',
@@ -2112,7 +2115,8 @@ export const km = {
   apply: 'អនុវត្ត',
   create: 'បង្កើត',
   selectSubSubject: 'ជ្រើសរើសមុខវិជ្ជារង (ស្រេចចិត្ត)',
-  none: 'គ្មាន (មុខវិជ្ជាចម្បង)',
+  none: 'គ្មានមុខវិជ្ជារង',
+  previewTemplate: 'គំរូតារាង',
 
   // Officer Registration
   officerRegistration: 'ការចុះឈ្មោះ',

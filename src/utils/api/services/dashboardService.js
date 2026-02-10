@@ -225,6 +225,72 @@ export const dashboardService = {
   },
 
   /**
+   * Get dashboard statistics
+   * Fetches system-wide statistics from /api/v1/dashboard/statistics endpoint
+   * @returns {Promise<Object>} Response with dashboard statistics
+   */
+  async getDashboardStatistics() {
+    try {
+      console.log('📊 Fetching dashboard statistics...');
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(`${ENDPOINTS.DASHBOARD.BASE}/statistics`)
+      );
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Failed to fetch dashboard statistics');
+      }
+
+      const data = response.data || {};
+
+      return {
+        success: true,
+        data: {
+          totalStudents: data.totalStudents || 0,
+          totalStudentsWithClass: data.totalStudentsWithClass || 0,
+          totalStudentsNoClass: data.totalStudentsNoClass || 0,
+          totalTeachers: data.totalTeachers || 0,
+          totalDirectors: data.totalDirectors || 0,
+          totalDeputyPrincipals: data.totalDeputyPrincipals || 0,
+          totalSchoolSecretaries: data.totalSchoolSecretaries || 0,
+          totalSchoolTreasurers: data.totalSchoolTreasurers || 0,
+          totalSchoolLibrarians: data.totalSchoolLibrarians || 0,
+          totalSchoolWorkshop: data.totalSchoolWorkshop || 0,
+          totalSchoolSecurity: data.totalSchoolSecurity || 0,
+          totalTeacherIct: data.totalTeacherIct || 0,
+          totalClasses: data.totalClasses || 0,
+          totalSchools: data.totalSchools || 0,
+          studentsByGradeLevel: data.studentsByGradeLevel || []
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getDashboardStatistics:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get dashboard statistics',
+        data: {
+          totalStudents: 0,
+          totalStudentsWithClass: 0,
+          totalStudentsNoClass: 0,
+          totalTeachers: 0,
+          totalDirectors: 0,
+          totalDeputyPrincipals: 0,
+          totalSchoolSecretaries: 0,
+          totalSchoolTreasurers: 0,
+          totalSchoolLibrarians: 0,
+          totalSchoolWorkshop: 0,
+          totalSchoolSecurity: 0,
+          totalTeacherIct: 0,
+          totalClasses: 0,
+          totalSchools: 0,
+          studentsByGradeLevel: []
+        }
+      };
+    }
+  },
+
+  /**
    * Get school distribution data for admin dashboard
    * Fetches data from /api/v1/dashboard/distribution/schools endpoint
    * @param {Object} params - Filter parameters
