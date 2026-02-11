@@ -166,38 +166,64 @@ apiClient.interceptors.response.use(
         } else if (isRedirecting) {
           console.log('Redirect already in progress, skipping duplicate redirect');
         }
+        // For 401, we explicitly reject with type 'auth' and a specific code
+        return Promise.reject({
+          status,
+          message: data?.message || data?.error || 'Unauthorized access',
+          type: 'auth',
+          code: 'UNAUTHORIZED_ERROR',
+          errors: data?.errors,
+          data: data?.data,
+          originalError: error
+        });
       } else if (status === 403) {
         // Forbidden - user doesn't have permission
         console.error('Forbidden: You do not have permission to perform this action');
       } else if (status === 404) {
         // Not found
         console.error('Resource not found');
-      } else if (status === 500) {
-        // Server error
-        console.error('Server error occurred');
       }
+
+      // Prefer specific error message > general error > status text
+      const errorMessage = data?.message || data?.error || error.response.statusText || 'An error occurred';
 
       // Return error with status and message
       return Promise.reject({
         status,
-        message: data?.message || 'An error occurred',
+        message: errorMessage,
         errors: data?.errors,
-        data: data?.data
+        data: data?.data,
+        type,
+        originalError: error, // Preserve original error for debugging
+        code: error.code // Preserve error code
       });
     } else if (error.request) {
       // The request was made but no response was received
-      console.error('No response received from server. Please check your internet connection.');
+      console.error('No response received from server:', error.message);
+
+      // Check for timeout
+      const isTimeout = error.code === 'ECONNABORTED' || error.message?.includes('timeout');
+      const message = isTimeout
+        ? 'Request timed out. Please check your internet connection.'
+        : 'No response received from server. Please check your internet connection or Refresh the page.';
 
       return Promise.reject({
         status: 0,
-        message: 'No response received from server. Please check your internet connection.'
+        message,
+        request: error.request,
+        code: isTimeout ? 'TIMEOUT_ERROR' : 'NETWORK_ERROR',
+        type: 'network',
+        originalError: error
       });
     } else {
       // Something happened in setting up the request that triggered an Error
       console.error('Request setup error:', error.message);
       return Promise.reject({
         status: -1,
-        message: error.message || 'Error setting up request'
+        message: error.message || 'Error setting up request',
+        code: 'REQUEST_SETUP_ERROR',
+        type: 'client',
+        originalError: error
       });
     }
   }
@@ -233,7 +259,7 @@ publicApiClient.interceptors.response.use(
     } else if (error.request) {
       return Promise.reject({
         status: 0,
-        message: 'No response received from server. Please check your internet connection.'
+        message: 'No response received from server. Please check your internet connection or Refresh the page.'
       });
     } else {
       return Promise.reject({

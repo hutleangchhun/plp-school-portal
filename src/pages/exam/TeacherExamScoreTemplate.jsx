@@ -19,26 +19,22 @@ import Badge from "../../components/ui/Badge";
 import Dropdown from "../../components/ui/Dropdown";
 import { YearPicker } from "../../components/ui/year-picker";
 import SidebarFilter from "../../components/ui/SidebarFilter";
-import ExamRecordsTab from "./ExamRecordsTab";
-import ScoreInputTab from "./ScoreInputTab";
-import HonorRollTab from "./HonorRollTab";
 import TemplateManagementTab from "./TemplateManagementTab";
 import ScoreInputTemplateTab from "./ScoreInputTemplateTab";
 import { ListFilter } from "lucide-react";
 
 /**
- * TeacherExamRecords Component
- * Teachers can view exam records for students in their assigned classes
- * and input student scores by subject and skill
+ * TeacherExamScoreTemplate Component
+ * Teachers can manage exam score templates and input scores based on templates
  */
-export default function TeacherExamRecords({ user }) {
+export default function TeacherExamScoreTemplate({ user }) {
   const { t } = useLanguage();
   const { showError } = useToast();
 
   // Shared state
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
-  const [activeTab, setActiveTab] = useState("honor"); // 'honor', 'records', or 'scores'
+  const [activeTab, setActiveTab] = useState("templates"); // 'templates' or 'scores'
   const [loading, setLoading] = useState(true);
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [filterAcademicYear, setFilterAcademicYear] = useState(
@@ -87,7 +83,7 @@ export default function TeacherExamRecords({ user }) {
   if (loading && classes.length === 0) {
     return (
       <PageLoader
-        message={t("loadingExamRecords", "Loading exam records...")}
+        message={t("loadingTemplates", "Loading templates...")}
       />
     );
   }
@@ -101,12 +97,12 @@ export default function TeacherExamRecords({ user }) {
             <div className="flex items-center justify-between gap-3 mb-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {t("studentExamRecords", "Student Exam Records")}
+                  {t("examScoreTemplates", "Exam Score Templates")}
                 </h1>
                 <p className="text-sm text-gray-600">
                   {t(
-                    "viewClassStudentExams",
-                    "View exam records for your students",
+                    "manageTemplatesAndScores",
+                    "Manage score templates and input student scores",
                   )}
                 </p>
               </div>
@@ -129,20 +125,11 @@ export default function TeacherExamRecords({ user }) {
               className="mt-6"
             >
               <TabsList>
-                <TabsTrigger value="honor">
-                  {t("honorRoll", "Honor Roll")}
-                </TabsTrigger>
-                <TabsTrigger value="records">
-                  {t("examRecords", "Exam Records")}
-                </TabsTrigger>
-                <TabsTrigger value="scores">
-                  {t("scoreInput", "Score Input")}
-                </TabsTrigger>
                 <TabsTrigger value="templates">
                   {t("templateManagement", "Template Management")}
                 </TabsTrigger>
-                <TabsTrigger value="scoreTemplate">
-                  {t("scoreInputTemplate", "Score Input (Template)")}
+                <TabsTrigger value="scores">
+                  {t("scoreInputTemplate", "Score Input")}
                 </TabsTrigger>
               </TabsList>
 
@@ -151,32 +138,23 @@ export default function TeacherExamRecords({ user }) {
                 <span className="text-sm font-medium text-gray-700">
                   {t("activeFilters", "Active Filters")}:
                 </span>
-                {selectedClass ? (() => {
-                  const selectedClassObj = classes.find((c) => Number(c.classId || c.id) === Number(selectedClass));
-
-                  if (!selectedClassObj) {
-                    return (
-                      <Badge color="blue" variant="outline">
-                        {t("class", "Class")}: {t("unknown", "Unknown")}
-                      </Badge>
-                    );
-                  }
-
-                  let displayName = t("unknown", "Unknown");
-                  if (selectedClassObj.gradeLevel) {
-                    displayName = formatClassIdentifier(selectedClassObj.gradeLevel, selectedClassObj.section);
-                  } else if (selectedClassObj.name) {
-                    displayName = selectedClassObj.name;
-                  } else if (selectedClassObj.className) {
-                    displayName = selectedClassObj.className;
-                  }
-
-                  return (
-                    <Badge color="blue" variant="outline">
-                      {t("class", "Class")}: {displayName}
-                    </Badge>
-                  );
-                })() : (
+                {selectedClass ? (
+                  <Badge color="blue" variant="outline">
+                    {t("class", "Class")}:{" "}
+                    {classes.find((c) => (c.classId || c.id) === selectedClass)
+                      ?.gradeLevel
+                      ? formatClassIdentifier(
+                        classes.find(
+                          (c) => (c.classId || c.id) === selectedClass,
+                        )?.gradeLevel,
+                        classes.find(
+                          (c) => (c.classId || c.id) === selectedClass,
+                        )?.section,
+                      )
+                      : classes.find((c) => (c.classId || c.id) === selectedClass)
+                        ?.name || t("unknown", "Unknown")}
+                  </Badge>
+                ) : (
                   <Badge color="gray" variant="outline">
                     {t("class", "Class")}: {t("all", "All")}
                   </Badge>
@@ -205,48 +183,6 @@ export default function TeacherExamRecords({ user }) {
                 </Badge>
               </div>
 
-              {/* Honor Roll Tab */}
-              <TabsContent value="honor">
-                <HonorRollTab
-                  selectedClass={selectedClass}
-                  selectedClassName={
-                    selectedClass
-                      ? formatClassIdentifier(
-                        classes.find((c) => Number(c.classId || c.id) === Number(selectedClass))?.gradeLevel,
-                        classes.find((c) => Number(c.classId || c.id) === Number(selectedClass))?.section,
-                        t
-                      ) || classes.find((c) => Number(c.classId || c.id) === Number(selectedClass))?.name
-                      : null
-                  }
-                  globalFilterMonth={filterMonth}
-                  globalFilterYear={filterAcademicYear}
-                  t={t}
-                />
-              </TabsContent>
-
-              {/* Exam Records Tab */}
-              <TabsContent value="records">
-                <ExamRecordsTab
-                  selectedClass={selectedClass}
-                  globalFilterMonth={filterMonth}
-                  globalFilterYear={filterAcademicYear}
-                  t={t}
-                />
-              </TabsContent>
-
-              {/* Score Input Tab */}
-              <TabsContent value="scores">
-                <ScoreInputTab
-                  classes={classes}
-                  selectedClass={selectedClass}
-                  onClassChange={setSelectedClass}
-                  globalFilterMonth={filterMonth}
-                  globalFilterYear={filterAcademicYear}
-                  user={user}
-                  t={t}
-                />
-              </TabsContent>
-
               {/* Template Management Tab */}
               <TabsContent value="templates">
                 <TemplateManagementTab
@@ -259,14 +195,15 @@ export default function TeacherExamRecords({ user }) {
                 />
               </TabsContent>
 
-              {/* Score Input Template Tab */}
-              <TabsContent value="scoreTemplate">
+              {/* Score Input Tab */}
+              <TabsContent value="scores">
                 <ScoreInputTemplateTab
                   user={user}
                   classes={classes}
                   selectedClass={selectedClass}
                   globalFilterMonth={filterMonth}
                   globalFilterYear={filterAcademicYear}
+                  onNavigateToTemplates={() => setActiveTab("templates")}
                   t={t}
                 />
               </TabsContent>

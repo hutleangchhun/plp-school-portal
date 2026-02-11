@@ -45,28 +45,28 @@ export const ERROR_CODES = {
   NETWORK_ERROR: 'NETWORK_ERROR',
   TIMEOUT_ERROR: 'TIMEOUT_ERROR',
   CONNECTION_ERROR: 'CONNECTION_ERROR',
-  
+
   // Authentication errors
   UNAUTHORIZED: 'UNAUTHORIZED',
   FORBIDDEN: 'FORBIDDEN',
   TOKEN_EXPIRED: 'TOKEN_EXPIRED',
   INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
-  
+
   // Validation errors
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   REQUIRED_FIELD: 'REQUIRED_FIELD',
   INVALID_FORMAT: 'INVALID_FORMAT',
-  
+
   // Resource errors
   NOT_FOUND: 'NOT_FOUND',
   ALREADY_EXISTS: 'ALREADY_EXISTS',
   INSUFFICIENT_PERMISSIONS: 'INSUFFICIENT_PERMISSIONS',
-  
+
   // Server errors
   SERVER_ERROR: 'SERVER_ERROR',
   DATABASE_ERROR: 'DATABASE_ERROR',
   EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',
-  
+
   // Business logic errors
   OPERATION_FAILED: 'OPERATION_FAILED',
   CONSTRAINT_VIOLATION: 'CONSTRAINT_VIOLATION',
@@ -83,7 +83,7 @@ export const parseError = (error, t = null) => {
   let message = 'An unknown error occurred';
   let code = ERROR_CODES.SERVER_ERROR;
   let statusCode = 500;
-  
+
   if (error instanceof AppError) {
     return {
       message: error.message,
@@ -92,11 +92,11 @@ export const parseError = (error, t = null) => {
       timestamp: error.timestamp
     };
   }
-  
+
   if (error?.response) {
     // Axios error with response
     statusCode = error.response.status;
-    
+
     switch (statusCode) {
       case 400:
         code = ERROR_CODES.VALIDATION_ERROR;
@@ -128,7 +128,7 @@ export const parseError = (error, t = null) => {
         message = t ? t('serverError') : 'Internal server error';
         break;
     }
-    
+
     // Override with specific error message if available
     if (error.response.data?.message) {
       message = error.response.data.message;
@@ -140,7 +140,7 @@ export const parseError = (error, t = null) => {
   } else if (error?.message) {
     // General error with message
     message = error.message;
-    
+
     // Check for specific error types
     if (error.message.includes('timeout')) {
       code = ERROR_CODES.TIMEOUT_ERROR;
@@ -152,11 +152,13 @@ export const parseError = (error, t = null) => {
   } else if (typeof error === 'string') {
     message = error;
   }
-  
+
   return {
     message,
     code,
     statusCode,
+    type: error.type || (statusCode >= 500 ? 'server' : statusCode >= 400 ? 'client' : statusCode === 0 ? 'network' : 'unknown'),
+    originalError: error,
     timestamp: new Date().toISOString()
   };
 };
@@ -170,13 +172,13 @@ export const parseError = (error, t = null) => {
  */
 export const handleError = (error, showToast = null, t = null, context = '') => {
   const parsedError = parseError(error, t);
-  
+
   // Log error for debugging
   console.error(`Error in ${context}:`, {
     ...parsedError,
     originalError: error
   });
-  
+
   // Show user-friendly notification
   if (showToast) {
     showToast({
@@ -185,7 +187,7 @@ export const handleError = (error, showToast = null, t = null, context = '') => 
       duration: 5000
     });
   }
-  
+
   return parsedError;
 };
 
@@ -204,22 +206,22 @@ export const retryWithErrorHandling = async (
   shouldRetry = (error) => error?.response?.status >= 500
 ) => {
   let lastError;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
-      
+
       if (attempt === maxRetries || !shouldRetry(error)) {
         throw error;
       }
-      
+
       // Wait before retrying
       await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt)));
     }
   }
-  
+
   throw lastError;
 };
 
@@ -237,17 +239,17 @@ export const withErrorBoundary = (fn, options = {}) => {
     fallbackValue = null,
     rethrow = false
   } = options;
-  
+
   return async (...args) => {
     try {
       return await fn(...args);
     } catch (error) {
       const parsedError = handleError(error, showToast, t, context);
-      
+
       if (rethrow) {
         throw new AppError(parsedError.message, parsedError.code, parsedError.statusCode);
       }
-      
+
       return fallbackValue;
     }
   };
@@ -262,7 +264,7 @@ export const withErrorBoundary = (fn, options = {}) => {
  */
 export const createFieldError = (field, rule, t = null) => {
   const fieldName = t ? t(field) : field;
-  
+
   switch (rule) {
     case 'required':
       return t ? t('fieldRequired', { field: fieldName }) : `${fieldName} is required`;
@@ -288,7 +290,7 @@ export const setupGlobalErrorHandler = (showToast = null, t = null) => {
     handleError(event.reason, showToast, t, 'unhandledrejection');
     event.preventDefault(); // Prevent default browser handling
   });
-  
+
   // Handle general errors
   window.addEventListener('error', (event) => {
     handleError(event.error, showToast, t, 'global');

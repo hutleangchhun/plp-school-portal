@@ -64,6 +64,63 @@ export const subjectService = {
   },
 
   /**
+   * Get all student subjects
+   * @returns {Promise<Object>} List of student subjects
+   */
+  async getStudentSubjects() {
+    try {
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.SUBJECTS.BASE + '/student')
+      );
+
+      const responseData = response.data || response;
+      const subjectsArray = Array.isArray(responseData)
+        ? responseData
+        : responseData.subjects || responseData.data || [];
+
+      return {
+        success: true,
+        data: subjectsArray,
+      };
+    } catch (error) {
+      console.error('Error fetching student subjects:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get subjects with their grade levels
+   * @param {Object} options - Query options
+   * @param {boolean} options.isStudent - Filter for student subjects only
+   * @returns {Promise<Object>} List of subjects with grade levels
+   */
+  async getSubjectGrades(options = {}) {
+    try {
+      const params = {};
+      if (options.isStudent !== undefined) {
+        params.isStudent = options.isStudent;
+      }
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.SUBJECTS.SUBJECT_GRADES, { params })
+      );
+
+      const responseData = response.data || response;
+      const subjectsArray = Array.isArray(responseData)
+        ? responseData
+        : responseData.subjects || responseData.data || [];
+
+      return {
+        success: true,
+        data: subjectsArray,
+      };
+    } catch (error) {
+      console.error('Error fetching subject grades:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get subject by ID
    * @param {string|number} subjectId - The subject ID
    * @returns {Promise<Object>} Subject details

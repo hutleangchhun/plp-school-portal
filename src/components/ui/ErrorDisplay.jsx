@@ -3,12 +3,12 @@ import { X, RefreshCw, Wifi, Server, AlertTriangle, Lock, Ban, FileQuestion, Clo
 import { Button } from './Button';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-const ErrorDisplay = ({ 
-  error, 
-  onRetry, 
+const ErrorDisplay = ({
+  error,
+  onRetry,
   showRetry = true,
-  size = 'default', 
-  className = '' 
+  size = 'default',
+  className = ''
 }) => {
   const { t } = useLanguage();
 
@@ -132,7 +132,7 @@ const ErrorDisplay = ({
     // Fallback to error type
     switch (error.type) {
       case 'network':
-        return t('networkErrorDesc', 'Please check your internet connection and try again.');
+        return t('networkErrorDesc', 'Please check your connection and try again.');
       case 'server':
         return t('serverErrorDesc', 'Server is temporarily unavailable. Please try again later.');
       case 'auth':

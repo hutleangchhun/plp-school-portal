@@ -31,7 +31,7 @@ export const en = {
   serverError: 'Server Error',
   connectionError: 'Connection Error',
   authenticationError: 'Authentication Error',
-  networkErrorDesc: 'Please check your internet connection and try again.',
+  networkErrorDesc: 'Please check your connection and try again.',
   serverErrorDesc: 'Server is temporarily unavailable. Please try again later.',
   generalErrorDesc: 'Something went wrong. Please try again.',
   authErrorDesc: 'Your session has expired. Please login again.',
@@ -429,6 +429,7 @@ export const en = {
   failedLoadAvailableStudents: 'Failed to load available students',
   studentsAddedSuccess: 'Students added successfully',
   failedAddStudents: 'Failed to add students',
+  networkErrorDesc: 'Please check your connection and try again.',
   searchStudentsByNameEmail: 'Search students by name or email...',
   noStudentsMatchSearch: 'No students match your search criteria.',
   noStudentsAvailableAdd: 'There are no students available to add.',
@@ -1978,4 +1979,8 @@ export const en = {
   districts: 'Districts',
   schools: 'Schools',
   communes: 'Communes',
+
+  // Exam Score Templates
+  applyTemplateFirst: "This class doesn't have a template applied yet. Please go to Template Management to create and apply a template.",
+  goToTemplateManagement: 'Go to Template Management',
 };  

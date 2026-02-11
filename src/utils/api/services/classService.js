@@ -15,9 +15,9 @@ export const classService = {
       const response = await handleApiResponse(() =>
         apiClient_.get(ENDPOINTS.CLASSES.BASE)
       );
-      
+
       console.log('Raw classes API response:', response);
-      
+
       if (response.data && Array.isArray(response.data)) {
         const formattedData = response.data.map(cls => {
           console.log('Raw class before formatting:', cls);
@@ -25,7 +25,7 @@ export const classService = {
           console.log('Formatted class:', formatted);
           return formatted;
         });
-        
+
         return {
           data: formattedData,
         };
@@ -479,11 +479,15 @@ export const classService = {
         throw new Error('School ID is required');
       }
 
-      const { page = 1, limit = 10, search = '' } = params;
+      const { page = 1, limit = 10, search = '', classId } = params;
       const queryParams = { page, limit };
 
       if (search.trim()) {
         queryParams.search = search.trim();
+      }
+
+      if (classId) {
+        queryParams.classId = classId;
       }
 
       const response = await handleApiResponse(() =>
