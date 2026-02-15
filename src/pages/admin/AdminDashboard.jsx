@@ -126,9 +126,9 @@ const AdminDashboard = ({ user: initialUser }) => {
                 <div className="flex items-center">
                   <div>
                     <CardTitle className="text-xl font-bold text-gray-900">
-                      {t('systemOverview', 'System Overview')}
+                      {t('schoolManagement', 'System Overview')}
                     </CardTitle>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 mt-1">
                       {t('systemOverviewDesc', 'Overview of the entire school system')}
                     </p>
                   </div>
@@ -155,7 +155,7 @@ const AdminDashboard = ({ user: initialUser }) => {
           <Card className="rounded-sm shadow-sm transition-shadow">
             <CardHeader className="border-b bg-white pb-4">
               <div className="flex items-center gap-2">
-                <CardTitle className="text-lg font-semibold text-gray-900">
+                <CardTitle className="text-base sm:text-base md:text-lg lg:text-lg font-bold text-gray-900">
                   {t('studentStatistics', 'Student Statistics')}
                 </CardTitle>
               </div>
@@ -206,7 +206,7 @@ const AdminDashboard = ({ user: initialUser }) => {
                   <p className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
                     {t('studentsByGradeWithClasses', 'Students by Grade Level with Classes')}
                   </p>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-2">
                     {systemStats.studentsByGradeLevel.map((grade) => (
                       <div key={grade.gradeLevel} className="p-4 bg-gray-50 rounded-sm border border-gray-100">
                         <p className="text-xs text-gray-500 mb-0.5">
@@ -227,7 +227,7 @@ const AdminDashboard = ({ user: initialUser }) => {
           <Card className="rounded-sm shadow-sm transition-shadow">
             <CardHeader className="border-b bg-white pb-4">
               <div className="flex items-center gap-2">
-                <CardTitle className="text-lg font-semibold text-gray-900">
+                <CardTitle className="text-base sm:text-base md:text-lg lg:text-lg font-bold text-gray-900">
                   {t('staffStatistics', 'Staff Statistics')}
                 </CardTitle>
               </div>
