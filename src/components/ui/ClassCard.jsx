@@ -53,7 +53,7 @@ export default function ClassCard({
   const badgeColor = status === 'full' ? 'red' : status === 'high' ? 'yellow' : 'green';
 
   return (
-    <div className="bg-white rounded-md border border-gray-200 hover:border-gray-300 shadow-sm transition-all">
+    <div className="bg-white rounded-sm border border-gray-200 hover:border-gray-300 shadow-sm transition-all">
       <div className="p-6">
         <div className="flex items-start justify-between">
           <div className="min-w-0">
@@ -112,7 +112,7 @@ export default function ClassCard({
               <Tooltip content={t('manageStudent', 'View and manage students in this class')} className="p-2 text-xs">
                 <button
                   onClick={onManage}
-                  className="p-2 rounded-md text-green-500 hover:text-green-600 hover:bg-green-50 border-2 border-green-100 bg-green-100 duration-300"
+                  className="p-2 rounded-sm text-green-500 hover:text-green-600 hover:bg-green-50 border-2 border-green-100 bg-green-100 duration-300"
                   title="Manage Students"
                 >
                   <Users className="h-4 w-4" />
@@ -124,7 +124,7 @@ export default function ClassCard({
                 <button
                   onClick={onEdit}
                   disabled={isEditLoading}
-                  className={`p-2 rounded-md border-2 duration-300 ${
+                  className={`p-2 rounded-sm border-2 duration-300 ${
                     isEditLoading
                       ? 'text-gray-400 hover:text-gray-400 hover:bg-gray-50 border-gray-200 bg-gray-100 cursor-not-allowed'
                       : 'text-blue-500 hover:text-blue-600 hover:bg-blue-50 border-blue-100 bg-blue-100'
@@ -143,7 +143,7 @@ export default function ClassCard({
               <Tooltip content={t('deleteClass', 'Delete class')} className="p-2 text-xs">
                 <button
                   onClick={onDelete}
-                  className="p-2 rounded-md text-red-500 hover:text-red-600 hover:bg-red-50 border-2 border-red-100 bg-red-100 duration-300"
+                  className="p-2 rounded-sm text-red-500 hover:text-red-600 hover:bg-red-50 border-2 border-red-100 bg-red-100 duration-300"
                   title="Delete Class"
                 >
                   <Trash2 className="h-4 w-4" />

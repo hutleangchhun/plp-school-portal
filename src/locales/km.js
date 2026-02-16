@@ -579,7 +579,7 @@ export const km = {
   editClass: 'កែប្រែថ្នាក់រៀន',
   deleteClass: 'លុបថ្នាក់',
   grade: 'កម្រិតថ្នាក់',
-  manageClassSchedules: 'គ្រប់គ្រងព័ត៌មានថ្នាក់រៀន​ ឆ្នាំសិក្សា​​ កំណត់ចំនួនសិស្ស',
+  manageClassSchedules: 'គ្រប់គ្រងថ្នាក់រៀន​​ កំណត់ចំនួនសិស្ស',
   room: 'បន្ទប់រៀន',
   schedule: 'កាលវិភាគ',
   selectSubject: 'ជ្រើសរើសមុខវិជ្ជា',
@@ -2120,6 +2120,7 @@ export const km = {
   previewTemplate: 'គំរូតារាង',
   applyTemplateFirst: 'ថ្នាក់នេះមិនមានគំរូតារាងសម្រាប់ប្រើបានទេ។ សូមទៅកាន់ការគ្រប់គ្រងគំរូតារាងដើម្បីបង្កើតនិងអនុវត្តគំរូ។',
   goToTemplateManagement: 'ទៅកាន់ការគ្រប់គ្រងគំរូតារាង',
+  totalSubject: 'មុខវិជ្ជាសរុប',
 
   // Officer Registration
   officerRegistration: 'ការចុះឈ្មោះ',

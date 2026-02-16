@@ -1,32 +1,56 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Users, BookOpen, Clock, Calendar, Building, User, ChevronLeft, ChevronRight, Search, Filter, Loader } from 'lucide-react';
-import ClassCard from '@/components/ui/ClassCard';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { useToast } from '../../contexts/ToastContext';
-import { useLoading } from '../../contexts/LoadingContext';
-import Modal from '../../components/ui/Modal';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import Pagination from '../../components/ui/Pagination';
-import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
-import classService from '../../utils/api/services/classService'; // Import the classService
-import { teacherService } from '../../utils/api/services/teacherService'; // Import teacherService for teacher selection
-import { schoolService } from '../../utils/api/services/schoolService'; // Import schoolService for school details
-import { getCurrentAcademicYear, generateAcademicYears } from '../../utils/academicYear'; // Import academic year utilities
-import { useStableCallback, useRenderTracker } from '../../utils/reactOptimization';
-import { GRADE_LEVELS, getGradeLabel } from '../../constants/grades';
-import { formatClassIdentifier } from '../../utils/helpers'; // Import class formatting utility
-import { getFullName } from '../../utils/usernameUtils'; // Import name formatting utility
-import Dropdown from '@/components/ui/Dropdown';
-import SearchableDropdown from '@/components/ui/SearchableDropdown';
-import { Button } from '../../components/ui/Button';
-import React from 'react'; // Added for useMemo
-import ErrorDisplay from '../../components/ui/ErrorDisplay';
-import { useErrorHandler } from '../../hooks/useErrorHandler';
-import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
-import EmptyState from '../../components/ui/EmptyState';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { encryptParams } from '../../utils/encryption'; // Import encryption for URL parameters
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Users,
+  BookOpen,
+  Clock,
+  Calendar,
+  Building,
+  User,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  Filter,
+  Loader,
+} from "lucide-react";
+import ClassCard from "@/components/ui/ClassCard";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { useToast } from "../../contexts/ToastContext";
+import { useLoading } from "../../contexts/LoadingContext";
+import Modal from "../../components/ui/Modal";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import Pagination from "../../components/ui/Pagination";
+import {
+  PageTransition,
+  FadeInSection,
+} from "../../components/ui/PageTransition";
+import classService from "../../utils/api/services/classService"; // Import the classService
+import { teacherService } from "../../utils/api/services/teacherService"; // Import teacherService for teacher selection
+import { schoolService } from "../../utils/api/services/schoolService"; // Import schoolService for school details
+import {
+  getCurrentAcademicYear,
+  generateAcademicYears,
+} from "../../utils/academicYear"; // Import academic year utilities
+import {
+  useStableCallback,
+  useRenderTracker,
+} from "../../utils/reactOptimization";
+import { GRADE_LEVELS, getGradeLabel } from "../../constants/grades";
+import { formatClassIdentifier } from "../../utils/helpers"; // Import class formatting utility
+import { getFullName } from "../../utils/usernameUtils"; // Import name formatting utility
+import Dropdown from "@/components/ui/Dropdown";
+import SearchableDropdown from "@/components/ui/SearchableDropdown";
+import { Button } from "../../components/ui/Button";
+import React from "react"; // Added for useMemo
+import ErrorDisplay from "../../components/ui/ErrorDisplay";
+import { useErrorHandler } from "../../hooks/useErrorHandler";
+import DynamicLoader, { PageLoader } from "../../components/ui/DynamicLoader";
+import EmptyState from "../../components/ui/EmptyState";
+import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
+import { encryptParams } from "../../utils/encryption"; // Import encryption for URL parameters
 
 export default function ClassesManagement() {
   const navigate = useNavigate();
@@ -36,15 +60,15 @@ export default function ClassesManagement() {
   const { startLoading, stopLoading, isLoading } = useLoading();
 
   // Track renders to detect infinite loops (development only)
-  useRenderTracker('ClassesManagement');
+  useRenderTracker("ClassesManagement");
 
   // Get authenticated user data
   const [user, setUser] = useState(() => {
     try {
-      const userData = localStorage.getItem('user');
+      const userData = localStorage.getItem("user");
       return userData ? JSON.parse(userData) : null;
     } catch (err) {
-      console.error('Error parsing user data from localStorage:', err);
+      console.error("Error parsing user data from localStorage:", err);
       // Can't use handleError here since hook isn't initialized yet
       return null;
     }
@@ -54,7 +78,7 @@ export default function ClassesManagement() {
   useEffect(() => {
     const handleStorageChange = () => {
       try {
-        const userData = localStorage.getItem('user');
+        const userData = localStorage.getItem("user");
         if (userData) {
           const parsedUser = JSON.parse(userData);
           setUser(parsedUser);
@@ -62,19 +86,19 @@ export default function ClassesManagement() {
           setUser(null);
         }
       } catch (err) {
-        console.error('Error parsing updated user data:', err);
+        console.error("Error parsing updated user data:", err);
       }
     };
 
     // Listen for storage events (from other tabs/windows)
-    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
 
     // Also set up a custom event listener for same-tab updates
-    window.addEventListener('userDataUpdated', handleStorageChange);
+    window.addEventListener("userDataUpdated", handleStorageChange);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('userDataUpdated', handleStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("userDataUpdated", handleStorageChange);
     };
   }, []);
 
@@ -82,19 +106,18 @@ export default function ClassesManagement() {
   useEffect(() => {
     if (!user) {
       try {
-        const userData = localStorage.getItem('user');
+        const userData = localStorage.getItem("user");
         if (userData) {
           JSON.parse(userData); // Test parsing again
         }
       } catch (err) {
         handleError(err, {
-          toastMessage: t('failedToParseUserData', 'Failed to parse user data'),
-          setError: false // Don't show error display for localStorage parsing issues
+          toastMessage: t("failedToParseUserData", "Failed to parse user data"),
+          setError: false, // Don't show error display for localStorage parsing issues
         });
       }
     }
   }, [user, handleError, t]);
-
 
   const [classes, setClasses] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -106,12 +129,15 @@ export default function ClassesManagement() {
   const [dataFetched, setDataFetched] = useState(false);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const [editingClassId, setEditingClassId] = useState(null);
-  
+
   // Debug pagination loading state changes
   useEffect(() => {
-    console.log('🔄 paginationLoading changed:', paginationLoading);
+    console.log("🔄 paginationLoading changed:", paginationLoading);
   }, [paginationLoading]);
-  const [schoolInfo, setSchoolInfo] = useState({ id: null, name: 'Loading...' });
+  const [schoolInfo, setSchoolInfo] = useState({
+    id: null,
+    name: "Loading...",
+  });
   const [availableTeachers, setAvailableTeachers] = useState([]);
   const [filteredTeachers, setFilteredTeachers] = useState([]);
 
@@ -122,32 +148,31 @@ export default function ClassesManagement() {
   const [classesPerPage, setClassesPerPage] = useState(6);
 
   // Filter state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState("");
   const [isFiltering, setIsFiltering] = useState(false);
   const [showAllTeachers, setShowAllTeachers] = useState(false);
 
-
   const [formData, setFormData] = useState(() => {
     return {
-      name: '',
-      gradeLevel: '',
-      section: '',
-      schoolId: '', // Will be set when schoolInfo is loaded
-      teacherId: user?.teacherId || user?.id || '',
-      teacherName: getFullName(user, user?.username || 'Teacher'),
+      name: "",
+      gradeLevel: "",
+      section: "",
+      schoolId: "", // Will be set when schoolInfo is loaded
+      teacherId: user?.teacherId || user?.id || "",
+      teacherName: getFullName(user, user?.username || "Teacher"),
       academicYear: getCurrentAcademicYear(),
-      maxStudents: '30',
-      subject: '',
-      schedule: 'Mon, Wed, Fri',
-      room: '',
-      description: ''
+      maxStudents: "30",
+      subject: "",
+      schedule: "Mon, Wed, Fri",
+      room: "",
+      description: "",
     };
   });
 
-  const grades = GRADE_LEVELS.map(grade => ({
+  const grades = GRADE_LEVELS.map((grade) => ({
     value: grade.value,
-    label: t(`grade${grade.value}`, grade.label)
+    label: t(`grade${grade.value}`, grade.label),
   }));
 
   // Generate academic years dynamically (2 past, current, 3 future for better coverage)
@@ -164,21 +189,32 @@ export default function ClassesManagement() {
 
       // Build request parameters with proper limits
       const params = {
-        limit: 150 // Set a reasonable limit for dropdown
+        limit: 150, // Set a reasonable limit for dropdown
       };
       if (gradeLevel) {
         params.grade_level = gradeLevel;
       }
 
-      const response = await teacherService.getTeachersBySchool(schoolId, params);
+      const response = await teacherService.getTeachersBySchool(
+        schoolId,
+        params,
+      );
 
-      if (response && response.success && response.data && Array.isArray(response.data)) {
+      if (
+        response &&
+        response.success &&
+        response.data &&
+        Array.isArray(response.data)
+      ) {
         // Format teachers for dropdown
-        const formattedTeachers = response.data.map(teacher => ({
-          value: teacher.teacherId?.toString() || '',
-          label: getFullName(teacher.user, teacher.user?.username || `Teacher ${teacher.teacherId}`),
+        const formattedTeachers = response.data.map((teacher) => ({
+          value: teacher.teacherId?.toString() || "",
+          label: getFullName(
+            teacher.user,
+            teacher.user?.username || `Teacher ${teacher.teacherId}`,
+          ),
           gradeLevel: teacher.gradeLevel,
-          teacherData: teacher
+          teacherData: teacher,
         }));
 
         if (gradeLevel) {
@@ -202,9 +238,9 @@ export default function ClassesManagement() {
         return [];
       }
     } catch (error) {
-      console.error('Error fetching teachers:', error);
+      console.error("Error fetching teachers:", error);
       handleError(error, {
-        toastMessage: t('failedToFetchTeachers', 'Failed to fetch teachers')
+        toastMessage: t("failedToFetchTeachers", "Failed to fetch teachers"),
       });
       if (gradeLevel) {
         setFilteredTeachers([]);
@@ -218,10 +254,11 @@ export default function ClassesManagement() {
   // Get school information from localStorage and API
   const fetchSchoolInfo = async () => {
     try {
-      const userData = localStorage.getItem('user');
+      const userData = localStorage.getItem("user");
       if (userData) {
         const user = JSON.parse(userData);
-        const schoolId = user?.teacher?.schoolId || user?.school_id || user?.schoolId;
+        const schoolId =
+          user?.teacher?.schoolId || user?.school_id || user?.schoolId;
 
         if (schoolId) {
           // First, try to get school name from user object
@@ -237,44 +274,48 @@ export default function ClassesManagement() {
           if (schoolNameFromUser) {
             setSchoolInfo({
               id: schoolId,
-              name: schoolNameFromUser
+              name: schoolNameFromUser,
             });
           } else {
             // If not in user data, fetch from API
             try {
               const response = await schoolService.getSchoolById(schoolId);
-              const schoolName = response?.data?.name || response?.name || `School ${schoolId}`;
+              const schoolName =
+                response?.data?.name || response?.name || `School ${schoolId}`;
               setSchoolInfo({
                 id: schoolId,
-                name: schoolName
+                name: schoolName,
               });
             } catch (apiErr) {
-              console.warn('Failed to fetch school from API:', apiErr);
+              console.warn("Failed to fetch school from API:", apiErr);
               setSchoolInfo({
                 id: schoolId,
-                name: `School ${schoolId}`
+                name: `School ${schoolId}`,
               });
             }
           }
         } else {
-          setSchoolInfo({ id: null, name: 'No School Found' });
+          setSchoolInfo({ id: null, name: "No School Found" });
         }
       } else {
-        setSchoolInfo({ id: null, name: 'No School Found' });
+        setSchoolInfo({ id: null, name: "No School Found" });
       }
     } catch (err) {
-      console.error('Error in fetchSchoolInfo:', err);
+      console.error("Error in fetchSchoolInfo:", err);
       handleError(err, {
-        toastMessage: t('failedToFetchSchoolId', 'Failed to fetch school information')
+        toastMessage: t(
+          "failedToFetchSchoolId",
+          "Failed to fetch school information",
+        ),
       });
-      setSchoolInfo({ id: null, name: 'Error Loading School' });
+      setSchoolInfo({ id: null, name: "Error Loading School" });
     }
   };
 
   // Function to refresh user authentication data from localStorage
   const refreshUserData = async () => {
     try {
-      const userData = localStorage.getItem('user');
+      const userData = localStorage.getItem("user");
       if (userData) {
         const user = JSON.parse(userData);
 
@@ -284,9 +325,9 @@ export default function ClassesManagement() {
         let gradeLevels = [];
 
         if (user.classes && Array.isArray(user.classes)) {
-          classIds = user.classes.map(cls => parseInt(cls.class_id));
-          classNames = user.classes.map(cls => cls.name);
-          gradeLevels = user.classes.map(cls => cls.grade_level);
+          classIds = user.classes.map((cls) => parseInt(cls.class_id));
+          classNames = user.classes.map((cls) => cls.name);
+          gradeLevels = user.classes.map((cls) => cls.grade_level);
         } else {
           classIds = user?.classIds || [];
           classNames = user?.classNames || [];
@@ -298,22 +339,22 @@ export default function ClassesManagement() {
           ...user,
           classIds: classIds,
           classNames: classNames,
-          gradeLevels: gradeLevels
+          gradeLevels: gradeLevels,
         };
 
         // Update localStorage and state with fresh data
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        window.dispatchEvent(new Event('userDataUpdated')); // Notify other components
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        window.dispatchEvent(new Event("userDataUpdated")); // Notify other components
         setUser(updatedUser);
         return updatedUser;
       } else {
-        console.warn('No account data received from server');
+        console.warn("No account data received from server");
         return user;
       }
     } catch (err) {
-      console.error('Error refreshing user data:', err);
+      console.error("Error refreshing user data:", err);
       handleError(err, {
-        toastMessage: t('failedToFetchUserData', 'Failed to refresh user data')
+        toastMessage: t("failedToFetchUserData", "Failed to refresh user data"),
       });
       return user; // Return original user data if refresh fails
     }
@@ -345,117 +386,146 @@ export default function ClassesManagement() {
   // Re-fetch classes when user ID changes (after authentication)
   // Note: fetchClasses now uses my-account API directly, so we don't need to depend on user.classIds
 
+  const fetchClasses = useStableCallback(
+    async (
+      page = currentPage,
+      gradeLevel = selectedGradeLevel,
+      search = searchTerm,
+      isPagination = false,
+    ) => {
+      try {
+        if (isPagination) {
+          console.log("🔄 Setting pagination loading to true");
+          setPaginationLoading(true);
+        } else {
+          console.log("🔄 Setting regular loading");
+          startLoading(
+            "fetchClasses",
+            t("loadingClasses", "Loading classes..."),
+          );
+        }
 
-  const fetchClasses = useStableCallback(async (page = currentPage, gradeLevel = selectedGradeLevel, search = searchTerm, isPagination = false) => {
-    try {
-      if (isPagination) {
-        console.log('🔄 Setting pagination loading to true');
-        setPaginationLoading(true);
-      } else {
-        console.log('🔄 Setting regular loading');
-        startLoading('fetchClasses', t('loadingClasses', 'Loading classes...'));
-      }
+        if (!user?.id) {
+          setClasses([]);
+          setTotalPages(1);
+          setTotalClasses(0);
+          return;
+        }
 
-      if (!user?.id) {
-        setClasses([]);
-        setTotalPages(1);
-        setTotalClasses(0);
-        return;
-      }
+        if (!schoolInfo?.id) {
+          setClasses([]);
+          setTotalPages(1);
+          setTotalClasses(0);
+          return;
+        }
 
-      if (!schoolInfo?.id) {
-        setClasses([]);
-        setTotalPages(1);
-        setTotalClasses(0);
-        return;
-      }
-
-      // Build query parameters
-      const queryParams = {
-        page: page,
-        limit: classesPerPage
-      };
-
-      // Add filters if they exist
-      if (gradeLevel) {
-        queryParams.gradeLevel = gradeLevel;
-      }
-      if (search && search.trim()) {
-        queryParams.search = search.trim();
-      }
-
-      // Get class data from /classes/school/{schoolId} endpoint with pagination and filters
-      const classResponse = await classService.getBySchool(schoolInfo.id, queryParams);
-
-      if (!classResponse || !classResponse.success || !classResponse.classes || !Array.isArray(classResponse.classes)) {
-        setClasses([]);
-        return;
-      }
-
-
-      // Process classes from the new API response - teacher data is now flattened at top level
-      const formattedClasses = classResponse.classes.map((classData) => {
-        // Construct teacher name from flat response structure
-        const teacherName = classData.fullName || classData.username || '';
-
-        return {
-          id: classData.classId,
-          name: classData.name,
-          grade: getGradeLabel(String(classData.gradeLevel), t),
-          gradeLevel: classData.gradeLevel,
-          section: classData.section || '',
-          subject: `Subject ${classData.gradeLevel}`,
-          teacher: teacherName,
-          teacherId: classData.teacherId || null,
-          userId: classData.userId,
-          username: classData.username,
-          schedule: 'Mon, Wed, Fri',
-          room: `Room ${classData.classId}`,
-          capacity: classData.maxStudents || 50,
-          enrolled: classData.studentCount || 0,
-          description: `Class ${classData.name} - Grade ${classData.gradeLevel} (${classData.section})`,
-          classId: classData.classId,
-          maxStudents: classData.maxStudents || 50,
-          academicYear: classData.academicYear,
-          status: classData.status,
-          schoolId: classData.schoolId,
-          schoolName: classData.schoolName
+        // Build query parameters
+        const queryParams = {
+          page: page,
+          limit: classesPerPage,
         };
-      });
-      setClasses(formattedClasses);
 
-      // Update pagination state
-      const total = classResponse.pagination?.total || classResponse.total || formattedClasses.length;
-      const pages = classResponse.pagination?.totalPages || Math.ceil(total / classesPerPage);
+        // Add filters if they exist
+        if (gradeLevel) {
+          queryParams.gradeLevel = gradeLevel;
+        }
+        if (search && search.trim()) {
+          queryParams.search = search.trim();
+        }
 
-      setTotalClasses(total);
-      setTotalPages(pages);
-      setCurrentPage(page);
-      setDataFetched(true); // Mark data as fetched after successful API call
-      setInitialLoading(false); // End initial loading after successful data fetch
+        // Get class data from /classes/school/{schoolId} endpoint with pagination and filters
+        const classResponse = await classService.getBySchool(
+          schoolInfo.id,
+          queryParams,
+        );
 
-    } catch (error) {
-      console.error('Failed to fetch classes:', error);
-      handleError(error, {
-        toastMessage: t('error.fetchingClasses') || 'Failed to fetch classes'
-      });
-      setClasses([]); // Set empty array on error
-      setTotalPages(1);
-      setTotalClasses(0);
-      setDataFetched(true); // Mark data as fetched even on error
-      setInitialLoading(false); // End initial loading even on error
-    } finally {
-      if (isPagination) {
-        setPaginationLoading(false);
-      } else {
-        stopLoading('fetchClasses');
+        if (
+          !classResponse ||
+          !classResponse.success ||
+          !classResponse.classes ||
+          !Array.isArray(classResponse.classes)
+        ) {
+          setClasses([]);
+          return;
+        }
+
+        // Process classes from the new API response - teacher data is now flattened at top level
+        const formattedClasses = classResponse.classes.map((classData) => {
+          // Construct teacher name from flat response structure
+          const teacherName = classData.fullName || classData.username || "";
+
+          return {
+            id: classData.classId,
+            name: classData.name,
+            grade: getGradeLabel(String(classData.gradeLevel), t),
+            gradeLevel: classData.gradeLevel,
+            section: classData.section || "",
+            subject: `Subject ${classData.gradeLevel}`,
+            teacher: teacherName,
+            teacherId: classData.teacherId || null,
+            userId: classData.userId,
+            username: classData.username,
+            schedule: "Mon, Wed, Fri",
+            room: `Room ${classData.classId}`,
+            capacity: classData.maxStudents || 50,
+            enrolled: classData.studentCount || 0,
+            description: `Class ${classData.name} - Grade ${classData.gradeLevel} (${classData.section})`,
+            classId: classData.classId,
+            maxStudents: classData.maxStudents || 50,
+            academicYear: classData.academicYear,
+            status: classData.status,
+            schoolId: classData.schoolId,
+            schoolName: classData.schoolName,
+          };
+        });
+        setClasses(formattedClasses);
+
+        // Update pagination state
+        const total =
+          classResponse.pagination?.total ||
+          classResponse.total ||
+          formattedClasses.length;
+        const pages =
+          classResponse.pagination?.totalPages ||
+          Math.ceil(total / classesPerPage);
+
+        setTotalClasses(total);
+        setTotalPages(pages);
+        setCurrentPage(page);
+        setDataFetched(true); // Mark data as fetched after successful API call
+        setInitialLoading(false); // End initial loading after successful data fetch
+      } catch (error) {
+        console.error("Failed to fetch classes:", error);
+        handleError(error, {
+          toastMessage: t("error.fetchingClasses") || "Failed to fetch classes",
+        });
+        setClasses([]); // Set empty array on error
+        setTotalPages(1);
+        setTotalClasses(0);
+        setDataFetched(true); // Mark data as fetched even on error
+        setInitialLoading(false); // End initial loading even on error
+      } finally {
+        if (isPagination) {
+          setPaginationLoading(false);
+        } else {
+          stopLoading("fetchClasses");
+        }
       }
-    }
-  }, [startLoading, stopLoading, t, user?.id, handleError, schoolInfo?.id, classesPerPage]);
+    },
+    [
+      startLoading,
+      stopLoading,
+      t,
+      user?.id,
+      handleError,
+      schoolInfo?.id,
+      classesPerPage,
+    ],
+  );
   // Main effect to fetch classes when user and school are available (initial load only)
   useEffect(() => {
     if (user?.id && schoolInfo?.id && currentPage === 1) {
-      console.log('📄 Initial fetch triggered');
+      console.log("📄 Initial fetch triggered");
       fetchClasses(currentPage, selectedGradeLevel, searchTerm, false);
     }
   }, [user?.id, schoolInfo?.id]); // Only for initial load, pagination handled in handlePageChange
@@ -464,11 +534,14 @@ export default function ClassesManagement() {
   useEffect(() => {
     if (!user?.id || !schoolInfo?.id) return;
 
-    const timeoutId = setTimeout(() => {
-      setCurrentPage(1); // Reset to first page
-      fetchClasses(1, selectedGradeLevel, searchTerm);
-      setIsFiltering(searchTerm || selectedGradeLevel ? true : false);
-    }, searchTerm ? 500 : 0); // 500ms debounce for search, immediate for grade level
+    const timeoutId = setTimeout(
+      () => {
+        setCurrentPage(1); // Reset to first page
+        fetchClasses(1, selectedGradeLevel, searchTerm);
+        setIsFiltering(searchTerm || selectedGradeLevel ? true : false);
+      },
+      searchTerm ? 500 : 0,
+    ); // 500ms debounce for search, immediate for grade level
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm, selectedGradeLevel]); // Removed user and schoolInfo dependencies
@@ -476,24 +549,24 @@ export default function ClassesManagement() {
   // Auto-fetch classes when limit per page changes
   useEffect(() => {
     if (!user?.id || !schoolInfo?.id || !dataFetched) return;
-    console.log('🔄 classesPerPage changed, fetching classes with new limit');
+    console.log("🔄 classesPerPage changed, fetching classes with new limit");
     fetchClasses(1, selectedGradeLevel, searchTerm, true);
   }, [classesPerPage]); // Trigger fetch when limit changes
 
   const handleAddClass = () => {
     setFormData({
-      name: '',
-      gradeLevel: '',
-      section: '',
-      schoolId: schoolInfo.id?.toString() || '',
-      teacherId: '', // Empty by default to show placeholder
-      teacherName: '',
+      name: "",
+      gradeLevel: "",
+      section: "",
+      schoolId: schoolInfo.id?.toString() || "",
+      teacherId: "", // Empty by default to show placeholder
+      teacherName: "",
       academicYear: getCurrentAcademicYear(),
-      maxStudents: '',
-      subject: '',
-      schedule: '',
-      room: '',
-      description: ''
+      maxStudents: "",
+      subject: "",
+      schedule: "",
+      room: "",
+      description: "",
     });
 
     // Fetch all teachers when opening add modal (no grade filter)
@@ -513,9 +586,9 @@ export default function ClassesManagement() {
       // The classItem contains all the necessary fields (fullName, username, etc.)
       const classData = classItem;
 
-
       // Extract grade level from class name if not available in gradeLevel
-      let gradeLevel = classData.gradeLevel || classData.grade?.replace('Grade ', '') || '';
+      let gradeLevel =
+        classData.gradeLevel || classData.grade?.replace("Grade ", "") || "";
       if (!gradeLevel && classData.name) {
         const gradeMatch = classData.name.match(/\d+/);
         if (gradeMatch) {
@@ -524,10 +597,10 @@ export default function ClassesManagement() {
       }
 
       // Convert gradeLevel to string to match select option values
-      gradeLevel = gradeLevel ? gradeLevel.toString() : '';
+      gradeLevel = gradeLevel ? gradeLevel.toString() : "";
 
       // Get academic year from class data
-      let academicYear = classData.academicYear || '';
+      let academicYear = classData.academicYear || "";
 
       // If we don't have an academic year, use the current academic year
       if (!academicYear) {
@@ -536,7 +609,7 @@ export default function ClassesManagement() {
 
       // Create form data - use schoolId from my-account instead of API response
       // For teacher name, try multiple fallback sources
-      let teacherName = 'Teacher'; // default fallback
+      let teacherName = "Teacher"; // default fallback
 
       // Try to get teacher name from API response - handle both old nested and new flat structure
       if (classData.fullName) {
@@ -545,30 +618,38 @@ export default function ClassesManagement() {
       } else if (classData.username) {
         // New flat response format fallback
         teacherName = classData.username;
-      } else if (classData.teacher?.user?.first_name || classData.teacher?.user?.last_name || classData.teacher?.first_name || classData.teacher?.last_name) {
+      } else if (
+        classData.teacher?.user?.first_name ||
+        classData.teacher?.user?.last_name ||
+        classData.teacher?.first_name ||
+        classData.teacher?.last_name
+      ) {
         // Old nested structure (backward compatibility)
-        teacherName = getFullName(classData.teacher.user || classData.teacher, classData.teacher.username || 'Teacher');
+        teacherName = getFullName(
+          classData.teacher.user || classData.teacher,
+          classData.teacher.username || "Teacher",
+        );
       } else if (classData.teacher?.username) {
         // Old nested structure fallback
         teacherName = classData.teacher.username;
       } else {
         // Fallback to current user's name if this is their class
-        teacherName = getFullName(user, user?.username || 'Teacher');
+        teacherName = getFullName(user, user?.username || "Teacher");
       }
 
       const formDataToSet = {
-        name: classData.name || '',
+        name: classData.name || "",
         gradeLevel: gradeLevel,
-        section: classData.section || '',
-        schoolId: schoolInfo.id?.toString() || '', // Use schoolId from my-account
-        teacherId: classData.teacherId?.toString() || '',
+        section: classData.section || "",
+        schoolId: schoolInfo.id?.toString() || "", // Use schoolId from my-account
+        teacherId: classData.teacherId?.toString() || "",
         teacherName: teacherName,
         academicYear: academicYear,
-        maxStudents: classData.maxStudents?.toString() || '30',
-        subject: classData.subject || `Subject ${gradeLevel || ''}`.trim(),
-        schedule: classData.schedule || 'Mon, Wed, Fri',
-        room: classData.room || `Room ${classData.classId || ''}`.trim(),
-        description: classData.description || ''
+        maxStudents: classData.maxStudents?.toString() || "30",
+        subject: classData.subject || `Subject ${gradeLevel || ""}`.trim(),
+        schedule: classData.schedule || "Mon, Wed, Fri",
+        room: classData.room || `Room ${classData.classId || ""}`.trim(),
+        description: classData.description || "",
       };
 
       // Fetch teachers for the grade level when editing
@@ -597,7 +678,9 @@ export default function ClassesManagement() {
         const currentTeacherId = formDataToSet.teacherId.toString();
 
         // Check if current teacher is already in allTeachers
-        const inAllTeachers = allTeachers.find(t => t.value === currentTeacherId);
+        const inAllTeachers = allTeachers.find(
+          (t) => t.value === currentTeacherId,
+        );
 
         // Only add if not already present
         if (!inAllTeachers) {
@@ -612,7 +695,10 @@ export default function ClassesManagement() {
             formattedTeacherName = classData.username;
           } else if (classData.teacher?.user) {
             // Old nested structure
-            formattedTeacherName = getFullName(classData.teacher.user, classData.teacher.user.username || teacherName);
+            formattedTeacherName = getFullName(
+              classData.teacher.user,
+              classData.teacher.user.username || teacherName,
+            );
           } else if (classData.teacher?.username) {
             // Old nested structure fallback
             formattedTeacherName = classData.teacher.username;
@@ -622,7 +708,10 @@ export default function ClassesManagement() {
             value: currentTeacherId,
             label: formattedTeacherName || teacherName,
             gradeLevel: classData.gradeLevel,
-            teacherData: classData.teacher || { fullName: classData.fullName, username: classData.username }
+            teacherData: classData.teacher || {
+              fullName: classData.fullName,
+              username: classData.username,
+            },
           };
 
           // Add to allTeachers
@@ -631,10 +720,14 @@ export default function ClassesManagement() {
 
         // Ensure current teacher is in gradeTeachers when filtering by grade
         if (!showAllTeachers) {
-          const inGradeTeachers = gradeTeachers.find(t => t.value === currentTeacherId);
+          const inGradeTeachers = gradeTeachers.find(
+            (t) => t.value === currentTeacherId,
+          );
           if (!inGradeTeachers) {
             // Get the teacher object from allTeachers if it exists there
-            const teacherFromAll = allTeachers.find(t => t.value === currentTeacherId);
+            const teacherFromAll = allTeachers.find(
+              (t) => t.value === currentTeacherId,
+            );
 
             if (teacherFromAll) {
               // Reuse the teacher object from allTeachers
@@ -643,7 +736,10 @@ export default function ClassesManagement() {
               // Create a new teacher object with consistent formatting
               let formattedTeacherName = teacherName;
               if (classData.teacher?.user) {
-                formattedTeacherName = getFullName(classData.teacher.user, classData.teacher.user.username || teacherName);
+                formattedTeacherName = getFullName(
+                  classData.teacher.user,
+                  classData.teacher.user.username || teacherName,
+                );
               } else if (classData.teacher?.username) {
                 formattedTeacherName = classData.teacher.username;
               }
@@ -652,7 +748,7 @@ export default function ClassesManagement() {
                 value: currentTeacherId,
                 label: formattedTeacherName || teacherName,
                 gradeLevel: classData.gradeLevel,
-                teacherData: classData.teacher
+                teacherData: classData.teacher,
               };
               gradeTeachers = [teacherToAdd, ...gradeTeachers];
             }
@@ -675,14 +771,15 @@ export default function ClassesManagement() {
       setFormData(formDataToSet);
       setShowEditModal(true);
     } catch (error) {
-      console.error('Error fetching class details:', error);
-      showError(t('errorFetchingClassDetails') || 'Error fetching class details');
+      console.error("Error fetching class details:", error);
+      showError(
+        t("errorFetchingClassDetails") || "Error fetching class details",
+      );
     } finally {
       setLoading(false);
       setEditingClassId(null);
     }
   };
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -690,16 +787,30 @@ export default function ClassesManagement() {
 
     try {
       // Validate required fields
-      if (!formData.name || !formData.gradeLevel || !formData.academicYear || !formData.maxStudents) {
-        showError(t('pleaseCompleteAllRequiredFields') || 'Please complete all required fields');
+      if (
+        !formData.name ||
+        !formData.gradeLevel ||
+        !formData.academicYear ||
+        !formData.maxStudents
+      ) {
+        showError(
+          t("pleaseCompleteAllRequiredFields") ||
+            "Please complete all required fields",
+        );
         return;
       }
 
       // Validate school information is available
       if (!schoolInfo.id) {
         // If school info is still loading, just show a loading message
-        if (schoolInfo.name === 'Loading...' || schoolInfo.name === t('loadingText')) {
-          showError(t('schoolInfoStillLoading') || 'School information is still loading. Please wait a moment and try again.');
+        if (
+          schoolInfo.name === "Loading..." ||
+          schoolInfo.name === t("loadingText")
+        ) {
+          showError(
+            t("schoolInfoStillLoading") ||
+              "School information is still loading. Please wait a moment and try again.",
+          );
           return;
         }
 
@@ -708,7 +819,10 @@ export default function ClassesManagement() {
 
         // Check again after refetch
         if (!schoolInfo.id) {
-          showError(t('schoolInfoNotAvailable') || 'School information is not available. Please try refreshing the page or contact administrator.');
+          showError(
+            t("schoolInfoNotAvailable") ||
+              "School information is not available. Please try refreshing the page or contact administrator.",
+          );
           return;
         }
       }
@@ -716,34 +830,48 @@ export default function ClassesManagement() {
       const classData = {
         name: formData.name.trim(),
         gradeLevel: parseInt(formData.gradeLevel),
-        section: formData.section?.trim() || '',
+        section: formData.section?.trim() || "",
         schoolId: parseInt(schoolInfo.id) || 0, // Always use schoolId from my-account
         teacherId: parseInt(formData.teacherId) || 0,
         academicYear: formData.academicYear.trim(),
-        maxStudents: parseInt(formData.maxStudents) || 200
+        maxStudents: parseInt(formData.maxStudents) || 200,
       };
 
       // Additional validation
-      if (isNaN(classData.gradeLevel) || classData.gradeLevel < 0 || classData.gradeLevel > 12) {
-        showError(t('invalidGradeLevel') || 'Grade level must be between 0 and 12');
+      if (
+        isNaN(classData.gradeLevel) ||
+        classData.gradeLevel < 0 ||
+        classData.gradeLevel > 12
+      ) {
+        showError(
+          t("invalidGradeLevel") || "Grade level must be between 0 and 12",
+        );
         return;
       }
 
       if (classData.maxStudents < 1 || classData.maxStudents > 200) {
-        showError(t('invalidMaxStudents') || 'Maximum students must be between 1 and 200');
+        showError(
+          t("invalidMaxStudents") ||
+            "Maximum students must be between 1 and 200",
+        );
         return;
       }
 
       // Validate that a teacher is selected
       if (!formData.teacherId || parseInt(formData.teacherId) === 0) {
-        showError(t('classMustHaveTeacher') || 'Class must have a teacher assigned. Please select a teacher.');
+        showError(
+          t("classMustHaveTeacher") ||
+            "Class must have a teacher assigned. Please select a teacher.",
+        );
         return;
       }
 
       if (showAddModal) {
         const response = await classService.createClass(classData);
         if (response.success) {
-          showSuccess(t('classAddedSuccessfully') || 'Class added successfully');
+          showSuccess(
+            t("classAddedSuccessfully") || "Class added successfully",
+          );
           clearError(); // Clear any previous errors
           setShowAddModal(false);
 
@@ -753,12 +881,19 @@ export default function ClassesManagement() {
           // Then fetch classes with updated user data
           await fetchClasses();
         } else {
-          throw new Error(response.message || response.error || 'Failed to create class');
+          throw new Error(
+            response.message || response.error || "Failed to create class",
+          );
         }
       } else if (showEditModal) {
-        const response = await classService.updateClass(selectedClass.classId, classData);
+        const response = await classService.updateClass(
+          selectedClass.classId,
+          classData,
+        );
         if (response.success) {
-          showSuccess(t('classUpdatedSuccessfully') || 'Class updated successfully');
+          showSuccess(
+            t("classUpdatedSuccessfully") || "Class updated successfully",
+          );
           clearError(); // Clear any previous errors
           setShowEditModal(false);
 
@@ -769,16 +904,21 @@ export default function ClassesManagement() {
           await fetchClasses();
         } else {
           // Handle server-side errors (including authorization)
-          const errorMessage = response.message || response.error || t('errorUpdatingClass') || 'Error updating class';
+          const errorMessage =
+            response.message ||
+            response.error ||
+            t("errorUpdatingClass") ||
+            "Error updating class";
           throw new Error(errorMessage);
         }
       }
     } catch (error) {
-      console.error('Error saving class:', error);
-      console.error('Error details - errors field:', error.errors);
+      console.error("Error saving class:", error);
+      console.error("Error details - errors field:", error.errors);
 
       // Provide specific error messages based on the error
-      let displayMessage = error.message || t('errorSavingClass') || 'Error saving class';
+      let displayMessage =
+        error.message || t("errorSavingClass") || "Error saving class";
       let hasDetailedErrors = false;
 
       // Check for detailed errors from API response
@@ -787,38 +927,57 @@ export default function ClassesManagement() {
 
         // Check for class name duplicate error
         if (error.errors.name) {
-          errorList.push(`- ${t('classNameDuplicate') || 'ឈ្មោះថ្នាក់មិនគួរស្ថិតក្នុងលក្ខណៈដូច្នេះទេ'}`);
+          errorList.push(
+            `- ${t("classNameDuplicate") || "ឈ្មោះថ្នាក់មិនគួរស្ថិតក្នុងលក្ខណៈដូច្នេះទេ"}`,
+          );
           hasDetailedErrors = true;
         }
 
         // Check for teacher requirement error
         if (error.errors.teacherId) {
-          errorList.push(`- ${t('classTeacherRequired') || 'ថ្នាក់ត្រូវតែមានគ្រូបង្រៀន'}`);
+          errorList.push(
+            `- ${t("classTeacherRequired") || "ថ្នាក់ត្រូវតែមានគ្រូបង្រៀន"}`,
+          );
           hasDetailedErrors = true;
         }
 
         // If we found specific errors, show them
         if (errorList.length > 0) {
-          const header = t('pleaseCheck') || 'សូមពិនិត្យ';
-          displayMessage = header + '\n' + errorList.join('\n');
+          const header = t("pleaseCheck") || "សូមពិនិត្យ";
+          displayMessage = header + "\n" + errorList.join("\n");
         }
       }
 
       // Fallback to keyword matching if no detailed errors were found
       if (!hasDetailedErrors) {
-        const errorStr = error.message?.toLowerCase() || '';
+        const errorStr = error.message?.toLowerCase() || "";
 
         // If we get a generic server error (500), show the validation checks
-        if (errorStr.includes('internal server error') || errorStr.includes('error')) {
-          const header = t('pleaseCheck') || 'សូមពិនិត្យ';
-          const nameError = `- ${t('classNameDuplicate') || 'ឈ្មោះថ្នាក់មិនគួរស្ថិតក្នុងលក្ខណៈដូច្នេះទេ'}`;
-          const teacherError = `- ${t('classTeacherRequired') || 'ថ្នាក់ត្រូវតែមានគ្រូបង្រៀន'}`;
-          displayMessage = header + '\n' + nameError + '\n' + teacherError;
-        } else if (errorStr.includes('duplicate') || errorStr.includes('already exists') || errorStr.includes('name')) {
-          const header = t('pleaseCheck') || 'សូមពិនិត្យ';
-          displayMessage = header + '\n- ' + (t('classNameDuplicate') || 'ឈ្មោះថ្នាក់មិនគួរស្ថិតក្នុងលក្ខណៈដូច្នេះទេ');
-        } else if (errorStr.includes('teacher') || errorStr.includes('invalid teacher')) {
-          displayMessage = '- ' + (t('classTeacherRequired') || 'ថ្នាក់ត្រូវតែមានគ្រូបង្រៀន');
+        if (
+          errorStr.includes("internal server error") ||
+          errorStr.includes("error")
+        ) {
+          const header = t("pleaseCheck") || "សូមពិនិត្យ";
+          const nameError = `- ${t("classNameDuplicate") || "ឈ្មោះថ្នាក់មិនគួរស្ថិតក្នុងលក្ខណៈដូច្នេះទេ"}`;
+          const teacherError = `- ${t("classTeacherRequired") || "ថ្នាក់ត្រូវតែមានគ្រូបង្រៀន"}`;
+          displayMessage = header + "\n" + nameError + "\n" + teacherError;
+        } else if (
+          errorStr.includes("duplicate") ||
+          errorStr.includes("already exists") ||
+          errorStr.includes("name")
+        ) {
+          const header = t("pleaseCheck") || "សូមពិនិត្យ";
+          displayMessage =
+            header +
+            "\n- " +
+            (t("classNameDuplicate") ||
+              "ឈ្មោះថ្នាក់មិនគួរស្ថិតក្នុងលក្ខណៈដូច្នេះទេ");
+        } else if (
+          errorStr.includes("teacher") ||
+          errorStr.includes("invalid teacher")
+        ) {
+          displayMessage =
+            "- " + (t("classTeacherRequired") || "ថ្នាក់ត្រូវតែមានគ្រូបង្រៀន");
         }
       }
 
@@ -833,7 +992,9 @@ export default function ClassesManagement() {
     try {
       const response = await classService.deleteClass(selectedClass.classId);
       if (response.success) {
-        showSuccess(t('classDeletedSuccessfully') || 'Class deleted successfully');
+        showSuccess(
+          t("classDeletedSuccessfully") || "Class deleted successfully",
+        );
         clearError(); // Clear any previous errors
         setShowDeleteDialog(false);
 
@@ -844,11 +1005,15 @@ export default function ClassesManagement() {
         setCurrentPage(1);
         await fetchClasses(1, selectedGradeLevel, searchTerm, false);
       } else {
-        throw new Error(response.message || response.error || 'Failed to delete class');
+        throw new Error(
+          response.message || response.error || "Failed to delete class",
+        );
       }
     } catch (error) {
-      console.error('Error deleting class:', error);
-      showError(error.message || t('errorDeletingClass') || 'Error deleting class');
+      console.error("Error deleting class:", error);
+      showError(
+        error.message || t("errorDeletingClass") || "Error deleting class",
+      );
     } finally {
       setLoading(false);
     }
@@ -856,7 +1021,7 @@ export default function ClassesManagement() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Filter handlers
@@ -872,44 +1037,71 @@ export default function ClassesManagement() {
   };
 
   const handleClearFilters = () => {
-    setSearchTerm('');
-    setSelectedGradeLevel('');
+    setSearchTerm("");
+    setSelectedGradeLevel("");
     setCurrentPage(1);
     // Fetch classes will be triggered by useEffect
   };
 
   // Pagination handlers - memoized to prevent unnecessary re-renders
-  const handlePageChange = React.useCallback((newPage) => {
-    console.log('🔄 Pagination click:', { newPage, currentPage, totalPages, paginationLoading });
-    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage && !paginationLoading) {
-      console.log('✅ Valid pagination change, setting pagination loading and updating page');
-      setPaginationLoading(true); // Set loading immediately
-      setCurrentPage(newPage);
-      // Call fetchClasses directly with pagination flag
-      fetchClasses(newPage, selectedGradeLevel, searchTerm, true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      console.log('❌ Invalid pagination change blocked');
-    }
-  }, [currentPage, totalPages, paginationLoading, fetchClasses, selectedGradeLevel, searchTerm]);
+  const handlePageChange = React.useCallback(
+    (newPage) => {
+      console.log("🔄 Pagination click:", {
+        newPage,
+        currentPage,
+        totalPages,
+        paginationLoading,
+      });
+      if (
+        newPage >= 1 &&
+        newPage <= totalPages &&
+        newPage !== currentPage &&
+        !paginationLoading
+      ) {
+        console.log(
+          "✅ Valid pagination change, setting pagination loading and updating page",
+        );
+        setPaginationLoading(true); // Set loading immediately
+        setCurrentPage(newPage);
+        // Call fetchClasses directly with pagination flag
+        fetchClasses(newPage, selectedGradeLevel, searchTerm, true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        console.log("❌ Invalid pagination change blocked");
+      }
+    },
+    [
+      currentPage,
+      totalPages,
+      paginationLoading,
+      fetchClasses,
+      selectedGradeLevel,
+      searchTerm,
+    ],
+  );
 
   // Handle limit (items per page) change
-  const handleLimitChange = React.useCallback((newLimit) => {
-    console.log('🔄 Limit change:', { newLimit, classesPerPage });
-    setPaginationLoading(true);
-    setClassesPerPage(newLimit);
-    setCurrentPage(1); // Reset to first page when changing limit
-    // fetchClasses will be triggered by useEffect watching classesPerPage
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [classesPerPage]);
-
+  const handleLimitChange = React.useCallback(
+    (newLimit) => {
+      console.log("🔄 Limit change:", { newLimit, classesPerPage });
+      setPaginationLoading(true);
+      setClassesPerPage(newLimit);
+      setCurrentPage(1); // Reset to first page when changing limit
+      // fetchClasses will be triggered by useEffect watching classesPerPage
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [classesPerPage],
+  );
 
   // Use the shared enrollment status utility from exportUtils
 
   // Compute the class with the highest number of students
   const mostEnrolledClass = React.useMemo(() => {
     if (!classes || classes.length === 0) return null;
-    return classes.reduce((maxCls, cls) => (cls.enrolled > (maxCls?.enrolled ?? -1) ? cls : maxCls), null);
+    return classes.reduce(
+      (maxCls, cls) => (cls.enrolled > (maxCls?.enrolled ?? -1) ? cls : maxCls),
+      null,
+    );
   }, [classes]);
 
   // Show error state if error exists (prioritize over loading)
@@ -917,10 +1109,12 @@ export default function ClassesManagement() {
     return (
       <ErrorDisplay
         error={error}
-        onRetry={() => retry(() => {
-          clearError();
-          window.location.reload(); // Reload the page to reinitialize everything
-        })}
+        onRetry={() =>
+          retry(() => {
+            clearError();
+            window.location.reload(); // Reload the page to reinitialize everything
+          })
+        }
         size="lg"
         className="min-h-screen bg-gray-50"
       />
@@ -931,44 +1125,47 @@ export default function ClassesManagement() {
   if (initialLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <PageLoader message={t('loadingClasses')} />
+        <PageLoader message={t("loadingClasses")} />
       </div>
     );
   }
 
   return (
-    <PageTransition duration='200' variant='zoom'>
-      <div className="p-3 sm:p-4">
+    <PageTransition variant="fade" className="flex-1">
+      <div className="p-3 sm:p-6">
         {/* Header */}
-        <FadeInSection className='rounded-lg p-4 sm:p-6 transition-all duration-300 mb-4'>
-          <div className="mb-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {t('classesManagement') || 'Classes Management'}
-                </h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  {t('manageClassSchedules') || 'Manage class schedules, assignments, and enrollment'}
-                </p>
-              </div>
-              <Button
-                onClick={handleAddClass}
-                disabled={schoolInfo.name === 'Loading...' || schoolInfo.name.includes('Error') || !schoolInfo.id}
-                variant="primary"
-                size="sm"
-                className="mt-4 sm:mt-0 max-w-32"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {t('addClass') || 'Add Class'}
-              </Button>
+        <FadeInSection delay={100} className=" my-4 sm:my-2 mx-2">
+          <div className="flex sm:flex-row justify-between items-start mb-4">
+            <div className="">
+              <h4 className="text-lg sm:text-xl font-bold text-gray-900">
+                {t("classesManagement") || "Classes Management"}
+              </h4>
+              <p className="mt-1 text-sm text-gray-500">
+                {t("manageClassSchedules") ||
+                  "Manage class schedules, assignments, and enrollment"}
+              </p>
             </div>
+            <Button
+              onClick={handleAddClass}
+              disabled={
+                schoolInfo.name === "Loading..." ||
+                schoolInfo.name.includes("Error") ||
+                !schoolInfo.id
+              }
+              variant="primary"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {t("addClass") || "Add Class"}
+            </Button>
           </div>
           <div className="">
             <div className="flex flex-col sm:flex-row gap-4 items-end">
               {/* Search Input */}
               <div className="flex-1 w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('search', 'Search')}
+                  {t("search", "Search")}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -978,8 +1175,8 @@ export default function ClassesManagement() {
                     type="text"
                     value={searchTerm}
                     onChange={handleSearchChange}
-                    placeholder={t('searchClasses', 'Search classes...')}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                    placeholder={t("searchClasses", "Search classes...")}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-sm leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   />
                 </div>
               </div>
@@ -987,16 +1184,16 @@ export default function ClassesManagement() {
               {/* Grade Level Filter */}
               <div className="w-full sm:w-48">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('gradeLevel', 'Grade Level')}
+                  {t("gradeLevel", "Grade Level")}
                 </label>
                 <Dropdown
                   value={selectedGradeLevel}
                   onValueChange={handleGradeLevelChange}
                   options={[
-                    { value: '', label: t('allGrades', 'All Grades') },
-                    ...grades
+                    { value: "", label: t("allGrades", "All Grades") },
+                    ...grades,
                   ]}
-                  placeholder={t('selectGradeLevel', 'Select Grade Level')}
+                  placeholder={t("selectGradeLevel", "Select Grade Level")}
                   className="w-full"
                   icon={Filter}
                 />
@@ -1010,124 +1207,153 @@ export default function ClassesManagement() {
                     variant="outline"
                     size="sm"
                   >
-                    {t('clearFilters', 'Reset Filters')}
+                    {t("clearFilters", "Reset Filters")}
                   </Button>
                 )}
               </div>
             </div>
             {/* Classes Grid */}
-        <FadeInSection delay={0.2} className='mt-3 sm:mt-6'>
-          {paginationLoading || isLoading('fetchClasses') ? (
-            <div className="flex items-center justify-center py-12">
-              {console.log('🎯 Rendering LoadingSpinner for pagination')}
-              <LoadingSpinner size="lg" variant="primary">
-                {paginationLoading ? t('loadingPage', 'Loading page...') : t('loadingClasses', 'Loading classes...')}
-              </LoadingSpinner>
-            </div>
-          ) : classes.length === 0 && dataFetched ? (
-            <EmptyState
-              icon={BookOpen}
-              title={searchTerm || selectedGradeLevel ?
-                t('noClassesFound', 'No classes found') :
-                t('noClassesYet', 'No classes yet')
-              }
-              description={searchTerm || selectedGradeLevel ?
-                t('noClassesMatchFilter', 'No classes match your current filters. Try adjusting your search or grade level filter.') :
-                t('noClassesDescription', 'Get started by creating your first class.')
-              }
-              variant="neutral"
-              actionLabel={!(searchTerm || selectedGradeLevel) ? t('addClass', 'Add Class') : undefined}
-              onAction={!(searchTerm || selectedGradeLevel) ? handleAddClass : undefined}
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {classes.map((classItem) => {
-                const badges = [];
+            <FadeInSection delay={0.2} className="mt-3 sm:mt-6">
+              {paginationLoading || isLoading("fetchClasses") ? (
+                <div className="flex items-center justify-center py-12">
+                  {console.log("🎯 Rendering LoadingSpinner for pagination")}
+                  <LoadingSpinner size="lg" variant="primary">
+                    {paginationLoading
+                      ? t("loadingPage", "Loading page...")
+                      : t("loadingClasses", "Loading classes...")}
+                  </LoadingSpinner>
+                </div>
+              ) : classes.length === 0 && dataFetched ? (
+                <EmptyState
+                  icon={BookOpen}
+                  title={
+                    searchTerm || selectedGradeLevel
+                      ? t("noClassesFound", "No classes found")
+                      : t("noClassesYet", "No classes yet")
+                  }
+                  description={
+                    searchTerm || selectedGradeLevel
+                      ? t(
+                          "noClassesMatchFilter",
+                          "No classes match your current filters. Try adjusting your search or grade level filter.",
+                        )
+                      : t(
+                          "noClassesDescription",
+                          "Get started by creating your first class.",
+                        )
+                  }
+                  variant="neutral"
+                  actionLabel={
+                    !(searchTerm || selectedGradeLevel)
+                      ? t("addClass", "Add Class")
+                      : undefined
+                  }
+                  onAction={
+                    !(searchTerm || selectedGradeLevel)
+                      ? handleAddClass
+                      : undefined
+                  }
+                />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {classes.map((classItem) => {
+                    const badges = [];
 
-                if (classItem.teacher && classItem.teacherId) {
-                  badges.push({
-                    label: classItem.teacher,
-                    color: 'blue',
-                    variant: 'outline'
-                  });
-                } else {
-                  badges.push({
-                    label: t('noTeacher', 'No Teacher'),
-                    color: 'gray',
-                    variant: 'outline'
-                  });
-                }
-                if (classItem.academicYear) {
-                  badges.push({
-                    label: classItem.academicYear,
-                    color: 'orange',
-                    variant: 'outline'
-                  });
-                }
+                    if (classItem.teacher && classItem.teacherId) {
+                      badges.push({
+                        label: classItem.teacher,
+                        color: "blue",
+                        variant: "outline",
+                      });
+                    } else {
+                      badges.push({
+                        label: t("noTeacher", "No Teacher"),
+                        color: "gray",
+                        variant: "outline",
+                      });
+                    }
+                    if (classItem.academicYear) {
+                      badges.push({
+                        label: classItem.academicYear,
+                        color: "orange",
+                        variant: "outline",
+                      });
+                    }
 
-                // Combine grade level and section into a single subtitle part
-                const rawGradeLevel =
-                  typeof classItem.gradeLevel !== 'undefined' && classItem.gradeLevel !== null
-                    ? String(classItem.gradeLevel)
-                    : classItem.grade.replace('Grade ', '');
+                    // Combine grade level and section into a single subtitle part
+                    const rawGradeLevel =
+                      typeof classItem.gradeLevel !== "undefined" &&
+                      classItem.gradeLevel !== null
+                        ? String(classItem.gradeLevel)
+                        : classItem.grade.replace("Grade ", "");
 
-                // For grade level 0, use localized Kindergarten label (e.g., មត្តេយ្យ in Khmer)
-                const displayGradeLevel =
-                  rawGradeLevel === '0'
-                    ? t('grade0', 'Kindergarten')
-                    : rawGradeLevel;
+                    // For grade level 0, use localized Kindergarten label (e.g., មត្តេយ្យ in Khmer)
+                    const displayGradeLevel =
+                      rawGradeLevel === "0"
+                        ? t("grade0", "Kindergarten")
+                        : rawGradeLevel;
 
-                const gradeAndSection = `${t('class') || 'Class'} ${formatClassIdentifier(displayGradeLevel, classItem.section)}`;
+                    const gradeAndSection = `${t("class") || "Class"} ${formatClassIdentifier(displayGradeLevel, classItem.section)}`;
 
-                return (
-                  <ClassCard
-                    key={classItem.id}
-                    title={classItem.name}
-                    subtitleParts={[gradeAndSection]}
-                    enrolled={classItem.enrolled}
-                    capacity={classItem.capacity}
-                    badges={badges}
-                    isEditLoading={editingClassId === classItem.id}
-                    onManage={() => {
-                      const paramsToEncrypt = { classId: classItem.id, schoolId: schoolInfo.id, gradeLevel: classItem.gradeLevel };
-                      console.log('📤 Encrypting params:', paramsToEncrypt);
-                      const encryptedParams = encryptParams(paramsToEncrypt);
-                      console.log('📤 Encrypted params:', encryptedParams);
-                      console.log('📤 Full URL:', `/students?params=${encryptedParams}`);
-                      navigate(`/students?params=${encryptedParams}`);
-                    }}
-                    onEdit={() => handleEditClass(classItem)}
-                    onDelete={() => { setSelectedClass(classItem); setShowDeleteDialog(true); }}
+                    return (
+                      <ClassCard
+                        key={classItem.id}
+                        title={classItem.name}
+                        subtitleParts={[gradeAndSection]}
+                        enrolled={classItem.enrolled}
+                        capacity={classItem.capacity}
+                        badges={badges}
+                        isEditLoading={editingClassId === classItem.id}
+                        onManage={() => {
+                          const paramsToEncrypt = {
+                            classId: classItem.id,
+                            schoolId: schoolInfo.id,
+                            gradeLevel: classItem.gradeLevel,
+                          };
+                          console.log("📤 Encrypting params:", paramsToEncrypt);
+                          const encryptedParams =
+                            encryptParams(paramsToEncrypt);
+                          console.log("📤 Encrypted params:", encryptedParams);
+                          console.log(
+                            "📤 Full URL:",
+                            `/students?params=${encryptedParams}`,
+                          );
+                          navigate(`/students?params=${encryptedParams}`);
+                        }}
+                        onEdit={() => handleEditClass(classItem)}
+                        onDelete={() => {
+                          setSelectedClass(classItem);
+                          setShowDeleteDialog(true);
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-8">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    total={totalClasses}
+                    limit={classesPerPage}
+                    onPageChange={handlePageChange}
+                    onLimitChange={handleLimitChange}
+                    limitOptions={[6, 12, 24]}
+                    showLimitSelector={true}
+                    t={t}
+                    showFirstLast={true}
+                    showInfo={true}
+                    maxVisiblePages={5}
+                    disabled={paginationLoading}
                   />
-                );
-              })}
-            </div>
-          )}
-
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="mt-8">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                total={totalClasses}
-                limit={classesPerPage}
-                onPageChange={handlePageChange}
-                onLimitChange={handleLimitChange}
-                limitOptions={[6, 12, 24]}
-                showLimitSelector={true}
-                t={t}
-                showFirstLast={true}
-                showInfo={true}
-                maxVisiblePages={5}
-                disabled={paginationLoading}
-              />
-            </div>
-          )}
-        </FadeInSection>
+                </div>
+              )}
+            </FadeInSection>
           </div>
         </FadeInSection>
-
 
         {/* Add/Edit Modal */}
         <Modal
@@ -1138,9 +1364,12 @@ export default function ClassesManagement() {
             setShowAddModal(false);
             setShowEditModal(false);
           }}
-          title={showAddModal ? (t('addClass') || 'Add Class') : (t('editClass') || 'Edit Class')}
+          title={
+            showAddModal
+              ? t("addClass") || "Add Class"
+              : t("editClass") || "Edit Class"
+          }
           size="lg"
-
           stickyFooter={true}
           footer={
             <div className="flex justify-end space-x-3">
@@ -1155,17 +1384,28 @@ export default function ClassesManagement() {
                 size="sm"
                 disabled={loading}
               >
-                {t('cancel') || 'Cancel'}
+                {t("cancel") || "Cancel"}
               </Button>
               <Button
                 type="submit"
                 form="class-form"
-                disabled={loading || schoolInfo.name === 'Loading...' || schoolInfo.name.includes('Error') || !schoolInfo.id}
+                disabled={
+                  loading ||
+                  schoolInfo.name === "Loading..." ||
+                  schoolInfo.name.includes("Error") ||
+                  !schoolInfo.id
+                }
                 variant="primary"
                 size="sm"
               >
-                {loading && <Loader className="inline h-4 w-4 mr-2 animate-spin" />}
-                {loading ? (t('saving') || 'Saving...') : (showAddModal ? (t('addClass') || 'Add Class') : (t('updateClass') || 'Update Class'))}
+                {loading && (
+                  <Loader className="inline h-4 w-4 mr-2 animate-spin" />
+                )}
+                {loading
+                  ? t("saving") || "Saving..."
+                  : showAddModal
+                    ? t("addClass") || "Add Class"
+                    : t("updateClass") || "Update Class"}
               </Button>
             </div>
           }
@@ -1175,269 +1415,335 @@ export default function ClassesManagement() {
               <div className="flex flex-col items-center space-y-3">
                 <LoadingSpinner size="lg" variant="primary" />
                 <p className="text-sm text-gray-600">
-                  {t('loading') || 'Loading...'}
+                  {t("loading") || "Loading..."}
                 </p>
               </div>
             </div>
           )}
           {(!loading || !showEditModal || formData.name) && (
             <form id="class-form" onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('school') || 'School'} *
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Building className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="schoolName"
-                    required
-                    readOnly
-                    value={schoolInfo.name}
-                    className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm cursor-not-allowed ${schoolInfo.name === 'Loading...'
-                      ? 'bg-blue-50 border-blue-300 text-blue-700'
-                      : schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')
-                        ? 'bg-red-50 border-red-300 text-red-700'
-                        : 'bg-gray-50 border-0 focus:ring-0 focus:border-0 focus:outline-none'
-                      }`}
-                    title={`School ID: ${schoolInfo.id || 'Not available'}`}
-                  />
-                  {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
-                    <Button
-                      type="button"
-                      onClick={fetchSchoolInfo}
-                      variant="primary"
-                      size="xs"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                      title="Retry loading school information"
-                    >
-                      Retry
-                    </Button>
-                  )}
-                </div>
-                <input
-                  type="hidden"
-                  name="schoolId"
-                  value={formData.schoolId}
-                />
-                {schoolInfo.name === 'Loading...' && (
-                  <p className="text-xs text-blue-600 mt-1">Loading school information...</p>
-                )}
-                {(schoolInfo.name.includes('Error') || schoolInfo.name.includes('No School')) && (
-                  <p className="text-xs text-red-600 mt-1">Failed to load school information. Click "Retry" to try again.</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('className') || 'Class Name'}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <BookOpen className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="name"
-                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder={t('enterClassName') || 'Enter class name'}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('grade') || 'Grade Level'} *
-                </label>
-                <Dropdown
-                  value={formData.gradeLevel}
-                  onValueChange={(value) => {
-                    // Update grade level and filter teachers by grade
-                    setFormData(prev => ({
-                      ...prev,
-                      gradeLevel: value,
-                      // Reset teacher selection when grade changes unless showing all teachers
-                      teacherId: showAllTeachers ? prev.teacherId : '',
-                      teacherName: showAllTeachers ? prev.teacherName : ''
-                    }));
-
-                    // Fetch teachers filtered by the selected grade level
-                    if (value && schoolInfo.id && !showAllTeachers) {
-                      fetchTeachers(schoolInfo.id, value);
-                    } else if (schoolInfo.id && !showAllTeachers) {
-                      // If grade level is cleared, fetch all teachers
-                      fetchTeachers(schoolInfo.id);
-                    }
-                  }}
-                  options={[
-                    { value: '', label: t('allGrades', 'All Grades') },
-                    ...grades
-                  ]}
-                  placeholder={t('selectGrade') || 'Select Grade'}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700">
-                    {t('teacher') || 'Teacher'}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("school") || "School"} *
                   </label>
-                  <label className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showAllTeachers}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setShowAllTeachers(checked);
-
-                        // When toggling to show all teachers, fetch all teachers
-                        if (checked && schoolInfo.id) {
-                          fetchTeachers(schoolInfo.id);
-                        }
-                        // When toggling back to filtered, re-apply grade filter
-                        else if (!checked && formData.gradeLevel && schoolInfo.id) {
-                          fetchTeachers(schoolInfo.id, formData.gradeLevel);
-                        } else if (!checked && schoolInfo.id) {
-                          fetchTeachers(schoolInfo.id);
-                        }
-                      }}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span>{t('showAllTeachers', 'Show all teachers')}</span>
-                  </label>
-                </div>
-                {(showAllTeachers ? availableTeachers : filteredTeachers).length > 0 ? (
-                  <>
-                    <SearchableDropdown
-                      value={formData.teacherId}
-                      onValueChange={(value) => {
-                        const teacherList = showAllTeachers ? availableTeachers : filteredTeachers;
-                        const selectedTeacher = teacherList.find(t => t.value === value);
-                        const teacherName = selectedTeacher?.label || '';
-                        setFormData(prev => ({
-                          ...prev,
-                          teacherId: value,
-                          teacherName: teacherName
-                        }));
-                      }}
-                      options={[
-                        { value: '', label: t('noTeacher', 'No Teacher') },
-                        ...(showAllTeachers ? availableTeachers : filteredTeachers)
-                      ]}
-                      placeholder={t('selectTeacher', 'Select Teacher')}
-                      searchPlaceholder={t('searchTeacher', 'Search teachers...')}
-                      className="w-full"
-                      emptyMessage={t('noTeachersFound', 'No teachers found')}
-                    />
-                    {formData.gradeLevel && formData.teacherId && (
-                      (() => {
-                        const teacherList = showAllTeachers ? availableTeachers : filteredTeachers;
-                        const selectedTeacher = teacherList.find(t => t.value === formData.teacherId);
-                        const teacherGrade = selectedTeacher?.gradeLevel;
-                        if (teacherGrade && teacherGrade.toString() !== formData.gradeLevel) {
-                          return (
-                            <p className="text-xs text-blue-600 mt-1">
-                              {t('teacherAssignedToDifferentGrade', 'Note: This teacher is currently assigned to grade')} {teacherGrade}
-                            </p>
-                          );
-                        }
-                        return null;
-                      })()
-                    )}
-                  </>
-                ) : (
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="h-4 w-4 text-gray-400" />
+                      <Building className="h-4 w-4 text-gray-400" />
                     </div>
                     <input
                       type="text"
-                      name="teacherName"
+                      name="schoolName"
+                      required
                       readOnly
-                      value={
-                        !schoolInfo?.id ? t('loadingSchool', 'Loading school...') :
-                          (showAllTeachers ? availableTeachers : filteredTeachers).length === 0 && formData.gradeLevel && !showAllTeachers ?
-                            t('noTeachersForGrade', 'No teachers available for this grade') :
-                            t('loadingTeachers', 'Loading teachers...')
-                      }
-                      className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                      value={schoolInfo.name}
+                      className={`mt-1 block w-full pl-10 rounded-md shadow-sm text-sm cursor-not-allowed ${
+                        schoolInfo.name === "Loading..."
+                          ? "bg-blue-50 border-blue-300 text-blue-700"
+                          : schoolInfo.name.includes("Error") ||
+                              schoolInfo.name.includes("No School")
+                            ? "bg-red-50 border-red-300 text-red-700"
+                            : "bg-gray-50 border-0 focus:ring-0 focus:border-0 focus:outline-none"
+                      }`}
+                      title={`School ID: ${schoolInfo.id || "Not available"}`}
+                    />
+                    {(schoolInfo.name.includes("Error") ||
+                      schoolInfo.name.includes("No School")) && (
+                      <Button
+                        type="button"
+                        onClick={fetchSchoolInfo}
+                        variant="primary"
+                        size="xs"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                        title="Retry loading school information"
+                      >
+                        Retry
+                      </Button>
+                    )}
+                  </div>
+                  <input
+                    type="hidden"
+                    name="schoolId"
+                    value={formData.schoolId}
+                  />
+                  {schoolInfo.name === "Loading..." && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Loading school information...
+                    </p>
+                  )}
+                  {(schoolInfo.name.includes("Error") ||
+                    schoolInfo.name.includes("No School")) && (
+                    <p className="text-xs text-red-600 mt-1">
+                      Failed to load school information. Click "Retry" to try
+                      again.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("className") || "Class Name"}
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <BookOpen className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      name="name"
+                      className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder={t("enterClassName") || "Enter class name"}
                     />
                   </div>
-                )}
-                <input
-                  type="hidden"
-                  name="teacherId"
-                  value={formData.teacherId}
-                />
-                {formData.gradeLevel && (showAllTeachers ? availableTeachers : filteredTeachers).length === 0 && schoolInfo?.id && !showAllTeachers && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    {t('noTeachersForGradeMessage', 'No teachers are assigned to grade')} {formData.gradeLevel}. {t('tryShowAllTeachers', 'Try enabling "Show all teachers" above.')}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('section') || 'Section'} *
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Users className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="section"
-                    required
-                    placeholder={t('sectionPlaceholder') || 'Enter section'}
-                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                    value={formData.section}
-                    onChange={handleInputChange}
-                  />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('academicYear') || 'Academic Year'} *
-                </label>
-                <Dropdown
-                  value={formData.academicYear}
-                  onValueChange={(value) => handleInputChange({ target: { name: 'academicYear', value } })}
-                  options={academicYears.map(year => ({ value: year, label: year }))}
-                  placeholder={t('selectAcademicYear') || 'Select Academic Year'}
-                  className="w-full"
-                />
-              </div>
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("grade") || "Grade Level"} *
+                  </label>
+                  <Dropdown
+                    value={formData.gradeLevel}
+                    onValueChange={(value) => {
+                      // Update grade level and filter teachers by grade
+                      setFormData((prev) => ({
+                        ...prev,
+                        gradeLevel: value,
+                        // Reset teacher selection when grade changes unless showing all teachers
+                        teacherId: showAllTeachers ? prev.teacherId : "",
+                        teacherName: showAllTeachers ? prev.teacherName : "",
+                      }));
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('maxStudents') || 'Maximum Students'} *
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Users className="h-4 w-4 text-gray-400" />
+                      // Fetch teachers filtered by the selected grade level
+                      if (value && schoolInfo.id && !showAllTeachers) {
+                        fetchTeachers(schoolInfo.id, value);
+                      } else if (schoolInfo.id && !showAllTeachers) {
+                        // If grade level is cleared, fetch all teachers
+                        fetchTeachers(schoolInfo.id);
+                      }
+                    }}
+                    options={[
+                      { value: "", label: t("allGrades", "All Grades") },
+                      ...grades,
+                    ]}
+                    placeholder={t("selectGrade") || "Select Grade"}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {t("teacher") || "Teacher"}
+                    </label>
+                    <label className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showAllTeachers}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setShowAllTeachers(checked);
+
+                          // When toggling to show all teachers, fetch all teachers
+                          if (checked && schoolInfo.id) {
+                            fetchTeachers(schoolInfo.id);
+                          }
+                          // When toggling back to filtered, re-apply grade filter
+                          else if (
+                            !checked &&
+                            formData.gradeLevel &&
+                            schoolInfo.id
+                          ) {
+                            fetchTeachers(schoolInfo.id, formData.gradeLevel);
+                          } else if (!checked && schoolInfo.id) {
+                            fetchTeachers(schoolInfo.id);
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span>{t("showAllTeachers", "Show all teachers")}</span>
+                    </label>
                   </div>
+                  {(showAllTeachers ? availableTeachers : filteredTeachers)
+                    .length > 0 ? (
+                    <>
+                      <SearchableDropdown
+                        value={formData.teacherId}
+                        onValueChange={(value) => {
+                          const teacherList = showAllTeachers
+                            ? availableTeachers
+                            : filteredTeachers;
+                          const selectedTeacher = teacherList.find(
+                            (t) => t.value === value,
+                          );
+                          const teacherName = selectedTeacher?.label || "";
+                          setFormData((prev) => ({
+                            ...prev,
+                            teacherId: value,
+                            teacherName: teacherName,
+                          }));
+                        }}
+                        options={[
+                          { value: "", label: t("noTeacher", "No Teacher") },
+                          ...(showAllTeachers
+                            ? availableTeachers
+                            : filteredTeachers),
+                        ]}
+                        placeholder={t("selectTeacher", "Select Teacher")}
+                        searchPlaceholder={t(
+                          "searchTeacher",
+                          "Search teachers...",
+                        )}
+                        className="w-full"
+                        emptyMessage={t("noTeachersFound", "No teachers found")}
+                      />
+                      {formData.gradeLevel &&
+                        formData.teacherId &&
+                        (() => {
+                          const teacherList = showAllTeachers
+                            ? availableTeachers
+                            : filteredTeachers;
+                          const selectedTeacher = teacherList.find(
+                            (t) => t.value === formData.teacherId,
+                          );
+                          const teacherGrade = selectedTeacher?.gradeLevel;
+                          if (
+                            teacherGrade &&
+                            teacherGrade.toString() !== formData.gradeLevel
+                          ) {
+                            return (
+                              <p className="text-xs text-blue-600 mt-1">
+                                {t(
+                                  "teacherAssignedToDifferentGrade",
+                                  "Note: This teacher is currently assigned to grade",
+                                )}{" "}
+                                {teacherGrade}
+                              </p>
+                            );
+                          }
+                          return null;
+                        })()}
+                    </>
+                  ) : (
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        name="teacherName"
+                        readOnly
+                        value={
+                          !schoolInfo?.id
+                            ? t("loadingSchool", "Loading school...")
+                            : (showAllTeachers
+                                  ? availableTeachers
+                                  : filteredTeachers
+                                ).length === 0 &&
+                                formData.gradeLevel &&
+                                !showAllTeachers
+                              ? t(
+                                  "noTeachersForGrade",
+                                  "No teachers available for this grade",
+                                )
+                              : t("loadingTeachers", "Loading teachers...")
+                        }
+                        className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm bg-gray-50 border-0 cursor-not-allowed focus:ring-0 focus:border-0 focus:outline-none"
+                      />
+                    </div>
+                  )}
                   <input
-                    type="number"
-                    name="maxStudents"
-                    required
-                    min="1"
-                    max="200"
-                    placeholder={t('capacityPlaceholder') || 'Enter maximum students'}
-                    className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
-                    value={formData.maxStudents}
-                    onChange={handleInputChange}
+                    type="hidden"
+                    name="teacherId"
+                    value={formData.teacherId}
+                  />
+                  {formData.gradeLevel &&
+                    (showAllTeachers ? availableTeachers : filteredTeachers)
+                      .length === 0 &&
+                    schoolInfo?.id &&
+                    !showAllTeachers && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        {t(
+                          "noTeachersForGradeMessage",
+                          "No teachers are assigned to grade",
+                        )}{" "}
+                        {formData.gradeLevel}.{" "}
+                        {t(
+                          "tryShowAllTeachers",
+                          'Try enabling "Show all teachers" above.',
+                        )}
+                      </p>
+                    )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("section") || "Section"} *
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Users className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      name="section"
+                      required
+                      placeholder={t("sectionPlaceholder") || "Enter section"}
+                      className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                      value={formData.section}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("academicYear") || "Academic Year"} *
+                  </label>
+                  <Dropdown
+                    value={formData.academicYear}
+                    onValueChange={(value) =>
+                      handleInputChange({
+                        target: { name: "academicYear", value },
+                      })
+                    }
+                    options={academicYears.map((year) => ({
+                      value: year,
+                      label: year,
+                    }))}
+                    placeholder={
+                      t("selectAcademicYear") || "Select Academic Year"
+                    }
+                    className="w-full"
                   />
                 </div>
               </div>
-            </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("maxStudents") || "Maximum Students"} *
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Users className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="number"
+                      name="maxStudents"
+                      required
+                      min="1"
+                      max="200"
+                      placeholder={
+                        t("capacityPlaceholder") || "Enter maximum students"
+                      }
+                      className="mt-1 block w-full pl-10 rounded-md shadow-sm text-sm transition-all duration-300 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 focus:scale-[1.01] hover:shadow-md"
+                      value={formData.maxStudents}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+              </div>
             </form>
           )}
         </Modal>
@@ -1451,13 +1757,18 @@ export default function ClassesManagement() {
             setShowDeleteDialog(false);
           }}
           onConfirm={handleConfirmDelete}
-          title={t('confirmDelete') || 'Confirm Delete'}
-          message={`${t('confirmDeleteClass') || 'Are you sure you want to delete'} ${selectedClass?.name}?`}
+          title={t("confirmDelete") || "Confirm Delete"}
+          message={`${t("confirmDeleteClass") || "Are you sure you want to delete"} ${selectedClass?.name}?`}
           type="danger"
-          confirmText={t('delete') || 'Delete'}
-          cancelText={t('cancel') || 'Cancel'}
-          loading={isLoading('fetchClasses')}
-          disabledReason={selectedClass?.enrolled > 0 ? t('cannotDeleteClassWithStudents') || `Cannot delete class with ${selectedClass?.enrolled} student(s). Please remove all students first.` : null}
+          confirmText={t("delete") || "Delete"}
+          cancelText={t("cancel") || "Cancel"}
+          loading={isLoading("fetchClasses")}
+          disabledReason={
+            selectedClass?.enrolled > 0
+              ? t("cannotDeleteClassWithStudents") ||
+                `Cannot delete class with ${selectedClass?.enrolled} student(s). Please remove all students first.`
+              : null
+          }
         />
       </div>
     </PageTransition>
