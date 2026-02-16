@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Download, ChevronDown, X, Users, Edit2, User, Plus, Filter, Eye } from 'lucide-react';
+import { Search, Download, ChevronDown, X, Users, Edit2, ListFilter, Eye } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button } from '../../components/ui/Button';
@@ -14,12 +14,12 @@ import { Table } from '../../components/ui/Table';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
 import EmptyState from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import Modal from '../../components/ui/Modal';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import StudentViewModal from '../../components/students/StudentViewModal';
 import { formatClassIdentifier } from '../../utils/helpers';
 import { encryptId } from '../../utils/encryption';
 import { getFullName } from '../../utils/usernameUtils';
+import { genderToKhmer } from '../../utils/formatters';
 
 export default function TeacherStudentsManagement({ user }) {
   const navigate = useNavigate();
@@ -349,6 +349,16 @@ export default function TeacherStudentsManagement({ user }) {
       }
     },
     {
+      key: 'gender',
+      header: t('gender', 'Gender'),
+      cellClassName: 'text-xs sm:text-sm text-gray-700',
+      responsive: 'hidden md:table-cell',
+      render: (student) => {
+        const gender = student.gender || student.user?.gender;
+        return <p>{gender ? genderToKhmer(gender) : 'N/A'}</p>;
+      }
+    },
+    {
       key: 'status',
       header: t('status', 'Status'),
       render: (student) => (
@@ -417,7 +427,7 @@ export default function TeacherStudentsManagement({ user }) {
             </div>
 
             {/* Search Bar and Filter Button */}
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+            <div className="flex sm:flex-row gap-3 items-center">
               {/* Search Input */}
               <div className="flex-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -449,14 +459,9 @@ export default function TeacherStudentsManagement({ user }) {
                 title={t('filters', 'Filters & Actions')}
                 className="flex items-center justify-center sm:justify-start gap-2 whitespace-nowrap shadow-lg"
               >
-                <Filter className="h-4 w-4" />
+                <ListFilter className="h-4 w-4" />
                 <span className="sm:hidden">{t('filters', 'Filters & Actions')}</span>
                 <span className="hidden sm:inline">{t('filters', 'Filters')}</span>
-                {selectedClassId !== 'all' && (
-                  <span className="ml-auto sm:ml-1 bg-white text-blue-600 text-xs font-bold px-2.5 sm:px-2 py-0.5 rounded-full">
-                    1
-                  </span>
-                )}
               </Button>
             </div>
           </div>

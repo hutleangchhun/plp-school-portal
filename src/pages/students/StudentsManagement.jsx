@@ -17,6 +17,7 @@ import { Table } from '../../components/ui/Table';
 import { formatClassIdentifier, getGradeLevelOptions as getSharedGradeLevelOptions } from '../../utils/helpers';
 import { encryptId, decryptParams } from '../../utils/encryption';
 import { getFullName } from '../../utils/usernameUtils';
+import { genderToKhmer } from '../../utils/formatters';
 import StudentActionsModal from '../../components/students/StudentActionsModal';
 import StudentViewModal from '../../components/students/StudentViewModal';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
@@ -1574,6 +1575,16 @@ export default function StudentsManagement() {
         }
 
         return <p>{student?.className || '-'}</p>;
+      }
+    },
+    {
+      key: 'gender',
+      header: t('gender', 'Gender'),
+      cellClassName: 'text-xs sm:text-sm text-gray-700',
+      responsive: 'hidden md:table-cell',
+      render: (student) => {
+        const gender = student.gender || student.user?.gender;
+        return <p>{gender ? genderToKhmer(gender) : 'N/A'}</p>;
       }
     },
     {
