@@ -1,23 +1,22 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Calendar, Check, Clock, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Calendar, Check } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
+import { PageLoader } from '../../components/ui/DynamicLoader';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { Button } from '../../components/ui/Button';
-import { Tooltip } from '@/components/ui/Tooltip';
 import Badge from '../../components/ui/Badge';
+import Table from '../../components/ui/Table';
 import Modal from '../../components/ui/Modal';
 import Dropdown from '../../components/ui/Dropdown';
-import { formatDateKhmer } from '../../utils/formatters';
 import { attendanceService } from '../../utils/api/services/attendanceService';
-import { classService } from '../../utils/api/services/classService';
 import { teacherService } from '../../utils/api/services/teacherService';
-import { isToday } from '../attendance/utils';
 import { canAccessTeacherFeatures } from '../../utils/routePermissions';
+import { formatClassIdentifier } from '../../utils/helpers';
+import { formatDateKhmer } from '../../utils/formatters';
 
 /**
  * TeacherSelfAttendance Component
@@ -36,10 +35,8 @@ export default function TeacherSelfAttendance() {
   const { error, handleError, clearError, retry } = useErrorHandler();
 
   const [monthlyAttendance, setMonthlyAttendance] = useState({});
-  const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedShift, setSelectedShift] = useState('MORNING'); // MORNING or AFTERNOON
 
   // Class selection state
   const [classes, setClasses] = useState([]);
@@ -52,15 +49,8 @@ export default function TeacherSelfAttendance() {
   const [selectedClassForSubmit, setSelectedClassForSubmit] = useState(null);
   const [reasonInput, setReasonInput] = useState('');
 
-  // Check-in/Check-out state
-  const [todayCheckInStatus, setTodayCheckInStatus] = useState(null); // Tracks today's check-in records by classId_shift
-  const [selectedAttendanceForCheckout, setSelectedAttendanceForCheckout] = useState(null);
-
   // Real-time clock state
   const [currentTime, setCurrentTime] = useState(new Date());
-
-  // Get current month
-  const [currentMonth, setCurrentMonth] = useState(() => new Date());
 
   // Get authenticated user data
   const [user] = useState(() => {
@@ -174,165 +164,70 @@ export default function TeacherSelfAttendance() {
     return `${year}-${month}-${day}`;
   };
 
-  // Get days in current month
-  const getDaysInMonth = useCallback((date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const days = [];
-
-    // Add empty slots for days before first day of month
-    const firstDayOfWeek = firstDay.getDay();
-    for (let i = 0; i < firstDayOfWeek; i++) {
-      days.push(null);
-    }
-
-    // Add all days in month
-    for (let day = 1; day <= lastDay.getDate(); day++) {
-      days.push(new Date(year, month, day));
-    }
-
-    return days;
-  }, []);
-
-  const daysInMonth = useMemo(() => getDaysInMonth(currentMonth), [currentMonth, getDaysInMonth]);
-
-  // Fetch attendance for current month
+  // Fetch today's attendance only
   const fetchMonthlyAttendance = useCallback(async () => {
-    if (!userLoginId) return; // Use userLoginId for attendance operations
+    if (!userLoginId) return;
 
-    setLoading(true);
     clearError();
 
     try {
-      const loadingKey = 'fetchAttendance';
-      startLoading(loadingKey, t('loadingAttendance', 'Loading attendance...'));
-
-      const year = currentMonth.getFullYear();
-      const month = currentMonth.getMonth();
-
-      // Use date string formatting to avoid timezone conversion issues
-      const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-      const lastDay = new Date(year, month + 1, 0).getDate();
-      const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-
-      console.log('DEBUG: Fetching attendance for:', {
-        currentMonthDisplay: getLocalDateString(currentMonth),
-        year,
-        month: month + 1, // Display as 1-indexed
-        startDate,
-        endDate
-      });
-
-      // Fetch attendance for all classes (don't filter by classId)
-      // This allows us to show attendance for all teacher's classes
+      const today = getLocalDateString();
       const response = await attendanceService.getAttendance({
-        userId: userLoginId, // Use userLoginId for attendance operations
-        startDate,
-        endDate,
-        limit: 400 // Increase limit to accommodate multiple classes
+        userId: userLoginId,
+        date: today,
+        limit: 50
       });
 
-      const attendanceData = {};
+      const todayData = {};
       if (response.success && response.data) {
         const records = Array.isArray(response.data) ? response.data : response.data.records || [];
 
-        console.log('DEBUG: Raw backend response:', response.data);
-        console.log('DEBUG: Processing records count:', records.length);
-
         records.forEach(record => {
-          const recordDate = record.date ? record.date.split('T')[0] : null;
           const recordClassId = record.classId;
-
-          // Determine shift based on class
-          // Since classId itself determines if it's morning or afternoon class,
-          // we'll infer shift from the submission time for now
-          // In the future, class data should have a 'shift' field
           const recordTime = record.createdAt ? new Date(record.createdAt) : null;
           const recordHour = recordTime ? recordTime.getHours() : 12;
+          const shift = recordHour < 11 ? 'MORNING' : recordHour < 13 ? 'NOON' : 'AFTERNOON';
 
-          // Infer shift: if submitted before 11am = morning, 11am-1pm = noon, after 1pm = afternoon
-          const shift = recordHour < 11 ? 'MORNING' :
-                        recordHour < 13 ? 'NOON' :
-                        'AFTERNOON';
-
-          console.log('DEBUG: Processing record:', {
-            rawDate: record.date,
-            extractedDate: recordDate,
-            status: record.status,
-            inferredShift: shift,
+          const classIdKey = recordClassId || 'null';
+          const key = `${classIdKey}_${shift}`;
+          todayData[key] = {
+            status: record.status?.toUpperCase() || 'PRESENT',
+            time: record.createdAt ? new Date(record.createdAt).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            }) : null,
+            id: record.id,
+            createdAt: record.createdAt,
+            reason: record.reason || '',
+            shift,
             classId: recordClassId,
-            recordHour,
-            id: record.id
-          });
-
-          if (recordDate) {
-            // Initialize date entry if it doesn't exist
-            if (!attendanceData[recordDate]) {
-              attendanceData[recordDate] = {};
-            }
-
-            // Store attendance by class ID + shift combination
-            // This allows tracking multiple classes per day, each with 2 shifts
-            // If no classId (teacher without class), use 'null' as identifier
-            const classIdKey = recordClassId || 'null';
-            const key = `${classIdKey}_${shift}`;
-            attendanceData[recordDate][key] = {
-              status: record.status?.toUpperCase() || 'PRESENT',
-              time: record.createdAt ? new Date(record.createdAt).toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-              }) : null,
-              id: record.id,
-              createdAt: record.createdAt,
-              reason: record.reason || '',
-              shift: shift,
-              classId: recordClassId,
-              // Check-in/Check-out fields from new API
-              checkInTime: record.checkInTime || null,
-              checkOutTime: record.checkOutTime || null,
-              hoursWorked: record.hoursWorked !== undefined ? record.hoursWorked : null,
-              isCheckedOut: record.isCheckedOut === true // Explicitly check boolean value
-            };
-          }
+            classInfo: record.class || null,
+            checkInTime: record.checkInTime || null,
+            checkOutTime: record.checkOutTime || null,
+            hoursWorked: record.hoursWorked !== undefined ? record.hoursWorked : null,
+            isCheckedOut: record.isCheckedOut === true
+          };
         });
       }
 
-      console.log('DEBUG: Final attendanceData object:', attendanceData);
-      console.log('DEBUG: Keys in attendanceData:', Object.keys(attendanceData));
-
-      setMonthlyAttendance(attendanceData);
-
-      // Track today's check-in status for check-in/check-out UI
-      const today = getLocalDateString();
-      if (attendanceData[today]) {
-        setTodayCheckInStatus(attendanceData[today]);
-        console.log('✅ Today\'s check-in status:', attendanceData[today]);
-      } else {
-        setTodayCheckInStatus(null);
-      }
-
-      stopLoading(loadingKey);
+      setMonthlyAttendance({ [today]: todayData });
     } catch (err) {
       console.error('Error fetching attendance:', err);
       handleError(err, {
         toastMessage: t('errorFetchingAttendance', 'Error fetching attendance data')
       });
     } finally {
-      setLoading(false);
       setInitialLoading(false);
     }
-  }, [userLoginId, currentMonth, t, handleError, clearError, startLoading, stopLoading]);
+  }, [userLoginId, t, handleError, clearError]);
 
-  // Fetch attendance on mount and when month/userId changes
+  // Fetch today's attendance on mount
   useEffect(() => {
     if (userLoginId) {
       fetchMonthlyAttendance();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userLoginId, currentMonth]); // Re-fetch when userLoginId or currentMonth changes
+  }, [userLoginId, fetchMonthlyAttendance]);
 
   // Update current time every second
   useEffect(() => {
@@ -376,7 +271,6 @@ export default function TeacherSelfAttendance() {
     const todayAttendanceData = monthlyAttendance[today];
     const attendanceKey = `${targetClassId}_${shift}`;
     if (todayAttendanceData && todayAttendanceData[attendanceKey]) {
-      const className = classes.find(c => (c.classId || c.id) === targetClassId)?.name || 'this class';
       showError(shift === 'MORNING'
         ? t('alreadySubmittedMorningForClass', `អ្នកបានបញ្ជូនវត្តមានព្រឹកសម្រាប់ថ្នាក់នេះរួចហើយ`)
         : t('alreadySubmittedAfternoonForClass', `អ្នកបានបញ្ជូនវត្តមានរសៀលសម្រាប់ថ្នាក់នេះរួចហើយ`));
@@ -395,9 +289,6 @@ export default function TeacherSelfAttendance() {
         stopLoading('markAttendance');
         return;
       }
-
-      // Get the class to determine if it's a morning or afternoon class
-      const selectedClass = classes.find(c => (c.classId || c.id) === targetClassId);
 
       // Auto-determine status based on submission time and shift
       // The shift is based on the class schedule (morning or afternoon class)
@@ -515,27 +406,6 @@ export default function TeacherSelfAttendance() {
           return updated;
         });
 
-        // Also update todayCheckInStatus
-        setTodayCheckInStatus(prev => {
-          if (!prev || !prev[key]) {
-            console.log('⚠️ Cannot find todayCheckInStatus to update:', { key, hasPrev: !!prev });
-            return prev;
-          }
-
-          const updated = {
-            ...prev,
-            [key]: {
-              ...prev[key],
-              checkOutTime: checkOutTimeStamp,
-              isCheckedOut: true,
-              hoursWorked: response.hoursWorked || response.data?.hoursWorked || prev[key].hoursWorked
-            }
-          };
-
-          console.log('✅ Updated todayCheckInStatus:', updated[key]);
-          return updated;
-        });
-
         console.log('✅ Updated local state after checkout, refreshing data...');
 
         // Refresh attendance data to get server values
@@ -550,78 +420,6 @@ export default function TeacherSelfAttendance() {
       setSubmitting(false);
       stopLoading('checkOutAttendance');
     }
-  };
-
-  // Navigate months
-  const goToPreviousMonth = () => {
-    const newMonth = new Date(currentMonth);
-    newMonth.setMonth(newMonth.getMonth() - 1);
-    setCurrentMonth(newMonth);
-  };
-
-  const goToNextMonth = () => {
-    const newMonth = new Date(currentMonth);
-    newMonth.setMonth(newMonth.getMonth() + 1);
-    setCurrentMonth(newMonth);
-  };
-
-  const goToCurrentMonth = () => {
-    setCurrentMonth(new Date());
-  };
-
-  // Get attendance for a specific date (now checks all classes)
-  const getAttendanceForDate = (date) => {
-    if (!date) return null;
-    // Use helper function to avoid timezone issues
-    const dateStr = getLocalDateString(date);
-    const dayAttendance = monthlyAttendance[dateStr];
-
-    if (!dayAttendance) return null;
-
-    // Aggregate all attendance records for this date across all classes
-    const morningRecords = [];
-    const noonRecords = [];
-    const afternoonRecords = [];
-
-    Object.entries(dayAttendance).forEach(([key, attendance]) => {
-      const [classIdStr, shift] = key.split('_');
-      if (shift === 'MORNING') {
-        morningRecords.push(attendance);
-      } else if (shift === 'NOON') {
-        noonRecords.push(attendance);
-      } else if (shift === 'AFTERNOON') {
-        afternoonRecords.push(attendance);
-      }
-    });
-
-    // Return aggregated attendance info
-    return {
-      morning: morningRecords.length > 0 ? morningRecords[morningRecords.length - 1] : null, // Use last for display
-      noon: noonRecords.length > 0 ? noonRecords[noonRecords.length - 1] : null,
-      afternoon: afternoonRecords.length > 0 ? afternoonRecords[afternoonRecords.length - 1] : null,
-      morningCount: morningRecords.length,
-      noonCount: noonRecords.length,
-      afternoonCount: afternoonRecords.length,
-      // For backward compatibility, return primary status
-      status: morningRecords[morningRecords.length - 1]?.status || noonRecords[noonRecords.length - 1]?.status || afternoonRecords[afternoonRecords.length - 1]?.status,
-      hasBothShifts: morningRecords.length > 0 && afternoonRecords.length > 0,
-      allRecords: { morning: morningRecords, noon: noonRecords, afternoon: afternoonRecords }
-    };
-  };
-
-  // Check if date is weekend
-  const isWeekend = (date) => {
-    if (!date) return false;
-    const day = date.getDay();
-    return day === 0 || day === 6;
-  };
-
-  // Check if date is in the future
-  const isFuture = (date) => {
-    if (!date) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return date > today;
   };
 
   // Check if user is teacher, director, or restricted roles (roleId = 8 for teacher, roleId = 14 for director, roleId 15-21 for restricted roles)
@@ -692,35 +490,11 @@ export default function TeacherSelfAttendance() {
   const todayStr = getLocalDateString();
   const todayAttendanceData = monthlyAttendance[todayStr] || {};
 
-  console.log('DEBUG: Pre-render state:', {
-    todayStr,
-    todayAttendanceData,
-    monthlyAttendanceKeys: Object.keys(monthlyAttendance),
-    monthlyAttendanceCount: Object.keys(monthlyAttendance).length
-  });
-
-  // Check if current viewing month is the current month
-  const isCurrentMonth = currentMonth.getMonth() === new Date().getMonth() &&
-    currentMonth.getFullYear() === new Date().getFullYear();
-
   const now = new Date();
   const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
   const isBeforeMorningCutoff = currentHour < 7;
   const isBeforeNoonCutoff = currentHour < 11;
   const isBeforeAfternoonCutoff = currentHour < 13;
-
-  // Helper function to check if attendance is submitted for a specific class and shift
-  const isAttendanceSubmitted = (classId, shift) => {
-    const key = `${classId}_${shift}`;
-    return todayAttendanceData && todayAttendanceData[key];
-  };
-
-  // Helper function to get attendance for a specific class and shift
-  const getAttendanceForClassShift = (classId, shift) => {
-    const key = `${classId}_${shift}`;
-    return todayAttendanceData[key] || null;
-  };
 
   // Helper function to determine if current time is late for a shift
   const isLateForShift = (shift) => {
@@ -800,459 +574,195 @@ export default function TeacherSelfAttendance() {
   };
 
   return (
-    <PageTransition variant="fade" className="flex-1 bg-gray-50 p-3 sm:p-4">
+    <PageTransition variant="fade" className="flex-1 bg-gray-50">
       <div className="p-4 sm:p-6">
         {/* Header - Full Width */}
-        <FadeInSection className="mb-6 mx-auto">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">
+        <FadeInSection className="mb-4 mx-2">
+          <div className="flex flex-row items-start sm:items-center justify-between gap-4">
+            <div className='space-y-1'>
+              <h4 className="text-lg sm:text-xl font-semibold text-gray-900">
                 {t('myAttendance') || 'វត្តមានរបស់ខ្ញុំ'}
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
+              </h4>
+              <p className="text-sm text-gray-600">
                 {t('teacherAttendanceSubtitle', 'កត់ត្រាវត្តមានរបស់លោកគ្រូ/អ្នកគ្រូ')}
               </p>
             </div>
-            {!isCurrentMonth && (
-              <Button onClick={goToCurrentMonth} variant="outline" size="sm">
-                <Calendar className="h-4 w-4 mr-2" />
-                {t('today', 'ថ្ងៃនេះ')}
-              </Button>
-            )}
           </div>
         </FadeInSection>
 
-        {/* Full Width Layout */}
-        <FadeInSection className="mx-auto grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Layout */}
+        <FadeInSection className="mx-auto grid grid-cols-1 gap-4">
           <div className='grid grid-cols-1 gap-4'>
             {/* Quick Submit Section */}
-            {isCurrentMonth && (
-              <>
-                {/* Current Time Display */}
-                <div className="rounded-md border bg-white border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-sm text-gray-600">{t('currentTime', 'ពេលវេលាបច្ចុប្បន្ន')}</p>
-                      <p className="text-2xl font-bold text-gray-900">{getCurrentTimeDisplay()}</p>
-                    </div>
-                    {/* Check-in/Check-out Button */}
-                    <Button
-                      onClick={openSubmitModal}
-                      disabled={submitting}
-                      size="sm"
-                    >
-                      <Check className="h-4 w-4 mr-2" />
-                      {t('checkIn', 'ចូលវត្តមាន')}
-                    </Button>
-                  </div>
+            <>
+              {/* Current Time Display */}
+                <div className="rounded-sm border bg-white border-gray-200 px-6 py-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
 
-                  {/* Late Status Indicator */}
-                  <div className="grid sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
-                    <div className={`p-3 rounded-md ${isBeforeMorningCutoff ? 'bg-green-50 border border-green-300' : 'bg-orange-50 border border-orange-300'}`}>
-                      <p className="text-xs font-medium text-gray-700">{t('morningShift', 'វេនព្រឹក')}</p>
-                      <Badge color={isBeforeMorningCutoff ? 'green' : 'orange'} variant="outline" size="sm" className="mt-1">
-                        {isBeforeMorningCutoff ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
-                      </Badge>
-                      <p className="text-xs text-gray-600 mt-2">
-                        {isBeforeMorningCutoff ? 'មុន' : 'ក្រោយ'} {'7:00 AM'}
+                    {/* Digital Clock - Left */}
+                    <div className="flex flex-col gap-4 py-2">
+                      <p className="text-sm font-bold text-gray-700 uppercase">
+                        {t('currentTime', 'ពេលវេលាបច្ចុប្បន្ន')}
                       </p>
-                    </div>
-                    <div className={`p-3 rounded-md ${isBeforeNoonCutoff ? 'bg-green-50 border border-green-300' : 'bg-orange-50 border border-orange-300'}`}>
-                      <p className="text-xs font-medium text-gray-700">{t('noonShift', 'វេនថ្ងៃត្រង់')}</p>
-                      <Badge color={isBeforeNoonCutoff ? 'green' : 'orange'} variant="outline" size="sm" className="mt-1">
-                        {isBeforeNoonCutoff ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
-                      </Badge>
-                      <p className="text-xs text-gray-600 mt-2">
-                        {isBeforeNoonCutoff ? 'មុន' : 'ក្រោយ'} {'11:00 AM'}
+
+                      {/* Time + AM/PM */}
+                      <div className="flex items-end gap-2">
+                        <span className="text-6xl font-light tabular-nums text-gray-900 leading-none tracking-tight">
+                          {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                        </span>
+                        <span className="text-sm text-gray-700 mb-1">
+                          {currentTime.getHours() < 12 ? 'AM' : 'PM'}
+                        </span>
+                      </div>
+
+                      {/* Seconds progress bar */}
+                      <div className="w-full h-px bg-gray-100 relative overflow-hidden rounded-full">
+                        <div
+                          className="absolute top-0 left-0 h-full bg-gray-400 transition-all duration-1000 ease-linear"
+                          style={{ width: `${(currentTime.getSeconds() / 60) * 100}%` }}
+                        />
+                      </div>
+
+                      {/* Date */}
+                      <p className="text-xs text-gray-700 font-bold">
+                        {formatDateKhmer(currentTime, 'full')}
                       </p>
+
+                      {/* Check-in Button */}
+                      <Button
+                        onClick={openSubmitModal}
+                        disabled={submitting}
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Check className="h-4 w-4 mr-2" />
+                        {t('checkIn', 'ចូលវត្តមាន')}
+                      </Button>
                     </div>
-                    <div className={`p-3 rounded-md ${isBeforeAfternoonCutoff ? 'bg-green-50 border border-green-300' : 'bg-orange-50 border border-orange-300'}`}>
-                      <p className="text-xs font-medium text-gray-700">{t('afternoonShift', 'វេនរសៀល')}</p>
-                      <Badge color={isBeforeAfternoonCutoff ? 'green' : 'orange'} variant="outline" size="sm" className="mt-1">
-                        {isBeforeAfternoonCutoff ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
-                      </Badge>
-                      <p className="text-xs text-gray-600 mt-2">
-                        {isBeforeAfternoonCutoff ? 'មុន' : 'ក្រោយ'} {'1:00 PM'}
+
+                    {/* Shift Status - Right */}
+                    <div className="flex flex-col gap-1 py-2 sm:pl-6">
+                      <p className="text-sm font-bold text-gray-700 uppercase mb-3">
+                        {t('shift', 'ស្ថានភាពវេន')}
                       </p>
+                      {[
+                        { label: t('morningShift', 'វេនព្រឹក'), onTime: isBeforeMorningCutoff, cutoff: '7:00 AM' },
+                        { label: t('noonShift', 'វេនថ្ងៃត្រង់'), onTime: isBeforeNoonCutoff, cutoff: '11:00 AM' },
+                        { label: t('afternoonShift', 'វេនរសៀល'), onTime: isBeforeAfternoonCutoff, cutoff: '1:00 PM' },
+                      ].map(({ label, onTime, cutoff }) => (
+                        <div key={cutoff} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                          <div className="flex items-center gap-2.5">
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${onTime ? 'bg-green-500' : 'bg-orange-400'}`} />
+                            <div>
+                              <p className="text-sm text-gray-700">{label}</p>
+                              <p className="text-xs text-gray-400">{onTime ? 'មុន' : 'ក្រោយ'} {cutoff}</p>
+                            </div>
+                          </div>
+                          <Badge color={onTime ? 'green' : 'orange'} variant="filled" size="xs">
+                            {onTime ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
+                          </Badge>
+                        </div>
+                      ))}
                     </div>
+
                   </div>
                 </div>
 
-                {/* Today's Check-in/Check-out Status - 2 Cards Per Row */}
-                <div className="bg-white rounded-md border border-gray-200 p-4">
+                {/* Today's Check-in/Check-out Status - Table */}
+                <div className="bg-white rounded-sm border border-gray-200 p-4">
                   <h4 className="text-sm font-semibold text-gray-900 mb-3">
                     {t('todayStatus', 'ស្ថានភាពថ្ងៃនេះ')}
                   </h4>
-                  {Object.keys(todayAttendanceData).length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {Object.entries(todayAttendanceData).map(([key, attendance]) => {
-                        const [classIdStr, shift] = key.split('_');
-                        const classId = classIdStr === 'null' ? null : Number(classIdStr);
-                        const cls = classId ? classes.find(c => (c.classId || c.id) === classId) : null;
-                        const className = cls?.name || (classId ? `${t('class', 'ថ្នាក់')} ${classId}` : t('personalAttendance', 'វត្តមានផ្ទាល់ខ្លួន'));
-
-                        const checkInTime = attendance.checkInTime ? new Date(attendance.checkInTime).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: true
-                        }) : attendance.time;
-
-                        const checkOutTime = attendance.checkOutTime ? new Date(attendance.checkOutTime).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: true
-                        }) : null;
-
-                        // Debug log
-                        console.log('🔍 Rendering attendance card:', {
-                          key,
-                          className,
-                          isCheckedOut: attendance.isCheckedOut,
-                          isCheckedOutType: typeof attendance.isCheckedOut,
-                          checkOutTime,
-                          hoursWorked: attendance.hoursWorked
-                        });
-
-                        return (
-                          <div key={key} className="border border-gray-200 rounded-md p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900">{className}</p>
-                              </div>
-                              <Badge color={getStatusBadgeColor(attendance.status)} variant="filled" size="xs">
-                                {getStatusInKhmer(attendance.status)}
-                              </Badge>
+                  <Table
+                    enableSort={false}
+                    className="min-w-[520px]"
+                    emptyMessage={t('noCheckInsToday', 'មិនទាន់មានការចូលវត្តមានថ្ងៃនេះ')}
+                    data={Object.entries(todayAttendanceData).map(([key, attendance]) => {
+                      const [classIdStr, shift] = key.split('_');
+                      const classId = classIdStr === 'null' ? null : Number(classIdStr);
+                      // Prefer class info from API response, fall back to classes state
+                      const cls = attendance.classInfo || (classId ? classes.find(c => (c.classId || c.id) === classId) : null);
+                      return { key, shift, classId, attendance, cls };
+                    })}
+                    columns={[
+                      {
+                        key: 'class',
+                        header: t('class', 'ថ្នាក់'),
+                        render: (row) => {
+                          const name = row.cls
+                            ? (row.cls.gradeLevel != null
+                                ? formatClassIdentifier(row.cls.gradeLevel, row.cls.section, t)
+                                : (row.cls.name || `${t('class', 'ថ្នាក់')} ${row.classId}`))
+                            : (row.classId ? `${t('class', 'ថ្នាក់')} ${row.classId}` : t('personalAttendance', 'វត្តមានផ្ទាល់ខ្លួន'));
+                          const shiftLabel = row.shift === 'MORNING' ? t('morningShift', 'ព្រឹក') : row.shift === 'NOON' ? t('noonShift', 'ថ្ងៃត្រង់') : t('afternoonShift', 'រសៀល');
+                          return (
+                            <div>
+                              <p className="font-medium text-gray-900">{name}</p>
+                              <p className="text-xs text-gray-500">{shiftLabel}</p>
                             </div>
-
-                            {/* Check-in/Check-out section - Only show for non-LEAVE status */}
-                            {attendance.status !== 'LEAVE' ? (
-                              <>
-                                {/* Check-in Time */}
-                                <div className="flex items-center gap-2 text-xs">
-                                  <span className="text-gray-500">{t('checkIn', 'ចូល')}:</span>
-                                  <span className="font-medium text-green-600">{checkInTime}</span>
-                                </div>
-
-                                {/* Check-out Time or Button */}
-                                <div className='flex justify-between items-center w-full'>
-                                  {attendance.isCheckedOut === true ? (
-                                    <>
-                                      <div className="flex items-center gap-2 text-xs">
-                                        <span className="text-gray-500">{t('checkOut', 'ចេញ')}:</span>
-                                        <span className="font-medium text-blue-600">{checkOutTime || t('completed', 'បានបញ្ចប់')}</span>
-                                      </div>
-                                      {attendance.hoursWorked !== null && attendance.hoursWorked !== undefined && (
-                                        <div className="flex items-center gap-2 text-xs">
-                                          <span className="text-gray-500">{t('hoursWorked', 'ម៉ោងធ្វើការ')}:</span>
-                                          <span className="font-semibold text-indigo-600">{attendance.hoursWorked.toFixed(2)} {t('hours', 'ម៉ោង')}</span>
-                                        </div>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <Button
-                                      onClick={() => checkOutAttendance(attendance.id, classId, shift)}
-                                      disabled={submitting}
-                                      size="xs"
-                                      variant="success"
-                                    >
-                                      <Check className="h-3 w-3 mr-1" />
-                                      {t('checkOut', 'ចេញវត្តមាន')}
-                                    </Button>
-                                  )}
-                                </div>
-                              </>
-                            ) : (
-                              <div className="flex items-center gap-2 text-xs">
-                                <span className="text-gray-500">{t('submittedAt', 'បានបញ្ជូននៅ')}:</span>
-                                <span className="font-medium text-purple-600">{checkInTime}</span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 text-center py-4">
-                      {t('noCheckInsToday', 'មិនទាន់មានការចូលវត្តមានថ្ងៃនេះ')}
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Calendar Section - Full Width */}
-          <div className="bg-white rounded-md border border-gray-200 shadow-sm overflow-hidden">
-            {/* Calendar Header */}
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={goToPreviousMonth}
-                  disabled={loading}
-                  className="p-2 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50"
-                >
-                  <ChevronLeft className="h-5 w-5 text-gray-600" />
-                </button>
-                <h3 className="text-base font-medium text-gray-900">
-                  {formatDateKhmer(currentMonth, 'monthYear')}
-                </h3>
-                <button
-                  onClick={goToNextMonth}
-                  disabled={loading}
-                  className="p-2 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50"
-                >
-                  <ChevronRight className="h-5 w-5 text-gray-600" />
-                </button>
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="flex justify-center items-center p-12">
-                <DynamicLoader
-                  type="spinner"
-                  size="lg"
-                  variant="primary"
-                  message={t('loadingAttendance', 'កំពុងផ្ទុក...')}
-                />
-              </div>
-            ) : (
-              <div className="p-6">
-                {/* Day headers */}
-                <div className="grid grid-cols-7 gap-2 mb-2">
-                  {['អាទិត្យ', 'ច័ន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍'].map((day, idx) => (
-                    <div
-                      key={idx}
-                      className={`text-center text-xs font-medium py-2 ${idx === 0 || idx === 6 ? 'text-red-600' : 'text-gray-700'
-                        }`}
-                    >
-                      {day}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Calendar grid */}
-                <div className="grid grid-cols-7 gap-2">
-                  {daysInMonth.map((date, idx) => {
-                    if (!date) {
-                      return <div key={`empty-${idx}`} className="aspect-square" />;
-                    }
-
-                    const attendance = getAttendanceForDate(date);
-                    const isWeekendDay = isWeekend(date);
-                    const isCurrentDay = isToday(date);
-                    const isFutureDay = isFuture(date);
-
-                    let bgColor = 'bg-white hover:bg-gray-50';
-                    let textColor = 'text-gray-900';
-                    let borderColor = 'border-gray-200';
-
-                    if (isCurrentDay) {
-                      bgColor = 'bg-blue-50';
-                      borderColor = 'border-blue-500';
-                      textColor = 'text-blue-900';
-                    } else if (isWeekendDay) {
-                      textColor = 'text-red-600';
-                    }
-
-                    // Determine colors based on attendance
-                    const hasMorning = attendance?.morning;
-                    const hasNoon = attendance?.noon;
-                    const hasAfternoon = attendance?.afternoon;
-                    const shiftsCount = (hasMorning ? 1 : 0) + (hasNoon ? 1 : 0) + (hasAfternoon ? 1 : 0);
-
-                    if (hasMorning || hasNoon || hasAfternoon) {
-                      // If all 3 shifts present - show full day color
-                      if (shiftsCount === 3) {
-                        bgColor = 'bg-gradient-to-br from-green-50 via-yellow-50 to-blue-50 hover:from-green-100 hover:via-yellow-100 hover:to-blue-100';
-                        borderColor = 'border-green-500';
-                      } else if (shiftsCount === 2) {
-                        // Two shifts - determine which ones
-                        if (hasMorning && hasNoon) {
-                          bgColor = 'bg-gradient-to-br from-green-50 to-yellow-50 hover:from-green-100 hover:to-yellow-100';
-                          borderColor = 'border-green-500';
-                        } else if (hasMorning && hasAfternoon) {
-                          bgColor = 'bg-gradient-to-br from-green-50 to-blue-50 hover:from-green-100 hover:to-blue-100';
-                          borderColor = 'border-green-500';
-                        } else if (hasNoon && hasAfternoon) {
-                          bgColor = 'bg-gradient-to-br from-yellow-50 to-blue-50 hover:from-yellow-100 hover:to-blue-100';
-                          borderColor = 'border-yellow-500';
+                          );
                         }
-                      } else if (hasMorning) {
-                        // Only morning
-                        const status = hasMorning.status;
-                        switch (status) {
-                          case 'PRESENT':
-                            bgColor = 'bg-green-50 hover:bg-green-100';
-                            borderColor = 'border-green-500';
-                            break;
-                          case 'LATE':
-                            bgColor = 'bg-orange-50 hover:bg-orange-100';
-                            borderColor = 'border-orange-500';
-                            break;
-                          case 'LEAVE':
-                            bgColor = 'bg-purple-50 hover:bg-purple-100';
-                            borderColor = 'border-purple-500';
-                            break;
+                      },
+                      {
+                        key: 'status',
+                        header: t('status', 'ស្ថានភាព'),
+                        render: (row) => (
+                          <Badge color={getStatusBadgeColor(row.attendance.status)} variant="filled" size="xs">
+                            {getStatusInKhmer(row.attendance.status)}
+                          </Badge>
+                        )
+                      },
+                      {
+                        key: 'checkIn',
+                        header: t('checkIn', 'ចូល'),
+                        render: (row) => {
+                          const time = row.attendance.checkInTime
+                            ? new Date(row.attendance.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                            : row.attendance.time;
+                          return row.attendance.status === 'LEAVE'
+                            ? <span className="text-purple-600 font-medium">{time}</span>
+                            : <span className="text-green-600 font-medium">{time || '-'}</span>;
                         }
-                      } else if (hasNoon) {
-                        // Only noon
-                        const status = hasNoon.status;
-                        switch (status) {
-                          case 'PRESENT':
-                            bgColor = 'bg-yellow-50 hover:bg-yellow-100';
-                            borderColor = 'border-yellow-500';
-                            break;
-                          case 'LATE':
-                            bgColor = 'bg-amber-50 hover:bg-amber-100';
-                            borderColor = 'border-amber-500';
-                            break;
-                          case 'LEAVE':
-                            bgColor = 'bg-yellow-100 hover:bg-yellow-200';
-                            borderColor = 'border-yellow-600';
-                            break;
+                      },
+                      {
+                        key: 'checkOut',
+                        header: t('checkOut', 'ចេញ'),
+                        render: (row) => {
+                          if (row.attendance.status === 'LEAVE') return <span className="text-gray-400">-</span>;
+                          if (row.attendance.isCheckedOut === true) {
+                            const time = row.attendance.checkOutTime
+                              ? new Date(row.attendance.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                              : null;
+                            return <span className="text-blue-600 font-medium">{time || t('completed', 'បានបញ្ចប់')}</span>;
+                          }
+                          return (
+                            <Button
+                              onClick={() => checkOutAttendance(row.attendance.id, row.classId, row.shift)}
+                              disabled={submitting}
+                              size="xs"
+                              variant="success"
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              {t('checkOut', 'ចេញ')}
+                            </Button>
+                          );
                         }
-                      } else if (hasAfternoon) {
-                        // Only afternoon
-                        const status = hasAfternoon.status;
-                        switch (status) {
-                          case 'PRESENT':
-                            bgColor = 'bg-blue-50 hover:bg-blue-100';
-                            borderColor = 'border-blue-500';
-                            break;
-                          case 'LATE':
-                            bgColor = 'bg-amber-50 hover:bg-amber-100';
-                            borderColor = 'border-amber-500';
-                            break;
-                          case 'LEAVE':
-                            bgColor = 'bg-indigo-50 hover:bg-indigo-100';
-                            borderColor = 'border-indigo-500';
-                            break;
+                      },
+                      {
+                        key: 'hours',
+                        header: t('hoursWorked', 'ម៉ោងធ្វើការ'),
+                        render: (row) => {
+                          const h = row.attendance.hoursWorked;
+                          if (h !== null && h !== undefined) {
+                            return <span className="text-indigo-600 font-semibold">{h.toFixed(2)}</span>;
+                          }
+                          return <span className="text-gray-400">-</span>;
                         }
                       }
-                    }
-
-                    const cellContent = (
-                      <div className="flex flex-col items-center justify-center h-full p-1">
-                        <span className={`text-sm font-medium ${textColor}`}>
-                          {date.getDate()}
-                        </span>
-                        {(hasMorning || hasNoon || hasAfternoon) && (
-                          <div className="flex gap-0.5 mt-0.5">
-                            {hasMorning && (
-                              <div className={`w-1 h-1 rounded-full ${hasMorning.status === 'PRESENT' ? 'bg-green-500' :
-                                hasMorning.status === 'LATE' ? 'bg-orange-500' :
-                                  hasMorning.status === 'LEAVE' ? 'bg-purple-500' : 'bg-gray-400'
-                                }`} />
-                            )}
-                            {hasNoon && (
-                              <div className={`w-1 h-1 rounded-full ${hasNoon.status === 'PRESENT' ? 'bg-yellow-500' :
-                                hasNoon.status === 'LATE' ? 'bg-amber-500' :
-                                  hasNoon.status === 'LEAVE' ? 'bg-yellow-600' : 'bg-gray-400'
-                                }`} />
-                            )}
-                            {hasAfternoon && (
-                              <div className={`w-1 h-1 rounded-full ${hasAfternoon.status === 'PRESENT' ? 'bg-blue-500' :
-                                hasAfternoon.status === 'LATE' ? 'bg-amber-500' :
-                                  hasAfternoon.status === 'LEAVE' ? 'bg-indigo-500' : 'bg-gray-400'
-                                }`} />
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-
-                    return (
-                      <div key={idx}>
-                        {(hasMorning || hasNoon || hasAfternoon) ? (
-                          <Tooltip
-                            content={
-                              <div className="text-xs space-y-1 max-w-xs">
-                                {attendance.allRecords.morning.length > 0 && (
-                                  <div className="space-y-1">
-                                    {attendance.allRecords.morning.map((record, idx) => {
-                                      const classId = record.classId;
-                                      const cls = classId ? classes.find(c => (c.classId || c.id) === classId) : null;
-                                      const className = cls?.name || (classId ? `Class ${classId}` : null);
-                                      return (
-                                        <div key={idx} className="py-0.5">
-                                          <div className="text-gray-900 font-medium">
-                                            {className ? `${className} - ${getStatusInKhmer(record.status)}` : getStatusInKhmer(record.status)}
-                                          </div>
-                                          <div className="text-gray-700 text-xs">
-                                            ចូល: {record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
-                                            {record.isCheckedOut ? ` | ចេញ: ${new Date(record.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}` : ' | ឥឡូវនៅ'}
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-
-                                {attendance.allRecords.noon.length > 0 && (
-                                  <div className="space-y-1">
-                                    {attendance.allRecords.noon.map((record, idx) => {
-                                      const classId = record.classId;
-                                      const cls = classId ? classes.find(c => (c.classId || c.id) === classId) : null;
-                                      const className = cls?.name || (classId ? `Class ${classId}` : null);
-                                      return (
-                                        <div key={idx} className="py-0.5">
-                                          <div className="text-gray-900 font-medium">
-                                            {className ? `${className} - ${getStatusInKhmer(record.status)}` : getStatusInKhmer(record.status)}
-                                          </div>
-                                          <div className="text-gray-700 text-xs">
-                                            ចូល: {record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
-                                            {record.isCheckedOut ? ` | ចេញ: ${new Date(record.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}` : ' | ឥឡូវនៅ'}
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-
-                                {attendance.allRecords.afternoon.length > 0 && (
-                                  <div className="space-y-1">
-                                    {attendance.allRecords.afternoon.map((record, idx) => {
-                                      const classId = record.classId;
-                                      const cls = classId ? classes.find(c => (c.classId || c.id) === classId) : null;
-                                      const className = cls?.name || (classId ? `Class ${classId}` : null);
-                                      return (
-                                        <div key={idx} className="py-0.5">
-                                          <div className="text-gray-900 font-medium">
-                                            {className ? `${className} - ${getStatusInKhmer(record.status)}` : getStatusInKhmer(record.status)}
-                                          </div>
-                                          <div className="text-gray-700 text-xs">
-                                            ចូល: {record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
-                                            {record.isCheckedOut ? ` | ចេញ: ${new Date(record.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}` : ' | ឥឡូវនៅ'}
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            }
-                          >
-                            <div
-                              className={`aspect-square border rounded-md ${bgColor} ${borderColor} ${isFutureDay ? 'opacity-40' : ''
-                                } transition-colors cursor-pointer`}
-                            >
-                              {cellContent}
-                            </div>
-                          </Tooltip>
-                        ) : (
-                          <div
-                            className={`aspect-square border rounded-md ${bgColor} ${borderColor} ${isFutureDay ? 'opacity-40' : ''
-                              } transition-colors`}
-                          >
-                            {cellContent}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                    ]}
+                  />
                 </div>
-              </div>
-            )}
+            </>
           </div>
         </FadeInSection>
 
@@ -1263,38 +773,36 @@ export default function TeacherSelfAttendance() {
           title={t('submitAttendance', 'បញ្ជូនវត្តមាន')}
           size="xl"
           className="!w-[90vw] sm:!w-[700px]"
-          footer={
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
-              <Button
-                onClick={() => handleSubmitFromModal('LEAVE')}
-                disabled={submitting || (isTeacher && classes.length > 0 && !selectedClassForSubmit)}
-                variant="outline"
-                className="w-full sm:w-auto"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                {t('leave', 'ច្បាប់')}
-              </Button>
-              <Button
-                onClick={() => handleSubmitFromModal('PRESENT')}
-                disabled={submitting || (isTeacher && classes.length > 0 && !selectedClassForSubmit)}
-                className={`w-full sm:w-auto ${isLateForShift(selectedShiftForSubmit)
-                  ? 'bg-orange-600 hover:bg-orange-700'
-                  : 'bg-green-600 hover:bg-green-700'
-                  }`}
-              >
-                <Check className="h-4 w-4 mr-2" />
-                {t('submit', 'បញ្ជូន')}
-              </Button>
-            </div>
-          }
+          footer={(() => {
+            const classAlreadySubmitted = !!(selectedClassForSubmit && todayAttendanceData[`${selectedClassForSubmit}_${selectedShiftForSubmit}`]);
+            const submitDisabled = submitting || (isTeacher && classes.length > 0 && !selectedClassForSubmit) || classAlreadySubmitted;
+            return (
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                <Button
+                  onClick={() => handleSubmitFromModal('LEAVE')}
+                  disabled={submitDisabled}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {t('leave', 'ច្បាប់')}
+                </Button>
+                <Button
+                  onClick={() => handleSubmitFromModal('PRESENT')}
+                  disabled={submitDisabled}
+                  className={`w-full sm:w-auto ${isLateForShift(selectedShiftForSubmit)
+                    ? 'bg-orange-600 hover:bg-orange-700'
+                    : 'bg-green-600 hover:bg-green-700'
+                    }`}
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  {t('submit', 'បញ្ជូន')}
+                </Button>
+              </div>
+            );
+          })()}
           stickyFooter={true}
         >
-          {/* Current Time Info */}
-          <div className="mb-4 p-3 bg-blue-50 rounded-md">
-            <p className="text-sm font-semibold text-gray-700">
-              {t('currentTime', 'ពេលវេលាបច្ចុប្បន្ន')}: <strong className='font-medium'>{getCurrentTimeDisplay()}</strong>
-            </p>
-          </div>
 
           {/* Class Selection - Only for Teachers (roleId = 8) */}
           {isTeacher && (
@@ -1310,11 +818,16 @@ export default function TeacherSelfAttendance() {
                 }}
                 options={classes.map((cls) => {
                   const classId = cls.classId || cls.id;
-                  const className = cls.name || `${t('grade', 'ថ្នាក់ទី')} ${cls.gradeLevel} ${cls.section || ''}`;
-                  console.log('🏫 Mapping class option:', { classId, className, cls });
+                  const className = cls.gradeLevel != null
+                    ? formatClassIdentifier(cls.gradeLevel, cls.section, t)
+                    : (cls.name || `${t('class', 'ថ្នាក់')} ${classId}`);
+                  const alreadySubmitted = !!(todayAttendanceData[`${classId}_${selectedShiftForSubmit}`]);
                   return {
                     value: classId.toString(),
-                    label: className
+                    label: alreadySubmitted
+                      ? `${className} (${t('alreadySubmitted', 'បានបញ្ជូនរួចហើយ')})`
+                      : className,
+                    disabled: alreadySubmitted
                   };
                 })}
                 placeholder={classes.length === 0 ? t('noClassesAvailable', 'No classes available') : t('selectClass', 'ជ្រើសរើសថ្នាក់')}
@@ -1337,7 +850,7 @@ export default function TeacherSelfAttendance() {
             <div className="grid sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-3">
               <button
                 onClick={() => setSelectedShiftForSubmit('MORNING')}
-                className={`p-3 rounded-md border-2 transition-all ${selectedShiftForSubmit === 'MORNING'
+                className={`p-3 rounded-sm border-2 transition-all ${selectedShiftForSubmit === 'MORNING'
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
@@ -1350,7 +863,7 @@ export default function TeacherSelfAttendance() {
               </button>
               <button
                 onClick={() => setSelectedShiftForSubmit('NOON')}
-                className={`p-3 rounded-md border-2 transition-all ${selectedShiftForSubmit === 'NOON'
+                className={`p-3 rounded-sm border-2 transition-all ${selectedShiftForSubmit === 'NOON'
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
@@ -1363,7 +876,7 @@ export default function TeacherSelfAttendance() {
               </button>
               <button
                 onClick={() => setSelectedShiftForSubmit('AFTERNOON')}
-                className={`p-3 rounded-md border-2 transition-all ${selectedShiftForSubmit === 'AFTERNOON'
+                className={`p-3 rounded-sm border-2 transition-all ${selectedShiftForSubmit === 'AFTERNOON'
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
@@ -1378,7 +891,7 @@ export default function TeacherSelfAttendance() {
           </div>
 
           {/* Status Warning */}
-          <div className={`p-3 rounded-md mb-4 ${isLateForShift(selectedShiftForSubmit)
+          <div className={`p-3 rounded-sm mb-4 ${isLateForShift(selectedShiftForSubmit)
             ? 'bg-orange-50 border border-orange-200'
             : 'bg-green-50 border border-green-200'
             }`}>
@@ -1399,7 +912,7 @@ export default function TeacherSelfAttendance() {
               onChange={(e) => setReasonInput(e.target.value)}
               placeholder={t('enterReasonPlaceholder', 'បញ្ចូលមូលហេតុ (ប្រសិនបើមាន)...')}
               rows={3}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              className="block w-full rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
             />
           </div>
         </Modal>

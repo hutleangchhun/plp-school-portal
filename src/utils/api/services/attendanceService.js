@@ -832,9 +832,11 @@ export const attendanceService = {
         } : null,
         // Include class info if available
         class: attendance.class ? {
-          id: attendance.class.id,
+          id: attendance.class.classId || attendance.class.id,
+          classId: attendance.class.classId || attendance.class.id,
           name: attendance.class.name,
           gradeLevel: attendance.class.grade_level || attendance.class.gradeLevel,
+          section: attendance.class.section || '',
           academicYear: attendance.class.academic_year || attendance.class.academicYear
         } : null
       };

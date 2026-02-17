@@ -413,15 +413,15 @@ export default function TeacherStudentsManagement({ user }) {
   return (
     <PageTransition variant="fade" className="flex-1">
       <div className="p-3 sm:p-6">
-        <FadeInSection delay={100} className="my-4 sm:my-2 mx-2">
+        <FadeInSection delay={100} className="my-2 mx-2">
           {/* Filters */}
           <div className="mb-4 flex flex-col space-y-4">
             {/* Header */}
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold text-gray-900">
+            <div className='space-y-2'>
+              <h4 className="text-lg sm:text-xl font-bold text-gray-900">
                 {t('studentsManagement', 'My Students')}
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
+              </h4>
+              <p className="text-sm text-gray-600">
                 {t('manageYourStudents', 'View and manage students in your classes')}
               </p>
             </div>
