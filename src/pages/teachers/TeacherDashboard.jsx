@@ -163,15 +163,15 @@ export default function TeacherDashboard({ user }) {
         <FadeInSection>
           {/* Welcome Header */}
           <div className="p-6 bg-white rounded-sm border border-gray-200 mb-4">
-            <div className='flex justify-between items-start mb-6'>
+            <div className='flex flex-col sm:flex-row justify-between items-start mb-6 space-y-4 sm:space-y-0'>
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-green-50 rounded-full border border-green-100">
                   <CustomIcon name="bee" className="w-8 h-8" />
                 </div>
                 <div>
-                  <h1 className="text-lg sm:text-xl font-bold text-gray-900">
+                  <h4 className="text-lg sm:text-xl font-bold text-gray-900">
                     {t('welcome', 'Welcome')}, {user?.lastName && user?.firstName ? `${user.lastName} ${user.firstName}` : user?.name || user?.username || t('teacher', 'Teacher')}
-                  </h1>
+                  </h4>
                   <p className="text-gray-600 text-xs sm:text-sm mt-1">
                     {t('dashboardGreeting', "Here's an overview of your classes and students")}
                   </p>
@@ -188,7 +188,6 @@ export default function TeacherDashboard({ user }) {
                       size="sm"
                       className="flex items-center gap-2"
                     >
-                      <IconComponent className="w-4 h-4" />
                       {role.label}
                     </Badge>
                   );
