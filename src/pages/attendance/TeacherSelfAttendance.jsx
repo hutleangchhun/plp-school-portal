@@ -1,22 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Calendar, Check } from 'lucide-react';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { useToast } from '../../contexts/ToastContext';
-import { useLoading } from '../../contexts/LoadingContext';
-import { PageLoader } from '../../components/ui/DynamicLoader';
-import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
-import ErrorDisplay from '../../components/ui/ErrorDisplay';
-import { useErrorHandler } from '../../hooks/useErrorHandler';
-import { Button } from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
-import Table from '../../components/ui/Table';
-import Modal from '../../components/ui/Modal';
-import Dropdown from '../../components/ui/Dropdown';
-import { attendanceService } from '../../utils/api/services/attendanceService';
-import { teacherService } from '../../utils/api/services/teacherService';
-import { canAccessTeacherFeatures } from '../../utils/routePermissions';
-import { formatClassIdentifier } from '../../utils/helpers';
-import { formatDateKhmer } from '../../utils/formatters';
+import { useState, useEffect, useCallback } from "react";
+import { Calendar, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { useToast } from "../../contexts/ToastContext";
+import { useLoading } from "../../contexts/LoadingContext";
+import { PageLoader } from "../../components/ui/DynamicLoader";
+import {
+  PageTransition,
+  FadeInSection,
+} from "../../components/ui/PageTransition";
+import ErrorDisplay from "../../components/ui/ErrorDisplay";
+import { useErrorHandler } from "../../hooks/useErrorHandler";
+import { Button } from "../../components/ui/Button";
+import Badge from "../../components/ui/Badge";
+import Table from "../../components/ui/Table";
+import Modal from "../../components/ui/Modal";
+import Dropdown from "../../components/ui/Dropdown";
+import { attendanceService } from "../../utils/api/services/attendanceService";
+import { teacherService } from "../../utils/api/services/teacherService";
+import { canAccessTeacherFeatures } from "../../utils/routePermissions";
+import { formatClassIdentifier } from "../../utils/helpers";
+import { formatDateKhmer } from "../../utils/formatters";
+import { DatePickerWithDropdowns } from "../../components/ui/date-picker-with-dropdowns";
 
 /**
  * TeacherSelfAttendance Component
@@ -26,7 +30,7 @@ export default function TeacherSelfAttendance() {
   const { t, setLanguage } = useLanguage();
   // Force Khmer as the base language for this page
   useEffect(() => {
-    setLanguage && setLanguage('km');
+    setLanguage && setLanguage("km");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only set language once on mount
 
@@ -45,9 +49,13 @@ export default function TeacherSelfAttendance() {
 
   // Modal state for class/shift selection
   const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [selectedShiftForSubmit, setSelectedShiftForSubmit] = useState('MORNING');
+  const [selectedShiftForSubmit, setSelectedShiftForSubmit] =
+    useState("MORNING");
   const [selectedClassForSubmit, setSelectedClassForSubmit] = useState(null);
-  const [reasonInput, setReasonInput] = useState('');
+  const [reasonInput, setReasonInput] = useState("");
+
+  // Date filter for attendance history
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   // Real-time clock state
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -55,10 +63,10 @@ export default function TeacherSelfAttendance() {
   // Get authenticated user data
   const [user] = useState(() => {
     try {
-      const userData = localStorage.getItem('user');
+      const userData = localStorage.getItem("user");
       return userData ? JSON.parse(userData) : null;
     } catch (err) {
-      console.error('Error parsing user data:', err);
+      console.error("Error parsing user data:", err);
       return null;
     }
   });
@@ -73,48 +81,51 @@ export default function TeacherSelfAttendance() {
 
     try {
       setLoadingClasses(true);
-      console.log('🔍 Fetching teacher classes for userId:', userId);
+      console.log("🔍 Fetching teacher classes for userId:", userId);
       const response = await teacherService.getTeacherClasses(userId);
 
-      console.log('📋 Teacher classes response from teacherService:', {
+      console.log("📋 Teacher classes response from teacherService:", {
         success: response.success,
         dataLength: response.data?.length,
         classesLength: response.classes?.length,
-        fullResponse: response
+        fullResponse: response,
       });
 
       // Use the already formatted classes from teacherService
       // teacherService.getTeacherClasses returns { success, data: [], classes: [] }
       let teacherClasses = [];
-      
+
       if (response.success) {
         // Prefer the 'data' property (formatted classes), fallback to 'classes'
         teacherClasses = response.data || response.classes || [];
       }
 
-      console.log('📚 Processed teacher classes:', teacherClasses);
+      console.log("📚 Processed teacher classes:", teacherClasses);
 
       if (teacherClasses.length > 0) {
-        console.log('✅ Fetched teacher classes from API:', teacherClasses);
+        console.log("✅ Fetched teacher classes from API:", teacherClasses);
         setClasses(teacherClasses);
         // Store in localStorage for next time
-        localStorage.setItem('teacherClasses', JSON.stringify(teacherClasses));
+        localStorage.setItem("teacherClasses", JSON.stringify(teacherClasses));
 
         // Auto-select first class if available
         const firstClass = teacherClasses[0];
         const firstClassId = firstClass.classId || firstClass.id;
         setSelectedClassId(firstClassId);
-        localStorage.setItem('currentClassId', String(firstClassId));
-        console.log('✅ Auto-selected first class:', firstClassId);
+        localStorage.setItem("currentClassId", String(firstClassId));
+        console.log("✅ Auto-selected first class:", firstClassId);
       } else {
-        console.warn('⚠️ No classes found for teacher:', userId);
+        console.warn("⚠️ No classes found for teacher:", userId);
         setClasses([]);
         // Clear localStorage if no classes
-        localStorage.removeItem('teacherClasses');
-        localStorage.removeItem('currentClassId');
+        localStorage.removeItem("teacherClasses");
+        localStorage.removeItem("currentClassId");
       }
     } catch (err) {
-      console.error('❌ Error fetching teacher classes from teacherService:', err);
+      console.error(
+        "❌ Error fetching teacher classes from teacherService:",
+        err,
+      );
       setClasses([]);
     } finally {
       setLoadingClasses(false);
@@ -127,31 +138,42 @@ export default function TeacherSelfAttendance() {
 
     try {
       // Get classes from localStorage (set during login for roleId = 8)
-      const storedClasses = localStorage.getItem('teacherClasses');
-      const storedClassId = localStorage.getItem('currentClassId');
+      const storedClasses = localStorage.getItem("teacherClasses");
+      const storedClassId = localStorage.getItem("currentClassId");
 
       if (storedClasses) {
         const parsedClasses = JSON.parse(storedClasses);
         setClasses(parsedClasses);
-        console.log('📚 Loaded', parsedClasses.length, 'classes from localStorage');
+        console.log(
+          "📚 Loaded",
+          parsedClasses.length,
+          "classes from localStorage",
+        );
 
         // Use stored class ID or default to first class
-        if (storedClassId && parsedClasses.find(c => String(c.classId || c.id) === String(storedClassId))) {
+        if (
+          storedClassId &&
+          parsedClasses.find(
+            (c) => String(c.classId || c.id) === String(storedClassId),
+          )
+        ) {
           setSelectedClassId(Number(storedClassId));
-          console.log('✅ Using stored class ID:', storedClassId);
+          console.log("✅ Using stored class ID:", storedClassId);
         } else if (parsedClasses.length > 0) {
           const firstClassId = parsedClasses[0].classId || parsedClasses[0].id;
           setSelectedClassId(firstClassId);
-          localStorage.setItem('currentClassId', String(firstClassId));
-          console.log('✅ Using first class as default:', firstClassId);
+          localStorage.setItem("currentClassId", String(firstClassId));
+          console.log("✅ Using first class as default:", firstClassId);
         }
       } else {
-        console.warn('⚠️ No classes found in localStorage, fetching from API...');
+        console.warn(
+          "⚠️ No classes found in localStorage, fetching from API...",
+        );
         // Fallback: fetch from API if not in localStorage
         fetchTeacherClassesFromAPI();
       }
     } catch (err) {
-      console.error('Error loading classes from localStorage:', err);
+      console.error("Error loading classes from localStorage:", err);
       fetchTeacherClassesFromAPI();
     }
   }, [userId, isTeacher, fetchTeacherClassesFromAPI]);
@@ -159,68 +181,83 @@ export default function TeacherSelfAttendance() {
   // Helper function to get date string in YYYY-MM-DD format without timezone conversion
   const getLocalDateString = (date = new Date()) => {
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
 
-  // Fetch today's attendance only
+  // Fetch attendance for the selected date
   const fetchMonthlyAttendance = useCallback(async () => {
     if (!userLoginId) return;
 
     clearError();
 
     try {
-      const today = getLocalDateString();
+      const dateStr = getLocalDateString(selectedDate);
       const response = await attendanceService.getAttendance({
         userId: userLoginId,
-        date: today,
-        limit: 50
+        date: dateStr,
+        limit: 50,
       });
 
-      const todayData = {};
+      const dateData = {};
       if (response.success && response.data) {
-        const records = Array.isArray(response.data) ? response.data : response.data.records || [];
+        const records = Array.isArray(response.data)
+          ? response.data
+          : response.data.records || [];
 
-        records.forEach(record => {
+        records.forEach((record) => {
           const recordClassId = record.classId;
-          const recordTime = record.createdAt ? new Date(record.createdAt) : null;
+          const recordTime = record.createdAt
+            ? new Date(record.createdAt)
+            : null;
           const recordHour = recordTime ? recordTime.getHours() : 12;
-          const shift = recordHour < 11 ? 'MORNING' : recordHour < 13 ? 'NOON' : 'AFTERNOON';
+          const shift =
+            recordHour < 11
+              ? "MORNING"
+              : recordHour < 13
+                ? "NOON"
+                : "AFTERNOON";
 
-          const classIdKey = recordClassId || 'null';
+          const classIdKey = recordClassId || "null";
           const key = `${classIdKey}_${shift}`;
-          todayData[key] = {
-            status: record.status?.toUpperCase() || 'PRESENT',
-            time: record.createdAt ? new Date(record.createdAt).toLocaleTimeString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true
-            }) : null,
+          dateData[key] = {
+            status: record.status?.toUpperCase() || "PRESENT",
+            time: record.createdAt
+              ? new Date(record.createdAt).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                })
+              : null,
             id: record.id,
             createdAt: record.createdAt,
-            reason: record.reason || '',
+            reason: record.reason || "",
             shift,
             classId: recordClassId,
             classInfo: record.class || null,
             checkInTime: record.checkInTime || null,
             checkOutTime: record.checkOutTime || null,
-            hoursWorked: record.hoursWorked !== undefined ? record.hoursWorked : null,
-            isCheckedOut: record.isCheckedOut === true
+            hoursWorked:
+              record.hoursWorked !== undefined ? record.hoursWorked : null,
+            isCheckedOut: record.isCheckedOut === true,
           };
         });
       }
 
-      setMonthlyAttendance({ [today]: todayData });
+      setMonthlyAttendance((prev) => ({ ...prev, [dateStr]: dateData }));
     } catch (err) {
-      console.error('Error fetching attendance:', err);
+      console.error("Error fetching attendance:", err);
       handleError(err, {
-        toastMessage: t('errorFetchingAttendance', 'Error fetching attendance data')
+        toastMessage: t(
+          "errorFetchingAttendance",
+          "Error fetching attendance data",
+        ),
       });
     } finally {
       setInitialLoading(false);
     }
-  }, [userLoginId, t, handleError, clearError]);
+  }, [userLoginId, selectedDate, t, handleError, clearError]);
 
   // Fetch today's attendance on mount
   useEffect(() => {
@@ -248,7 +285,12 @@ export default function TeacherSelfAttendance() {
   };
 
   // Mark attendance for today with specific class
-  const markAttendance = async (status, shift = 'MORNING', classId = null, userReason = '') => {
+  const markAttendance = async (
+    status,
+    shift = "MORNING",
+    classId = null,
+    userReason = "",
+  ) => {
     if (!userLoginId) return; // Use userLoginId for attendance marking
 
     // Use provided classId or fall back to selectedClassId
@@ -256,14 +298,19 @@ export default function TeacherSelfAttendance() {
 
     // Validate class for teachers who have classes assigned
     if (isTeacher && classes.length > 0 && !targetClassId) {
-      showError(t('pleaseSelectClass', 'សូមជ្រើសរើសថ្នាក់រៀន'));
+      showError(t("pleaseSelectClass", "សូមជ្រើសរើសថ្នាក់រៀន"));
       return;
     }
 
     // Validate that we're only marking attendance for today
     const today = getLocalDateString();
     if (!isDateToday(today)) {
-      showError(t('canOnlyMarkTodayAttendance', 'អ្នកអាចបញ្ជូនវត្តមានតែថ្ងៃនេះប៉ុណ្ណោះ'));
+      showError(
+        t(
+          "canOnlyMarkTodayAttendance",
+          "អ្នកអាចបញ្ជូនវត្តមានតែថ្ងៃនេះប៉ុណ្ណោះ",
+        ),
+      );
       return;
     }
 
@@ -271,41 +318,57 @@ export default function TeacherSelfAttendance() {
     const todayAttendanceData = monthlyAttendance[today];
     const attendanceKey = `${targetClassId}_${shift}`;
     if (todayAttendanceData && todayAttendanceData[attendanceKey]) {
-      showError(shift === 'MORNING'
-        ? t('alreadySubmittedMorningForClass', `អ្នកបានបញ្ជូនវត្តមានព្រឹកសម្រាប់ថ្នាក់នេះរួចហើយ`)
-        : t('alreadySubmittedAfternoonForClass', `អ្នកបានបញ្ជូនវត្តមានរសៀលសម្រាប់ថ្នាក់នេះរួចហើយ`));
+      showError(
+        shift === "MORNING"
+          ? t(
+              "alreadySubmittedMorningForClass",
+              `អ្នកបានបញ្ជូនវត្តមានព្រឹកសម្រាប់ថ្នាក់នេះរួចហើយ`,
+            )
+          : t(
+              "alreadySubmittedAfternoonForClass",
+              `អ្នកបានបញ្ជូនវត្តមានរសៀលសម្រាប់ថ្នាក់នេះរួចហើយ`,
+            ),
+      );
       return;
     }
 
     try {
       setSubmitting(true);
-      startLoading('markAttendance', t('submittingAttendance', 'Submitting attendance...'));
+      startLoading(
+        "markAttendance",
+        t("submittingAttendance", "Submitting attendance..."),
+      );
 
       // Double-check the date before sending to API
       const requestDate = getLocalDateString();
       if (!isDateToday(requestDate)) {
-        showError(t('canOnlyMarkTodayAttendance', 'អ្នកអាចបញ្ជូនវត្តមានតែថ្ងៃនេះប៉ុណ្ណោះ'));
+        showError(
+          t(
+            "canOnlyMarkTodayAttendance",
+            "អ្នកអាចបញ្ជូនវត្តមានតែថ្ងៃនេះប៉ុណ្ណោះ",
+          ),
+        );
         setSubmitting(false);
-        stopLoading('markAttendance');
+        stopLoading("markAttendance");
         return;
       }
 
       // Auto-determine status based on submission time and shift
       // The shift is based on the class schedule (morning or afternoon class)
       let finalStatus = status;
-      if (status === 'PRESENT' || status === 'LATE') {
+      if (status === "PRESENT" || status === "LATE") {
         const now = new Date();
         const currentHour = now.getHours();
 
-        if (shift === 'MORNING') {
+        if (shift === "MORNING") {
           // Morning shift: Late if submitted at or after 7:00 AM
-          finalStatus = currentHour >= 7 ? 'LATE' : 'PRESENT';
-        } else if (shift === 'NOON') {
+          finalStatus = currentHour >= 7 ? "LATE" : "PRESENT";
+        } else if (shift === "NOON") {
           // Noon shift: Late if submitted at or after 11:00 AM
-          finalStatus = currentHour >= 11 ? 'LATE' : 'PRESENT';
-        } else if (shift === 'AFTERNOON') {
+          finalStatus = currentHour >= 11 ? "LATE" : "PRESENT";
+        } else if (shift === "AFTERNOON") {
           // Afternoon shift: Late if submitted at or after 1:00 PM (13:00)
-          finalStatus = currentHour >= 13 ? 'LATE' : 'PRESENT';
+          finalStatus = currentHour >= 13 ? "LATE" : "PRESENT";
         }
       }
       // For LEAVE status, keep it as is
@@ -316,62 +379,93 @@ export default function TeacherSelfAttendance() {
         date: requestDate,
         status: finalStatus,
         reason: userReason.trim(), // User's own reason
-        classId: targetClassId || null // classId is optional (null if not provided)
+        classId: targetClassId || null, // classId is optional (null if not provided)
       };
 
       // Only add checkInTime if status is not LEAVE
-      if (finalStatus !== 'LEAVE') {
+      if (finalStatus !== "LEAVE") {
         attendancePayload.checkInTime = new Date().toISOString();
       }
 
-      console.log('✅ Attendance payload:', attendancePayload);
+      console.log("✅ Attendance payload:", attendancePayload);
 
-      const attendanceResponse = await attendanceService.createAttendance(attendancePayload);
+      const attendanceResponse =
+        await attendanceService.createAttendance(attendancePayload);
 
-      showSuccess(t('attendanceMarkedSuccess', 'វត្តមានត្រូវបានបញ្ជូនដោយជោគជ័យ'));
+      showSuccess(
+        t("attendanceMarkedSuccess", "វត្តមានត្រូវបានបញ្ជូនដោយជោគជ័យ"),
+      );
 
       // If attendance requires approval, notify director
-      if (attendanceResponse?.approvalStatus === 'PENDING') {
+      if (attendanceResponse?.approvalStatus === "PENDING") {
         // This will be handled by the NotificationContext polling
-        showSuccess(t('awaitingApproval', 'Your attendance is awaiting director approval'));
+        showSuccess(
+          t(
+            "awaitingApproval",
+            "Your attendance is awaiting director approval",
+          ),
+        );
       }
 
       fetchMonthlyAttendance();
     } catch (error) {
-      console.error('Error marking attendance:', error);
+      console.error("Error marking attendance:", error);
 
       // Check if error is related to date validation
-      const errorMessage = error?.response?.data?.message || error?.message || '';
-      if (errorMessage.includes('date') || errorMessage.includes('past') || errorMessage.includes('future')) {
-        showError(t('canOnlyMarkTodayAttendance', 'អ្នកអាចបញ្ជូនវត្តមានតែថ្ងៃនេះប៉ុណ្ណោះ'));
+      const errorMessage =
+        error?.response?.data?.message || error?.message || "";
+      if (
+        errorMessage.includes("date") ||
+        errorMessage.includes("past") ||
+        errorMessage.includes("future")
+      ) {
+        showError(
+          t(
+            "canOnlyMarkTodayAttendance",
+            "អ្នកអាចបញ្ជូនវត្តមានតែថ្ងៃនេះប៉ុណ្ណោះ",
+          ),
+        );
       } else {
-        showError(t('failedToMarkAttendance', 'បរាជ័យក្នុងការបញ្ជូនវត្តមាន'));
+        showError(t("failedToMarkAttendance", "បរាជ័យក្នុងការបញ្ជូនវត្តមាន"));
       }
     } finally {
       setSubmitting(false);
-      stopLoading('markAttendance');
+      stopLoading("markAttendance");
     }
   };
 
   // Check-out function for existing attendance
-  const checkOutAttendance = async (attendanceId, classId = null, shift = 'MORNING') => {
+  const checkOutAttendance = async (
+    attendanceId,
+    classId = null,
+    shift = "MORNING",
+  ) => {
     if (!userLoginId || !attendanceId) return; // Use userLoginId for attendance operations
 
     try {
       setSubmitting(true);
-      startLoading('checkOutAttendance', t('checkingOut', 'កំពុងចុះវត្តមាន...'));
+      startLoading(
+        "checkOutAttendance",
+        t("checkingOut", "កំពុងចុះវត្តមាន..."),
+      );
 
       // Build check-out payload with current timestamp
       const checkOutPayload = {
-        checkOutTime: new Date().toISOString()
+        checkOutTime: new Date().toISOString(),
       };
 
-      console.log('✅ Check-out payload:', { attendanceId, ...checkOutPayload });
+      console.log("✅ Check-out payload:", {
+        attendanceId,
+        ...checkOutPayload,
+      });
 
-      const response = await attendanceService.updateAttendance(attendanceId, checkOutPayload);
+      const response = await attendanceService.updateAttendance(
+        attendanceId,
+        checkOutPayload,
+      );
 
       if (response) {
-        showSuccess(t('checkOutSuccess', 'ចុះវត្តមានដោយជោគជ័យ'));
+        showSuccess(t("checkOutSuccess", "ចុះវត្តមានដោយជោគជ័យ"));
 
         // Update local state immediately
         const today = getLocalDateString();
@@ -379,13 +473,17 @@ export default function TeacherSelfAttendance() {
         const key = `${targetClassId}_${shift}`;
         const checkOutTimeStamp = new Date().toISOString();
 
-        console.log('✅ Checkout response:', response);
-        console.log('✅ Updating state for key:', key, 'on date:', today);
+        console.log("✅ Checkout response:", response);
+        console.log("✅ Updating state for key:", key, "on date:", today);
 
         // Update monthlyAttendance state immediately for instant UI update
-        setMonthlyAttendance(prev => {
+        setMonthlyAttendance((prev) => {
           if (!prev[today] || !prev[today][key]) {
-            console.log('⚠️ Cannot find attendance record to update:', { today, key, hasToday: !!prev[today] });
+            console.log("⚠️ Cannot find attendance record to update:", {
+              today,
+              key,
+              hasToday: !!prev[today],
+            });
             return prev;
           }
 
@@ -397,28 +495,33 @@ export default function TeacherSelfAttendance() {
                 ...prev[today][key],
                 checkOutTime: checkOutTimeStamp,
                 isCheckedOut: true,
-                hoursWorked: response.hoursWorked || response.data?.hoursWorked || prev[today][key].hoursWorked
-              }
-            }
+                hoursWorked:
+                  response.hoursWorked ||
+                  response.data?.hoursWorked ||
+                  prev[today][key].hoursWorked,
+              },
+            },
           };
 
-          console.log('✅ Updated monthlyAttendance:', updated[today][key]);
+          console.log("✅ Updated monthlyAttendance:", updated[today][key]);
           return updated;
         });
 
-        console.log('✅ Updated local state after checkout, refreshing data...');
+        console.log(
+          "✅ Updated local state after checkout, refreshing data...",
+        );
 
         // Refresh attendance data to get server values
         fetchMonthlyAttendance();
       } else {
-        showError(t('checkOutFailed', 'បរាជ័យក្នុងការចុះវត្តមាន'));
+        showError(t("checkOutFailed", "បរាជ័យក្នុងការចុះវត្តមាន"));
       }
     } catch (error) {
-      console.error('Error checking out:', error);
-      showError(t('checkOutFailed', 'បរាជ័យក្នុងការចុះវត្តមាន'));
+      console.error("Error checking out:", error);
+      showError(t("checkOutFailed", "បរាជ័យក្នុងការចុះវត្តមាន"));
     } finally {
       setSubmitting(false);
-      stopLoading('checkOutAttendance');
+      stopLoading("checkOutAttendance");
     }
   };
 
@@ -430,10 +533,10 @@ export default function TeacherSelfAttendance() {
   // Helper function to translate attendance status to Khmer
   const getStatusInKhmer = (status) => {
     const statusMap = {
-      'PRESENT': t('present', 'វត្តមាន'),
-      'ABSENT': t('absent', 'អវត្តមាន'),
-      'LATE': t('late', 'យឺត'),
-      'LEAVE': t('leave', 'ច្បាប់')
+      PRESENT: t("present", "វត្តមាន"),
+      ABSENT: t("absent", "អវត្តមាន"),
+      LATE: t("late", "យឺត"),
+      LEAVE: t("leave", "ច្បាប់"),
     };
     return statusMap[status?.toUpperCase()] || status;
   };
@@ -441,14 +544,14 @@ export default function TeacherSelfAttendance() {
   // Helper function to get badge color for attendance status
   const getStatusBadgeColor = (status) => {
     switch (status?.toUpperCase()) {
-      case 'PRESENT':
-        return 'green';
-      case 'LATE':
-        return 'orange';
-      case 'LEAVE':
-        return 'purple';
+      case "PRESENT":
+        return "green";
+      case "LATE":
+        return "orange";
+      case "LEAVE":
+        return "purple";
       default:
-        return 'gray';
+        return "gray";
     }
   };
 
@@ -456,9 +559,14 @@ export default function TeacherSelfAttendance() {
     return (
       <div className="p-4">
         <ErrorDisplay
-          error={{ message: t('accessDenied', 'Access denied. This page is only accessible by teachers and directors.') }}
+          error={{
+            message: t(
+              "accessDenied",
+              "Access denied. This page is only accessible by teachers and directors.",
+            ),
+          }}
           onRetry={() => window.history.back()}
-          retryText={t('goBack', 'Go Back')}
+          retryText={t("goBack", "Go Back")}
         />
       </div>
     );
@@ -468,12 +576,11 @@ export default function TeacherSelfAttendance() {
   if (initialLoading || loadingClasses) {
     return (
       <PageLoader
-        message={t('loadingAttendance', 'Loading attendance...')}
+        message={t("loadingAttendance", "Loading attendance...")}
         className="min-h-screen bg-gray-50"
       />
     );
   }
-
 
   // Error state
   if (error) {
@@ -488,7 +595,23 @@ export default function TeacherSelfAttendance() {
   }
 
   const todayStr = getLocalDateString();
+  const displayDateStr = getLocalDateString(selectedDate);
+  const isViewingToday = displayDateStr === todayStr;
+  const isViewingFuture = displayDateStr > todayStr;
   const todayAttendanceData = monthlyAttendance[todayStr] || {};
+  const displayAttendanceData = monthlyAttendance[displayDateStr] || {};
+
+  const goToPrevDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 1);
+    setSelectedDate(d);
+  };
+
+  const goToNextDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 1);
+    setSelectedDate(d);
+  };
 
   const now = new Date();
   const currentHour = now.getHours();
@@ -498,11 +621,11 @@ export default function TeacherSelfAttendance() {
 
   // Helper function to determine if current time is late for a shift
   const isLateForShift = (shift) => {
-    if (shift === 'MORNING') {
+    if (shift === "MORNING") {
       return currentHour >= 7;
-    } else if (shift === 'NOON') {
+    } else if (shift === "NOON") {
       return currentHour >= 11;
-    } else if (shift === 'AFTERNOON') {
+    } else if (shift === "AFTERNOON") {
       return currentHour >= 13;
     }
     return false;
@@ -510,29 +633,28 @@ export default function TeacherSelfAttendance() {
 
   // Get current time display with real-time seconds
   const getCurrentTimeDisplay = () => {
-    return currentTime.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
+    return currentTime.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
     });
   };
 
   // Open submit modal
   const openSubmitModal = () => {
-    console.log('🔓 Opening submit modal with current state:', {
+    console.log("🔓 Opening submit modal with current state:", {
       classes: classes,
       classesLength: classes.length,
       selectedClassId,
-      currentHour
+      currentHour,
     });
 
     // Always fetch fresh classes when opening modal to ensure we have current data
     fetchTeacherClassesFromAPI().then(() => {
       // Auto-detect current shift based on time
-      const autoShift = currentHour < 11 ? 'MORNING' :
-                        currentHour < 13 ? 'NOON' :
-                        'AFTERNOON';
+      const autoShift =
+        currentHour < 11 ? "MORNING" : currentHour < 13 ? "NOON" : "AFTERNOON";
       setSelectedShiftForSubmit(autoShift);
 
       // Auto-select first class from teacher's classes
@@ -540,13 +662,13 @@ export default function TeacherSelfAttendance() {
         const firstClass = classes[0];
         const firstClassId = firstClass.classId || firstClass.id;
         setSelectedClassForSubmit(firstClassId);
-        console.log('✅ Auto-selected class for modal:', {
+        console.log("✅ Auto-selected class for modal:", {
           firstClass,
           firstClassId,
-          className: firstClass.name
+          className: firstClass.name,
         });
       } else {
-        console.warn('⚠️ No classes available for teacher to select');
+        console.warn("⚠️ No classes available for teacher to select");
         setSelectedClassForSubmit(null);
       }
 
@@ -555,22 +677,27 @@ export default function TeacherSelfAttendance() {
   };
 
   // Handle submit from modal
-  const handleSubmitFromModal = async (status = 'PRESENT') => {
+  const handleSubmitFromModal = async (status = "PRESENT") => {
     // Validate shift is selected
     if (!selectedShiftForSubmit) {
-      showError(t('pleaseSelectShift', 'សូមជ្រើសរើសវេន'));
+      showError(t("pleaseSelectShift", "សូមជ្រើសរើសវេន"));
       return;
     }
 
     // Validate class for teachers with classes only
     if (isTeacher && classes.length > 0 && !selectedClassForSubmit) {
-      showError(t('pleaseSelectClass', 'សូមជ្រើសរើសថ្នាក់រៀន'));
+      showError(t("pleaseSelectClass", "សូមជ្រើសរើសថ្នាក់រៀន"));
       return;
     }
 
-    await markAttendance(status, selectedShiftForSubmit, selectedClassForSubmit, reasonInput);
+    await markAttendance(
+      status,
+      selectedShiftForSubmit,
+      selectedClassForSubmit,
+      reasonInput,
+    );
     setShowSubmitModal(false);
-    setReasonInput(''); // Clear reason after submit
+    setReasonInput(""); // Clear reason after submit
   };
 
   return (
@@ -579,12 +706,15 @@ export default function TeacherSelfAttendance() {
         {/* Header - Full Width */}
         <FadeInSection className="mb-4 mx-2">
           <div className="flex flex-row items-start sm:items-center justify-between gap-4">
-            <div className='space-y-1'>
+            <div className="space-y-1">
               <h4 className="text-lg sm:text-xl font-semibold text-gray-900">
-                {t('myAttendance') || 'វត្តមានរបស់ខ្ញុំ'}
+                {t("myAttendance") || "វត្តមានរបស់ខ្ញុំ"}
               </h4>
               <p className="text-sm text-gray-600">
-                {t('teacherAttendanceSubtitle', 'កត់ត្រាវត្តមានរបស់លោកគ្រូ/អ្នកគ្រូ')}
+                {t(
+                  "teacherAttendanceSubtitle",
+                  "កត់ត្រាវត្តមានរបស់លោកគ្រូ/អ្នកគ្រូ",
+                )}
               </p>
             </div>
           </div>
@@ -592,43 +722,49 @@ export default function TeacherSelfAttendance() {
 
         {/* Layout */}
         <FadeInSection className="mx-auto grid grid-cols-1 gap-4">
-          <div className='grid grid-cols-1 gap-4'>
+          <div className="grid grid-cols-1 gap-4">
             {/* Quick Submit Section */}
             <>
               {/* Current Time Display */}
-                <div className="rounded-sm border bg-white border-gray-200 px-6 py-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+              <div className="rounded-sm border bg-white border-gray-200 px-6 py-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+                  {/* Digital Clock - Left */}
+                  <div className="flex flex-col gap-4 py-2">
+                    <p className="text-sm font-bold text-gray-700 uppercase">
+                      {t("currentTime", "ពេលវេលាបច្ចុប្បន្ន")}
+                    </p>
 
-                    {/* Digital Clock - Left */}
-                    <div className="flex flex-col gap-4 py-2">
-                      <p className="text-sm font-bold text-gray-700 uppercase">
-                        {t('currentTime', 'ពេលវេលាបច្ចុប្បន្ន')}
-                      </p>
+                    {/* Time + AM/PM */}
+                    <div className="flex items-end gap-2">
+                      <span className="text-6xl font-light tabular-nums text-gray-900 leading-none tracking-tight">
+                        {currentTime.toLocaleTimeString("en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })}
+                      </span>
+                      <span className="text-sm text-gray-700 mb-1">
+                        {currentTime.getHours() < 12 ? "AM" : "PM"}
+                      </span>
+                    </div>
 
-                      {/* Time + AM/PM */}
-                      <div className="flex items-end gap-2">
-                        <span className="text-6xl font-light tabular-nums text-gray-900 leading-none tracking-tight">
-                          {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                        </span>
-                        <span className="text-sm text-gray-700 mb-1">
-                          {currentTime.getHours() < 12 ? 'AM' : 'PM'}
-                        </span>
-                      </div>
+                    {/* Seconds progress bar */}
+                    <div className="w-full h-px bg-gray-100 relative overflow-hidden rounded-full">
+                      <div
+                        className="absolute top-0 left-0 h-full bg-gray-400 transition-all duration-1000 ease-linear"
+                        style={{
+                          width: `${(currentTime.getSeconds() / 60) * 100}%`,
+                        }}
+                      />
+                    </div>
 
-                      {/* Seconds progress bar */}
-                      <div className="w-full h-px bg-gray-100 relative overflow-hidden rounded-full">
-                        <div
-                          className="absolute top-0 left-0 h-full bg-gray-400 transition-all duration-1000 ease-linear"
-                          style={{ width: `${(currentTime.getSeconds() / 60) * 100}%` }}
-                        />
-                      </div>
+                    {/* Date */}
+                    <p className="text-xs text-gray-700 font-bold">
+                      {formatDateKhmer(currentTime, "full")}
+                    </p>
 
-                      {/* Date */}
-                      <p className="text-xs text-gray-700 font-bold">
-                        {formatDateKhmer(currentTime, 'full')}
-                      </p>
-
-                      {/* Check-in Button */}
+                    {/* Check-in Button — hidden when viewing a future date */}
+                    {!isViewingFuture && (
                       <Button
                         onClick={openSubmitModal}
                         disabled={submitting}
@@ -636,132 +772,248 @@ export default function TeacherSelfAttendance() {
                         className="w-full"
                       >
                         <Check className="h-4 w-4 mr-2" />
-                        {t('checkIn', 'ចូលវត្តមាន')}
+                        {t("checkIn", "ចូលវត្តមាន")}
                       </Button>
-                    </div>
+                    )}
+                  </div>
 
-                    {/* Shift Status - Right */}
-                    <div className="flex flex-col gap-1 py-2 sm:pl-6">
-                      <p className="text-sm font-bold text-gray-700 uppercase mb-3">
-                        {t('shift', 'ស្ថានភាពវេន')}
-                      </p>
-                      {[
-                        { label: t('morningShift', 'វេនព្រឹក'), onTime: isBeforeMorningCutoff, cutoff: '7:00 AM' },
-                        { label: t('noonShift', 'វេនថ្ងៃត្រង់'), onTime: isBeforeNoonCutoff, cutoff: '11:00 AM' },
-                        { label: t('afternoonShift', 'វេនរសៀល'), onTime: isBeforeAfternoonCutoff, cutoff: '1:00 PM' },
-                      ].map(({ label, onTime, cutoff }) => (
-                        <div key={cutoff} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                          <div className="flex items-center gap-2.5">
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${onTime ? 'bg-green-500' : 'bg-orange-400'}`} />
-                            <div>
-                              <p className="text-sm text-gray-700">{label}</p>
-                              <p className="text-xs text-gray-400">{onTime ? 'មុន' : 'ក្រោយ'} {cutoff}</p>
-                            </div>
+                  {/* Shift Status - Right */}
+                  <div className="flex flex-col gap-1 py-2 sm:pl-6">
+                    <p className="text-sm font-bold text-gray-700 uppercase mb-3">
+                      {t("shift", "ស្ថានភាពវេន")}
+                    </p>
+                    {[
+                      {
+                        label: t("morningShift", "វេនព្រឹក"),
+                        onTime: isBeforeMorningCutoff,
+                        cutoff: "7:00 AM",
+                      },
+                      {
+                        label: t("noonShift", "វេនថ្ងៃត្រង់"),
+                        onTime: isBeforeNoonCutoff,
+                        cutoff: "11:00 AM",
+                      },
+                      {
+                        label: t("afternoonShift", "វេនរសៀល"),
+                        onTime: isBeforeAfternoonCutoff,
+                        cutoff: "1:00 PM",
+                      },
+                    ].map(({ label, onTime, cutoff }) => (
+                      <div
+                        key={cutoff}
+                        className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${onTime ? "bg-green-500" : "bg-orange-400"}`}
+                          />
+                          <div>
+                            <p className="text-sm text-gray-700">{label}</p>
+                            <p className="text-xs text-gray-400">
+                              {onTime ? "មុន" : "ក្រោយ"} {cutoff}
+                            </p>
                           </div>
-                          <Badge color={onTime ? 'green' : 'orange'} variant="filled" size="xs">
-                            {onTime ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
-                          </Badge>
                         </div>
-                      ))}
-                    </div>
-
+                        <Badge
+                          color={onTime ? "green" : "orange"}
+                          variant="filled"
+                          size="xs"
+                        >
+                          {onTime ? t("onTime", "ទាន់ម៉ោង") : t("late", "យឺត")}
+                        </Badge>
+                      </div>
+                    ))}
                   </div>
                 </div>
+              </div>
 
-                {/* Today's Check-in/Check-out Status - Table */}
-                <div className="bg-white rounded-sm border border-gray-200 p-4">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                    {t('todayStatus', 'ស្ថានភាពថ្ងៃនេះ')}
-                  </h4>
+              {/* Attendance History Table */}
+              <div className="bg-white rounded-sm border border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-b border-gray-100 gap-2">
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">
+                      {isViewingToday
+                        ? t("todayStatus", "ការចុះវត្តមានថ្ងៃនេះ")
+                        : t("attendanceHistory", "ប្រវត្តិការចុះវត្តមាន")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 w-full sm:w-auto">
+                    {!isViewingToday && (
+                      <button
+                        onClick={() => setSelectedDate(new Date())}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium mr-1 shrink-0"
+                      >
+                        {t("backToToday", "ថ្ងៃនេះ")}
+                      </button>
+                    )}
+                    <button
+                      onClick={goToPrevDay}
+                      className="p-1 rounded hover:bg-gray-100 text-gray-500 transition-colors shrink-0"
+                      title={t("previousDay", "ថ្ងៃមុន")}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <DatePickerWithDropdowns
+                      value={selectedDate}
+                      onChange={(date) => date && setSelectedDate(date)}
+                      fromYear={2020}
+                      toYear={new Date().getFullYear() + 1}
+                      className="h-8 text-xs flex-1 sm:flex-none sm:w-auto"
+                    />
+                    <button
+                      onClick={goToNextDay}
+                      className="p-1 rounded hover:bg-gray-100 text-gray-500 transition-colors shrink-0"
+                      title={t("nextDay", "ថ្ងៃបន្ទាប់")}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="">
                   <Table
                     enableSort={false}
                     className="min-w-[520px]"
-                    emptyMessage={t('noCheckInsToday', 'មិនទាន់មានការចូលវត្តមានថ្ងៃនេះ')}
-                    data={Object.entries(todayAttendanceData).map(([key, attendance]) => {
-                      const [classIdStr, shift] = key.split('_');
-                      const classId = classIdStr === 'null' ? null : Number(classIdStr);
-                      // Prefer class info from API response, fall back to classes state
-                      const cls = attendance.classInfo || (classId ? classes.find(c => (c.classId || c.id) === classId) : null);
-                      return { key, shift, classId, attendance, cls };
-                    })}
+                    emptyMessage={t(
+                      "noCheckInsToday",
+                      "មិនទាន់មានការចូលវត្តមានថ្ងៃនេះ",
+                    )}
+                    data={Object.entries(displayAttendanceData).map(
+                      ([key, attendance]) => {
+                        const [classIdStr, shift] = key.split("_");
+                        const classId =
+                          classIdStr === "null" ? null : Number(classIdStr);
+                        // Prefer class info from API response, fall back to classes state
+                        const cls =
+                          attendance.classInfo ||
+                          (classId
+                            ? classes.find(
+                                (c) => (c.classId || c.id) === classId,
+                              )
+                            : null);
+                        return { key, shift, classId, attendance, cls };
+                      },
+                    )}
                     columns={[
                       {
-                        key: 'class',
-                        header: t('class', 'ថ្នាក់'),
+                        key: "class",
+                        header: t("typeOfAttendance", "ប្រភេទការចុះវត្តមាន"),
                         render: (row) => {
                           const name = row.cls
-                            ? (row.cls.gradeLevel != null
-                                ? formatClassIdentifier(row.cls.gradeLevel, row.cls.section, t)
-                                : (row.cls.name || `${t('class', 'ថ្នាក់')} ${row.classId}`))
-                            : (row.classId ? `${t('class', 'ថ្នាក់')} ${row.classId}` : t('personalAttendance', 'វត្តមានផ្ទាល់ខ្លួន'));
-                          const shiftLabel = row.shift === 'MORNING' ? t('morningShift', 'ព្រឹក') : row.shift === 'NOON' ? t('noonShift', 'ថ្ងៃត្រង់') : t('afternoonShift', 'រសៀល');
+                            ? row.cls.gradeLevel != null
+                              ? formatClassIdentifier(
+                                  row.cls.gradeLevel,
+                                  row.cls.section,
+                                  t,
+                                )
+                              : row.cls.name ||
+                                `${t("class", "ថ្នាក់")} ${row.classId}`
+                            : row.classId
+                              ? `${t("class", "ថ្នាក់")} ${row.classId}`
+                              : t("personalAttendance", "វត្តមានផ្ទាល់ខ្លួន");
                           return (
-                            <div>
-                              <p className="font-medium text-gray-900">{name}</p>
-                              <p className="text-xs text-gray-500">{shiftLabel}</p>
-                            </div>
+                            <p className="font-medium text-gray-900">{name}</p>
                           );
-                        }
+                        },
                       },
                       {
-                        key: 'status',
-                        header: t('status', 'ស្ថានភាព'),
+                        key: "status",
+                        header: t("status", "ស្ថានភាព"),
                         render: (row) => (
-                          <Badge color={getStatusBadgeColor(row.attendance.status)} variant="filled" size="xs">
+                          <Badge
+                            color={getStatusBadgeColor(row.attendance.status)}
+                            variant="filled"
+                            size="xs"
+                          >
                             {getStatusInKhmer(row.attendance.status)}
                           </Badge>
-                        )
+                        ),
                       },
                       {
-                        key: 'checkIn',
-                        header: t('checkIn', 'ចូល'),
+                        key: "checkIn",
+                        header: t("checkIn", "ចូល"),
                         render: (row) => {
                           const time = row.attendance.checkInTime
-                            ? new Date(row.attendance.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                            ? new Date(
+                                row.attendance.checkInTime,
+                              ).toLocaleTimeString("en-US", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                              })
                             : row.attendance.time;
-                          return row.attendance.status === 'LEAVE'
-                            ? <span className="text-purple-600 font-medium">{time}</span>
-                            : <span className="text-green-600 font-medium">{time || '-'}</span>;
-                        }
+                          return row.attendance.status === "LEAVE" ? (
+                            <span className="text-purple-600 font-medium">
+                              {time}
+                            </span>
+                          ) : (
+                            <span className="text-green-600 font-medium">
+                              {time || "-"}
+                            </span>
+                          );
+                        },
                       },
                       {
-                        key: 'checkOut',
-                        header: t('checkOut', 'ចេញ'),
+                        key: "checkOut",
+                        header: t("checkOut", "ចេញ"),
                         render: (row) => {
-                          if (row.attendance.status === 'LEAVE') return <span className="text-gray-400">-</span>;
+                          if (row.attendance.status === "LEAVE")
+                            return <span className="text-gray-400">-</span>;
                           if (row.attendance.isCheckedOut === true) {
                             const time = row.attendance.checkOutTime
-                              ? new Date(row.attendance.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                              ? new Date(
+                                  row.attendance.checkOutTime,
+                                ).toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })
                               : null;
-                            return <span className="text-blue-600 font-medium">{time || t('completed', 'បានបញ្ចប់')}</span>;
+                            return (
+                              <span className="text-blue-600 font-medium">
+                                {time || t("completed", "បានបញ្ចប់")}
+                              </span>
+                            );
                           }
+                          if (!isViewingToday)
+                            return <span className="text-gray-400">-</span>;
                           return (
                             <Button
-                              onClick={() => checkOutAttendance(row.attendance.id, row.classId, row.shift)}
+                              onClick={() =>
+                                checkOutAttendance(
+                                  row.attendance.id,
+                                  row.classId,
+                                  row.shift,
+                                )
+                              }
                               disabled={submitting}
                               size="xs"
                               variant="success"
                             >
                               <Check className="h-3 w-3 mr-1" />
-                              {t('checkOut', 'ចេញ')}
+                              {t("checkOut", "ចេញ")}
                             </Button>
                           );
-                        }
+                        },
                       },
                       {
-                        key: 'hours',
-                        header: t('hoursWorked', 'ម៉ោងធ្វើការ'),
+                        key: "hours",
+                        header: t("hoursWorked", "ម៉ោងធ្វើការ"),
                         render: (row) => {
                           const h = row.attendance.hoursWorked;
                           if (h !== null && h !== undefined) {
-                            return <span className="text-indigo-600 font-semibold">{h.toFixed(2)}</span>;
+                            return (
+                              <span className="text-indigo-600 font-semibold">
+                                {h.toFixed(2)}
+                              </span>
+                            );
                           }
                           return <span className="text-gray-400">-</span>;
-                        }
-                      }
+                        },
+                      },
                     ]}
                   />
                 </div>
+              </div>
             </>
           </div>
         </FadeInSection>
@@ -770,73 +1022,93 @@ export default function TeacherSelfAttendance() {
         <Modal
           isOpen={showSubmitModal}
           onClose={() => setShowSubmitModal(false)}
-          title={t('submitAttendance', 'បញ្ជូនវត្តមាន')}
+          title={t("submitAttendance", "បញ្ជូនវត្តមាន")}
           size="xl"
           className="!w-[90vw] sm:!w-[700px]"
           footer={(() => {
-            const classAlreadySubmitted = !!(selectedClassForSubmit && todayAttendanceData[`${selectedClassForSubmit}_${selectedShiftForSubmit}`]);
-            const submitDisabled = submitting || (isTeacher && classes.length > 0 && !selectedClassForSubmit) || classAlreadySubmitted;
+            const classAlreadySubmitted = !!(
+              selectedClassForSubmit &&
+              todayAttendanceData[
+                `${selectedClassForSubmit}_${selectedShiftForSubmit}`
+              ]
+            );
+            const submitDisabled =
+              submitting ||
+              (isTeacher && classes.length > 0 && !selectedClassForSubmit) ||
+              classAlreadySubmitted;
             return (
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                 <Button
-                  onClick={() => handleSubmitFromModal('LEAVE')}
+                  onClick={() => handleSubmitFromModal("LEAVE")}
                   disabled={submitDisabled}
                   variant="outline"
                   className="w-full sm:w-auto"
                 >
                   <Calendar className="h-4 w-4 mr-2" />
-                  {t('leave', 'ច្បាប់')}
+                  {t("leave", "ច្បាប់")}
                 </Button>
                 <Button
-                  onClick={() => handleSubmitFromModal('PRESENT')}
+                  onClick={() => handleSubmitFromModal("PRESENT")}
                   disabled={submitDisabled}
-                  className={`w-full sm:w-auto ${isLateForShift(selectedShiftForSubmit)
-                    ? 'bg-orange-600 hover:bg-orange-700'
-                    : 'bg-green-600 hover:bg-green-700'
-                    }`}
+                  className={`w-full sm:w-auto ${
+                    isLateForShift(selectedShiftForSubmit)
+                      ? "bg-orange-600 hover:bg-orange-700"
+                      : "bg-green-600 hover:bg-green-700"
+                  }`}
                 >
                   <Check className="h-4 w-4 mr-2" />
-                  {t('submit', 'បញ្ជូន')}
+                  {t("submit", "បញ្ជូន")}
                 </Button>
               </div>
             );
           })()}
           stickyFooter={true}
         >
-
           {/* Class Selection - Only for Teachers (roleId = 8) */}
           {isTeacher && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('selectClass', 'ជ្រើសរើសថ្នាក់')} <span className='text-red-500'>*</span>
+                {t("selectClass", "ជ្រើសរើសថ្នាក់")}{" "}
+                <span className="text-red-500">*</span>
               </label>
               <Dropdown
-                value={selectedClassForSubmit?.toString() || ''}
+                value={selectedClassForSubmit?.toString() || ""}
                 onValueChange={(value) => {
-                  console.log('🎯 Class selected in modal:', value);
+                  console.log("🎯 Class selected in modal:", value);
                   setSelectedClassForSubmit(Number(value));
                 }}
                 options={classes.map((cls) => {
                   const classId = cls.classId || cls.id;
-                  const className = cls.gradeLevel != null
-                    ? formatClassIdentifier(cls.gradeLevel, cls.section, t)
-                    : (cls.name || `${t('class', 'ថ្នាក់')} ${classId}`);
-                  const alreadySubmitted = !!(todayAttendanceData[`${classId}_${selectedShiftForSubmit}`]);
+                  const className =
+                    cls.gradeLevel != null
+                      ? formatClassIdentifier(cls.gradeLevel, cls.section, t)
+                      : cls.name || `${t("class", "ថ្នាក់")} ${classId}`;
+                  const alreadySubmitted =
+                    !!todayAttendanceData[
+                      `${classId}_${selectedShiftForSubmit}`
+                    ];
                   return {
                     value: classId.toString(),
                     label: alreadySubmitted
-                      ? `${className} (${t('alreadySubmitted', 'បានបញ្ជូនរួចហើយ')})`
+                      ? `${className} (${t("alreadySubmitted", "បានបញ្ជូនរួចហើយ")})`
                       : className,
-                    disabled: alreadySubmitted
+                    disabled: alreadySubmitted,
                   };
                 })}
-                placeholder={classes.length === 0 ? t('noClassesAvailable', 'No classes available') : t('selectClass', 'ជ្រើសរើសថ្នាក់')}
+                placeholder={
+                  classes.length === 0
+                    ? t("noClassesAvailable", "No classes available")
+                    : t("selectClass", "ជ្រើសរើសថ្នាក់")
+                }
                 width="w-full"
                 disabled={classes.length === 0}
               />
               {classes.length === 0 && (
                 <p className="text-sm text-red-600 mt-2">
-                  {t('noClassesAssigned', 'No classes assigned to you. Please contact administrator.')}
+                  {t(
+                    "noClassesAssigned",
+                    "No classes assigned to you. Please contact administrator.",
+                  )}
                 </p>
               )}
             </div>
@@ -845,72 +1117,121 @@ export default function TeacherSelfAttendance() {
           {/* Shift Selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('selectShift', 'ជ្រើសរើសវេន')} <span className='text-red-500'>*</span>
+              {t("selectShift", "ជ្រើសរើសវេន")}{" "}
+              <span className="text-red-500">*</span>
             </label>
             <div className="grid sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-3">
               <button
-                onClick={() => setSelectedShiftForSubmit('MORNING')}
-                className={`p-3 rounded-sm border-2 transition-all ${selectedShiftForSubmit === 'MORNING'
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+                onClick={() => setSelectedShiftForSubmit("MORNING")}
+                className={`p-3 rounded-sm border-2 transition-all ${
+                  selectedShiftForSubmit === "MORNING"
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
               >
-                <p className="text-sm text-gray-900">{t('morningShift', 'ព្រឹក')}</p>
-                <p className="text-xs text-gray-600">{isBeforeMorningCutoff ? 'មុន' : 'ក្រោយ'} 7:00 AM</p>
-                <Badge color={isBeforeMorningCutoff ? 'green' : 'orange'} variant="filled" size="sm" className="mt-2">
-                  {isBeforeMorningCutoff ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
+                <p className="text-sm text-gray-900">
+                  {t("morningShift", "ព្រឹក")}
+                </p>
+                <p className="text-xs text-gray-600">
+                  {isBeforeMorningCutoff ? "មុន" : "ក្រោយ"} 7:00 AM
+                </p>
+                <Badge
+                  color={isBeforeMorningCutoff ? "green" : "orange"}
+                  variant="filled"
+                  size="sm"
+                  className="mt-2"
+                >
+                  {isBeforeMorningCutoff
+                    ? t("onTime", "ទាន់ម៉ោង")
+                    : t("late", "យឺត")}
                 </Badge>
               </button>
               <button
-                onClick={() => setSelectedShiftForSubmit('NOON')}
-                className={`p-3 rounded-sm border-2 transition-all ${selectedShiftForSubmit === 'NOON'
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+                onClick={() => setSelectedShiftForSubmit("NOON")}
+                className={`p-3 rounded-sm border-2 transition-all ${
+                  selectedShiftForSubmit === "NOON"
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
               >
-                <p className="text-sm text-gray-900">{t('noonShift', 'ថ្ងៃត្រង់')}</p>
-                <p className="text-xs text-gray-600">{isBeforeNoonCutoff ? 'មុន' : 'ក្រោយ'} 11:00 AM</p>
-                <Badge color={isBeforeNoonCutoff ? 'green' : 'orange'} variant="filled" size="sm" className="mt-2">
-                  {isBeforeNoonCutoff ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
+                <p className="text-sm text-gray-900">
+                  {t("noonShift", "ថ្ងៃត្រង់")}
+                </p>
+                <p className="text-xs text-gray-600">
+                  {isBeforeNoonCutoff ? "មុន" : "ក្រោយ"} 11:00 AM
+                </p>
+                <Badge
+                  color={isBeforeNoonCutoff ? "green" : "orange"}
+                  variant="filled"
+                  size="sm"
+                  className="mt-2"
+                >
+                  {isBeforeNoonCutoff
+                    ? t("onTime", "ទាន់ម៉ោង")
+                    : t("late", "យឺត")}
                 </Badge>
               </button>
               <button
-                onClick={() => setSelectedShiftForSubmit('AFTERNOON')}
-                className={`p-3 rounded-sm border-2 transition-all ${selectedShiftForSubmit === 'AFTERNOON'
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+                onClick={() => setSelectedShiftForSubmit("AFTERNOON")}
+                className={`p-3 rounded-sm border-2 transition-all ${
+                  selectedShiftForSubmit === "AFTERNOON"
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
               >
-                <p className="text-sm text-gray-900">{t('afternoonShift', 'រសៀល')}</p>
-                <p className="text-xs text-gray-600">{isBeforeAfternoonCutoff ? 'មុន' : 'ក្រោយ'} 1:00 PM</p>
-                <Badge color={isBeforeAfternoonCutoff ? 'green' : 'orange'} variant="filled" size="sm" className="mt-2">
-                  {isBeforeAfternoonCutoff ? t('onTime', 'ទាន់ម៉ោង') : t('late', 'យឺត')}
+                <p className="text-sm text-gray-900">
+                  {t("afternoonShift", "រសៀល")}
+                </p>
+                <p className="text-xs text-gray-600">
+                  {isBeforeAfternoonCutoff ? "មុន" : "ក្រោយ"} 1:00 PM
+                </p>
+                <Badge
+                  color={isBeforeAfternoonCutoff ? "green" : "orange"}
+                  variant="filled"
+                  size="sm"
+                  className="mt-2"
+                >
+                  {isBeforeAfternoonCutoff
+                    ? t("onTime", "ទាន់ម៉ោង")
+                    : t("late", "យឺត")}
                 </Badge>
               </button>
             </div>
           </div>
 
           {/* Status Warning */}
-          <div className={`p-3 rounded-sm mb-4 ${isLateForShift(selectedShiftForSubmit)
-            ? 'bg-orange-50 border border-orange-200'
-            : 'bg-green-50 border border-green-200'
-            }`}>
+          <div
+            className={`p-3 rounded-sm mb-4 ${
+              isLateForShift(selectedShiftForSubmit)
+                ? "bg-orange-50 border border-orange-200"
+                : "bg-green-50 border border-green-200"
+            }`}
+          >
             <p className="text-sm font-medium">
               {isLateForShift(selectedShiftForSubmit)
-                ? t('willBeMarkedLate', 'ប្រព័ន្ធនឹងកត់ត្រាថាអ្នកចុះវត្តមានយឺត')
-                : t('willBeMarkedPresent', 'ប្រព័ន្ធនឹងកត់ត្រាថាអ្នកចុះវត្តមានទាន់')}
+                ? t("willBeMarkedLate", "ប្រព័ន្ធនឹងកត់ត្រាថាអ្នកចុះវត្តមានយឺត")
+                : t(
+                    "willBeMarkedPresent",
+                    "ប្រព័ន្ធនឹងកត់ត្រាថាអ្នកចុះវត្តមានទាន់",
+                  )}
             </p>
           </div>
 
           {/* Reason Input (Optional) */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('reason', 'មូលហេតុ')} <span className="text-gray-400 text-xs">({t('optional', 'ជម្រើស')})</span>
+              {t("reason", "មូលហេតុ")}{" "}
+              <span className="text-gray-400 text-xs">
+                ({t("optional", "ជម្រើស")})
+              </span>
             </label>
             <textarea
               value={reasonInput}
               onChange={(e) => setReasonInput(e.target.value)}
-              placeholder={t('enterReasonPlaceholder', 'បញ្ចូលមូលហេតុ (ប្រសិនបើមាន)...')}
+              placeholder={t(
+                "enterReasonPlaceholder",
+                "បញ្ចូលមូលហេតុ (ប្រសិនបើមាន)...",
+              )}
               rows={3}
               className="block w-full rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
             />

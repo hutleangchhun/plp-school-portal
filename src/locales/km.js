@@ -638,6 +638,7 @@ export const km = {
   enterReason: 'មូលហេតុ...',
   markAllPresent: 'វត្តមានទាំងអស់',
   allPresent: 'វត្តមានទាំងអស់',
+  typeOfAttendance: 'ប្រភេទការចុះវត្តមាន',
   markStudentAttendance: 'កំណត់វត្តមានសិស្សប្រចាំថ្ងៃ',
   markedAllPresent: 'សិស្សទាំងអស់ត្រូវបានកំណត់ថាមាន៖ វត្តមាន',
   contactAdminToAssignClasses: 'សូមទាក់ទងអ្នកគ្រប់គ្រងរបស់អ្នកដើម្បីកំណត់ថ្នាក់',
