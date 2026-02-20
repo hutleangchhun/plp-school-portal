@@ -50,14 +50,14 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
     // Prepare export data
     const exportData = schools.map((school, index) => ({
       'ល.រ': index + 1,
-      'ឈ្មោះសាលា': school.schoolName || 'Unknown',
+      'ឈ្មោះសាលា': school.schoolName || 'មិនមានឈ្មោះ',
       'ចំនួនសិស្សសរុប': school.totalStudents || 0,
       'ចំនួនគ្រូសរុប': school.totalTeachers || 0,
-      'ថ្ងៃមានវត្តមាន': school.daysWithAttendance || 0,
+      'ចំនួនថ្ងៃមានវត្តមាន': school.daysWithAttendance || 0,
       'ទិន្នន័យសិស្ស': school.hasStudentAttendance ? 'មាន' : 'គ្មាន',
       'ទិន្នន័យគ្រូបង្រៀន': school.hasTeacherAttendance ? 'មាន' : 'គ្មាន',
-      'ចំនួនកំណត់ត្រាសិស្ស': school.studentAttendanceCount || 0,
-      'ចំនួនកំណត់ត្រាគ្រូ': school.teacherAttendanceCount || 0,
+      'ចំនួនកំណត់ត្រាសិស្សចុះវត្តមាន': school.studentAttendanceCount || 0,
+      'ចំនួនកំណត់ត្រាគ្រូចុះវត្តមាន': school.teacherAttendanceCount || 0,
       'ថ្ងៃដំបូង': school.firstAttendanceDate ? school.firstAttendanceDate.split('T')[0] : '-',
       'ថ្ងៃចុងក្រោយ': school.lastAttendanceDate ? school.lastAttendanceDate.split('T')[0] : '-'
     }));
@@ -66,7 +66,7 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
     const templateData = [];
 
     // Row 0: Title
-    templateData.push(['របាយការណ៍វត្តមាននៃសាលា', '', '', '', '', '', '', '', '', '', '']);
+    templateData.push(['វត្តមាននៃសាលានិមួយៗ', '', '', '', '', '', '', '', '', '', '']);
 
     // Row 1: Empty
     templateData.push(['', '', '', '', '', '', '', '', '', '', '']);
