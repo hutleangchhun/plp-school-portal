@@ -284,9 +284,20 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
       detailSheet.getColumn(index + 1).width = width;
     });
 
-    // Write file
+    // Write file (browser-compatible)
     const filename = getTimestampedFilename('របាយការណ៍វត្តមានប្រចាំថ្ងៃ', 'xlsx');
-    await workbook.xlsx.writeFile(filename);
+
+    // Generate buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    // Create blob and download
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
 
     if (onSuccess) {
       onSuccess();
