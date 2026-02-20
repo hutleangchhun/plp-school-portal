@@ -266,8 +266,117 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
       { s: { r: 2, c: 0 }, e: { r: 2, c: 15 } }   // Filter info
     ];
 
+    // Create second sheet for bar chart (simplified data)
+    const chartData = [];
+
+    // Row 0: Title
+    chartData.push(['របាយការណ៍វត្តមានប្រចាំថ្ងៃ (សម្រាប់ Bar Chart)', '', '', '']);
+
+    // Row 1: Empty
+    chartData.push(['', '', '', '']);
+
+    // Row 2: Headers
+    chartData.push([
+      'ថ្ងៃ',
+      'ចំនួនសាលារៀនទាំងអស់',
+      'សរុបសិស្សចុះវត្តមាន',
+      'សរុបបុគ្គលិកចុះវត្តមាន'
+    ]);
+
+    // Data rows
+    dailyData.forEach(day => {
+      chartData.push([
+        day.date,
+        day.totalSchools,
+        day.totalStudentsWithAttendance,
+        day.totalTeachersWithAttendance
+      ]);
+    });
+
+    // Create chart worksheet
+    const wsChart = XLSXStyle.utils.aoa_to_sheet(chartData);
+
+    // Set column widths for chart sheet
+    wsChart['!cols'] = [
+      { wch: 15 },  // ថ្ងៃ
+      { wch: 22 },  // ចំនួនសាលារៀនទាំងអស់
+      { wch: 25 },  // សរុបសិស្សចុះវត្តមាន
+      { wch: 25 }   // សរុបបុគ្គលិកចុះវត្តមាន
+    ];
+
+    // Apply styling to chart sheet
+    const chartTotalRows = chartData.length;
+    const chartTotalCols = 4;
+
+    for (let R = 0; R < chartTotalRows; R++) {
+      for (let C = 0; C < chartTotalCols; C++) {
+        const cellAddress = XLSXStyle.utils.encode_cell({ r: R, c: C });
+
+        if (!wsChart[cellAddress]) {
+          wsChart[cellAddress] = { t: 's', v: '' };
+        }
+
+        // Title row styling
+        if (R === 0) {
+          wsChart[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center' },
+            font: { name: 'Khmer OS Battambang', sz: 14, bold: true, color: { rgb: 'FFFFFF' } },
+            fill: { fgColor: { rgb: '4A90E2' } }
+          };
+        }
+        // Header row styling
+        else if (R === 2) {
+          wsChart[cellAddress].s = {
+            fill: { fgColor: { rgb: '4A90E2' } },
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } }
+            },
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            font: {
+              name: 'Khmer OS Battambang',
+              sz: 10,
+              bold: true,
+              color: { rgb: 'FFFFFF' }
+            }
+          };
+        }
+        // Data rows styling
+        else if (R > 2) {
+          wsChart[cellAddress].s = {
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } }
+            },
+            alignment: {
+              vertical: 'center',
+              horizontal: C === 0 ? 'center' : 'center'
+            },
+            font: {
+              name: 'Khmer OS Battambang',
+              sz: 9,
+              bold: C > 0 // Bold numbers
+            },
+            fill: {
+              fgColor: { rgb: R % 2 === 0 ? 'FFFFFF' : 'F5F5F5' } // Alternating row colors
+            }
+          };
+        }
+      }
+    }
+
+    // Merge cells for title
+    wsChart['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }  // Title
+    ];
+
     // Create workbook
     const wb = XLSXStyle.utils.book_new();
+    XLSXStyle.utils.book_append_sheet(wb, wsChart, 'Bar Chart');
     XLSXStyle.utils.book_append_sheet(wb, ws, 'វត្តមានប្រចាំថ្ងៃ');
 
     wb.Props = {
