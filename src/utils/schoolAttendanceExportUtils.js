@@ -43,45 +43,38 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
 
     console.log('Exporting daily chart data with params:', params);
 
-    // Fetch schools coverage data with pagination to get daily breakdown
-    const response = await attendanceService.dashboard.getSchoolsCoverage({
-      ...params,
-      page: 1,
-      limit: 10000
-    });
+    // Fetch daily trends data and schools coverage for accurate daily statistics
+    const [dailyTrendsResponse, coverageResponse] = await Promise.all([
+      attendanceService.dashboard.getDailyTrends(params),
+      attendanceService.dashboard.getSchoolsCoverage({ ...params, page: 1, limit: 10000 })
+    ]);
 
-    if (!response.success || !response.data) {
+    if (!dailyTrendsResponse.success || !coverageResponse.success) {
       throw new Error('Failed to fetch daily attendance data for chart');
     }
 
-    // Group data by date
-    const schools = response.data.schools || [];
-    const dailyStats = {};
+    const dailyTrends = dailyTrendsResponse.data || [];
+    const schools = coverageResponse.data?.schools || [];
 
-    schools.forEach(school => {
-      const firstDate = school.firstAttendanceDate ? school.firstAttendanceDate.split('T')[0] : null;
+    // Build comprehensive daily statistics
+    const dailyData = dailyTrends.map(day => {
+      // Count schools that had attendance on this specific date
+      const schoolsOnDate = schools.filter(school => {
+        const firstDate = school.firstAttendanceDate ? school.firstAttendanceDate.split('T')[0] : null;
+        const lastDate = school.lastAttendanceDate ? school.lastAttendanceDate.split('T')[0] : null;
+        const currentDate = day.date;
 
-      if (firstDate) {
-        if (!dailyStats[firstDate]) {
-          dailyStats[firstDate] = {
-            totalSchools: 0,
-            studentAttendance: 0,
-            teacherAttendance: 0
-          };
-        }
-        dailyStats[firstDate].totalSchools += 1;
-        dailyStats[firstDate].studentAttendance += school.studentAttendanceCount || 0;
-        dailyStats[firstDate].teacherAttendance += school.teacherAttendanceCount || 0;
-      }
-    });
+        // Check if school had attendance on or around this date
+        return firstDate && currentDate >= firstDate && (!lastDate || currentDate <= lastDate);
+      });
 
-    // Convert to sorted array
-    const dailyData = Object.keys(dailyStats)
-      .sort()
-      .map(date => ({
-        date,
-        ...dailyStats[date]
-      }));
+      return {
+        date: day.date,
+        totalSchools: schoolsOnDate.length,
+        studentAttendance: day.totalPresent || day.present || 0,
+        teacherAttendance: day.teacherPresent || 0
+      };
+    }).sort((a, b) => a.date.localeCompare(b.date));
 
     if (dailyData.length === 0) {
       throw new Error('No daily data found to export');
