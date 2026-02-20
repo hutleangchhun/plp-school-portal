@@ -357,9 +357,18 @@ const AttendanceOverview = () => {
 
       const response = await attendanceService.dashboard.getSchoolsCoverage(coverageParams);
 
+      console.log('=== Schools Coverage Response ===');
+      console.log('Full response:', response);
+      console.log('response.success:', response.success);
+      console.log('response.data:', response.data);
+      console.log('response.data.schools:', response.data?.schools);
+      console.log('schools array length:', response.data?.schools?.length);
+
       if (response.success) {
         setSchoolsCoverageData(response.data);
-        console.log('Schools coverage data:', response.data);
+        console.log('✅ Schools coverage data SET:', response.data);
+      } else {
+        console.log('❌ Response not successful');
       }
     } catch (err) {
       console.error('Error fetching schools coverage:', err);
@@ -487,6 +496,14 @@ const AttendanceOverview = () => {
   // Export to CSV
   const handleExportCSV = () => {
     try {
+      console.log('');
+      console.log('🔵🔵🔵 ATTENDANCE OVERVIEW EXPORT STARTED 🔵🔵🔵');
+      console.log('Active Tab:', activeTab);
+      console.log('=== EXPORT DEBUG ===');
+      console.log('schoolsCoverageData:', schoolsCoverageData);
+      console.log('schoolsCoverageData?.schools:', schoolsCoverageData?.schools);
+      console.log('schools length:', schoolsCoverageData?.schools?.length);
+
       let csvRows = [];
 
       if (activeTab === 'student') {
@@ -531,7 +548,14 @@ const AttendanceOverview = () => {
       }
 
       // School-Level Details Section
+      console.log('Checking school data condition...');
+      console.log('schoolsCoverageData exists?', !!schoolsCoverageData);
+      console.log('schoolsCoverageData.schools exists?', !!schoolsCoverageData?.schools);
+      console.log('schools length > 0?', (schoolsCoverageData?.schools?.length || 0) > 0);
+
       if (schoolsCoverageData && schoolsCoverageData.schools && schoolsCoverageData.schools.length > 0) {
+        console.log('✅ Adding school-level details to export...');
+        console.log('Number of schools:', schoolsCoverageData.schools.length);
         csvRows.push(['SCHOOL-LEVEL ATTENDANCE DETAILS']);
         csvRows.push(['']);
 
@@ -551,7 +575,10 @@ const AttendanceOverview = () => {
         ]);
 
         // School rows
-        schoolsCoverageData.schools.forEach(school => {
+        schoolsCoverageData.schools.forEach((school, index) => {
+          if (index === 0) {
+            console.log('First school data:', school);
+          }
           csvRows.push([
             school.schoolName || 'N/A',
             school.totalStudents || 0,
@@ -581,6 +608,11 @@ const AttendanceOverview = () => {
         csvRows.push(['Total Teachers in Schools with Attendance', schoolsCoverageData.totalTeachersInSchoolsWithAttendance || 0]);
         csvRows.push(['Total Students with Attendance', schoolsCoverageData.totalStudentsWithAttendance || 0]);
         csvRows.push(['Total Teachers with Attendance', schoolsCoverageData.totalTeachersWithAttendance || 0]);
+      } else {
+        console.log('❌ School-level details NOT added because:');
+        console.log('  - schoolsCoverageData exists?', !!schoolsCoverageData);
+        console.log('  - schools array exists?', !!schoolsCoverageData?.schools);
+        console.log('  - schools has items?', (schoolsCoverageData?.schools?.length || 0) > 0);
       }
 
       // Convert to CSV format
@@ -588,18 +620,26 @@ const AttendanceOverview = () => {
         .map(row => row.map(cell => `"${cell}"`).join(','))
         .join('\n');
 
+      console.log('Total CSV rows:', csvRows.length);
+      console.log('First 5 rows:', csvRows.slice(0, 5));
+
       // Create and download file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
 
+      const fileName = `attendance-report-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`;
       link.setAttribute('href', url);
-      link.setAttribute('download', `attendance-report-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', fileName);
       link.style.visibility = 'hidden';
 
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
+      console.log('✅ Export completed! File:', fileName);
+      console.log('🔵🔵🔵 EXPORT FINISHED 🔵🔵🔵');
+      console.log('');
     } catch (err) {
       console.error('Error exporting CSV:', err);
       handleError(err, {
