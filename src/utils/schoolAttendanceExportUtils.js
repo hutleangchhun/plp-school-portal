@@ -43,38 +43,47 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
 
     console.log('Exporting daily chart data with params:', params);
 
-    // Fetch daily trends data and schools coverage for accurate daily statistics
-    const [dailyTrendsResponse, coverageResponse] = await Promise.all([
-      attendanceService.dashboard.getDailyTrends(params),
-      attendanceService.dashboard.getSchoolsCoverage({ ...params, page: 1, limit: 10000 })
-    ]);
+    // Generate date range excluding Sundays
+    const startDate = new Date(params.startDate);
+    const endDate = new Date(params.endDate);
+    const dates = [];
 
-    if (!dailyTrendsResponse.success || !coverageResponse.success) {
-      throw new Error('Failed to fetch daily attendance data for chart');
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const dayOfWeek = d.getDay();
+      // Skip Sundays (0 = Sunday)
+      if (dayOfWeek !== 0) {
+        dates.push(d.toISOString().split('T')[0]);
+      }
     }
 
-    const dailyTrends = dailyTrendsResponse.data || [];
-    const schools = coverageResponse.data?.schools || [];
+    console.log(`Fetching coverage data for ${dates.length} days (excluding Sundays)`);
 
-    // Build comprehensive daily statistics
-    const dailyData = dailyTrends.map(day => {
-      // Count schools that had attendance on this specific date
-      const schoolsOnDate = schools.filter(school => {
-        const firstDate = school.firstAttendanceDate ? school.firstAttendanceDate.split('T')[0] : null;
-        const lastDate = school.lastAttendanceDate ? school.lastAttendanceDate.split('T')[0] : null;
-        const currentDate = day.date;
+    // Fetch coverage data for each date
+    const dailyDataPromises = dates.map(async (date) => {
+      try {
+        const dateParams = { ...params, date };
+        delete dateParams.startDate;
+        delete dateParams.endDate;
 
-        // Check if school had attendance on or around this date
-        return firstDate && currentDate >= firstDate && (!lastDate || currentDate <= lastDate);
-      });
+        const response = await attendanceService.dashboard.getSchoolsCoverage(dateParams);
 
-      return {
-        date: day.date,
-        totalSchools: schoolsOnDate.length,
-        studentAttendance: day.totalPresent || day.present || 0,
-        teacherAttendance: day.teacherPresent || 0
-      };
-    }).sort((a, b) => a.date.localeCompare(b.date));
+        if (response.success && response.data) {
+          return {
+            date: date,
+            totalSchools: response.data.totalSchools || 0,
+            studentAttendance: response.data.totalStudentsWithAttendance || 0,
+            teacherAttendance: response.data.totalTeachersWithAttendance || 0
+          };
+        }
+        return null;
+      } catch (error) {
+        console.error(`Error fetching coverage for ${date}:`, error);
+        return null;
+      }
+    });
+
+    const dailyDataResults = await Promise.all(dailyDataPromises);
+    const dailyData = dailyDataResults.filter(data => data !== null).sort((a, b) => a.date.localeCompare(b.date));
 
     if (dailyData.length === 0) {
       throw new Error('No daily data found to export');
@@ -146,7 +155,7 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
         if (R === 0) {
           ws[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'center' },
-            font: { name: 'Khmer OS Battambang', sz: 14, bold: true },
+            font: { name: 'Khmer OS Battambang', sz: 14, bold: true, color: { rgb: 'FFFFFF' } },
             fill: { fgColor: { rgb: '4A90E2' } }
           };
         }
