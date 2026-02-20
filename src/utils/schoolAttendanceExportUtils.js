@@ -68,11 +68,24 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
         const response = await attendanceService.dashboard.getSchoolsCoverage(dateParams);
 
         if (response.success && response.data) {
+          const data = response.data;
           return {
             date: date,
-            totalSchools: response.data.totalSchools || 0,
-            studentAttendance: response.data.totalStudentsWithAttendance || 0,
-            teacherAttendance: response.data.totalTeachersWithAttendance || 0
+            totalSchools: data.totalSchools || 0,
+            schoolsWithStudentAttendance: data.schoolsWithStudentAttendance || 0,
+            schoolsWithTeacherAttendance: data.schoolsWithTeacherAttendance || 0,
+            totalStudentsInSchoolsWithAttendance: data.totalStudentsInSchoolsWithAttendance || 0,
+            totalTeachersInSchoolsWithAttendance: data.totalTeachersInSchoolsWithAttendance || 0,
+            totalStudentsWithAttendance: data.totalStudentsWithAttendance || 0,
+            totalTeachersWithAttendance: data.totalTeachersWithAttendance || 0,
+            totalStudentsPresentCount: data.totalStudentsPresentCount || 0,
+            totalStudentsAbsentCount: data.totalStudentsAbsentCount || 0,
+            totalStudentsLateCount: data.totalStudentsLateCount || 0,
+            totalStudentsLeaveCount: data.totalStudentsLeaveCount || 0,
+            totalTeachersPresentCount: data.totalTeachersPresentCount || 0,
+            totalTeachersAbsentCount: data.totalTeachersAbsentCount || 0,
+            totalTeachersLateCount: data.totalTeachersLateCount || 0,
+            totalTeachersLeaveCount: data.totalTeachersLeaveCount || 0
           };
         }
         return null;
@@ -93,10 +106,10 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
     const templateData = [];
 
     // Row 0: Title
-    templateData.push(['របាយការណ៍វត្តមានប្រចាំថ្ងៃ', '', '', '']);
+    templateData.push(['របាយការណ៍វត្តមានប្រចាំថ្ងៃ', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
 
     // Row 1: Empty
-    templateData.push(['', '', '', '']);
+    templateData.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
 
     // Row 2: Filter info
     const filterInfo = [];
@@ -105,17 +118,29 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
     if (params.startDate || params.endDate) {
       filterInfo.push(`ពេលវេលា: ${params.startDate} ដល់ ${params.endDate}`);
     }
-    templateData.push([filterInfo.join(' | '), '', '', '']);
+    templateData.push([filterInfo.join(' | '), '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
 
     // Row 3: Empty
-    templateData.push(['', '', '', '']);
+    templateData.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
 
     // Row 4: Headers
     templateData.push([
       'ថ្ងៃ',
-      'ចំនួនសាលារៀន',
-      'វត្តមានសិស្ស',
-      'វត្តមានគ្រូ'
+      'ចំនួនសាលារៀនទាំងអស់',
+      'សាលារៀនមានទិន្នន័យសិស្ស',
+      'សាលារៀនមានទិន្នន័យបុគ្គលិក',
+      'សរុបសិស្សក្នុងសាលា',
+      'សរុបបុគ្គលិកក្នុងសាលា',
+      'សរុបសិស្សចុះវត្តមាន',
+      'សរុបបុគ្គលិកចុះវត្តមាន',
+      'សិស្សមានវត្តមាន',
+      'សិស្សអវត្តមាន',
+      'សិស្សយឺត',
+      'សិស្សច្បាប់',
+      'បុគ្គលិកមានវត្តមាន',
+      'បុគ្គលិកអវត្តមាន',
+      'បុគ្គលិកយឺត',
+      'បុគ្គលិកច្បាប់'
     ]);
 
     // Data rows
@@ -123,8 +148,20 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
       templateData.push([
         day.date,
         day.totalSchools,
-        day.studentAttendance,
-        day.teacherAttendance
+        day.schoolsWithStudentAttendance,
+        day.schoolsWithTeacherAttendance,
+        day.totalStudentsInSchoolsWithAttendance,
+        day.totalTeachersInSchoolsWithAttendance,
+        day.totalStudentsWithAttendance,
+        day.totalTeachersWithAttendance,
+        day.totalStudentsPresentCount,
+        day.totalStudentsAbsentCount,
+        day.totalStudentsLateCount,
+        day.totalStudentsLeaveCount,
+        day.totalTeachersPresentCount,
+        day.totalTeachersAbsentCount,
+        day.totalTeachersLateCount,
+        day.totalTeachersLeaveCount
       ]);
     });
 
@@ -133,15 +170,27 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
 
     // Set column widths
     ws['!cols'] = [
-      { wch: 15 },  // ថ្ងៃ
-      { wch: 18 },  // ចំនួនសាលារៀន
-      { wch: 18 },  // វត្តមានសិស្ស
-      { wch: 18 }   // វត្តមានគ្រូ
+      { wch: 12 },  // ថ្ងៃ
+      { wch: 18 },  // ចំនួនសាលារៀនទាំងអស់
+      { wch: 22 },  // សាលារៀនមានទិន្នន័យសិស្ស
+      { wch: 22 },  // សាលារៀនមានទិន្នន័យគ្រូ
+      { wch: 18 },  // សរុបសិស្សក្នុងសាលា
+      { wch: 18 },  // សរុបគ្រូក្នុងសាលា
+      { wch: 20 },  // សរុបសិស្សចុះវត្តមាន
+      { wch: 20 },  // សរុបគ្រូចុះវត្តមាន
+      { wch: 16 },  // សិស្សមកវត្តមាន
+      { wch: 15 },  // សិស្សអវត្តមាន
+      { wch: 12 },  // សិស្សយឺត
+      { wch: 12 },  // សិស្សច្បាប់
+      { wch: 16 },  // គ្រូមកវត្តមាន
+      { wch: 15 },  // គ្រូអវត្តមាន
+      { wch: 12 },  // គ្រូយឺត
+      { wch: 12 }   // គ្រូច្បាប់
     ];
 
     // Apply styling
     const totalRows = templateData.length;
-    const totalCols = 4;
+    const totalCols = 16;
 
     for (let R = 0; R < totalRows; R++) {
       for (let C = 0; C < totalCols; C++) {
@@ -213,8 +262,8 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
 
     // Merge cells for title and filter info
     ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },  // Title
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } }   // Filter info
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 15 } },  // Title
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 15 } }   // Filter info
     ];
 
     // Create workbook
