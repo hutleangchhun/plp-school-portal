@@ -51,6 +51,9 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
     const exportData = schools.map((school, index) => ({
       'ល.រ': index + 1,
       'ឈ្មោះសាលា': school.schoolName || 'Unknown',
+      'ចំនួនសិស្សសរុប': school.totalStudents || 0,
+      'ចំនួនគ្រូសរុប': school.totalTeachers || 0,
+      'ថ្ងៃមានវត្តមាន': school.daysWithAttendance || 0,
       'ទិន្នន័យសិស្ស': school.hasStudentAttendance ? 'មាន' : 'គ្មាន',
       'ទិន្នន័យគ្រូបង្រៀន': school.hasTeacherAttendance ? 'មាន' : 'គ្មាន',
       'ចំនួនកំណត់ត្រាសិស្ស': school.studentAttendanceCount || 0,
@@ -63,10 +66,10 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
     const templateData = [];
 
     // Row 0: Title
-    templateData.push(['របាយការណ៍វត្តមាននៃសាលា', '', '', '', '', '', '', '']);
+    templateData.push(['របាយការណ៍វត្តមាននៃសាលា', '', '', '', '', '', '', '', '', '', '']);
 
     // Row 1: Empty
-    templateData.push(['', '', '', '', '', '', '', '']);
+    templateData.push(['', '', '', '', '', '', '', '', '', '', '']);
 
     // Row 2: Filters info
     const filterInfo = [];
@@ -79,15 +82,18 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
         filterInfo.push(`ពេលវេលា: ${filters.startDate || '...'} ដល់ ${filters.endDate || '...'}`);
       }
     }
-    templateData.push([filterInfo.join(' | '), '', '', '', '', '', '', '']);
+    templateData.push([filterInfo.join(' | '), '', '', '', '', '', '', '', '', '', '']);
 
     // Row 3: Empty
-    templateData.push(['', '', '', '', '', '', '', '']);
+    templateData.push(['', '', '', '', '', '', '', '', '', '', '']);
 
     // Row 4: Headers
     templateData.push([
       'ល.រ',
       'ឈ្មោះសាលា',
+      'ចំនួនសិស្សសរុប',
+      'ចំនួនគ្រូសរុប',
+      'ថ្ងៃមានវត្តមាន',
       'ទិន្នន័យសិស្ស',
       'ទិន្នន័យគ្រូបង្រៀន',
       'ចំនួនកំណត់ត្រាសិស្ស',
@@ -100,6 +106,9 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
     const dataRows = exportData.map(row => [
       row['ល.រ'],
       row['ឈ្មោះសាលា'],
+      row['ចំនួនសិស្សសរុប'],
+      row['ចំនួនគ្រូសរុប'],
+      row['ថ្ងៃមានវត្តមាន'],
       row['ទិន្នន័យសិស្ស'],
       row['ទិន្នន័យគ្រូបង្រៀន'],
       row['ចំនួនកំណត់ត្រាសិស្ស'],
@@ -117,6 +126,9 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
     ws['!cols'] = [
       { wch: 6 },   // ល.រ
       { wch: 30 },  // ឈ្មោះសាលា
+      { wch: 14 },  // ចំនួនសិស្សសរុប (Total Students)
+      { wch: 14 },  // ចំនួនគ្រូសរុប (Total Teachers)
+      { wch: 14 },  // ថ្ងៃមានវត្តមាន (Days with Attendance)
       { wch: 12 },  // ទិន្នន័យសិស្ស
       { wch: 15 },  // ទិន្នន័យគ្រូបង្រៀន
       { wch: 18 },  // ចំនួនកំណត់ត្រាសិស្ស
@@ -127,9 +139,10 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
 
     // Apply styling
     const totalRows = templateData.length;
+    const totalCols = 11; // Updated from 8 to 11 columns
 
     for (let R = 0; R < totalRows; R++) {
-      for (let C = 0; C < 8; C++) {
+      for (let C = 0; C < totalCols; C++) {
         const cellAddress = XLSXStyle.utils.encode_cell({ r: R, c: C });
 
         if (!ws[cellAddress]) {
@@ -193,8 +206,8 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
 
     // Merge cells for title and filter info
     ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } }
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }, // Updated to span 11 columns (0-10)
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } }  // Updated to span 11 columns (0-10)
     ];
 
     // Create workbook
