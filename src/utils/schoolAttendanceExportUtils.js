@@ -58,7 +58,7 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
       'ទិន្នន័យគ្រូបង្រៀន': school.hasTeacherAttendance ? 'មាន' : 'គ្មាន',
       'ចំនួនកំណត់ត្រាសិស្សចុះវត្តមាន': school.studentAttendanceCount || 0,
       'ចំនួនកំណត់ត្រាគ្រូចុះវត្តមាន': school.teacherAttendanceCount || 0,
-      'ថ្ងៃដំបូង': school.firstAttendanceDate ? school.firstAttendanceDate.split('T')[0] : '-',
+      'ថ្ងៃចាប់ផ្ដើម': school.firstAttendanceDate ? school.firstAttendanceDate.split('T')[0] : '-',
       'ថ្ងៃចុងក្រោយ': school.lastAttendanceDate ? school.lastAttendanceDate.split('T')[0] : '-'
     }));
 
@@ -96,9 +96,9 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
       'ថ្ងៃមានវត្តមាន',
       'ទិន្នន័យសិស្ស',
       'ទិន្នន័យគ្រូបង្រៀន',
-      'ចំនួនកំណត់ត្រាសិស្ស',
-      'ចំនួនកំណត់ត្រាគ្រូ',
-      'ថ្ងៃដំបូង',
+      'ចំនួនកំណត់ត្រាសិស្សចុះវត្តមាន',
+      'ចំនួនកំណត់ត្រាគ្រូចុះវត្តមាន',
+      'ថ្ងៃចាប់ផ្ដើម',
       'ថ្ងៃចុងក្រោយ'
     ]);
 
