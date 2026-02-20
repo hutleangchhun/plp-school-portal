@@ -43,6 +43,15 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
 
     const schools = response.data.schools || [];
 
+    // Extract summary statistics
+    const summaryStats = {
+      totalSchools: response.data.totalSchools || 0,
+      schoolsWithStudentAttendance: response.data.schoolsWithStudentAttendance || 0,
+      schoolsWithTeacherAttendance: response.data.schoolsWithTeacherAttendance || 0,
+      totalStudentsWithAttendance: response.data.totalStudentsWithAttendance || 0,
+      totalTeachersWithAttendance: response.data.totalTeachersWithAttendance || 0
+    };
+
     if (schools.length === 0) {
       throw new Error('No schools found to export');
     }
@@ -71,7 +80,28 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
     // Row 1: Empty
     templateData.push(['', '', '', '', '', '', '', '', '', '', '']);
 
-    // Row 2: Filters info
+    // Row 2-3: Summary Statistics (Horizontal Table)
+    templateData.push([
+      'ចំនួនសាលារៀនទាំងអស់',
+      'សាលារៀនមានទិន្នន័យសិស្ស',
+      'សាលារៀនមានទិន្នន័យគ្រូ',
+      'សរុបសិស្សចុះវត្តមាន',
+      'សរុបគ្រូចុះវត្តមាន',
+      '', '', '', '', '', ''
+    ]);
+    templateData.push([
+      summaryStats.totalSchools,
+      summaryStats.schoolsWithStudentAttendance,
+      summaryStats.schoolsWithTeacherAttendance,
+      summaryStats.totalStudentsWithAttendance,
+      summaryStats.totalTeachersWithAttendance,
+      '', '', '', '', '', ''
+    ]);
+
+    // Row 4: Empty
+    templateData.push(['', '', '', '', '', '', '', '', '', '', '']);
+
+    // Row 5: Filters info
     const filterInfo = [];
     if (filters.province) filterInfo.push(`ខេត្ត/រាជធានី: ${filters.province}`);
     if (filters.district) filterInfo.push(`ស្រុក/ខណ្ឌ: ${filters.district}`);
@@ -84,10 +114,10 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
     }
     templateData.push([filterInfo.join(' | '), '', '', '', '', '', '', '', '', '', '']);
 
-    // Row 3: Empty
+    // Row 6: Empty
     templateData.push(['', '', '', '', '', '', '', '', '', '', '']);
 
-    // Row 4: Headers
+    // Row 7: Headers
     templateData.push([
       'ល.រ',
       'ឈ្មោះសាលា',
@@ -124,17 +154,17 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
 
     // Set column widths
     ws['!cols'] = [
-      { wch: 6 },   // ល.រ
-      { wch: 30 },  // ឈ្មោះសាលា
-      { wch: 14 },  // ចំនួនសិស្សសរុប (Total Students)
-      { wch: 14 },  // ចំនួនគ្រូសរុប (Total Teachers)
-      { wch: 14 },  // ថ្ងៃមានវត្តមាន (Days with Attendance)
-      { wch: 12 },  // ទិន្នន័យសិស្ស
-      { wch: 15 },  // ទិន្នន័យគ្រូបង្រៀន
-      { wch: 18 },  // ចំនួនកំណត់ត្រាសិស្ស
-      { wch: 16 },  // ចំនួនកំណត់ត្រាគ្រូ
-      { wch: 12 },  // ថ្ងៃដំបូង
-      { wch: 14 }   // ថ្ងៃចុងក្រោយ
+      { wch: 25 },  // ចំនួនសាលារៀនទាំងអស់ / ល.រ
+      { wch: 28 },  // សាលារៀនមានទិន្នន័យសិស្ស / ឈ្មោះសាលា
+      { wch: 28 },  // សាលារៀនមានទិន្នន័យគ្រូ / ចំនួនសិស្សសរុប
+      { wch: 25 },  // សរុបសិស្សចុះវត្តមាន / ចំនួនគ្រូសរុប
+      { wch: 25 },  // សរុបគ្រូចុះវត្តមាន / ចំនួនថ្ងៃមានវត្តមាន
+      { wch: 18 },  // ទិន្នន័យសិស្ស
+      { wch: 22 },  // ទិន្នន័យគ្រូបង្រៀន
+      { wch: 28 },  // ចំនួនកំណត់ត្រាសិស្សចុះវត្តមាន
+      { wch: 28 },  // ចំនួនកំណត់ត្រាគ្រូចុះវត្តមាន
+      { wch: 16 },  // ថ្ងៃចាប់ផ្ដើម
+      { wch: 16 }   // ថ្ងៃចុងក្រោយ
     ];
 
     // Apply styling
@@ -149,22 +179,56 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
           ws[cellAddress] = { t: 's', v: '' };
         }
 
-        // Title row styling
+        // Title row styling (Row 0)
         if (R === 0) {
           ws[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'center' },
             font: { name: 'Khmer OS Battambang', sz: 14, bold: true }
           };
         }
-        // Filter info row styling
+        // Summary headers row styling (Row 2)
         else if (R === 2) {
+          // Only style first 5 columns (summary stats)
+          if (C < 5) {
+            ws[cellAddress].s = {
+              alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+              font: { name: 'Khmer OS Battambang', sz: 10, bold: true },
+              fill: { fgColor: { rgb: '4A90E2' } },
+              border: {
+                top: { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left: { style: 'thin', color: { rgb: '000000' } },
+                right: { style: 'thin', color: { rgb: '000000' } }
+              }
+            };
+          }
+        }
+        // Summary values row styling (Row 3)
+        else if (R === 3) {
+          // Only style first 5 columns (summary stats)
+          if (C < 5) {
+            ws[cellAddress].s = {
+              alignment: { vertical: 'center', horizontal: 'center' },
+              font: { name: 'Khmer OS Battambang', sz: 11, bold: true },
+              fill: { fgColor: { rgb: 'E8F4F8' } },
+              border: {
+                top: { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left: { style: 'thin', color: { rgb: '000000' } },
+                right: { style: 'thin', color: { rgb: '000000' } }
+              }
+            };
+          }
+        }
+        // Filter info row styling (Row 5)
+        else if (R === 5) {
           ws[cellAddress].s = {
             alignment: { vertical: 'center', horizontal: 'left' },
             font: { name: 'Khmer OS Battambang', sz: 10, italic: true }
           };
         }
-        // Header row styling
-        else if (R === 4) {
+        // Table header row styling (Row 7)
+        else if (R === 7) {
           ws[cellAddress].s = {
             fill: { fgColor: { rgb: 'D3D3D3' } },
             border: {
@@ -182,8 +246,8 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
             }
           };
         }
-        // Data rows styling
-        else if (R > 4) {
+        // Data rows styling (Rows > 7)
+        else if (R > 7) {
           ws[cellAddress].s = {
             border: {
               top: { style: 'thin', color: { rgb: '000000' } },
@@ -206,8 +270,8 @@ export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, on
 
     // Merge cells for title and filter info
     ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }, // Updated to span 11 columns (0-10)
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } }  // Updated to span 11 columns (0-10)
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },  // Title (Row 0)
+      { s: { r: 5, c: 0 }, e: { r: 5, c: 10 } }   // Filter info (Row 5)
     ];
 
     // Create workbook
