@@ -27,6 +27,7 @@ const AttendanceOverview = () => {
   const [activeTab, setActiveTab] = useState('teacher');
 
   const [teacherDashboardData, setTeacherDashboardData] = useState(null);
+  const [schoolsCoverageData, setSchoolsCoverageData] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false); // Sidebar filter state
 
   // Get current month's start and end dates
@@ -340,6 +341,32 @@ const AttendanceOverview = () => {
     }
   }, [dailyFilters, monthlyFilters, handleError, clearError, t]);
 
+  // Fetch schools coverage data (for export)
+  const fetchSchoolsCoverage = useCallback(async () => {
+    try {
+      const coverageParams = {
+        page: 1,
+        limit: 10000 // Get all schools for export
+      };
+      if (monthlyFilters.startDate) coverageParams.startDate = monthlyFilters.startDate;
+      if (monthlyFilters.endDate) coverageParams.endDate = monthlyFilters.endDate;
+      if (monthlyFilters.province) coverageParams.provinceId = parseInt(monthlyFilters.province, 10);
+      if (monthlyFilters.district) coverageParams.districtId = parseInt(monthlyFilters.district, 10);
+
+      console.log('Fetching schools coverage with params:', coverageParams);
+
+      const response = await attendanceService.dashboard.getSchoolsCoverage(coverageParams);
+
+      if (response.success) {
+        setSchoolsCoverageData(response.data);
+        console.log('Schools coverage data:', response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching schools coverage:', err);
+      // Don't show error to user as this is for export only
+    }
+  }, [monthlyFilters]);
+
   // Fetch teacher attendance dashboard data
   const fetchTeacherAttendanceDashboard = useCallback(async () => {
     setDashboardLoading(true);
@@ -451,12 +478,16 @@ const AttendanceOverview = () => {
     }
   }, [activeTab, fetchTeacherAttendanceDashboard]);
 
+  // Fetch schools coverage data when filters change (for export)
+  useEffect(() => {
+    fetchSchoolsCoverage();
+  }, [fetchSchoolsCoverage]);
+
 
   // Export to CSV
   const handleExportCSV = () => {
     try {
-      let headers = ['Metric', 'Value'];
-      let rows = [];
+      let csvRows = [];
 
       if (activeTab === 'student') {
         if (!dashboardData || !dashboardData.primary) {
@@ -464,39 +495,98 @@ const AttendanceOverview = () => {
           return;
         }
 
-        // Prepare student CSV rows
-        rows = [
-          ['Total Students', dashboardData.primary.totalStudents || 0],
-          ['Students with Data', dashboardData.primary.studentsWithAttendanceData || 0],
-          ['Total Records', dashboardData.primary.totalAttendanceRecords || 0],
-          ['Overall Attendance %', dashboardData.primary.overallAttendancePercentage?.toFixed(2) || 0],
-          ['Present', dashboardData.primary.attendanceDistribution?.present || 0],
-          ['Absent', dashboardData.primary.attendanceDistribution?.absent || 0],
-          ['Late', dashboardData.primary.attendanceDistribution?.late || 0],
-          ['Leave', dashboardData.primary.attendanceDistribution?.leave || 0]
-        ];
+        // Summary Statistics Section
+        csvRows.push(['STUDENT ATTENDANCE SUMMARY']);
+        csvRows.push(['']);
+        csvRows.push(['Metric', 'Value']);
+        csvRows.push(['Total Students', dashboardData.primary.totalStudents || 0]);
+        csvRows.push(['Students with Data', dashboardData.primary.studentsWithAttendanceData || 0]);
+        csvRows.push(['Total Records', dashboardData.primary.totalAttendanceRecords || 0]);
+        csvRows.push(['Overall Attendance %', dashboardData.primary.overallAttendancePercentage?.toFixed(2) || 0]);
+        csvRows.push(['Present', dashboardData.primary.attendanceDistribution?.present || 0]);
+        csvRows.push(['Absent', dashboardData.primary.attendanceDistribution?.absent || 0]);
+        csvRows.push(['Late', dashboardData.primary.attendanceDistribution?.late || 0]);
+        csvRows.push(['Leave', dashboardData.primary.attendanceDistribution?.leave || 0]);
+        csvRows.push(['']);
+        csvRows.push(['']);
+
       } else {
         if (!teacherDashboardData || !teacherDashboardData.primary) {
           handleError(new Error('No data to export'));
           return;
         }
 
-        // Prepare teacher CSV rows
-        rows = [
-          ['Total Teachers', teacherDashboardData.primary.totalTeachers || 0],
-          ['Teachers with Data', teacherDashboardData.primary.teachersWithAttendanceData || 0],
-          ['Total Records', teacherDashboardData.primary.totalAttendanceRecords || 0],
-          ['Average Hours Worked', teacherDashboardData.primary.averageHoursWorked?.toFixed(2) || 0],
-          ['Overall Attendance %', teacherDashboardData.primary.overallAttendancePercentage?.toFixed(2) || 0],
-          ['Pending Approvals', teacherDashboardData.primary.pendingApprovals || 0]
-        ];
+        // Summary Statistics Section
+        csvRows.push(['TEACHER ATTENDANCE SUMMARY']);
+        csvRows.push(['']);
+        csvRows.push(['Metric', 'Value']);
+        csvRows.push(['Total Teachers', teacherDashboardData.primary.totalTeachers || 0]);
+        csvRows.push(['Teachers with Data', teacherDashboardData.primary.teachersWithAttendanceData || 0]);
+        csvRows.push(['Total Records', teacherDashboardData.primary.totalAttendanceRecords || 0]);
+        csvRows.push(['Average Hours Worked', teacherDashboardData.primary.averageHoursWorked?.toFixed(2) || 0]);
+        csvRows.push(['Overall Attendance %', teacherDashboardData.primary.overallAttendancePercentage?.toFixed(2) || 0]);
+        csvRows.push(['Pending Approvals', teacherDashboardData.primary.pendingApprovals || 0]);
+        csvRows.push(['']);
+        csvRows.push(['']);
       }
 
-      // Combine headers and rows
-      const csvContent = [
-        headers.join(','),
-        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-      ].join('\n');
+      // School-Level Details Section
+      if (schoolsCoverageData && schoolsCoverageData.schools && schoolsCoverageData.schools.length > 0) {
+        csvRows.push(['SCHOOL-LEVEL ATTENDANCE DETAILS']);
+        csvRows.push(['']);
+
+        // Headers for school data
+        csvRows.push([
+          'School Name',
+          'Total Students',
+          'Total Teachers',
+          'Days with Attendance',
+          'Student Attendance Count',
+          'Teacher Attendance Count',
+          'Has Student Attendance',
+          'Has Teacher Attendance',
+          'Coverage Percentage',
+          'First Attendance Date',
+          'Last Attendance Date'
+        ]);
+
+        // School rows
+        schoolsCoverageData.schools.forEach(school => {
+          csvRows.push([
+            school.schoolName || 'N/A',
+            school.totalStudents || 0,
+            school.totalTeachers || 0,
+            school.daysWithAttendance || 0,
+            school.studentAttendanceCount || 0,
+            school.teacherAttendanceCount || 0,
+            school.hasStudentAttendance ? 'Yes' : 'No',
+            school.hasTeacherAttendance ? 'Yes' : 'No',
+            school.coveragePercentage || 0,
+            school.firstAttendanceDate ? new Date(school.firstAttendanceDate).toLocaleDateString() : 'N/A',
+            school.lastAttendanceDate ? new Date(school.lastAttendanceDate).toLocaleDateString() : 'N/A'
+          ]);
+        });
+
+        csvRows.push(['']);
+        csvRows.push(['']);
+
+        // Add overall statistics from coverage data
+        csvRows.push(['OVERALL STATISTICS']);
+        csvRows.push(['']);
+        csvRows.push(['Metric', 'Value']);
+        csvRows.push(['Total Schools', schoolsCoverageData.totalSchools || 0]);
+        csvRows.push(['Schools with Student Attendance', schoolsCoverageData.schoolsWithStudentAttendance || 0]);
+        csvRows.push(['Schools with Teacher Attendance', schoolsCoverageData.schoolsWithTeacherAttendance || 0]);
+        csvRows.push(['Total Students in Schools with Attendance', schoolsCoverageData.totalStudentsInSchoolsWithAttendance || 0]);
+        csvRows.push(['Total Teachers in Schools with Attendance', schoolsCoverageData.totalTeachersInSchoolsWithAttendance || 0]);
+        csvRows.push(['Total Students with Attendance', schoolsCoverageData.totalStudentsWithAttendance || 0]);
+        csvRows.push(['Total Teachers with Attendance', schoolsCoverageData.totalTeachersWithAttendance || 0]);
+      }
+
+      // Convert to CSV format
+      const csvContent = csvRows
+        .map(row => row.map(cell => `"${cell}"`).join(','))
+        .join('\n');
 
       // Create and download file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -504,7 +594,7 @@ const AttendanceOverview = () => {
       const url = URL.createObjectURL(blob);
 
       link.setAttribute('href', url);
-      link.setAttribute('download', `${activeTab}-attendance-report-${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `attendance-report-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`);
       link.style.visibility = 'hidden';
 
       document.body.appendChild(link);
