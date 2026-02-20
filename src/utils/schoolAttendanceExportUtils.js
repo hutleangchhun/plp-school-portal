@@ -8,6 +8,242 @@ import { attendanceService } from './api/services/attendanceService';
  * @param {Function} onSuccess - Success callback
  * @param {Function} onError - Error callback
  */
+/**
+ * Export daily attendance statistics for bar chart visualization
+ * Shows total schools, student attendance, and teacher attendance by each day
+ * @param {Object} filters - Filter options (province, district, date range)
+ * @param {Function} onSuccess - Success callback
+ * @param {Function} onError - Error callback
+ */
+export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onError) => {
+  try {
+    // Dynamically import xlsx-js-style
+    const XLSXStyleModule = await import('xlsx-js-style');
+    const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
+
+    // Build API params for date range
+    const params = {};
+
+    // Add filters
+    if (filters.province) params.provinceId = parseInt(filters.province, 10);
+    if (filters.district) params.districtId = parseInt(filters.district, 10);
+
+    // Set date range (default to last 30 days if not specified)
+    if (filters.filterMode === 'range') {
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+    } else {
+      // Default to last 30 days
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+      params.startDate = startDate.toISOString().split('T')[0];
+      params.endDate = endDate.toISOString().split('T')[0];
+    }
+
+    console.log('Exporting daily chart data with params:', params);
+
+    // Fetch schools coverage data with pagination to get daily breakdown
+    const response = await attendanceService.dashboard.getSchoolsCoverage({
+      ...params,
+      page: 1,
+      limit: 10000
+    });
+
+    if (!response.success || !response.data) {
+      throw new Error('Failed to fetch daily attendance data for chart');
+    }
+
+    // Group data by date
+    const schools = response.data.schools || [];
+    const dailyStats = {};
+
+    schools.forEach(school => {
+      const firstDate = school.firstAttendanceDate ? school.firstAttendanceDate.split('T')[0] : null;
+
+      if (firstDate) {
+        if (!dailyStats[firstDate]) {
+          dailyStats[firstDate] = {
+            totalSchools: 0,
+            studentAttendance: 0,
+            teacherAttendance: 0
+          };
+        }
+        dailyStats[firstDate].totalSchools += 1;
+        dailyStats[firstDate].studentAttendance += school.studentAttendanceCount || 0;
+        dailyStats[firstDate].teacherAttendance += school.teacherAttendanceCount || 0;
+      }
+    });
+
+    // Convert to sorted array
+    const dailyData = Object.keys(dailyStats)
+      .sort()
+      .map(date => ({
+        date,
+        ...dailyStats[date]
+      }));
+
+    if (dailyData.length === 0) {
+      throw new Error('No daily data found to export');
+    }
+
+    // Build template data
+    const templateData = [];
+
+    // Row 0: Title
+    templateData.push(['របាយការណ៍វត្តមានប្រចាំថ្ងៃ', '', '', '']);
+
+    // Row 1: Empty
+    templateData.push(['', '', '', '']);
+
+    // Row 2: Filter info
+    const filterInfo = [];
+    if (filters.province) filterInfo.push(`ខេត្ត/រាជធានី: ${filters.province}`);
+    if (filters.district) filterInfo.push(`ស្រុក/ខណ្ឌ: ${filters.district}`);
+    if (params.startDate || params.endDate) {
+      filterInfo.push(`ពេលវេលា: ${params.startDate} ដល់ ${params.endDate}`);
+    }
+    templateData.push([filterInfo.join(' | '), '', '', '']);
+
+    // Row 3: Empty
+    templateData.push(['', '', '', '']);
+
+    // Row 4: Headers
+    templateData.push([
+      'ថ្ងៃ',
+      'ចំនួនសាលារៀន',
+      'វត្តមានសិស្ស',
+      'វត្តមានគ្រូ'
+    ]);
+
+    // Data rows
+    dailyData.forEach(day => {
+      templateData.push([
+        day.date,
+        day.totalSchools,
+        day.studentAttendance,
+        day.teacherAttendance
+      ]);
+    });
+
+    // Create worksheet
+    const ws = XLSXStyle.utils.aoa_to_sheet(templateData);
+
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 15 },  // ថ្ងៃ
+      { wch: 18 },  // ចំនួនសាលារៀន
+      { wch: 18 },  // វត្តមានសិស្ស
+      { wch: 18 }   // វត្តមានគ្រូ
+    ];
+
+    // Apply styling
+    const totalRows = templateData.length;
+    const totalCols = 4;
+
+    for (let R = 0; R < totalRows; R++) {
+      for (let C = 0; C < totalCols; C++) {
+        const cellAddress = XLSXStyle.utils.encode_cell({ r: R, c: C });
+
+        if (!ws[cellAddress]) {
+          ws[cellAddress] = { t: 's', v: '' };
+        }
+
+        // Title row styling
+        if (R === 0) {
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'center' },
+            font: { name: 'Khmer OS Battambang', sz: 14, bold: true },
+            fill: { fgColor: { rgb: '4A90E2' } }
+          };
+        }
+        // Filter info row styling
+        else if (R === 2) {
+          ws[cellAddress].s = {
+            alignment: { vertical: 'center', horizontal: 'left' },
+            font: { name: 'Khmer OS Battambang', sz: 10, italic: true }
+          };
+        }
+        // Header row styling
+        else if (R === 4) {
+          ws[cellAddress].s = {
+            fill: { fgColor: { rgb: '4A90E2' } },
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } }
+            },
+            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+            font: {
+              name: 'Khmer OS Battambang',
+              sz: 10,
+              bold: true,
+              color: { rgb: 'FFFFFF' }
+            }
+          };
+        }
+        // Data rows styling
+        else if (R > 4) {
+          ws[cellAddress].s = {
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } }
+            },
+            alignment: {
+              vertical: 'center',
+              horizontal: C === 0 ? 'center' : 'center'
+            },
+            font: {
+              name: 'Khmer OS Battambang',
+              sz: 9,
+              bold: C > 0 // Bold numbers
+            },
+            fill: {
+              fgColor: { rgb: R % 2 === 0 ? 'FFFFFF' : 'F5F5F5' } // Alternating row colors
+            }
+          };
+        }
+      }
+    }
+
+    // Merge cells for title and filter info
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },  // Title
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } }   // Filter info
+    ];
+
+    // Create workbook
+    const wb = XLSXStyle.utils.book_new();
+    XLSXStyle.utils.book_append_sheet(wb, ws, 'វត្តមានប្រចាំថ្ងៃ');
+
+    wb.Props = {
+      Title: 'របាយការណ៍វត្តមានប្រចាំថ្ងៃ',
+      Subject: 'វត្តមានប្រចាំថ្ងៃ',
+      Author: 'School Portal',
+      CreatedDate: new Date()
+    };
+
+    const filename = getTimestampedFilename('របាយការណ៍វត្តមានប្រចាំថ្ងៃ', 'xlsx');
+
+    XLSXStyle.writeFile(wb, filename);
+
+    if (onSuccess) {
+      onSuccess();
+    }
+
+    return { success: true, filename };
+  } catch (error) {
+    console.error('Daily attendance chart export error:', error);
+    if (onError) {
+      onError(error);
+    }
+    return { success: false, error };
+  }
+};
+
 export const exportSchoolsAttendanceToExcel = async (filters = {}, onSuccess, onError) => {
   try {
     // Dynamically import xlsx-js-style

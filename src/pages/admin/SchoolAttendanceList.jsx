@@ -6,7 +6,7 @@ import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import locationService from '../../utils/api/services/locationService';
-import { exportSchoolsAttendanceToExcel } from '../../utils/schoolAttendanceExportUtils';
+import { exportSchoolsAttendanceToExcel, exportDailyAttendanceChart } from '../../utils/schoolAttendanceExportUtils';
 import { School, Users, ChevronRight, Filter, CheckCircle, XCircle, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import Pagination from '../../components/ui/Pagination';
@@ -544,6 +544,26 @@ const SchoolAttendanceList = () => {
     }
   };
 
+  const handleExportDailyChart = async () => {
+    setIsExporting(true);
+    try {
+      await exportDailyAttendanceChart(
+        filters,
+        () => {
+          showSuccess(t('exportChartSuccess', 'Daily chart data exported successfully'));
+          clearError();
+        },
+        (error) => {
+          handleError(error, {
+            toastMessage: t('exportChartFailed', 'Failed to export chart data')
+          });
+        }
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Handle pagination
   const handlePageChange = (newPage) => {
     fetchSchools(newPage);
@@ -596,6 +616,17 @@ const SchoolAttendanceList = () => {
               >
                 <Download className="h-4 w-4" />
                 {isExporting ? t('exporting', 'Exporting...') : t('export', 'Export')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportDailyChart}
+                disabled={isExporting}
+                className="flex items-center gap-2"
+                title={t('exportDailyChart', 'Export daily chart data for visualization')}
+              >
+                <Download className="h-4 w-4" />
+                {t('exportChart', 'Export Chart')}
               </Button>
               <Button
                 variant="primary"
