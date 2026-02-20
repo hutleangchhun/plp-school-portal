@@ -17,9 +17,9 @@ import { attendanceService } from './api/services/attendanceService';
  */
 export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onError) => {
   try {
-    // Dynamically import xlsx-js-style
-    const XLSXStyleModule = await import('xlsx-js-style');
-    const XLSXStyle = XLSXStyleModule.default || XLSXStyleModule;
+    // Dynamically import exceljs
+    const ExcelJSModule = await import('exceljs');
+    const ExcelJS = ExcelJSModule.default || ExcelJSModule;
 
     // Build API params for date range
     const params = {};
@@ -102,7 +102,12 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
       throw new Error('No daily data found to export');
     }
 
-    // Build template data
+    // Create ExcelJS workbook
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'School Portal';
+    workbook.created = new Date();
+
+    // Build template data for detailed sheet
     const templateData = [];
 
     // Row 0: Title
@@ -165,230 +170,123 @@ export const exportDailyAttendanceChart = async (filters = {}, onSuccess, onErro
       ]);
     });
 
-    // Create worksheet
-    const ws = XLSXStyle.utils.aoa_to_sheet(templateData);
+    // ===== SHEET 1: Bar Chart =====
+    const chartSheet = workbook.addWorksheet('Bar Chart');
 
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 12 },  // ថ្ងៃ
-      { wch: 18 },  // ចំនួនសាលារៀនទាំងអស់
-      { wch: 22 },  // សាលារៀនមានទិន្នន័យសិស្ស
-      { wch: 22 },  // សាលារៀនមានទិន្នន័យគ្រូ
-      { wch: 18 },  // សរុបសិស្សក្នុងសាលា
-      { wch: 18 },  // សរុបគ្រូក្នុងសាលា
-      { wch: 20 },  // សរុបសិស្សចុះវត្តមាន
-      { wch: 20 },  // សរុបគ្រូចុះវត្តមាន
-      { wch: 16 },  // សិស្សមកវត្តមាន
-      { wch: 15 },  // សិស្សអវត្តមាន
-      { wch: 12 },  // សិស្សយឺត
-      { wch: 12 },  // សិស្សច្បាប់
-      { wch: 16 },  // គ្រូមកវត្តមាន
-      { wch: 15 },  // គ្រូអវត្តមាន
-      { wch: 12 },  // គ្រូយឺត
-      { wch: 12 }   // គ្រូច្បាប់
-    ];
+    // Add chart data starting from row 3
+    chartSheet.getCell('A3').value = 'ថ្ងៃ';
+    chartSheet.getCell('B3').value = 'ចំនួនសាលារៀនទាំងអស់';
+    chartSheet.getCell('C3').value = 'សរុបសិស្សចុះវត្តមាន';
+    chartSheet.getCell('D3').value = 'សរុបបុគ្គលិកចុះវត្តមាន';
 
-    // Apply styling
-    const totalRows = templateData.length;
-    const totalCols = 16;
-
-    for (let R = 0; R < totalRows; R++) {
-      for (let C = 0; C < totalCols; C++) {
-        const cellAddress = XLSXStyle.utils.encode_cell({ r: R, c: C });
-
-        if (!ws[cellAddress]) {
-          ws[cellAddress] = { t: 's', v: '' };
-        }
-
-        // Title row styling
-        if (R === 0) {
-          ws[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'center' },
-            font: { name: 'Khmer OS Battambang', sz: 14, bold: true, color: { rgb: 'FFFFFF' } },
-            fill: { fgColor: { rgb: '4A90E2' } }
-          };
-        }
-        // Filter info row styling
-        else if (R === 2) {
-          ws[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'left' },
-            font: { name: 'Khmer OS Battambang', sz: 10, italic: true }
-          };
-        }
-        // Header row styling
-        else if (R === 4) {
-          ws[cellAddress].s = {
-            fill: { fgColor: { rgb: '4A90E2' } },
-            border: {
-              top: { style: 'thin', color: { rgb: '000000' } },
-              bottom: { style: 'thin', color: { rgb: '000000' } },
-              left: { style: 'thin', color: { rgb: '000000' } },
-              right: { style: 'thin', color: { rgb: '000000' } }
-            },
-            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
-            font: {
-              name: 'Khmer OS Battambang',
-              sz: 10,
-              bold: true,
-              color: { rgb: 'FFFFFF' }
-            }
-          };
-        }
-        // Data rows styling
-        else if (R > 4) {
-          ws[cellAddress].s = {
-            border: {
-              top: { style: 'thin', color: { rgb: '000000' } },
-              bottom: { style: 'thin', color: { rgb: '000000' } },
-              left: { style: 'thin', color: { rgb: '000000' } },
-              right: { style: 'thin', color: { rgb: '000000' } }
-            },
-            alignment: {
-              vertical: 'center',
-              horizontal: C === 0 ? 'center' : 'center'
-            },
-            font: {
-              name: 'Khmer OS Battambang',
-              sz: 9,
-              bold: C > 0 // Bold numbers
-            },
-            fill: {
-              fgColor: { rgb: R % 2 === 0 ? 'FFFFFF' : 'F5F5F5' } // Alternating row colors
-            }
-          };
-        }
-      }
-    }
-
-    // Merge cells for title and filter info
-    ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 15 } },  // Title
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 15 } }   // Filter info
-    ];
-
-    // Create second sheet for bar chart (simplified data)
-    const chartData = [];
-
-    // Row 0: Title
-    chartData.push(['របាយការណ៍វត្តមានប្រចាំថ្ងៃ (សម្រាប់ Bar Chart)', '', '', '']);
-
-    // Row 1: Empty
-    chartData.push(['', '', '', '']);
-
-    // Row 2: Headers
-    chartData.push([
-      'ថ្ងៃ',
-      'ចំនួនសាលារៀនទាំងអស់',
-      'សរុបសិស្សចុះវត្តមាន',
-      'សរុបបុគ្គលិកចុះវត្តមាន'
-    ]);
-
-    // Data rows
-    dailyData.forEach(day => {
-      chartData.push([
-        day.date,
-        day.totalSchools,
-        day.totalStudentsWithAttendance,
-        day.totalTeachersWithAttendance
-      ]);
+    // Style header row
+    ['A3', 'B3', 'C3', 'D3'].forEach(cell => {
+      chartSheet.getCell(cell).font = { name: 'Khmer OS Battambang', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      chartSheet.getCell(cell).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4A90E2' } };
+      chartSheet.getCell(cell).alignment = { vertical: 'middle', horizontal: 'center' };
+      chartSheet.getCell(cell).border = {
+        top: { style: 'thin' },
+        bottom: { style: 'thin' },
+        left: { style: 'thin' },
+        right: { style: 'thin' }
+      };
     });
 
-    // Create chart worksheet
-    const wsChart = XLSXStyle.utils.aoa_to_sheet(chartData);
+    // Add data rows
+    dailyData.forEach((day, index) => {
+      const rowNum = index + 4;
+      chartSheet.getCell(`A${rowNum}`).value = day.date;
+      chartSheet.getCell(`B${rowNum}`).value = day.totalSchools;
+      chartSheet.getCell(`C${rowNum}`).value = day.totalStudentsWithAttendance;
+      chartSheet.getCell(`D${rowNum}`).value = day.totalTeachersWithAttendance;
 
-    // Set column widths for chart sheet
-    wsChart['!cols'] = [
-      { wch: 15 },  // ថ្ងៃ
-      { wch: 22 },  // ចំនួនសាលារៀនទាំងអស់
-      { wch: 25 },  // សរុបសិស្សចុះវត្តមាន
-      { wch: 25 }   // សរុបបុគ្គលិកចុះវត្តមាន
-    ];
+      // Style data rows
+      ['A', 'B', 'C', 'D'].forEach(col => {
+        const cell = chartSheet.getCell(`${col}${rowNum}`);
+        cell.font = { name: 'Khmer OS Battambang', size: 9, bold: col !== 'A' };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: rowNum % 2 === 0 ? 'FFFFFFFF' : 'FFF5F5F5' }
+        };
+      });
+    });
 
-    // Apply styling to chart sheet
-    const chartTotalRows = chartData.length;
-    const chartTotalCols = 4;
+    // Set column widths
+    chartSheet.getColumn(1).width = 15;
+    chartSheet.getColumn(2).width = 22;
+    chartSheet.getColumn(3).width = 25;
+    chartSheet.getColumn(4).width = 25;
 
-    for (let R = 0; R < chartTotalRows; R++) {
-      for (let C = 0; C < chartTotalCols; C++) {
-        const cellAddress = XLSXStyle.utils.encode_cell({ r: R, c: C });
+    // ===== SHEET 2: Detailed Data =====
+    const detailSheet = workbook.addWorksheet('វត្តមានប្រចាំថ្ងៃ');
 
-        if (!wsChart[cellAddress]) {
-          wsChart[cellAddress] = { t: 's', v: '' };
-        }
+    // Add all data rows
+    templateData.forEach((row, rowIndex) => {
+      row.forEach((value, colIndex) => {
+        const cell = detailSheet.getCell(rowIndex + 1, colIndex + 1);
+        cell.value = value;
 
-        // Title row styling
-        if (R === 0) {
-          wsChart[cellAddress].s = {
-            alignment: { vertical: 'center', horizontal: 'center' },
-            font: { name: 'Khmer OS Battambang', sz: 14, bold: true, color: { rgb: 'FFFFFF' } },
-            fill: { fgColor: { rgb: '4A90E2' } }
+        // Apply styling
+        if (rowIndex === 0) {
+          // Title row
+          cell.font = { name: 'Khmer OS Battambang', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4A90E2' } };
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        } else if (rowIndex === 2) {
+          // Filter info
+          cell.font = { name: 'Khmer OS Battambang', size: 10, italic: true };
+          cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        } else if (rowIndex === 4) {
+          // Headers
+          cell.font = { name: 'Khmer OS Battambang', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4A90E2' } };
+          cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+          cell.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+            left: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        } else if (rowIndex > 4) {
+          // Data rows
+          cell.font = { name: 'Khmer OS Battambang', size: 9, bold: colIndex > 0 };
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          cell.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+            left: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: rowIndex % 2 === 0 ? 'FFFFFFFF' : 'FFF5F5F5' }
           };
         }
-        // Header row styling
-        else if (R === 2) {
-          wsChart[cellAddress].s = {
-            fill: { fgColor: { rgb: '4A90E2' } },
-            border: {
-              top: { style: 'thin', color: { rgb: '000000' } },
-              bottom: { style: 'thin', color: { rgb: '000000' } },
-              left: { style: 'thin', color: { rgb: '000000' } },
-              right: { style: 'thin', color: { rgb: '000000' } }
-            },
-            alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
-            font: {
-              name: 'Khmer OS Battambang',
-              sz: 10,
-              bold: true,
-              color: { rgb: 'FFFFFF' }
-            }
-          };
-        }
-        // Data rows styling
-        else if (R > 2) {
-          wsChart[cellAddress].s = {
-            border: {
-              top: { style: 'thin', color: { rgb: '000000' } },
-              bottom: { style: 'thin', color: { rgb: '000000' } },
-              left: { style: 'thin', color: { rgb: '000000' } },
-              right: { style: 'thin', color: { rgb: '000000' } }
-            },
-            alignment: {
-              vertical: 'center',
-              horizontal: C === 0 ? 'center' : 'center'
-            },
-            font: {
-              name: 'Khmer OS Battambang',
-              sz: 9,
-              bold: C > 0 // Bold numbers
-            },
-            fill: {
-              fgColor: { rgb: R % 2 === 0 ? 'FFFFFF' : 'F5F5F5' } // Alternating row colors
-            }
-          };
-        }
-      }
-    }
+      });
+    });
 
-    // Merge cells for title
-    wsChart['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }  // Title
-    ];
+    // Merge cells for title and filter
+    detailSheet.mergeCells('A1:P1');
+    detailSheet.mergeCells('A3:P3');
 
-    // Create workbook
-    const wb = XLSXStyle.utils.book_new();
-    XLSXStyle.utils.book_append_sheet(wb, wsChart, 'Bar Chart');
-    XLSXStyle.utils.book_append_sheet(wb, ws, 'វត្តមានប្រចាំថ្ងៃ');
+    // Set column widths
+    const columnWidths = [12, 18, 22, 22, 18, 18, 20, 20, 16, 15, 12, 12, 16, 15, 12, 12];
+    columnWidths.forEach((width, index) => {
+      detailSheet.getColumn(index + 1).width = width;
+    });
 
-    wb.Props = {
-      Title: 'របាយការណ៍វត្តមានប្រចាំថ្ងៃ',
-      Subject: 'វត្តមានប្រចាំថ្ងៃ',
-      Author: 'School Portal',
-      CreatedDate: new Date()
-    };
-
+    // Write file
     const filename = getTimestampedFilename('របាយការណ៍វត្តមានប្រចាំថ្ងៃ', 'xlsx');
-
-    XLSXStyle.writeFile(wb, filename);
+    await workbook.xlsx.writeFile(filename);
 
     if (onSuccess) {
       onSuccess();
