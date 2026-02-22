@@ -25,7 +25,8 @@ import {
   Database,
   CalendarDays,
   Briefcase,
-  UserPlus
+  UserPlus,
+  Clock
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getNavigationItems } from '../../utils/routePermissions';
@@ -107,6 +108,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/student-transfer': Users,
     '/admin/bmi-report': Heart,
     '/admin/school-attendance': CalendarCheck,
+    '/admin/shifts': Clock,
     '/admin/student-demographics': Database,
     '/admin/teacher-overview': Database,
     '/admin/officer-registration': UserPlus,
@@ -153,6 +155,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/student-transfer': 'blue',
     '/admin/bmi-report': 'blue',
     '/admin/school-attendance': 'blue',
+    '/admin/shifts': 'blue',
     '/admin/teacher-overview': 'blue',
     '/admin/officer-registration': 'blue',
     '/multi-role-dashboard': 'blue',

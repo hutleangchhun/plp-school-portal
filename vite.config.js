@@ -38,6 +38,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/api/v1/shifts': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+        secure: false,
+      },
       // Main server (port 8080)
       '/api/v1': {
         target: 'http://localhost:8080',

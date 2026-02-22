@@ -303,6 +303,10 @@ const ENDPOINTS = {
     SCORES: '/exam-score/scores',
     SCORE_BY_ID: (id) => `/exam-score/scores/${id}`,
   },
+  SHIFTS: {
+    BASE: '/shifts',
+    BY_ID: (id) => `/shifts/${id}`,
+  },
 };
 
 // HTTP Status codes for consistent error handling

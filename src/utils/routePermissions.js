@@ -175,6 +175,10 @@ export const routePermissions = {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'SchoolManagement'
   },
+  '/admin/shifts': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'ShiftsManagement'
+  },
   '/multi-role-dashboard': {
     allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR, ROLES.RESTRICTED_ROLES_ONLY],
     component: 'MultiRoleDashboardPage'
@@ -584,6 +588,10 @@ export const getNavigationItems = (user, t) => {
         {
           name: t('schoolAttendanceList', 'School Attendance'),
           href: '/admin/school-attendance',
+        },
+        {
+          name: t('shiftsManagement', 'Shifts Management'),
+          href: '/admin/shifts',
         },
       ],
     },

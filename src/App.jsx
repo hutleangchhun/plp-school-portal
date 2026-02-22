@@ -19,6 +19,7 @@ import TeacherOverviewDashboard from './pages/admin/TeacherOverviewDashboard';
 import UserRegistrationDashboard from './pages/admin/UserRegistrationDashboard';
 import OfficerRegistration from './pages/admin/OfficerRegistration';
 import SchoolManagement from './pages/admin/SchoolManagement';
+import ShiftsManagement from './pages/admin/ShiftsManagement';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -327,6 +328,15 @@ function AppContent() {
               </ProtectedRoute>
             }>
               <Route index element={<SchoolManagement />} />
+            </Route>
+
+            {/* Admin Shifts Management route - role ID 1 only */}
+            <Route path="admin/shifts" element={
+              <ProtectedRoute path="/admin/shifts" user={user}>
+                <DashboardLayout user={user} onLogout={handleLogout} />
+              </ProtectedRoute>
+            }>
+              <Route index element={<ShiftsManagement />} />
             </Route>
 
             <Route path="students" element={
