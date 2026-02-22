@@ -97,13 +97,13 @@ export default function TeacherExamRecords({ user }) {
       <div className="p-3 sm:p-6">
         {/* Header */}
         <FadeInSection className="mb-6">
-          <div className="bg-white rounded-xl p-6">
+          <div className="bg-white rounded-xl mx-2 my-4">
             <div className="flex items-center justify-between gap-3 mb-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-base sm:text-base md:text-lg lg:text-xl font-bold text-gray-900">
                   {t("studentExamRecords", "Student Exam Records")}
                 </h1>
-                <p className="text-sm text-gray-600">
+                <p className="text-xs sm:text-xs md:text-sm lg:text-sm text-gray-600">
                   {t(
                     "viewClassStudentExams",
                     "View exam records for your students",

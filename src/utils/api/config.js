@@ -1,28 +1,51 @@
-// API Configuration - Environment-aware URL selection
-const getApiBaseUrl = () => {
-  // 1. Development (Vite)
-  if (import.meta.env.MODE === 'development') {
-    return 'http://localhost:8080/api/v1';
-  }
+// ── Service Registry ──────────────────────────────────────────────────────────
+// To add a new backend service:
+//   1. Add an entry below with dev/localhost/production URLs
+//   2. Add a Vite proxy rule in vite.config.js  (dev)
+//   3. Add an nginx location block in nginx configs (prod)
+//   4. Use getServiceClient('yourService') in your service file
+// ─────────────────────────────────────────────────────────────────────────────
+export const SERVICE_REGISTRY = {
+  main: {
+    development:  '/api/v1',                     // Vite proxy → localhost:8080
+    localhost:    'http://localhost:8080/api/v1', // production build served locally
+    production:   '/api',                        // nginx → 192.168.155.105
+  },
+  attendance: {
+    development:  '/api/v1',                     // Vite proxy → localhost:8082 (via /api/v1/attendance* rule)
+    localhost:    'http://localhost:8082/api/v1', // production build served locally
+    production:   '/api',                        // nginx → 192.168.155.90 (via /api/attendance* rule)
+  },
+  // ── Add new services here ──────────────────────────────────────────────────
+  // reports: {
+  //   development: '/api/v1',
+  //   localhost:   'http://localhost:9090/api/v1',
+  //   production:  '/api',                       // nginx → 192.168.155.XXX
+  // },
+};
 
-  // 2. Production (browser)
+const PROD_HOSTNAMES = ['plp-sms.moeys.gov.kh', '192.168.155.105', '192.168.155.115'];
+const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1'];
+
+export const getServiceBaseUrl = (serviceName) => {
+  const service = SERVICE_REGISTRY[serviceName];
+  if (!service) throw new Error(`Unknown service: "${serviceName}". Add it to SERVICE_REGISTRY in config.js`);
+
+  if (import.meta.env.MODE === 'development') return service.development;
+
   if (typeof window !== 'undefined') {
     const { hostname } = window.location;
-
-    // Physical server or official domain - use proxy /api
-    if (hostname === 'plp-sms.moeys.gov.kh' || hostname === '192.168.155.105' || hostname === '192.168.155.115') {
-      return '/api';
-    }
-
-    // Localhost in production build (e.g., served by a local server)
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:8080/api/v1';
-    }
+    if (PROD_HOSTNAMES.includes(hostname)) return service.production;
+    if (LOCAL_HOSTNAMES.includes(hostname)) return service.localhost ?? service.development;
   }
 
-  // 3. Fallback - use /api (relative URL for proxy)
-  return '/api';
+  return service.production;
 };
+
+// Kept for backward compatibility
+export const getAttendanceApiBaseUrl = () => getServiceBaseUrl('attendance');
+
+const getApiBaseUrl = () => getServiceBaseUrl('main');
 
 export default getApiBaseUrl;
 

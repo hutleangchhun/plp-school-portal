@@ -617,7 +617,7 @@ export default function ScoreInputTemplateTab({
                     <tr className="border-b border-blue-800 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                       <th
                         rowSpan={2}
-                        className="px-6 py-3 text-left text-sm font-bold text-white border-r border-blue-500 min-w-80 bg-gradient-to-r from-blue-600 to-blue-700 sticky left-0 z-30"
+                        className="px-6 py-3 text-left text-sm font-bold text-white border-r border-blue-500 min-w-80 bg-blue-700 sticky left-0 z-30"
                       >
                         {t("studentName", "Student Name")}
                       </th>
@@ -626,26 +626,26 @@ export default function ScoreInputTemplateTab({
                           key={idx}
                           colSpan={group.subSubjects.length || 1}
                           rowSpan={group.subSubjects.length > 0 ? 1 : 2}
-                          className="px-3 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-blue-600 to-blue-700 whitespace-nowrap"
+                          className="px-3 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-blue-700 whitespace-nowrap"
                         >
                           {group.subjectName}
                         </th>
                       ))}
                       <th
                         rowSpan={2}
-                        className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-green-600 to-green-700 whitespace-nowrap"
+                        className="px-4 py-3 text-center text-sm font-bold text-white border-r border-gray-200 bg-green-700 whitespace-nowrap"
                       >
                         {t("totalScore", "Total Score")}
                       </th>
                       <th
                         rowSpan={2}
-                        className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-purple-600 to-purple-700 whitespace-nowrap"
+                        className="px-4 py-3 text-center text-sm font-bold text-white border-r border-gray-200 bg-purple-700 whitespace-nowrap"
                       >
                         {t("average", "Average")}
                       </th>
                       <th
                         rowSpan={2}
-                        className="px-4 py-3 text-center text-sm font-bold text-white border-r border-blue-500 bg-gradient-to-r from-orange-600 to-orange-700 whitespace-nowrap"
+                        className="px-4 py-3 text-center text-sm font-bold text-white border-r border-gray-200 bg-orange-700 whitespace-nowrap"
                       >
                         {t("grading", "Grade")}
                       </th>
@@ -656,7 +656,7 @@ export default function ScoreInputTemplateTab({
                         group.subSubjects.map((subCol, subIdx) => (
                           <th
                             key={`${group.subjectId}-${subIdx}`}
-                            className="px-3 py-2 text-center text-xs font-bold text-white border-r border-blue-500 border-t border-blue-400 whitespace-nowrap"
+                            className="px-3 py-2 text-center text-xs font-bold text-white border-r border-blue-500 border-t whitespace-nowrap"
                           >
                             {subCol.subSubject?.khmerName || subCol.subSubject?.name}
                           </th>
@@ -821,12 +821,12 @@ export default function ScoreInputTemplateTab({
       </div>
 
       {/* Summary */}
-      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+      <div className="mt-4 p-4 bg-blue-50 rounded-sm border border-blue-200">
         <p className="text-sm text-blue-800">
           <strong>{t("totalStudents", "Total Students")}:</strong>{" "}
           {studentGroups.length}
           {" | "}
-          <strong>{t("totalColumns", "Total Columns")}:</strong>{" "}
+          <strong>{t("totalSubject", "Total Subjectkm")}:</strong>{" "}
           {templateColumns.length}
           {" | "}
           <strong>{t("totalScores", "Total Scores")}:</strong> {Object.keys(scoreInputs).filter(k => scoreInputs[k] !== "").length}

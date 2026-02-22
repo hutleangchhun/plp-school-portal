@@ -31,6 +31,20 @@ export default defineConfig({
     hmr: {
       clientPort: 3001, // Important for HMR to work on network
     },
+    proxy: {
+      // Attendance server (port 8082) - must be listed before /api/v1 to take precedence
+      '/api/v1/attendance': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Main server (port 8080)
+      '/api/v1': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   preview: {
     host: true,

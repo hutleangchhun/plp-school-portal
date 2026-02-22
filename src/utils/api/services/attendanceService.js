@@ -1,5 +1,8 @@
-import { apiClient_, handleApiResponse } from '../client.js';
+import { apiClient_, attendanceApiClient, handleApiResponse } from '../client.js';
 import { ENDPOINTS } from '../config.js';
+
+// Attendance-specific client for /attendance and /attendance-dashboard endpoints
+const attendanceClient = attendanceApiClient;
 
 /**
  * Attendance API Service
@@ -50,7 +53,7 @@ export const attendanceService = {
     console.log('Date param specifically:', queryParams.date);
 
     const response = await handleApiResponse(() =>
-      apiClient_.get(`${ENDPOINTS.ATTENDANCE.BASE}`, { params: queryParams })
+      attendanceClient.get(`${ENDPOINTS.ATTENDANCE.BASE}`, { params: queryParams })
     );
 
     console.log('Raw API response:', response);
@@ -87,7 +90,7 @@ export const attendanceService = {
    */
   async getAttendanceById(attendanceId) {
     return handleApiResponse(() =>
-      apiClient_.get(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}`)
+      attendanceClient.get(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}`)
     ).then(response => ({
       ...response,
       data: attendanceService.utils.formatAttendanceData(response.data)
@@ -107,7 +110,7 @@ export const attendanceService = {
    */
   async createAttendance(attendanceData) {
     return handleApiResponse(() =>
-      apiClient_.post(ENDPOINTS.ATTENDANCE.BASE, attendanceData)
+      attendanceClient.post(ENDPOINTS.ATTENDANCE.BASE, attendanceData)
     ).then(response => attendanceService.utils.formatAttendanceData(response.data));
   },
 
@@ -120,7 +123,7 @@ export const attendanceService = {
    */
   async updateAttendance(attendanceId, attendanceData) {
     return handleApiResponse(() =>
-      apiClient_.patch(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}`, attendanceData)
+      attendanceClient.patch(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}`, attendanceData)
     ).then(response => attendanceService.utils.formatAttendanceData(response.data));
   },
 
@@ -132,7 +135,7 @@ export const attendanceService = {
    */
   async deleteAttendance(attendanceId) {
     return handleApiResponse(() =>
-      apiClient_.delete(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}`)
+      attendanceClient.delete(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}`)
     );
   },
 
@@ -146,7 +149,7 @@ export const attendanceService = {
    */
   async getAttendanceSummary(userId, startDate, endDate) {
     return handleApiResponse(() =>
-      apiClient_.get(`${ENDPOINTS.ATTENDANCE.BASE}/summary/${userId}`, {
+      attendanceClient.get(`${ENDPOINTS.ATTENDANCE.BASE}/summary/${userId}`, {
         params: { startDate, endDate }
       })
     );
@@ -181,7 +184,7 @@ export const attendanceService = {
     if (endDate !== undefined) queryParams.endDate = endDate;
 
     const response = await handleApiResponse(() =>
-      apiClient_.get(`${ENDPOINTS.ATTENDANCE.BASE}/pending/approval`, { params: queryParams })
+      attendanceClient.get(`${ENDPOINTS.ATTENDANCE.BASE}/pending/approval`, { params: queryParams })
     );
 
     const d = response?.data;
@@ -216,7 +219,7 @@ export const attendanceService = {
    */
   async approveAttendance(attendanceId, approvalData) {
     const result = await handleApiResponse(() =>
-      apiClient_.patch(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}/approve`, approvalData)
+      attendanceClient.patch(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}/approve`, approvalData)
     );
 
     if (result.success) {
@@ -239,7 +242,7 @@ export const attendanceService = {
    */
   async rejectAttendance(attendanceId, rejectionData) {
     return handleApiResponse(() =>
-      apiClient_.patch(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}/reject`, rejectionData)
+      attendanceClient.patch(`${ENDPOINTS.ATTENDANCE.BASE}/${attendanceId}/reject`, rejectionData)
     ).then(response => attendanceService.utils.formatAttendanceData(response.data));
   },
 
@@ -252,7 +255,7 @@ export const attendanceService = {
    */
   async bulkApproveAttendance(attendanceIds, comments = '') {
     return handleApiResponse(() =>
-      apiClient_.post(`${ENDPOINTS.ATTENDANCE.BASE}/bulk-approve`, {
+      attendanceClient.post(`${ENDPOINTS.ATTENDANCE.BASE}/bulk-approve`, {
         attendanceIds,
         comments
       })
@@ -268,7 +271,7 @@ export const attendanceService = {
    */
   async bulkRejectAttendance(attendanceIds, rejectionReason) {
     return handleApiResponse(() =>
-      apiClient_.post(`${ENDPOINTS.ATTENDANCE.BASE}/bulk-reject`, {
+      attendanceClient.post(`${ENDPOINTS.ATTENDANCE.BASE}/bulk-reject`, {
         attendanceIds,
         rejectionReason
       })
@@ -288,7 +291,7 @@ export const attendanceService = {
    */
   async queueBulkAttendance(records) {
     return handleApiResponse(() =>
-      apiClient_.post(ENDPOINTS.ATTENDANCE.BULK_QUEUE, { records })
+      attendanceClient.post(ENDPOINTS.ATTENDANCE.BULK_QUEUE, { records })
     );
   },
 
@@ -303,7 +306,7 @@ export const attendanceService = {
    */
   async updateBulkAttendance(records) {
     return handleApiResponse(() =>
-      apiClient_.put(ENDPOINTS.ATTENDANCE.BULK_QUEUE, { records })
+      attendanceClient.put(ENDPOINTS.ATTENDANCE.BULK_QUEUE, { records })
     );
   },
 
@@ -326,7 +329,7 @@ export const attendanceService = {
    */
   async getBulkJobStatus(jobId) {
     return handleApiResponse(() =>
-      apiClient_.get(ENDPOINTS.ATTENDANCE.BULK_STATUS(jobId))
+      attendanceClient.get(ENDPOINTS.ATTENDANCE.BULK_STATUS(jobId))
     );
   },
 
@@ -340,7 +343,7 @@ export const attendanceService = {
    */
   async getQueueLength() {
     return handleApiResponse(() =>
-      apiClient_.get(ENDPOINTS.ATTENDANCE.QUEUE_LENGTH)
+      attendanceClient.get(ENDPOINTS.ATTENDANCE.QUEUE_LENGTH)
     );
   },
 
@@ -469,7 +472,7 @@ export const attendanceService = {
       if (params.classId) queryParams.classId = params.classId;
 
       return handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.PRIMARY, { params: queryParams })
+        attendanceClient.get(ENDPOINTS.ATTENDANCE.DASHBOARD.PRIMARY, { params: queryParams })
       );
     },
 
@@ -489,7 +492,7 @@ export const attendanceService = {
       if (params.classId) queryParams.classId = params.classId;
 
       return handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.GENDER_COMPARISON, { params: queryParams })
+        attendanceClient.get(ENDPOINTS.ATTENDANCE.DASHBOARD.GENDER_COMPARISON, { params: queryParams })
       );
     },
 
@@ -514,7 +517,7 @@ export const attendanceService = {
       if (params.schoolId) queryParams.schoolId = params.schoolId;
 
       return handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.GRADE_BREAKDOWN, { params: queryParams })
+        attendanceClient.get(ENDPOINTS.ATTENDANCE.DASHBOARD.GRADE_BREAKDOWN, { params: queryParams })
       );
     },
 
@@ -539,7 +542,7 @@ export const attendanceService = {
       if (params.schoolId) queryParams.schoolId = params.schoolId;
 
       return handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.CLASS_BREAKDOWN, { params: queryParams })
+        attendanceClient.get(ENDPOINTS.ATTENDANCE.DASHBOARD.CLASS_BREAKDOWN, { params: queryParams })
       );
     },
 
@@ -564,7 +567,7 @@ export const attendanceService = {
       if (params.limit !== undefined) queryParams.limit = params.limit;
 
       return handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.SCHOOL_RANKINGS, { params: queryParams })
+        attendanceClient.get(ENDPOINTS.ATTENDANCE.DASHBOARD.SCHOOL_RANKINGS, { params: queryParams })
       );
     },
 
@@ -584,7 +587,7 @@ export const attendanceService = {
       if (params.classId) queryParams.classId = params.classId;
 
       return handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.DAILY_TRENDS, { params: queryParams })
+        attendanceClient.get(ENDPOINTS.ATTENDANCE.DASHBOARD.DAILY_TRENDS, { params: queryParams })
       );
     },
 
@@ -604,7 +607,7 @@ export const attendanceService = {
       if (params.classId) queryParams.classId = params.classId;
 
       return handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.MONTHLY_TRENDS, { params: queryParams })
+        attendanceClient.get(ENDPOINTS.ATTENDANCE.DASHBOARD.MONTHLY_TRENDS, { params: queryParams })
       );
     },
 
@@ -624,7 +627,7 @@ export const attendanceService = {
       if (params.classId) queryParams.classId = params.classId;
 
       return handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.APPROVAL_STATUS, { params: queryParams })
+        attendanceClient.get(ENDPOINTS.ATTENDANCE.DASHBOARD.APPROVAL_STATUS, { params: queryParams })
       );
     },
 
@@ -647,7 +650,7 @@ export const attendanceService = {
       if (params.schoolId) queryParams.schoolId = params.schoolId;
 
       return handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.TEACHER_PRIMARY, { params: queryParams })
+        attendanceClient.get(ENDPOINTS.ATTENDANCE.DASHBOARD.TEACHER_PRIMARY, { params: queryParams })
       );
     },
 
@@ -670,7 +673,7 @@ export const attendanceService = {
       if (params.schoolId) queryParams.schoolId = params.schoolId;
 
       return handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.TEACHER_BY_ROLE, { params: queryParams })
+        attendanceClient.get(ENDPOINTS.ATTENDANCE.DASHBOARD.TEACHER_BY_ROLE, { params: queryParams })
       );
     },
 
@@ -693,7 +696,7 @@ export const attendanceService = {
       if (params.schoolId) queryParams.schoolId = params.schoolId;
 
       return handleApiResponse(() =>
-        apiClient_.get(ENDPOINTS.ATTENDANCE.DASHBOARD.TEACHER_MONTHLY_TRENDS, { params: queryParams })
+        attendanceClient.get(ENDPOINTS.ATTENDANCE.DASHBOARD.TEACHER_MONTHLY_TRENDS, { params: queryParams })
       );
     },
 
@@ -718,7 +721,7 @@ export const attendanceService = {
       if (params.endDate) queryParams.endDate = params.endDate;
 
       return handleApiResponse(() =>
-        apiClient_.get(`${ENDPOINTS.ATTENDANCE.DASHBOARD.BASE}/schools/coverage`, { params: queryParams })
+        attendanceClient.get(`${ENDPOINTS.ATTENDANCE.DASHBOARD.BASE}/schools/coverage`, { params: queryParams })
       );
     },
 
@@ -740,7 +743,7 @@ export const attendanceService = {
       if (params.districtId) queryParams.districtId = params.districtId;
 
       return handleApiResponse(() =>
-        apiClient_.get(`${ENDPOINTS.ATTENDANCE.DASHBOARD.BASE}/schools/ids`, { params: queryParams })
+        attendanceClient.get(`${ENDPOINTS.ATTENDANCE.DASHBOARD.BASE}/schools/ids`, { params: queryParams })
       );
     },
 
@@ -751,7 +754,7 @@ export const attendanceService = {
      */
     async getSchoolAttendanceCount(schoolId) {
       return handleApiResponse(() =>
-        apiClient_.get(`${ENDPOINTS.ATTENDANCE.DASHBOARD.BASE}/schools/${schoolId}/attendance-count`)
+        attendanceClient.get(`${ENDPOINTS.ATTENDANCE.DASHBOARD.BASE}/schools/${schoolId}/attendance-count`)
       );
     },
 
@@ -768,7 +771,7 @@ export const attendanceService = {
       if (params.date) queryParams.date = params.date;
 
       return handleApiResponse(() =>
-        apiClient_.get(`${ENDPOINTS.ATTENDANCE.DASHBOARD.BASE}/schools/${schoolId}/attendance-count`, { params: queryParams })
+        attendanceClient.get(`${ENDPOINTS.ATTENDANCE.DASHBOARD.BASE}/schools/${schoolId}/attendance-count`, { params: queryParams })
       );
     }
   },

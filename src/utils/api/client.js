@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL } from './config';
+import { API_BASE_URL, getAttendanceApiBaseUrl, getServiceBaseUrl } from './config';
 // Remove circular dependency - token management is now handled internally
 
 // Flag to prevent multiple simultaneous redirects
@@ -549,5 +549,128 @@ export const tokenManager = {
 };
 
 
-export { apiClient as apiClient_, publicApiClient };
+/**
+ * Dedicated axios client for /attendance and /attendance-dashboard endpoints
+ * Local:      http://localhost:8082
+ * Production: http://192.168.155.90
+ */
+const attendanceApiClient = axios.create({
+  baseURL: getAttendanceApiBaseUrl(),
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+});
+
+// Reuse same auth token injection
+attendanceApiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Reuse same response handling
+attendanceApiClient.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    if (error.response) {
+      const { status, data } = error.response;
+      if (status === 401) {
+        const currentPath = window.location.pathname.toLowerCase();
+        const publicPages = ['/login', '/school-lookup', '/register', '/'];
+        const isPublicPage = publicPages.some(page => currentPath === page || currentPath.startsWith(page + '/'));
+        if (!isPublicPage && !isRedirecting) {
+          isRedirecting = true;
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
+          setTimeout(() => { window.location.href = '/login'; }, 100);
+        }
+      }
+      return Promise.reject({
+        status,
+        message: data?.message || data?.error || error.response.statusText || 'An error occurred',
+        errors: data?.errors,
+        data: data?.data,
+        originalError: error
+      });
+    } else if (error.request) {
+      return Promise.reject({
+        status: 0,
+        message: 'No response received from attendance server.',
+        code: 'NETWORK_ERROR',
+        type: 'network',
+        originalError: error
+      });
+    }
+    return Promise.reject({ status: -1, message: error.message, originalError: error });
+  }
+);
+
+// ── Service Client Factory ────────────────────────────────────────────────────
+// Returns a cached axios instance for any registered service.
+// Usage: const client = getServiceClient('reports');
+// ─────────────────────────────────────────────────────────────────────────────
+const _serviceClients = { main: apiClient, attendance: attendanceApiClient };
+
+export const getServiceClient = (serviceName = 'main') => {
+  if (_serviceClients[serviceName]) return _serviceClients[serviceName];
+
+  const client = axios.create({
+    baseURL: getServiceBaseUrl(serviceName),
+    timeout: 30000,
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
+  });
+
+  // Inject auth token
+  client.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('authToken');
+      if (token) config.headers.Authorization = `Bearer ${token}`;
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+
+  // Unwrap response, handle 401
+  client.interceptors.response.use(
+    (response) => response.data,
+    (error) => {
+      if (error.response) {
+        const { status, data } = error.response;
+        if (status === 401) {
+          const currentPath = window.location.pathname.toLowerCase();
+          const publicPages = ['/login', '/school-lookup', '/register', '/'];
+          const isPublicPage = publicPages.some(p => currentPath === p || currentPath.startsWith(p + '/'));
+          if (!isPublicPage && !isRedirecting) {
+            isRedirecting = true;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userData');
+            setTimeout(() => { window.location.href = '/login'; }, 100);
+          }
+        }
+        return Promise.reject({
+          status,
+          message: data?.message || data?.error || error.response.statusText || 'An error occurred',
+          errors: data?.errors,
+          data: data?.data,
+          originalError: error
+        });
+      } else if (error.request) {
+        return Promise.reject({ status: 0, message: 'No response received.', code: 'NETWORK_ERROR', type: 'network', originalError: error });
+      }
+      return Promise.reject({ status: -1, message: error.message, originalError: error });
+    }
+  );
+
+  _serviceClients[serviceName] = client;
+  return client;
+};
+
+export { apiClient as apiClient_, publicApiClient, attendanceApiClient };
 export default apiClient;

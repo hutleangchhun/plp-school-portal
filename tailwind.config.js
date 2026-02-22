@@ -54,5 +54,16 @@ module.exports = {
   plugins: [
     require('@tailwindcss/forms'),
     require('tailwindcss-animate'),
+    function ({ addUtilities }) {
+      addUtilities({
+        '.scrollbar-hide': {
+          '-ms-overflow-style': 'none',
+          'scrollbar-width': 'none',
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+        },
+      });
+    },
   ],
 }
