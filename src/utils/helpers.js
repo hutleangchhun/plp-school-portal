@@ -131,7 +131,7 @@ export const sortBy = (array, sortKeys) => {
     for (const { key, direction = 'asc' } of sortKeys) {
       const aVal = a[key];
       const bVal = b[key];
-      
+
       if (aVal < bVal) return direction === 'asc' ? -1 : 1;
       if (aVal > bVal) return direction === 'asc' ? 1 : -1;
     }
@@ -164,7 +164,7 @@ export const uniqueBy = (array, key) => {
  * @returns {Array} Flattened array
  */
 export const flatten = (array, depth = Infinity) => {
-  return depth > 0 ? array.reduce((acc, val) => 
+  return depth > 0 ? array.reduce((acc, val) =>
     acc.concat(Array.isArray(val) ? flatten(val, depth - 1) : val), []) : array.slice();
 };
 
@@ -316,7 +316,7 @@ export const hasStudentClass = (student) => {
 
   // Check nested class object
   if (student.class?.id || student.class?.classId || student.class?.name ||
-      student.class?.gradeLevel || student.class_grade_level) {
+    student.class?.gradeLevel || student.class_grade_level) {
     return true;
   }
 
@@ -362,7 +362,7 @@ export const hasMasterClass = (student) => {
 
   // Check for master class data
   if (student.masterclass_id || student.masterClassId ||
-      student.masterclass_name || student.masterClassName) {
+    student.masterclass_name || student.masterClassName) {
     return true;
   }
 
@@ -389,4 +389,52 @@ export const getMasterClassDisplay = (student) => {
 
   // If no master class assigned
   return null;
+};
+
+/**
+ * Format date/time string to localized time string (e.g. 10:15 AM)
+ * @param {string|Date} time - Time to format
+ * @param {boolean} [addSeconds=false] - Whether to include seconds
+ * @returns {string|null} Formatted time string
+ */
+export const formatTime = (time, addSeconds = false) => {
+  if (!time) return null;
+
+  const date = new Date(time);
+  if (isNaN(date.getTime())) return time;
+
+  const options = {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  };
+
+  if (addSeconds) {
+    options.second = "2-digit";
+  }
+
+  return date.toLocaleTimeString("en-US", options);
+};
+
+/**
+ * Format decimal hours to hours and minutes string
+ * @param {number} decimalHours - Hours in decimal (e.g. 8.5)
+ * @param {Function} [t] - Optional translation function
+ * @returns {string|null} Formatted string (e.g. "8 ម៉ោង 30 នាទី")
+ */
+export const formatDuration = (decimalHours, t = null) => {
+  if (decimalHours === null || decimalHours === undefined) return null;
+
+  const hours = Math.floor(decimalHours);
+  const minutes = Math.round((decimalHours - hours) * 60);
+
+  const hourText = t ? t("hour", "ម៉ោង") : "hour";
+  const minuteText = t ? t("minute", "នាទី") : "minutes";
+
+  if (hours === 0 && minutes === 0) return `0 ${minuteText}`;
+  let display = "";
+  if (hours > 0) display += `${hours} ${hourText}`;
+  if (minutes > 0 || hours === 0) display += `${display ? " " : ""}${minutes} ${minuteText}`;
+
+  return display.trim();
 };

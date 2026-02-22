@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Calendar, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Check, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useToast } from "../../contexts/ToastContext";
 import { useLoading } from "../../contexts/LoadingContext";
@@ -17,8 +17,9 @@ import Modal from "../../components/ui/Modal";
 import Dropdown from "../../components/ui/Dropdown";
 import { attendanceService } from "../../utils/api/services/attendanceService";
 import { teacherService } from "../../utils/api/services/teacherService";
+import shiftService from "../../utils/api/services/shiftService";
 import { canAccessTeacherFeatures } from "../../utils/routePermissions";
-import { formatClassIdentifier } from "../../utils/helpers";
+import { formatClassIdentifier, formatTime, formatDuration } from "../../utils/helpers";
 import { formatDateKhmer } from "../../utils/formatters";
 import { DatePickerWithDropdowns } from "../../components/ui/date-picker-with-dropdowns";
 
@@ -46,11 +47,13 @@ export default function TeacherSelfAttendance() {
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [loadingClasses, setLoadingClasses] = useState(false);
+  const [shifts, setShifts] = useState([]);
+  const [loadingShifts, setLoadingShifts] = useState(false);
 
   // Modal state for class/shift selection
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [selectedShiftForSubmit, setSelectedShiftForSubmit] =
-    useState("MORNING");
+    useState(null);
   const [selectedClassForSubmit, setSelectedClassForSubmit] = useState(null);
   const [reasonInput, setReasonInput] = useState("");
 
@@ -178,6 +181,25 @@ export default function TeacherSelfAttendance() {
     }
   }, [userId, isTeacher, fetchTeacherClassesFromAPI]);
 
+  // Fetch shifts from API
+  const fetchShifts = useCallback(async () => {
+    try {
+      setLoadingShifts(true);
+      const response = await shiftService.getShifts();
+      if (response.success && response.data) {
+        setShifts(response.data);
+      }
+    } catch (err) {
+      console.error("Error fetching shifts:", err);
+    } finally {
+      setLoadingShifts(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchShifts();
+  }, [fetchShifts]);
+
   // Helper function to get date string in YYYY-MM-DD format without timezone conversion
   const getLocalDateString = (date = new Date()) => {
     const year = date.getFullYear();
@@ -208,32 +230,20 @@ export default function TeacherSelfAttendance() {
 
         records.forEach((record) => {
           const recordClassId = record.classId;
-          const recordTime = record.createdAt
-            ? new Date(record.createdAt)
-            : null;
-          const recordHour = recordTime ? recordTime.getHours() : 12;
-          const shift =
-            recordHour < 11
-              ? "MORNING"
-              : recordHour < 13
-                ? "NOON"
-                : "AFTERNOON";
+          const shiftId = record.shiftId || "UNKNOWN";
 
           const classIdKey = recordClassId || "null";
-          const key = `${classIdKey}_${shift}`;
+          const key = `${classIdKey}_${shiftId}`;
           dateData[key] = {
             status: record.status?.toUpperCase() || "PRESENT",
             time: record.createdAt
-              ? new Date(record.createdAt).toLocaleTimeString("en-US", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                })
+              ? formatTime(record.createdAt)
               : null,
             id: record.id,
             createdAt: record.createdAt,
             reason: record.reason || "",
-            shift,
+            shiftId,
+            shift: record.shift || null,
             classId: recordClassId,
             classInfo: record.class || null,
             checkInTime: record.checkInTime || null,
@@ -287,7 +297,7 @@ export default function TeacherSelfAttendance() {
   // Mark attendance for today with specific class
   const markAttendance = async (
     status,
-    shift = "MORNING",
+    shiftId = null,
     classId = null,
     userReason = "",
   ) => {
@@ -316,19 +326,9 @@ export default function TeacherSelfAttendance() {
 
     // Check if attendance already submitted for this shift and class
     const todayAttendanceData = monthlyAttendance[today];
-    const attendanceKey = `${targetClassId}_${shift}`;
+    const attendanceKey = `${targetClassId}_${shiftId}`;
     if (todayAttendanceData && todayAttendanceData[attendanceKey]) {
-      showError(
-        shift === "MORNING"
-          ? t(
-              "alreadySubmittedMorningForClass",
-              `អ្នកបានបញ្ជូនវត្តមានព្រឹកសម្រាប់ថ្នាក់នេះរួចហើយ`,
-            )
-          : t(
-              "alreadySubmittedAfternoonForClass",
-              `អ្នកបានបញ្ជូនវត្តមានរសៀលសម្រាប់ថ្នាក់នេះរួចហើយ`,
-            ),
-      );
+      showError(t("alreadySubmittedForClass", "អ្នកបានបញ្ជូនវត្តមានសម្រាប់វេននេះរួចហើយ"));
       return;
     }
 
@@ -354,32 +354,31 @@ export default function TeacherSelfAttendance() {
       }
 
       // Auto-determine status based on submission time and shift
-      // The shift is based on the class schedule (morning or afternoon class)
       let finalStatus = status;
       if (status === "PRESENT" || status === "LATE") {
         const now = new Date();
         const currentHour = now.getHours();
+        const currentMinutes = now.getMinutes();
 
-        if (shift === "MORNING") {
-          // Morning shift: Late if submitted at or after 7:00 AM
-          finalStatus = currentHour >= 7 ? "LATE" : "PRESENT";
-        } else if (shift === "NOON") {
-          // Noon shift: Late if submitted at or after 11:00 AM
-          finalStatus = currentHour >= 11 ? "LATE" : "PRESENT";
-        } else if (shift === "AFTERNOON") {
-          // Afternoon shift: Late if submitted at or after 1:00 PM (13:00)
-          finalStatus = currentHour >= 13 ? "LATE" : "PRESENT";
+        const selectedShiftObj = shifts.find(s => s.id === shiftId);
+        if (selectedShiftObj && selectedShiftObj.startTime) {
+          const [startHour, startMin] = selectedShiftObj.startTime.split(':').map(Number);
+          if (currentHour > startHour || (currentHour === startHour && currentMinutes > startMin)) {
+            finalStatus = "LATE";
+          } else {
+            finalStatus = "PRESENT";
+          }
         }
       }
-      // For LEAVE status, keep it as is
 
       // Build attendance payload with check-in timestamp (except for LEAVE status)
       const attendancePayload = {
-        userId: userLoginId, // Use userLoginId for attendance marking
+        userId: userLoginId,
         date: requestDate,
         status: finalStatus,
-        reason: userReason.trim(), // User's own reason
-        classId: targetClassId || null, // classId is optional (null if not provided)
+        reason: userReason.trim(),
+        classId: targetClassId || null,
+        shiftId: shiftId || null,
       };
 
       // Only add checkInTime if status is not LEAVE
@@ -438,7 +437,7 @@ export default function TeacherSelfAttendance() {
   const checkOutAttendance = async (
     attendanceId,
     classId = null,
-    shift = "MORNING",
+    shiftId = null,
   ) => {
     if (!userLoginId || !attendanceId) return; // Use userLoginId for attendance operations
 
@@ -470,7 +469,7 @@ export default function TeacherSelfAttendance() {
         // Update local state immediately
         const today = getLocalDateString();
         const targetClassId = classId || selectedClassId;
-        const key = `${targetClassId}_${shift}`;
+        const key = `${targetClassId}_${shiftId}`;
         const checkOutTimeStamp = new Date().toISOString();
 
         console.log("✅ Checkout response:", response);
@@ -573,7 +572,7 @@ export default function TeacherSelfAttendance() {
   }
 
   // Initial loading state
-  if (initialLoading || loadingClasses) {
+  if (initialLoading || loadingClasses || loadingShifts) {
     return (
       <PageLoader
         message={t("loadingAttendance", "Loading attendance...")}
@@ -615,20 +614,17 @@ export default function TeacherSelfAttendance() {
 
   const now = new Date();
   const currentHour = now.getHours();
-  const isBeforeMorningCutoff = currentHour < 7;
-  const isBeforeNoonCutoff = currentHour < 11;
-  const isBeforeAfternoonCutoff = currentHour < 13;
-
   // Helper function to determine if current time is late for a shift
-  const isLateForShift = (shift) => {
-    if (shift === "MORNING") {
-      return currentHour >= 7;
-    } else if (shift === "NOON") {
-      return currentHour >= 11;
-    } else if (shift === "AFTERNOON") {
-      return currentHour >= 13;
-    }
-    return false;
+  const isLateForShift = (shiftId) => {
+    const shift = shifts.find(s => s.id === shiftId);
+    if (!shift || !shift.startTime) return false;
+
+    const [startHour, startMin] = shift.startTime.split(':').map(Number);
+    const now = new Date();
+    const currentH = now.getHours();
+    const currentM = now.getMinutes();
+
+    return currentH > startHour || (currentH === startHour && currentM > startMin);
   };
 
   // Get current time display with real-time seconds
@@ -650,12 +646,21 @@ export default function TeacherSelfAttendance() {
       currentHour,
     });
 
-    // Always fetch fresh classes when opening modal to ensure we have current data
     fetchTeacherClassesFromAPI().then(() => {
       // Auto-detect current shift based on time
-      const autoShift =
-        currentHour < 11 ? "MORNING" : currentHour < 13 ? "NOON" : "AFTERNOON";
-      setSelectedShiftForSubmit(autoShift);
+      let autoShiftId = null;
+      if (shifts && shifts.length > 0) {
+        const now = new Date();
+        const currentH = now.getHours();
+        const currentM = now.getMinutes();
+        const activeShift = shifts.find(s => {
+          if (!s.endTime) return false;
+          const [endH, endM] = s.endTime.split(':').map(Number);
+          return currentH < endH || (currentH === endH && currentM <= endM);
+        });
+        autoShiftId = activeShift ? activeShift.id : shifts[0].id;
+      }
+      setSelectedShiftForSubmit(autoShiftId);
 
       // Auto-select first class from teacher's classes
       if (classes.length > 0) {
@@ -763,17 +768,62 @@ export default function TeacherSelfAttendance() {
                       {formatDateKhmer(currentTime, "full")}
                     </p>
 
-                    {/* Check-in Button — hidden when viewing a future date */}
+                    {/* Actions — hidden when viewing a future date */}
                     {!isViewingFuture && (
-                      <Button
-                        onClick={openSubmitModal}
-                        disabled={submitting}
-                        size="sm"
-                        className="w-full"
-                      >
-                        <Check className="h-4 w-4 mr-2" />
-                        {t("checkIn", "ចូលវត្តមាន")}
-                      </Button>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <Button
+                          onClick={openSubmitModal}
+                          disabled={submitting}
+                          size="sm"
+                          className="w-full h-full"
+                        >
+                          <Check className="h-4 w-4 mr-2" />
+                          {t("checkIn", "ចូលវត្តមាន")}
+                        </Button>
+
+                        {/* Only show check-out if there are active attendances hasn't checked out */}
+                        {Object.entries(displayAttendanceData).filter(([_, att]) => !att.isCheckedOut && att.status !== "LEAVE").length > 0 && (
+                          <div className="flex flex-col justify-center gap-2">
+                            <div className="flex flex-col gap-2">
+                              {Object.entries(displayAttendanceData)
+                                .map(([key, attendance]) => {
+                                  const parts = key.split("_");
+                                  const classIdStr = parts[0];
+                                  const shiftIdStr = parts.slice(1).join('_');
+                                  const shiftId = shiftIdStr === "UNKNOWN" ? null : Number(shiftIdStr) || shiftIdStr;
+                                  const classId = classIdStr === "null" ? null : Number(classIdStr);
+
+                                  let shiftName = attendance.shift?.name;
+                                  if (!shiftName && shiftId) {
+                                    const foundShift = shifts.find(s => s.id == shiftId);
+                                    if (foundShift) shiftName = foundShift.name;
+                                  }
+
+                                  return { key, shiftId, classId, attendance, shiftName: shiftName || t("unknownShift", "មិនស្គាល់វេន") };
+                                })
+                                .filter(row => !row.attendance.isCheckedOut && row.attendance.status !== "LEAVE")
+                                .map((row) => (
+                                  <Button
+                                    key={row.key}
+                                    onClick={() => checkOutAttendance(row.attendance.id, row.classId, row.shiftId)}
+                                    disabled={submitting}
+                                    title={`Check out for ${row.shiftName}`}
+                                    size="sm"
+                                    variant="warning"
+                                    className="w-full h-full min-h-[36px]"
+                                  >
+                                    <span className="relative z-10 flex items-center gap-1.5 transition-transform duration-300 group-hover:-translate-x-0.5 truncate max-w-full">
+                                      <LogOut className="h-3 w-3 flex-shrink-0 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-amber-800" />
+                                      <span className="truncate">{row.shiftName} - {t("checkOut", "ចេញ")}</span>
+                                    </span>
+                                    <div className="absolute inset-0 z-0 bg-amber-50 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                                  </Button>
+                                ))
+                              }
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -782,55 +832,49 @@ export default function TeacherSelfAttendance() {
                     <p className="text-sm font-bold text-gray-700 uppercase mb-3">
                       {t("shift", "ស្ថានភាពវេន")}
                     </p>
-                    {[
-                      {
-                        label: t("morningShift", "វេនព្រឹក"),
-                        onTime: isBeforeMorningCutoff,
-                        cutoff: "7:00 AM",
-                      },
-                      {
-                        label: t("noonShift", "វេនថ្ងៃត្រង់"),
-                        onTime: isBeforeNoonCutoff,
-                        cutoff: "11:00 AM",
-                      },
-                      {
-                        label: t("afternoonShift", "វេនរសៀល"),
-                        onTime: isBeforeAfternoonCutoff,
-                        cutoff: "1:00 PM",
-                      },
-                    ].map(({ label, onTime, cutoff }) => (
-                      <div
-                        key={cutoff}
-                        className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${onTime ? "bg-green-500" : "bg-orange-400"}`}
-                          />
-                          <div>
-                            <p className="text-sm text-gray-700">{label}</p>
-                            <p className="text-xs text-gray-400">
-                              {onTime ? "មុន" : "ក្រោយ"} {cutoff}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge
-                          color={onTime ? "green" : "orange"}
-                          variant="filled"
-                          size="xs"
+                    {shifts.map((shift) => {
+                      const isLate = isLateForShift(shift.id);
+                      const onTime = !isLate;
+
+                      let [h, m] = shift.startTime ? shift.startTime.split(':') : ['00', '00'];
+                      const ampm = parseInt(h) >= 12 ? 'PM' : 'AM';
+                      const h12 = parseInt(h) % 12 || 12;
+                      const cutoff = `${h12}:${m} ${ampm}`;
+
+                      return (
+                        <div
+                          key={shift.id}
+                          className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0"
                         >
-                          {onTime ? t("onTime", "ទាន់ម៉ោង") : t("late", "យឺត")}
-                        </Badge>
-                      </div>
-                    ))}
+                          <div className="flex items-center gap-2.5">
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${onTime ? "bg-green-500" : "bg-orange-400"}`}
+                            />
+                            <div>
+                              <p className="text-sm text-gray-700">{shift.name}</p>
+                              <p className="text-xs text-gray-400">
+                                {onTime ? "មុន" : "ក្រោយ"} {cutoff}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge
+                            color={onTime ? "green" : "orange"}
+                            variant="filled"
+                            size="xs"
+                          >
+                            {onTime ? t("onTime", "ទាន់ម៉ោង") : t("late", "យឺត")}
+                          </Badge>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
 
               {/* Attendance History Table */}
               <div className="bg-white rounded-sm border border-gray-200">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-b border-gray-100 gap-2">
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 py-5 sm:px-5 sm:py-4 border-b border-gray-100 gap-2">
+                  <div className="mb-1 sm:mb-0">
                     <p className="text-sm font-bold text-gray-900">
                       {isViewingToday
                         ? t("todayStatus", "ការចុះវត្តមានថ្ងៃនេះ")
@@ -879,7 +923,9 @@ export default function TeacherSelfAttendance() {
                     )}
                     data={Object.entries(displayAttendanceData).map(
                       ([key, attendance]) => {
-                        const [classIdStr, shift] = key.split("_");
+                        const parts = key.split("_");
+                        const classIdStr = parts[0];
+                        const shiftIdStr = parts.slice(1).join('_');
                         const classId =
                           classIdStr === "null" ? null : Number(classIdStr);
                         // Prefer class info from API response, fall back to classes state
@@ -887,10 +933,10 @@ export default function TeacherSelfAttendance() {
                           attendance.classInfo ||
                           (classId
                             ? classes.find(
-                                (c) => (c.classId || c.id) === classId,
-                              )
+                              (c) => (c.classId || c.id) === classId,
+                            )
                             : null);
-                        return { key, shift, classId, attendance, cls };
+                        return { key, shiftId: shiftIdStr === "UNKNOWN" ? null : Number(shiftIdStr) || shiftIdStr, classId, attendance, cls };
                       },
                     )}
                     columns={[
@@ -901,17 +947,33 @@ export default function TeacherSelfAttendance() {
                           const name = row.cls
                             ? row.cls.gradeLevel != null
                               ? formatClassIdentifier(
-                                  row.cls.gradeLevel,
-                                  row.cls.section,
-                                  t,
-                                )
+                                row.cls.gradeLevel,
+                                row.cls.section,
+                                t,
+                              )
                               : row.cls.name ||
-                                `${t("class", "ថ្នាក់")} ${row.classId}`
+                              `${t("class", "ថ្នាក់")} ${row.classId}`
                             : row.classId
                               ? `${t("class", "ថ្នាក់")} ${row.classId}`
                               : t("personalAttendance", "វត្តមានផ្ទាល់ខ្លួន");
                           return (
                             <p className="font-medium text-gray-900">{name}</p>
+                          );
+                        },
+                      },
+                      {
+                        key: "shift",
+                        header: t("shift", "វេន"),
+                        render: (row) => {
+                          let shiftName = row.attendance.shift?.name;
+                          if (!shiftName && row.shiftId) {
+                            // Use == instead of === since row.shiftId might be a string from the dictionary key split
+                            const foundShift = shifts.find(s => s.id == row.shiftId);
+                            if (foundShift) shiftName = foundShift.name;
+                          }
+                          shiftName = shiftName || t("unknownShift", "មិនស្គាល់វេន");
+                          return (
+                            <p className="font-medium text-gray-700">{shiftName}</p>
                           );
                         },
                       },
@@ -933,13 +995,7 @@ export default function TeacherSelfAttendance() {
                         header: t("checkIn", "ចូល"),
                         render: (row) => {
                           const time = row.attendance.checkInTime
-                            ? new Date(
-                                row.attendance.checkInTime,
-                              ).toLocaleTimeString("en-US", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: true,
-                              })
+                            ? formatTime(row.attendance.checkInTime)
                             : row.attendance.time;
                           return row.attendance.status === "LEAVE" ? (
                             <span className="text-purple-600 font-medium">
@@ -960,13 +1016,7 @@ export default function TeacherSelfAttendance() {
                             return <span className="text-gray-400">-</span>;
                           if (row.attendance.isCheckedOut === true) {
                             const time = row.attendance.checkOutTime
-                              ? new Date(
-                                  row.attendance.checkOutTime,
-                                ).toLocaleTimeString("en-US", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                })
+                              ? formatTime(row.attendance.checkOutTime)
                               : null;
                             return (
                               <span className="text-blue-600 font-medium">
@@ -977,21 +1027,9 @@ export default function TeacherSelfAttendance() {
                           if (!isViewingToday)
                             return <span className="text-gray-400">-</span>;
                           return (
-                            <Button
-                              onClick={() =>
-                                checkOutAttendance(
-                                  row.attendance.id,
-                                  row.classId,
-                                  row.shift,
-                                )
-                              }
-                              disabled={submitting}
-                              size="xs"
-                              variant="success"
-                            >
-                              <Check className="h-3 w-3 mr-1" />
-                              {t("checkOut", "ចេញ")}
-                            </Button>
+                            <span className="text-orange-500 font-medium text-sm">
+                              {t("pending", "រង់ចាំ")}
+                            </span>
                           );
                         },
                       },
@@ -1003,7 +1041,7 @@ export default function TeacherSelfAttendance() {
                           if (h !== null && h !== undefined) {
                             return (
                               <span className="text-indigo-600 font-semibold">
-                                {h.toFixed(2)}
+                                {formatDuration(h, t)}
                               </span>
                             );
                           }
@@ -1029,7 +1067,7 @@ export default function TeacherSelfAttendance() {
             const classAlreadySubmitted = !!(
               selectedClassForSubmit &&
               todayAttendanceData[
-                `${selectedClassForSubmit}_${selectedShiftForSubmit}`
+              `${selectedClassForSubmit}_${selectedShiftForSubmit}`
               ]
             );
             const submitDisabled =
@@ -1050,11 +1088,10 @@ export default function TeacherSelfAttendance() {
                 <Button
                   onClick={() => handleSubmitFromModal("PRESENT")}
                   disabled={submitDisabled}
-                  className={`w-full sm:w-auto ${
-                    isLateForShift(selectedShiftForSubmit)
-                      ? "bg-orange-600 hover:bg-orange-700"
-                      : "bg-green-600 hover:bg-green-700"
-                  }`}
+                  className={`w-full sm:w-auto ${isLateForShift(selectedShiftForSubmit)
+                    ? "bg-orange-600 hover:bg-orange-700"
+                    : "bg-green-600 hover:bg-green-700"
+                    }`}
                 >
                   <Check className="h-4 w-4 mr-2" />
                   {t("submit", "បញ្ជូន")}
@@ -1085,7 +1122,7 @@ export default function TeacherSelfAttendance() {
                       : cls.name || `${t("class", "ថ្នាក់")} ${classId}`;
                   const alreadySubmitted =
                     !!todayAttendanceData[
-                      `${classId}_${selectedShiftForSubmit}`
+                    `${classId}_${selectedShiftForSubmit}`
                     ];
                   return {
                     value: classId.toString(),
@@ -1121,99 +1158,60 @@ export default function TeacherSelfAttendance() {
               <span className="text-red-500">*</span>
             </label>
             <div className="grid sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-3">
-              <button
-                onClick={() => setSelectedShiftForSubmit("MORNING")}
-                className={`p-3 rounded-sm border-2 transition-all ${
-                  selectedShiftForSubmit === "MORNING"
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-              >
-                <p className="text-sm text-gray-900">
-                  {t("morningShift", "ព្រឹក")}
-                </p>
-                <p className="text-xs text-gray-600">
-                  {isBeforeMorningCutoff ? "មុន" : "ក្រោយ"} 7:00 AM
-                </p>
-                <Badge
-                  color={isBeforeMorningCutoff ? "green" : "orange"}
-                  variant="filled"
-                  size="sm"
-                  className="mt-2"
-                >
-                  {isBeforeMorningCutoff
-                    ? t("onTime", "ទាន់ម៉ោង")
-                    : t("late", "យឺត")}
-                </Badge>
-              </button>
-              <button
-                onClick={() => setSelectedShiftForSubmit("NOON")}
-                className={`p-3 rounded-sm border-2 transition-all ${
-                  selectedShiftForSubmit === "NOON"
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-              >
-                <p className="text-sm text-gray-900">
-                  {t("noonShift", "ថ្ងៃត្រង់")}
-                </p>
-                <p className="text-xs text-gray-600">
-                  {isBeforeNoonCutoff ? "មុន" : "ក្រោយ"} 11:00 AM
-                </p>
-                <Badge
-                  color={isBeforeNoonCutoff ? "green" : "orange"}
-                  variant="filled"
-                  size="sm"
-                  className="mt-2"
-                >
-                  {isBeforeNoonCutoff
-                    ? t("onTime", "ទាន់ម៉ោង")
-                    : t("late", "យឺត")}
-                </Badge>
-              </button>
-              <button
-                onClick={() => setSelectedShiftForSubmit("AFTERNOON")}
-                className={`p-3 rounded-sm border-2 transition-all ${
-                  selectedShiftForSubmit === "AFTERNOON"
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-              >
-                <p className="text-sm text-gray-900">
-                  {t("afternoonShift", "រសៀល")}
-                </p>
-                <p className="text-xs text-gray-600">
-                  {isBeforeAfternoonCutoff ? "មុន" : "ក្រោយ"} 1:00 PM
-                </p>
-                <Badge
-                  color={isBeforeAfternoonCutoff ? "green" : "orange"}
-                  variant="filled"
-                  size="sm"
-                  className="mt-2"
-                >
-                  {isBeforeAfternoonCutoff
-                    ? t("onTime", "ទាន់ម៉ោង")
-                    : t("late", "យឺត")}
-                </Badge>
-              </button>
+              {shifts.map((shift) => {
+                const isLate = isLateForShift(shift.id);
+                const onTime = !isLate;
+
+                let [h, m] = shift.startTime ? shift.startTime.split(':') : ['00', '00'];
+                const ampm = parseInt(h) >= 12 ? 'PM' : 'AM';
+                const h12 = parseInt(h) % 12 || 12;
+                const cutoff = `${h12}:${m} ${ampm}`;
+
+                return (
+                  <button
+                    key={shift.id}
+                    onClick={() => setSelectedShiftForSubmit(shift.id)}
+                    className={`p-3 rounded-sm border-2 transition-all ${selectedShiftForSubmit === shift.id
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                      }`}
+                  >
+                    <p className="text-sm text-gray-900">
+                      {shift.name}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {onTime ? "មុន" : "ក្រោយ"} {cutoff}
+                    </p>
+                    <Badge
+                      color={onTime ? "green" : "orange"}
+                      variant="filled"
+                      size="sm"
+                      className="mt-2"
+                    >
+                      {onTime
+                        ? t("onTime", "ទាន់ម៉ោង")
+                        : t("late", "យឺត")}
+                    </Badge>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Status Warning */}
           <div
-            className={`p-3 rounded-sm mb-4 ${
-              isLateForShift(selectedShiftForSubmit)
-                ? "bg-orange-50 border border-orange-200"
-                : "bg-green-50 border border-green-200"
-            }`}
+            className={`p-3 rounded-sm mb-4 ${isLateForShift(selectedShiftForSubmit)
+              ? "bg-orange-50 border border-orange-200"
+              : "bg-green-50 border border-green-200"
+              }`}
           >
             <p className="text-sm font-medium">
               {isLateForShift(selectedShiftForSubmit)
                 ? t("willBeMarkedLate", "ប្រព័ន្ធនឹងកត់ត្រាថាអ្នកចុះវត្តមានយឺត")
                 : t(
-                    "willBeMarkedPresent",
-                    "ប្រព័ន្ធនឹងកត់ត្រាថាអ្នកចុះវត្តមានទាន់",
-                  )}
+                  "willBeMarkedPresent",
+                  "ប្រព័ន្ធនឹងកត់ត្រាថាអ្នកចុះវត្តមានទាន់",
+                )}
             </p>
           </div>
 

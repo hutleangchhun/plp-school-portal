@@ -841,6 +841,14 @@ export const attendanceService = {
           gradeLevel: attendance.class.grade_level || attendance.class.gradeLevel,
           section: attendance.class.section || '',
           academicYear: attendance.class.academic_year || attendance.class.academicYear
+        } : null,
+        // Include shift info
+        shiftId: attendance.shift_id || attendance.shiftId || null,
+        shift: attendance.shift ? {
+          id: attendance.shift.id,
+          name: attendance.shift.name,
+          startTime: attendance.shift.start_time || attendance.shift.startTime,
+          endTime: attendance.shift.end_time || attendance.shift.endTime
         } : null
       };
     },
