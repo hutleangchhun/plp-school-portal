@@ -913,10 +913,10 @@ export default function TeacherSelfAttendance() {
                     </button>
                   </div>
                 </div>
-                <div className="">
+                <div className="overflow-x-auto">
                   <Table
                     enableSort={false}
-                    className="min-w-[520px]"
+                    className="min-w-[520px] sm:min-w-0 md:min-w-[800px] whitespace-nowrap"
                     emptyMessage={t(
                       "noCheckInsToday",
                       "មិនទាន់មានការចូលវត្តមានថ្ងៃនេះ",
