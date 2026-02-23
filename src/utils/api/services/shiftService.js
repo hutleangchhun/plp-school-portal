@@ -1,7 +1,7 @@
 import { attendanceApiClient, handleApiResponse } from '../client.js';
 import { ENDPOINTS } from '../config.js';
 
-// Uses the attendance server (localhost:8082 in dev, 192.168.155.90 in prod)
+// Uses the attendance server (localhost:8082 in dev, 192.168.155.92 in prod)
 const client = attendanceApiClient;
 
 export const shiftService = {

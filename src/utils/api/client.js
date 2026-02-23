@@ -552,7 +552,7 @@ export const tokenManager = {
 /**
  * Dedicated axios client for /attendance and /attendance-dashboard endpoints
  * Local:      http://localhost:8082
- * Production: http://192.168.155.90
+ * Production: http://192.168.155.92
  */
 const attendanceApiClient = axios.create({
   baseURL: getAttendanceApiBaseUrl(),

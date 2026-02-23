@@ -14,7 +14,7 @@ export const SERVICE_REGISTRY = {
   attendance: {
     development: '/api/v1',                     // Vite proxy → localhost:8082 (via /api/v1/attendance* rule)
     localhost: 'http://localhost:8082/api/v1', // production build served locally
-    production: '/api',             // nginx → 192.168.155.90 (via /api/v1/attendance* rule)
+    production: '/api',             // nginx → 192.168.155.92 (via /api/v1/attendance* rule)
   },
   graphql: {
     development: '/api/v1',
