@@ -86,7 +86,7 @@ const AdminUserAttendance = () => {
         // Vite will intercept both `/attendance` and the underlying `/socket.io` transport.
         const socket = io('/attendance', {
             auth: { token: `Bearer ${token}` },
-            transports: ['websocket'] // Force websocket to prevent Vite HTTP polling loops
+            transports: ['websocket', 'polling'] // Force websocket to prevent Vite HTTP polling loops
         });
 
         socket.on('connect', () => {
