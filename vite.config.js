@@ -38,6 +38,11 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
       },
+      '/api/v1/socket.io': {
+        target: 'http://localhost:8082',
+        ws: true,
+        changeOrigin: true,
+      },
       // Attendance namespace for WebSocket
       '/attendance': {
         target: 'http://localhost:8082',
@@ -57,6 +62,11 @@ export default defineConfig({
       },
       // GraphQL API endpoint (assuming it is on 8082, matching attendance log features)
       '/graphql': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/v1/graphql': {
         target: 'http://localhost:8082',
         changeOrigin: true,
         secure: false,

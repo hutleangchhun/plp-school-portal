@@ -8,8 +8,7 @@ import { PageLoader } from '../../components/ui/DynamicLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Badge } from '../../components/ui/Badge';
 import StatsCard from '../../components/ui/StatsCard';
-import { tokenManager } from '../../utils/api/client';
-import { io } from 'socket.io-client';
+
 import { Users, UserCheck, UserX, Clock, Clock4 } from 'lucide-react';
 import { getFullName } from '../../utils/usernameUtils';
 
@@ -21,21 +20,14 @@ const AdminUserAttendance = () => {
     const [stats, setStats] = useState({ total: 0, present: 0, absent: 0, late: 0, leave: 0 });
     const [logs, setLogs] = useState([]);
     const [initialLoading, setInitialLoading] = useState(true);
+    const [socketInstance, setSocketInstance] = useState(null);
 
     const fetchInitialData = async () => {
         try {
             clearError();
             startLoading('fetchAttendanceData', t('loadingData', 'Loading data...'));
 
-            // Use the attendance API base URL since GraphQL and the websocket live there
-            const { getAttendanceApiBaseUrl } = await import('../../utils/api/config');
-            let baseApiUrl = getAttendanceApiBaseUrl();
-
-            // Remove /api/v1 to get the root URL for GraphQL
-            const rootUrl = baseApiUrl.replace('/api/v1', '');
-            const graphqlUrl = `${rootUrl}/graphql`;
-
-            const token = tokenManager.getToken();
+            const { graphqlService } = await import('../../utils/api/services/graphqlService');
 
             const query = `
         query {
@@ -46,24 +38,11 @@ const AdminUserAttendance = () => {
         }
       `;
 
-            const response = await fetch(graphqlUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ query })
-            });
+            const data = await graphqlService.query(query);
 
-            const jsonResponse = await response.json();
-
-            if (jsonResponse.errors) {
-                throw new Error(jsonResponse.errors[0].message || 'GraphQL Error');
-            }
-
-            if (jsonResponse.data) {
-                setStats(jsonResponse.data.attendanceTodayStats || { total: 0, present: 0, absent: 0, late: 0, leave: 0 });
-                setLogs(jsonResponse.data.attendanceTodayLog || []);
+            if (data) {
+                setStats(data.attendanceTodayStats || { total: 0, present: 0, absent: 0, late: 0, leave: 0 });
+                setLogs(data.attendanceTodayLog || []);
             }
 
         } catch (err) {
@@ -79,56 +58,64 @@ const AdminUserAttendance = () => {
     useEffect(() => {
         fetchInitialData();
 
-        // Socket Initialization (Synchronous to avoid React StrictMode async disconnects on cached sockets)
-        const token = tokenManager.getToken();
+        const initializeSocket = async () => {
+            const { websocketService } = await import('../../utils/api/services/websocketService');
 
-        // Connect using the exact namespace as specified by the documentation.
-        // Vite will intercept both `/attendance` and the underlying `/socket.io` transport.
-        const socket = io('/attendance', {
-            auth: { token: `Bearer ${token}` },
-            transports: ['websocket', 'polling'] // Force websocket to prevent Vite HTTP polling loops
-        });
+            // Connect using the exact namespace as specified by the documentation.
+            const socket = websocketService.connect('/attendance');
 
-        socket.on('connect', () => {
-            console.log('Connected to /attendance namespace with Transport:', socket.io.engine.transport.name);
-            socket.emit('joinAttendanceLog');
-        });
-
-        // Debug every single event sent from the server
-        socket.onAny((eventName, ...args) => {
-            console.log(`[Socket Debug] Event received: '${eventName}'`, args);
-        });
-
-        socket.on('joinedAttendanceLog', (ack) => {
-            console.log('Successfully joined the backend tracking room:', ack);
-        });
-
-        socket.on('attendanceLog', (newEntry) => {
-            console.log('Received new attendance log:', newEntry);
-
-            // Prepend the new log to the list
-            setLogs((prev) => [newEntry, ...prev]);
-
-            // Update the stats incrementally
-            setStats((prev) => {
-                const status = (newEntry.status || '').toUpperCase();
-                return {
-                    ...prev,
-                    total: prev.total + 1,
-                    present: status === 'PRESENT' ? prev.present + 1 : prev.present,
-                    absent: status === 'ABSENT' ? prev.absent + 1 : prev.absent,
-                    late: status === 'LATE' ? prev.late + 1 : prev.late,
-                    leave: status === 'LEAVE' ? prev.leave + 1 : prev.leave,
-                };
+            socket.on('connect', () => {
+                console.log('Connected to /attendance namespace with Transport:', socket.io.engine.transport.name);
+                socket.emit('joinAttendanceLog');
             });
-        });
 
-        socket.on('connect_error', (err) => {
-            console.error('Socket connection error:', err);
-        });
+            // Debug every single event sent from the server
+            socket.onAny((eventName, ...args) => {
+                console.log(`[Socket Debug] Event received: '${eventName}'`, args);
+            });
+
+            socket.on('joinedAttendanceLog', (ack) => {
+                console.log('Successfully joined the backend tracking room:', ack);
+            });
+
+            socket.on('attendanceLog', (newEntry) => {
+                console.log('Received new attendance log:', newEntry);
+
+                // Prepend the new log to the list
+                setLogs((prev) => [newEntry, ...prev]);
+
+                // Update the stats incrementally
+                setStats((prev) => {
+                    const isLate = prev.checkInTime && new Date(prev.checkInTime).getHours() >= 8; // Simplified late check
+                    const currentStats = { ...prev };
+                    currentStats.total += 1;
+
+                    if (newEntry.status === 'present') {
+                        currentStats.present += 1;
+                        if (isLate) currentStats.late += 1;
+                    } else if (newEntry.status === 'absent') {
+                        currentStats.absent += 1;
+                    } else if (newEntry.status === 'leave') {
+                        currentStats.leave += 1;
+                    }
+                    return currentStats;
+                });
+            });
+
+            socket.on('connect_error', (err) => {
+                console.error('Socket connection error:', err);
+            });
+
+            // store socket in state to be accessible by cleanup
+            setSocketInstance(socket);
+        };
+
+        initializeSocket();
 
         return () => {
-            socket.disconnect();
+            if (socketInstance) {
+                socketInstance.disconnect();
+            }
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

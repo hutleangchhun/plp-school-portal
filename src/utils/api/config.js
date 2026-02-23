@@ -7,14 +7,24 @@
 // ─────────────────────────────────────────────────────────────────────────────
 export const SERVICE_REGISTRY = {
   main: {
-    development:  '/api/v1',                     // Vite proxy → localhost:8080
-    localhost:    'http://localhost:8080/api/v1', // production build served locally
-    production:   '/api',                        // nginx → 192.168.155.105
+    development: '/api/v1',                     // Vite proxy → localhost:8080
+    localhost: 'http://localhost:8080/api/v1', // production build served locally
+    production: '/api',                        // nginx → 192.168.155.105
   },
   attendance: {
-    development:  '/api/v1',                     // Vite proxy → localhost:8082 (via /api/v1/attendance* rule)
-    localhost:    'http://localhost:8082/api/v1', // production build served locally
-    production:   '/api',                        // nginx → 192.168.155.90 (via /api/attendance* rule)
+    development: '/api/v1',                     // Vite proxy → localhost:8082 (via /api/v1/attendance* rule)
+    localhost: 'http://localhost:8082/api/v1', // production build served locally
+    production: '/api/attendance',             // nginx → 192.168.155.90 (via /api/v1/attendance* rule)
+  },
+  graphql: {
+    development: '/api/v1',
+    localhost: 'http://localhost:8082/api/v1',
+    production: '/api/attendance',
+  },
+  websocket: {
+    development: '/api/v1',
+    localhost: 'http://localhost:8082/api/v1',
+    production: '/api/attendance',
   },
   // ── Add new services here ──────────────────────────────────────────────────
   // reports: {
@@ -44,6 +54,8 @@ export const getServiceBaseUrl = (serviceName) => {
 
 // Kept for backward compatibility
 export const getAttendanceApiBaseUrl = () => getServiceBaseUrl('attendance');
+export const getGraphqlBaseUrl = () => getServiceBaseUrl('graphql');
+export const getWebsocketBaseUrl = () => getServiceBaseUrl('websocket');
 
 const getApiBaseUrl = () => getServiceBaseUrl('main');
 
@@ -78,6 +90,12 @@ export const HTTPS_CONFIG = {
 };
 
 const ENDPOINTS = {
+  GRAPHQL: {
+    BASE: '/graphql',
+  },
+  WEBSOCKET: {
+    ATTENDANCE: '/attendance',
+  },
   AUTH: {
     LOGIN: '/auth/login',
     SELECT_ACCOUNT: '/auth/select-account',
