@@ -11,6 +11,8 @@ import StatsCard from '../../components/ui/StatsCard';
 
 import { Users, UserCheck, UserX, Clock, Clock4 } from 'lucide-react';
 import { getFullName } from '../../utils/usernameUtils';
+import { graphqlService } from '../../utils/api/services/graphqlService';
+import { websocketService } from '../../utils/api/services/websocketService';
 
 const AdminUserAttendance = () => {
     const { t } = useLanguage();
@@ -26,8 +28,6 @@ const AdminUserAttendance = () => {
         try {
             clearError();
             startLoading('fetchAttendanceData', t('loadingData', 'Loading data...'));
-
-            const { graphqlService } = await import('../../utils/api/services/graphqlService');
 
             const query = `
         query {
@@ -59,8 +59,6 @@ const AdminUserAttendance = () => {
         fetchInitialData();
 
         const initializeSocket = async () => {
-            const { websocketService } = await import('../../utils/api/services/websocketService');
-
             // Connect using the exact namespace as specified by the documentation.
             const socket = websocketService.connect('/attendance');
 

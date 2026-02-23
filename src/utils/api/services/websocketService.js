@@ -14,7 +14,7 @@ export const websocketService = {
      * @returns {import('socket.io-client').Socket} The initialized socket instance
      */
     connect(namespace = ENDPOINTS.WEBSOCKET.ATTENDANCE, options = {}) {
-        const websocketPath = `${getWebsocketBaseUrl()}/socket.io`;
+        const websocketPath = getWebsocketBaseUrl();
         const token = tokenManager.getToken();
 
         const defaultOptions = {
