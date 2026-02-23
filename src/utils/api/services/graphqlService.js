@@ -1,4 +1,4 @@
-import { getGraphqlBaseUrl } from '../config';
+import { getGraphqlBaseUrl, ENDPOINTS } from '../config';
 import { tokenManager } from '../client';
 
 /**
@@ -14,7 +14,7 @@ export const graphqlService = {
      * @throws {Error} If the response contains GraphQL errors
      */
     async query(query, variables = {}) {
-        const graphqlUrl = getGraphqlBaseUrl();
+        const graphqlUrl = `${getGraphqlBaseUrl()}${ENDPOINTS.GRAPHQL.BASE}`;
         const token = tokenManager.getToken();
 
         const response = await fetch(graphqlUrl, {
