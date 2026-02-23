@@ -19,8 +19,7 @@ export const websocketService = {
 
         const defaultOptions = {
             path: websocketPath,
-            auth: { token: `Bearer ${token}` },
-            transports: ['websocket', 'polling'] // Force websocket to prevent Vite HTTP polling loops
+            auth: { token: `Bearer ${token}` }
         };
 
         return io(namespace, { ...defaultOptions, ...options });
