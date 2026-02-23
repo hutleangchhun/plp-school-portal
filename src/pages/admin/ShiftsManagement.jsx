@@ -124,7 +124,7 @@ export default function ShiftsManagement() {
   const columns = [
     {
       key: "index",
-      header: "#",
+      header: "ល.រ",
       disableSort: true,
       render: (_, rowIndex) => (
         <span className="text-gray-500">{rowIndex + 1}</span>
@@ -132,7 +132,7 @@ export default function ShiftsManagement() {
     },
     {
       key: "name",
-      header: t("shiftName", "Name"),
+      header: t("shift", "Shift"),
       accessor: "name",
       render: (shift) => (
         <span className="font-medium text-gray-900">{shift.name}</span>
@@ -202,17 +202,14 @@ export default function ShiftsManagement() {
   ];
 
   return (
-    <PageTransition variant="fade">
-      <FadeInSection>
-        <div className="p-6">
+    <PageTransition variant="fade" className="flex-1 bg-gray-50">
+      <div className="p-4 sm:p-6">
+        <FadeInSection>
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Clock className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+              <div className="space-y-1">
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">
                   {t("shiftsManagement", "Shifts Management")}
                 </h1>
                 <p className="text-sm text-gray-500">
@@ -220,80 +217,88 @@ export default function ShiftsManagement() {
                 </p>
               </div>
             </div>
-            <Button onClick={handleOpenAdd} className="flex items-center gap-2">
+            <Button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-2"
+              size="sm"
+              variant="primary"
+            >
               <Plus className="w-4 h-4" />
               {t("addShift", "Add Shift")}
             </Button>
           </div>
+        </FadeInSection>
+        <FadeInSection>
+          <div>
+            {/* Table */}
+            <Table
+              columns={columns}
+              data={shifts}
+              loading={loading}
+              emptyIcon={Clock}
+              emptyMessage={t("noShifts", "No shifts found")}
+              emptyDescription={t("noShiftsDesc", "Create your first shift to get started")}
+              emptyActionLabel={t("addShift", "Add Shift")}
+              onEmptyAction={handleOpenAdd}
+              t={t}
+            />
+          </div>
 
-          {/* Table */}
-          <Table
-            columns={columns}
-            data={shifts}
-            loading={loading}
-            emptyIcon={Clock}
-            emptyMessage={t("noShifts", "No shifts found")}
-            emptyDescription={t("noShiftsDesc", "Create your first shift to get started")}
-            emptyActionLabel={t("addShift", "Add Shift")}
-            onEmptyAction={handleOpenAdd}
-            t={t}
+          {/* Add Modal */}
+          <Modal
+            isOpen={showAddModal}
+            onClose={() => setShowAddModal(false)}
+            title={t("addShift", "Add Shift")}
+            size="md"
+            footer={
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowAddModal(false)} size="sm">
+                  {t("cancel", "Cancel")}
+                </Button>
+                <Button onClick={handleCreate} disabled={submitting} size="sm">
+                  {submitting ? t("saving", "Saving...") : t("save", "Save")}
+                </Button>
+              </div>
+            }
+          >
+            <ShiftForm form={form} errors={formErrors} onChange={handleChange} t={t} />
+          </Modal>
+
+          {/* Edit Modal */}
+          <Modal
+            isOpen={showEditModal}
+            onClose={() => setShowEditModal(false)}
+            title={t("editShift", "Edit Shift")}
+            size="md"
+            footer={
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowEditModal(false)} size="sm">
+                  {t("cancel", "Cancel")}
+                </Button>
+                <Button onClick={handleUpdate} disabled={submitting} size="sm">
+                  {submitting ? t("saving", "Saving...") : t("save", "Save")}
+                </Button>
+              </div>
+            }
+          >
+            <ShiftForm form={form} errors={formErrors} onChange={handleChange} t={t} />
+          </Modal>
+
+          {/* Delete Confirm */}
+          <ConfirmDialog
+            isOpen={showDeleteDialog}
+            onClose={() => setShowDeleteDialog(false)}
+            onConfirm={handleDelete}
+            title={t("deleteShift", "Delete Shift")}
+            message={t(
+              "deleteShiftConfirm",
+              `Are you sure you want to delete "${selectedShift?.name}"? This action cannot be undone.`
+            )}
+            confirmText={t("delete", "Delete")}
+            confirmVariant="danger"
           />
-        </div>
-
-        {/* Add Modal */}
-        <Modal
-          isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          title={t("addShift", "Add Shift")}
-          size="md"
-          footer={
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAddModal(false)}>
-                {t("cancel", "Cancel")}
-              </Button>
-              <Button onClick={handleCreate} disabled={submitting}>
-                {submitting ? t("saving", "Saving...") : t("save", "Save")}
-              </Button>
-            </div>
-          }
-        >
-          <ShiftForm form={form} errors={formErrors} onChange={handleChange} t={t} />
-        </Modal>
-
-        {/* Edit Modal */}
-        <Modal
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          title={t("editShift", "Edit Shift")}
-          size="md"
-          footer={
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowEditModal(false)}>
-                {t("cancel", "Cancel")}
-              </Button>
-              <Button onClick={handleUpdate} disabled={submitting}>
-                {submitting ? t("saving", "Saving...") : t("save", "Save")}
-              </Button>
-            </div>
-          }
-        >
-          <ShiftForm form={form} errors={formErrors} onChange={handleChange} t={t} />
-        </Modal>
-
-        {/* Delete Confirm */}
-        <ConfirmDialog
-          isOpen={showDeleteDialog}
-          onClose={() => setShowDeleteDialog(false)}
-          onConfirm={handleDelete}
-          title={t("deleteShift", "Delete Shift")}
-          message={t(
-            "deleteShiftConfirm",
-            `Are you sure you want to delete "${selectedShift?.name}"? This action cannot be undone.`
-          )}
-          confirmText={t("delete", "Delete")}
-          confirmVariant="danger"
-        />
-      </FadeInSection>
+        </FadeInSection>
+      </div>
     </PageTransition>
   );
 }
@@ -312,9 +317,8 @@ function ShiftForm({ form, errors, onChange, t }) {
           value={form.name}
           onChange={onChange}
           placeholder={t("shiftNamePlaceholder", "e.g. Morning")}
-          className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.name ? "border-red-400" : "border-gray-300"
-          }`}
+          className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-400" : "border-gray-300"
+            }`}
         />
         {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
       </div>
@@ -330,9 +334,8 @@ function ShiftForm({ form, errors, onChange, t }) {
             name="startTime"
             value={form.startTime}
             onChange={onChange}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.startTime ? "border-red-400" : "border-gray-300"
-            }`}
+            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.startTime ? "border-red-400" : "border-gray-300"
+              }`}
           />
           {errors.startTime && <p className="mt-1 text-xs text-red-500">{errors.startTime}</p>}
         </div>
@@ -345,9 +348,8 @@ function ShiftForm({ form, errors, onChange, t }) {
             name="endTime"
             value={form.endTime}
             onChange={onChange}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.endTime ? "border-red-400" : "border-gray-300"
-            }`}
+            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.endTime ? "border-red-400" : "border-gray-300"
+              }`}
           />
           {errors.endTime && <p className="mt-1 text-xs text-red-500">{errors.endTime}</p>}
         </div>

@@ -1983,4 +1983,16 @@ export const en = {
   // Exam Score Templates
   applyTemplateFirst: "This class doesn't have a template applied yet. Please go to Template Management to create and apply a template.",
   goToTemplateManagement: 'Go to Template Management',
+
+
+  //shift management
+  shiftsManagement: 'Shifts Management',
+  shiftsManagementDesc: 'Manage attendance shift schedules',
+  addShift: 'Add Shift',
+  editShift: 'Edit Shift',
+  deleteShift: 'Delete Shift',
+  deleteShiftConfirm: 'Are you sure you want to delete "{name}"? This action cannot be undone.',
+  noShifts: 'No shifts found',
+  noShiftsDesc: 'Create your first shift to get started',
+  shift: 'Shift',
 };  

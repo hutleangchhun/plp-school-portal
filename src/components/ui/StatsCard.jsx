@@ -31,6 +31,7 @@ export default function StatsCard({
   titleColor = 'text-gray-600',
   enhanced = false,
   hoverColor = 'hover:border-blue-200',
+  gradientFrom = 'from-blue-500',
   gradientTo = 'to-blue-600',
   responsive = false,
   clickable = false,
@@ -55,7 +56,7 @@ export default function StatsCard({
         </div>
       );
     }
-    
+
     // Simple mode loading
     return (
       <div className={`bg-white rounded-lg shadow p-6 ${className}`}>

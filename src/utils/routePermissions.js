@@ -179,6 +179,10 @@ export const routePermissions = {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'ShiftsManagement'
   },
+  '/admin/user-attendance': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'AdminUserAttendance'
+  },
   '/multi-role-dashboard': {
     allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR, ROLES.RESTRICTED_ROLES_ONLY],
     component: 'MultiRoleDashboardPage'
@@ -592,6 +596,10 @@ export const getNavigationItems = (user, t) => {
         {
           name: t('shiftsManagement', 'Shifts Management'),
           href: '/admin/shifts',
+        },
+        {
+          name: t('userAttendanceTrack', 'User Attendance Track'),
+          href: '/admin/user-attendance',
         },
       ],
     },

@@ -20,6 +20,7 @@ import UserRegistrationDashboard from './pages/admin/UserRegistrationDashboard';
 import OfficerRegistration from './pages/admin/OfficerRegistration';
 import SchoolManagement from './pages/admin/SchoolManagement';
 import ShiftsManagement from './pages/admin/ShiftsManagement';
+import AdminUserAttendance from './pages/admin/AdminUserAttendance';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -337,6 +338,15 @@ function AppContent() {
               </ProtectedRoute>
             }>
               <Route index element={<ShiftsManagement />} />
+            </Route>
+
+            {/* Admin User Attendance route - role ID 1 only */}
+            <Route path="admin/user-attendance" element={
+              <ProtectedRoute path="/admin/user-attendance" user={user}>
+                <DashboardLayout user={user} onLogout={handleLogout} />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminUserAttendance />} />
             </Route>
 
             <Route path="students" element={

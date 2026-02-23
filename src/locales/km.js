@@ -2149,6 +2149,18 @@ export const km = {
   districts: 'ក្រុង/ស្រុក/ខណ្ឌ',
   schools: 'សាលារៀន',
   communes: 'ឃុំ/សង្កាត់',
+
+
+  //shift management
+  shiftsManagement: 'គ្របគ្រងវេនបង្រៀន',
+  shiftsManagementDesc: 'គ្របគ្រងវេនបង្រៀនរបស់បុគ្គលិក',
+  shift: 'វេន',
+  addShift: 'បន្ថែមវេន',
+  editShift: 'កែប្រែវេន',
+  deleteShift: 'លុបវេន',
+  deleteShiftConfirm: 'តើអ្នកប្រាកដថាចង់លុប "{name}" មែនទេ? ការលុបនេះមិនអាចកែប្រែបានទេ។',
+  noShifts: 'មិនមានវេនទេ',
+  noShiftsDesc: 'បង្កើតវេនដំបូងរបស់អ្នកដើម្បីចាប់ផ្តើម',
 };
 
 // Inserted translations - Teacher Active/Inactive Status
