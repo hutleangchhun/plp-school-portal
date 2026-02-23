@@ -17,9 +17,15 @@ export const websocketService = {
         const websocketPath = `${getWebsocketBaseUrl()}/socket.io`;
         const token = tokenManager.getToken();
 
+        // Production domain is behind a government SSL gateway that blocks WebSocket upgrades.
+        // Force polling-only to avoid noisy console errors; real-time still works via long-polling.
+        const isProd = typeof window !== 'undefined' &&
+            ['plp-sms.moeys.gov.kh', '192.168.155.115'].includes(window.location.hostname);
+
         const defaultOptions = {
             path: websocketPath,
-            auth: { token: `Bearer ${token}` }
+            auth: { token: `Bearer ${token}` },
+            transports: isProd ? ['polling'] : ['polling', 'websocket'],
         };
 
         return io(namespace, { ...defaultOptions, ...options });
