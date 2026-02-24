@@ -186,15 +186,16 @@ export default function TeacherAttendance() {
       startLoading(loadingKey, t('loadingTeachers', 'Loading teachers...'));
 
       // ✅ Single optimized call to fetch teachers + settings combined
-      console.log(`🚀 Fetching teachers with attendance settings from: /teachers/attendance-settings/${schoolId}`);
-      const response = await attendanceService.getTeacherAttendanceSettings(schoolId, {
+      console.log(`🚀 Fetching teachers with attendance settings from: /teacher-settings`);
+      const response = await teacherSettingsService.getTeacherSettingsBySchool({
+        schoolId,
         search: _searchQuery.trim() || '',
         page: pageNum,
         limit
       });
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch teacher attendance settings');
+        throw new Error(response.error || 'Failed to fetch teacher settings');
       }
 
       // Update pagination info from API response
@@ -310,8 +311,8 @@ export default function TeacherAttendance() {
             const recordTime = record.checkInTime
               ? new Date(record.checkInTime)
               : record.createdAt
-              ? new Date(record.createdAt)
-              : null;
+                ? new Date(record.createdAt)
+                : null;
 
             const recordHour = recordTime ? recordTime.getHours() : 12;
             const shift =
@@ -321,10 +322,10 @@ export default function TeacherAttendance() {
               status: record.status?.toUpperCase() || 'PRESENT',
               time: recordTime
                 ? recordTime.toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true
-                  })
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true
+                })
                 : null,
               id: record.id,
               createdAt: record.createdAt,
@@ -471,8 +472,9 @@ export default function TeacherAttendance() {
       });
 
       // Fetch ALL teachers with limit 100 for export (not paginated)
-      console.log('Fetching all teachers for export...');
-      const allTeachersResponse = await teacherService.getTeachersBySchool(schoolId, {
+      console.log('Fetching all teachers for export using teacher settings...');
+      const allTeachersResponse = await teacherSettingsService.getTeacherSettingsBySchool({
+        schoolId,
         limit: 100,
         page: 1
       });
@@ -1164,9 +1166,9 @@ export default function TeacherAttendance() {
                                     const recordBadgeInfo = getBadgeInfo(record.status);
                                     const shift = record.shift ? (
                                       record.shift === 'MORNING' ? t('morning', 'ព្រឹក') :
-                                      record.shift === 'NOON' ? t('noon', 'ថ្ងៃត្រង់') :
-                                      record.shift === 'AFTERNOON' ? t('afternoon', 'រសៀល') :
-                                      ''
+                                        record.shift === 'NOON' ? t('noon', 'ថ្ងៃត្រង់') :
+                                          record.shift === 'AFTERNOON' ? t('afternoon', 'រសៀល') :
+                                            ''
                                     ) : '';
                                     const className = record.className || (record.classId ? `${t('class', 'ថ្នាក់')} ${record.classId}` : '');
                                     const checkInTime = record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-US', {
@@ -1222,9 +1224,9 @@ export default function TeacherAttendance() {
                                           <div className="text-gray-700 text-xs mt-1">
                                             <span className="font-semibold">{t('approvalStatus', 'ស្ថានភាពអនុម័ត')}:</span> {
                                               record.approvalStatus === 'APPROVED' ? t('approved', 'បានអនុម័ត') :
-                                              record.approvalStatus === 'PENDING' ? t('pending', 'កំពុងរង់ចាំ') :
-                                              record.approvalStatus === 'REJECTED' ? t('rejected', 'បានបដិសេធ') :
-                                              record.approvalStatus
+                                                record.approvalStatus === 'PENDING' ? t('pending', 'កំពុងរង់ចាំ') :
+                                                  record.approvalStatus === 'REJECTED' ? t('rejected', 'បានបដិសេធ') :
+                                                    record.approvalStatus
                                             }
                                           </div>
                                         )}
@@ -1270,9 +1272,8 @@ export default function TeacherAttendance() {
                             return (
                               <td
                                 key={idx}
-                                className={`px-3 py-3 text-center ${isToday(date) ? 'cursor-pointer hover:bg-blue-100' : ''} transition-colors ${
-                                  isCurrentDay ? 'bg-blue-50' : isWeekendDay ? 'bg-gray-50' : ''
-                                }`}
+                                className={`px-3 py-3 text-center ${isToday(date) ? 'cursor-pointer hover:bg-blue-100' : ''} transition-colors ${isCurrentDay ? 'bg-blue-50' : isWeekendDay ? 'bg-gray-50' : ''
+                                  }`}
                                 onClick={() => {
                                   // Allow updating attendance only for today
                                   if (isToday(date)) {

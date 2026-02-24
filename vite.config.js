@@ -58,6 +58,10 @@ export default defineConfig({
       '/api/v1/shifts': {
         target: 'http://localhost:8082',
         changeOrigin: true,
+      },
+      '/api/v1/teacher-settings': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
         secure: false
       },
       '/api/v1/classes/teacher-class': {

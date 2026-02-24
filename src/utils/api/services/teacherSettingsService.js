@@ -1,4 +1,4 @@
-import apiClient from '../client';
+import apiClient, { attendanceApiClient } from '../client';
 
 /**
  * Teacher Settings Service
@@ -270,7 +270,6 @@ const teacherSettingsService = {
       console.log('Bulk update request:', { teachers });
       console.log('Bulk update response:', response);
 
-      // apiClient already unwraps response.data
       return {
         success: true,
         data: response || {}
@@ -278,6 +277,38 @@ const teacherSettingsService = {
     } catch (error) {
       console.error('Error bulk updating teacher settings:', error);
       throw error;
+    }
+  },
+
+  /**
+   * Get teacher settings by school
+   * @param {Object} params - Query parameters including schoolId, page, limit
+   * @returns {Promise<Object>} Teacher settings response
+   */
+  async getTeacherSettingsBySchool(params) {
+    try {
+      const { schoolId, page = 1, limit = 10, search = '' } = params;
+      const queryParams = new URLSearchParams();
+
+      if (schoolId) queryParams.append('schoolId', schoolId);
+      if (page) queryParams.append('page', page);
+      if (limit) queryParams.append('limit', limit);
+      if (search) queryParams.append('search', search);
+
+      const response = await attendanceApiClient.get(`/teacher-settings?${queryParams.toString()}`);
+
+      return {
+        success: true,
+        data: response.data || response || [],
+        pagination: response.pagination || null
+      };
+    } catch (error) {
+      console.error('Error fetching teacher settings by school:', error);
+      return {
+        success: false,
+        data: [],
+        error: error.message
+      };
     }
   }
 };
