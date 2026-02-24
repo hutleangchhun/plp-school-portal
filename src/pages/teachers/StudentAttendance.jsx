@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button';
 import Dropdown from '../../components/ui/Dropdown';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import { studentService } from '../../utils/api/services/studentService';
-import { teacherService } from '../../utils/api/services/teacherService';
+import { classService } from '../../utils/api/services/classService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { getFullName } from '../../utils/usernameUtils';
@@ -46,28 +46,7 @@ export default function TeacherAttendance({ user }) {
   const prevClassIdRef = useRef(selectedClassId);
   const prevDateRef = useRef(selectedDate);
 
-  // Update selected date to current date when component mounts or becomes visible
-  useEffect(() => {
-    const updateToCurrentDate = () => {
-      setSelectedDate(new Date());
-    };
-
-    // Update immediately
-    updateToCurrentDate();
-
-    // Also update when page becomes visible (handles overnight tab switching)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        updateToCurrentDate();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
+  // Date is initialized once in state: const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   const attendanceStatuses = [
     { value: 'PRESENT', label: t('present', 'Present'), icon: Check, color: 'green', bgColor: 'bg-green-100', textColor: 'text-green-600', borderColor: 'green' },
@@ -132,7 +111,7 @@ export default function TeacherAttendance({ user }) {
         }
 
         console.log('🎓 Fetching classes for teacher:', teacherId);
-        const response = await teacherService.getTeacherClasses(teacherId);
+        const response = await classService.getTeacherClasses(teacherId);
 
         if (mounted && response.success && response.data?.length > 0) {
           setClasses(response.data || []);
@@ -180,131 +159,75 @@ export default function TeacherAttendance({ user }) {
 
         setStudentsLoading(true);
 
-        // Fetch students in the class with pagination
-        console.log('Fetching students for classId:', selectedClassId, 'page:', currentPage);
-        const studentsResponse = await studentService.getMyStudents({
-          classId: selectedClassId,
-          page: currentPage,
-          limit: studentsPerPage
-        });
+        const selectedDateStr = formatDateToString(selectedDate);
+        console.log('Fetching unified attendance for classId:', selectedClassId, 'page:', currentPage);
 
-        console.log('Students API response:', studentsResponse);
+        const attendanceResponse = await attendanceService.getClassAttendance(
+          selectedClassId,
+          selectedDateStr,
+          { page: currentPage, limit: studentsPerPage }
+        );
 
         if (!mounted) return;
 
-        if (studentsResponse.success) {
-          const studentsList = studentsResponse.data || [];
-          // Extract pagination info from the response
-          const paginationInfo = studentsResponse.pagination || {};
-          const total = paginationInfo.total || studentsList.length;
-          const pages = paginationInfo.pages || Math.ceil(total / studentsPerPage);
+        if (attendanceResponse.success) {
+          const records = attendanceResponse.data || [];
 
-          console.log('=== PAGINATION DEBUG ===');
-          console.log('Full API Response:', studentsResponse);
-          console.log('Pagination Info:', paginationInfo);
-          console.log('Students List Length:', studentsList.length);
-          console.log('Total from API:', total);
-          console.log('Pages from API:', pages);
-          console.log('Current Page:', currentPage);
-          console.log(`Loaded ${studentsList.length} students for attendance (page ${currentPage} of ${pages}, total: ${total})`);
-          setStudents(studentsList);
+          const paginationInfo = attendanceResponse.pagination || {};
+          const total = paginationInfo.total || records.length;
+          const pages = paginationInfo.totalPages || Math.ceil(total / studentsPerPage);
+
+          console.log(`Loaded ${records.length} students/attendance for page ${currentPage} of ${pages}, total: ${total}`);
+
           setTotalStudents(total);
           setTotalPages(pages);
 
-          // Fetch existing attendance for this date and class
-          const selectedDateStr = formatDateToString(selectedDate);
-          console.log('=== ATTENDANCE REQUEST ===');
-          console.log('Selected Date Object:', selectedDate);
-          console.log('Selected Date String (formatted):', selectedDateStr);
-          console.log('Current date (now):', formatDateToString(new Date()));
-          console.log('Class ID:', selectedClassId);
+          // Build a unified students array from the populated 'user' object in each record.
+          const studentsList = records.map(record => ({
+            ...record.user,
+            userId: record.user.id
+          }));
 
-          const attendanceResponse = await attendanceService.getAttendance({
-            classId: selectedClassId,
-            date: selectedDateStr,
-            page: 1,
-            limit: 100 // Set very high limit to get all attendance records
-          });
+          setStudents(studentsList);
 
-          console.log('=== ATTENDANCE RESPONSE ===');
-          console.log('Total records received:', attendanceResponse.data?.length);
-          console.log('Records by date:', attendanceResponse.data?.reduce((acc, record) => {
-            acc[record.date] = (acc[record.date] || 0) + 1;
-            return acc;
-          }, {}));
-          console.log('Sample record:', attendanceResponse.data?.[0]);
-          console.log('Full response:', attendanceResponse);
-
-          if (!mounted) return;
-
-          // Build attendance map
           const attendanceMap = {};
           const existingMap = {};
 
-          if (attendanceResponse.success && attendanceResponse.data) {
-            // WORKAROUND: Filter by date on frontend since backend might not filter correctly
-            const filteredRecords = attendanceResponse.data.filter(record => {
-              return record.date === selectedDateStr;
-            });
+          records.forEach(record => {
+            if (!record.user || !record.user.id) return;
 
-            console.log(`Filtered ${filteredRecords.length} records out of ${attendanceResponse.data.length} for date ${selectedDateStr}`);
-            console.log('Filtered records:', filteredRecords);
-
-            filteredRecords.forEach(record => {
-              // Normalize userId to number for consistent comparison
-              const studentUserId = Number(record.userId);
-              console.log('Loading attendance record:', {
-                rawRecord: record,
-                userId: studentUserId,
-                status: record.status,
-                reason: record.reason,
-                date: record.date
-              });
+            const studentUserId = Number(record.user.id);
+            if (record.id) {
+              existingMap[studentUserId] = record.id;
+            }
+            if (record.status) {
               attendanceMap[studentUserId] = {
                 status: record.status,
                 reason: record.reason || ''
               };
-              existingMap[studentUserId] = record.id; // Store attendance record ID for updates
-            });
-          }
+            }
+          });
 
-          console.log('Attendance map after loading from API:', attendanceMap);
-
-          console.log('=== ATTENDANCE MERGE DEBUG ===');
-          console.log('Attendance from API (attendanceMap):', attendanceMap);
-          // Merge with existing attendance state to preserve selections from other pages
+          // Merge with existing attendance state to preserve pending selections from other pages
           setAttendance(prev => {
-            console.log('Previous attendance state:', prev);
             const merged = { ...prev };
 
-            // Add students from current page
             studentsList.forEach(student => {
-              const studentUserId = Number(student.userId || student.id);
-
-              // PRIORITY ORDER:
-              // 1. If user already made a local change (status !== null), keep it
-              // 2. Otherwise, use API data if available
-              // 3. Otherwise, initialize as null
+              const studentUserId = Number(student.userId);
 
               if (prev[studentUserId] && prev[studentUserId].status !== null) {
-                // Keep local changes - don't overwrite with API data
-                // User already selected a status (could be different from API)
-                console.log(`Preserving local change for user ${studentUserId}:`, prev[studentUserId]);
+                // Keep local unsaved changes
               } else if (attendanceMap[studentUserId]) {
-                // No local change yet, use API data
+                // Pre-fill existing API status
                 merged[studentUserId] = attendanceMap[studentUserId];
               } else {
-                // No local change and no API data, initialize
-                merged[studentUserId] = {
-                  status: null,
-                  reason: ''
-                };
+                // Initialize empty for unmarked students
+                merged[studentUserId] = { status: null, reason: '' };
               }
             });
-
-            console.log('Final merged attendance state:', merged);
             return merged;
           });
+
           setExistingAttendance(prev => ({
             ...prev,
             ...existingMap
@@ -479,18 +402,20 @@ export default function TeacherAttendance({ user }) {
       setStudentsLoading(true);
 
       // Fetch ALL students from the class (not just current page)
-      const allStudentsResponse = await studentService.getMyStudents({
-        classId: selectedClassId,
-        page: 1,
-        limit: totalStudents || 1000 // Fetch all students at once
-      });
+      const selectedDateStr = formatDateToString(selectedDate);
+      const allStudentsResponse = await attendanceService.getClassAttendance(
+        selectedClassId,
+        selectedDateStr,
+        { page: 1, limit: totalStudents || 1000 } // Fetch all students at once
+      );
 
       if (allStudentsResponse.success && allStudentsResponse.data) {
         const newAttendance = { ...attendance };
 
         // Mark ALL students as present
-        allStudentsResponse.data.forEach(student => {
-          const studentUserId = student.userId || student.id;
+        allStudentsResponse.data.forEach(record => {
+          if (!record.user || !record.user.id) return;
+          const studentUserId = record.user.id;
           newAttendance[studentUserId] = {
             status: 'PRESENT',
             reason: ''

@@ -213,6 +213,7 @@ const ENDPOINTS = {
   },
   ATTENDANCE: {
     BASE: '/attendance',
+    CLASS_ATTENDANCE: (classId) => `/attendance/class/${classId}`,
     BULK_QUEUE: '/attendance/bulk/queue',
     BULK_STATUS: (jobId) => `/attendance/bulk/status/${jobId}`,
     QUEUE_LENGTH: '/attendance/bulk/queue-length',

@@ -84,6 +84,42 @@ export const attendanceService = {
   },
 
   /**
+   * Get comprehensive class attendance (includes all students in the class, with their attendance records if available)
+   * @param {string|number} classId - The class ID
+   * @param {string} date - The date to fetch for (YYYY-MM-DD)
+   * @param {Object} params - Query parameters for pagination
+   * @returns {Promise<Object>} Response with unified class attendance data
+   */
+  async getClassAttendance(classId, date, params = {}) {
+    const { page = 1, limit = 100 } = params;
+    const queryParams = { date, page, limit };
+
+    console.log(`=== CLASS ATTENDANCE REQUEST for class ${classId} on ${date} ===`);
+
+    const response = await handleApiResponse(() =>
+      attendanceClient.get(ENDPOINTS.ATTENDANCE.CLASS_ATTENDANCE(classId), { params: queryParams })
+    );
+
+    const d = response?.data;
+    const list = Array.isArray(d?.data) ? d.data : (Array.isArray(d) ? d : []);
+
+    const pagination = d?.pagination || {
+      page: d?.page ?? page,
+      limit: d?.limit ?? limit,
+      total: d?.total ?? list.length,
+      totalPages: d?.totalPages ?? Math.max(1, Math.ceil((d?.total ?? list.length) / (d?.limit ?? limit)))
+    };
+
+    // Keep the raw records as they contain populated 'user' and 'id' fields.
+    // The UI handles distinguishing between existing and missing records natively.
+    return {
+      success: true,
+      data: list,
+      pagination
+    };
+  },
+
+  /**
    * Get attendance by ID
    * @param {string|number} attendanceId - The ID of the attendance record to retrieve
    * @returns {Promise<Object>} Attendance data
