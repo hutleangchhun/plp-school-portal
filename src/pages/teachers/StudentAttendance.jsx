@@ -636,7 +636,7 @@ export default function TeacherAttendance({ user }) {
           {/* Responsive Header Row - Mobile Only */}
 
 
-          <div className="flex gap-2 w-full pb-2 border-t border-gray-100 lg:hidden">
+          <div className="flex gap-2 w-full pb-4 border-t border-gray-100 lg:hidden">
             <Button
               onClick={handleMarkAllPresent}
               variant="outline"
@@ -927,9 +927,9 @@ export default function TeacherAttendance({ user }) {
                   const hasStatus = studentAttendance.status !== null;
 
                   return (
-                    <div key={studentUserId} className="bg-white rounded-sm border border-blue-300 shadow-sm">
+                    <div key={studentUserId} className="bg-white rounded-sm border shadow-sm">
                       {/* Student Name */}
-                      <div className="font-bold text-sm text-blue-800 mb-3 px-4 py-3 bg-blue-100">
+                      <div className="font-bold text-sm text-gray-700 mb-3 px-4 py-3 border-b-2 border-gray-200">
                         {getFullName(student, student.username)}
                       </div>
 
@@ -963,7 +963,7 @@ export default function TeacherAttendance({ user }) {
 
                       {/* Reason Input */}
                       {(studentAttendance.status === 'ABSENT' || studentAttendance.status === 'LATE' || studentAttendance.status === 'LEAVE') && (
-                        <div className='px-4 pb-2'>
+                        <div className='px-4 pb-4'>
                           <label className="block text-xs font-medium text-gray-700 mb-2">
                             {t('reason', 'Reason')}
                           </label>
