@@ -16,7 +16,7 @@ import Table from "../../components/ui/Table";
 import Modal from "../../components/ui/Modal";
 import Dropdown from "../../components/ui/Dropdown";
 import { attendanceService } from "../../utils/api/services/attendanceService";
-import { teacherService } from "../../utils/api/services/teacherService";
+import { classService } from "../../utils/api/services/classService";
 import shiftService from "../../utils/api/services/shiftService";
 import { canAccessTeacherFeatures } from "../../utils/routePermissions";
 import { formatClassIdentifier, formatTime, formatDuration } from "../../utils/helpers";
@@ -85,17 +85,17 @@ export default function TeacherSelfAttendance() {
     try {
       setLoadingClasses(true);
       console.log("🔍 Fetching teacher classes for userId:", userId);
-      const response = await teacherService.getTeacherClasses(userId);
+      const response = await classService.getTeacherClasses(userId);
 
-      console.log("📋 Teacher classes response from teacherService:", {
+      console.log("📋 Teacher classes response from classService:", {
         success: response.success,
         dataLength: response.data?.length,
         classesLength: response.classes?.length,
         fullResponse: response,
       });
 
-      // Use the already formatted classes from teacherService
-      // teacherService.getTeacherClasses returns { success, data: [], classes: [] }
+      // Use the already formatted classes from classService
+      // classService.getTeacherClasses returns { success, data: [], classes: [] }
       let teacherClasses = [];
 
       if (response.success) {
@@ -126,7 +126,7 @@ export default function TeacherSelfAttendance() {
       }
     } catch (err) {
       console.error(
-        "❌ Error fetching teacher classes from teacherService:",
+        "❌ Error fetching teacher classes from classService:",
         err,
       );
       setClasses([]);

@@ -13,6 +13,7 @@ import { Users, UserCheck, UserX, Clock, Clock4 } from 'lucide-react';
 import { getFullName } from '../../utils/usernameUtils';
 import { graphqlService } from '../../utils/api/services/graphqlService';
 import { websocketService } from '../../utils/api/services/websocketService';
+import { Button } from '@/components/ui/Button';
 
 const AdminUserAttendance = () => {
     const { t } = useLanguage();
@@ -180,28 +181,29 @@ const AdminUserAttendance = () => {
 
     return (
         <PageTransition variant="fade" className="flex-1 bg-gray-50">
-            <div className="p-4 sm:p-6 space-y-6">
-
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 border-l-4 border-blue-600 pl-3">
-                            {t('userAttendanceTrack', 'User Attendance Tracking')}
-                        </h1>
-                        <p className="text-sm text-gray-500 mt-1 pl-4">
-                            {t('realTimeAttendanceDescription', 'Real-time overview of staff attendance today')}
-                        </p>
+            <div className="p-4 sm:p-6 space-y-2">
+                <FadeInSection>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                        <div className='border-l-4 border-blue-600 pl-3'>
+                            <h1 className="text-2xl font-bold text-gray-900">
+                                {t('userAttendanceTrack', 'User Attendance Tracking')}
+                            </h1>
+                            <p className="text-sm text-gray-500 mt-1">
+                                {t('realTimeAttendanceDescription', 'Real-time overview of staff attendance today')}
+                            </p>
+                        </div>
+                        <Button
+                            onClick={fetchInitialData}
+                            size="sm"
+                            variant="primary"
+                        >
+                            {t('refreshData', 'Refresh Data')}
+                        </Button>
                     </div>
-                    <button
-                        onClick={fetchInitialData}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-                    >
-                        {t('refreshData', 'Refresh Data')}
-                    </button>
-                </div>
-
+                </FadeInSection>
                 {/* Stats Section */}
                 <FadeInSection delay={50}>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                         <StatsCard
                             title={t('totalAttendance', 'Total Today')}
                             value={stats.total}
@@ -210,47 +212,42 @@ const AdminUserAttendance = () => {
                             gradientTo="to-blue-600"
                             hoverColor="hover:border-blue-200"
                             responsive={true}
-                            icon={Users}
                         />
                         <StatsCard
-                            title={t('presentCount', 'Present')}
+                            title={t('present', 'Present')}
                             value={stats.present}
                             enhanced={true}
                             gradientFrom="from-emerald-500"
                             gradientTo="to-emerald-600"
                             hoverColor="hover:border-emerald-200"
                             responsive={true}
-                            icon={UserCheck}
                         />
                         <StatsCard
-                            title={t('lateCount', 'Late')}
+                            title={t('late', 'Late')}
                             value={stats.late}
                             enhanced={true}
                             gradientFrom="from-orange-500"
                             gradientTo="to-orange-600"
                             hoverColor="hover:border-orange-200"
                             responsive={true}
-                            icon={Clock}
                         />
                         <StatsCard
-                            title={t('leaveCount', 'Leave')}
+                            title={t('leave', 'Leave')}
                             value={stats.leave}
                             enhanced={true}
                             gradientFrom="from-purple-500"
                             gradientTo="to-purple-600"
                             hoverColor="hover:border-purple-200"
                             responsive={true}
-                            icon={Clock4}
                         />
                         <StatsCard
-                            title={t('absentCount', 'Absent/No Show')}
+                            title={t('absent', 'Absent/No Show')}
                             value={stats.absent}
                             enhanced={true}
                             gradientFrom="from-rose-500"
                             gradientTo="to-rose-600"
                             hoverColor="hover:border-rose-200"
                             responsive={true}
-                            icon={UserX}
                         />
                     </div>
                 </FadeInSection>
@@ -266,8 +263,8 @@ const AdminUserAttendance = () => {
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto max-h-[600px]">
-                                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                    <thead className="bg-gray-50/80 sticky top-0 shadow-sm">
+                                <table className="min-w-full text-sm">
+                                    <thead className="bg-white sticky top-0">
                                         <tr>
                                             <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('time', 'Time')}</th>
                                             <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('name', 'Name')}</th>

@@ -687,6 +687,43 @@ export const classService = {
       console.error(`Error fetching classes for grade level ${gradeLevel}:`, error);
       throw error;
     }
+  },
+
+  /**
+   * Get classes for a specific teacher
+   * @param {string|number} teacherId - The ID of the teacher
+   * @param {Object} params - Query parameters (page, limit, etc.)
+   * @returns {Promise<Object>} Response with teacher's classes data
+   */
+  async getTeacherClasses(teacherId, params = {}) {
+    try {
+      if (!teacherId) {
+        throw new Error('Teacher ID is required');
+      }
+
+      const queryParams = { teacherId, ...params };
+
+      const response = await handleApiResponse(() =>
+        apiClient_.get(ENDPOINTS.CLASSES.TEACHER_CLASSES, { params: queryParams })
+      );
+
+      const payload = response?.data || response || {};
+      const classes = Array.isArray(payload.data) ? payload.data : (Array.isArray(payload) ? payload : []);
+
+      return {
+        success: true,
+        data: classes,
+        total: payload.total || classes.length,
+        pagination: {
+          page: payload.page || 1,
+          limit: payload.limit || classes.length,
+          totalPages: payload.totalPages || 1
+        }
+      };
+    } catch (error) {
+      console.error(`Error fetching classes for teacher ${teacherId}:`, error);
+      throw error;
+    }
   }
 };
 

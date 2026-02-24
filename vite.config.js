@@ -32,23 +32,44 @@ export default defineConfig({
       clientPort: 3001, // Important for HMR to work on network
     },
     proxy: {
-      // WebSocket — proxied through nginx LB on .92
+      // WebSocket — Proxied to Local Attendance Server (Port 8082)
       '/api/v1/socket.io': {
-        target: 'http://192.168.155.92',
+        target: 'http://localhost:8082',
         ws: true,
-        changeOrigin: true,
+        changeOrigin: true
       },
-      // GraphQL
+      // GraphQL — Proxied to Local Attendance Server (Port 8082)
       '/api/v1/graphql': {
-        target: 'http://192.168.155.92',
+        target: 'http://localhost:8082',
         changeOrigin: true,
-        secure: false,
+        secure: false
       },
-      // All REST API
-      '/api/v1': {
-        target: 'http://192.168.155.92',
+      // Attendance REST Routes — Proxied to Local Attendance Server (Port 8082)
+      '/api/v1/attendance': {
+        target: 'http://localhost:8082',
         changeOrigin: true,
-        secure: false,
+        secure: false
+      },
+      '/api/v1/attendance-dashboard': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+        secure: false
+      },
+      '/api/v1/shifts': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+        secure: false
+      },
+      '/api/v1/classes/teacher-class': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+        secure: false
+      },
+      // All other REST API — Proxied to Main Local Backend (Port 8080)
+      '/api/v1': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false
       },
     },
   },

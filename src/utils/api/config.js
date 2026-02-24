@@ -197,6 +197,7 @@ const ENDPOINTS = {
     MASTER_CLASSES: (schoolId) => `/master-class/${schoolId}/masterclasses`,
     CLASS_BY_SCHOOL: (schoolId) => `/classes/${schoolId}`,
     TRANSFER_STUDENT_MASTERCLASS: '/master-class/transfer-student-masterclass',
+    TEACHER_CLASSES: '/classes/teacher-class',
   },
   SUBJECTS: {
     BASE: '/subjects',
