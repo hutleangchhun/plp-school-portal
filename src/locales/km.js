@@ -680,6 +680,7 @@ export const km = {
   pleaseWait: 'សូមរង់ចាំ យើងកំពុងដំណើរការបញ្ជូនទិន្នន័យរបស់អ្នក...',
   almostDone: 'ជិតរួចរាល់ហើយ...',
   processing: 'កំពុងបញ្ជូន...',
+  manageAttendanceFilters: 'គ្រប់គ្រងតម្រងវត្តមាន',
 
 
   // Teacher Information

@@ -81,7 +81,7 @@ export function DatePickerWithDropdowns({
         <Button
           variant="outline"
           className={cn(
-            "w-full justify-start text-left font-normal text-xs py-1 h-auto min-h-[28px]",
+            "w-full justify-start text-left font-normal text-sm px-4 py-2 h-auto min-h-[38px]",
             !dateValue && "text-muted-foreground",
             disabled && "cursor-not-allowed opacity-50",
             className
@@ -89,8 +89,8 @@ export function DatePickerWithDropdowns({
           disabled={disabled}
           {...props}
         >
-          <CalendarIcon className="mr-2 h-3 w-3" />
-          {dateValue ? <span className="text-xs">{formatDateKhmer(dateValue, "short")}</span> : <span className="text-xs">{placeholder}</span>}
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {dateValue ? <span className="text-sm">{formatDateKhmer(dateValue, "short")}</span> : <span className="text-sm">{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -127,7 +127,7 @@ export function DatePickerWithDropdowns({
             </SelectContent>
           </Select>
         </div>
-        
+
         <Calendar
           mode="single"
           selected={dateValue}

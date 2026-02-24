@@ -8,13 +8,15 @@ import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dr
 import { studentService } from '../../utils/api/services/studentService';
 import { classService } from '../../utils/api/services/classService';
 import { attendanceService } from '../../utils/api/services/attendanceService';
+import EmptyState from '@/components/ui/EmptyState';
+import { formatClassIdentifier } from '../../utils/helpers';
+import Pagination from '../../components/ui/Pagination';
+import SidebarFilter from '../../components/ui/SidebarFilter';
+import AttendanceExport from '../../components/attendance/AttendanceExport';
+import { Filter } from 'lucide-react';
 import { PageTransition, FadeInSection } from '../../components/ui/PageTransition';
 import { getFullName } from '../../utils/usernameUtils';
 import DynamicLoader, { PageLoader } from '../../components/ui/DynamicLoader';
-import EmptyState from '@/components/ui/EmptyState';
-import AttendanceExport from '../../components/attendance/AttendanceExport';
-import { formatClassIdentifier } from '../../utils/helpers';
-import Pagination from '../../components/ui/Pagination';
 
 export default function TeacherAttendance({ user }) {
   const { t } = useLanguage();
@@ -30,6 +32,7 @@ export default function TeacherAttendance({ user }) {
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showWarning, setShowWarning] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Redis Queue State
   const [jobId, setJobId] = useState(null);
@@ -610,20 +613,66 @@ export default function TeacherAttendance({ user }) {
         <FadeInSection delay={100} className="my-4 mx-2">
           {/* Filters */}
           {/* Header */}
-          <div className="mb-4">
-            <h4 className="text-lg sm:text-2xl font-bold text-gray-900">
-              {t('attendance', 'Attendance')}
-            </h4>
-            <p className="text-xs sm:text-sm text-gray-600">
-              {t('markStudentAttendance', 'Mark student attendance for your classes')}
-            </p>
+          <div className='flex justify-between items-start'>
+            <div className="mb-4">
+              <h4 className="text-lg sm:text-2xl font-bold text-gray-900">
+                {t('attendance', 'Attendance')}
+              </h4>
+              <p className="text-xs sm:text-sm text-gray-600">
+                {t('markStudentAttendance', 'Mark student attendance for your classes')}
+              </p>
+            </div>
+            <Button
+              onClick={() => setIsSidebarOpen(true)}
+              variant="primary"
+              size="sm"
+              className="flex items-center gap-2 justify-center lg:hidden"
+            >
+              <Filter className="h-4 w-4" />
+              <p className="text-xs">{t('filters', 'Filters')}</p>
+            </Button>
+
+          </div>
+          {/* Responsive Header Row - Mobile Only */}
+
+
+          <div className="flex gap-2 w-full pb-2 border-t border-gray-100 lg:hidden">
+            <Button
+              onClick={handleMarkAllPresent}
+              variant="outline"
+              size="sm"
+              disabled={studentsLoading || students.length === 0 || isReadOnly}
+              className="flex-1"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              <span>{t('markAllPresent', 'Mark All')}</span>
+            </Button>
+
+            <Button
+              onClick={handleSaveAttendance}
+              disabled={saving || processingJob || studentsLoading || students.length === 0 || isReadOnly}
+              size="sm"
+              className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+            >
+              {(saving || processingJob) ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              {saving
+                ? t('queueing', 'Queueing...')
+                : processingJob
+                  ? t('processing', 'Processing...')
+                  : t('save', 'Save')}
+            </Button>
           </div>
 
-          {/* Filters Grid - Responsive Layout */}
-          <div className="flex flex-col lg:flex-row items-end gap-4 mb-4">
-            {/* Class Selector */}
-            <div className="w-full">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+          {/* Desktop Filters Grid - Hidden on Mobile */}
+          <div className="hidden lg:flex flex-row items-end gap-4 mb-4">
+
+            {/* Desktop: Class Selector */}
+            <div className="w-[200px] flex-shrink-0">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('class', 'Class')}
               </label>
               <Dropdown
@@ -635,16 +684,15 @@ export default function TeacherAttendance({ user }) {
               />
             </div>
 
-            {/* Date Selector */}
-            <div className="w-full">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+            {/* Desktop: Date Selector */}
+            <div className="w-[200px] flex-shrink-0">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('date', 'Date')} <span className="text-red-500">*</span>
               </label>
               <DatePickerWithDropdowns
                 value={selectedDate}
                 onChange={(date) => {
                   if (date) {
-                    // Check if trying to select future date
                     const tempDate = new Date(date);
                     tempDate.setHours(0, 0, 0, 0);
                     const today = new Date();
@@ -659,29 +707,29 @@ export default function TeacherAttendance({ user }) {
                 }}
                 placeholder={t('pickDate', 'Pick a date')}
                 className="w-full"
-                toDate={new Date()} // Limit to today
-                fromYear={new Date().getFullYear() - 1} // Allow selecting dates from last year
+                toDate={new Date()}
+                fromYear={new Date().getFullYear() - 1}
               />
               {isFutureDate() && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-red-500 mt-1 absolute">
                   {t('futureDateSelected', 'Future date selected - cannot mark attendance')}
                 </p>
               )}
             </div>
-            <Button
-              onClick={handleMarkAllPresent}
-              variant="outline"
-              size="sm"
-              disabled={studentsLoading || students.length === 0 || isReadOnly}
-              className="w-full lg:w-auto whitespace-nowrap"
-            >
-              <Check className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">{t('markAllPresent', 'Mark All Present')}</span>
-              <span className="sm:hidden">{t('allPresent', 'All Present')}</span>
-            </Button>
 
-            <div className="grid grid-cols-2 gap-2 w-full lg:flex lg:w-auto lg:gap-2 lg:ml-auto">
-              {/* Export Component */}
+            {/* Desktop: Actions */}
+            <div className="flex gap-2 ml-auto">
+              <Button
+                onClick={handleMarkAllPresent}
+                variant="outline"
+                size="sm"
+                disabled={studentsLoading || students.length === 0 || isReadOnly}
+                className="whitespace-nowrap"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                <span>{t('markAllPresent', 'Mark All Present')}</span>
+              </Button>
+
               <AttendanceExport
                 students={students}
                 attendance={attendance}
@@ -690,15 +738,15 @@ export default function TeacherAttendance({ user }) {
                 selectedDate={selectedDate}
                 exportType="daily"
                 disabled={studentsLoading}
-                buttonClassName="w-full lg:w-auto whitespace-nowrap"
-                containerClassName="w-full lg:w-auto"
+                buttonClassName="whitespace-nowrap"
+                containerClassName="w-auto"
               />
 
               <Button
                 onClick={handleSaveAttendance}
                 disabled={saving || processingJob || studentsLoading || students.length === 0 || isReadOnly}
                 size="sm"
-                className="w-full lg:w-auto whitespace-nowrap"
+                className="whitespace-nowrap"
               >
                 {(saving || processingJob) ? (
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -713,6 +761,77 @@ export default function TeacherAttendance({ user }) {
               </Button>
             </div>
           </div>
+
+          {/* Mobile Sidebar Filter */}
+          <SidebarFilter
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+            onApply={() => setIsSidebarOpen(false)}
+            title={t('filters', 'Filters')}
+            subtitle={t('manageAttendanceFilters', 'Manage attendance view')}
+            actionsContent={
+              <AttendanceExport
+                students={students}
+                attendance={attendance}
+                className={classes.find(cls => String(cls.classId || cls.id) === selectedClassId)?.name || 'Unknown-Class'}
+                schoolName={user?.school?.name || user?.schoolName || 'សាលា'}
+                selectedDate={selectedDate}
+                exportType="daily"
+                disabled={studentsLoading}
+                buttonClassName="w-full justify-start"
+                containerClassName="w-full block"
+              />
+            }
+          >
+            <div className="flex flex-col gap-4">
+              {/* Mobile: Class Selector */}
+              <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('class', 'Class')}
+                </label>
+                <Dropdown
+                  value={selectedClassId}
+                  onValueChange={setSelectedClassId}
+                  options={classDropdownOptions}
+                  placeholder={t('selectClass', 'Select class...')}
+                  minWidth="w-full"
+                />
+              </div>
+
+              {/* Mobile: Date Selector */}
+              <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('date', 'Date')} <span className="text-red-500">*</span>
+                </label>
+                <DatePickerWithDropdowns
+                  value={selectedDate}
+                  onChange={(date) => {
+                    if (date) {
+                      const tempDate = new Date(date);
+                      tempDate.setHours(0, 0, 0, 0);
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+
+                      if (tempDate > today) {
+                        showError(t('cannotMarkFutureAttendance', 'Cannot mark attendance for future dates. Please select today only.'));
+                        return;
+                      }
+                      setSelectedDate(date);
+                    }
+                  }}
+                  placeholder={t('pickDate', 'Pick a date')}
+                  className="w-full"
+                  toDate={new Date()}
+                  fromYear={new Date().getFullYear() - 1}
+                />
+                {isFutureDate() && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {t('futureDateSelected', 'Future date selected - cannot mark attendance')}
+                  </p>
+                )}
+              </div>
+            </div>
+          </SidebarFilter>
 
           {/* Past Date Warning */}
           {isReadOnly && showWarning && (
@@ -808,14 +927,14 @@ export default function TeacherAttendance({ user }) {
                   const hasStatus = studentAttendance.status !== null;
 
                   return (
-                    <div key={studentUserId} className="bg-white rounded-sm border border-gray-200 p-4 shadow-sm">
+                    <div key={studentUserId} className="bg-white rounded-sm border border-blue-300 shadow-sm">
                       {/* Student Name */}
-                      <div className="font-medium text-gray-900 mb-3 text-sm">
+                      <div className="font-bold text-sm text-blue-800 mb-3 px-4 py-3 bg-blue-100">
                         {getFullName(student, student.username)}
                       </div>
 
                       {/* Status Buttons */}
-                      <div className="mb-3">
+                      <div className="mb-3 px-4">
                         <label className="block text-xs font-medium text-gray-700 mb-2">
                           {t('status', 'Status')}
                         </label>
@@ -844,7 +963,7 @@ export default function TeacherAttendance({ user }) {
 
                       {/* Reason Input */}
                       {(studentAttendance.status === 'ABSENT' || studentAttendance.status === 'LATE' || studentAttendance.status === 'LEAVE') && (
-                        <div>
+                        <div className='px-4 pb-2'>
                           <label className="block text-xs font-medium text-gray-700 mb-2">
                             {t('reason', 'Reason')}
                           </label>
