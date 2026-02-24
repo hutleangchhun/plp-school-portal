@@ -78,10 +78,9 @@ export function DatePickerWithDropdowns({
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
+        <button
           className={cn(
-            "w-full justify-start text-left font-normal text-sm px-4 py-2 h-auto min-h-[38px]",
+            "inline-flex w-full items-center justify-start rounded px-4 py-2 text-sm bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left font-normal",
             !dateValue && "text-muted-foreground",
             disabled && "cursor-not-allowed opacity-50",
             className
@@ -90,8 +89,8 @@ export function DatePickerWithDropdowns({
           {...props}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {dateValue ? <span className="text-sm">{formatDateKhmer(dateValue, "short")}</span> : <span className="text-sm">{placeholder}</span>}
-        </Button>
+          {dateValue ? <span className="text-sm truncate">{formatDateKhmer(dateValue, "short")}</span> : <span className="text-sm truncate">{placeholder}</span>}
+        </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <div className="flex items-center justify-center gap-2 p-2 border-b">
