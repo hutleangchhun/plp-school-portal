@@ -640,10 +640,6 @@ export default function TeacherAttendance() {
         reason: reason || null
       };
 
-      if (status !== 'LEAVE') {
-        payload.checkInTime = new Date().toISOString();
-      }
-
       if (attendanceModal.shift?.id) {
         payload.shiftId = attendanceModal.shift.id;
       }

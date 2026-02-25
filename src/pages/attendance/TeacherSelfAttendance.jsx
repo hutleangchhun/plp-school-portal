@@ -801,7 +801,7 @@ export default function TeacherSelfAttendance() {
 
                                   return { key, shiftId, classId, attendance, shiftName: shiftName || t("unknownShift", "មិនស្គាល់វេន") };
                                 })
-                                .filter(row => !row.attendance.isCheckedOut && row.attendance.status !== "LEAVE")
+                                .filter(row => !row.attendance.isCheckedOut && row.attendance.status !== "LEAVE" && row.attendance.status !== "ABSENT" && row.attendance.checkInTime)
                                 .map((row) => (
                                   <Button
                                     key={row.key}
@@ -994,12 +994,12 @@ export default function TeacherSelfAttendance() {
                         key: "checkIn",
                         header: t("checkIn", "ចូល"),
                         render: (row) => {
-                          const time = row.attendance.checkInTime
-                            ? formatTime(row.attendance.checkInTime)
-                            : row.attendance.time;
+                          const timeObj = row.attendance.checkInTime;
+                          const time = timeObj ? formatTime(timeObj) : null;
+
                           return row.attendance.status === "LEAVE" ? (
                             <span className="text-purple-600 font-medium">
-                              {time}
+                              {time || "-"}
                             </span>
                           ) : (
                             <span className="text-green-600 font-medium">
@@ -1012,8 +1012,14 @@ export default function TeacherSelfAttendance() {
                         key: "checkOut",
                         header: t("checkOut", "ចេញ"),
                         render: (row) => {
-                          if (row.attendance.status === "LEAVE")
+                          if (row.attendance.status === "LEAVE" || row.attendance.status === "ABSENT")
                             return <span className="text-gray-400">-</span>;
+
+                          // If there's no checkInTime, they can't be pending checkout.
+                          if (!row.attendance.checkInTime && !row.attendance.checkOutTime) {
+                            return <span className="text-gray-400">-</span>;
+                          }
+
                           if (row.attendance.isCheckedOut === true) {
                             const time = row.attendance.checkOutTime
                               ? formatTime(row.attendance.checkOutTime)
