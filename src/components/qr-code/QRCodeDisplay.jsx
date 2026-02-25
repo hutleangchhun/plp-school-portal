@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Download, Loader, CheckSquare, Square } from 'lucide-react';
 import { formatClassIdentifier } from '../../utils/helpers';
+import AuthenticatedImage from './AuthenticatedImage';
 
 function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef, t, selectedItems = [], onToggleSelection, onToggleAll, cardType = 'student' }) {
   // Color scheme based on card type
@@ -69,76 +70,74 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
             const canSelect = !qrCode.hasQrCode && onToggleSelection;
 
             return (
-            <div
-              key={qrCode.userId || index}
-              ref={(el) => {
-                if (el) cardRefsRef.current[qrCode.userId] = el;
-              }}
-              onClick={() => canSelect && onToggleSelection(qrCode.userId)}
-              className={`relative overflow-hidden rounded-lg border-2 transition-all ${
-                canSelect ? 'cursor-pointer hover:shadow-md' : ''
-              } ${
-                isSelected ? `${colorScheme.border} ${colorScheme.bg}` : 'border-gray-200 bg-white'
-              }`}
-            >
-              {/* Top decorative bar matching download card */}
-              <div className={`h-2 bg-gradient-to-r ${colorScheme.topBar}`}></div>
+              <div
+                key={qrCode.userId || index}
+                ref={(el) => {
+                  if (el) cardRefsRef.current[qrCode.userId] = el;
+                }}
+                onClick={() => canSelect && onToggleSelection(qrCode.userId)}
+                className={`relative overflow-hidden rounded-lg border-2 transition-all ${canSelect ? 'cursor-pointer hover:shadow-md' : ''
+                  } ${isSelected ? `${colorScheme.border} ${colorScheme.bg}` : 'border-gray-200 bg-white'
+                  }`}
+              >
+                {/* Top decorative bar matching download card */}
+                <div className={`h-2 bg-gradient-to-r ${colorScheme.topBar}`}></div>
 
-              {canSelect && (
-                <div className="absolute top-2 right-2">
-                  {isSelected ? (
-                    <CheckSquare className={`h-5 w-5 ${colorScheme.accent}`} />
-                  ) : (
-                    <Square className="h-5 w-5 text-gray-400" />
-                  )}
-                </div>
-              )}
-              <div className="p-4">
-                <div className="flex justify-center mb-3 relative">
-                  {qrCode.qrCode ? (
-                    <img
-                      src={`/api/files/${qrCode.qrCode}`}
-                      alt={`QR Code for ${qrCode.name}`}
-                      className="w-40 h-40 border border-gray-300 rounded"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextElementSibling.style.display = 'flex';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-40 h-40 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50">
-                      <p className="text-xs text-gray-400 text-center px-2">{t('noQRCode', 'No QR Code')}</p>
-                    </div>
-                  )}
-                  {qrCode.qrCode && (
-                    <div className="w-40 h-40 border-2 border-dashed border-gray-300 rounded items-center justify-center bg-gray-50 hidden" style={{ display: 'none' }}>
-                      <p className="text-xs text-gray-400 text-center px-2">{t('failedToLoadQR', 'Failed to load QR Code')}</p>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-900 truncate">{t('name', 'Name')}: {qrCode.name}</p>
-                  <p className="text-xs text-gray-500">{t('username', 'Username')}: {qrCode.username}</p>
-                  {qrCode.schoolName && (
-                    <p className="text-xs text-gray-500">{t('school', 'School')}: {qrCode.schoolName}</p>
-                  )}
-                  {qrCode.class?.gradeLevel || qrCode.className ? (
-                    <p className="text-xs text-gray-500">{t('class', 'Class')}: {qrCode.class?.gradeLevel ? formatClassIdentifier(qrCode.class.gradeLevel === 0 || qrCode.class.gradeLevel === '0' ? t('grade0', 'Kindergarten') : qrCode.class.gradeLevel, qrCode.class.section) : qrCode.className}</p>
-                  ) : null}
-                  {qrCode.qrCode && (
-                    <Button
-                      onClick={() => downloadQRCode(qrCode, cardRefsRef.current[qrCode.userId], cardType)}
-                      variant="outline"
-                      size="sm"
-                      className="w-full mt-3 flex items-center gap-1"
-                    >
-                      <Download className="h-4 w-4" />
-                      {t('download', 'Download')}
-                    </Button>
-                  )}
+                {canSelect && (
+                  <div className="absolute top-2 right-2">
+                    {isSelected ? (
+                      <CheckSquare className={`h-5 w-5 ${colorScheme.accent}`} />
+                    ) : (
+                      <Square className="h-5 w-5 text-gray-400" />
+                    )}
+                  </div>
+                )}
+                <div className="p-4">
+                  <div className="flex justify-center mb-3 relative">
+                    {qrCode.qrCode ? (
+                      <AuthenticatedImage
+                        src={`/api/files/${qrCode.qrCode}`}
+                        alt={`QR Code for ${qrCode.name}`}
+                        className="w-40 h-40 border border-gray-300 rounded"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextElementSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-40 h-40 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50">
+                        <p className="text-xs text-gray-400 text-center px-2">{t('noQRCode', 'No QR Code')}</p>
+                      </div>
+                    )}
+                    {qrCode.qrCode && (
+                      <div className="w-40 h-40 border-2 border-dashed border-gray-300 rounded items-center justify-center bg-gray-50 hidden" style={{ display: 'none' }}>
+                        <p className="text-xs text-gray-400 text-center px-2">{t('failedToLoadQR', 'Failed to load QR Code')}</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-900 truncate">{t('name', 'Name')}: {qrCode.name}</p>
+                    <p className="text-xs text-gray-500">{t('username', 'Username')}: {qrCode.username}</p>
+                    {qrCode.schoolName && (
+                      <p className="text-xs text-gray-500">{t('school', 'School')}: {qrCode.schoolName}</p>
+                    )}
+                    {qrCode.class?.gradeLevel || qrCode.className ? (
+                      <p className="text-xs text-gray-500">{t('class', 'Class')}: {qrCode.class?.gradeLevel ? formatClassIdentifier(qrCode.class.gradeLevel === 0 || qrCode.class.gradeLevel === '0' ? t('grade0', 'Kindergarten') : qrCode.class.gradeLevel, qrCode.class.section) : qrCode.className}</p>
+                    ) : null}
+                    {qrCode.qrCode && (
+                      <Button
+                        onClick={() => downloadQRCode(qrCode, cardRefsRef.current[qrCode.userId], cardType)}
+                        variant="outline"
+                        size="sm"
+                        className="w-full mt-3 flex items-center gap-1"
+                      >
+                        <Download className="h-4 w-4" />
+                        {t('download', 'Download')}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
             );
           })}
         </div>
@@ -172,47 +171,45 @@ function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef
                 const canSelect = !qrCode.hasQrCode && onToggleSelection;
 
                 return (
-                <tr
-                  key={qrCode.userId || index}
-                  onClick={() => canSelect && onToggleSelection(qrCode.userId)}
-                  className={`${
-                    canSelect ? 'cursor-pointer' : ''
-                  } ${
-                    isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
-                  }`}
-                >
-                  <td className="px-4 py-3 text-sm text-gray-900">
-                    <div className="flex items-center gap-2">
-                      {canSelect && (
-                        isSelected ? (
-                          <CheckSquare className="h-4 w-4 text-blue-600" />
-                        ) : (
-                          <Square className="h-4 w-4 text-gray-400" />
-                        )
+                  <tr
+                    key={qrCode.userId || index}
+                    onClick={() => canSelect && onToggleSelection(qrCode.userId)}
+                    className={`${canSelect ? 'cursor-pointer' : ''
+                      } ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
+                      }`}
+                  >
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      <div className="flex items-center gap-2">
+                        {canSelect && (
+                          isSelected ? (
+                            <CheckSquare className="h-4 w-4 text-blue-600" />
+                          ) : (
+                            <Square className="h-4 w-4 text-gray-400" />
+                          )
+                        )}
+                        {qrCode.name}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{qrCode.username}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{qrCode.schoolName || '-'}</td>
+                    {qrCodes[0]?.className || qrCodes[0]?.class?.gradeLevel ? (
+                      <td className="px-4 py-3 text-sm text-gray-600">{qrCode.class?.gradeLevel ? formatClassIdentifier(qrCode.class.gradeLevel === 0 || qrCode.class.gradeLevel === '0' ? t('grade0', 'Kindergarten') : qrCode.class.gradeLevel, qrCode.class.section) : qrCode.className || '-'}</td>
+                    ) : null}
+                    <td className="px-4 py-3 text-center">
+                      {qrCode.qrCode ? (
+                        <Button
+                          onClick={() => downloadQRCode(qrCode, null, cardType)}
+                          variant="ghost"
+                          size="icon"
+                          title={t('download', 'Download')}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-gray-400">{t('noQRCode', 'No QR')}</span>
                       )}
-                      {qrCode.name}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{qrCode.username}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{qrCode.schoolName || '-'}</td>
-                  {qrCodes[0]?.className || qrCodes[0]?.class?.gradeLevel ? (
-                    <td className="px-4 py-3 text-sm text-gray-600">{qrCode.class?.gradeLevel ? formatClassIdentifier(qrCode.class.gradeLevel === 0 || qrCode.class.gradeLevel === '0' ? t('grade0', 'Kindergarten') : qrCode.class.gradeLevel, qrCode.class.section) : qrCode.className || '-'}</td>
-                  ) : null}
-                  <td className="px-4 py-3 text-center">
-                    {qrCode.qrCode ? (
-                      <Button
-                        onClick={() => downloadQRCode(qrCode, null, cardType)}
-                        variant="ghost"
-                        size="icon"
-                        title={t('download', 'Download')}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-gray-400">{t('noQRCode', 'No QR')}</span>
-                    )}
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>

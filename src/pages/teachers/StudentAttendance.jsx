@@ -615,7 +615,7 @@ export default function TeacherAttendance({ user }) {
           {/* Header */}
           <div className='flex justify-between items-start'>
             <div className="mb-4">
-              <h4 className="text-lg sm:text-2xl font-bold text-gray-900">
+              <h4 className="text-lg sm:text-xl font-bold text-gray-900">
                 {t('attendance', 'Attendance')}
               </h4>
               <p className="text-xs sm:text-sm text-gray-600">

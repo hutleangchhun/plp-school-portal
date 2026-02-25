@@ -121,7 +121,7 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
   schoolNameText.textContent = cleanSchoolName(qrCode.schoolName) || 'School';
   schoolNameText.style.fontSize = '14px';
   schoolNameText.style.fontWeight = '600';
-  schoolNameText.style.padding= '6px 0 0 0';
+  schoolNameText.style.padding = '6px 0 0 0';
   schoolNameText.style.color = '#ffffff';
   schoolNameText.style.margin = '0';
   schoolNameText.style.lineHeight = '1.3';
@@ -196,16 +196,57 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
 
   if (qrCode.qrCode) {
     const img = document.createElement('img');
-    // Construct the full URL for the QR code image
-    img.src = qrCode.qrCode.startsWith('/') || qrCode.qrCode.startsWith('http')
+    const qrUrl = qrCode.qrCode.startsWith('/') || qrCode.qrCode.startsWith('http')
       ? qrCode.qrCode
       : `/api/files/${qrCode.qrCode}`;
+
     img.style.width = '290px'; // Increased to 290px for maximum clarity
     img.style.height = '290px';
     img.style.border = `3px solid ${accentColor}`; // Thicker border for better definition
     img.style.borderRadius = '4px';
     img.style.display = 'block';
     img.style.imageRendering = 'crisp-edges'; // Sharp rendering for QR codes
+
+    // Securely fetch image using authorization token since it's a DOM element
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      fetch(qrUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+        .then(response => response.blob())
+        .then(async blob => {
+          // Check if the response is actually an SVG (which some QR codes might be returned as)
+          if (blob.type.includes('svg') || blob.type.includes('text') || blob.type === 'application/octet-stream') {
+            try {
+              const text = await blob.text();
+              if (text.trim().startsWith('<svg')) {
+                // Properly construct an SVG data URI
+                const encodedSvg = encodeURIComponent(text.trim());
+                img.src = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
+                return;
+              }
+            } catch (e) {
+              console.warn('Failed to parse potential SVG, falling back to object URL', e);
+            }
+          }
+
+          // Default binary blob handling
+          const objectUrl = URL.createObjectURL(blob);
+          img.src = objectUrl;
+          // Clean up blob URL after load
+          img.onload = () => URL.revokeObjectURL(objectUrl);
+        })
+        .catch(err => {
+          console.error('Failed to securely fetch QR code for card:', err);
+          // Fallback to original url (will fail with 401 but handles empty image case gracefully)
+          img.src = qrUrl;
+        });
+    } else {
+      img.src = qrUrl;
+    }
+
     qrContainer.appendChild(img);
   }
   content.appendChild(qrContainer);

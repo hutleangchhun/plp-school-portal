@@ -69,6 +69,18 @@ export default defineConfig({
         changeOrigin: true,
         secure: false
       },
+      // Static files and uploads
+      '/api/files': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/files/, '/api/v1/files'),
+        secure: false
+      },
+      '/uploads': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false
+      },
       // All other REST API — Proxied to Main Local Backend (Port 8080)
       '/api/v1': {
         target: 'http://localhost:8080',

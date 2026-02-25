@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { debounce } from 'lodash';
 import { Calendar, Check, X, Clock, Users, Search, ChevronLeft, ChevronRight, Settings, FileCheck, Download } from 'lucide-react';
@@ -10,6 +10,7 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Button } from '../../components/ui/Button';
 import Pagination from '../../components/ui/Pagination';
+import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import Badge from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -72,28 +73,16 @@ export default function TeacherAttendance() {
 
   const fetchingRef = useRef(false);
 
-  // Helper function to get the start of the week (Monday)
-  const getWeekStartHelper = (date) => {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
-    return new Date(d.setDate(diff));
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+
+  // Prevent selecting future dates for attendance
+  const isFutureDate = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selected = new Date(selectedDate);
+    selected.setHours(0, 0, 0, 0);
+    return selected > today;
   };
-
-  const [currentWeekStart, setCurrentWeekStart] = useState(() => getWeekStartHelper(new Date()));
-
-  // Generate array of dates for the current week
-  const getWeekDates = useCallback((startDate) => {
-    const dates = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + i); // Use date.getDate() instead of startDate.getDate()
-      dates.push(date);
-    }
-    return dates;
-  }, []);
-
-  const weekDates = useMemo(() => getWeekDates(currentWeekStart), [currentWeekStart, getWeekDates]);
 
   // Get authenticated user data
   const [user] = useState(() => {
@@ -258,20 +247,24 @@ export default function TeacherAttendance() {
         setTeacherSettings(settingsMap);
 
         // ✅ Fetch attendance data separately (not included in the settings endpoint)
-        console.log('📅 Fetching attendance data for teachers...');
-        const dates = getWeekDates(currentWeekStart);
-        const startDate = dates[0].toISOString().split('T')[0];
-        const endDate = dates[6].toISOString().split('T')[0];
+        // Create local date string (YYYY-MM-DD) avoiding UTC offset issues
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
 
-        const weeklyAttendanceData = {};
+        console.log(`📅 Fetching attendance data for teachers for selected date: ${dateStr}`);
+        const startDate = dateStr;
+        const endDate = dateStr;
+
+        const dailyAttendanceData = {};
 
         // Fetch attendance for each teacher
         const attendancePromises = formattedTeachers.map(async (teacher) => {
           try {
             const attendanceResponse = await attendanceService.getAttendance({
               userId: teacher.id,
-              startDate,
-              endDate,
+              date: dateStr,
               limit: 400
             });
 
@@ -296,15 +289,15 @@ export default function TeacherAttendance() {
 
         // Process attendance records and group by date
         attendanceResults.forEach(({ userId, records }) => {
-          weeklyAttendanceData[userId] = {};
+          dailyAttendanceData[userId] = {};
 
           records.forEach(record => {
             const recordDate = record.date ? record.date.split('T')[0] : null;
 
             if (!recordDate) return;
 
-            if (!weeklyAttendanceData[userId][recordDate]) {
-              weeklyAttendanceData[userId][recordDate] = [];
+            if (!dailyAttendanceData[userId][recordDate]) {
+              dailyAttendanceData[userId][recordDate] = [];
             }
 
             // Format attendance record
@@ -318,7 +311,7 @@ export default function TeacherAttendance() {
             const shift =
               recordHour < 11 ? 'MORNING' : recordHour < 13 ? 'NOON' : 'AFTERNOON';
 
-            weeklyAttendanceData[userId][recordDate].push({
+            dailyAttendanceData[userId][recordDate].push({
               status: record.status?.toUpperCase() || 'PRESENT',
               time: recordTime
                 ? recordTime.toLocaleTimeString('en-US', {
@@ -332,7 +325,9 @@ export default function TeacherAttendance() {
               reason: record.reason || '',
               classId: record.classId,
               className: record.class?.name || null,
-              shift,
+              shift: record.shift || { name: shift },
+              shiftId: record.shiftId || record.shift?.id || null,
+
               checkInTime: record.checkInTime || null,
               checkOutTime: record.checkOutTime || null,
               hoursWorked: record.hoursWorked !== undefined ? record.hoursWorked : null,
@@ -342,8 +337,8 @@ export default function TeacherAttendance() {
           });
 
           // Sort records by time
-          Object.keys(weeklyAttendanceData[userId]).forEach(date => {
-            weeklyAttendanceData[userId][date].sort((a, b) => {
+          Object.keys(dailyAttendanceData[userId]).forEach(date => {
+            dailyAttendanceData[userId][date].sort((a, b) => {
               const timeA = a.checkInTime ? new Date(a.checkInTime).getTime() : 0;
               const timeB = b.checkInTime ? new Date(b.checkInTime).getTime() : 0;
               return timeA - timeB;
@@ -352,11 +347,11 @@ export default function TeacherAttendance() {
         });
 
         console.log('✅ Attendance data processed:', {
-          teachersWithAttendance: Object.keys(weeklyAttendanceData).length,
+          teachersWithAttendance: Object.keys(dailyAttendanceData).length,
           totalRecords: attendanceResults.reduce((sum, a) => sum + a.records.length, 0)
         });
 
-        setWeeklyAttendance(weeklyAttendanceData);
+        setWeeklyAttendance(dailyAttendanceData);
       } else {
         setTeachers([]);
         setWeeklyAttendance({});
@@ -374,7 +369,7 @@ export default function TeacherAttendance() {
       setInitialLoading(false);
       fetchingRef.current = false;
     }
-  }, [schoolId, isDirector, currentWeekStart, getWeekDates, t, handleError, clearError, startLoading, stopLoading, itemsPerPage]);
+  }, [schoolId, isDirector, selectedDate, t, handleError, clearError, startLoading, stopLoading, itemsPerPage]);
 
   // With server-side search and pagination, teachers are already filtered by API
   // No need for client-side filtering
@@ -385,6 +380,11 @@ export default function TeacherAttendance() {
     setCurrentPage(1);
     fetchTeachersAndAttendance(searchTerm, 1);
   }, [searchTerm]);
+
+  // Refetch when the selected date changes
+  useEffect(() => {
+    fetchTeachersAndAttendance(searchTerm, currentPage);
+  }, [selectedDate]);
 
   // Function to select/deselect all teachers on current page
   const toggleSelectAll = useCallback(() => {
@@ -528,7 +528,7 @@ export default function TeacherAttendance() {
         exportTeachers,
         schoolId,
         {
-          selectedDate: currentWeekStart,
+          selectedDate: selectedDate,
           schoolName,
           onProgress: (processed, total) => {
             const progress = 45 + (processed / total) * 45; // 45-90%
@@ -579,7 +579,7 @@ export default function TeacherAttendance() {
       }));
       _showError(t('exportError', 'នាំចេញបរាជ័យ'));
     }
-  }, [schoolId, currentWeekStart, t, _showSuccess, _showError]);
+  }, [schoolId, selectedDate, t, _showSuccess, _showError]);
 
   // Function to open attendance modal
   const openAttendanceModal = useCallback((teacher, date, existingAttendance) => {
@@ -618,7 +618,12 @@ export default function TeacherAttendance() {
       return;
     }
 
-    const dateStr = date.toISOString().split('T')[0];
+    // Use local Date to format yyyy-mm-dd
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
     const existingAttendanceId = attendanceModal.existingAttendance?.id;
 
     // Optimistic UI update - update state immediately
@@ -730,22 +735,21 @@ export default function TeacherAttendance() {
     return statusMap[status?.toUpperCase()] || status;
   }, [t]);
 
-  // Debounce search
   const debouncedFetchRef = useRef(null);
   const previousSearchRef = useRef(searchTerm);
-  const previousWeekRef = useRef(currentWeekStart);
+  const previousDateRef = useRef(selectedDate);
 
-  // Effect to handle week changes and search
+  // Effect to handle date changes and search
   useEffect(() => {
     if (!isDirector || !schoolId) {
       setInitialLoading(false);
       return;
     }
 
-    const weekChanged = previousWeekRef.current?.getTime() !== currentWeekStart?.getTime();
+    const dateChanged = previousDateRef.current?.getTime() !== selectedDate?.getTime();
     const searchChanged = previousSearchRef.current !== searchTerm;
 
-    previousWeekRef.current = currentWeekStart;
+    previousDateRef.current = selectedDate;
     previousSearchRef.current = searchTerm;
 
     // Cancel any pending debounced calls
@@ -753,8 +757,8 @@ export default function TeacherAttendance() {
       debouncedFetchRef.current.cancel();
     }
 
-    // If week changed, fetch immediately
-    if (weekChanged) {
+    // If date changed, fetch immediately
+    if (dateChanged) {
       fetchTeachersAndAttendance(searchTerm);
     }
     // If only search changed, debounce
@@ -771,7 +775,7 @@ export default function TeacherAttendance() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentWeekStart, searchTerm, isDirector, schoolId]);
+  }, [selectedDate, searchTerm, isDirector, schoolId]);
 
   // Initial fetch
   useEffect(() => {
@@ -780,19 +784,6 @@ export default function TeacherAttendance() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Week navigation
-  const goToPreviousWeek = useCallback(() => {
-    const newStart = new Date(currentWeekStart);
-    newStart.setDate(newStart.getDate() - 7);
-    setCurrentWeekStart(newStart);
-  }, [currentWeekStart]);
-
-  const goToNextWeek = useCallback(() => {
-    const newStart = new Date(currentWeekStart);
-    newStart.setDate(newStart.getDate() + 7);
-    setCurrentWeekStart(newStart);
-  }, [currentWeekStart]);
 
 
   // Helper to check if date is weekend
@@ -841,10 +832,10 @@ export default function TeacherAttendance() {
       <div className="p-3 sm:p-4">
         {/* Header */}
         <FadeInSection>
-          <div className="p-3 sm:p-4">
+          <div className="mx-4 my-2">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">
                   {t('teacherAttendanceTracking') || 'វត្តមានគ្រូបង្រៀន'}
                 </h1>
                 <p className="mt-1 text-xs sm:text-sm text-gray-500">
@@ -895,7 +886,7 @@ export default function TeacherAttendance() {
           </div>
         </FadeInSection>
 
-        {/* Bulk Actions Toolbar */}
+        {/* Bulk Actions Toolbar 
         {selectedTeachers.size > 0 && (
           <FadeInSection>
             <div className="p-4">
@@ -930,43 +921,35 @@ export default function TeacherAttendance() {
             </div>
           </FadeInSection>
         )}
+          */}
 
         {/* Attendance List */}
         <FadeInSection className='p-0 sm:px-4'>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-white">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+            <div className="px-6 py-5 border-b border-gray-200 bg-white">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
                   <div className='flex flex-row items-center gap-2'>
-                    <div className='w-12 h-12 rounded-md bg-indigo-100 flex justify-center items-center'>
-                      <Calendar className="inline-block h-5 w-5 text-indigo-600" />
-                    </div>
                     <div>
-                      <h3 className="text-md sm:text-lg font-semibold text-gray-900">
-                        {t('weeklyAttendance', 'វត្តមានប្រចាំសប្តាហ៍')}
+                      <h3 className="text-base font-bold text-gray-900">
+                        {t('dailyAttendance', 'វត្តមានប្រចាំថ្ងៃ')}
                       </h3>
                     </div>
                   </div>
-                  <div className='flex justify-start items-center gap-3 mt-3'>
-                    <button
-                      onClick={goToPreviousWeek}
-                      disabled={loading}
-                      className="hover:text-blue-500 transition-colors duration-300"
-                    >
-                      <ChevronLeft className="h-6 w-6" />
-                    </button>
-                    <div className="text-center mt-1">
-                      <p className="text-xs sm:text-sm text-gray-600">
-                        {formatDateKhmer(currentWeekStart, 'dayMonth')} - {formatDateKhmer(weekDates[6], 'short')}
-                      </p>
-                    </div>
-                    <button
-                      onClick={goToNextWeek}
-                      disabled={loading}
-                      className="hover:text-blue-500 transition-colors duration-300"
-                    >
-                      <ChevronRight className="h-6 w-6" />
-                    </button>
+                  <div className='flex justify-start items-center gap-3 mt-3 w-full sm:w-[240px]'>
+                    <DatePickerWithDropdowns
+                      id="attendance-date"
+                      date={selectedDate}
+                      onChange={(newDate) => {
+                        if (newDate) {
+                          setSelectedDate(newDate);
+                        }
+                      }}
+                      placeholder={t('pickDate', 'ជ្រើសរើសថ្ងៃ')}
+                      className="w-full"
+                      toDate={new Date()}
+                      fromYear={new Date().getFullYear() - 1}
+                    />
                   </div>
                 </div>
               </div>
@@ -991,61 +974,52 @@ export default function TeacherAttendance() {
                 variant='info'
               />
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-b-xl">
                 <table className="w-full">
-                  <thead className="bg-blue-50">
-                    <tr>
-                      <th className="sticky left-0 z-10 bg-blue-50 px-3 py-3 text-center border-r">
+                  <thead>
+                    <tr className="bg-gray-50/80 border-b border-gray-200">
+                      <th className="px-4 py-3 text-center w-12 text-gray-400">
                         <input
                           type="checkbox"
                           checked={displayedTeachers.length > 0 && displayedTeachers.every(t => selectedTeachers.has(t.id))}
                           onChange={toggleSelectAll}
-                          className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                          className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
                           title={t('selectAll', 'Select All')}
                         />
                       </th>
-                      <th className="sticky left-0 z-10 bg-blue-50 px-4 py-3 text-left text-sm font-medium text-blue-700 uppercase tracking-wider border-r">
-                        <div className='ml-3'>{t('teachers', 'គ្រូបង្រៀន')}</div>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-48">
+                        {t('teachers', 'គ្រូបង្រៀន')}
                       </th>
-                      <th className="bg-blue-50 px-3 py-3 text-center text-xs font-medium text-blue-700 uppercase tracking-wider border-r">
+                      <th className="px-3 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-24">
                         <Tooltip content={t('requiresApprovalTooltip', 'Enable if teacher attendance requires director approval')}>
-                          <div className="flex flex-col items-center gap-1">
-                            <Settings className="h-4 w-4" />
-                            <span className='text-xs'>{t('requiresApproval', 'ត្រូវការអនុម័ត')}</span>
+                          <div className="flex flex-col items-center gap-1 cursor-help group">
+                            <Settings className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                            <span className="text-[10px] leading-tight">{t('requiresApproval', 'ត្រូវការអនុម័ត')}</span>
                           </div>
                         </Tooltip>
                       </th>
-                      {/* Khmer day names mapping */}
-                      {(() => {
-                        const khmerDays = ['អាទិត្យ', 'ច័ន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍'];
-                        return weekDates.map((date, idx) => {
-                          const dayName = khmerDays[date.getDay()];
-                          const dayNum = date.getDate();
-                          const isWeekendDay = isWeekend(date);
-                          const isCurrentDay = isToday(date);
-                          return (
-                            <th
-                              key={idx}
-                              className={`px-3 py-3 text-center text-xs font-medium uppercase tracking-wider ${isCurrentDay
-                                ? 'bg-blue-200 text-blue-900'
-                                : isWeekendDay
-                                  ? 'bg-red-100 text-red-700'
-                                  : 'text-gray-700'
-                                }`}
-                            >
-                              <div className="flex flex-col items-center">
-                                <span className='text-md'>{dayName}</span>
-                                <span className="font-bold text">
-                                  {dayNum}
-                                </span>
-                              </div>
-                            </th>
-                          );
-                        });
-                      })()}
+                      {/* Shifts Headers */}
+                      <th className="px-3 py-4 text-center text-sm font-semibold uppercase tracking-wider text-gray-700 bg-blue-50/50 border-l border-gray-200 border-b w-32">
+                        <div className="flex flex-col items-center gap-1">
+                          <span>{t('morning', 'វេនព្រឹក')}</span>
+                          <span className="text-[10px] text-gray-500 font-normal opacity-80">07:00 - 11:00</span>
+                        </div>
+                      </th>
+                      <th className="px-3 py-4 text-center text-sm font-semibold uppercase tracking-wider text-gray-700 bg-blue-50/50 border-l border-gray-200 border-b w-32">
+                        <div className="flex flex-col items-center gap-1">
+                          <span>{t('noon', 'វេនថ្ងៃត្រង់')}</span>
+                          <span className="text-[10px] text-gray-500 font-normal opacity-80">11:00 - 13:00</span>
+                        </div>
+                      </th>
+                      <th className="px-3 py-4 text-center text-sm font-semibold uppercase tracking-wider text-gray-700 bg-blue-50/50 border-l border-gray-200 border-b w-32">
+                        <div className="flex flex-col items-center gap-1">
+                          <span>{t('afternoon', 'វេនរសៀល')}</span>
+                          <span className="text-[10px] text-gray-500 font-normal opacity-80">13:00 - 17:00</span>
+                        </div>
+                      </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white">
                     {displayedTeachers.map((teacher) => {
                       const settings = teacherSettings[teacher.id] || {};
                       const requiresApproval = settings.requiresApproval || false;
@@ -1053,23 +1027,22 @@ export default function TeacherAttendance() {
                       const isUpdating = updatingSettings[teacher.id] || false;
 
                       return (
-                        <tr key={teacher.id} className={selectedTeachers.has(teacher.id) ? 'bg-blue-50' : ''}>
-                          <td className={`sticky left-0 z-10 px-3 py-3 text-center border-r ${selectedTeachers.has(teacher.id) ? 'bg-blue-50' : 'bg-white'}`}>
+                        <tr key={teacher.id} className={`group transition-all duration-200 hover:bg-gray-50/80 ${selectedTeachers.has(teacher.id) ? 'bg-blue-50/50' : ''}`}>
+                          <td className={`px-4 py-4 text-center border-b border-gray-100 ${selectedTeachers.has(teacher.id) ? 'bg-blue-50/50' : ''}`}>
                             <input
                               type="checkbox"
                               checked={selectedTeachers.has(teacher.id)}
                               onChange={() => toggleTeacherSelection(teacher.id)}
-                              className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                              className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
                             />
                           </td>
-                          <td className={`sticky left-0 z-10 px-4 py-3 whitespace-nowrap border-r ${selectedTeachers.has(teacher.id) ? 'bg-blue-50' : 'bg-white'}`}>
-                            <div className="flex items-center">
-                              <div className="ml-3">
-                                <div className="text-xs sm:text-sm font-medium text-gray-900">{teacher.name}</div>
-                              </div>
+                          <td className={`px-4 py-4 whitespace-nowrap border-b border-gray-100 w-48 max-w-[12rem] ${selectedTeachers.has(teacher.id) ? 'bg-blue-50/50' : ''}`}>
+                            <div className="flex flex-col overflow-hidden">
+                              <span className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors truncate" title={teacher.name}>{teacher.name}</span>
+                              <span className="text-[10px] text-gray-500 font-medium truncate">ID: {teacher.id}</span>
                             </div>
                           </td>
-                          <td className="bg-white px-3 py-3 text-center border-r">
+                          <td className="px-3 py-4 text-center border-b border-gray-100">
                             <div className="flex flex-col items-center justify-center gap-1">
                               <label className="relative inline-flex items-center cursor-pointer" title={`User ID: ${teacher.id}, Teacher ID: ${teacherIdFromDb}, Status: ${requiresApproval ? 'Enabled' : 'Disabled'}`}>
                                 <input
@@ -1086,34 +1059,35 @@ export default function TeacherAttendance() {
                               )}
                             </div>
                           </td>
-                          {weekDates.map((date, idx) => {
-                            // Use same date formatting as in fetch
+                          {(() => {
+                            const date = selectedDate;
                             const year = date.getFullYear();
                             const month = String(date.getMonth() + 1).padStart(2, '0');
                             const day = String(date.getDate()).padStart(2, '0');
                             const dateStr = `${year}-${month}-${day}`;
 
-                            // Get all attendance records for this teacher on this date
                             const teacherAttendanceForDay = weeklyAttendance[teacher.id]?.[dateStr];
                             const isWeekendDay = isWeekend(date);
                             const isCurrentDay = isToday(date);
 
-                            // attendanceRecords is now always an array
                             let attendanceRecords = [];
                             if (teacherAttendanceForDay) {
                               if (Array.isArray(teacherAttendanceForDay)) {
-                                // New structure: array of records
                                 attendanceRecords = teacherAttendanceForDay;
                               } else if (teacherAttendanceForDay.status) {
-                                // Old structure: single attendance record object
                                 attendanceRecords = [teacherAttendanceForDay];
                               } else {
-                                // Fallback: try to convert object to array
                                 attendanceRecords = Object.values(teacherAttendanceForDay).filter(r => r && r.status);
                               }
                             }
 
-                            // Helper function to get badge info for a status
+                            if (attendanceRecords.length > 0) {
+                              console.log(`[Shift Debug] teacher ${teacher.id} on ${dateStr}:`, {
+                                rawDate: teacherAttendanceForDay,
+                                records: attendanceRecords
+                              });
+                            }
+
                             const getBadgeInfo = (status) => {
                               let color = 'gray';
                               let icon = null;
@@ -1152,141 +1126,92 @@ export default function TeacherAttendance() {
                               return { color, icon, text };
                             };
 
-                            // Status badge config
-                            let badge = null;
-                            if (attendanceRecords.length > 0) {
-                              // Use the first record for display
-                              const primaryAttendance = attendanceRecords[0];
-                              const badgeInfo = getBadgeInfo(primaryAttendance.status);
+                            const shifts = [
+                              { id: 1, key: 'MORNING' },
+                              { id: 2, key: 'NOON' },
+                              { id: 3, key: 'AFTERNOON' }
+                            ];
 
-                              // Build tooltip content showing all records
-                              const tooltipContent = (
-                                <div className="text-left text-xs space-y-2 max-w-xs">
-                                  {attendanceRecords.map((record, recordIdx) => {
-                                    const recordBadgeInfo = getBadgeInfo(record.status);
-                                    const shift = record.shift ? (
-                                      record.shift === 'MORNING' ? t('morning', 'ព្រឹក') :
-                                        record.shift === 'NOON' ? t('noon', 'ថ្ងៃត្រង់') :
-                                          record.shift === 'AFTERNOON' ? t('afternoon', 'រសៀល') :
-                                            ''
-                                    ) : '';
-                                    const className = record.className || (record.classId ? `${t('class', 'ថ្នាក់')} ${record.classId}` : '');
-                                    const checkInTime = record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-US', {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                      hour12: true
-                                    }) : record.time;
-                                    const checkOutTime = record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('en-US', {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                      hour12: true
-                                    }) : null;
+                            return shifts.map((shiftDef) => {
+                              const shiftRecords = attendanceRecords.filter(r => {
+                                // 1. Direct ID match (most reliable)
+                                if (r.shiftId) return r.shiftId === shiftDef.id;
+                                if (r.shift?.id) return r.shift.id === shiftDef.id;
 
-                                    return (
-                                      <div key={recordIdx} className="py-1 border-b border-gray-300 last:border-b-0">
-                                        <div className="mb-1 font-semibold flex items-center gap-2 flex-wrap">
-                                          {className && <span className="text-blue-500">{className}</span>}
-                                          {shift && <span className="text-purple-500">{shift}</span>}
-                                          <span className="text-gray-900">{recordBadgeInfo.text}</span>
-                                        </div>
-                                        {record.status !== 'LEAVE' ? (
-                                          <>
-                                            <div className="text-gray-700 text-xs">
-                                              {t('checkIn', 'ចូល')}: {checkInTime || 'N/A'}
-                                            </div>
-                                            {record.isCheckedOut && checkOutTime && (
-                                              <div className="text-gray-700 text-xs">
-                                                {t('checkOut', 'ចេញ')}: {checkOutTime}
-                                              </div>
-                                            )}
-                                            {!record.isCheckedOut && (
-                                              <div className="text-yellow-600 text-xs">
-                                                {t('notCheckedOut', 'មិនទាន់ចេញវត្តមាន')}
-                                              </div>
-                                            )}
-                                            {record.hoursWorked !== null && record.hoursWorked !== undefined && (
-                                              <div className="text-gray-700 text-xs">
-                                                {t('hoursWorked', 'ម៉ោងធ្វើការ')}: {record.hoursWorked.toFixed(2)} {t('hours', 'ម៉ោង')}
-                                              </div>
-                                            )}
-                                          </>
-                                        ) : (
-                                          <div className="text-gray-700 text-xs">
-                                            {t('submittedAt', 'បានបញ្ជូននៅ')}: {checkInTime}
-                                          </div>
-                                        )}
-                                        {record.reason && (
-                                          <div className="text-gray-700 text-xs mt-1">
-                                            <span className="font-semibold">{t('reason', 'មូលហេតុ')}:</span> {record.reason}
-                                          </div>
-                                        )}
-                                        {record.approvalStatus && (
-                                          <div className="text-gray-700 text-xs mt-1">
-                                            <span className="font-semibold">{t('approvalStatus', 'ស្ថានភាពអនុម័ត')}:</span> {
-                                              record.approvalStatus === 'APPROVED' ? t('approved', 'បានអនុម័ត') :
-                                                record.approvalStatus === 'PENDING' ? t('pending', 'កំពុងរង់ចាំ') :
-                                                  record.approvalStatus === 'REJECTED' ? t('rejected', 'បានបដិសេធ') :
-                                                    record.approvalStatus
+                                // 2. Name fuzzy match
+                                if (r.shift?.name) {
+                                  const sName = r.shift.name.toLowerCase();
+                                  if (shiftDef.id === 1) return sName.includes('ព្រឹក') || sName.includes('morning');
+                                  if (shiftDef.id === 2) return sName.includes('ថ្ងៃត្រង់') || sName.includes('noon');
+                                  if (shiftDef.id === 3) return sName.includes('រសៀល') || sName.includes('afternoon');
+                                }
+
+                                // 3. Fallback to time inference
+                                const h = r.checkInTime ? new Date(r.checkInTime).getHours() : 12;
+                                if (shiftDef.id === 1) return h < 11;
+                                if (shiftDef.id === 2) return h >= 11 && h < 13;
+                                if (shiftDef.id === 3) return h >= 13;
+
+                                return false;
+                              });
+
+                              let badges = null;
+                              if (shiftRecords.length > 0) {
+                                badges = (
+                                  <div className="flex flex-col gap-1.5 w-full max-w-[120px] mx-auto">
+                                    {shiftRecords.map((record, recordIdx) => {
+                                      const badgeInfo = getBadgeInfo(record.status);
+                                      return (
+                                        <div
+                                          key={recordIdx}
+                                          className="flex flex-col items-center bg-white p-1 rounded-md border border-gray-100 shadow-sm transition-all hover:border-blue-200 cursor-pointer"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (isCurrentDay) {
+                                              openAttendanceModal(teacher, date, record);
                                             }
+                                          }}
+                                        >
+                                          <Badge color={badgeInfo.color} variant="outline" size="sm" className="gap-1 font-bold w-full justify-center px-1.5 py-0.5">
+                                            {React.cloneElement(badgeInfo.icon, { className: "h-3.5 w-3.5 mr-0.5" })}
+                                            {badgeInfo.text}
+                                          </Badge>
+                                          <div className="flex flex-col items-center w-full mt-1 px-0.5 text-[9px] text-gray-400">
+                                            <span>{record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}</span>
+                                            {record.checkOutTime && (
+                                              <>
+                                                <span className="leading-none text-[8px]">-</span>
+                                                <span>{new Date(record.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                                              </>
+                                            )}
                                           </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              );
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              }
 
-                              badge = (
-                                <div
-                                  className="flex flex-col items-center gap-1"
-                                  onClick={(e) => {
-                                    // Allow clicks to propagate if it's today (for opening modal to update)
-                                    if (!isToday(date)) {
-                                      e.stopPropagation();
-                                      e.preventDefault();
+                              return (
+                                <td
+                                  key={`shift-${shiftDef.id}`}
+                                  className={`px-3 py-3 text-center align-middle border-b border-gray-100 border-l transition-all duration-200 ${isCurrentDay ? 'bg-blue-50/10 hover:bg-blue-50/30 cursor-pointer' : isWeekendDay ? 'bg-red-50/10' : ''}`}
+                                  onClick={() => {
+                                    if (isCurrentDay && shiftRecords.length === 0) {
+                                      openAttendanceModal(teacher, date, null);
                                     }
                                   }}
-                                  onMouseDown={(e) => {
-                                    // Allow mouse events to propagate if it's today
-                                    if (!isToday(date)) {
-                                      e.stopPropagation();
-                                      e.preventDefault();
-                                    }
-                                  }}
+                                  title={isCurrentDay && shiftRecords.length === 0 ? t('clickToMarkAttendance', 'ចុចដើម្បីបញ្ជូនវត្តមាន') : ''}
                                 >
-                                  <Tooltip content={tooltipContent}>
-                                    <div className="flex flex-col items-center gap-1">
-                                      <Badge color={badgeInfo.color} variant="outline" size="sm" className="gap-1">
-                                        {badgeInfo.icon}
-                                        {badgeInfo.text}
-                                      </Badge>
-                                      {attendanceRecords.length > 1 && (
-                                        <span className="text-xs text-gray-500">+{attendanceRecords.length - 1}</span>
-                                      )}
+                                  {badges || (
+                                    <div className="flex flex-col items-center justify-center p-2 text-gray-300 hover:text-blue-400 cursor-pointer transition-colors w-full h-full rounded border border-transparent hover:border-blue-100 border-dashed min-h-[40px] opacity-0 group-hover:opacity-100">
+                                      <span className="text-sm font-bold">+</span>
                                     </div>
-                                  </Tooltip>
-                                </div>
+                                  )}
+                                </td>
                               );
-                            }
-
-                            return (
-                              <td
-                                key={idx}
-                                className={`px-3 py-3 text-center ${isToday(date) ? 'cursor-pointer hover:bg-blue-100' : ''} transition-colors ${isCurrentDay ? 'bg-blue-50' : isWeekendDay ? 'bg-gray-50' : ''
-                                  }`}
-                                onClick={() => {
-                                  // Allow updating attendance only for today
-                                  if (isToday(date)) {
-                                    const existingAttendance = attendanceRecords.length > 0 ? attendanceRecords[0] : null;
-                                    openAttendanceModal(teacher, date, existingAttendance);
-                                  }
-                                }}
-                                title={isToday(date) ? t('clickToMarkAttendance', 'ចុចដើម្បីបញ្ជូនវត្តមាន') : ''}
-                              >
-                                {badge || <span className="text-gray-400">-</span>}
-                              </td>
-                            );
-                          })}
+                            });
+                          })()}
                         </tr>
                       );
                     })}
