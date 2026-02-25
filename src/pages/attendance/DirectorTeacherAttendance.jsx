@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { debounce } from 'lodash';
-import { Calendar, Check, X, Clock, Users, Search, ChevronLeft, ChevronRight, Settings, FileCheck, Download } from 'lucide-react';
+import { Calendar, Check, X, Clock, Users, Search, ListFilter, ChevronLeft, ChevronRight, Settings, FileCheck, Download, Filter } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -10,6 +10,7 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Button } from '../../components/ui/Button';
 import Pagination from '../../components/ui/Pagination';
+import SidebarFilter from '../../components/ui/SidebarFilter';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import Badge from '@/components/ui/Badge';
@@ -77,6 +78,8 @@ export default function TeacherAttendance() {
     totalItems: 0,
     errorMessage: null
   });
+
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const fetchingRef = useRef(false);
 
@@ -855,64 +858,103 @@ export default function TeacherAttendance() {
               </div>
             </div>
             <div className="flex flex-col lg:flex-row gap-4 my-4">
-              <div className="flex-1">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                  {t('search') || 'ស្វែងរក'}
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder={t('searchTeachers') || 'ស្វែងរកគ្រូបង្រៀន...'}
-                    className="pl-10 w-full border text-xs sm:text-sm border-gray-300 rounded-sm px-3 py-2"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+              {/* Top Row: Search and Mobile Filter */}
+              <div className="flex flex-row items-end gap-2 flex-1">
+                <div className="flex-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                    {t('search') || 'ស្វែងរក'}
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder={t('searchTeachers') || 'ស្វែងរកគ្រូបង្រៀន...'}
+                      className="pl-10 w-full border text-xs sm:text-sm border-gray-300 rounded-sm px-3 py-2"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Mobile Filter Button (Side-by-side with Search) */}
+                <div className="sm:hidden shrink-0">
+                  <Button
+                    onClick={() => setIsFilterOpen(true)}
+                    variant="primary"
+                    size="sm"
+                    className="flex justify-center items-center gap-2"
+                  >
+                    <ListFilter className="w-4 h-4" />
+                    {t('filters', 'តម្រង')}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Desktop Filters */}
+              <div className="hidden sm:flex flex-1 gap-4">
+                <div className="flex-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                    {t('gradeLevel', 'កម្រិតថ្នាក់')}
+                  </label>
+                  <Dropdown
+                    value={selectedGradeLevel}
+                    onValueChange={setSelectedGradeLevel}
+                    options={[
+                      { value: 'all', label: `-- ${t('all', 'ទាំងអស់')} --` },
+                      ...getGradeLevelOptions(t).filter(grade => {
+                        const val = parseInt(grade.value, 10);
+                        return !isNaN(val) && val >= 0 && val <= 6;
+                      })
+                    ]}
+                    placeholder={`-- ${t('all', 'ទាំងអស់')} --`}
+                    className="w-full text-xs sm:text-sm bg-white"
+                    minWidth="min-w-[150px]"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                    {t('role', 'តួនាទី')}
+                  </label>
+                  <Dropdown
+                    value={selectedRoleId}
+                    onValueChange={setSelectedRoleId}
+                    options={[
+                      { value: 'all', label: `-- ${t('all', 'ទាំងអស់')} --` },
+                      ...getDynamicRoleOptions()
+                    ]}
+                    placeholder={`-- ${t('all', 'ទាំងអស់')} --`}
+                    className="w-full text-xs sm:text-sm bg-white"
+                    minWidth="min-w-[150px]"
                   />
                 </div>
               </div>
-              <div className="flex-1">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                  {t('gradeLevel', 'កម្រិតថ្នាក់')}
-                </label>
-                <Dropdown
-                  value={selectedGradeLevel}
-                  onValueChange={setSelectedGradeLevel}
-                  options={[
-                    { value: 'all', label: `-- ${t('all', 'ទាំងអស់')} --` },
-                    ...getGradeLevelOptions(t)
-                  ]}
-                  placeholder={`-- ${t('all', 'ទាំងអស់')} --`}
-                  className="w-full text-xs sm:text-sm bg-white"
-                  minWidth="min-w-[150px]"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                  {t('role', 'តួនាទី')}
-                </label>
-                <Dropdown
-                  value={selectedRoleId}
-                  onValueChange={setSelectedRoleId}
-                  options={[
-                    { value: 'all', label: `-- ${t('all', 'ទាំងអស់')} --` },
-                    ...getDynamicRoleOptions()
-                  ]}
-                  placeholder={`-- ${t('all', 'ទាំងអស់')} --`}
-                  className="w-full text-xs sm:text-sm bg-white"
-                  minWidth="min-w-[150px]"
-                />
-              </div>
+
+              {/* Mobile Filter Button (Now moved beside Search) */}
+              {/* <div className="sm:hidden flex items-end">
+                <Button
+                  onClick={() => setIsFilterOpen(true)}
+                  variant="outline"
+                  className="w-full flex justify-center items-center gap-2"
+                >
+                  <Filter className="w-4 h-4" />
+                  {t('filters', 'តម្រង')}
+                </Button>
+              </div> */}
+
               <div className="flex items-end gap-2">
+                {/* 
                 <Button
                   onClick={handleExportAttendance}
                   variant="outline"
-                  className="flex items-center gap-2 whitespace-nowrap"
+                  className="flex items-center gap-2 whitespace-nowrap opacity-50 cursor-not-allowed"
                   title={t('exportAttendance', 'នាំចេញវត្តមាន')}
                   size="sm"
+                  disabled={true}
                 >
                   <Download className="w-4 h-4" />
                   {t('export', 'នាំចេញ')}
                 </Button>
+                */}
                 <Button
                   onClick={() => navigate('/attendance/approval')}
                   variant="primary"
@@ -968,7 +1010,7 @@ export default function TeacherAttendance() {
 
         {/* Attendance List */}
         <FadeInSection className='p-0 sm:px-4'>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+          <div className="bg-white rounded-sm border border-gray-200 shadow-sm overflow-hidden mb-6">
             <div className="px-6 py-5 border-b border-gray-200 bg-white">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
@@ -991,7 +1033,6 @@ export default function TeacherAttendance() {
                       placeholder={t('pickDate', 'ជ្រើសរើសថ្ងៃ')}
                       className="w-full"
                       toDate={new Date()}
-                      fromYear={new Date().getFullYear() - 1}
                     />
                   </div>
                 </div>
@@ -1030,13 +1071,13 @@ export default function TeacherAttendance() {
                           title={t('selectAll', 'Select All')}
                         />
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider w-48 whitespace-nowrap">
+                      <th className="px-4 py-3 text-left text-sm font-bold text-gray-800 uppercase tracking-wider w-48 whitespace-nowrap">
                         {t('teachers', 'គ្រូបង្រៀន')}
                       </th>
                       <th className="px-3 py-3 text-center text-sm font-semibold border border-gray-100 text-gray-600 uppercase w-24">
                         <Tooltip content={t('requiresApprovalTooltip', 'Enable if teacher attendance requires director approval')}>
                           <div className="flex flex-col items-center gap-1 cursor-help group whitespace-nowrap">
-                            <span className="text-sm">{t('attendanceApprovals', 'ត្រូវការអនុម័ត')}</span>
+                            <span className="text-sm font-bold">{t('attendanceApprovals', 'ត្រូវការអនុម័ត')}</span>
                           </div>
                         </Tooltip>
                       </th>
@@ -1045,8 +1086,8 @@ export default function TeacherAttendance() {
                         shifts.map(shiftDef => (
                           <th key={`header-shift-${shiftDef.id}`} className="px-3 py-4 text-center text-sm font-semibold uppercase tracking-wider text-gray-700 bg-blue-50/50 border-l border-gray-200 border-b w-32 whitespace-nowrap">
                             <div className="flex flex-col items-center gap-1">
-                              <span>{shiftDef.name}</span>
-                              <span className="text-[10px] text-gray-500 font-normal opacity-80">{shiftDef.startTime} - {shiftDef.endTime}</span>
+                              <p className='font-bold'>{shiftDef.name}</p>
+                              <span className="text-xs text-gray-500 font-normal opacity-80">{shiftDef.startTime} - {shiftDef.endTime}</span>
                             </div>
                           </th>
                         ))
@@ -1211,24 +1252,31 @@ export default function TeacherAttendance() {
                                             }
                                           }}
                                         >
-                                          <Badge color={badgeInfo.color} variant="outline" size="sm" className="gap-1 font-bold w-full justify-center px-1 py-1">
-                                            {React.cloneElement(badgeInfo.icon, { className: "h-3.5 w-3.5 mr-0.5" })}
-                                            {badgeInfo.text}
-                                          </Badge>
-                                          <div className="flex flex-col items-center w-full mt-1.5 px-0.5 text-xs text-gray-500 font-medium tracking-tight">
-                                            {(record.checkInTime || record.checkOutTime) ? (
-                                              <div className='flex'>
-                                                <span>{record.checkInTime ? formatTime(record.checkInTime) : '--:--'}</span>
-                                                <span className="leading-none text-[10px] text-gray-300 my-0.5 mx-1">-</span>
-                                                {record.checkOutTime ? (
-                                                  <span>{formatTime(record.checkOutTime)}</span>
-                                                ) : (
-                                                  <span className="text-[10px] text-yellow-600 ml-1">{t('notYetCheckedOut', 'មិនទាន់ចេញវត្តមាន')}</span>
-                                                )}
-                                              </div>
-                                            ) : (
-                                              <span>{record.submittedAt ? formatTime(record.submittedAt) : record.time}</span>
-                                            )}
+                                          <div className="flex flex-col items-center justify-center gap-0.5 w-full text-xs font-medium tracking-tight">
+                                            <div className={`flex items-center gap-1 font-bold ${record.status === 'ABSENT' ? 'text-red-600' :
+                                              record.status === 'LATE' ? 'text-orange-600' :
+                                                record.status === 'LEAVE' ? 'text-purple-600' :
+                                                  'text-green-600'
+                                              }`}>
+                                              {React.cloneElement(badgeInfo.icon, { className: "h-3.5 w-3.5" })}
+                                              <span>{badgeInfo.text}</span>
+                                            </div>
+
+                                            <div className="text-gray-500">
+                                              {(record.checkInTime || record.checkOutTime) ? (
+                                                <div className="flex items-center">
+                                                  <span>{record.checkInTime ? formatTime(record.checkInTime) : '--:--'}</span>
+                                                  <span className="leading-none text-[10px] text-gray-300 mx-1">-</span>
+                                                  {record.checkOutTime ? (
+                                                    <span>{formatTime(record.checkOutTime)}</span>
+                                                  ) : (
+                                                    <span className="text-[10px] text-yellow-600">{t('notYetCheckedOut', 'មិនទាន់ចេញវត្តមាន')}</span>
+                                                  )}
+                                                </div>
+                                              ) : (
+                                                <span>{record.submittedAt ? formatTime(record.submittedAt) : record.time}</span>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
                                       );
@@ -1242,14 +1290,19 @@ export default function TeacherAttendance() {
                                   key={`shift-${shiftDef.id}`}
                                   className={`p-1 h-full text-center align-middle border-b border-gray-100 border-l transition-all duration-200 ${isCurrentDay ? 'bg-blue-50/10 hover:bg-blue-50/30 cursor-pointer' : isWeekendDay ? 'bg-red-50/10' : ''}`}
                                   onClick={() => {
-                                    if (isCurrentDay && shiftRecords.length === 0) {
+                                    // Prevent marking attendance on Sundays (day 0)
+                                    const isSunday = new Date(date).getDay() === 0;
+
+                                    if (isCurrentDay && shiftRecords.length === 0 && !isSunday) {
                                       openAttendanceModal(teacher, date, null, shiftDef);
+                                    } else if (isSunday && isCurrentDay) {
+                                      _showError(t('cannotMarkSunday', 'មិនអាចបញ្ជូនវត្តមាននៅថ្ងៃអាទិត្យបានទេ'));
                                     }
                                   }}
                                   title={isCurrentDay && shiftRecords.length === 0 ? t('clickToMarkAttendance', 'ចុចដើម្បីបញ្ជូនវត្តមាន') : ''}
                                 >
                                   {badges || (
-                                    <div className="flex flex-col items-center justify-center p-2 text-gray-300 hover:text-blue-400 cursor-pointer transition-colors w-full h-full min-h-[60px] rounded border border-transparent hover:border-blue-100 border-dashed opacity-0 group-hover:opacity-100">
+                                    <div className="flex flex-col items-center justify-center p-2 text-gray-300 hover:text-blue-400 cursor-pointer transition-colors w-full h-full min-h-[60px] rounded border border-transparent hover:border-blue-500 border-dashed opacity-0 group-hover:opacity-100">
                                       <span className="text-xl font-bold">+</span>
                                     </div>
                                   )}
@@ -1413,6 +1466,56 @@ export default function TeacherAttendance() {
           setExportModal(prev => ({ ...prev, isOpen: false }));
         }}
       />
+
+      {/* Mobile Sidebar Filter */}
+      <SidebarFilter
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        title={t('filters', 'តម្រង')}
+        subtitle={t('filterTeachers', 'ចម្រាញ់បញ្ជីគ្រូបង្រៀន')}
+        onApply={() => setIsFilterOpen(false)}
+        onClearFilters={() => {
+          setSelectedGradeLevel('all');
+          setSelectedRoleId('all');
+        }}
+        hasFilters={selectedGradeLevel !== 'all' || selectedRoleId !== 'all'}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('gradeLevel', 'កម្រិតថ្នាក់')}
+            </label>
+            <Dropdown
+              value={selectedGradeLevel}
+              onValueChange={setSelectedGradeLevel}
+              options={[
+                { value: 'all', label: `-- ${t('all', 'ទាំងអស់')} --` },
+                ...getGradeLevelOptions(t).filter(grade => {
+                  const val = parseInt(grade.value, 10);
+                  return !isNaN(val) && val >= 0 && val <= 6;
+                })
+              ]}
+              placeholder={`-- ${t('all', 'ទាំងអស់')} --`}
+              className="w-full text-sm bg-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('role', 'តួនាទី')}
+            </label>
+            <Dropdown
+              value={selectedRoleId}
+              onValueChange={setSelectedRoleId}
+              options={[
+                { value: 'all', label: `-- ${t('all', 'ទាំងអស់')} --` },
+                ...getDynamicRoleOptions()
+              ]}
+              placeholder={`-- ${t('all', 'ទាំងអស់')} --`}
+              className="w-full text-sm bg-white"
+            />
+          </div>
+        </div>
+      </SidebarFilter>
     </PageTransition>
   );
 }

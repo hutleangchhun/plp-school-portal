@@ -32,6 +32,7 @@ export const attendanceService = {
       date,
       startDate,
       endDate,
+      search,
     } = params;
 
     const queryParams = { page, limit };
@@ -41,6 +42,7 @@ export const attendanceService = {
     if (date !== undefined) queryParams.date = date;
     if (startDate !== undefined) queryParams.startDate = startDate;
     if (endDate !== undefined) queryParams.endDate = endDate;
+    if (search !== undefined) queryParams.search = search;
 
     const response = await handleApiResponse(() =>
       attendanceClient.get(ENDPOINTS.ATTENDANCE.TEACHER, { params: queryParams })
