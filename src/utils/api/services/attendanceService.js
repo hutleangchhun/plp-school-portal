@@ -22,6 +22,47 @@ export const attendanceService = {
    * @param {string} [params.endDate] - Filter by end date (YYYY-MM-DD)
    * @returns {Promise<Object>} Response with attendance data and pagination info
    */
+  async getTeacherAttendanceRecords(params = {}) {
+    const {
+      page = 1,
+      limit = 20,
+      schoolId,
+      gradeLevel,
+      roleId,
+      date,
+      startDate,
+      endDate,
+    } = params;
+
+    const queryParams = { page, limit };
+    if (schoolId !== undefined) queryParams.schoolId = schoolId;
+    if (gradeLevel !== undefined) queryParams.gradeLevel = gradeLevel;
+    if (roleId !== undefined) queryParams.roleId = roleId;
+    if (date !== undefined) queryParams.date = date;
+    if (startDate !== undefined) queryParams.startDate = startDate;
+    if (endDate !== undefined) queryParams.endDate = endDate;
+
+    const response = await handleApiResponse(() =>
+      attendanceClient.get(ENDPOINTS.ATTENDANCE.TEACHER, { params: queryParams })
+    );
+
+    const d = response?.data;
+    const list = Array.isArray(d?.data) ? d.data : (Array.isArray(d) ? d : []);
+
+    const pagination = {
+      page: d?.page ?? page,
+      limit: d?.limit ?? limit,
+      total: d?.total ?? list.length,
+      totalPages: d?.totalPages ?? Math.max(1, Math.ceil((d?.total ?? list.length) / (d?.limit ?? limit)))
+    };
+
+    return {
+      success: true,
+      data: list,
+      pagination
+    };
+  },
+
   async getAttendance(params = {}) {
     const {
       page = 1,

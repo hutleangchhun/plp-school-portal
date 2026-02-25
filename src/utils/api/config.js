@@ -215,6 +215,7 @@ const ENDPOINTS = {
   },
   ATTENDANCE: {
     BASE: '/attendance',
+    TEACHER: '/attendance/teacher',
     CLASS_ATTENDANCE: (classId) => `/attendance/class/${classId}`,
     BULK_QUEUE: '/attendance/bulk/queue',
     BULK_STATUS: (jobId) => `/attendance/bulk/status/${jobId}`,

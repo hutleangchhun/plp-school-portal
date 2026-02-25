@@ -18,7 +18,7 @@ export const km = {
   schoolPopulationDistribution: 'ការបែងចែកប្រភេទបុគ្គលិកក្នុងសាលារៀន',
   schoolPopulationDistributionDesc: 'ការបែងចែកប្រភេទបុគ្គលិក',
   requiresApproval: 'ត្រូវការអនុម័ត',
-  requiresApprovalTooltip: 'បើកប្រសិនបើវត្តមានគ្រូត្រូវការការអនុម័តពីនាយក',
+  requiresApprovalTooltip: 'បើកប្រសិនបើវត្តមានគ្រូត្រូវការការឯកភាពពីនាយក',
   approvalRequiredEnabled: 'បានបើកការទាមទារការអនុម័តសម្រាប់គ្រូរូបនេះ',
   approvalRequiredDisabled: 'បានបិទការទាមទារការអនុម័តសម្រាប់គ្រូរូបនេះ',
   errorUpdatingSettings: 'បរាជ័យក្នុងការកែប្រែការកំណត់របស់គ្រូ',
