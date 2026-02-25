@@ -164,6 +164,7 @@ const ENDPOINTS = {
       BASE: (studentId) => `/students/${studentId}/grades`,
       SUBJECT: (studentId, subjectId) => `/students/${studentId}/grades/${subjectId}`,
     },
+    QR_CODES: '/students/qr-codes',
   },
   PARENTS: {
     BASE: '/parents',
@@ -187,6 +188,7 @@ const ENDPOINTS = {
     CLASSES: (teacherId) => `/teachers/${teacherId}/classes`,
     TEACHER_ATTENDANCE: (schoolId) => `/teachers/teacher-attendance/${schoolId}`,
     ATTENDANCE_SETTINGS: (schoolId) => `/teachers/attendance-settings/${schoolId}`,
+    QR_CODES: '/teachers/qr-codes',
   },
   CLASSES: {
     BASE: '/classes',

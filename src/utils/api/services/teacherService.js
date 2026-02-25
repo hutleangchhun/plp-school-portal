@@ -59,6 +59,38 @@ export const teacherService = {
         };
     },
 
+    /**
+     * Fetch teacher QR codes in bulk for a school using the optimized bulk endpoint.
+     * GET /teachers/qr-codes?schoolId=&gradeLevel=&page=&limit=
+     * Response: { schoolId, data: [{ userId, teacherId, username, firstName, lastName, qrCode, hasQrCode, qrGeneratedAt }], total, page, limit, totalPages }
+     */
+    getTeacherQrCodes: async (schoolId, params = {}) => {
+        const { gradeLevel, page, limit } = params;
+
+        const queryParams = { schoolId };
+        if (gradeLevel && gradeLevel !== 'all') queryParams.gradeLevel = gradeLevel;
+        if (page) queryParams.page = page;
+        if (limit) queryParams.limit = limit;
+
+        const response = await handleApiResponse(() =>
+            apiClient_.get(ENDPOINTS.TEACHERS.QR_CODES, { params: queryParams })
+        );
+
+        const data = response?.data;
+
+        return {
+            success: response.success,
+            data: data?.data || [],
+            pagination: {
+                total: data?.total || 0,
+                pages: data?.totalPages || 1,
+                page: data?.page || page || 1,
+                limit: data?.limit || limit || 10
+            },
+            error: response.error
+        };
+    },
+
     // Fetch all teachers across all schools with pagination and search
     getAllTeachers: async (params = {}) => {
         const { search, page, limit, is_active, roleId } = params;

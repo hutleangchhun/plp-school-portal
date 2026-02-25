@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Download, Loader, CheckSquare, Square } from 'lucide-react';
 import { formatClassIdentifier } from '../../utils/helpers';
-import AuthenticatedImage from './AuthenticatedImage';
+import AuthenticatedImage from '../ui/AuthenticatedImage';
 
 function QRCodeDisplay({ loading, qrCodes, viewMode, downloadQRCode, cardRefsRef, t, selectedItems = [], onToggleSelection, onToggleAll, cardType = 'student' }) {
   // Color scheme based on card type

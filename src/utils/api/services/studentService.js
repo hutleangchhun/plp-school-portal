@@ -69,15 +69,47 @@ export const studentService = {
   },
 
   /**
+   * Fetch student QR codes in bulk using the optimized bulk endpoint.
+   * GET /students/qr-codes?schoolId=&classId=&page=&limit=
+   * Response: { schoolId, classId, data: [...], total, page, limit, totalPages }
+   */
+  async getStudentQrCodes(schoolId, params = {}) {
+    const { classId, page, limit } = params;
+
+    const queryParams = { schoolId };
+    if (classId && classId !== 'all') queryParams.classId = classId;
+    if (page) queryParams.page = page;
+    if (limit) queryParams.limit = limit;
+
+    const response = await handleApiResponse(() =>
+      apiClient_.get(ENDPOINTS.STUDENTS.QR_CODES, { params: queryParams })
+    );
+
+    const d = response?.data;
+
+    return {
+      success: response.success,
+      data: d?.data || [],
+      pagination: {
+        total: d?.total || 0,
+        pages: d?.totalPages || 1,
+        page: d?.page || page || 1,
+        limit: d?.limit || limit || 10
+      },
+      error: response.error
+    };
+  },
+
+  /**
    * Get all available students that can be assigned to the current teacher
    * @returns {Promise<Array>} List of available students
    */
   async getAvailableStudents(search = '', params = {}) {
     const { page = 1, limit = 10 } = params;
-    
+
     const response = await handleApiResponse(() =>
       apiClient_.get(`${ENDPOINTS.USERS.BASE}/filter`, {
-        params: { 
+        params: {
           search,
           page,
           limit,
@@ -87,7 +119,7 @@ export const studentService = {
         }
       })
     );
-    
+
     if (response.data && response.data.data) {
       return {
         data: response.data.data.map(student => studentService.utils.formatStudentData(student)),
@@ -147,7 +179,7 @@ export const studentService = {
         console.warn(`🐛 DEBUG: Simulating ${debugState.simulatePartialFailure} failure rate`);
         // Return successful batch with results showing some failures
         const failureRate = debugState.simulatePartialFailure === 'half' ? 0.5 :
-                           debugState.simulatePartialFailure === 'quarter' ? 0.25 : 1;
+          debugState.simulatePartialFailure === 'quarter' ? 0.25 : 1;
         const failCount = Math.ceil(studentsData.length * failureRate);
 
         return Promise.resolve({
@@ -305,7 +337,7 @@ export const studentService = {
         }
       })
     );
-    
+
     return response;
   },
 
@@ -319,28 +351,28 @@ export const studentService = {
     try {
       // Convert to array if it's a single ID
       const userIds = Array.isArray(studentUserIds) ? studentUserIds : [studentUserIds];
-      
+
       // Convert all IDs to numbers
       const numericUserIds = userIds.map(id => Number(id)).filter(id => !isNaN(id));
-      
+
       if (numericUserIds.length === 0) {
         throw new Error('No valid student IDs provided');
       }
-      
+
       // Prepare request body based on number of students (matching addStudentsToClass format)
       const requestData = {
         classId: Number(classId)
       };
-      
+
       if (numericUserIds.length === 1) {
         requestData.studentId = numericUserIds[0];
       } else {
         requestData.studentIds = numericUserIds;
       }
-      
+
       console.log('Sending delete request with data:', requestData);
-      
-      const deleteResponse = await handleApiResponse(() => 
+
+      const deleteResponse = await handleApiResponse(() =>
         apiClient_.request({
           method: 'DELETE',
           url: `${ENDPOINTS.CLASSES.BASE}/students`,
@@ -350,10 +382,10 @@ export const studentService = {
           }
         })
       );
-      
+
       console.log('Delete response:', deleteResponse);
       return deleteResponse;
-      
+
     } catch (error) {
       console.error('Error in removeStudentsFromClass:', error);
       throw error;
@@ -385,7 +417,7 @@ export const studentService = {
   async addStudentsToClass(classId, studentIds) {
     // Convert to array if a single ID is passed
     const ids = Array.isArray(studentIds) ? studentIds : [studentIds];
-    
+
     // Convert all student IDs to positive integers and filter out invalid ones
     const validIds = ids
       .map(id => {
@@ -393,28 +425,28 @@ export const studentService = {
         return isNaN(numId) || numId <= 0 ? null : numId;
       })
       .filter(id => id !== null);
-    
+
     if (validIds.length === 0) {
       throw new Error('No valid student IDs provided');
     }
-    
+
     // Prepare request body based on number of students
     const requestBody = {
       classId: parseInt(classId)
     };
-    
+
     if (validIds.length === 1) {
       requestBody.studentId = validIds[0];
     } else {
       requestBody.studentIds = validIds;
     }
-    
+
     console.log('Sending request to assign students:', requestBody);
-    
+
     const response = await handleApiResponse(() =>
       apiClient_.put('/classes/students', requestBody)
     );
-    
+
     return response;
   },
 
@@ -690,19 +722,19 @@ export const studentService = {
       if (dateOfBirth) queryParams.dateOfBirth = dateOfBirth;
       if (gradeLevel) queryParams.gradeId = gradeLevel;
       if (search) queryParams.search = search;
-      
+
       const response = await handleApiResponse(() =>
         apiClient_.get(ENDPOINTS.STUDENTS.MY_STUDENTS, {
           params: queryParams
         })
       );
-      
+
       // Handle the response data - using the same robust approach as getStudents
       const d = response?.data;
       const studentsData = Array.isArray(d?.data)
         ? d.data
         : (Array.isArray(d) ? d : (Array.isArray(response) ? response : []));
-      
+
       console.log('=== MY-STUDENTS API RESPONSE DEBUG ===');
       console.log('Request URL params sent:', queryParams);
       console.log('Raw students data from my-students API:', studentsData);
@@ -712,41 +744,41 @@ export const studentService = {
       console.log('Pagination info in response:', d?.pagination);
       console.log('Does response have pagination metadata?', !!d?.pagination);
       console.log('=== END MY-STUDENTS API RESPONSE DEBUG ===');
-      
+
       // Format student data
       const formattedStudents = studentsData.map(student => {
         return studentService.utils.formatStudentData(student);
       }).filter(student => student !== null);
-      
+
       // Robust pagination extraction - try multiple paths and check if server provided total
       let serverTotal = d?.total || d?.pagination?.total || response?.total || response?.pagination?.total;
-      
+
       // If no server total and we got exactly the limit, assume there might be more pages
       if (!serverTotal && formattedStudents.length === parseInt(limit)) {
         console.warn('No server total provided but got full page - pagination may be incomplete');
       }
-      
+
       const pagination = d?.pagination || {
         page: d?.page ?? parseInt(page),
         limit: d?.limit ?? parseInt(limit),
         total: serverTotal ?? formattedStudents.length,
         pages: d?.pages ?? Math.max(1, Math.ceil((serverTotal ?? formattedStudents.length) / (d?.limit ?? parseInt(limit))))
       };
-      
+
       console.log('Final pagination object:', pagination);
-      
+
       console.log(`getMyStudents: Found ${formattedStudents.length} students${classId ? ` for class ${classId}` : ' (all classes)'} - Page ${page}/${pagination.pages}`);
-      
+
       return {
         success: true,
         data: formattedStudents,
         pagination
       };
-      
+
     } catch (error) {
       console.error('Error in getMyStudents:', error);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: error.message || 'Failed to fetch students',
         data: [],
         pagination: { page: 1, limit: 5, total: 0, pages: 1 }
@@ -898,15 +930,15 @@ export const studentService = {
       if (isEthnicMinority === true) apiParams.isEthnicMinority = true;
 
       const response = await classService.getMasterClasses(schoolId, apiParams);
-      
+
       console.log('Raw master classes response for students:', response);
-      
+
       if (!response.success) {
         throw new Error('Failed to fetch students from school');
       }
 
       let allStudents = response.data || [];
-      
+
       // Format student data using our utility function
       const formattedStudents = allStudents.map(student => {
         return studentService.utils.formatStudentData(student);
@@ -915,7 +947,7 @@ export const studentService = {
       // Use server-side pagination directly since we only have search and pagination
       if (response.pagination) {
         console.log(`getStudentsBySchool: Using server-side search and pagination - Found ${formattedStudents.length} students from school ${schoolId} on page ${page}`);
-        
+
         return {
           success: true,
           data: formattedStudents,
@@ -925,7 +957,7 @@ export const studentService = {
 
       // Fallback to basic pagination if API doesn't provide pagination info
       console.log(`getStudentsBySchool: Fallback pagination - Found ${formattedStudents.length} students from school ${schoolId}`);
-      
+
       return {
         success: true,
         data: formattedStudents,
@@ -936,11 +968,11 @@ export const studentService = {
           pages: Math.ceil(formattedStudents.length / limit)
         }
       };
-      
+
     } catch (error) {
       console.error('Error in getStudentsBySchool:', error);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: error.message || 'Failed to fetch students from school',
         data: [],
         pagination: { page: 1, limit: 10, total: 0, pages: 1 }
@@ -1059,35 +1091,35 @@ export const studentService = {
 
       // Prefer studentId (e.g., student_number) as display id if present
       let finalId = student.student_id || student.studentId;
-      
+
       // Fallback to other possible ID fields
       if (!finalId) {
-        finalId = student.id || 
-                  student.user_id ||      
-                  student.userId ||       
-                  user.id || 
-                  user.userId || 
-                  user.user_id;
+        finalId = student.id ||
+          student.user_id ||
+          student.userId ||
+          user.id ||
+          user.userId ||
+          user.user_id;
       }
-      
+
       // Resolve the underlying users_id for updates (nested user.id in MY_STUDENTS responses)
       const resolvedUserId = user?.id || user?.userId || user?.user_id || student.user_id || student.userId || undefined;
-      
+
       // If still no ID, generate a temporary one for UI keys
       if (finalId === undefined || finalId === null) {
         finalId = user.username || student.username || user.email || student.email || `temp_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       }
-      
+
       // Names
       const firstName = student.first_name || user.firstName || user.first_name || student.firstName || '';
       const lastName = student.last_name || user.lastName || user.last_name || student.lastName || '';
-      
+
       // Student number for display
       const studentNumber = student.student_number || student.studentNumber || student.studentId || finalId;
 
       // School information (for global /students endpoint)
       const schoolInfo = student.school || {};
-      
+
       return {
         // id remains for table selection; usually studentId
         id: finalId,
@@ -1117,13 +1149,13 @@ export const studentService = {
           student.class === null && !classIdValue && !student.class_name
             ? null
             : classIdValue || classInfo.classId || classInfo.id ? {
-                id: classIdValue || classInfo.classId || classInfo.id,
-                classId: classIdValue || classInfo.classId || classInfo.id,
-                name: student.class_name || classInfo.name,
-                gradeLevel: student.class_grade_level || student.grade_level || classInfo.gradeLevel,
-                section: student.section || classInfo.section,
-                academicYear: student.class_academic_year || student.academic_year || classInfo.academicYear,
-              } : null,
+              id: classIdValue || classInfo.classId || classInfo.id,
+              classId: classIdValue || classInfo.classId || classInfo.id,
+              name: student.class_name || classInfo.name,
+              gradeLevel: student.class_grade_level || student.grade_level || classInfo.gradeLevel,
+              section: student.section || classInfo.section,
+              academicYear: student.class_academic_year || student.academic_year || classInfo.academicYear,
+            } : null,
         averageScore: student.averageScore || 0,
         timeSpent: student.timeSpent || 0,
         scores: student.scores || [],
@@ -1163,7 +1195,7 @@ export const studentService = {
         updatedAt: student.student_updated_at || student.updatedAt || student.updated_at || user.updated_at
       };
     },
-    
+
     /**
      * Format API response to consistent structure
      * @param {Object} response - Raw API response
@@ -1333,8 +1365,8 @@ export const studentService = {
         // The API returns qr_code as a base64 string (data:image/png...)
         // Validate both fields exist and have content
         const hasQRCode = userProfile.qr_code &&
-                         (userProfile.qr_code.startsWith('data:') ||
-                          userProfile.qr_code.includes('-'));
+          (userProfile.qr_code.startsWith('data:') ||
+            userProfile.qr_code.includes('-'));
         const hasQRToken = userProfile.qr_token && userProfile.qr_token.length > 10;
 
         if (hasQRCode && hasQRToken) {
@@ -1397,8 +1429,8 @@ export const studentService = {
         // The API returns qr_code as a base64 string (data:image/png...)
         // Check if it's a valid base64 string or UUID token
         const hasQRCode = userProfile.qr_code &&
-                         (userProfile.qr_code.startsWith('data:') ||
-                          userProfile.qr_code.includes('-'));
+          (userProfile.qr_code.startsWith('data:') ||
+            userProfile.qr_code.includes('-'));
         const hasQRToken = userProfile.qr_token && userProfile.qr_token.length > 10;
 
         if (hasQRCode && hasQRToken) {

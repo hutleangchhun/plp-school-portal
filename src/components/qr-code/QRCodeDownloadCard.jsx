@@ -196,9 +196,13 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
 
   if (qrCode.qrCode) {
     const img = document.createElement('img');
-    const qrUrl = qrCode.qrCode.startsWith('/') || qrCode.qrCode.startsWith('http')
-      ? qrCode.qrCode
-      : `/api/files/${qrCode.qrCode}`;
+    let qrUrl = qrCode.qrCode;
+
+    // Build a proper relative URL for fetch — always use /api/files/ path so Vite proxy handles auth token routing
+    if (!qrUrl.startsWith('http')) {
+      // Normalise to a relative path that Vite dev proxy can forward with correct CORS headers
+      qrUrl = qrUrl.startsWith('/') ? qrUrl : `/api/files/${qrUrl}`;
+    }
 
     img.style.width = '290px'; // Increased to 290px for maximum clarity
     img.style.height = '290px';
@@ -232,11 +236,11 @@ export function createQRCodeDownloadCard(qrCode, cardType = 'student', t = null)
             }
           }
 
-          // Default binary blob handling
-          const objectUrl = URL.createObjectURL(blob);
-          img.src = objectUrl;
-          // Clean up blob URL after load
-          img.onload = () => URL.revokeObjectURL(objectUrl);
+          // Convert blob → base64 data URI so html2canvas can read it from its cloned iframe
+          // without a blob URL lifecycle issue (blob URLs are revoked before html2canvas re-fetches them)
+          const reader = new FileReader();
+          reader.onload = () => { img.src = reader.result; };
+          reader.readAsDataURL(blob);
         })
         .catch(err => {
           console.error('Failed to securely fetch QR code for card:', err);
