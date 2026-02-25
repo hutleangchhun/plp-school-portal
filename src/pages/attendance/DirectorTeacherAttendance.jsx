@@ -11,6 +11,7 @@ import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import { Button } from '../../components/ui/Button';
 import Pagination from '../../components/ui/Pagination';
 import SidebarFilter from '../../components/ui/SidebarFilter';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { DatePickerWithDropdowns } from '../../components/ui/date-picker-with-dropdowns';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import Badge from '@/components/ui/Badge';
@@ -80,6 +81,7 @@ export default function TeacherAttendance() {
   });
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [showSundayAlert, setShowSundayAlert] = useState(false);
 
   const fetchingRef = useRef(false);
 
@@ -635,8 +637,7 @@ export default function TeacherAttendance() {
         userId: teacher.id, // Use userId not teacherId
         date: dateStr,
         status: status,
-        reason: reason || null,
-        submittedAt: new Date().toISOString()
+        reason: reason || null
       };
 
       if (status !== 'LEAVE') {
@@ -1033,6 +1034,7 @@ export default function TeacherAttendance() {
                       placeholder={t('pickDate', 'ជ្រើសរើសថ្ងៃ')}
                       className="w-full"
                       toDate={new Date()}
+                      disabledDays={{ after: new Date() }}
                     />
                   </div>
                 </div>
@@ -1296,7 +1298,7 @@ export default function TeacherAttendance() {
                                     if (isCurrentDay && shiftRecords.length === 0 && !isSunday) {
                                       openAttendanceModal(teacher, date, null, shiftDef);
                                     } else if (isSunday && isCurrentDay) {
-                                      _showError(t('cannotMarkSunday', 'មិនអាចបញ្ជូនវត្តមាននៅថ្ងៃអាទិត្យបានទេ'));
+                                      setShowSundayAlert(true);
                                     }
                                   }}
                                   title={isCurrentDay && shiftRecords.length === 0 ? t('clickToMarkAttendance', 'ចុចដើម្បីបញ្ជូនវត្តមាន') : ''}
@@ -1516,6 +1518,18 @@ export default function TeacherAttendance() {
           </div>
         </div>
       </SidebarFilter>
+
+      {/* Sunday Alert Dialog */}
+      <ConfirmDialog
+        isOpen={showSundayAlert}
+        onClose={() => setShowSundayAlert(false)}
+        onConfirm={() => setShowSundayAlert(false)}
+        title={t('sundayAttendance', 'វត្តមានថ្ងៃអាទិត្យ')}
+        message={t('cannotMarkSunday', 'មិនអាចបញ្ជូនវត្តមាននៅថ្ងៃអាទិត្យបានទេ')}
+        type="warning"
+        isAlert={true}
+        confirmText={t('ok', 'យល់ព្រម')}
+      />
     </PageTransition>
   );
 }

@@ -33,6 +33,7 @@ export function DatePickerWithDropdowns({
   fromDate,
   toDate,
   closeOnOutsideClick = true,
+  disabledDays,
   ...props
 }) {
   // Accept both 'value' and 'date' props for flexibility
@@ -135,7 +136,7 @@ export function DatePickerWithDropdowns({
           onMonthChange={setCurrentMonth}
           fromDate={fromDate || new Date(fromYear, 0, 1)}
           toDate={toDate || new Date(toYear, 11, 31)}
-          disabled={disabled}
+          disabled={disabledDays || disabled}
           hideNavigation
         />
       </PopoverContent>
