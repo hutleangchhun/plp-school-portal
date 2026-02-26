@@ -1944,6 +1944,7 @@ export const km = {
   teacherOverviewDesc: 'មើលបំណែងចែកទិន្នន័យរបស់គ្រូបង្រៀន',
   studentDataOverview: 'ព័ត៏មានសិស្ស',
   schoolManagementPage: 'គ្រប់គ្រងសាលារៀន',
+  userStatistics: 'ស្ថិតិអ្នកប្រើប្រាស់',
   //schedule
   noSchedule: 'មិនមានការកំណត់',
   breaktime: 'ម៉ោងសម្រាក',

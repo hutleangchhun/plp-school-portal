@@ -14,6 +14,7 @@ import { getFullName } from '../../utils/usernameUtils';
 import { graphqlService } from '../../utils/api/services/graphqlService';
 import { websocketService } from '../../utils/api/services/websocketService';
 import { Button } from '@/components/ui/Button';
+import { Table } from '../../components/ui/Table';
 import { roleOptions } from '../../utils/formOptions';
 
 const AdminUserAttendance = () => {
@@ -180,6 +181,21 @@ const AdminUserAttendance = () => {
         return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     };
 
+    const tableColumns = [
+        { key: 'time', header: t('time', 'Time'), render: (log) => formatTimeLocal(log.submittedAt || new Date().toISOString()), cellClassName: "text-gray-500 text-xs", headerClassName: "text-xs" },
+        { key: 'name', header: t('name', 'Name'), render: (log) => getFullName(log), cellClassName: "font-medium text-gray-900", headerClassName: "text-xs" },
+        { key: 'role', header: t('role', 'Role'), render: (log) => roleOptions.find(r => r.value === String(log.roleId))?.label || log.roleId || '-', cellClassName: "text-sm text-gray-500", headerClassName: "text-xs" },
+        { key: 'shift', header: t('shift', 'Shift'), render: (log) => log.shiftName || '-', cellClassName: "text-gray-600", headerClassName: "text-xs" },
+        { key: 'checkInTime', header: t('checkInTime', 'Check In Time'), render: (log) => formatTimeLocal(log.checkInTime || log.submittedAt), cellClassName: "text-gray-700 font-mono text-xs", headerClassName: "text-xs" },
+        {
+            key: 'status', header: t('status', 'Status'), render: (log) => (
+                <Badge color={getStatusBadgeColor(log.status)} variant="filled" size="sm" className="font-medium">
+                    {getStatusLabel(log.status)}
+                </Badge>
+            ), headerClassName: "text-xs"
+        }
+    ];
+
     return (
         <PageTransition variant="fade" className="flex-1 bg-gray-50">
             <div className="p-4 sm:p-6 space-y-2">
@@ -264,62 +280,13 @@ const AdminUserAttendance = () => {
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto max-h-[600px]">
-                                <table className="min-w-full text-sm">
-                                    <thead className="bg-white sticky top-0">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('time', 'Time')}</th>
-                                            <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('name', 'Name')}</th>
-                                            <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('role', 'Role')}</th>
-                                            <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('shift', 'Shift')}</th>
-                                            <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('checkInTime', 'Check In Time')}</th>
-                                            <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('status', 'Status')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-100">
-                                        {logs.length === 0 && (
-                                            <tr>
-                                                <td colSpan={5} className="px-6 py-8 text-center text-gray-500 italic">
-                                                    {t('noAttendanceData', 'No attendance records yet for today.')}
-                                                </td>
-                                            </tr>
-                                        )}
-                                        {logs.map((log, index) => {
-                                            const isNew = index === 0; // Simple highlight effect on the newest item
-                                            return (
-                                                <tr
-                                                    key={log.id || index}
-                                                    className={`hover:bg-blue-50/50 transition-colors duration-300 ${isNew ? 'bg-green-50/30' : ''}`}
-                                                >
-                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-500 text-xs">
-                                                        {formatTimeLocal(log.submittedAt || new Date().toISOString())}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                                                        {getFullName(log)}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {roleOptions.find(r => r.value === String(log.roleId))?.label || log.roleId || '-'}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                                                        {log.shiftName || '-'}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-mono text-xs">
-                                                        {formatTimeLocal(log.checkInTime || log.submittedAt)}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <Badge
-                                                            color={getStatusBadgeColor(log.status)}
-                                                            variant="filled"
-                                                            size="sm"
-                                                            className="font-medium"
-                                                        >
-                                                            {getStatusLabel(log.status)}
-                                                        </Badge>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
+                                <Table
+                                    columns={tableColumns}
+                                    data={logs}
+                                    dense={true}
+                                    stickyHeader={true}
+                                    emptyMessage={t('noAttendanceData', 'No attendance records yet for today.')}
+                                />
                             </div>
                         </CardContent>
                     </Card>

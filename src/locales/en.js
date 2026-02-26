@@ -1913,6 +1913,7 @@ export const en = {
 
   // School Management
   schoolManagementPage: 'School Management',
+  userStatistics: 'User Statistics',
   schoolManagementPageDescription: 'View, create, update, and delete schools in the system',
   schoolList: 'School List',
   addNewSchool: 'Add New School',

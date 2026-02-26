@@ -111,6 +111,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/shifts': Clock,
     '/admin/student-demographics': Database,
     '/admin/teacher-overview': Database,
+    '/admin/user-statistics': BarChart3,
     '/admin/officer-registration': UserPlus,
     '/multi-role-dashboard': Briefcase,
     'attendance': Calendar, // Parent item for attendance dropdown
@@ -157,6 +158,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, user }) {
     '/admin/school-attendance': 'blue',
     '/admin/shifts': 'blue',
     '/admin/teacher-overview': 'blue',
+    '/admin/user-statistics': 'blue',
     '/admin/officer-registration': 'blue',
     '/multi-role-dashboard': 'blue',
     'attendance': 'blue', // Parent item for attendance dropdown

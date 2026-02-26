@@ -607,9 +607,9 @@ export default function TeachersManagement() {
           newStatus
             ? t("teacherActivatedSuccess", "Teacher activated successfully")
             : t(
-                "teacherDeactivatedSuccess",
-                "Teacher deactivated successfully",
-              ),
+              "teacherDeactivatedSuccess",
+              "Teacher deactivated successfully",
+            ),
         );
 
         // Refresh data from API to ensure consistency
@@ -617,7 +617,7 @@ export default function TeachersManagement() {
       } else {
         showError(
           response?.error ||
-            t("failedToUpdateStatus", "Failed to update teacher status"),
+          t("failedToUpdateStatus", "Failed to update teacher status"),
         );
       }
     } catch (err) {
@@ -757,21 +757,21 @@ export default function TeachersManagement() {
         const classesTaught =
           teacher.classes && teacher.classes.length > 0
             ? teacher.classes
-                .map((cls) => {
-                  const rawGradeLevel =
-                    typeof cls.gradeLevel !== "undefined" &&
+              .map((cls) => {
+                const rawGradeLevel =
+                  typeof cls.gradeLevel !== "undefined" &&
                     cls.gradeLevel !== null
-                      ? String(cls.gradeLevel)
-                      : "";
+                    ? String(cls.gradeLevel)
+                    : "";
 
-                  const displayGradeLevel =
-                    rawGradeLevel === "0"
-                      ? t("grade0", "Kindergarten")
-                      : rawGradeLevel;
+                const displayGradeLevel =
+                  rawGradeLevel === "0"
+                    ? t("grade0", "Kindergarten")
+                    : rawGradeLevel;
 
-                  return `${t("class") || "Class"} ${formatClassIdentifier(displayGradeLevel, cls.section)}`;
-                })
-                .join(", ")
+                return `${t("class") || "Class"} ${formatClassIdentifier(displayGradeLevel, cls.section)}`;
+              })
+              .join(", ")
             : "";
 
         const row = [
@@ -969,7 +969,7 @@ export default function TeachersManagement() {
       if (selectedCount > 0) {
         showSuccess(
           t("selectedAllTeachers") ||
-            `Selected ${selectedCount} teacher${selectedCount !== 1 ? "s" : ""}`,
+          `Selected ${selectedCount} teacher${selectedCount !== 1 ? "s" : ""}`,
         );
       } else if (selectedCount === 0 && teachers.length > 0) {
         showSuccess(
@@ -1179,7 +1179,7 @@ export default function TeachersManagement() {
                 {(() => {
                   const rawGradeLevel =
                     typeof classItem.gradeLevel !== "undefined" &&
-                    classItem.gradeLevel !== null
+                      classItem.gradeLevel !== null
                       ? String(classItem.gradeLevel)
                       : "";
 
@@ -1222,7 +1222,7 @@ export default function TeachersManagement() {
             }
           >
             {loadingViewTeacherId ===
-            (teacher.id || teacher.teacherId || teacher.userId) ? (
+              (teacher.id || teacher.teacherId || teacher.userId) ? (
               <LoadingSpinner size="sm" variant="primary" />
             ) : (
               <Eye className="h-4 w-4" />
@@ -1258,9 +1258,9 @@ export default function TeachersManagement() {
             title={
               teacher.roleId === 14
                 ? t(
-                    "cannotChangeDirectorStatus",
-                    "Cannot change director status",
-                  )
+                  "cannotChangeDirectorStatus",
+                  "Cannot change director status",
+                )
                 : teacher.isActive
                   ? t("deactivateTeacher", "Deactivate teacher")
                   : t("activateTeacher", "Activate teacher")
@@ -1376,7 +1376,7 @@ export default function TeachersManagement() {
               )}
             </div>
             <div className="flex items-center gap-2 sm:space-x-2">
-              
+
               {/* Filter Button - Responsive (works on all screen sizes) */}
               <Button
                 onClick={() => setShowMobileFilters(true)}
@@ -1392,7 +1392,7 @@ export default function TeachersManagement() {
                 <span className="hidden sm:inline">
                   {t("filters", "Filters")}
                 </span>
-                
+
               </Button>
             </div>
           </div>
@@ -1667,13 +1667,13 @@ export default function TeachersManagement() {
         message={
           selectedTeacher?.isActive
             ? t(
-                "confirmDeactivateTeacher",
-                "Are you sure you want to deactivate this teacher? They will no longer be able to access the system.",
-              )
+              "confirmDeactivateTeacher",
+              "Are you sure you want to deactivate this teacher? They will no longer be able to access the system.",
+            )
             : t(
-                "confirmActivateTeacher",
-                "Are you sure you want to activate this teacher? They will be able to access the system.",
-              )
+              "confirmActivateTeacher",
+              "Are you sure you want to activate this teacher? They will be able to access the system.",
+            )
         }
         type={selectedTeacher?.isActive ? "warning" : "info"}
         confirmText={

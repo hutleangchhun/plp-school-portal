@@ -21,6 +21,7 @@ import OfficerRegistration from './pages/admin/OfficerRegistration';
 import SchoolManagement from './pages/admin/SchoolManagement';
 import ShiftsManagement from './pages/admin/ShiftsManagement';
 import AdminUserAttendance from './pages/admin/AdminUserAttendance';
+import AdminUserStatistics from './pages/admin/AdminUserStatistics';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -347,6 +348,15 @@ function AppContent() {
               </ProtectedRoute>
             }>
               <Route index element={<AdminUserAttendance />} />
+            </Route>
+
+            {/* Admin User Statistics route - role ID 1 only */}
+            <Route path="admin/user-statistics" element={
+              <ProtectedRoute path="/admin/user-statistics" user={user}>
+                <DashboardLayout user={user} onLogout={handleLogout} />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminUserStatistics />} />
             </Route>
 
             <Route path="students" element={
