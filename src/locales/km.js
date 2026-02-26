@@ -1816,7 +1816,7 @@ export const km = {
   error: 'កំហុស',
   noUsersFound: 'រកមិនឃើញអ្នកប្រើប្រាស់',
   fullName: 'ឈ្មោះពេញលេញ',
-  role: 'ជ្រើសរើសតួនាទី និងមុខតំណែង',
+  role: 'តួនាទី និងមុខតំណែង',
   qrCode: 'QR Code',
   status: 'ស្ថានភាព',
   director: 'នាយក',
