@@ -801,7 +801,7 @@ export default function TeacherSelfAttendance() {
 
                                   return { key, shiftId, classId, attendance, shiftName: shiftName || t("unknownShift", "មិនស្គាល់វេន") };
                                 })
-                                .filter(row => !row.attendance.isCheckedOut && row.attendance.status !== "LEAVE" && row.attendance.status !== "ABSENT" && row.attendance.checkInTime)
+                                .filter(row => !row.attendance.isCheckedOut && row.attendance.status !== "LEAVE" && row.attendance.status !== "ABSENT")
                                 .map((row) => (
                                   <Button
                                     key={row.key}
@@ -1014,11 +1014,6 @@ export default function TeacherSelfAttendance() {
                         render: (row) => {
                           if (row.attendance.status === "LEAVE" || row.attendance.status === "ABSENT")
                             return <span className="text-gray-400">-</span>;
-
-                          // If there's no checkInTime, they can't be pending checkout.
-                          if (!row.attendance.checkInTime && !row.attendance.checkOutTime) {
-                            return <span className="text-gray-400">-</span>;
-                          }
 
                           if (row.attendance.isCheckedOut === true) {
                             const time = row.attendance.checkOutTime
