@@ -298,7 +298,7 @@ const AdminUserAttendance = () => {
                                                         {log.shiftName || '-'}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-mono text-xs">
-                                                        {formatTimeLocal(log.checkInTime)}
+                                                        {formatTimeLocal(log.checkInTime || log.submittedAt)}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <Badge
