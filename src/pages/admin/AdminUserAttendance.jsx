@@ -14,6 +14,7 @@ import { getFullName } from '../../utils/usernameUtils';
 import { graphqlService } from '../../utils/api/services/graphqlService';
 import { websocketService } from '../../utils/api/services/websocketService';
 import { Button } from '@/components/ui/Button';
+import { roleOptions } from '../../utils/formOptions';
 
 const AdminUserAttendance = () => {
     const { t } = useLanguage();
@@ -34,7 +35,7 @@ const AdminUserAttendance = () => {
         query {
           attendanceTodayStats { total present absent late leave }
           attendanceTodayLog(limit: 50) {
-            id userId firstName lastName status checkInTime shiftName submittedAt
+            id userId firstName lastName status checkInTime shiftName submittedAt roleId
           }
         }
       `;
@@ -268,6 +269,7 @@ const AdminUserAttendance = () => {
                                         <tr>
                                             <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('time', 'Time')}</th>
                                             <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('name', 'Name')}</th>
+                                            <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('role', 'Role')}</th>
                                             <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('shift', 'Shift')}</th>
                                             <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('checkInTime', 'Check In Time')}</th>
                                             <th className="px-6 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">{t('status', 'Status')}</th>
@@ -293,6 +295,9 @@ const AdminUserAttendance = () => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
                                                         {getFullName(log)}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {roleOptions.find(r => r.value === String(log.roleId))?.label || log.roleId || '-'}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-gray-600">
                                                         {log.shiftName || '-'}
