@@ -22,6 +22,7 @@ import SchoolManagement from './pages/admin/SchoolManagement';
 import ShiftsManagement from './pages/admin/ShiftsManagement';
 import AdminUserAttendance from './pages/admin/AdminUserAttendance';
 import AdminUserStatistics from './pages/admin/AdminUserStatistics';
+import AdminStaffDataCompletion from './pages/admin/AdminStaffDataCompletion';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/auth/Login';
@@ -359,6 +360,16 @@ function AppContent() {
               <Route index element={<AdminUserStatistics />} />
             </Route>
 
+            {/* Admin Staff Data Completion route - role ID 1 only */}
+            <Route path="admin/staff-data-completion" element={
+              <ProtectedRoute path="/admin/staff-data-completion" user={user}>
+                <DashboardLayout user={user} onLogout={handleLogout} />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminStaffDataCompletion />} />
+            </Route>
+
+
             <Route path="students" element={
               <ProtectedRoute path="/students" user={user}>
                 <DashboardLayout user={user} onLogout={handleLogout} />
@@ -550,7 +561,7 @@ function AppContent() {
           {/* Catch-all route for 404 pages */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </Router>
+      </Router >
     </>
   );
 }

@@ -13,7 +13,6 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import TooltipChart from '../../components/ui/TooltipChart';
-import { Checkbox } from '../../components/ui/Checkbox';
 import { ListFilter } from 'lucide-react';
 
 export default function AdminUserStatistics() {
@@ -103,34 +102,6 @@ export default function AdminUserStatistics() {
         setLoading(true);
         setError(null);
         try {
-            const query = `
-        query($provinceId: Int, $districtId: Int, $schoolId: Int, $noClasses: Boolean, $noTeachers: Boolean, $noStudents: Boolean, $page: Int, $limit: Int) {
-          schoolStatus(
-            provinceId: $provinceId
-            districtId: $districtId
-            schoolId: $schoolId
-            noClasses: $noClasses
-            noTeachers: $noTeachers
-            noStudents: $noStudents
-            page: $page
-            limit: $limit
-          ) {
-            total
-            page
-            limit
-            totalPages
-            data {
-              schoolId
-              schoolName
-              schoolCode
-              classCount
-              teacherCount
-              studentCount
-            }
-          }
-        }
-      `;
-
             const variables = {
                 page: parseInt(page),
                 limit: parseInt(limit)
@@ -143,7 +114,7 @@ export default function AdminUserStatistics() {
             if (noTeachers) variables.noTeachers = true;
             if (noStudents) variables.noStudents = true;
 
-            const result = await graphqlService.query(query, variables);
+            const result = await graphqlService.getSchoolStatus(variables);
 
             if (result && result.schoolStatus) {
                 setData(result.schoolStatus.data || []);
@@ -162,23 +133,7 @@ export default function AdminUserStatistics() {
     const fetchChartData = async () => {
         setChartLoading(true);
         try {
-            const query = `
-                query {
-                  provinceSchoolStatus {
-                    provinceId
-                    provinceNameEn
-                    provinceNameKh
-                    totalSchools
-                    schoolsWithClasses
-                    schoolsWithClassesPct
-                    schoolsWithTeachers
-                    schoolsWithTeachersPct
-                    schoolsWithStudents
-                    schoolsWithStudentsPct
-                  }
-                }
-            `;
-            const result = await graphqlService.query(query, {});
+            const result = await graphqlService.getProvinceSchoolStatus();
             if (result && result.provinceSchoolStatus) {
                 // Parse percentage strings to numbers for accurate charting
                 const processedData = result.provinceSchoolStatus.map(item => ({
@@ -198,7 +153,7 @@ export default function AdminUserStatistics() {
 
     useEffect(() => {
         fetchData();
-    }, [page, limit]);
+    }, [page, limit, noClasses, noTeachers, noStudents]);
 
     useEffect(() => {
         fetchChartData();
@@ -327,32 +282,6 @@ export default function AdminUserStatistics() {
                             />
                         </div>
 
-                        <div className="pt-2 border-t border-slate-100 space-y-3">
-                            <label className="flex items-center text-sm font-medium text-slate-700 cursor-pointer hover:text-blue-600 transition-colors">
-                                <Checkbox
-                                    checked={noClasses}
-                                    onCheckedChange={setNoClasses}
-                                    className="mr-2 border-slate-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 text-white"
-                                />
-                                {t('noClasses', 'គ្មានថ្នាក់រៀន')}
-                            </label>
-                            <label className="flex items-center text-sm font-medium text-slate-700 cursor-pointer hover:text-blue-600 transition-colors">
-                                <Checkbox
-                                    checked={noTeachers}
-                                    onCheckedChange={setNoTeachers}
-                                    className="mr-2 border-slate-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 text-white"
-                                />
-                                {t('noTeachers', 'គ្មានគ្រូបង្រៀន')}
-                            </label>
-                            <label className="flex items-center text-sm font-medium text-slate-700 cursor-pointer hover:text-blue-600 transition-colors">
-                                <Checkbox
-                                    checked={noStudents}
-                                    onCheckedChange={setNoStudents}
-                                    className="mr-2 border-slate-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 text-white"
-                                />
-                                {t('noStudents', 'គ្មានសិស្ស')}
-                            </label>
-                        </div>
                     </div>
                 </SidebarFilter>
 
@@ -417,9 +346,34 @@ export default function AdminUserStatistics() {
                 {/* Data Table Card */}
                 <FadeInSection delay={0.3}>
                     <div className="bg-white p-4 rounded-sm shadow-sm border border-slate-200 mb-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h5 className="text-md font-bold text-slate-800">{t('schoolData', 'ទិន្នន័យសាលា')}</h5>
-                            <div className="flex items-center gap-2">
+                        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 gap-4">
+                            <div className="flex flex-col items-start gap-2 w-full xl:w-auto">
+                                <h5 className="text-md font-bold text-slate-800 whitespace-nowrap">{t('schoolData', 'ទិន្នន័យសាលា')}</h5>
+                                <div className="flex flex-wrap gap-2">
+                                    <Button
+                                        variant={noClasses ? "primary" : "outline"}
+                                        size="sm"
+                                        onClick={() => { setNoClasses(prev => !prev); if (page !== 1) setPage(1); }}
+                                    >
+                                        {t('noClasses', 'គ្មានថ្នាក់រៀន')}
+                                    </Button>
+                                    <Button
+                                        variant={noTeachers ? "primary" : "outline"}
+                                        size="sm"
+                                        onClick={() => { setNoTeachers(prev => !prev); if (page !== 1) setPage(1); }}
+                                    >
+                                        {t('noTeachers', 'គ្មានគ្រូបង្រៀន')}
+                                    </Button>
+                                    <Button
+                                        variant={noStudents ? "primary" : "outline"}
+                                        size="sm"
+                                        onClick={() => { setNoStudents(prev => !prev); if (page !== 1) setPage(1); }}
+                                    >
+                                        {t('noStudents', 'គ្មានសិស្ស')}
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-end xl:self-auto">
                                 <Button
                                     variant="primary"
                                     onClick={() => setShowFilters(true)}

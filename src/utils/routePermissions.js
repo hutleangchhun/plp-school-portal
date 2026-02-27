@@ -187,6 +187,10 @@ export const routePermissions = {
     allowedRoles: [ROLES.ROLE1_ONLY],
     component: 'AdminUserStatistics'
   },
+  '/admin/staff-data-completion': {
+    allowedRoles: [ROLES.ROLE1_ONLY],
+    component: 'AdminStaffDataCompletion'
+  },
   '/multi-role-dashboard': {
     allowedRoles: [ROLES.TEACHER, ROLES.DIRECTOR, ROLES.RESTRICTED_ROLES_ONLY],
     component: 'MultiRoleDashboardPage'
@@ -622,6 +626,10 @@ export const getNavigationItems = (user, t) => {
     {
       name: t('userStatistics', 'User Statistics'),
       href: '/admin/user-statistics',
+    },
+    {
+      name: t('staffDataCompletion', 'ការបំពេញទិន្នន័យបុគ្គលិក'),
+      href: '/admin/staff-data-completion',
     },
   ];
 
