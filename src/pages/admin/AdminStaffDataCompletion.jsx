@@ -15,6 +15,7 @@ import TooltipChart from '../../components/ui/TooltipChart';
 import Dropdown from '../../components/ui/Dropdown';
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
 import { Button } from '../../components/ui/Button';
+import { Badge } from '../../components/ui/Badge';
 import { roleOptions } from '../../utils/formOptions';
 
 const getBarColor = (pct) => {
@@ -34,10 +35,8 @@ const STAFF_FIELD_KEY_MAP = {
     'weightKg': 'weight', 'heightCm': 'height',
     'maritalStatus': 'maritalStatus', 'role': 'role', 'bookIds': 'bookIds',
     'residence': 'currentResidence', 'placeOfBirth': 'placeOfBirth',
-    'repeated_class_info': 'repeated_class_info',
-    'repeatedClassInfo': 'repeated_class_info',
-    'repeated_grade_info': 'repeated_class_info',
-    'repeatedGradeInfo': 'repeated_class_info',
+    'repeated_class_info': 'repeated_class_info', 'repeatedClassInfo': 'repeated_class_info',
+    'repeated_grade_info': 'repeated_class_info', 'repeatedGradeInfo': 'repeated_class_info',
     'teacher.gradeLevel': 'gradeLevel', 'teacher.employmentType': 'employmentType',
     'teacher.salaryType': 'salaryType', 'teacher.educationLevel': 'educationLevel',
     'teacher.trainingType': 'trainingType', 'teacher.teachingType': 'teachingType',
@@ -62,6 +61,7 @@ const STAFF_FIELD_KEY_MAP = {
     'user.accessibility': 'accessibility', 'user.weight': 'weight',
     'user.height': 'height', 'user.bmi': 'bmi',
     'user.weight_kg': 'weight', 'user.height_cm': 'height',
+    'user.weightKg': 'weight', 'user.heightCm': 'height',
     'user.maritalStatus': 'maritalStatus', 'user.role': 'role', 'user.bookIds': 'bookIds',
 };
 
@@ -76,10 +76,8 @@ const STUDENT_FIELD_KEY_MAP = {
     'weightKg': 'weight', 'heightCm': 'height',
     'maritalStatus': 'maritalStatus', 'role': 'role',
     'residence': 'currentResidence', 'placeOfBirth': 'placeOfBirth',
-    'repeated_class_info': 'repeated_class_info',
-    'repeatedClassInfo': 'repeated_class_info',
-    'repeated_grade_info': 'repeated_class_info',
-    'repeatedGradeInfo': 'repeated_class_info',
+    'repeated_class_info': 'repeated_class_info', 'repeatedClassInfo': 'repeated_class_info',
+    'repeated_grade_info': 'repeated_class_info', 'repeatedGradeInfo': 'repeated_class_info',
     'student.studentNumber': 'studentNumber',
     'student.poorCardGrade': 'poorCardGrade',
     'student.academicYear': 'academicYear',
@@ -89,10 +87,8 @@ const STUDENT_FIELD_KEY_MAP = {
     'student.repeatedClassInfo': 'repeated_class_info',
     'student.repeated_grade_info': 'repeated_class_info',
     'student.repeatedGradeInfo': 'repeated_class_info',
-    'student.weight_kg': 'weight',
-    'student.height_cm': 'height',
-    'student.weightKg': 'weight',
-    'student.heightCm': 'height',
+    'student.weight_kg': 'weight', 'student.height_cm': 'height',
+    'student.weightKg': 'weight', 'student.heightCm': 'height',
 };
 
 // ── Shared category key map ────────────────────────────────────────────────────
@@ -107,8 +103,12 @@ const CATEGORY_KEY_MAP = {
     'Learning': 'learning', 'System': 'system', 'Other': 'other',
 };
 
-// ── Reusable DataCompletionChart ───────────────────────────────────────────────
-function DataCompletionChart({ fieldKeyMap, fetchFn, totalLabel, showRoleFilter, t, showToast }) {
+// ── Chart sub-component (receives committed location filters as props) ──────────
+function DataCompletionChart({
+    fieldKeyMap, fetchFn, totalLabel, showRoleFilter,
+    provinceId, districtId, schoolId,
+    t, showToast
+}) {
     const translateField = (fieldName, fallback) => {
         const key = fieldKeyMap[fieldName];
         return key ? t(key, fallback) : fallback;
@@ -122,38 +122,9 @@ function DataCompletionChart({ fieldKeyMap, fetchFn, totalLabel, showRoleFilter,
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('');
-    const [showFilters, setShowFilters] = useState(false);
 
-    // Filters
-    const [provinceId, setProvinceId] = useState('');
-    const [districtId, setDistrictId] = useState('');
-    const [schoolId, setSchoolId] = useState('');
+    // Role filter — Staff tab only, inline dropdown
     const [roleId, setRoleId] = useState('');
-
-    // Pending
-    const [pendingProvinceId, setPendingProvinceId] = useState('');
-    const [pendingDistrictId, setPendingDistrictId] = useState('');
-    const [pendingSchoolId, setPendingSchoolId] = useState('');
-    const [pendingRoleId, setPendingRoleId] = useState('');
-
-    // Location
-    const [provinces, setProvinces] = useState([]);
-    const [districts, setDistricts] = useState([]);
-    const [schools, setSchools] = useState([]);
-
-    useEffect(() => {
-        locationService.getProvinces().then(res => setProvinces(Array.isArray(res) ? res : (res?.data || []))).catch(() => { });
-    }, []);
-
-    useEffect(() => {
-        if (!pendingProvinceId) { setDistricts([]); return; }
-        locationService.getDistrictsByProvince(pendingProvinceId).then(res => setDistricts(Array.isArray(res) ? res : (res?.data || []))).catch(() => { });
-    }, [pendingProvinceId]);
-
-    useEffect(() => {
-        if (!pendingDistrictId) { setSchools([]); return; }
-        schoolService.getSchoolsByDistrict(pendingDistrictId).then(res => setSchools(res?.data || [])).catch(() => { });
-    }, [pendingDistrictId]);
 
     const fetchData = useCallback(async () => {
         setLoading(true); setError(null);
@@ -165,7 +136,7 @@ function DataCompletionChart({ fieldKeyMap, fetchFn, totalLabel, showRoleFilter,
             if (showRoleFilter && roleId) variables.roleId = parseInt(roleId);
             const result = await fetchFn(variables);
             setData(result ?? null);
-            // 🔍 DEBUG: log untranslated fieldNames (remove after fixing)
+            // 🔍 DEBUG: log untranslated fieldNames
             if (result?.fieldStatistics) {
                 const untranslated = result.fieldStatistics
                     .filter(f => !fieldKeyMap[f.fieldName])
@@ -178,22 +149,12 @@ function DataCompletionChart({ fieldKeyMap, fetchFn, totalLabel, showRoleFilter,
         } finally {
             setLoading(false);
         }
-    }, [provinceId, districtId, schoolId, roleId, fetchFn, showRoleFilter, showToast, t]);
+    }, [provinceId, districtId, schoolId, roleId, fetchFn, showRoleFilter, showToast, t, fieldKeyMap]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    const handleApply = () => {
-        setProvinceId(pendingProvinceId);
-        setDistrictId(pendingDistrictId);
-        setSchoolId(pendingSchoolId);
-        setRoleId(pendingRoleId);
-        setShowFilters(false);
-    };
-    const handleClear = () => {
-        setPendingProvinceId(''); setPendingDistrictId(''); setPendingSchoolId(''); setPendingRoleId('');
-        setProvinceId(''); setDistrictId(''); setSchoolId(''); setRoleId('');
-    };
-    const hasActiveFilters = !!(provinceId || districtId || schoolId || roleId);
+    // Reset category when tab data changes
+    useEffect(() => { setSelectedCategory(''); }, [provinceId, districtId, schoolId]);
 
     const fieldStats = data?.fieldStatistics || [];
     const categories = [...new Set(fieldStats.map(f => f.category))].filter(Boolean);
@@ -202,7 +163,6 @@ function DataCompletionChart({ fieldKeyMap, fetchFn, totalLabel, showRoleFilter,
     const chartData = filteredStats.map(f => ({
         name: translateField(f.fieldName, f.fieldDisplayName),
         filledPct: parseFloat(f.filledPercentage) || 0,
-        emptyPct: parseFloat(f.emptyPercentage) || 0,
         filledCount: f.filledCount,
         emptyCount: f.emptyCount,
         category: f.category,
@@ -212,68 +172,11 @@ function DataCompletionChart({ fieldKeyMap, fetchFn, totalLabel, showRoleFilter,
         ? (chartData.reduce((s, d) => s + d.filledPct, 0) / chartData.length).toFixed(1)
         : 0;
 
+    const hasRoleFilter = !!(roleId);
+
     return (
         <>
-            {/* Sidebar Filter */}
-            <SidebarFilter
-                isOpen={showFilters}
-                onClose={() => setShowFilters(false)}
-                title={t('filters', 'ចម្រោះ')}
-                subtitle={t('filterByLocation', 'ចម្រោះតាមទីតាំង')}
-                onApply={handleApply}
-                onClearFilters={handleClear}
-                hasFilters={hasActiveFilters}
-            >
-                <div className="space-y-4">
-                    <div className="space-y-1">
-                        <label className="block text-sm font-medium text-slate-700">{t('province', 'ខេត្ត')}</label>
-                        <Dropdown
-                            value={pendingProvinceId}
-                            onValueChange={(v) => { setPendingProvinceId(v); setPendingDistrictId(''); setPendingSchoolId(''); }}
-                            options={[{ value: '', label: t('allProvinces', 'ខេត្តទាំងអស់') }, ...provinces.map(p => ({ value: String(p.id), label: p.provinceNameKh || p.provinceNameEn || p.provinceName }))]}
-                            placeholder={t('allProvinces', 'ខេត្តទាំងអស់')}
-                            className="w-full"
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="block text-sm font-medium text-slate-700">{t('district', 'ស្រុក')}</label>
-                        <Dropdown
-                            value={pendingDistrictId}
-                            onValueChange={(v) => { setPendingDistrictId(v); setPendingSchoolId(''); }}
-                            options={[{ value: '', label: t('allDistricts', 'ស្រុកទាំងអស់') }, ...districts.map(d => ({ value: String(d.id), label: d.districtNameKh || d.districtNameEn || d.districtName || d.name }))]}
-                            placeholder={t('allDistricts', 'ស្រុកទាំងអស់')}
-                            className="w-full"
-                            disabled={!pendingProvinceId}
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="block text-sm font-medium text-slate-700">{t('school', 'សាលា')}</label>
-                        <SearchableDropdown
-                            value={pendingSchoolId}
-                            onValueChange={setPendingSchoolId}
-                            options={[{ value: '', label: t('allSchools', 'សាលាទាំងអស់'), secondary: '' }, ...schools.map(s => ({ value: String(s.id), label: s.schoolName, secondary: s.schoolCode }))]}
-                            placeholder={t('allSchools', 'សាលាទាំងអស់')}
-                            searchPlaceholder={t('searchSchool', 'ស្វែងរកសាលា...')}
-                            showSecondaryInfo={true}
-                            secondaryInfoKey="secondary"
-                            className="w-full"
-                            disabled={!pendingDistrictId}
-                        />
-                    </div>
-                    {showRoleFilter && (
-                        <div className="space-y-1">
-                            <label className="block text-sm font-medium text-slate-700">{t('role', 'តួនាទី')}</label>
-                            <Dropdown
-                                value={pendingRoleId}
-                                onValueChange={setPendingRoleId}
-                                options={[{ value: '', label: t('allRoles', 'តួនាទីទាំងអស់') }, ...roleOptions]}
-                                placeholder={t('allRoles', 'តួនាទីទាំងអស់')}
-                                className="w-full"
-                            />
-                        </div>
-                    )}
-                </div>
-            </SidebarFilter>
+
 
             {/* Summary cards */}
             {data && (
@@ -307,6 +210,7 @@ function DataCompletionChart({ fieldKeyMap, fetchFn, totalLabel, showRoleFilter,
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 border-b border-slate-100 pb-3">
                     <h5 className="text-md font-bold text-slate-800">{t('fieldCompletionChart', 'ក្រាហ្វការបំពេញទិន្នន័យ')}</h5>
                     <div className="flex flex-wrap items-center gap-2">
+                        {/* Category tabs */}
                         <Button variant={selectedCategory === '' ? 'primary' : 'outline'} size="sm" onClick={() => setSelectedCategory('')}>
                             {t('all', 'ទាំងអស់')}
                         </Button>
@@ -315,10 +219,16 @@ function DataCompletionChart({ fieldKeyMap, fetchFn, totalLabel, showRoleFilter,
                                 {translateCategory(cat)}
                             </Button>
                         ))}
-                        <Button variant="primary" size="sm" onClick={() => setShowFilters(true)} className="relative">
-                            <ListFilter className="w-4 h-4" />
-                            {hasActiveFilters && <span className="flex h-2 w-2 rounded-full bg-white absolute -top-1 -right-1" />}
-                        </Button>
+                        {/* Role inline dropdown (Staff only) */}
+                        {showRoleFilter && (
+                            <Dropdown
+                                value={roleId}
+                                onValueChange={setRoleId}
+                                options={[{ value: '', label: t('allRoles', 'តួនាទីទាំងអស់') }, ...roleOptions]}
+                                placeholder={t('allRoles', 'តួនាទីទាំងអស់')}
+                                className="min-w-[140px]"
+                            />
+                        )}
                         <Button variant="success" size="sm" onClick={fetchData} disabled={loading}>
                             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         </Button>
@@ -374,11 +284,69 @@ function DataCompletionChart({ fieldKeyMap, fetchFn, totalLabel, showRoleFilter,
     );
 }
 
-// ── Main page with tabs ────────────────────────────────────────────────────────
+// ── Main page with GLOBAL location filter + tabs ───────────────────────────────
 export default function AdminStaffDataCompletion() {
     const { t } = useLanguage();
     const { showToast } = useToast();
 
+    // ── Global location filter state ──────────────────────────────────────────
+    const [showFilters, setShowFilters] = useState(false);
+
+    // Committed (applied) values
+    const [provinceId, setProvinceId] = useState('');
+    const [districtId, setDistrictId] = useState('');
+    const [schoolId, setSchoolId] = useState('');
+
+    // Pending (sidebar draft) values
+    const [pendingProvinceId, setPendingProvinceId] = useState('');
+    const [pendingDistrictId, setPendingDistrictId] = useState('');
+    const [pendingSchoolId, setPendingSchoolId] = useState('');
+
+    // Location data
+    const [provinces, setProvinces] = useState([]);
+    const [districts, setDistricts] = useState([]);
+    const [schools, setSchools] = useState([]);
+
+    useEffect(() => {
+        locationService.getProvinces()
+            .then(res => setProvinces(Array.isArray(res) ? res : (res?.data || [])))
+            .catch(() => { });
+    }, []);
+
+    useEffect(() => {
+        if (!pendingProvinceId) { setDistricts([]); return; }
+        locationService.getDistrictsByProvince(pendingProvinceId)
+            .then(res => setDistricts(Array.isArray(res) ? res : (res?.data || [])))
+            .catch(() => { });
+    }, [pendingProvinceId]);
+
+    useEffect(() => {
+        if (!pendingDistrictId) { setSchools([]); return; }
+        schoolService.getSchoolsByDistrict(pendingDistrictId)
+            .then(res => setSchools(res?.data || []))
+            .catch(() => { });
+    }, [pendingDistrictId]);
+
+    const handleApply = () => {
+        setProvinceId(pendingProvinceId);
+        setDistrictId(pendingDistrictId);
+        setSchoolId(pendingSchoolId);
+        setShowFilters(false);
+    };
+    const handleClear = () => {
+        setPendingProvinceId(''); setPendingDistrictId(''); setPendingSchoolId('');
+        setProvinceId(''); setDistrictId(''); setSchoolId('');
+    };
+    const hasActiveFilters = !!(provinceId || districtId || schoolId);
+
+    // ── Active filter chips (shown below header) ──────────────────────────────
+    const filterChips = [
+        provinceId && { label: provinces.find(p => String(p.id) === provinceId)?.provinceNameKh || provinceId, onRemove: () => { setProvinceId(''); setPendingProvinceId(''); setDistrictId(''); setPendingDistrictId(''); setSchoolId(''); setPendingSchoolId(''); } },
+        districtId && { label: districts.find(d => String(d.id) === districtId)?.districtNameKh || districtId, onRemove: () => { setDistrictId(''); setPendingDistrictId(''); setSchoolId(''); setPendingSchoolId(''); } },
+        schoolId && { label: schools.find(s => String(s.id) === schoolId)?.schoolName || schoolId, onRemove: () => { setSchoolId(''); setPendingSchoolId(''); } },
+    ].filter(Boolean);
+
+    // ── Tabs ──────────────────────────────────────────────────────────────────
     const TABS = [
         { key: 'staff', label: t('staff', 'បុគ្គលិក'), icon: GraduationCap },
         { key: 'student', label: t('student', 'សិស្ស'), icon: BookOpen },
@@ -393,18 +361,93 @@ export default function AdminStaffDataCompletion() {
 
     return (
         <PageTransition>
+            {/* Global Location Sidebar Filter */}
+            <SidebarFilter
+                isOpen={showFilters}
+                onClose={() => setShowFilters(false)}
+                title={t('filters', 'ចម្រោះ')}
+                subtitle={t('filterByLocation', 'ចម្រោះតាមទីតាំង')}
+                onApply={handleApply}
+                onClearFilters={handleClear}
+                hasFilters={hasActiveFilters}
+            >
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-slate-700">{t('province', 'ខេត្ត')}</label>
+                        <Dropdown
+                            value={pendingProvinceId}
+                            onValueChange={(v) => { setPendingProvinceId(v); setPendingDistrictId(''); setPendingSchoolId(''); }}
+                            options={[{ value: '', label: t('allProvinces', 'ខេត្តទាំងអស់') }, ...provinces.map(p => ({ value: String(p.id), label: p.provinceNameKh || p.provinceNameEn || p.provinceName }))]}
+                            placeholder={t('allProvinces', 'ខេត្តទាំងអស់')}
+                            className="w-full"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-slate-700">{t('district', 'ស្រុក')}</label>
+                        <Dropdown
+                            value={pendingDistrictId}
+                            onValueChange={(v) => { setPendingDistrictId(v); setPendingSchoolId(''); }}
+                            options={[{ value: '', label: t('allDistricts', 'ស្រុកទាំងអស់') }, ...districts.map(d => ({ value: String(d.id), label: d.districtNameKh || d.districtNameEn || d.districtName || d.name }))]}
+                            placeholder={t('allDistricts', 'ស្រុកទាំងអស់')}
+                            className="w-full"
+                            disabled={!pendingProvinceId}
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-slate-700">{t('school', 'សាលា')}</label>
+                        <SearchableDropdown
+                            value={pendingSchoolId}
+                            onValueChange={setPendingSchoolId}
+                            options={[{ value: '', label: t('allSchools', 'សាលាទាំងអស់'), secondary: '' }, ...schools.map(s => ({ value: String(s.id), label: s.schoolName, secondary: s.schoolCode }))]}
+                            placeholder={t('allSchools', 'សាលាទាំងអស់')}
+                            searchPlaceholder={t('searchSchool', 'ស្វែងរកសាលា...')}
+                            showSecondaryInfo={true}
+                            secondaryInfoKey="secondary"
+                            className="w-full"
+                            disabled={!pendingDistrictId}
+                        />
+                    </div>
+                </div>
+            </SidebarFilter>
+
             <div className="p-4 sm:p-6">
                 {/* Header */}
                 <FadeInSection delay={0}>
-                    <div className="mb-6">
-                        <h1 className="text-xl font-bold text-slate-900">{t('dataCompletion', 'ការបំពេញទិន្នន័យ')}</h1>
-                        <p className="text-sm text-slate-500 mt-1">{t('dataCompletionDesc', 'តាមដានភាពពេញលេញនៃទិន្នន័យតាមក្រឡា')}</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                        <div>
+                            <h1 className="text-xl font-bold text-slate-900">{t('dataCompletion', 'ការបំពេញទិន្នន័យ')}</h1>
+                            <p className="text-sm text-slate-500 mt-0.5">{t('dataCompletionDesc', 'តាមដានភាពពេញលេញនៃទិន្នន័យតាមក្រឡា')}</p>
+                        </div>
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => { setPendingProvinceId(provinceId); setPendingDistrictId(districtId); setPendingSchoolId(schoolId); setShowFilters(true); }}
+                            className="relative self-start sm:self-auto"
+                        >
+                            <ListFilter className="w-4 h-4" />
+                            {hasActiveFilters && <span className="flex h-2 w-2 rounded-full bg-white absolute -top-1 -right-1" />}
+                        </Button>
                     </div>
+
+                    {/* Active filter chips */}
+                    {filterChips.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            {filterChips.map((chip, i) => (
+                                <Badge key={i} variant="outline" color="blue" size="sm" className="gap-1 cursor-default">
+                                    {chip.label}
+                                    <button onClick={chip.onRemove} className="ml-1 text-blue-400 hover:text-blue-700 leading-none">&times;</button>
+                                </Badge>
+                            ))}
+                            <button onClick={handleClear} className="text-xs text-slate-400 hover:text-slate-600 underline">
+                                {t('clearAll', 'លុបទាំងអស់')}
+                            </button>
+                        </div>
+                    )}
                 </FadeInSection>
 
                 {/* Tab switcher */}
                 <FadeInSection delay={0.05}>
-                    <div className="flex gap-1 bg-slate-100 p-1 rounded-sm w-fit mb-6">
+                    <div className="flex gap-1 bg-slate-100 p-1 rounded-sm w-fit mb-6 mt-4">
                         {TABS.map(tab => {
                             const Icon = tab.icon;
                             const active = activeTab === tab.key;
@@ -413,10 +456,7 @@ export default function AdminStaffDataCompletion() {
                                     key={tab.key}
                                     onClick={() => setActiveTab(tab.key)}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-medium transition-all duration-200
-                                        ${active
-                                            ? 'bg-white text-blue-700 shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-700'
-                                        }`}
+                                        ${active ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                                 >
                                     <Icon className="w-4 h-4" />
                                     {tab.label}
@@ -426,7 +466,7 @@ export default function AdminStaffDataCompletion() {
                     </div>
                 </FadeInSection>
 
-                {/* Tab content */}
+                {/* Tab content — charts receive global location filter as props */}
                 <FadeInSection delay={0.1}>
                     {activeTab === 'staff' ? (
                         <DataCompletionChart
@@ -435,6 +475,10 @@ export default function AdminStaffDataCompletion() {
                             fetchFn={fetchStaff}
                             totalLabel={t('totalStaff', 'បុគ្គលិកសរុប')}
                             showRoleFilter={true}
+                            provinceId={provinceId}
+                            districtId={districtId}
+                            schoolId={schoolId}
+
                             t={t}
                             showToast={showToast}
                         />
@@ -445,6 +489,10 @@ export default function AdminStaffDataCompletion() {
                             fetchFn={fetchStudent}
                             totalLabel={t('totalStudents', 'សិស្សសរុប')}
                             showRoleFilter={false}
+                            provinceId={provinceId}
+                            districtId={districtId}
+                            schoolId={schoolId}
+
                             t={t}
                             showToast={showToast}
                         />
