@@ -178,7 +178,7 @@ const AdminUserAttendance = () => {
         const dateObj = new Date(normalizedStr);
         if (isNaN(dateObj.getTime())) return timeValue;
 
-        return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        return dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Phnom_Penh', hour12: false });
     };
 
     const tableColumns = [
