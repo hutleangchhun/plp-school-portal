@@ -55,6 +55,21 @@ export default defineConfig({
         changeOrigin: true,
         secure: false
       },
+      '/api/v1/export/attendance': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+        secure: false
+      },
+      '/api/v1/export/students': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+        secure: false
+      },
+      '/api/v1/export/job': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+        secure: false
+      },
       '/api/v1/shifts': {
         target: 'http://localhost:8082',
         changeOrigin: true,

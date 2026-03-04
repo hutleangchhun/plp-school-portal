@@ -165,6 +165,7 @@ const ENDPOINTS = {
       SUBJECT: (studentId, subjectId) => `/students/${studentId}/grades/${subjectId}`,
     },
     QR_CODES: '/students/qr-codes',
+    EXPORT_ACCESSIBILITY: '/export/students/accessibility',
   },
   PARENTS: {
     BASE: '/parents',
@@ -220,6 +221,14 @@ const ENDPOINTS = {
     BULK_QUEUE: '/attendance/bulk/queue',
     BULK_STATUS: (jobId) => `/attendance/bulk/status/${jobId}`,
     QUEUE_LENGTH: '/attendance/bulk/queue-length',
+    EXPORT: {
+      STUDENT_MONTHLY_ASYNC: '/export/attendance/class/monthly/async',
+      TEACHER_MONTHLY_ASYNC: '/export/attendance/teacher/monthly/async',
+      STUDENT_MONTHLY_CHECK: '/export/attendance/class/monthly/check',
+      TEACHER_MONTHLY_CHECK: '/export/attendance/teacher/monthly/check',
+      JOB: (jobId) => `/export/job/${jobId}`,
+      DOWNLOAD: (jobId) => `/export/job/${jobId}/download`,
+    },
     DASHBOARD: {
       BASE: '/attendance-dashboard',
       PRIMARY: '/attendance-dashboard/primary',

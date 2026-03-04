@@ -2,11 +2,11 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-export default function Modal({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
+export default function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
   size = 'md',
   height = 'auto',
   rounded = true,
@@ -55,13 +55,15 @@ export default function Modal({
           style={{ transform: 'translate(-50%, -50%)' }}
         >
           {/* Header */}
-          {(title || showCloseButton) && (
+          {(title || showCloseButton) ? (
             <div className={`flex-shrink-0 bg-white px-3 pt-3 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b border-gray-200 ${roundedClass}`}>
               <div className="flex items-center justify-between">
-                {title && (
+                {title ? (
                   <Dialog.Title className="text-base sm:text-lg font-medium text-gray-900 pr-2">
                     {title}
                   </Dialog.Title>
+                ) : (
+                  <Dialog.Title className="sr-only">Modal</Dialog.Title>
                 )}
                 {showCloseButton && (
                   <Dialog.Close asChild>
@@ -75,6 +77,8 @@ export default function Modal({
                 )}
               </div>
             </div>
+          ) : (
+            <Dialog.Title className="sr-only">Modal</Dialog.Title>
           )}
           <Dialog.Description className="sr-only"></Dialog.Description>
           {/* Content - Scrollable */}

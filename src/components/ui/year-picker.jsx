@@ -16,23 +16,16 @@ export function YearPicker({
   placeholder = "ជ្រើសរើសឆ្នាំ",
   className,
   disabled = false,
-  fromYear = 1960,
-  toYear = new Date().getFullYear() + 5,
   ...props
 }) {
   const [open, setOpen] = React.useState(false)
   const [startYear, setStartYear] = React.useState(() => {
-    const currentYear = value ? parseInt(value) : toYear
-    // Round down to nearest decade
-    let decade = Math.floor(currentYear / 10) * 10
-    // Ensure it's within valid range: can't start before fromYear, and must leave room for 12 years
-    const minStart = fromYear
-    const maxStart = Math.max(fromYear, toYear - 11)
-    decade = Math.max(minStart, Math.min(decade, maxStart))
-    return decade
+    const currentYear = value ? parseInt(value) : new Date().getFullYear()
+    // Start at beginning of the 12-year block containing the current year
+    return Math.floor(currentYear / 12) * 12
   })
 
-  // Get 12 years for the calendar view (current decade)
+  // Get 12 years for the calendar view
   const yearsInView = Array.from({ length: 12 }, (_, i) => startYear + i)
 
   const handleYearChange = (year) => {
@@ -43,19 +36,13 @@ export function YearPicker({
   const handlePrevDecade = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    const minStart = fromYear
-    const maxStart = Math.max(fromYear, toYear - 11)
-    const newStartYear = startYear - 10
-    setStartYear(Math.max(newStartYear, minStart))
+    setStartYear(prev => prev - 12)
   }
 
   const handleNextDecade = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    const minStart = fromYear
-    const maxStart = Math.max(fromYear, toYear - 11)
-    const newStartYear = startYear + 10
-    setStartYear(Math.min(newStartYear, maxStart))
+    setStartYear(prev => prev + 12)
   }
 
   const displayValue = value ? `${value}` : placeholder

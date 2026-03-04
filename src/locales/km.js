@@ -32,6 +32,49 @@ export const km = {
   errorBulkUpdating: 'បរាជ័យក្នុងការធ្វើបច្ចុប្បន្នភាពជាក្រុម',
   updating: 'កំពុងកែប្រែ...',
 
+  // Report Preview Panel
+  loadingReportData: 'កំពុងផ្ទុកទិន្នន័យរបាយការណ៍...',
+  preview: 'ការពិនិត្យមើលជាមុន',
+  classSelectionRequired: 'ត្រូវការជ្រើសរើសថ្នាក់',
+  selectClassForReport1: 'សូមជ្រើសរើសថ្នាក់ជាក់លាក់ដើម្បីបង្កើតរបាយការណ៍',
+  selectClassForReport4: 'សូមជ្រើសរើសថ្នាក់ជាក់លាក់សម្រាប់របាយការណ៍អវត្តមាន',
+  noDataAvailable: 'គ្មានទិន្នន័យ',
+  noDataMessage: 'សូមជ្រើសរើសតម្រង ហើយរង់ចាំទិន្នន័យ',
+  missingDataBreakdown: 'មូលហេតុដែលសិស្សមិនមានទិន្នន័យ',
+  // Stat card labels
+  totalStudents: 'សិស្សសរុប',
+  totalTeachers: 'គ្រូសរុប',
+  female: 'ស្រី',
+  withBMI: 'មានBMI',
+  withoutBMI: 'សិស្សគ្មានBMI',
+  avgBMI: 'មធ្យមភាគ BMI',
+  studentsWithDisability: 'សិស្សពិការ',
+  daysRecorded: 'ថ្ងៃបានកត់ត្រា',
+  missingHeight: 'មិនបានបំពេញទិន្នន័យកម្ពស់',
+  missingWeight: 'មិនបានបំពេញទិន្នន័យទម្ងន់',
+  // BMI breakdown
+  bmiStatusBreakdown: 'ស្ថានភាព BMI',
+  thinnessG3: 'ស្គម G3',
+  thinnessG2: 'ស្គម G2',
+  thinnessG1: 'ស្គម G1',
+  normalBMI: 'ធម្មតា',
+  overweight: 'លើសទម្ងន់',
+  obesity: 'ធាត់',
+  // Accessibility & Ethnic charts
+  byDisabilityType: 'តាមប្រភេទពិការ',
+  byEthnicGroup: 'តាមក្រុមជនជាតិ',
+  noBreakdownData: 'គ្មានទិន្នន័យបំបែក',
+  noMinorityBreakdown: 'គ្មានទិន្នន័យជនជាតិភាគតិច',
+  // Attendance
+  present: 'មានវត្តមាន',
+  absent: 'អវត្តមាន',
+  late: 'យឺត',
+  leave: 'ច្បាប់',
+  highestFrequencyRecords: 'កំណត់ត្រាខ្ពស់តាមប្រភេទនៃស្ថានភាពការចុះវត្តមាន',
+  topPresent: 'វត្តមានច្រើនបំផុត',
+  topAbsent: 'អវត្តមានច្រើនបំផុត',
+  topLate: 'យឺតច្រើនបំផុត',
+  topLeave: 'ច្បាប់ច្រើនបំផុត',
 
   //chart
   classStudentCounts: 'ចំនួនសិស្សតាមថ្នាក់និមួយៗ',
@@ -719,6 +762,7 @@ export const km = {
   reportType: 'ប្រភេទរបាយការណ៍',
   reports: 'របាយការណ៍',
   viewAnalytics: 'មើលរបាយការណ៍និងការវិភាគទូលំទូលាយ',
+  reportParameters: 'ជ្រើសរើសរបាយការណ៍តាមតម្រង',
 
   //examination
   noExamRecordsForStudent: 'មិនមានទិន្នន័យការប្រឡងរបស់សិស្ស',
@@ -941,6 +985,14 @@ export const km = {
   academicYear: 'ឆ្នាំសិក្សា',
   generated: 'បានបង្កើត',
   totalStudents: 'សិស្សសរុប',
+  exportingYourData: 'កំពុងនាំចេញទិន្នន័យរបស់អ្នក',
+  exportingDesc: 'នេះអាចចំណាយពេលបន្តិចអាស្រ័យលើទំហំឯកសារ។',
+  complete: 'រួចរាល់',
+  estimatedTime: 'ប៉ាន់ស្មាន: សល់ ១នាទី',
+  finishing: 'កំពុងបញ្ចប់...',
+  currentlyProcessing: 'កំពុងដំណើរការ',
+  runInBackground: 'ដំណើរការក្នុងផ្ទៃខាងក្រោយ',
+  cancelExport: 'បោះបង់ការនាំចេញ',
 
   // Login page
   signInToAccount: 'ចូលទៅកាន់គណនីរបស់អ្នក',
