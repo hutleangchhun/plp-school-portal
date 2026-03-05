@@ -63,6 +63,8 @@ export const graphqlService = {
               classCount
               teacherCount
               studentCount
+              provinceName
+              districtName
             }
           }
         }

@@ -92,6 +92,22 @@ export const exportService = {
     },
 
     /**
+     * Enqueue school distribution report export
+     * @param {Object} params - Query parameters (provinceId, districtId, includeGrade0)
+     */
+    enqueueSchoolDistributionExport(params = {}) {
+        return handleApiResponse(() =>
+            attendanceApiClient.get(ENDPOINTS.ATTENDANCE.EXPORT.SCHOOL_DISTRIBUTION_ASYNC, {
+                params: {
+                    provinceId: params.provinceId,
+                    districtId: params.districtId,
+                    includeGrade0: params.includeGrade0
+                }
+            })
+        );
+    },
+
+    /**
      * Export BMI report for students
      * @param {Object} params - Query parameters
      * @returns {Promise<Blob>} Blob data for file download

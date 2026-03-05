@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { graphqlService } from '../../utils/api/services/graphqlService';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
-import { BarChart3, Search, RefreshCw } from 'lucide-react';
+import { BarChart3, Search, RefreshCw, ListFilter, Download } from 'lucide-react';
 import locationService from '../../utils/api/services/locationService';
 import schoolService from '../../utils/api/services/schoolService';
+import { exportService } from '../../utils/api/services/exportService';
+import ExportProgressModal from '../../components/modals/ExportProgressModal';
+import Badge from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
 import Dropdown from '../../components/ui/Dropdown';
 import SearchableDropdown from '../../components/ui/SearchableDropdown';
@@ -13,11 +16,10 @@ import { PageTransition, FadeInSection } from '../../components/ui/PageTransitio
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import SidebarFilter from '../../components/ui/SidebarFilter';
 import TooltipChart from '../../components/ui/TooltipChart';
-import { ListFilter } from 'lucide-react';
 
 export default function AdminUserStatistics() {
     const { t } = useLanguage();
-    const { showToast } = useToast();
+    const { showSuccess, showError, showInfo } = useToast();
 
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -47,6 +49,14 @@ export default function AdminUserStatistics() {
 
     // Sidebar state
     const [showFilters, setShowFilters] = useState(false);
+
+    // Export Progress Modal State
+    const [exportModalState, setExportModalState] = useState({
+        isOpen: false,
+        progress: 0,
+        status: 'processing',
+        pollInterval: null
+    });
 
     // Fetch Provinces
     useEffect(() => {
@@ -189,17 +199,110 @@ export default function AdminUserStatistics() {
         provinceId || districtId || schoolId || noClasses || noTeachers || noStudents
     );
 
+    const handleExport = async () => {
+        try {
+            setExportModalState({ isOpen: true, progress: 10, status: 'processing', jobId: null });
+
+            const params = {
+                includeGrade0: noClasses
+            };
+            if (provinceId) params.provinceId = parseInt(provinceId);
+            if (districtId) params.districtId = parseInt(districtId);
+
+            const enqueueRes = await exportService.enqueueSchoolDistributionExport(params);
+
+            if (!enqueueRes.success) {
+                throw new Error(enqueueRes.error || 'Failed to enqueue export job');
+            }
+
+            const jobId = enqueueRes.data?.jobId || enqueueRes.jobId;
+            setExportModalState(prev => ({ ...prev, progress: 40, jobId }));
+
+            const intervalId = setInterval(async () => {
+                setExportModalState(prev => ({
+                    ...prev,
+                    progress: Math.min(prev.progress + 5, 85)
+                }));
+
+                try {
+                    const statusRes = await exportService.getJobStatus(jobId);
+                    const job = statusRes.data || statusRes;
+
+                    if (job.status === 'completed') {
+                        clearInterval(intervalId);
+                        setExportModalState(prev => ({ ...prev, progress: 95 }));
+
+                        try {
+                            const blobRes = await exportService.downloadJobResult(jobId);
+                            const url = window.URL.createObjectURL(new Blob([blobRes.data || blobRes]));
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.setAttribute('download', job.filename || 'school_distribution.xlsx');
+                            document.body.appendChild(link);
+                            link.click();
+                            link.parentNode.removeChild(link);
+                            window.URL.revokeObjectURL(url);
+
+                            setExportModalState({ isOpen: false, progress: 100, status: 'success' });
+                            showSuccess(t('exportSuccess', 'ទាញយកទិន្នន័យដោយជោគជ័យ'));
+                        } catch (downloadErr) {
+                            console.error('Download error:', downloadErr);
+                            setExportModalState({ isOpen: false, progress: 100, status: 'error' });
+                            showError(t('downloadFailed', 'បញ្ហាក្នុងការទាញយកឯកសារ'));
+                        }
+                    } else if (job.status === 'failed') {
+                        clearInterval(intervalId);
+                        setExportModalState({ isOpen: false, progress: 100, status: 'error' });
+                        showError(t('exportFailed', 'បញ្ហាក្នុងការទាញយកទិន្នន័យ: ') + (job.error || 'Unknown error'));
+                    }
+                } catch (pollErr) {
+                    console.error('Polling error:', pollErr);
+                }
+            }, 3000);
+
+            setExportModalState(prev => ({ ...prev, pollInterval: intervalId }));
+
+        } catch (err) {
+            console.error('Export enqueue error:', err);
+            setExportModalState({ isOpen: false, progress: 0, status: 'error' });
+            showError(t('exportFailed', 'បញ្ហាក្នុងការទាញយកទិន្នន័យ'));
+        }
+    };
+
     const tableColumns = [
-        { key: 'schoolCode', header: t('schoolCode', 'លេខកូដសាលា'), render: (row) => row.schoolCode || 'N/A' },
         { key: 'schoolName', header: t('schoolName', 'ឈ្មោះសាលា'), render: (row) => <span className="font-medium text-slate-900">{row.schoolName}</span> },
+        { key: 'schoolCode', header: t('schoolCode', 'លេខកូដសាលា'), render: (row) => row.schoolCode || '—' },
+        {
+            key: 'location', header: t('location', 'ទីតាំង'), render: (row) => (
+                <div className="flex flex-col gap-0.5">
+                    {row.provinceName && <span className="text-sm text-slate-700">{row.provinceName}</span>}
+                    {row.districtName && <span className="text-xs text-slate-400">{row.districtName}</span>}
+                    {!row.provinceName && !row.districtName && <span className="text-slate-400">—</span>}
+                </div>
+            )
+        },
         { key: 'classCount', header: t('classes', 'ថ្នាក់រៀន'), render: (row) => row.classCount?.toLocaleString(), headerClassName: "text-right", cellClassName: "text-right" },
         { key: 'teacherCount', header: t('teachers', 'គ្រូបង្រៀន'), render: (row) => row.teacherCount?.toLocaleString(), headerClassName: "text-right", cellClassName: "text-right" },
         { key: 'studentCount', header: t('students', 'សិស្ស'), render: (row) => <span className="font-medium text-blue-600">{row.studentCount?.toLocaleString()}</span>, headerClassName: "text-right", cellClassName: "text-right" },
     ];
 
+
     return (
         <PageTransition variant="fade" className="flex-1 bg-gray-50">
             <div className='p-3 sm:p-6'>
+                <ExportProgressModal
+                    isOpen={exportModalState.isOpen}
+                    progress={exportModalState.progress}
+                    status={exportModalState.status}
+                    title={t('exportingData', 'កំពុងទាញយកទិន្នន័យ')}
+                    onClose={() => setExportModalState({ ...exportModalState, isOpen: false })}
+                    onCancel={() => {
+                        if (exportModalState.pollInterval) clearInterval(exportModalState.pollInterval);
+                        setExportModalState({ isOpen: false, progress: 0, status: 'canceled' });
+                        showInfo(t('exportCanceled', 'ការទាញយកត្រូវបានលុបចោល'));
+                    }}
+                />
+
                 <FadeInSection delay={0.1} className='mb-4 mx-2'>
                     <div className="flex flex-row items-start sm:items-center justify-between gap-4">
                         <div className='space-y-1'>
@@ -375,6 +478,16 @@ export default function AdminUserStatistics() {
                             </div>
                             <div className="flex items-center gap-2 self-end xl:self-auto">
                                 <Button
+                                    variant="outline"
+                                    onClick={handleExport}
+                                    className="flex items-center gap-2"
+                                    size="sm"
+                                    disabled={loading || data.length === 0}
+                                >
+                                    <Download className="w-4 h-4" />
+                                    <span className="hidden sm:inline">{t('export', 'ទាញយក')}</span>
+                                </Button>
+                                <Button
                                     variant="primary"
                                     onClick={() => setShowFilters(true)}
                                     className="flex items-center gap-2 relative"
@@ -397,6 +510,30 @@ export default function AdminUserStatistics() {
                         </div>
 
                         <div className="border-t border-slate-100 pt-6">
+                            {(provinceId || districtId || schoolId) && (
+                                <div className="flex flex-wrap items-center gap-2 mb-4">
+                                    <span className="text-sm text-slate-500 font-medium">{t('activeFilters', 'តម្រងដែលបានជ្រើសរើស')}:</span>
+                                    {provinceId && (
+                                        <Badge variant="outline" color="blue" className="bg-blue-50/50">
+                                            <span className="text-slate-500 mr-1">{t('province', 'ខេត្ត')}:</span>
+                                            {provinces.find(p => p.id.toString() === provinceId.toString())?.provinceNameKh || provinces.find(p => p.id.toString() === provinceId.toString())?.provinceName || provinceId}
+                                        </Badge>
+                                    )}
+                                    {districtId && (
+                                        <Badge variant="outline" color="blue" className="bg-blue-50/50">
+                                            <span className="text-slate-500 mr-1">{t('district', 'ស្រុក')}:</span>
+                                            {districts.find(d => d.id.toString() === districtId.toString())?.districtNameKh || districts.find(d => d.id.toString() === districtId.toString())?.name_km || districtId}
+                                        </Badge>
+                                    )}
+                                    {schoolId && (
+                                        <Badge variant="outline" color="blue" className="bg-blue-50/50">
+                                            <span className="text-slate-500 mr-1">{t('school', 'សាលា')}:</span>
+                                            {schools.find(s => s.id.toString() === schoolId.toString())?.name || schools.find(s => s.id.toString() === schoolId.toString())?.schoolName || schoolId}
+                                        </Badge>
+                                    )}
+                                </div>
+                            )}
+
                             {error ? (
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden p-8 text-center text-red-500">
                                     <p>{error}</p>

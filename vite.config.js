@@ -65,6 +65,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false
       },
+      '/api/v1/export/schools': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+        secure: false
+      },
       '/api/v1/export/job': {
         target: 'http://localhost:8082',
         changeOrigin: true,

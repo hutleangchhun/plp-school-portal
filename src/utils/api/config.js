@@ -226,6 +226,7 @@ const ENDPOINTS = {
       TEACHER_MONTHLY_ASYNC: '/export/attendance/teacher/monthly/async',
       STUDENT_MONTHLY_CHECK: '/export/attendance/class/monthly/check',
       TEACHER_MONTHLY_CHECK: '/export/attendance/teacher/monthly/check',
+      SCHOOL_DISTRIBUTION_ASYNC: '/export/schools/distribution/async',
       JOB: (jobId) => `/export/job/${jobId}`,
       DOWNLOAD: (jobId) => `/export/job/${jobId}/download`,
     },
