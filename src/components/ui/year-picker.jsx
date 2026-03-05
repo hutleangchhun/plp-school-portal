@@ -16,6 +16,8 @@ export function YearPicker({
   placeholder = "ជ្រើសរើសឆ្នាំ",
   className,
   disabled = false,
+  fromYear, // Destructure to avoid DOM propagation
+  toYear,   // Destructure to avoid DOM propagation
   ...props
 }) {
   const [open, setOpen] = React.useState(false)

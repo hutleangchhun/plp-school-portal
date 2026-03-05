@@ -851,7 +851,12 @@ export default function TeacherSelfAttendance() {
                               className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${onTime ? "bg-green-500" : "bg-orange-400"}`}
                             />
                             <div>
-                              <p className="text-sm text-gray-700">{shift.name}</p>
+                              <p className="text-sm font-medium text-gray-700">{shift.name}</p>
+                              {shift.startTime && shift.endTime && (
+                                <p className="text-xs text-indigo-600/80 font-medium mb-0.5 mt-0.5">
+                                  {shift.startTime.substring(0, 5)} - {shift.endTime.substring(0, 5)}
+                                </p>
+                              )}
                               <p className="text-xs text-gray-400">
                                 {onTime ? "មុន" : "ក្រោយ"} {cutoff}
                               </p>
@@ -966,14 +971,29 @@ export default function TeacherSelfAttendance() {
                         header: t("shift", "វេន"),
                         render: (row) => {
                           let shiftName = row.attendance.shift?.name;
+                          let shiftStart = row.attendance.shift?.startTime;
+                          let shiftEnd = row.attendance.shift?.endTime;
                           if (!shiftName && row.shiftId) {
                             // Use == instead of === since row.shiftId might be a string from the dictionary key split
                             const foundShift = shifts.find(s => s.id == row.shiftId);
-                            if (foundShift) shiftName = foundShift.name;
+                            if (foundShift) {
+                              shiftName = foundShift.name;
+                              shiftStart = foundShift.startTime;
+                              shiftEnd = foundShift.endTime;
+                            }
                           }
                           shiftName = shiftName || t("unknownShift", "មិនស្គាល់វេន");
+                          const hasTime = shiftStart && shiftEnd;
+
                           return (
-                            <p className="font-medium text-gray-700">{shiftName}</p>
+                            <div className="flex flex-col">
+                              <p className="font-medium text-gray-700">{shiftName}</p>
+                              {hasTime && (
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  {shiftStart.substring(0, 5)} - {shiftEnd.substring(0, 5)}
+                                </p>
+                              )}
+                            </div>
                           );
                         },
                       },
@@ -1182,9 +1202,14 @@ export default function TeacherSelfAttendance() {
                       : "border-gray-200 bg-white hover:border-gray-300"
                       }`}
                   >
-                    <p className="text-sm text-gray-900">
+                    <p className="text-sm font-medium text-gray-900">
                       {shift.name}
                     </p>
+                    {shift.startTime && shift.endTime && (
+                      <p className="text-xs text-indigo-600/80 font-medium mt-1 mb-1">
+                        {shift.startTime.substring(0, 5)} - {shift.endTime.substring(0, 5)}
+                      </p>
+                    )}
                     <p className="text-xs text-gray-600">
                       {onTime ? "មុន" : "ក្រោយ"} {cutoff}
                     </p>
